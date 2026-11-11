@@ -48,7 +48,7 @@
       .menu-wrap .field { width: 210px; }
       /* Token specimens */
       .mats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-      .mat { min-height: 104px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; border-radius: var(--r-card); font-size: 13.5px; }
+      .mat { min-height: 104px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); font-size: 13.5px; }
       .mat b { font-weight: 650; }
       .mat code { font-size: 11.5px; color: var(--text-2); }
       .m-window { background: var(--mat-window); backdrop-filter: var(--blur-window); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1); }
@@ -59,11 +59,34 @@
       .shapes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
       .shape { display: grid; justify-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
       .shape i { display: block; background: var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--border-control); }
-      .shape .s-win { width: 112px; height: 76px; border-radius: var(--r-window); }
-      .shape .s-card { width: 92px; height: 64px; border-radius: var(--r-card); }
-      .shape .s-pop { width: 92px; height: 64px; border-radius: var(--r-pop); }
+      .shape .s-win { width: 112px; height: 76px; border-radius: calc(var(--r-window) * var(--r-k)); corner-shape: var(--r-curve); }
+      .shape .s-card { width: 92px; height: 64px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); }
+      .shape .s-pop { width: 92px; height: 64px; border-radius: calc(var(--r-pop) * var(--r-k)); corner-shape: var(--r-curve); }
+      .shape .s-menu { width: 92px; height: 64px; border-radius: calc(var(--r-menu) * var(--r-k)); corner-shape: var(--r-curve); }
+      .shape .s-fld { width: 92px; height: 36px; border-radius: calc(var(--r-field) * var(--r-k)); corner-shape: var(--r-curve); }
+      .shape .s-sm { width: 92px; height: 28px; border-radius: calc(var(--r-control-sm) * var(--r-k)); corner-shape: var(--r-curve); }
       .shape .s-ctl { width: 92px; height: 34px; border-radius: var(--r-control); }
-      .shape .s-fld { width: 92px; height: 36px; border-radius: var(--r-field); }
+      /* The three corner rules of macOS: the curve, the nesting, the capsule */
+      .curves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+      .curve { display: grid; justify-items: center; align-content: start; gap: 6px; text-align: center; font-size: 12.5px; color: var(--text-2); }
+      .curve b { font-size: 13.5px; font-weight: 650; color: var(--text); }
+      .curve i { position: relative; display: block; width: 136px; height: 136px; margin-bottom: 6px; background: var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--text-3); }
+      .curve .c-arc, .curve .c-both::before { border-radius: 44px; }
+      .curve .c-apple, .curve .c-both::after { border-radius: calc(44px * var(--r-k)); corner-shape: var(--r-curve); }
+      .curve .c-apple { box-shadow: inset 0 0 0 1.5px var(--accent); }
+      .curve .c-both { background: none; box-shadow: none; }
+      .curve .c-both::before, .curve .c-both::after { content: ''; position: absolute; inset: 0; }
+      .curve .c-both::before { box-shadow: inset 0 0 0 1.5px var(--text-3); }
+      .curve .c-both::after { box-shadow: inset 0 0 0 1.5px var(--accent); }
+      .nest { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--fill-1); box-shadow: inset 0 0 0 1.5px var(--border-control); font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+      .nest > span { padding: 2px 10px 0; }
+      .nest b { font-weight: 650; color: var(--text); }
+      .nest.n1 { width: 330px; max-width: 100%; height: 186px; border-radius: calc(var(--r-window) * var(--r-k)); corner-shape: var(--r-curve); }
+      .nest.n2 { flex: 1; width: 214px; border-radius: calc((var(--r-window) - 8px) * var(--r-k)); corner-shape: var(--r-curve); }
+      .nest.n3 { height: 34px; padding: 0 10px; justify-content: center; background: var(--fill-3); border-radius: calc((var(--r-window) - 16px) * var(--r-k)); corner-shape: var(--r-curve); }
+      .nest.n3 > span { padding: 0; }
+      [data-os='win'] .nest.n2 { border-radius: 0; background: none; box-shadow: none; }
+      [data-os='win'] .nest.n3 { border-radius: 4px; }
       .lane { display: grid; grid-template-columns: 190px minmax(0, 1fr); align-items: center; gap: 14px; margin-bottom: 10px; font-size: 14px; color: var(--text-2); white-space: nowrap; }
       .lane .track { height: 40px; padding: 4px; border-radius: 20px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); container-type: inline-size; }
       .puck { display: grid; place-items: center; width: 100px; height: 32px; border-radius: 16px; background: var(--accent-fill); color: var(--on-accent); font-size: 12.5px; font-weight: 650; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35); transition: transform 300ms ease; }
@@ -135,7 +158,7 @@
           <div class="spec-row"><button class="btn primary sm">Ghi kết quả</button><button class="btn sm">Hồ sơ KH →</button><button class="btn sm is-on"><svg class="ic"><use href="#i-eye" /></svg>Đang che tên</button></div>
         </div>
         <ul class="rules">
-          <li><b>Cao 34 px</b> (nhỏ: 28 px). macOS: viên bo tròn hai đầu. Windows 11: bo 4 px.</li>
+          <li><b>Cao 34 px</b> (gọn: 28 px). macOS: nút 34 px là hình viên, nút gọn 28 px là chữ nhật bo 8 px (quy tắc của Apple: chỉ cỡ lớn mới là viên). Windows 11: bo 4 px.</li>
           <li><b>Thứ tự trong hộp thoại:</b> nút phụ rồi nút chính, sát mép phải, giống các hộp đã duyệt; giữ nguyên trên cả hai hệ điều hành.</li>
           <li><b>Nút nguy hiểm</b> chỉ dùng cho bước xác nhận cuối (xóa, hủy HĐ, dọn Thùng rác), không dùng ở nút mở hộp.</li>
           <li><b>Vòng focus</b> vàng 2 px, cách nút 2 px, chỉ hiện khi dùng bàn phím.</li>
@@ -162,7 +185,7 @@
           </div>
         </div>
         <ul class="rules">
-          <li><b>macOS:</b> viền đều bốn cạnh, bo 12 px; đang gõ thì viền vàng và quầng vàng nhạt. <b>Windows 11:</b> bo 4 px, nhấn ở cạnh dưới; đang gõ thì cạnh dưới vàng.</li>
+          <li><b>macOS:</b> viền đều bốn cạnh, bo 10 px cong liên tục, ô tìm là hình viên; đang gõ thì viền vàng và quầng vàng nhạt. <b>Windows 11:</b> bo 4 px, nhấn ở cạnh dưới; đang gõ thì cạnh dưới vàng.</li>
           <li><b>Lỗi:</b> viền đỏ và một dòng nói rõ sai gì, ngay dưới ô. Không chỉ dựa vào màu: dòng lỗi có dấu ✕.</li>
           <li><b>Ô khóa:</b> viền đứt <code>--border-strong</code>, không nền (đúng quyết định T-303).</li>
         </ul>
@@ -223,7 +246,7 @@
         </div>
         <ul class="rules">
           <li><b>Thẻ số:</b> nhãn, con số lớn (số chủ đạo màu champagne), đơn vị nhỏ và nhạt, mức tăng / giảm, và phép tính ngay dưới số.</li>
-          <li><b>Bo góc:</b> 20 px trên macOS, 8 px trên Windows 11. Lề trong 18 × 20 px (thẻ dày đặc như lịch tháng: 16 px).</li>
+          <li><b>Bo góc:</b> 16 px cong liên tục trên macOS, 8 px trên Windows 11. Lề trong 18 × 20 px (thẻ dày đặc như lịch tháng: 16 px).</li>
           <li><b>Mọi số</b> dùng chữ số đều cột (<code>tabular-nums</code>).</li>
         </ul>
       </section>
@@ -389,16 +412,44 @@
             <div class="mat m-pop"><b>Lớp tiêu điểm</b><code>--mat-pop</code></div>
           </div>
         </div>
-        <h3 class="sub-h">Bo góc theo hệ điều hành</h3>
+        <h3 class="sub-h" id="corners">Bo góc theo hệ điều hành</h3>
+        <p class="sub-p">Anh nêu 11/11: <b>"bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple"</b>. Bản đầu của mockup (góc là cung tròn, nút nào cũng là viên, thẻ 20 px) đã bỏ. macOS nay vẽ theo ba quy tắc của Apple dưới đây; Windows 11 giữ kiểu Fluent: 8 px cho bề mặt, 4 px cho nút và ô.</p>
+        <p class="sub-p"><b>Quy tắc 1 · Góc cong liên tục.</b> Ba hình cùng độ cong 44 px. Góc kiểu Apple bắt đầu cong sớm hơn và vào cạnh thẳng êm hơn; cung tròn thường có một điểm gãy nhẹ ở chỗ cạnh thẳng gặp cung.</p>
+        <div class="duo" data-only="mac">
+          <div class="curves">
+            <div class="curve"><i class="c-arc"></i><b>Cung tròn thường</b><span>bản trước, anh không duyệt</span></div>
+            <div class="curve"><i class="c-apple"></i><b>Cong liên tục kiểu Apple</b><span>bản này, trên mọi hình chữ nhật bo</span></div>
+            <div class="curve"><i class="c-both"></i><b>Hai đường chồng lên nhau</b><span>vàng: kiểu Apple · xám: cung tròn</span></div>
+          </div>
+        </div>
+        <p class="sub-p"><b>Quy tắc 2 · Bo đồng tâm.</b> Hình nằm trong lấy độ cong của hình ngoài trừ đi khoảng cách giữa hai hình, nên hai đường cong chạy song song.</p>
+        <div class="duo">
+          <div class="nest n1">
+            <span>cửa sổ <b class="k-mac">24</b><b class="k-win">8</b></span>
+            <div class="nest n2">
+              <span>thanh bên <b class="k-mac">16 = 24 − 8</b><b class="k-win">phẳng, không bo</b></span>
+              <div class="nest n3"><span>mục đang chọn <b class="k-mac">8 = 16 − 8</b><b class="k-win">4</b></span></div>
+            </div>
+          </div>
+        </div>
+        <p class="sub-p"><b>Quy tắc 3 · Hình viên chỉ cho cỡ lớn.</b> Trên macOS, nút cỡ lớn (34 px), viên của thanh công cụ, ô tìm, viên chọn, nhãn và thông báo nổi là hình viên. Nút gọn (28 px), ô nhập, thẻ, menu và lớp nổi là chữ nhật bo.</p>
         <div class="duo">
           <div class="shapes">
             <div class="shape"><i class="s-win"></i><span>cửa sổ</span><code>--r-window</code></div>
-            <div class="shape"><i class="s-card"></i><span>thẻ</span><code>--r-card</code></div>
             <div class="shape"><i class="s-pop"></i><span>lớp nổi</span><code>--r-pop</code></div>
-            <div class="shape"><i class="s-ctl"></i><span>nút</span><code>--r-control</code></div>
+            <div class="shape"><i class="s-card"></i><span>thẻ</span><code>--r-card</code></div>
+            <div class="shape"><i class="s-menu"></i><span>menu</span><code>--r-menu</code></div>
             <div class="shape"><i class="s-fld"></i><span>ô nhập</span><code>--r-field</code></div>
+            <div class="shape"><i class="s-sm"></i><span>nút gọn</span><code>--r-control-sm</code></div>
+            <div class="shape"><i class="s-ctl"></i><span>nút cỡ lớn</span><code>--r-control</code></div>
           </div>
         </div>
+        <ul class="rules">
+          <li><b>Số bo góc trên macOS:</b> cửa sổ 24 · lớp nổi 20 · thẻ 16 · menu 14 · ô nhập 10 · nút gọn 8 (px). Các cặp đồng tâm khác: menu 14 → dòng menu 8, bộ chọn kỳ 20 → ô 8, nút trượt 10 → viên trượt 8, thẻ 16 → mục trong thẻ 8.</li>
+          <li><b>Góc cửa sổ là của macOS:</b> trong app thật hệ điều hành tự vẽ góc cửa sổ, app không đặt. Số 24 px chỉ để vẽ mockup; khi có bản build Mac (T-413) em đo góc thật rồi chỉnh các hình bên trong cho đồng tâm với nó.</li>
+          <li><b>Apple không công bố số đo.</b> Ba quy tắc lấy từ tài liệu của Apple cho macOS 26 trở lên (nút cỡ nhỏ tới vừa là chữ nhật bo, cỡ lớn là viên; hình trong đồng tâm với hình ngoài). Các con số là ước lượng của em, cần so với máy Mac thật.</li>
+          <li><b>Cách làm:</b> thuộc tính CSS <code>corner-shape</code>. Bản Windows (WebView2) đã có. Trên macOS, Safari mới thêm ở bản 27.3 beta (03/11/2026); máy chưa có thì app vẽ cùng số bo góc bằng cung tròn, bố cục không đổi. Chưa kiểm trên máy Mac.</li>
+        </ul>
         <h3 class="sub-h">Chuyển động</h3>
         <div class="pgrid">
           <div class="pcard lab">
@@ -436,9 +487,11 @@
             <tr><td>--hairline</td><td class="v" colspan="2">trắng 9%</td><td>Đường kẻ trong một bề mặt (dòng bảng, chân hộp thoại).</td></tr>
             <tr><td>--scrim</td><td class="v" colspan="2">rgba(4, 7, 12, 0.55)</td><td>Lớp mờ sau hộp thoại.</td></tr>
             <tr><td>--shadow-1 · -2 · -3</td><td class="v" colspan="2">thẻ · lớp nổi nhỏ · cửa sổ và hộp thoại</td><td>Ba mức bóng, đều là bóng đen mềm.</td></tr>
+            <tr><td>--r-curve · --r-k</td><td class="v">superellipse(1.7) · 1,5</td><td class="v">round · 1</td><td>Dáng của góc: cong liên tục kiểu Apple, vẽ trong ô rộng 1,5 lần số bo góc · cung tròn. Xem "Bo góc theo hệ điều hành".</td></tr>
             <tr><td>--r-window</td><td class="v">24 px</td><td class="v">8 px</td><td>Góc cửa sổ (app thật: do hệ điều hành vẽ).</td></tr>
-            <tr><td>--r-card · --r-pop</td><td class="v">20 px · 20 px</td><td class="v">8 px · 8 px</td><td>Thẻ · hộp thoại, menu.</td></tr>
-            <tr><td>--r-control · --r-field</td><td class="v">17 px (viên) · 12 px</td><td class="v">4 px · 4 px</td><td>Nút, viên chọn · ô nhập, ô trong lịch.</td></tr>
+            <tr><td>--r-pop · --r-card · --r-menu</td><td class="v">20 · 16 · 14 px</td><td class="v">8 · 8 · 8 px</td><td>Hộp thoại, bộ chọn kỳ · thẻ · menu.</td></tr>
+            <tr><td>--r-field · --r-control-sm</td><td class="v">10 px · 8 px</td><td class="v">4 px · 4 px</td><td>Ô nhập, ô trong lịch · nút gọn 28 px.</td></tr>
+            <tr><td>--r-control</td><td class="v">hình viên</td><td class="v">4 px</td><td>Nút 34 px, viên của thanh công cụ, ô tìm, viên chọn.</td></tr>
             <tr><td>--t-1 … --t-4</td><td class="v" colspan="2">120 · 220 · 400 · 600 ms</td><td>Thời lượng: đổi màu và đóng · mở lớp nổi · trượt, hiện · thanh dài ra, thông báo.</td></tr>
             <tr><td>--ease-out · --ease-in</td><td class="v" colspan="2">cubic-bezier(0.22, 1, 0.36, 1) · (0.4, 0, 1, 1)</td><td>Vào · ra, cho độ trong.</td></tr>
             <tr><td>--spring-smooth · -snappy · -bouncy</td><td class="v" colspan="2">CSS <code>linear()</code>, không thư viện</td><td>Êm · nhanh · nảy (phòng thử ở trên).</td></tr>
@@ -503,7 +556,7 @@
         <p class="lead">Mỗi điểm có đề xuất của em. Mười điểm của vỏ app nằm ở <a href="app-shell.html#ask">app-shell.html</a>.</p>
         <ol class="asks">
           <li><b>Bộ mười thành phần này là bộ dựng cho các mockup đợt b–g?</b>Nút, ô nhập, ô chọn, thẻ, bảng số, hộp thoại, nhãn trạng thái, thông báo nổi, trạng thái trống, trạng thái lỗi.<em>Đề xuất: duyệt. Thành phần phát sinh ở đợt sau (biểu đồ, lịch, kanban) vẽ trong mockup của đợt đó.</em></li>
-          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS tròn (viên, 20 px), Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành".<em>Đề xuất: duyệt. Cách khác: một bộ bo góc chung cho cả hai, đơn giản hơn nhưng app trên Windows trông như app Mac.</em></li>
+          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS theo ba quy tắc của Apple (cong liên tục, đồng tâm, viên chỉ cho cỡ lớn), Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành". Bản đầu của phần macOS anh không duyệt (11/11); đây là bản vẽ lại.<em>Đề xuất: duyệt, kèm điều kiện so lại với máy Mac thật khi có bản build. Cách khác: một bộ bo góc chung cho cả hai, đơn giản hơn nhưng app trên Windows trông như app Mac.</em></li>
           <li><b>Thẻ không viền, dùng chất liệu thay cho nền <code>--bg-2</code> + viền <code>--border</code>?</b>Đề mục trong thẻ vẫn vàng; tên thẻ màu chữ thường.<em>Đề xuất: duyệt.</em></li>
           <li><b>Trạng thái trống và lỗi theo một khuôn, ba cỡ (cả màn, trong thẻ, trong bảng)?</b>Xem hai mục 09 và 10. Câu chữ của lỗi giữ như app hiện nay.<em>Đề xuất: duyệt.</em></li>
           <li><b>Thông báo nổi ở giữa mép dưới cửa sổ, tự rời sau khoảng 4 giây, lỗi thì ở lại?</b>App hiện chưa có thông báo nổi dùng chung; đây là thành phần mới.<em>Đề xuất: duyệt.</em></li>

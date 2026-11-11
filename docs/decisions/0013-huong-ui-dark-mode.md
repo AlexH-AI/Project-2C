@@ -63,12 +63,21 @@ Bối cảnh: sau bản dùng thử exe `5215b2e`, Owner yêu cầu một vòng 
 
    | Token | macOS | Windows 11 |
    |---|---|---|
-   | `--r-window` | 24 px | 8 px |
-   | `--r-card` · `--r-pop` | 20 px · 20 px | 8 px · 8 px |
-   | `--r-control` · `--r-field` | 17 px (nút dạng viên) · 12 px | 4 px · 4 px |
+   | `--r-curve` · `--r-k` (dáng của góc) | `superellipse(1.7)` · 1,5: cong liên tục | `round` · 1: cung tròn |
+   | `--r-window` (app thật: hệ điều hành vẽ) | 24 px | 8 px |
+   | `--r-pop` · `--r-card` · `--r-menu` | 20 px · 16 px · 14 px | 8 px · 8 px · 8 px |
+   | `--r-field` · `--r-control-sm` (nút gọn 28 px) | 10 px · 8 px | 4 px · 4 px |
+   | `--r-control` (nút 34 px, viên của thanh công cụ, ô tìm, viên chọn) | hình viên | 4 px |
    | `--mat-window` (khi không có hiệu ứng gốc) | `rgba(11, 16, 23, 0.62)` | `rgba(17, 24, 34, 0.84)` |
 
-   macOS: ba nút cửa sổ nằm trong tấm thanh bên, mục đang chọn là viên bo tròn, ô tìm là nút trên thanh công cụ. Windows 11: thanh tiêu đề có ô tìm (hoặc thanh tiêu đề gốc, Owner chọn ở G3), mục đang chọn có vạch `--accent` bên trái. Bộ `--corner-sm / md / lg` hiện có nhường chỗ cho bộ `--r-*` khi ra Issue.
+   **Bo góc trên macOS theo ba quy tắc của Apple** (Owner 11/11/2026, khi xem bản đầu của mockup: "bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple chứ anh không duyệt như mockup của MacOS như đang xem"; bản đầu dùng cung tròn, nút nào cũng là viên, thẻ 20 px):
+
+   - *Góc cong liên tục:* đường cong vào cạnh thẳng êm dần, không phải cung tròn. Vẽ bằng thuộc tính CSS `corner-shape` với `--r-curve`, trong ô rộng `--r-k` lần số bo góc để giữ độ tròn của một cung cùng số đo. Web view chưa có `corner-shape` thì vẽ cung tròn cùng số đo, bố cục không đổi (WebView2 có từ bản 139; Safari thêm ở bản 27.3 beta, 03/11/2026).
+   - *Bo đồng tâm:* hình nằm trong lấy số bo góc của hình ngoài trừ khoảng cách giữa hai hình: cửa sổ 24 → tấm thanh bên 16 → mục thanh bên 8; menu 14 → dòng menu 8; bộ chọn kỳ 20 → ô 8; nút trượt 10 → viên trượt 8; thẻ 16 → mục trong thẻ 8.
+   - *Hình viên chỉ cho cỡ lớn:* nút 34 px, viên của thanh công cụ, ô tìm, viên chọn, nhãn và thông báo nổi là hình viên; nút gọn 28 px, ô nhập, thẻ, menu, lớp nổi là chữ nhật bo.
+   - Số đo là ước lượng (Apple không công bố). Góc cửa sổ do macOS vẽ; khi có bản thử Mac (T-413) đo góc thật rồi chỉnh các số đồng tâm theo nó.
+
+   macOS: ba nút cửa sổ nằm trong tấm thanh bên, mục đang chọn có nền bo đồng tâm với tấm thanh bên, ô tìm là nút trên thanh công cụ. Windows 11: thanh tiêu đề có ô tìm (hoặc thanh tiêu đề gốc, Owner chọn ở G3), mục đang chọn có vạch `--accent` bên trái. Bộ `--corner-sm / md / lg` hiện có nhường chỗ cho bộ `--r-*` khi ra Issue.
 4. **Điều hướng (bổ sung §6).** Thanh bên dùng logo gọn xếp ngang (Owner 11/11, thay khối dọc của phụ lục 27/10; ba mảnh ảnh và viền `--brand-outline` giữ nguyên), slogan xuống chân thanh bên dưới dòng trạng thái lưu. Thêm mục Forecast ngay trên Báo cáo. Icon nét 18 px, cùng màu chữ, mục đang chọn màu nhấn, như §6; ba mục của Cài đặt (Dữ liệu, AI, Thùng rác) có icon, kiểu do Owner chọn ở G3.
 5. **Thời gian (bổ sung §4).** Bộ chọn kỳ Ngày · Tuần · Tháng · Năm · Tùy chọn + ‹ › giữ nguyên. Ở màn có số liệu theo kỳ (Tổng quan, Báo cáo), góc nhìn và kỳ nằm thành một cụm trên thanh công cụ và áp dụng ngay khi đổi; nút "Lọc" bỏ (Owner 11/11, thay điều duyệt 03/10/2026). Lịch hẹn giữ bộ chọn kỳ trong màn.
 6. **Chuyển động.** Token: `--t-1 … --t-4` = 120 · 220 · 400 · 600 ms; `--ease-out`, `--ease-in`; ba lò xo `--spring-smooth`, `--spring-snappy`, `--spring-bouncy` viết bằng CSS `linear()`, không thư viện. Luật: chuyển động chỉ đổi `transform` và `opacity`; đổi màu khi rê chuột là chuyển màu ngắn 120 – 220 ms; ra nhanh hơn vào; máy bật "Giảm chuyển động" thì không chạy. Bốn động tác (Hiện, Mở, Trượt, Đếm) và nơi dùng từng lò xo duyệt ở mockup đợt g.

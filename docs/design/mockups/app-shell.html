@@ -41,18 +41,18 @@
       .today .st { grid-row: 1 / 3; grid-column: 3; }
       .view-note { margin: 14px 2px 0; font-size: 12.5px; color: var(--text-3); }
       /* A screen whose content belongs to a later round: only its shell is shown here */
-      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: var(--r-card); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
       .later .ic { width: 30px; height: 30px; color: var(--text-3); }
       .later b { font-size: 18px; font-weight: 650; color: var(--text); }
       .later p { margin: 0; max-width: 460px; font-size: 13.5px; }
       /* Cài đặt: three items, each with its icon */
       .set { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; max-width: 940px; }
       .set-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; align-self: start; }
-      .set-i { display: flex; align-items: center; gap: 12px; padding: 8px 9px; border-radius: var(--r-field); text-align: left; font-weight: 550; transition: background var(--t-1); }
+      .set-i { display: flex; align-items: center; gap: 12px; padding: 8px 9px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); /* concentric with the card: 8 px in */ text-align: left; font-weight: 550; transition: background var(--t-1); }
       .set-i:hover { background: var(--fill-1); }
       .set-i.on { background: var(--fill-2); }
-      .sq { width: 30px; height: 30px; flex: none; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 82%, #fff), var(--c)); color: var(--bg-0); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 3px 8px -3px var(--c); }
-      [data-os='win'] .sq { border-radius: 6px; }
+      .sq { width: 30px; height: 30px; flex: none; border-radius: calc(7px * var(--r-k)); corner-shape: var(--r-curve); display: grid; place-items: center; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 82%, #fff), var(--c)); color: var(--bg-0); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 3px 8px -3px var(--c); }
+      [data-os='win'] .sq { border-radius: 6px; corner-shape: round; }
       .sq.line { background: none; box-shadow: none; color: var(--text-2); }
       .set-i.on .sq.line { color: var(--accent); }
       .set-pane h3 { margin: 2px 0 14px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
@@ -78,7 +78,7 @@
       .keep .card { padding: 16px; }
       .keep .tree { padding: 10px 8px; }
       .keep .tree .team { display: flex; justify-content: space-between; padding: 6px 8px; font-size: 12.5px; font-weight: 600; }
-      .keep .tree .rm { display: flex; justify-content: space-between; padding: 5px 8px 5px 20px; border-radius: calc(var(--r-field) - 3px); font-size: 12.5px; color: var(--text-2); }
+      .keep .tree .rm { display: flex; justify-content: space-between; padding: 5px 8px 5px 20px; border-radius: calc(var(--r-control-sm) * var(--r-k)); corner-shape: var(--r-curve); font-size: 12.5px; color: var(--text-2); }
       .keep .tree .rm.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
       .keep .tree .rm .n { color: var(--text-3); }
       .keep .sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -89,7 +89,7 @@
       .keep .trig .hbar { grid-column: 1 / -1; height: 4px; }
       .keep .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
       .keep .cal .h { padding: 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
-      .keep .cell { min-height: 62px; padding: 6px 8px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; border-radius: var(--r-field); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-variant-numeric: tabular-nums; }
+      .keep .cell { min-height: 62px; padding: 6px 8px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; border-radius: calc(var(--r-field) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-variant-numeric: tabular-nums; }
       .keep .cell .dn { font-size: 11px; color: var(--text-3); }
       .keep .cell b { font-size: 16px; text-align: right; }
       .keep .cell .dots { grid-column: 1 / -1; align-self: end; display: flex; gap: 3px; }
@@ -104,7 +104,7 @@
       .keep .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11px; color: var(--text-2); }
       .keep .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; }
       .keep .moves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-      .keep .moves > div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 8px; padding: 10px 12px; border-radius: var(--r-field); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 11px; }
+      .keep .moves > div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 8px; padding: 10px 12px; border-radius: calc(var(--r-field) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 11px; }
       .keep .moves b { grid-row: 1 / 3; grid-column: 2; font-size: 26px; }
       .keep .detail { position: sticky; top: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
       .keep dl.facts { display: grid; grid-template-columns: 96px 1fr; gap: 6px 12px; margin: 0; font-size: 12.5px; }
@@ -126,7 +126,7 @@
         .keep .detail { grid-column: 1 / -1; position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
       }
       /* Dialog 6a: the list of earlier appointments */
-      .history { padding: 9px 11px; border-radius: var(--r-field); background: var(--fill-1); font-size: 12.5px; color: var(--text-2); }
+      .history { padding: 9px 11px; border-radius: calc(var(--r-field) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); font-size: 12.5px; color: var(--text-2); }
       .history .h-head { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 600; }
       .history .h-row { padding: 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
       .history .n { color: var(--text-3); }
@@ -597,14 +597,14 @@
             <tr><th>Phần</th><th>macOS</th><th>Windows 11</th></tr>
             <tr><td>Nền cửa sổ</td><td>Kính: thấy màn hình desktop mờ phía sau vùng thanh bên</td><td>Mica: nền đục, nhuộm nhẹ màu desktop, không nhìn xuyên</td></tr>
             <tr><td>Nút cửa sổ</td><td>Ba nút đỏ · vàng · xanh, trong thanh bên, góc trên trái</td><td>Thu nhỏ · phóng to · đóng, góc trên phải thanh tiêu đề</td></tr>
-            <tr><td>Thanh bên</td><td>Tấm kính nổi, bo đồng tâm với cửa sổ (16 px trong 24 px)</td><td>Phẳng trên nền Mica; vùng nội dung là tấm bo góc trên trái</td></tr>
-            <tr><td>Mục đang chọn</td><td>Viên bo 9 px, icon vàng</td><td>Viên bo 4 px, vạch vàng bên trái, icon vàng</td></tr>
+            <tr><td>Thanh bên</td><td>Tấm kính nổi, bo đồng tâm với cửa sổ (16 px trong 24 px, cách mép 8 px)</td><td>Phẳng trên nền Mica; vùng nội dung là tấm bo góc trên trái</td></tr>
+            <tr><td>Mục đang chọn</td><td>Nền bo 8 px, đồng tâm với tấm thanh bên, icon vàng</td><td>Nền bo 4 px, vạch vàng bên trái, icon vàng</td></tr>
             <tr><td>Ô tìm</td><td>Nút kính lúp trên thanh công cụ, phím ⌘K</td><td>Ô tìm giữa thanh tiêu đề, phím Ctrl K</td></tr>
-            <tr><td>Bo góc</td><td class="num">cửa sổ 24 · thẻ 20 · nút 17 (viên) · ô nhập 12 · lớp nổi 20</td><td class="num">cửa sổ 8 · thẻ 8 · nút 4 · ô nhập 4 · lớp nổi 8</td></tr>
+            <tr><td>Bo góc</td><td class="num">Kiểu Apple: góc cong liên tục, bo đồng tâm, hình viên chỉ cho nút cỡ lớn. Cửa sổ 24 · lớp nổi 20 · thẻ 16 · menu 14 · ô nhập 10 · nút gọn 8</td><td class="num">Kiểu Fluent: cung tròn. Cửa sổ 8 · lớp nổi 8 · thẻ 8 · menu 8 · nút 4 · ô nhập 4</td></tr>
             <tr><td>Chữ</td><td>SF Pro (font của macOS)</td><td>Segoe UI Variable (font của Windows 11)</td></tr>
             <tr><td>Hộp thoại</td><td>Trượt xuống từ thanh công cụ</td><td>Nở ra ở giữa cửa sổ</td></tr>
           </table>
-          <p class="foot-note">Hình macOS trên máy Windows dùng font Inter đứng thay SF Pro. Chưa kiểm trên Safari / máy Mac thật; kiểm khi có bản build Mac (T-413).</p>
+          <p class="foot-note">Ba quy tắc bo góc của macOS có hình ở <a href="components.html#corners">components.html · Bo góc theo hệ điều hành</a> (vẽ lại 11/11 theo lời anh: "bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple"). Hình macOS trên máy Windows dùng font Inter đứng thay SF Pro. Chưa kiểm trên Safari / máy Mac thật; kiểm khi có bản build Mac (T-413).</p>
         </div>
       </section>
 
@@ -837,6 +837,7 @@
             <tr><td>Ba nút cửa sổ macOS</td><td>Thanh tiêu đề kiểu phủ (<code>titleBarStyle: Overlay</code>), ẩn tiêu đề, dời vị trí ba nút; vùng kéo cửa sổ bằng <code>data-tauri-drag-region</code>.</td><td>Vị trí ba nút khớp tấm thanh bên; kéo cửa sổ ở vùng trống của thanh công cụ.</td></tr>
             <tr><td>Nền Mica Windows 11</td><td><code>windowEffects</code> kiểu Mica. Windows 10 không có Mica: dùng nền đặc <code>--bg-1</code>.</td><td>Mica khi cửa sổ mất tiêu điểm; máy tắt hiệu ứng trong suốt.</td></tr>
             <tr><td>Thanh tiêu đề Windows tự vẽ</td><td>Tắt khung gốc (<code>decorations: false</code>), tự vẽ ba nút và vùng kéo.</td><td>Snap Layouts, bấm đúp để phóng to, viền và bóng cửa sổ, bo góc 8 px. Không đạt thì dùng kiểu B ở mục trên.</td></tr>
+            <tr><td>Góc cong liên tục trên macOS</td><td>Thuộc tính CSS <code>corner-shape</code>; số bo góc đồng tâm tính bằng <code>calc()</code>. Góc cửa sổ do macOS tự vẽ.</td><td><code>corner-shape</code> có từ WebView2 139; Safari thêm ở bản 27.3 beta (03/11/2026). Máy chưa có thì góc là cung tròn cùng số đo. Đo góc cửa sổ thật trên bản thử Mac rồi chỉnh số đồng tâm.</td></tr>
             <tr><td>Lớp nổi (menu, hộp thoại, thông báo)</td><td><code>backdrop-filter</code> của CSS.</td><td>Độ mượt khi lớp nổi mở trên bảng dài.</td></tr>
             <tr><td>Chữ hệ thống</td><td>Không nhúng file font: CSS gọi font của máy. Playfair Display (slogan) vẫn nhúng như hiện nay.</td><td>Dấu tiếng Việt và độ rộng cột số trên SF Pro và Segoe UI Variable.</td></tr>
             <tr><td>Chuyển động</td><td>CSS thuần: chỉ đổi <code>transform</code> và <code>opacity</code>; lò xo viết bằng <code>linear()</code>. Tự tắt theo "Giảm chuyển động" của máy.</td><td><code>linear()</code> cần WebView2 113+ / Safari 17.2+; máy cũ hơn rơi về đường cong thường.</td></tr>

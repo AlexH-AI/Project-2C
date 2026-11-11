@@ -120,8 +120,19 @@
   --shadow-2: 0 14px 34px -10px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
   --shadow-3: 0 34px 90px -20px rgba(0, 0, 0, 0.7), 0 6px 18px rgba(0, 0, 0, 0.35);
 
-  /* B5. Shape per system: macOS here (concentric, capsule controls), Windows 11 below */
-  --r-window: 24px; --r-card: 20px; --r-control: 17px; --r-pop: 20px; --r-field: 12px;
+  /* B5. Shape per system: macOS here, Windows 11 below. macOS follows Apple's three rules (Owner
+     11/11: "bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple"):
+     1 continuous corners: the curve eases into the straight edge instead of a plain circular arc.
+       --r-curve is the shape; a corner of nominal radius r is drawn in a box of r × --r-k, which
+       keeps the roundness of a circle of radius r (see "Rounded rectangles" under section 5).
+     2 concentric nesting: a shape inside another takes the outer radius minus the gap between them
+       (window 24 → sidebar pane 16 → sidebar row 8; menu 14 → menu item 8; popover 20 → cell 8).
+     3 capsule only for large controls (34 px: buttons, toolbar pickers, search) and for chips;
+       compact controls (28 px and less), fields, cards and panes are rounded rectangles.
+     The values are nominal radii. The window corner belongs to macOS in the real app. */
+  --r-curve: superellipse(1.7); --r-k: 1.5;
+  --r-window: 24px; --r-card: 16px; --r-pop: 20px; --r-menu: 14px; --r-field: 10px;
+  --r-control: 999px; --r-control-sm: 8px;
 
   /* B6. Motion: four durations, one curve in and one out, three springs (CSS linear(), no library) */
   --t-1: 120ms; --t-2: 220ms; --t-3: 400ms; --t-4: 600ms;
@@ -134,8 +145,12 @@
 [data-os='win'] {
   --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --mat-window: rgba(17, 24, 34, 0.84); /* Mica: an opaque tint of the desktop, no see-through */
-  --r-window: 8px; --r-card: 8px; --r-control: 4px; --r-pop: 8px; --r-field: 4px;
+  --r-curve: round; --r-k: 1; /* Fluent: plain circular corners, 8 px surfaces, 4 px controls */
+  --r-window: 8px; --r-card: 8px; --r-pop: 8px; --r-menu: 8px; --r-field: 4px;
+  --r-control: 4px; --r-control-sm: 4px;
 }
+/* A web view without corner-shape draws the same nominal radii as circular arcs */
+@supports not (corner-shape: superellipse(1.7)) { :root { --r-k: 1; } }
 
 /* C. Mockup only: never becomes an app token. The page around the specimens, the desktop behind the
    window, and the blur that stands in for the window effect of the operating system. */
@@ -268,7 +283,7 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .crop-l { margin: 10px 2px 0; font-size: 13px; color: var(--text-3); }
 
 /* ============ 4. Window, title bar, sidebar ============ */
-.win { position: relative; display: grid; grid-template-columns: 244px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); border-radius: var(--r-window); overflow: hidden; container-type: inline-size; font: 14px/1.45 var(--font-ui); font-optical-sizing: auto; color: var(--text); text-align: left;
+.win { position: relative; display: grid; grid-template-columns: 244px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); --r: var(--r-window); overflow: hidden; container-type: inline-size; font: 14px/1.45 var(--font-ui); font-optical-sizing: auto; color: var(--text); text-align: left;
   /* glass where the sidebar floats, solid where the content is: no seam between the two */
   background: linear-gradient(90deg, var(--mat-window) 0, var(--mat-window) 226px, var(--bg-0) 300px);
   backdrop-filter: var(--blur-window); box-shadow: var(--shadow-3), 0 0 0 1px rgba(255, 255, 255, 0.1); }
@@ -285,8 +300,8 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .caps i:last-child:hover { background: #c42b1c; color: #fff; }
 .caps .ic { width: 10px; height: 10px; stroke-width: 1; }
 
-.sb { grid-row: 2; display: flex; flex-direction: column; gap: 12px; min-height: 0; margin: 8px 0 8px 8px; padding: 14px 10px 12px; border-radius: calc(var(--r-window) - 8px); /* concentric with the window */ background: var(--mat-pane); box-shadow: var(--mat-pane-edge), 0 18px 40px -18px rgba(0, 0, 0, 0.5); color: var(--text); }
-[data-os='win'] .sb { margin: 0; padding: 8px 8px 12px; border-radius: 0; background: none; box-shadow: none; }
+.sb { grid-row: 2; display: flex; flex-direction: column; gap: 12px; min-height: 0; margin: 8px 0 8px 8px; padding: 14px 8px 12px; --r: calc(var(--r-window) - 8px); /* concentric with the window: 8 px in */ background: var(--mat-pane); box-shadow: var(--mat-pane-edge), 0 18px 40px -18px rgba(0, 0, 0, 0.5); color: var(--text); }
+[data-os='win'] .sb { margin: 0; padding: 8px 8px 12px; --r: 0px; background: none; box-shadow: none; }
 /* macOS window buttons: they sit inside the sidebar pane */
 .lights { display: flex; gap: 8px; padding: 0 4px 8px; }
 .lights i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.2); }
@@ -302,16 +317,16 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .b-lcrm { width: 95px; margin-top: 4px; }
 .nav { position: relative; display: flex; flex-direction: column; gap: 2px; }
 .nav-h { padding: 14px 10px 5px; font-size: 11px; font-weight: 650; letter-spacing: 0.03em; color: var(--text-2); }
-.nav-i { position: relative; display: flex; align-items: center; gap: 11px; width: 100%; height: 34px; padding: 0 10px; border-radius: 9px; text-align: left; font-weight: 500; color: var(--text-2); transition: color var(--t-1), background var(--t-1); }
+.nav-i { position: relative; display: flex; align-items: center; gap: 11px; width: 100%; height: 34px; padding: 0 10px; --r: calc(var(--r-window) - 16px); /* concentric with the pane: 8 px in */ text-align: left; font-weight: 500; color: var(--text-2); transition: color var(--t-1), background var(--t-1); }
 .nav-i .ic { width: 18px; height: 18px; transition: color var(--t-2), transform var(--t-3) var(--spring-bouncy); }
 .nav-i:hover { color: var(--text); background: var(--fill-1); }
 .nav-i.on { font-weight: 650; color: var(--text); background: var(--fill-2); }
 .nav-i.on .ic { color: var(--accent); transform: scale(1.08); }
-[data-os='win'] .nav-i { height: 36px; border-radius: 4px; }
+[data-os='win'] .nav-i { height: 36px; --r: 4px; }
 [data-os='win'] .nav-i.on::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
 /* With the script, one pill glides to the chosen item instead of each item switching its own background */
-.nav-pill { position: absolute; left: 0; right: 0; top: 0; height: 34px; border-radius: 9px; background: var(--fill-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); transform: translateY(var(--y, 0)); transition: transform var(--t-3) var(--spring-snappy); pointer-events: none; }
-[data-os='win'] .nav-pill { height: 36px; border-radius: 4px; }
+.nav-pill { position: absolute; left: 0; right: 0; top: 0; height: 34px; --r: calc(var(--r-window) - 16px); background: var(--fill-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); transform: translateY(var(--y, 0)); transition: transform var(--t-3) var(--spring-snappy); pointer-events: none; }
+[data-os='win'] .nav-pill { height: 36px; --r: 4px; }
 [data-os='win'] .nav-pill::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
 .nav.pilled .nav-i.on { background: none; }
 .nav.pilled .nav-i.on::before { display: none; }
@@ -333,14 +348,21 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .tl-right { margin-left: auto; flex: none; display: flex; align-items: center; gap: 8px; }
 [data-os='win'] .tl-find { display: none; } /* Windows 11 has the search box in the title bar */
 .views { position: absolute; inset: 0; }
-.view { position: absolute; inset: 0; overflow: hidden auto; padding: 78px 28px 24px; display: none; }
+.view { position: absolute; inset: 0; overflow: hidden auto; padding: 90px 28px 24px; display: none; } /* 90 px: the first row starts below the scroll edge (68 + 18), its corners stay sharp */
 .view.on { display: block; }
 .view::-webkit-scrollbar, .dlg-body::-webkit-scrollbar { width: 10px; }
 .view::-webkit-scrollbar-thumb, .dlg-body::-webkit-scrollbar-thumb { border-radius: 5px; border: 3px solid transparent; background: var(--fill-3); background-clip: padding-box; }
 
+/* Rounded rectangles. Each of these sets --r, its nominal radius, in its own rule; this one rule
+   draws it the way of the system: a continuous corner on macOS (in a box of r × --r-k), a circular
+   arc on Windows 11. Capsules and circles keep a plain border-radius. A page that needs the same on
+   a class of its own writes these two declarations with its radius in place of --r. */
+.win, .sb, .nav-i, .nav-pill, .btn.sm, .input, .seg, .seg button, .seg .thumb, .check i, .menu, .menu button, .ppop, .ppop .plist button, .card, .chip, .dlg, .alert, .fail-detail { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+
 /* ============ 6. Buttons ============ */
 /* .btn is the secondary button; .primary, .danger, .quiet are the other levels; .cap is the picker of
-   the toolbar (view, period). All share one height, one radius per system and one press. */
+   the toolbar (view, period). All share one height and one press. Shape: 34 px is the large size, a
+   capsule on macOS; .sm (28 px) is the compact size, a rounded rectangle; Windows 11: 4 px for both. */
 .btn, .cap { position: relative; height: 34px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--r-control); background: var(--fill-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px var(--hairline); color: var(--text); font-weight: 550; white-space: nowrap; transition: background var(--t-1), filter var(--t-1), transform var(--t-3) var(--spring-snappy); }
 .btn:hover, .cap:hover, .btn.is-hover, .cap.is-hover { background: var(--fill-3); }
 .btn:active, .cap:active, .btn.is-press { transform: scale(0.96); }
@@ -351,7 +373,7 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .btn.danger:hover, .btn.danger.is-hover { background: var(--danger); filter: brightness(1.07); }
 .btn.quiet { background: none; box-shadow: none; color: var(--accent); padding: 0 10px; }
 .btn.quiet:hover, .btn.quiet.is-hover { background: var(--accent-soft); }
-.btn.sm { height: 28px; padding: 0 11px; font-size: 12.5px; }
+.btn.sm { height: 28px; padding: 0 11px; font-size: 12.5px; --r: var(--r-control-sm); }
 .btn.icon, .cap.icon { width: 34px; padding: 0; }
 .btn.sm.icon { width: 28px; }
 .btn[disabled], .btn.is-off { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
@@ -367,7 +389,7 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .field .opt-n { font-weight: 400; font-size: 11.5px; color: var(--text-3); }
 .field .req { color: var(--accent); }
 .fields-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-.input { width: 100%; min-height: 36px; padding: 7px 11px; display: flex; align-items: center; gap: 8px; border-radius: var(--r-field); border: 1px solid var(--border-control); background: var(--fill-1); color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums; outline: 0; transition: border-color var(--t-1), box-shadow var(--t-1), background var(--t-1); }
+.input { width: 100%; min-height: 36px; padding: 7px 11px; display: flex; align-items: center; gap: 8px; --r: var(--r-field); border: 1px solid var(--border-control); background: var(--fill-1); color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums; outline: 0; transition: border-color var(--t-1), box-shadow var(--t-1), background var(--t-1); }
 input.input::placeholder, .input.placeholder { color: var(--text-3); }
 .input:hover { border-color: var(--text-3); } /* the fill stays: --border-control needs 3:1 against it */
 .input:focus, .input.focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--fill-1); }
@@ -378,7 +400,7 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 .input.area { min-height: 76px; align-items: flex-start; line-height: 1.5; }
 .input .caret { margin-left: auto; color: var(--text-3); display: inline-flex; }
 .input .unit { margin-left: auto; color: var(--text-3); font-size: 12.5px; }
-.input.search { border-radius: var(--r-control); color: var(--text-3); }
+.input.search { border-radius: var(--r-control); corner-shape: round; color: var(--text-3); } /* a search field is a capsule on macOS */
 /* Windows 11 text boxes carry their weight on the bottom edge */
 [data-os='win'] .input { border-color: var(--hairline); border-bottom-color: var(--border-control); }
 [data-os='win'] .input:hover { border-color: var(--hairline); border-bottom-color: var(--text-2); }
@@ -396,14 +418,14 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 [data-os='win'] .token { border-radius: 4px; }
 .token .role { font-weight: 700; color: var(--accent); }
 /* Segmented control with a thumb that slides to the chosen segment (the script adds .thumb) */
-.seg { position: relative; display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px; background: var(--fill-2); }
-.seg button { position: relative; z-index: 1; height: 28px; padding: 0 12px; border-radius: 8px; font-weight: 550; white-space: nowrap; color: var(--text-2); transition: color var(--t-2); }
+.seg { position: relative; display: inline-flex; gap: 2px; padding: 2px; --r: 10px; background: var(--fill-2); }
+.seg button { position: relative; z-index: 1; height: 28px; padding: 0 12px; --r: 8px; /* 10 − the 2 px gap */ font-weight: 550; white-space: nowrap; color: var(--text-2); transition: color var(--t-2); }
 .seg button:hover { color: var(--text); }
 .seg button.on { color: var(--text); background: var(--fill-3); }
 .seg.thumbed button.on { background: none; }
-.seg .thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: var(--w, 0); border-radius: 8px; background: var(--fill-3); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12); transform: translateX(var(--x, 0)); transition: transform var(--t-3) var(--spring-snappy); }
-[data-os='win'] .seg { border-radius: 6px; }
-[data-os='win'] .seg button, [data-os='win'] .seg .thumb { border-radius: 4px; }
+.seg .thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: var(--w, 0); --r: 8px; background: var(--fill-3); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12); transform: translateX(var(--x, 0)); transition: transform var(--t-3) var(--spring-snappy); }
+[data-os='win'] .seg { --r: 6px; }
+[data-os='win'] .seg button, [data-os='win'] .seg .thumb { --r: 4px; }
 /* Choice pills (stage, status, kind): one of several, all visible */
 .choices { display: flex; flex-wrap: wrap; gap: 6px; }
 .choice { height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--border-control); color: var(--text-2); font-weight: 550; white-space: nowrap; transition: background var(--t-1), color var(--t-1), box-shadow var(--t-1), transform var(--t-3) var(--spring-snappy); }
@@ -412,15 +434,15 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 .choice.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 650; }
 /* Check box */
 .check { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; }
-.check i { position: relative; width: 18px; height: 18px; flex: none; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--border-control); transition: background var(--t-1), box-shadow var(--t-1), transform var(--t-3) var(--spring-bouncy); }
-[data-os='win'] .check i { border-radius: 4px; }
+.check i { position: relative; width: 18px; height: 18px; flex: none; --r: 5px; box-shadow: inset 0 0 0 1.5px var(--border-control); transition: background var(--t-1), box-shadow var(--t-1), transform var(--t-3) var(--spring-bouncy); }
+[data-os='win'] .check i { --r: 4px; }
 .check i::after { content: ''; position: absolute; left: 6px; top: 2.5px; width: 5px; height: 9px; border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(42deg) scale(0); transition: transform var(--t-3) var(--spring-bouncy); }
 .check.on i { background: var(--accent-fill); box-shadow: none; }
 .check.on i::after { transform: rotate(42deg) scale(1); }
 /* Menu: the open list of a select, of the view picker, of a "more" button */
-.menu { min-width: 200px; padding: 6px; border-radius: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); }
-.menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 0 10px; border-radius: calc(var(--r-pop) - 8px); text-align: left; white-space: nowrap; }
-[data-os='win'] .menu button { border-radius: 4px; }
+.menu { min-width: 200px; padding: 6px; --r: var(--r-menu); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); }
+.menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 0 10px; --r: calc(var(--r-menu) - 6px); /* concentric with the menu: 6 px in */ text-align: left; white-space: nowrap; }
+[data-os='win'] .menu button { --r: 4px; }
 .menu button:hover, .menu button.is-hover { background: var(--fill-2); }
 .menu button.on { color: var(--accent); font-weight: 600; }
 .menu button .ic:last-child, .menu button .n { margin-left: auto; }
@@ -429,12 +451,12 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 .menu hr { border: 0; border-top: 1px solid var(--hairline); margin: 5px 8px; }
 .menu .h { padding: 7px 10px 3px; font-size: 11.5px; font-weight: 600; color: var(--text-3); }
 /* The period picker of ADR-0013 §4 in its popover */
-.ppop { width: 300px; padding: 12px; border-radius: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); }
+.ppop { width: 300px; padding: 12px; --r: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); }
 .ppop .seg { display: flex; }
 .ppop .seg button { flex: 1; padding: 0; }
 .ppop .plist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 10px; }
-.ppop .plist button { height: 34px; border-radius: calc(var(--r-pop) - 10px); color: var(--text-2); font-variant-numeric: tabular-nums; }
-[data-os='win'] .ppop .plist button { border-radius: 4px; }
+.ppop .plist button { height: 34px; --r: calc(var(--r-pop) - 12px); /* concentric with the popover: 12 px in */ color: var(--text-2); font-variant-numeric: tabular-nums; }
+[data-os='win'] .ppop .plist button { --r: 4px; }
 .ppop .plist button:hover { background: var(--fill-2); color: var(--text); }
 .ppop .plist button.on { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
 .ppop .plist button.now { box-shadow: inset 0 0 0 1px var(--date-today); }
@@ -443,9 +465,9 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 .ppop .py button:hover { background: var(--fill-2); }
 
 /* ============ 8. Cards, numbers, tables ============ */
-.card { position: relative; min-width: 0; border-radius: var(--r-card); background: var(--mat-card); box-shadow: var(--mat-card-edge), var(--shadow-1); padding: 18px 20px; }
+.card { position: relative; min-width: 0; --r: var(--r-card); background: var(--mat-card); box-shadow: var(--mat-card-edge), var(--shadow-1); padding: 18px 20px; }
 /* A soft light follows the pointer across a card (--mx / --my are set by the script) */
-.card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--mat-spec), transparent 68%); opacity: 0; transition: opacity var(--t-3); }
+.card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; corner-shape: inherit; pointer-events: none; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--mat-spec), transparent 68%); opacity: 0; transition: opacity var(--t-3); }
 .card:hover::after { opacity: 1; }
 .card.flat::after { display: none; }
 .card.link { cursor: pointer; transition: transform var(--t-3) var(--spring-snappy); }
@@ -509,13 +531,14 @@ tr.open .tw .ic { transform: rotate(90deg); }
 [data-os='win'] .delta { border-radius: 4px; }
 .delta.up { --c: var(--ok); } .delta.bad { --c: var(--danger); }
 .count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--warn); background: color-mix(in srgb, var(--warn) 20%, transparent); }
-.chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 11.5px; color: var(--text-2); background: var(--fill-2); white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; --r: 6px; font-size: 11.5px; color: var(--text-2); background: var(--fill-2); white-space: nowrap; }
+[data-os='win'] .chip { --r: 4px; }
 .av { width: 32px; height: 32px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
 
 /* ============ 10. Focus layer: dialog, toast ============ */
 .scrim { position: absolute; inset: 0; z-index: 20; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity var(--t-2); }
 .win.modal .scrim { opacity: 1; pointer-events: auto; }
-.dlg { width: 480px; max-width: 100%; display: flex; flex-direction: column; border-radius: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-3); font: 14px/1.45 var(--font-ui); color: var(--text); text-align: left; }
+.dlg { width: 480px; max-width: 100%; display: flex; flex-direction: column; --r: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-3); font: 14px/1.45 var(--font-ui); color: var(--text); text-align: left; }
 .dlg.sm { width: 400px; }
 .dlg-head { display: flex; align-items: flex-start; gap: 10px; padding: 20px 22px 12px; }
 .dlg-head h3 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -0.012em; }
@@ -545,7 +568,7 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .win > .toast { position: absolute; left: 50%; bottom: 22px; z-index: 40; opacity: 0; pointer-events: none; transform: translate(-50%, 24px) scale(0.96); transition: opacity var(--t-2) var(--ease-in), transform var(--t-2) var(--ease-in); }
 .win > .toast.on { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); transition: opacity var(--t-2) var(--ease-out), transform var(--t-4) var(--spring-bouncy); }
 /* A notice that stays inside a dialog or a card until its cause is gone */
-.alert { --c: var(--danger); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 11px 13px; border-radius: var(--r-field); background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent); font-size: 13.5px; }
+.alert { --c: var(--danger); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 11px 13px; --r: var(--r-field); background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent); font-size: 13.5px; }
 .alert.warn { --c: var(--warn); } .alert.info { --c: var(--info); }
 .alert > .ic { grid-row: 1 / 3; margin-top: 2px; color: var(--c); }
 .alert b { font-weight: 650; }
@@ -568,7 +591,7 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .empty.sm b { font-size: 14px; align-self: end; }
 .empty.sm p { grid-column: 2; align-self: start; font-size: 12.5px; }
 .empty.sm .acts { grid-column: 3; grid-row: 1 / 3; margin: 0; }
-.fail-detail { margin-top: 10px; padding: 9px 12px; border-radius: var(--r-field); background: var(--fill-1); font: 12px/1.6 var(--font-code); color: var(--text-2); text-align: left; }
+.fail-detail { margin-top: 10px; padding: 9px 12px; --r: var(--r-field); background: var(--fill-1); font: 12px/1.6 var(--font-code); color: var(--text-2); text-align: left; }
 
 /* ============ 12. Customer-name mask ============ */
 /* Every place that shows a customer's name is marked: <span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span>.
