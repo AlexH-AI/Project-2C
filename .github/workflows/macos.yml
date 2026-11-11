@@ -5,10 +5,11 @@ name: macOS
 # build-mac, and by hand from main (GitHub runs a workflow by hand only once its file is on main).
 on:
   pull_request:
-    # No `reopened`: after a close + reopen, tools/auto-wait.mjs --since reads the newest
-    # pull_request run of the PR as CI's, and this workflow's run (skipped without the label)
-    # could be newer.
-    types: [opened, synchronize, labeled]
+    # No `opened`: a PR opened with build-mac also gets that label's `labeled` event, and both
+    # would build (PR #1219). No `reopened`: after a close + reopen, tools/auto-wait.mjs --since
+    # reads the newest pull_request run of the PR as CI's, and this workflow's run (skipped
+    # without the label) could be newer.
+    types: [synchronize, labeled]
   workflow_dispatch:
 
 # No `concurrency` cancelling older runs: tools/merge-pr.mjs counts every check of the PR's head,
@@ -20,13 +21,12 @@ permissions:
 jobs:
   build-mac:
     name: Build macOS app (Apple chip)
-    # The labels the event carries (`gh pr create --label` opens the PR before it adds them, T-063,
-    # so the label's own `labeled` event builds it); on `labeled`, only build-mac itself, so another
-    # label added to a build-mac PR builds nothing again.
+    # A push builds a PR that has the label; adding the label builds it once, and another label
+    # added to a build-mac PR builds nothing again.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.action == 'labeled' && github.event.label.name == 'build-mac') ||
-      (github.event.action != 'labeled' &&
+      (github.event.action == 'synchronize' &&
        contains(github.event.pull_request.labels.*.name, 'build-mac'))
     runs-on: macos-latest
     timeout-minutes: 60
