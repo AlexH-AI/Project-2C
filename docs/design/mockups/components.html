@@ -65,8 +65,10 @@
       .shape .s-menu { width: 92px; height: 64px; border-radius: calc(var(--r-menu) * var(--r-k)); corner-shape: var(--r-curve); }
       .shape .s-fld { width: 92px; height: 36px; border-radius: calc(var(--r-field) * var(--r-k)); corner-shape: var(--r-curve); }
       .shape .s-sm { width: 92px; height: 28px; border-radius: calc(var(--r-control-sm) * var(--r-k)); corner-shape: var(--r-curve); }
-      .shape .s-ctl { width: 92px; height: 34px; border-radius: var(--r-control); }
-      /* The three corner rules of macOS: the curve, the nesting, the capsule */
+      .shape .s-ctl { width: 92px; height: 34px; border-radius: calc(var(--r-control) * var(--r-k)); corner-shape: var(--r-curve); }
+      .shape .s-chip { width: 92px; height: 30px; border-radius: var(--r-chip); }
+      .btn-opt { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+      /* The three corner rules of macOS: the curve, the nesting, where a capsule is used */
       .curves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
       .curve { display: grid; justify-items: center; align-content: start; gap: 6px; text-align: center; font-size: 12.5px; color: var(--text-2); }
       .curve b { font-size: 13.5px; font-weight: 650; color: var(--text); }
@@ -158,7 +160,7 @@
           <div class="spec-row"><button class="btn primary sm">Ghi kết quả</button><button class="btn sm">Hồ sơ KH →</button><button class="btn sm is-on"><svg class="ic"><use href="#i-eye" /></svg>Đang che tên</button></div>
         </div>
         <ul class="rules">
-          <li><b>Cao 34 px</b> (gọn: 28 px). macOS: nút 34 px là hình viên, nút gọn 28 px là chữ nhật bo 8 px (quy tắc của Apple: chỉ cỡ lớn mới là viên). Windows 11: bo 4 px.</li>
+          <li><b>Cao 34 px</b> (gọn: 28 px). macOS: chữ nhật bo có cạnh thẳng hai bên, 10 px cho nút 34 px và 8 px cho nút gọn (anh nêu 11/11: nút hình viên "2 bên cong quá"). Windows 11: bo 4 px.</li>
           <li><b>Thứ tự trong hộp thoại:</b> nút phụ rồi nút chính, sát mép phải, giống các hộp đã duyệt; giữ nguyên trên cả hai hệ điều hành.</li>
           <li><b>Nút nguy hiểm</b> chỉ dùng cho bước xác nhận cuối (xóa, hủy HĐ, dọn Thùng rác), không dùng ở nút mở hộp.</li>
           <li><b>Vòng focus</b> vàng 2 px, cách nút 2 px, chỉ hiện khi dùng bàn phím.</li>
@@ -413,7 +415,7 @@
           </div>
         </div>
         <h3 class="sub-h" id="corners">Bo góc theo hệ điều hành</h3>
-        <p class="sub-p">Anh nêu 11/11: <b>"bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple"</b>. Bản đầu của mockup (góc là cung tròn, nút nào cũng là viên, thẻ 20 px) đã bỏ. macOS nay vẽ theo ba quy tắc của Apple dưới đây; Windows 11 giữ kiểu Fluent: 8 px cho bề mặt, 4 px cho nút và ô.</p>
+        <p class="sub-p">Anh nêu 11/11: <b>"bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple"</b>. Bản đầu của mockup (góc là cung tròn, nút nào cũng là viên, thẻ 20 px) đã bỏ. macOS nay vẽ theo ba quy tắc dưới đây, hai quy tắc đầu của Apple, quy tắc ba theo lời anh về nút; Windows 11 giữ kiểu Fluent: 8 px cho bề mặt, 4 px cho nút và ô.</p>
         <p class="sub-p"><b>Quy tắc 1 · Góc cong liên tục.</b> Ba hình cùng độ cong 44 px. Góc kiểu Apple bắt đầu cong sớm hơn và vào cạnh thẳng êm hơn; cung tròn thường có một điểm gãy nhẹ ở chỗ cạnh thẳng gặp cung.</p>
         <div class="duo" data-only="mac">
           <div class="curves">
@@ -432,7 +434,23 @@
             </div>
           </div>
         </div>
-        <p class="sub-p"><b>Quy tắc 3 · Hình viên chỉ cho cỡ lớn.</b> Trên macOS, nút cỡ lớn (34 px), viên của thanh công cụ, ô tìm, viên chọn, nhãn và thông báo nổi là hình viên. Nút gọn (28 px), ô nhập, thẻ, menu và lớp nổi là chữ nhật bo.</p>
+        <p class="sub-p"><b>Quy tắc 3 · Nút là chữ nhật bo, hình viên chỉ cho viên chọn và nhãn.</b> Anh nêu 11/11 khi xem bản vẽ lại: <b>"nút cỡ lớn 2 bên cong quá và không có đường thẳng dọc 2 bên"</b>. Nút 34 px và các nút của thanh công cụ nay là chữ nhật bo có cạnh thẳng hai bên, như nút gọn, ô nhập, thẻ, menu và lớp nổi. Hình viên chỉ còn ở viên chọn, nhãn trạng thái, ô tìm và thông báo nổi.</p>
+        <h3 class="sub-h" id="btn-corner">Góc của nút cỡ lớn: chọn một kiểu</h3>
+        <div class="gal three">
+          <div class="opt rec">
+            <div class="opt-pic flat"><div class="btn-opt" style="--r-control: 10px"><button class="btn primary" type="button"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button><button class="btn" type="button">Hủy</button><button class="cap" type="button">Toàn bộ<svg class="ic"><use href="#i-down" /></svg></button><button class="btn icon" type="button" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button></div></div>
+            <div class="opt-t"><b>A · Bo 10 px <span class="tag rec">Đề xuất</span></b><p>Cùng số với ô nhập, nên nút và ô đứng cạnh nhau trong hộp thoại có cùng dáng. Cạnh thẳng hai bên ngắn.</p></div>
+          </div>
+          <div class="opt">
+            <div class="opt-pic flat"><div class="btn-opt" style="--r-control: 8px"><button class="btn primary" type="button"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button><button class="btn" type="button">Hủy</button><button class="cap" type="button">Toàn bộ<svg class="ic"><use href="#i-down" /></svg></button><button class="btn icon" type="button" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button></div></div>
+            <div class="opt-t"><b>B · Bo 8 px</b><p>Cùng số với nút gọn. Vuông hơn, cạnh thẳng hai bên dài hơn.</p></div>
+          </div>
+          <div class="opt">
+            <div class="opt-pic flat"><div class="btn-opt" style="--r-control: 17px; --r-k: 1; --r-curve: round"><button class="btn primary" type="button"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button><button class="btn" type="button">Hủy</button><button class="cap" type="button">Toàn bộ<svg class="ic"><use href="#i-down" /></svg></button><button class="btn icon" type="button" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button></div></div>
+            <div class="opt-t"><b>Bản trước · Hình viên</b><p>Anh không duyệt: hai bên cong quá, không có cạnh thẳng. Để đây chỉ để so.</p></div>
+          </div>
+        </div>
+        <p class="sub-p" style="margin-top: 18px">Các mẫu khác trong hai trang đang vẽ theo kiểu A.</p>
         <div class="duo">
           <div class="shapes">
             <div class="shape"><i class="s-win"></i><span>cửa sổ</span><code>--r-window</code></div>
@@ -441,13 +459,15 @@
             <div class="shape"><i class="s-menu"></i><span>menu</span><code>--r-menu</code></div>
             <div class="shape"><i class="s-fld"></i><span>ô nhập</span><code>--r-field</code></div>
             <div class="shape"><i class="s-sm"></i><span>nút gọn</span><code>--r-control-sm</code></div>
-            <div class="shape"><i class="s-ctl"></i><span>nút cỡ lớn</span><code>--r-control</code></div>
+            <div class="shape"><i class="s-ctl"></i><span>nút 34 px</span><code>--r-control</code></div>
+            <div class="shape"><i class="s-chip"></i><span>viên chọn, nhãn</span><code>--r-chip</code></div>
           </div>
         </div>
         <ul class="rules">
-          <li><b>Số bo góc trên macOS:</b> cửa sổ 24 · lớp nổi 20 · thẻ 16 · menu 14 · ô nhập 10 · nút gọn 8 (px). Các cặp đồng tâm khác: menu 14 → dòng menu 8, bộ chọn kỳ 20 → ô 8, nút trượt 10 → viên trượt 8, thẻ 16 → mục trong thẻ 8.</li>
+          <li><b>Số bo góc trên macOS:</b> cửa sổ 24 · lớp nổi 20 · thẻ 16 · menu 14 · ô nhập 10 · nút 10 · nút gọn 8 (px). Các cặp đồng tâm khác: menu 14 → dòng menu 8, bộ chọn kỳ 20 → ô 8, nút trượt 10 → viên trượt 8, thẻ 16 → mục trong thẻ 8.</li>
           <li><b>Góc cửa sổ là của macOS:</b> trong app thật hệ điều hành tự vẽ góc cửa sổ, app không đặt. Số 24 px chỉ để vẽ mockup; khi có bản build Mac (T-413) em đo góc thật rồi chỉnh các hình bên trong cho đồng tâm với nó.</li>
-          <li><b>Apple không công bố số đo.</b> Ba quy tắc lấy từ tài liệu của Apple cho macOS 26 trở lên (nút cỡ nhỏ tới vừa là chữ nhật bo, cỡ lớn là viên; hình trong đồng tâm với hình ngoài). Các con số là ước lượng của em, cần so với máy Mac thật.</li>
+          <li><b>Apple không công bố số đo.</b> Góc cong liên tục và bo đồng tâm lấy từ tài liệu của Apple cho macOS 26 trở lên. Các con số là ước lượng của em, cần so với máy Mac thật.</li>
+          <li><b>Chỗ khác với Apple:</b> trên macOS 26 trở lên, nút cỡ lớn của Apple là hình viên (cỡ nhỏ tới vừa là chữ nhật bo). App này dùng chữ nhật bo cho mọi cỡ nút theo lời anh.</li>
           <li><b>Cách làm:</b> thuộc tính CSS <code>corner-shape</code>. Bản Windows (WebView2) đã có. Trên macOS, Safari mới thêm ở bản 27.3 beta (03/11/2026); máy chưa có thì app vẽ cùng số bo góc bằng cung tròn, bố cục không đổi. Chưa kiểm trên máy Mac.</li>
         </ul>
         <h3 class="sub-h">Chuyển động</h3>
@@ -490,8 +510,8 @@
             <tr><td>--r-curve · --r-k</td><td class="v">superellipse(1.7) · 1,5</td><td class="v">round · 1</td><td>Dáng của góc: cong liên tục kiểu Apple, vẽ trong ô rộng 1,5 lần số bo góc · cung tròn. Xem "Bo góc theo hệ điều hành".</td></tr>
             <tr><td>--r-window</td><td class="v">24 px</td><td class="v">8 px</td><td>Góc cửa sổ (app thật: do hệ điều hành vẽ).</td></tr>
             <tr><td>--r-pop · --r-card · --r-menu</td><td class="v">20 · 16 · 14 px</td><td class="v">8 · 8 · 8 px</td><td>Hộp thoại, bộ chọn kỳ · thẻ · menu.</td></tr>
-            <tr><td>--r-field · --r-control-sm</td><td class="v">10 px · 8 px</td><td class="v">4 px · 4 px</td><td>Ô nhập, ô trong lịch · nút gọn 28 px.</td></tr>
-            <tr><td>--r-control</td><td class="v">hình viên</td><td class="v">4 px</td><td>Nút 34 px, viên của thanh công cụ, ô tìm, viên chọn.</td></tr>
+            <tr><td>--r-field · --r-control · --r-control-sm</td><td class="v">10 · 10 · 8 px</td><td class="v">4 · 4 · 4 px</td><td>Ô nhập, ô trong lịch · nút 34 px và nút của thanh công cụ · nút gọn 28 – 30 px.</td></tr>
+            <tr><td>--r-chip</td><td class="v">hình viên</td><td class="v">4 px</td><td>Viên chọn, ô tìm, nút trong thông báo nổi.</td></tr>
             <tr><td>--t-1 … --t-4</td><td class="v" colspan="2">120 · 220 · 400 · 600 ms</td><td>Thời lượng: đổi màu và đóng · mở lớp nổi · trượt, hiện · thanh dài ra, thông báo.</td></tr>
             <tr><td>--ease-out · --ease-in</td><td class="v" colspan="2">cubic-bezier(0.22, 1, 0.36, 1) · (0.4, 0, 1, 1)</td><td>Vào · ra, cho độ trong.</td></tr>
             <tr><td>--spring-smooth · -snappy · -bouncy</td><td class="v" colspan="2">CSS <code>linear()</code>, không thư viện</td><td>Êm · nhanh · nảy (phòng thử ở trên).</td></tr>
@@ -556,7 +576,7 @@
         <p class="lead">Mỗi điểm có đề xuất của em. Mười điểm của vỏ app nằm ở <a href="app-shell.html#ask">app-shell.html</a>.</p>
         <ol class="asks">
           <li><b>Bộ mười thành phần này là bộ dựng cho các mockup đợt b–g?</b>Nút, ô nhập, ô chọn, thẻ, bảng số, hộp thoại, nhãn trạng thái, thông báo nổi, trạng thái trống, trạng thái lỗi.<em>Đề xuất: duyệt. Thành phần phát sinh ở đợt sau (biểu đồ, lịch, kanban) vẽ trong mockup của đợt đó.</em></li>
-          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS theo ba quy tắc của Apple (cong liên tục, đồng tâm, viên chỉ cho cỡ lớn), Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành". Bản đầu của phần macOS anh không duyệt (11/11); đây là bản vẽ lại.<em>Đề xuất: duyệt, kèm điều kiện so lại với máy Mac thật khi có bản build. Cách khác: một bộ bo góc chung cho cả hai, đơn giản hơn nhưng app trên Windows trông như app Mac.</em></li>
+          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS góc cong liên tục, bo đồng tâm, nút là chữ nhật bo; Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành". Anh đã duyệt bản vẽ lại (11/11), trừ nút cỡ lớn hình viên; còn chọn góc của nút ở "Góc của nút cỡ lớn: chọn một kiểu".<em>Đề xuất: kiểu A (bo 10 px), kèm điều kiện so lại với máy Mac thật khi có bản build. Cách khác: một bộ bo góc chung cho cả hai, đơn giản hơn nhưng app trên Windows trông như app Mac.</em></li>
           <li><b>Thẻ không viền, dùng chất liệu thay cho nền <code>--bg-2</code> + viền <code>--border</code>?</b>Đề mục trong thẻ vẫn vàng; tên thẻ màu chữ thường.<em>Đề xuất: duyệt.</em></li>
           <li><b>Trạng thái trống và lỗi theo một khuôn, ba cỡ (cả màn, trong thẻ, trong bảng)?</b>Xem hai mục 09 và 10. Câu chữ của lỗi giữ như app hiện nay.<em>Đề xuất: duyệt.</em></li>
           <li><b>Thông báo nổi ở giữa mép dưới cửa sổ, tự rời sau khoảng 4 giây, lỗi thì ở lại?</b>App hiện chưa có thông báo nổi dùng chung; đây là thành phần mới.<em>Đề xuất: duyệt.</em></li>

@@ -67,8 +67,8 @@
       .keep { display: flex; flex-direction: column; gap: 16px; }
       .keep .filter-bar, .keep .period { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
       .keep .period .step { color: var(--text-3); padding: 0 2px; }
-      .keep .range { height: 30px; padding: 0 11px; display: inline-flex; align-items: center; border-radius: var(--r-control); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-      .keep .sel { height: 30px; padding: 0 9px; display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-control); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--border-control); font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+      .keep .range { height: 30px; padding: 0 11px; display: inline-flex; align-items: center; border-radius: calc(var(--r-control-sm) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .keep .sel { height: 30px; padding: 0 9px; display: inline-flex; align-items: center; gap: 5px; border-radius: calc(var(--r-control-sm) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--border-control); font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
       .keep .sel b { color: var(--text); font-weight: 600; }
       .keep .sel .ic { width: 12px; height: 12px; }
       .keep .seg { font-size: 12.5px; }
@@ -586,9 +586,9 @@
         <h2>Một bố cục, hai hệ điều hành.</h2>
         <p class="lead">Cửa sổ phía trên bấm được: đổi màn ở thanh bên, bấm <b>+ Lịch hẹn</b> để mở hộp thoại, bấm nút con mắt để che tên KH, đổi <b>macOS / Windows 11</b> và cỡ cửa sổ ở thanh dưới. Dưới đây là hai góc của cùng cửa sổ đó ở cỡ thật, đặt cạnh nhau. Ba lớp <b>Nền · Kính · Tiêu điểm</b> giữ nguyên trên cả hai; mỗi hệ điều hành chỉ khác chất liệu, bo góc, chỗ đặt nút cửa sổ và ô tìm.</p>
         <div class="pgrid">
-          <figure style="margin: 0"><div class="crop" data-os="mac" data-clone="#win"></div><figcaption class="crop-l">macOS · góc trên trái: ba nút cửa sổ nằm trong thanh bên kính, logo gọn, viên chọn bo tròn</figcaption></figure>
+          <figure style="margin: 0"><div class="crop" data-os="mac" data-clone="#win"></div><figcaption class="crop-l">macOS · góc trên trái: ba nút cửa sổ nằm trong thanh bên kính, logo gọn, mục đang chọn bo đồng tâm với thanh bên</figcaption></figure>
           <figure style="margin: 0"><div class="crop" data-os="win" data-clone="#win"></div><figcaption class="crop-l">Windows 11 · góc trên trái: thanh tiêu đề, nền Mica, vạch vàng ở mục đang chọn</figcaption></figure>
-          <figure style="margin: 0"><div class="crop right" data-os="mac" data-clone="#win"></div><figcaption class="crop-l">macOS · góc trên phải: nút che tên, góc nhìn, kỳ, tìm, nút chính dạng viên</figcaption></figure>
+          <figure style="margin: 0"><div class="crop right" data-os="mac" data-clone="#win"></div><figcaption class="crop-l">macOS · góc trên phải: nút che tên, góc nhìn, kỳ, tìm, nút chính; nút là chữ nhật bo có cạnh thẳng hai bên</figcaption></figure>
           <figure style="margin: 0"><div class="crop right" data-os="win" data-clone="#win"></div><figcaption class="crop-l">Windows 11 · góc trên phải: ba nút cửa sổ; nút bo 4 px; ô tìm đã ở thanh tiêu đề nên không có nút kính lúp</figcaption></figure>
         </div>
         <div class="pcard" style="margin-top: 20px">
@@ -600,7 +600,7 @@
             <tr><td>Thanh bên</td><td>Tấm kính nổi, bo đồng tâm với cửa sổ (16 px trong 24 px, cách mép 8 px)</td><td>Phẳng trên nền Mica; vùng nội dung là tấm bo góc trên trái</td></tr>
             <tr><td>Mục đang chọn</td><td>Nền bo 8 px, đồng tâm với tấm thanh bên, icon vàng</td><td>Nền bo 4 px, vạch vàng bên trái, icon vàng</td></tr>
             <tr><td>Ô tìm</td><td>Nút kính lúp trên thanh công cụ, phím ⌘K</td><td>Ô tìm giữa thanh tiêu đề, phím Ctrl K</td></tr>
-            <tr><td>Bo góc</td><td class="num">Kiểu Apple: góc cong liên tục, bo đồng tâm, hình viên chỉ cho nút cỡ lớn. Cửa sổ 24 · lớp nổi 20 · thẻ 16 · menu 14 · ô nhập 10 · nút gọn 8</td><td class="num">Kiểu Fluent: cung tròn. Cửa sổ 8 · lớp nổi 8 · thẻ 8 · menu 8 · nút 4 · ô nhập 4</td></tr>
+            <tr><td>Bo góc</td><td class="num">Kiểu Apple: góc cong liên tục, bo đồng tâm, hình viên chỉ cho viên chọn và nhãn. Cửa sổ 24 · lớp nổi 20 · thẻ 16 · menu 14 · ô nhập 10 · nút 10 · nút gọn 8</td><td class="num">Kiểu Fluent: cung tròn. Cửa sổ 8 · lớp nổi 8 · thẻ 8 · menu 8 · nút 4 · ô nhập 4</td></tr>
             <tr><td>Chữ</td><td>SF Pro (font của macOS)</td><td>Segoe UI Variable (font của Windows 11)</td></tr>
             <tr><td>Hộp thoại</td><td>Trượt xuống từ thanh công cụ</td><td>Nở ra ở giữa cửa sổ</td></tr>
           </table>

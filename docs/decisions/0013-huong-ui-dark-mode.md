@@ -66,15 +66,15 @@ Bối cảnh: sau bản dùng thử exe `5215b2e`, Owner yêu cầu một vòng 
    | `--r-curve` · `--r-k` (dáng của góc) | `superellipse(1.7)` · 1,5: cong liên tục | `round` · 1: cung tròn |
    | `--r-window` (app thật: hệ điều hành vẽ) | 24 px | 8 px |
    | `--r-pop` · `--r-card` · `--r-menu` | 20 px · 16 px · 14 px | 8 px · 8 px · 8 px |
-   | `--r-field` · `--r-control-sm` (nút gọn 28 px) | 10 px · 8 px | 4 px · 4 px |
-   | `--r-control` (nút 34 px, viên của thanh công cụ, ô tìm, viên chọn) | hình viên | 4 px |
+   | `--r-field` · `--r-control` (nút 34 px, nút của thanh công cụ) · `--r-control-sm` (nút gọn 28 – 30 px) | 10 px · 10 px · 8 px | 4 px · 4 px · 4 px |
+   | `--r-chip` (viên chọn, ô tìm, nút trong thông báo nổi) | hình viên | 4 px |
    | `--mat-window` (khi không có hiệu ứng gốc) | `rgba(11, 16, 23, 0.62)` | `rgba(17, 24, 34, 0.84)` |
 
-   **Bo góc trên macOS theo ba quy tắc của Apple** (Owner 11/11/2026, khi xem bản đầu của mockup: "bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple chứ anh không duyệt như mockup của MacOS như đang xem"; bản đầu dùng cung tròn, nút nào cũng là viên, thẻ 20 px):
+   **Bo góc trên macOS: ba quy tắc, hai quy tắc đầu của Apple** (Owner 11/11/2026, khi xem bản đầu của mockup: "bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple chứ anh không duyệt như mockup của MacOS như đang xem"; bản đầu dùng cung tròn, nút nào cũng là viên, thẻ 20 px):
 
    - *Góc cong liên tục:* đường cong vào cạnh thẳng êm dần, không phải cung tròn. Vẽ bằng thuộc tính CSS `corner-shape` với `--r-curve`, trong ô rộng `--r-k` lần số bo góc để giữ độ tròn của một cung cùng số đo. Web view chưa có `corner-shape` thì vẽ cung tròn cùng số đo, bố cục không đổi (WebView2 có từ bản 139; Safari thêm ở bản 27.3 beta, 03/11/2026).
    - *Bo đồng tâm:* hình nằm trong lấy số bo góc của hình ngoài trừ khoảng cách giữa hai hình: cửa sổ 24 → tấm thanh bên 16 → mục thanh bên 8; menu 14 → dòng menu 8; bộ chọn kỳ 20 → ô 8; nút trượt 10 → viên trượt 8; thẻ 16 → mục trong thẻ 8.
-   - *Hình viên chỉ cho cỡ lớn:* nút 34 px, viên của thanh công cụ, ô tìm, viên chọn, nhãn và thông báo nổi là hình viên; nút gọn 28 px, ô nhập, thẻ, menu, lớp nổi là chữ nhật bo.
+   - *Nút là chữ nhật bo, hình viên chỉ cho viên chọn và nhãn:* nút 34 px và nút của thanh công cụ bo `--r-control`, nút gọn bo `--r-control-sm`, đều có cạnh thẳng hai bên; hình viên chỉ còn ở viên chọn, nhãn trạng thái, ô tìm và thông báo nổi. Owner 11/11/2026, khi xem bản vẽ lại có nút 34 px hình viên: "duyệt nhưng nút cỡ lớn 2 bên cong quá và không có đường thẳng dọc 2 bên, xem lại góc của nút cỡ lớn". Đây là chỗ khác với Apple (trên macOS 26 trở lên nút cỡ lớn của Apple là hình viên). Số của `--r-control` (10 px hay 8 px) Owner chọn ở G3, hình ở `components.html#btn-corner`.
    - Số đo là ước lượng (Apple không công bố). Góc cửa sổ do macOS vẽ; khi có bản thử Mac (T-413) đo góc thật rồi chỉnh các số đồng tâm theo nó.
 
    macOS: ba nút cửa sổ nằm trong tấm thanh bên, mục đang chọn có nền bo đồng tâm với tấm thanh bên, ô tìm là nút trên thanh công cụ. Windows 11: thanh tiêu đề có ô tìm (hoặc thanh tiêu đề gốc, Owner chọn ở G3), mục đang chọn có vạch `--accent` bên trái. Bộ `--corner-sm / md / lg` hiện có nhường chỗ cho bộ `--r-*` khi ra Issue.

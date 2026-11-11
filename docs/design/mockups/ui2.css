@@ -127,12 +127,14 @@
        keeps the roundness of a circle of radius r (see "Rounded rectangles" under section 5).
      2 concentric nesting: a shape inside another takes the outer radius minus the gap between them
        (window 24 → sidebar pane 16 → sidebar row 8; menu 14 → menu item 8; popover 20 → cell 8).
-     3 capsule only for large controls (34 px: buttons, toolbar pickers, search) and for chips;
-       compact controls (28 px and less), fields, cards and panes are rounded rectangles.
+     3 capsule only for chips: choice pills, labels, the search field, the toast. Buttons are
+       rounded rectangles with a straight side: 34 px buttons and toolbar pickers take --r-control,
+       compact ones (28–30 px) --r-control-sm (Owner 11/11, on the capsule buttons of the first
+       redraw: "nút cỡ lớn 2 bên cong quá và không có đường thẳng dọc 2 bên").
      The values are nominal radii. The window corner belongs to macOS in the real app. */
   --r-curve: superellipse(1.7); --r-k: 1.5;
   --r-window: 24px; --r-card: 16px; --r-pop: 20px; --r-menu: 14px; --r-field: 10px;
-  --r-control: 999px; --r-control-sm: 8px;
+  --r-control: 10px; --r-control-sm: 8px; --r-chip: 999px;
 
   /* B6. Motion: four durations, one curve in and one out, three springs (CSS linear(), no library) */
   --t-1: 120ms; --t-2: 220ms; --t-3: 400ms; --t-4: 600ms;
@@ -147,7 +149,7 @@
   --mat-window: rgba(17, 24, 34, 0.84); /* Mica: an opaque tint of the desktop, no see-through */
   --r-curve: round; --r-k: 1; /* Fluent: plain circular corners, 8 px surfaces, 4 px controls */
   --r-window: 8px; --r-card: 8px; --r-pop: 8px; --r-menu: 8px; --r-field: 4px;
-  --r-control: 4px; --r-control-sm: 4px;
+  --r-control: 4px; --r-control-sm: 4px; --r-chip: 4px;
 }
 /* A web view without corner-shape draws the same nominal radii as circular arcs */
 @supports not (corner-shape: superellipse(1.7)) { :root { --r-k: 1; } }
@@ -357,13 +359,13 @@ code { font: 0.9em var(--font-code); color: var(--text); }
    draws it the way of the system: a continuous corner on macOS (in a box of r × --r-k), a circular
    arc on Windows 11. Capsules and circles keep a plain border-radius. A page that needs the same on
    a class of its own writes these two declarations with its radius in place of --r. */
-.win, .sb, .nav-i, .nav-pill, .btn.sm, .input, .seg, .seg button, .seg .thumb, .check i, .menu, .menu button, .ppop, .ppop .plist button, .card, .chip, .dlg, .alert, .fail-detail { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+.win, .sb, .nav-i, .nav-pill, .btn, .cap, .input, .seg, .seg button, .seg .thumb, .check i, .menu, .menu button, .ppop, .ppop .plist button, .card, .chip, .dlg, .alert, .fail-detail { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
 
 /* ============ 6. Buttons ============ */
 /* .btn is the secondary button; .primary, .danger, .quiet are the other levels; .cap is the picker of
-   the toolbar (view, period). All share one height and one press. Shape: 34 px is the large size, a
-   capsule on macOS; .sm (28 px) is the compact size, a rounded rectangle; Windows 11: 4 px for both. */
-.btn, .cap { position: relative; height: 34px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--r-control); background: var(--fill-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px var(--hairline); color: var(--text); font-weight: 550; white-space: nowrap; transition: background var(--t-1), filter var(--t-1), transform var(--t-3) var(--spring-snappy); }
+   the toolbar (view, period). All share one height and one press. Shape on macOS: a rounded rectangle
+   with a straight side, 10 px at 34 px and 8 px for .sm (28 px); Windows 11: 4 px for both. */
+.btn, .cap { position: relative; height: 34px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; --r: var(--r-control); background: var(--fill-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px var(--hairline); color: var(--text); font-weight: 550; white-space: nowrap; transition: background var(--t-1), filter var(--t-1), transform var(--t-3) var(--spring-snappy); }
 .btn:hover, .cap:hover, .btn.is-hover, .cap.is-hover { background: var(--fill-3); }
 .btn:active, .cap:active, .btn.is-press { transform: scale(0.96); }
 .btn.is-focus, .input.is-focus-ring { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -400,7 +402,7 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 .input.area { min-height: 76px; align-items: flex-start; line-height: 1.5; }
 .input .caret { margin-left: auto; color: var(--text-3); display: inline-flex; }
 .input .unit { margin-left: auto; color: var(--text-3); font-size: 12.5px; }
-.input.search { border-radius: var(--r-control); corner-shape: round; color: var(--text-3); } /* a search field is a capsule on macOS */
+.input.search { border-radius: var(--r-chip); corner-shape: round; color: var(--text-3); } /* a search field is a capsule on macOS */
 /* Windows 11 text boxes carry their weight on the bottom edge */
 [data-os='win'] .input { border-color: var(--hairline); border-bottom-color: var(--border-control); }
 [data-os='win'] .input:hover { border-color: var(--hairline); border-bottom-color: var(--text-2); }
@@ -428,7 +430,7 @@ input.input::placeholder, .input.placeholder { color: var(--text-3); }
 [data-os='win'] .seg button, [data-os='win'] .seg .thumb { --r: 4px; }
 /* Choice pills (stage, status, kind): one of several, all visible */
 .choices { display: flex; flex-wrap: wrap; gap: 6px; }
-.choice { height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--border-control); color: var(--text-2); font-weight: 550; white-space: nowrap; transition: background var(--t-1), color var(--t-1), box-shadow var(--t-1), transform var(--t-3) var(--spring-snappy); }
+.choice { height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-chip); box-shadow: inset 0 0 0 1px var(--border-control); color: var(--text-2); font-weight: 550; white-space: nowrap; transition: background var(--t-1), color var(--t-1), box-shadow var(--t-1), transform var(--t-3) var(--spring-snappy); }
 .choice:hover { background: var(--fill-1); color: var(--text); }
 .choice:active { transform: scale(0.96); }
 .choice.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 650; }
@@ -563,7 +565,7 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .toast > .ic { width: 17px; height: 17px; color: var(--c, var(--ok)); }
 .toast.bad { --c: var(--danger); } .toast.warn { --c: var(--warn); } .toast.info { --c: var(--info); }
 .toast small { font-size: 12.5px; color: var(--text-2); }
-.toast .btn { height: 28px; }
+.toast .btn { height: 28px; border-radius: var(--r-chip); corner-shape: round; } /* concentric with the capsule of the toast */
 .toast > span:last-child { padding-right: 8px; }
 .win > .toast { position: absolute; left: 50%; bottom: 22px; z-index: 40; opacity: 0; pointer-events: none; transform: translate(-50%, 24px) scale(0.96); transition: opacity var(--t-2) var(--ease-in), transform var(--t-2) var(--ease-in); }
 .win > .toast.on { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); transition: opacity var(--t-2) var(--ease-out), transform var(--t-4) var(--spring-bouncy); }
