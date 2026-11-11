@@ -240,6 +240,10 @@ Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đ
      - **Forecast (phần D; ý 18, 19):** bấm một ngày (ô của lưới tháng, tên ngày của dải tuần) ra danh sách lịch của ngày đó: giờ, KH, nhóm, RM, team, case size; bấm một dòng mở hồ sơ KH, nút quay lại về Forecast.
      - **Nền của trang trình bày:** năm phương án ở thanh dưới cửa sổ (Hoàng hôn, Studio, Champagne, Lưới, Heritas); chỉ là nền của bảng và ảnh giới thiệu, không phải giao diện app. Lần đầu năm kiểu chỉ là năm chấm không nhãn trên thanh dưới nên Owner không tìm thấy; đã thêm mục "Nền" ngay dưới màn đầu, có tên và hình thử. **Owner chọn 11/11/2026:** "Anh chọn mẫu cuối: nền Heritas tree" (kiểu 5: cây của logo in chìm trên nền navy, ánh vàng nhẹ). Kiểu này là mặc định của bảng; bốn kiểu kia giữ lại để so.
      - Owner yêu cầu Claude tự rà "liệu có thể còn làm gì khác tốt hơn không" và nêu khuyến nghị: các khuyến nghị nêu trong chat cùng ngày; mục nào Owner nhận thì ghi vào đây.
+   - **Các điểm `#ask` Owner đã chốt** (số theo mục `#ask` của bảng):
+     - **1. Concept làm nền cho mockup G3:** nhận, 10/11/2026 ("Có …", rồi "Anh thấy là khá ổn rồi").
+     - **2. Chữ giao diện:** 11/11/2026, "Font hệ thống". Chữ giao diện dùng font của từng nền tảng: SF Pro trên macOS, Segoe UI Variable trên Windows 11 (Segoe UI trên máy không có bản Variable); Playfair Display vẫn chỉ cho slogan. Đây là đổi ADR-0013 §2 (Be Vietnam Pro): phụ lục ADR-0013 soạn cùng mockup đợt đầu (vỏ app) để Owner duyệt. Khi ra Issue: bỏ file font Be Vietnam Pro nhúng trong app, kiểm dấu tiếng Việt và độ rộng cột số trên cả hai font.
+     - **11. Nền của trang trình bày:** 11/11/2026, kiểu 5 "Heritas" (ghi ở trên).
 2. **Owner thêm và chọn ý.**
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".
