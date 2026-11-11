@@ -7,6 +7,7 @@
            lớp nổi: #pal ô lệnh, #sheet hộp Hủy HĐ / tạo team, #now-pop "Lúc này", #scope-menu, #miss-pop,
            #day-pop lịch của một ngày Forecast, #period-pop chọn kỳ báo cáo
            #dock: công tắc macOS / Windows 11, Tối / Sáng, hai bộ chữ, năm kiểu nền, toàn màn hình
+  #walls   Năm kiểu nền; Owner chọn kiểu 5 Heritas ngày 11/11/2026 (mặc định của trang)
   #concept Ba nguyên lý (ba lớp, hai hệ điều hành, bốn động tác)
   #ideas   Danh sách ý (do JS dựng từ mảng IDEAS), phiếu chọn
   #motion  Bốn động tác, ba lò xo, token chuyển động, ghi chú khả thi
@@ -14,7 +15,7 @@
   #ask     Các quyết định cần Owner
   Bảng mockup → màn hình → spec: docs/design/mockups/README.md
 -->
-<html lang="vi" data-os="mac" data-theme="dark" data-font="system" data-wall="1">
+<html lang="vi" data-os="mac" data-theme="dark" data-font="system" data-wall="5">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -269,7 +270,7 @@
           <span class="seg" data-set="os"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
           <span class="seg" data-set="theme"><button class="on" data-v="dark">Tối</button><button data-v="light">Sáng</button></span>
           <span class="seg" data-set="font"><button class="on" data-v="system">Chữ hệ thống</button><button data-v="brand">Be Vietnam Pro</button></span>
-          <span class="seg walls" data-set="wall" aria-label="Nền của trang trình bày"><button class="on" data-v="1" title="Nền 1 · Hoàng hôn" aria-label="Nền Hoàng hôn"><i class="w1"></i></button><button data-v="2" title="Nền 2 · Studio" aria-label="Nền Studio"><i class="w2"></i></button><button data-v="3" title="Nền 3 · Champagne" aria-label="Nền Champagne"><i class="w3"></i></button><button data-v="4" title="Nền 4 · Lưới" aria-label="Nền Lưới"><i class="w4"></i></button><button data-v="5" title="Nền 5 · Heritas" aria-label="Nền Heritas"><i class="w5"></i></button></span>
+          <span class="dock-l">Nền</span><span class="seg walls" data-set="wall" aria-label="Nền của trang trình bày"><button data-v="1" title="Nền 1 · Hoàng hôn" aria-label="Nền Hoàng hôn"><i class="w1"></i></button><button data-v="2" title="Nền 2 · Studio" aria-label="Nền Studio"><i class="w2"></i></button><button data-v="3" title="Nền 3 · Champagne" aria-label="Nền Champagne"><i class="w3"></i></button><button data-v="4" title="Nền 4 · Lưới" aria-label="Nền Lưới"><i class="w4"></i></button><button class="on" data-v="5" title="Nền 5 · Heritas" aria-label="Nền Heritas"><i class="w5"></i></button></span><b id="wall-name">Heritas</b>
           <button class="dock-b icon" id="full" aria-label="Toàn màn hình" title="Toàn màn hình"><svg class="ic"><use href="#i-full" /></svg></button>
           <a class="dock-b" href="#ideas">34 ý tưởng<svg class="ic"><use href="#i-down" /></svg></a>
         </div>
@@ -277,6 +278,20 @@
 
     <div class="page">
       <div class="onscreen" id="onscreen" aria-label="Ý tưởng ở màn đang mở"></div>
+
+      <!-- ================= Nền ================= -->
+      <section class="sec" id="walls">
+        <span class="kicker">Nền</span>
+        <h2>Nền: anh đã chọn Heritas.</h2>
+        <p class="lead">Nền là thứ nằm sau cửa sổ ở màn đầu của trang này, và sẽ là nền của ảnh giới thiệu. Trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. Anh chọn kiểu 5, Heritas, ngày 11/11/2026; bốn kiểu còn lại giữ ở đây để so. <b>Bấm một kiểu</b> để xem thử ở màn đầu; ở đó đổi tiếp bằng năm chấm cạnh chữ "Nền" trên thanh dưới cửa sổ.</p>
+        <div class="wgrid">
+          <button class="wcard" data-w="1" data-wall-pick="1"><span class="wmini"><i></i></span><b>1 · Hoàng hôn</b><span>Ánh cam ở góc dưới trái, xanh ở góc trên phải. Kiểu ban đầu, anh chưa vừa ý.</span></button>
+          <button class="wcard" data-w="2" data-wall-pick="2"><span class="wmini"><i></i></span><b>2 · Studio</b><span>Một nguồn sáng trung tính sau cửa sổ, viền tối, không màu. Giống ảnh chụp sản phẩm: mắt chỉ nhìn vào app.</span></button>
+          <button class="wcard" data-w="3" data-wall-pick="3"><span class="wmini"><i></i></span><b>3 · Champagne</b><span>Một dải sáng vàng champagne chạy chéo trên nền navy. Chỉ dùng màu thương hiệu.</span></button>
+          <button class="wcard" data-w="4" data-wall-pick="4"><span class="wmini"><i></i></span><b>4 · Lưới</b><span>Lưới chấm nhỏ, chút xanh ở giữa. Gọn, kỹ thuật, ít cảm xúc nhất.</span></button>
+          <button class="wcard on" data-w="5" data-wall-pick="5"><span class="wmini"><i></i></span><b>5 · Heritas<small>đang dùng</small></b><span>Cây của logo in chìm trên nền navy, ánh vàng nhẹ. Đậm thương hiệu nhất. Anh chọn kiểu này.</span></button>
+        </div>
+      </section>
 
       <!-- ================= Concept ================= -->
       <section class="sec" id="concept">
@@ -424,7 +439,7 @@
           <li><b>Màu file Excel.</b>Navy và champagne của logo, nền trắng. <em>Đề xuất: có.</em></li>
           <li><b>Các màn đã duyệt G3 khác</b> (Lịch hẹn, hồ sơ KH, KYC, các hộp thoại). <em>Đề xuất: giữ bố cục, chỉ thay vỏ theo ngôn ngữ mới; không vẽ lại.</em></li>
           <li><b>Forecast: 6 điểm mở D-a … D-f.</b>Bản thử đang theo đề xuất của em (mỗi KH tính một lần, hiện đã đạt + dự kiến, bỏ Chủ Nhật, không nhân trọng số, lịch thiếu case size không cộng, có sheet Excel). Em hỏi riêng từng điểm.</li>
-          <li><b>Nền của trang trình bày.</b>Thanh dưới cửa sổ có năm kiểu nền: Hoàng hôn, Studio, Champagne, Lưới, Heritas. Đây là nền của bảng này và của ảnh giới thiệu; trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. <em>Đề xuất: Studio hoặc Champagne.</em></li>
+          <li><b>Nền của trang trình bày.</b>Năm kiểu ở mục "Năm kiểu nền để anh chọn", ngay dưới màn đầu: Hoàng hôn, Studio, Champagne, Lưới, Heritas. Đây là nền của bảng này và của ảnh giới thiệu; trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. <em>Đã chốt 11/11/2026: kiểu 5, Heritas.</em></li>
           <li><b>Team có màu và icon.</b>Sáu màu lấy từ token hiện có, tám icon; TL ngang hàng tên team. Màu và icon là dữ liệu mới của team (G2), đi theo team ở mọi màn. <em>Đề xuất: làm, dùng bảng màu hiện có.</em></li>
           <li><b>Nhiều nhà cung cấp AI.</b>Thêm WorkBuddy cạnh OpenCode, chọn model và mức suy luận. Mỗi nhà cung cấp mới qua G4, G5, G6; phải kiểm trước WorkBuddy có API cho app ngoài gọi không. <em>Đề xuất: giữ khung nhiều nhà cung cấp trong mockup, kiểm API rồi mới quyết.</em></li>
         </ol>

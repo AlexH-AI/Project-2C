@@ -288,12 +288,22 @@
     chrome();
     if (RENDER[state.view]) RENDER[state.view]();
   }
+  const WALLS = ['Hoàng hôn', 'Studio', 'Champagne', 'Lưới', 'Heritas'];
   function setSwitch(key, val) {
     root.dataset[key] = val;
     $$(`.seg[data-set="${key}"]`).forEach((seg) => {
       $$('button', seg).forEach((b) => b.classList.toggle('on', b.dataset.v === val));
       thumb(seg);
     });
+    if (key === 'wall') { // the name next to the swatches and the gallery card follow the choice
+      $('#wall-name').textContent = WALLS[val - 1];
+      $$('.wcard').forEach((c) => {
+        c.classList.toggle('on', c.dataset.w === String(val));
+        const tag = $('small', c);
+        if (tag) tag.remove();
+        if (c.dataset.w === String(val)) $('b', c).insertAdjacentHTML('beforeend', '<small>đang dùng</small>');
+      });
+    }
     if (key === 'theme' || key === 'wall') return;
     // another platform or typeface changes every measure: the window, the thumbs, the pill
     fit();
@@ -1121,6 +1131,7 @@
   document.addEventListener('click', (e) => {
     const t = e.target, on = (sel) => t.closest(sel);
     let el;
+    if ((el = on('[data-wall-pick]'))) { setSwitch('wall', el.dataset.wallPick); return $('#stage').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
     if ((el = on('[data-cell]'))) { const [w, day] = el.dataset.cell.split('-').map(Number); return openDay(w, day, el); }
     if ((el = on('#period-l'))) return $('#period-pop').classList.contains('on') ? closeFloats() : openPeriod();
     if ((el = on('[data-kind]'))) { state.pkind = el.dataset.kind; return periodPop(true); }

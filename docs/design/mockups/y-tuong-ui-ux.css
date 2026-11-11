@@ -116,25 +116,39 @@ html[data-os='mac'] .k-win, html[data-os='win'] .k-mac { display: none; }
 .stage { position: relative; height: 100vh; min-height: 640px; overflow: hidden; isolation: isolate; display: grid; grid-template-rows: 28px minmax(0, 1fr) 78px; justify-items: center; align-items: center; background: #070b14; }
 html[data-os='win'] .stage { grid-template-rows: 14px minmax(0, 1fr) 78px; }
 /* The desktop: not app UI, only there so the window material has something to tint. It stays still:
-   a moving backdrop would make the browser blur the window again on every frame. */
-.wall { position: absolute; inset: 0; z-index: -1; background:
-    radial-gradient(58% 78% at 0% 100%, rgba(255, 160, 84, 0.42), transparent 62%),
-    radial-gradient(46% 64% at 16% -12%, rgba(217, 178, 106, 0.4), transparent 62%),
-    radial-gradient(52% 72% at 100% 0%, rgba(92, 126, 255, 0.5), transparent 64%),
-    radial-gradient(44% 62% at 74% 112%, rgba(176, 118, 255, 0.34), transparent 62%),
-    linear-gradient(160deg, #0d1b33, #0a1220 55%, #15193a); }
-html[data-os='win'] .wall { background:
-    radial-gradient(42% 60% at 62% 58%, rgba(64, 140, 255, 0.55), transparent 66%),
-    radial-gradient(36% 52% at 38% 40%, rgba(40, 96, 230, 0.5), transparent 66%),
-    radial-gradient(40% 50% at 86% 10%, rgba(120, 190, 255, 0.3), transparent 62%),
-    linear-gradient(160deg, #071226, #060d1c 55%, #0a1a3a); }
+   a moving backdrop would make the browser blur the window again on every frame. Five takes of it
+   (--wall-1 … --wall-5) for the Owner to choose from; --wall is the chosen one. */
+:root {
+  /* 1 Hoàng hôn: warm light bottom left, blue top right */
+  --wall-1: radial-gradient(58% 78% at 0% 100%, rgba(255, 160, 84, 0.42), transparent 62%), radial-gradient(46% 64% at 16% -12%, rgba(217, 178, 106, 0.4), transparent 62%), radial-gradient(52% 72% at 100% 0%, rgba(92, 126, 255, 0.5), transparent 64%), radial-gradient(44% 62% at 74% 112%, rgba(176, 118, 255, 0.34), transparent 62%), linear-gradient(160deg, #0d1b33, #0a1220 55%, #15193a);
+  /* 2 Studio: one neutral light behind the window, dark edges, no colour */
+  --wall-2: radial-gradient(62% 58% at 50% 40%, rgba(132, 150, 190, 0.34), transparent 72%), radial-gradient(120% 80% at 50% 118%, rgba(0, 0, 0, 0.55), transparent 62%), linear-gradient(180deg, #151c2b, #090d15);
+  /* 3 Champagne: a single band of the brand's gold across deep navy */
+  --wall-3: linear-gradient(112deg, transparent 26%, rgba(217, 178, 106, 0.1) 38%, rgba(217, 178, 106, 0.4) 49%, rgba(217, 178, 106, 0.12) 60%, transparent 74%), radial-gradient(70% 60% at 50% 45%, rgba(217, 178, 106, 0.1), transparent 70%), linear-gradient(160deg, #0c1424, #090e17);
+  /* 4 Lưới: a quiet dot grid, a hint of blue in the middle */
+  --wall-4: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1.5px) 0 0 / 24px 24px, radial-gradient(70% 62% at 50% 44%, rgba(111, 168, 255, 0.16), transparent 72%), linear-gradient(#090e17, #090e17);
+  /* 5 Heritas: navy with a little gold; the tree of the logo sits over it as a watermark (::after) */
+  --wall-5: radial-gradient(60% 70% at 78% 46%, rgba(217, 178, 106, 0.16), transparent 70%), linear-gradient(160deg, #11213f, #0a1322 60%, #0d1930);
+  --wall: var(--wall-1);
+}
+html[data-os='win'] { --wall-1: radial-gradient(42% 60% at 62% 58%, rgba(64, 140, 255, 0.55), transparent 66%), radial-gradient(36% 52% at 38% 40%, rgba(40, 96, 230, 0.5), transparent 66%), radial-gradient(40% 50% at 86% 10%, rgba(120, 190, 255, 0.3), transparent 62%), linear-gradient(160deg, #071226, #060d1c 55%, #0a1a3a); }
+html[data-theme='light'] {
+  --wall-1: radial-gradient(58% 78% at 0% 100%, rgba(255, 190, 120, 0.6), transparent 62%), radial-gradient(46% 64% at 16% -12%, rgba(232, 205, 150, 0.7), transparent 62%), radial-gradient(52% 72% at 100% 0%, rgba(150, 180, 255, 0.6), transparent 64%), radial-gradient(44% 62% at 74% 112%, rgba(205, 170, 255, 0.45), transparent 62%), linear-gradient(160deg, #eef2f8, #e3eaf3 55%, #f1e9dc);
+  --wall-2: radial-gradient(62% 58% at 50% 40%, #ffffff, transparent 72%), linear-gradient(180deg, #e6eaf0, #d5dbe4);
+  --wall-3: linear-gradient(112deg, transparent 26%, rgba(217, 178, 106, 0.2) 38%, rgba(217, 178, 106, 0.6) 49%, rgba(217, 178, 106, 0.22) 60%, transparent 74%), linear-gradient(160deg, #f4f1ea, #e9e4d8);
+  --wall-4: radial-gradient(rgba(19, 28, 43, 0.2) 1px, transparent 1.5px) 0 0 / 24px 24px, linear-gradient(#eef1f5, #eef1f5);
+  --wall-5: radial-gradient(60% 70% at 78% 46%, rgba(217, 178, 106, 0.3), transparent 70%), linear-gradient(160deg, #f1ede4, #e6e9ef);
+}
+html[data-wall='2'] { --wall: var(--wall-2); }
+html[data-wall='3'] { --wall: var(--wall-3); }
+html[data-wall='4'] { --wall: var(--wall-4); }
+html[data-wall='5'] { --wall: var(--wall-5); }
+.wall { position: absolute; inset: 0; z-index: -1; background: var(--wall); }
+.wall::after, .wmini::after { content: ''; position: absolute; inset: 0; background: url(img/heritas-tree.png) no-repeat 84% 46% / auto 82%; filter: brightness(0) invert(1); opacity: 0; }
+html[data-wall='5'] .wall::after, .wcard[data-w='5'] .wmini::after { opacity: 0.075; }
+html[data-theme='light'] .wall::after, html[data-theme='light'] .wmini::after { filter: none; }
+html[data-theme='light'][data-wall='5'] .wall::after, html[data-theme='light'] .wcard[data-w='5'] .wmini::after { opacity: 0.1; }
 html[data-theme='light'] .stage { background: #dfe6ee; }
-html[data-theme='light'] .wall { background:
-    radial-gradient(58% 78% at 0% 100%, rgba(255, 190, 120, 0.6), transparent 62%),
-    radial-gradient(46% 64% at 16% -12%, rgba(232, 205, 150, 0.7), transparent 62%),
-    radial-gradient(52% 72% at 100% 0%, rgba(150, 180, 255, 0.6), transparent 64%),
-    radial-gradient(44% 62% at 74% 112%, rgba(205, 170, 255, 0.45), transparent 62%),
-    linear-gradient(160deg, #eef2f8, #e3eaf3 55%, #f1e9dc); }
 .menubar { grid-row: 1; justify-self: stretch; height: 28px; display: flex; align-items: center; gap: 18px; padding: 0 16px; font-size: 13px; color: var(--menubar-ink); background: rgba(10, 14, 20, 0.2); backdrop-filter: blur(24px) saturate(1.5); }
 html[data-theme='light'] .menubar { background: rgba(255, 255, 255, 0.38); }
 .menubar b { font-weight: 700; }
@@ -826,29 +840,32 @@ button.tmark.lg:hover { transform: scale(1.08) rotate(-5deg); }
 .keyst { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
 .keyst .ic { color: var(--ok); }
 
-/* --- The desktop behind the window: five takes to choose from (dock → Nền) --- */
+/* --- Choosing the desktop: a labelled control in the dock, and a gallery section (#walls) under the stage --- */
+.dock-l { margin-right: -2px; color: var(--text-2); }
+#wall-name { min-width: 78px; font-weight: 600; color: var(--text); }
 .walls button { padding: 4px 6px; }
-.walls i { display: block; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+.walls i { display: block; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); }
 .walls .w1 { background: linear-gradient(135deg, #5c7eff, #0d1b33 50%, #ffa054); }
 .walls .w2 { background: radial-gradient(circle at 50% 38%, #66789c, #0a0e16 78%); }
 .walls .w3 { background: linear-gradient(115deg, #0b1322 30%, #d9b26a 50%, #0b1322 70%); }
 .walls .w4 { background: radial-gradient(#9fb0cf 1px, transparent 1.6px) 0 0 / 5px 5px, #0a0f18; }
 .walls .w5 { background: #10203c url(img/heritas-tree.png) center / 76% no-repeat; }
-.wall::after { content: ''; position: absolute; inset: 0; background: url(img/heritas-tree.png) no-repeat 84% 46% / auto 82%; filter: brightness(0) invert(1); opacity: 0; }
-/* 2 Studio: one neutral light behind the window, dark edges, no colour */
-html[data-wall='2'] .wall { background: radial-gradient(62% 58% at 50% 40%, rgba(132, 150, 190, 0.34), transparent 72%), radial-gradient(120% 80% at 50% 118%, rgba(0, 0, 0, 0.55), transparent 62%), linear-gradient(180deg, #151c2b, #090d15); }
-/* 3 Champagne: a single band of the brand's gold across deep navy */
-html[data-wall='3'] .wall { background: linear-gradient(112deg, transparent 26%, rgba(217, 178, 106, 0.1) 38%, rgba(217, 178, 106, 0.4) 49%, rgba(217, 178, 106, 0.12) 60%, transparent 74%), radial-gradient(70% 60% at 50% 45%, rgba(217, 178, 106, 0.1), transparent 70%), linear-gradient(160deg, #0c1424, #090e17); }
-/* 4 Lưới: a quiet dot grid, a hint of blue in the middle */
-html[data-wall='4'] .wall { background: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1.5px) 0 0 / 24px 24px, radial-gradient(70% 62% at 50% 44%, rgba(111, 168, 255, 0.16), transparent 72%), #090e17; }
-/* 5 Heritas: the tree of the logo as a faint watermark on navy */
-html[data-wall='5'] .wall { background: radial-gradient(60% 70% at 78% 46%, rgba(217, 178, 106, 0.16), transparent 70%), linear-gradient(160deg, #11213f, #0a1322 60%, #0d1930); }
-html[data-wall='5'] .wall::after { opacity: 0.075; }
-html[data-theme='light'][data-wall='2'] .wall { background: radial-gradient(62% 58% at 50% 40%, #ffffff, transparent 72%), linear-gradient(180deg, #e6eaf0, #d5dbe4); }
-html[data-theme='light'][data-wall='3'] .wall { background: linear-gradient(112deg, transparent 26%, rgba(217, 178, 106, 0.2) 38%, rgba(217, 178, 106, 0.6) 49%, rgba(217, 178, 106, 0.22) 60%, transparent 74%), linear-gradient(160deg, #f4f1ea, #e9e4d8); }
-html[data-theme='light'][data-wall='4'] .wall { background: radial-gradient(rgba(19, 28, 43, 0.2) 1px, transparent 1.5px) 0 0 / 24px 24px, #eef1f5; }
-html[data-theme='light'][data-wall='5'] .wall { background: radial-gradient(60% 70% at 78% 46%, rgba(217, 178, 106, 0.3), transparent 70%), linear-gradient(160deg, #f1ede4, #e6e9ef); }
-html[data-theme='light'][data-wall='5'] .wall::after { filter: none; opacity: 0.1; }
+.wgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+.wcard { display: flex; flex-direction: column; padding-bottom: 18px; border-radius: 24px; background: var(--card); box-shadow: var(--card-shadow); overflow: hidden; text-align: left; transition: transform var(--t-3) var(--spring-snappy), box-shadow var(--t-2); }
+.wcard:hover { transform: translateY(-5px); }
+.wcard.on { box-shadow: 0 0 0 2px var(--accent), var(--card-shadow); }
+.wmini { position: relative; display: block; height: 176px; background: var(--wall-1); overflow: hidden; }
+.wcard[data-w='2'] .wmini { background: var(--wall-2); }
+.wcard[data-w='3'] .wmini { background: var(--wall-3); }
+.wcard[data-w='4'] .wmini { background: var(--wall-4); }
+.wcard[data-w='5'] .wmini { background: var(--wall-5); }
+/* a small window on each backdrop: glass sidebar, content, one gold line */
+.wmini i { position: absolute; z-index: 1; left: 24%; right: 24%; top: 29%; bottom: 27%; border-radius: 9px; background: linear-gradient(var(--accent) 0 0) 36% 24% / 22% 5px no-repeat, linear-gradient(var(--fill-2) 0 0) 44% 48% / 44% 4px no-repeat, linear-gradient(var(--fill-2) 0 0) 40% 66% / 34% 4px no-repeat, linear-gradient(90deg, var(--win-glass) 0 26%, var(--content) 26%); backdrop-filter: blur(6px) saturate(1.6); box-shadow: 0 12px 26px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.wcard b { margin: 14px 18px 4px; font-size: 17px; font-weight: 650; letter-spacing: -0.012em; }
+.wcard b small { margin-left: 8px; font-size: 12px; font-weight: 650; letter-spacing: 0; color: var(--accent); }
+.wcard > span:last-child { margin: 0 18px; font-size: 14px; line-height: 1.5; color: var(--text-2); }
+@media (max-width: 1080px) { .wgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1320px) { .dock-t { display: none; } }
 
 /* --- "Giảm độ trong suốt" of the system: glass becomes solid, nothing else changes --- */
 @media (prefers-reduced-transparency: reduce) {
