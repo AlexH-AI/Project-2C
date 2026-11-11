@@ -496,7 +496,8 @@ pub fn key_entry() -> Result<Entry, AiError> {
         .map_err(keyring_error)
 }
 
-/// The app runs on Windows only (ADR-0006); elsewhere there is no key store.
+/// macOS has no key store yet (Keychain, M1 of the macOS trial, G4): every key command fails with
+/// [`AI_KEYRING`].
 #[cfg(not(windows))]
 pub fn key_entry() -> Result<Entry, AiError> {
     Err(AiError::new(AI_KEYRING))
