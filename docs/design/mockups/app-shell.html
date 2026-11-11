@@ -1,0 +1,872 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi ở ui2.js):
+  Mockup G3 đợt a (T-416 #1212): vỏ app trên macOS và Windows 11. Trạng thái: CHỜ Owner duyệt G3.
+  Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật (Owner 11/11: để sau, khi có bản build Mac T-413).
+  #shell    Cửa sổ app bấm được trên nền desktop: thanh bên, thanh công cụ, các màn
+            màn: overview (nội dung minh họa), appointments (bố cục đã duyệt), settings (ba mục có icon),
+            customers / forecast / reports / team (chỉ vỏ, nội dung vẽ ở đợt b–e)
+            lớp tiêu điểm: hộp "Lịch hẹn mới" (6a đã duyệt), thông báo nổi
+            thanh dưới: công tắc macOS / Windows 11, cỡ cửa sổ (vừa khung, 1440×900, 1100×700)
+  #duo      Hai hệ điều hành cạnh nhau (hai góc cửa sổ, cỡ thật) + bảng khác nhau
+  #sidebar  Thanh bên: logo gọn, slogan ở chân, bộ icon; hai kiểu icon Cài đặt để chọn
+  #toolbar  Thanh công cụ: cụm góc nhìn + kỳ (menu và bảng chọn kỳ đang mở), bảng "màn nào có gì"
+  #wintitle Thanh tiêu đề Windows 11: hai phương án để chọn
+  #privacy  Nút che tên KH: trước / sau, quy ước đánh dấu .kh / .kh-text, luật
+  #previews Hai hình xem trước: màn Lịch hẹn và hộp "Lịch hẹn mới" trong vỏ mới
+  #feasible Làm được bằng gì (Tauri 2 + React + CSS, không thêm dependency)
+  #ask      Các điểm Owner cần quyết ở G3
+  Bảng thành phần và token mới: components.html. Bảng mockup → màn hình → spec: README.md
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vỏ app hai nền tảng — Heritas L-CRM (Project-2C mockup, đợt a)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page: the content of the screens inside the window ---- */
+      /* Tổng quan: an illustration built from shared components (the real layout is round c) */
+      .demo { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+      .demo .stat { grid-column: span 3; }
+      .demo .wide { grid-column: span 8; }
+      .demo .side { grid-column: span 4; }
+      @container (max-width: 1180px) { .demo .stat { grid-column: span 6; } .demo .wide, .demo .side { grid-column: 1 / -1; } }
+      .today { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 9px 0; border-top: 1px solid var(--hairline); }
+      .today:first-of-type { border-top: 0; }
+      .today .tm { grid-row: 1 / 3; font-size: 15px; font-weight: 650; }
+      .today small { grid-column: 2; font-size: 12.5px; color: var(--text-2); }
+      .today .st { grid-row: 1 / 3; grid-column: 3; }
+      .view-note { margin: 14px 2px 0; font-size: 12.5px; color: var(--text-3); }
+      /* A screen whose content belongs to a later round: only its shell is shown here */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: var(--r-card); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 460px; font-size: 13.5px; }
+      /* Cài đặt: three items, each with its icon */
+      .set { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; max-width: 940px; }
+      .set-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; align-self: start; }
+      .set-i { display: flex; align-items: center; gap: 12px; padding: 8px 9px; border-radius: var(--r-field); text-align: left; font-weight: 550; transition: background var(--t-1); }
+      .set-i:hover { background: var(--fill-1); }
+      .set-i.on { background: var(--fill-2); }
+      .sq { width: 30px; height: 30px; flex: none; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 82%, #fff), var(--c)); color: var(--bg-0); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 3px 8px -3px var(--c); }
+      [data-os='win'] .sq { border-radius: 6px; }
+      .sq.line { background: none; box-shadow: none; color: var(--text-2); }
+      .set-i.on .sq.line { color: var(--accent); }
+      .set-pane h3 { margin: 2px 0 14px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+      .group { padding: 0 18px; margin-bottom: 14px; }
+      .group .r { display: flex; align-items: center; gap: 12px; min-height: 50px; border-top: 1px solid var(--hairline); }
+      .group .r:first-child { border-top: 0; }
+      .group .r > b { flex: 1; font-weight: 550; }
+      .group .r > span { color: var(--text-2); }
+      .path { font: 12.5px var(--font-code); }
+
+      /* Lịch hẹn: the layout of the approved appointments.html, in the new skin */
+      .keep { display: flex; flex-direction: column; gap: 16px; }
+      .keep .filter-bar, .keep .period { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .keep .period .step { color: var(--text-3); padding: 0 2px; }
+      .keep .range { height: 30px; padding: 0 11px; display: inline-flex; align-items: center; border-radius: var(--r-control); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .keep .sel { height: 30px; padding: 0 9px; display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-control); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--border-control); font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+      .keep .sel b { color: var(--text); font-weight: 600; }
+      .keep .sel .ic { width: 12px; height: 12px; }
+      .keep .seg { font-size: 12.5px; }
+      .keep .seg button { padding: 0 9px; }
+      .keep .layout { display: grid; grid-template-columns: 210px minmax(0, 1fr) 350px; gap: 16px; align-items: start; }
+      .keep .left, .keep .center { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+      .keep .card { padding: 16px; }
+      .keep .tree { padding: 10px 8px; }
+      .keep .tree .team { display: flex; justify-content: space-between; padding: 6px 8px; font-size: 12.5px; font-weight: 600; }
+      .keep .tree .rm { display: flex; justify-content: space-between; padding: 5px 8px 5px 20px; border-radius: calc(var(--r-field) - 3px); font-size: 12.5px; color: var(--text-2); }
+      .keep .tree .rm.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+      .keep .tree .rm .n { color: var(--text-3); }
+      .keep .sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .keep .sum div { font-size: 11px; color: var(--text-3); }
+      .keep .sum b { display: block; font-size: 20px; color: var(--text); }
+      .keep .sum b.c-ok { color: var(--ok); } .keep .sum b.c-warn { color: var(--warn); } .keep .sum b.c-info { color: var(--info); } .keep .sum b.c-accent { color: var(--accent); }
+      .keep .trig { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; margin-bottom: 8px; font-size: 12.5px; color: var(--text-2); }
+      .keep .trig .hbar { grid-column: 1 / -1; height: 4px; }
+      .keep .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+      .keep .cal .h { padding: 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+      .keep .cell { min-height: 62px; padding: 6px 8px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; border-radius: var(--r-field); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-variant-numeric: tabular-nums; }
+      .keep .cell .dn { font-size: 11px; color: var(--text-3); }
+      .keep .cell b { font-size: 16px; text-align: right; }
+      .keep .cell .dots { grid-column: 1 / -1; align-self: end; display: flex; gap: 3px; }
+      .keep .dots i { width: 8px; height: 8px; border-radius: 50%; }
+      .keep .dots .met { background: var(--ok); }
+      .keep .dots .plan { border: 1.5px solid var(--info); }
+      .keep .dots .miss { background: var(--warn); }
+      .keep .cell.out { opacity: 0.35; }
+      .keep .cell.wk { background: none; }
+      .keep .cell.today-c { box-shadow: inset 0 0 0 1.5px var(--date-today); }
+      .keep .cell.today-c .dn { color: var(--date-today); font-weight: 700; }
+      .keep .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11px; color: var(--text-2); }
+      .keep .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; }
+      .keep .moves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .keep .moves > div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 8px; padding: 10px 12px; border-radius: var(--r-field); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 11px; }
+      .keep .moves b { grid-row: 1 / 3; grid-column: 2; font-size: 26px; }
+      .keep .detail { position: sticky; top: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+      .keep dl.facts { display: grid; grid-template-columns: 96px 1fr; gap: 6px 12px; margin: 0; font-size: 12.5px; }
+      .keep dl.facts dt { color: var(--text-3); }
+      .keep dl.facts dd { margin: 0; }
+      .keep .ai-block ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-2); }
+      .keep .ai-block li { margin-bottom: 6px; }
+      .keep .ev { font-size: 11px; color: var(--text-3); }
+      .keep .ev a { color: var(--info); }
+      .keep .full { grid-column: 1 / -1; }
+      .keep .list .tbl th { text-align: left; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+      .keep .list .tbl td { text-align: left; }
+      .keep .list .name { font-weight: 600; white-space: nowrap; }
+      .keep .list .id { font-size: 11px; color: var(--text-3); }
+      .keep .list td.wrap { white-space: normal; color: var(--text-2); }
+      .keep .mock-note { padding: 10px; text-align: center; font-size: 11px; color: var(--text-3); }
+      @container (max-width: 1240px) {
+        .keep .layout { grid-template-columns: 210px minmax(0, 1fr); }
+        .keep .detail { grid-column: 1 / -1; position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+      }
+      /* Dialog 6a: the list of earlier appointments */
+      .history { padding: 9px 11px; border-radius: var(--r-field); background: var(--fill-1); font-size: 12.5px; color: var(--text-2); }
+      .history .h-head { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 600; }
+      .history .h-row { padding: 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+      .history .n { color: var(--text-3); }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .frame { padding: 28px; border-radius: 22px; background: var(--wall); overflow-x: auto; }
+      .frame > .win { min-width: 1100px; height: 800px; }
+      .frame-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13.5px; color: var(--text-2); }
+      .crop.half { height: 250px; }
+      .crop.half > .win { left: 16px; top: 16px; width: 1100px; height: 700px; transform: scale(0.5); transform-origin: 0 0; }
+      .opt-pic.crop { display: block; padding: 0; border-radius: 0; }
+      /* Windows 11, option B: the system's own title bar; search moves down to the toolbar */
+      .win.native-tb .titlebar { height: 32px; }
+      .win.native-tb .tb-search { display: none; }
+      .win.native-tb .caps { margin-left: auto; }
+      [data-os='win'] .win.native-tb .tl-find { display: inline-flex; }
+      .win:not(.native-tb) .caps { margin-left: 0; }
+      .icons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .icons div { display: grid; justify-items: center; gap: 8px; padding: 16px 6px 12px; border-radius: 14px; background: var(--fill-1); font-size: 12.5px; color: var(--text-2); text-align: center; }
+      .icons .ic { width: 22px; height: 22px; color: var(--text); }
+      .tb-spec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .tb-spec .menu { width: 210px; min-width: 0; }
+      .tb-spec .bar-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+      .tb-spec .pops { display: flex; align-items: flex-start; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+      .before-after { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+      .ba { padding: 20px; border-radius: 22px; background: var(--mat-glow), var(--bg-0); box-shadow: inset 0 0 0 1px var(--hairline); font: 14px/1.45 var(--font-ui); font-variant-numeric: tabular-nums; }
+      .ba > .cap-l { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font: 650 12.5px/1 var(--font-page); color: var(--text-2); }
+      .ba .tbl td { text-align: left; }
+      .ba .tbl td:last-child { text-align: right; }
+      .key { display: inline-flex; align-items: center; gap: 7px; margin-right: 14px; font-size: 13px; color: var(--text-2); }
+      .key i { width: 16px; height: 10px; border-radius: 3px; box-shadow: 0 0 0 1.5px var(--accent); }
+      .key i.t { box-shadow: 0 0 0 1.5px var(--info); }
+      pre.code { margin: 14px 0 0; padding: 14px 16px; border-radius: 14px; background: var(--fill-1); font: 12.5px/1.65 var(--font-code); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+      pre.code b { color: var(--accent); font-weight: 600; }
+      /* The customer-name button: an eye; once on it says so */
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+      @media (max-width: 1100px) { .before-after, .gal, .pgrid { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6l-1.9-4.9L4 9.8l5.1-1.9zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6C10.3 5.7 11.100 5.5 12 5.5c6 0 9.500 6.500 9.500 6.500s-1 1.900-3 3.700M14.500 18.100c-.8.3-1.600.4-2.500.4-6 0-9.500-6.500-9.500-6.500s1.300-2.400 3.800-4.300M4 4l16 16M9.900 9.900a3 3 0 0 0 4.200 4.200" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.500" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt a · Vỏ app hai nền tảng</b>
+      <span class="state">Chờ G3</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#duo">Hai hệ điều hành</a><a href="#sidebar">Thanh bên</a><a href="#toolbar">Thanh công cụ</a><a href="#privacy">Che tên KH</a><a href="#previews">Xem trước</a><a href="#ask">Cần anh quyết</a><a href="components.html">Bảng thành phần →</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i on" data-go="overview" data-sub="Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ" data-tools="scope period find" data-act="Lịch hẹn" data-act-open="dialog"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</button>
+              <button class="nav-i" data-go="appointments" data-sub="Team Sao Mai → Đỗ Khánh Linh" data-scope="Team Sao Mai" data-tools="scope find" data-act="Lịch hẹn" data-act-open="dialog"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</button>
+              <button class="nav-i" data-go="customers" data-sub="286 khách hàng đang theo" data-tools="scope find" data-act="Khách hàng"><svg class="ic"><use href="#i-people" /></svg>Khách hàng</button>
+              <button class="nav-i" data-go="forecast" data-sub="Tuần này 10/11 – 14/11 · Toàn bộ" data-tools="scope find" data-act="Xuất Excel"><svg class="ic"><use href="#i-forecast" /></svg>Forecast</button>
+              <button class="nav-i" data-go="reports" data-sub="Tháng 11/2026 · Toàn bộ" data-tools="scope period find" data-act="Xuất Excel"><svg class="ic"><use href="#i-report" /></svg>Báo cáo</button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team" data-sub="3 team · 27 RM" data-tools="find" data-act="Team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button>
+              <button class="nav-i" data-go="settings" data-sub="Dữ liệu · AI · Thùng rác" data-tools=""><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i>Đã lưu 13:20</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2>Tổng quan</h2><span>Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ</span></div>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
+                <button class="cap" data-tool="scope" aria-haspopup="true"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <span class="cap" data-tool="period"><button class="step" aria-label="Kỳ trước">&#x2039;</button><button class="num" aria-haspopup="true">Tháng 11/2026</button><button class="step" aria-label="Kỳ sau">&#x203A;</button></span>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn data-open="dialog"><svg class="ic"><use href="#i-plus" /></svg><span>Lịch hẹn</span></button>
+              </div>
+            </header>
+
+            <div class="views">
+              <!-- ===== Tổng quan: nội dung minh họa ===== -->
+              <div class="view on" data-view="overview">
+                <div class="demo">
+                  <section class="card stat lead-n rise" style="--i: 0"><span class="lbl">Doanh số</span><div class="val num">1,38<small>tỷ</small><span class="delta up">▲ 12,4%</span></div><p class="eq">Phát hành 1,46 tỷ − hủy 80 tr</p></section>
+                  <section class="card stat rise" style="--i: 1"><span class="lbl">Tổng số HĐ</span><div class="val num">32</div><p class="eq">34 phát hành − 2 hủy</p></section>
+                  <section class="card stat rise" style="--i: 2"><span class="lbl">Tỷ lệ hủy</span><div class="val num">5,9<small>%</small><span class="delta bad">▲ 2,1 điểm</span></div><p class="eq">2 HĐ hủy ÷ 34 HĐ phát hành</p></section>
+                  <section class="card stat rise" style="--i: 3"><span class="lbl">Tỉ lệ chốt</span><div class="val num">72,3<small>%</small></div><p class="eq">34 HĐ ÷ 47 RF</p></section>
+                  <section class="card wide rise" style="--i: 4">
+                    <div class="card-head"><h3>Theo team</h3><span class="meta num">Tháng 11/2026 · 01/11 – 10/11</span></div>
+                    <table class="tbl">
+                      <thead><tr><th>Team</th><th>Doanh số</th><th>Số HĐ</th><th>Tỷ lệ hủy</th><th>Tỉ lệ chốt</th></tr></thead>
+                      <tbody>
+                        <tr class="team"><td>Sao Mai <span class="dim" style="font-weight: 400">· TL Nguyễn Thu Hà</span></td><td class="bar" style="--w: 1"><span>620 tr</span></td><td>14</td><td>6,7%</td><td>75,0%</td></tr>
+                        <tr class="team"><td>Bình Minh <span class="dim" style="font-weight: 400">· TL Vũ Đức Thành</span></td><td class="bar" style="--w: 0.726"><span>450 tr</span></td><td>11</td><td class="zero">0%</td><td>73,3%</td></tr>
+                        <tr class="team"><td>Hừng Đông <span class="dim" style="font-weight: 400">· TL Lâm Ngọc Diệp</span></td><td class="bar" style="--w: 0.5"><span>310 tr</span></td><td>7</td><td class="hot">12,5%</td><td>66,7%</td></tr>
+                        <tr class="total"><td>Toàn bộ</td><td>1,38 tỷ</td><td>32</td><td>5,9%</td><td>72,3%</td></tr>
+                      </tbody>
+                    </table>
+                  </section>
+                  <section class="card side rise" style="--i: 5">
+                    <div class="card-head"><h3>Lịch hẹn hôm nay</h3><span class="meta num">Thứ Ba 10/11</span></div>
+                    <div class="today"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+                    <div class="today"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><span class="st s-ok">Đã gặp</span><small>RM Đỗ Khánh Linh · Sao Mai</small></div>
+                    <div class="today"><span class="tm num">14:00</span><b><span class="kh" data-kh="L. H. N.">Lê Hoài Nam</span></b><span class="st s-info">Dự kiến</span><small>RM Mai Phương · Bình Minh</small></div>
+                    <div class="today"><span class="tm num">16:00</span><b><span class="kh" data-kh="P. G. L.">Phạm Gia Long</span></b><span class="st s-info">Dự kiến</span><small>RM Hoàng Nam · Hừng Đông</small></div>
+                  </section>
+                </div>
+                <p class="view-note">Nội dung minh họa, ghép từ bảng thành phần để thấy vỏ có dữ liệu. Bố cục và từng chỉ số của Tổng quan duyệt ở đợt c.</p>
+              </div>
+
+              <!-- ===== Lịch hẹn: bố cục của appointments.html đã duyệt ===== -->
+              <div class="view" data-view="appointments">
+                <div class="keep">
+                  <div class="filter-bar">
+                    <div class="period">
+                      <div class="seg"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+                      <span class="step">‹</span><span class="range">Tháng 09/2026</span><span class="step">›</span>
+                      <button class="btn sm">Hôm nay</button>
+                    </div>
+                    <span class="spacer"></span>
+                    <span class="sel">Trạng thái: <b>Tất cả</b><svg class="ic"><use href="#i-down" /></svg></span>
+                    <span class="sel">Nhóm KH: <b>Tất cả</b><svg class="ic"><use href="#i-down" /></svg></span>
+                    <span class="sel">Phối hợp: <b>Bất kỳ</b><svg class="ic"><use href="#i-down" /></svg></span>
+                    <span class="sel">Kết quả: <b>Tất cả</b><svg class="ic"><use href="#i-down" /></svg></span>
+                  </div>
+
+                  <div class="layout">
+                    <div class="left">
+                      <nav class="card flat tree" aria-label="Team và RM">
+                        <div class="team"><span>Team Sao Mai</span><span class="muted num">312</span></div>
+                        <a class="rm"><span>Tất cả RM</span><span class="n num">312</span></a>
+                        <a class="rm on"><span>Đỗ Khánh Linh</span><span class="num">34</span></a>
+                        <a class="rm"><span>Hoàng Nam</span><span class="n num">33</span></a>
+                        <a class="rm"><span>Lý Quang Vinh</span><span class="n num">30</span></a>
+                        <a class="rm"><span>Mai Phương</span><span class="n num">29</span></a>
+                        <a class="rm"><span>Châu Bảo Ngọc</span><span class="n num">31</span></a>
+                        <a class="rm"><span>… 5 RM khác</span><span class="n num">154</span></a>
+                        <div class="team" style="margin-top: 8px"><span>Team Bình Minh</span><span class="muted num">286</span></div>
+                        <div class="team"><span>Team Hừng Đông</span><span class="muted num">251</span></div>
+                      </nav>
+                      <div class="card">
+                        <div class="subhead" style="margin-top: 0">Tháng 09 · Đỗ Khánh Linh</div>
+                        <div class="sum num">
+                          <div><b>34</b>Lịch hẹn</div>
+                          <div><b class="c-ok">28</b>Đã gặp</div>
+                          <div><b class="c-warn">2</b>Hoãn</div>
+                          <div><b class="c-info">4</b>Còn lại</div>
+                          <div><b class="c-accent">2</b>Chuyển RF</div>
+                          <div><b>4</b>HĐ nộp</div>
+                        </div>
+                      </div>
+                      <div class="card">
+                        <div class="subhead" style="margin-top: 0">Trigger trong tháng</div>
+                        <div class="trig"><span>Giới thiệu từ KH</span><b class="num">9</b><div class="hbar"><i style="--w: 0.9; --c: var(--n3)"></i></div></div>
+                        <div class="trig"><span>Đáo hạn tài sản</span><b class="num">6</b><div class="hbar"><i style="--w: 0.6; --c: var(--n3)"></i></div></div>
+                        <div class="trig"><span>Hội thảo / sự kiện</span><b class="num">5</b><div class="hbar"><i style="--w: 0.5; --c: var(--n3)"></i></div></div>
+                        <div class="trig"><span>Sinh nhật, dịp đặc biệt</span><b class="num">4</b><div class="hbar"><i style="--w: 0.4; --c: var(--n3)"></i></div></div>
+                        <div class="trig"><span>Khác</span><b class="num">10</b><div class="hbar"><i style="--w: 1; --c: var(--n3)"></i></div></div>
+                      </div>
+                    </div>
+
+                    <div class="center">
+                      <section class="card" aria-label="Lịch tháng">
+                        <div class="card-head"><h3>Tháng 09/2026</h3><span class="meta num">34 lịch · 28 đã gặp</span></div>
+                        <div class="cal">
+                          <div class="h">T2</div><div class="h">T3</div><div class="h">T4</div><div class="h">T5</div><div class="h">T6</div><div class="h">T7</div><div class="h">CN</div>
+                          <div class="cell out"><span class="dn">31</span></div>
+                          <div class="cell"><span class="dn">01</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">02</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">03</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">04</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell wk"><span class="dn">05</span></div>
+                          <div class="cell wk"><span class="dn">06</span></div>
+                          <div class="cell"><span class="dn">07</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">08</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">09</span><b>2</b><span class="dots"><i class="met"></i><i class="miss"></i></span></div>
+                          <div class="cell"><span class="dn">10</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">11</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell wk"><span class="dn">12</span></div>
+                          <div class="cell wk"><span class="dn">13</span></div>
+                          <div class="cell"><span class="dn">14</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">15</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">16</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">17</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">18</span><b>1</b><span class="dots"><i class="miss"></i></span></div>
+                          <div class="cell wk"><span class="dn">19</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell wk"><span class="dn">20</span></div>
+                          <div class="cell"><span class="dn">21</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">22</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">23</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">24</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell"><span class="dn">25</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                          <div class="cell wk"><span class="dn">26</span></div>
+                          <div class="cell wk"><span class="dn">27</span></div>
+                          <div class="cell today-c"><span class="dn">28</span><b>2</b><span class="dots"><i class="met"></i><i class="plan"></i></span></div>
+                          <div class="cell"><span class="dn">29</span><b>1</b><span class="dots"><i class="plan"></i></span></div>
+                          <div class="cell"><span class="dn">30</span><b>2</b><span class="dots"><i class="plan"></i><i class="plan"></i></span></div>
+                          <div class="cell out"><span class="dn">01</span></div>
+                          <div class="cell out"><span class="dn">02</span></div>
+                          <div class="cell out wk"><span class="dn">03</span></div>
+                          <div class="cell out wk"><span class="dn">04</span></div>
+                        </div>
+                        <div class="legend">
+                          <span><i style="background: var(--ok)"></i>Đã gặp</span>
+                          <span><i style="border: 1.5px solid var(--info)"></i>Dự kiến</span>
+                          <span><i style="background: var(--warn)"></i>Hoãn</span>
+                        </div>
+                      </section>
+
+                      <section class="card" aria-label="Chuyển nhóm">
+                        <div class="card-head"><h3>Chuyển nhóm sau cuộc gặp</h3><span class="meta num">Tháng 09/2026 · 28 cuộc đã gặp</span></div>
+                        <div class="moves num">
+                          <div><span><span class="st dot n4">N4</span> → <span class="st dot n3">N3</span></span><b>3</b><span class="muted">không tính RF</span></div>
+                          <div><span><span class="st dot n3">N3</span> → <span class="st dot n2">N2</span></span><b>2</b><span class="c-accent">tính RF</span></div>
+                          <div><span><span class="st dot n2">N2</span> → <span class="st dot n1">N1</span></span><b>1</b><span class="muted">không tính RF</span></div>
+                          <div><span><span class="st dot n2">N2</span> → <span class="st dot n3">N3</span></span><b>1</b><span class="muted">hạ nhóm · không tính RF</span></div>
+                          <div><span>Giữ nguyên nhóm</span><b>20</b><span class="muted">&nbsp;</span></div>
+                          <div><span><span class="st dot hold">Tạm hoãn</span></span><b>1</b><span class="muted">đóng</span></div>
+                        </div>
+                      </section>
+                    </div>
+
+                    <aside class="detail" aria-label="Chi tiết lịch hẹn">
+                      <div class="card">
+                        <div class="card-head"><h3 class="num">28/09 14:00 · <span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></h3></div>
+                        <dl class="facts">
+                          <dt>RM</dt>
+                          <dd>Đỗ Khánh Linh · Sao Mai</dd>
+                          <dt>Phối hợp</dt>
+                          <dd>TL Nguyễn Thu Hà, IS Phó Đức Huy</dd>
+                          <dt>Trigger</dt>
+                          <dd><span class="kh-text">Hỏi lại về kế hoạch du học của con</span></dd>
+                          <dt>Lần gặp</dt>
+                          <dd class="num">Lần 4 · lần trước 14/09</dd>
+                        </dl>
+                        <div class="row" style="margin-top: 12px">
+                          <button class="btn primary sm">Ghi kết quả</button>
+                          <button class="btn sm">Hồ sơ KH →</button>
+                        </div>
+                        <p class="muted" style="font-size: 11px; margin: 8px 0 0">Lịch đã qua (mọi trạng thái) có thêm nút <span class="c-accent">Tạo lịch hẹn tiếp theo</span> — điền sẵn KH, RM, người phối hợp, trigger.</p>
+                      </div>
+
+                      <div class="card">
+                        <div class="card-head"><h3>KYC hiện hành</h3><span class="meta num">14/09/2026 · 6/8 chiều</span></div>
+                        <dl class="facts">
+                          <dt>Tuổi</dt>
+                          <dd class="num">42 (12/03/1984)</dd>
+                          <dt>Gia đình</dt>
+                          <dd>Đã kết hôn, 2 con (14, 10 tuổi)</dd>
+                          <dt>Nghề nghiệp</dt>
+                          <dd>Chủ DN phân phối thiết bị y tế</dd>
+                          <dt>Tài sản</dt>
+                          <dd class="num">AUM ước ~25 tỷ, 2 BĐS</dd>
+                          <dt>Mục tiêu</dt>
+                          <dd>Con lớn du học 2029</dd>
+                          <dt>Chưa có</dt>
+                          <dd><span class="chip">Khẩu vị rủi ro</span> <span class="chip">Bảo vệ hiện có</span></dd>
+                        </dl>
+                      </div>
+
+                      <div class="card ai-block">
+                        <div class="card-head"><h3>KYC Intelligence</h3><span class="st dot s-ok">CURRENT</span><span class="actions meta num">v3 · 14/09</span></div>
+                        <span class="st s-info">PAIN_POINT_ANALYSIS</span>
+                        <div class="subhead">Next Best Actions</div>
+                        <ul>
+                          <li>Làm rõ mốc và ngân sách du học của con lớn trước khi bàn phương án.<div class="ev">Bằng chứng: <a>F-12</a>, <a>F-07</a> · 2 dữ kiện, mới nhất 14/09</div></li>
+                          <li>Hỏi về các hợp đồng bảo vệ đang có để tránh trùng lặp.<div class="ev">Chiều còn thiếu: bảo vệ hiện có</div></li>
+                        </ul>
+                        <div class="subhead">Discovery Strategy</div>
+                        <ul>
+                          <li>Cân nhắc mời chồng KH tham gia buổi kế tiếp, vì KH cho biết hai vợ chồng cùng quyết định chi tiêu giáo dục.<div class="ev">Bằng chứng: <a>F-09</a> · 1 dữ kiện, 14/09</div></li>
+                        </ul>
+                      </div>
+                    </aside>
+
+                    <div class="full">
+                      <section class="card list" aria-label="Danh sách lịch hẹn">
+                        <div class="card-head"><h3>Danh sách lịch hẹn</h3><span class="meta num">34 lịch · sắp xếp: Ngày ↓</span><span class="actions"><span class="sel">Cột<svg class="ic"><use href="#i-down" /></svg></span><span class="sel">Xuất Excel</span></span></div>
+                        <table class="tbl">
+                          <thead><tr><th class="sort desc">Ngày</th><th class="sort">Giờ</th><th class="sort">Khách hàng</th><th>Trigger</th><th class="sort">Phối hợp</th><th class="sort">Trạng thái</th><th class="sort">Kết quả</th></tr></thead>
+                          <tbody>
+                            <tr class="is-sel"><td>28/09</td><td>14:00</td><td><div class="name"><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span> <span class="st dot n1">N1</span></div><div class="id">K-9A1C</div></td><td class="wrap"><span class="kh-text">Hỏi lại về kế hoạch du học của con</span></td><td class="dim">TL, IS</td><td><span class="st s-info">Dự kiến</span></td><td class="dim"></td></tr>
+                            <tr><td>28/09</td><td>08:30</td><td><div class="name"><span class="kh" data-kh="P. G. L.">Phạm Gia Long</span> <span class="st dot n2">N2</span></div><div class="id">K-7F3Q</div></td><td class="wrap"><span class="kh-text">Đáo hạn tiền gửi 3 tỷ</span></td><td class="dim">—</td><td><span class="st s-ok">Đã gặp</span></td><td class="dim">N3 → N2 · <span class="c-accent">RF</span></td></tr>
+                            <tr><td>25/09</td><td>09:00</td><td><div class="name"><span class="kh" data-kh="Đ. C. H.">Đinh Công Hậu</span> <span class="st dot n3">N3</span></div><div class="id">K-0H4A</div></td><td class="wrap"><span class="kh-text">Giới thiệu từ KH Phạm Gia Long</span></td><td class="dim">—</td><td><span class="st s-ok">Đã gặp</span></td><td class="dim">Giữ N3</td></tr>
+                            <tr><td>24/09</td><td>15:00</td><td><div class="name"><span class="kh" data-kh="H. T. M.">Hà Tuệ Mẫn</span> <span class="st dot n1">N1</span></div><div class="id">K-2Q7J</div></td><td class="wrap"><span class="kh-text">Ký hồ sơ yêu cầu bảo hiểm</span></td><td class="dim">IS</td><td><span class="st s-ok">Đã gặp</span></td><td class="dim">HĐ nộp · 1,8 tỷ</td></tr>
+                            <tr><td>23/09</td><td>10:30</td><td><div class="name"><span class="kh" data-kh="T. G. H.">Tống Gia Huy</span> <span class="st dot n4">N4</span></div><div class="id">K-6R3M</div></td><td class="wrap"><span class="kh-text">Hội thảo khách hàng doanh nhân</span></td><td class="dim">—</td><td><span class="st s-ok">Đã gặp</span></td><td class="dim">N4 → N3</td></tr>
+                            <tr><td>23/09</td><td>16:00</td><td><div class="name"><span class="kh" data-kh="L. B. N.">Lưu Bích Ngọc</span> <span class="st dot n3">N3</span></div><div class="id">K-1U8Z</div></td><td class="wrap"><span class="kh-text">Sinh nhật KH</span></td><td class="dim">BD</td><td><span class="st s-ok">Đã gặp</span></td><td class="dim">Giữ N3</td></tr>
+                            <tr><td>18/09</td><td>14:00</td><td><div class="name"><span class="kh" data-kh="Q. Đ. P.">Quan Đình Phúc</span> <span class="st dot n2">N2</span></div><div class="id">K-4X2V</div></td><td class="wrap"><span class="kh-text">Kế hoạch nghỉ hưu</span></td><td class="dim">BDM</td><td><span class="st s-warn">Hoãn</span></td><td class="dim">Dời sang 02/10</td></tr>
+                          </tbody>
+                        </table>
+                        <div class="tbl-foot">+ 27 lịch hẹn khác trong tháng</div>
+                      </section>
+                    </div>
+                  </div>
+                  <div class="mock-note">Ngày / Tuần / Tháng / Năm / Tùy chọn cho mọi trường thời gian · bấm tiêu đề cột để sắp xếp · AI chỉ gợi ý</div>
+                </div>
+              </div>
+
+              <!-- ===== Màn vẽ ở đợt sau: chỉ có vỏ ===== -->
+              <div class="view" data-view="customers"><div class="later"><svg class="ic"><use href="#i-people" /></svg><b>Khách hàng</b><p>Bố cục kanban đã duyệt giữ nguyên, chỉ thay vỏ. Ô tìm KH và "tìm là sáng" vẽ ở <b>đợt b</b>.</p></div></div>
+              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Màn mới, vẽ ở <b>đợt d</b>. Ở đợt a chỉ duyệt vỏ: mục trên thanh bên ngay trên Báo cáo, icon, và góc nhìn trên thanh công cụ.</p></div></div>
+              <div class="view" data-view="reports"><div class="later"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Bản tin ba trang, sổ số và file Excel vẽ ở <b>đợt e</b>. Góc nhìn và kỳ nằm trên thanh công cụ, đổi là số cập nhật ngay.</p></div></div>
+              <div class="view" data-view="team"><div class="later"><svg class="ic"><use href="#i-team" /></svg><b>Team &amp; nhân sự</b><p>Team có màu và icon, TL ngang hàng tên team, trang RM vẽ ở <b>đợt b</b>.</p></div></div>
+
+              <!-- ===== Cài đặt: ba mục có icon ===== -->
+              <div class="view" data-view="settings">
+                <div class="set">
+                  <nav class="card flat set-nav" aria-label="Mục cài đặt">
+                    <button class="set-i on" data-set-i="data"><span class="sq" style="--c: var(--info)"><svg class="ic"><use href="#i-db" /></svg></span>Dữ liệu</button>
+                    <button class="set-i" data-set-i="ai"><span class="sq" style="--c: var(--n2)"><svg class="ic"><use href="#i-spark" /></svg></span>AI</button>
+                    <button class="set-i" data-set-i="trash"><span class="sq" style="--c: var(--n4)"><svg class="ic"><use href="#i-trash" /></svg></span>Thùng rác</button>
+                  </nav>
+                  <div class="set-pane">
+                    <div data-set-pane="data">
+                      <h3>Dữ liệu</h3>
+                      <div class="card flat group">
+                        <div class="r"><b>File dữ liệu</b><span class="path"><span class="k-win">Project2C-data\ cạnh file exe</span><span class="k-mac">~/Library/Application Support/dev.alexh.project2c/</span></span></div>
+                        <div class="r"><b>Bản sao lưu gần nhất</b><span class="num">Hôm nay 12:10</span></div>
+                      </div>
+                      <div class="card flat group">
+                        <div class="r"><b>Sao lưu ngay</b><button class="btn sm">Sao lưu</button></div>
+                        <div class="r"><b>Mở thư mục dữ liệu</b><span><span class="k-win">trong Explorer</span><span class="k-mac">trong Finder</span></span></div>
+                      </div>
+                      <p class="view-note">Hình minh họa mục có icon. Nội dung mục Dữ liệu giữ bố cục <code>settings-data.html</code> đã duyệt.</p>
+                    </div>
+                    <div data-set-pane="ai" hidden>
+                      <h3>AI</h3>
+                      <div class="later" style="min-height: 220px"><svg class="ic"><use href="#i-spark" /></svg><p>Giữ bố cục <code>ai.html</code> đã duyệt. Nhiều nhà cung cấp (ý 34) vẽ khi anh yêu cầu.</p></div>
+                    </div>
+                    <div data-set-pane="trash" hidden>
+                      <h3>Thùng rác</h3>
+                      <div class="later" style="min-height: 220px"><svg class="ic"><use href="#i-trash" /></svg><p>Giữ bố cục <code>trash.html</code> đã duyệt.</p></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm: hộp "Lịch hẹn mới" (appointment-forms.html 6a) ===== -->
+          <div class="scrim"></div>
+          <div class="dlg" id="dlg-6a" role="dialog" aria-modal="true" aria-label="Lịch hẹn mới">
+            <div class="dlg-head">
+              <div><h3>Lịch hẹn mới</h3><div class="sub">Trạng thái: Dự kiến</div></div>
+              <button class="x" data-close aria-label="Đóng"><svg class="ic"><use href="#i-x" /></svg></button>
+            </div>
+            <div class="dlg-body">
+              <div class="field">
+                <label>Khách hàng <span class="req">*</span></label>
+                <div class="input"><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span> <span class="muted num">K-9A1C</span> <span class="st dot n1">N1</span><span class="caret"><svg class="ic"><use href="#i-search" /></svg></span></div>
+                <span class="help">Lần gặp thứ 4 · lần trước 14/09/2026</span>
+              </div>
+              <div class="history" aria-label="Các lần hẹn trước">
+                <div class="h-head"><span>Các lần hẹn trước</span><span class="c-accent">Xem tất cả (6) →</span></div>
+                <div class="h-row"><span class="num">14/09</span> · <span class="c-ok">Đã gặp</span> · <span class="st dot n2">N2</span> → <span class="st dot n1">N1</span> · <span class="n">Ghi chú: <span class="kh-text">Con lớn dự định du học 2029; hai vợ chồng cùng quyết chi tiêu giáo dục</span></span></div>
+                <div class="h-row"><span class="num">25/08</span> · <span class="c-warn">Dời lịch</span> · <span class="n">Ghi chú: <span class="kh-text">KH có việc bận đột xuất</span></span></div>
+                <div class="h-row"><span class="num">12/07</span> · <span class="c-ok">Đã gặp</span> · <span class="st dot n3">N3</span> → <span class="st dot n2">N2</span> · <span class="n">Ghi chú: <span class="kh-text">Gia đình 2 con; AUM ước ~25 tỷ, ưu tiên thanh khoản</span></span></div>
+                <div class="h-row"><span class="num">20/06</span> · <span class="c-danger">Không đến</span> · <span class="n">Ghi chú: <span class="kh-text">Gọi lại không nghe máy</span></span></div>
+                <div class="h-row"><span class="num">01/06</span> · <span class="c-ok">Đã gặp</span> · <span class="st dot n4">N4</span> → <span class="st dot n3">N3</span> · <span class="n">Ghi chú: <span class="kh-text">Gặp lần đầu qua giới thiệu của anh Phạm Gia Long</span></span></div>
+              </div>
+              <div class="field">
+                <label>RM <span class="req">*</span> <span class="opt-n">mặc định RM phụ trách KH · RF tính cho RM này</span></label>
+                <div class="input">Đỗ Khánh Linh <span class="muted">· Sao Mai</span><span class="caret"><svg class="ic"><use href="#i-down" /></svg></span></div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày <span class="req">*</span> <span class="opt-n">dd/mm</span></label>
+                  <div class="input focus">28/9</div>
+                  <div class="read"><b>Thứ Hai 28/09/2026</b> · 2 ngày nữa</div>
+                </div>
+                <div class="field">
+                  <label>Giờ <span class="opt-n">không bắt buộc</span></label>
+                  <div class="input">14:00</div>
+                </div>
+              </div>
+              <div class="field">
+                <span class="label">Trigger <span class="req">*</span> <span class="opt-n">mặc định "—" = chưa chọn</span></span>
+                <div class="fields-2">
+                  <div class="input">Khác<span class="caret"><svg class="ic"><use href="#i-down" /></svg></span></div>
+                  <div class="input">Hỏi lại về kế hoạch du học của con</div>
+                </div>
+                <span class="help">Loại: Giới thiệu từ KH · Đáo hạn tài sản · Hội thảo / sự kiện · Sinh nhật, dịp đặc biệt · Khác. Mô tả không bắt buộc.</span>
+              </div>
+              <div class="field">
+                <label>Người phối hợp <span class="opt-n">không tính chỉ số</span></label>
+                <div class="input">
+                  <span class="token"><span class="role">TL</span> Nguyễn Thu Hà ×</span>
+                  <span class="token"><span class="role">IS</span> Phó Đức Huy ×</span>
+                  <span class="muted">+ thêm</span>
+                </div>
+              </div>
+            </div>
+            <div class="dlg-foot">
+              <span class="spacer"></span>
+              <button class="btn" data-close>Hủy</button>
+              <button class="btn primary" data-close="save">Tạo lịch hẹn</button>
+            </div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-t"><b>Heritas L-CRM</b> · vỏ app</span>
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="num" data-size-note></span>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Hai hệ điều hành ================= -->
+      <section class="sec" id="duo">
+        <span class="kicker">Vỏ app · ý 01, 02</span>
+        <h2>Một bố cục, hai hệ điều hành.</h2>
+        <p class="lead">Cửa sổ phía trên bấm được: đổi màn ở thanh bên, bấm <b>+ Lịch hẹn</b> để mở hộp thoại, bấm nút con mắt để che tên KH, đổi <b>macOS / Windows 11</b> và cỡ cửa sổ ở thanh dưới. Dưới đây là hai góc của cùng cửa sổ đó ở cỡ thật, đặt cạnh nhau. Ba lớp <b>Nền · Kính · Tiêu điểm</b> giữ nguyên trên cả hai; mỗi hệ điều hành chỉ khác chất liệu, bo góc, chỗ đặt nút cửa sổ và ô tìm.</p>
+        <div class="pgrid">
+          <figure style="margin: 0"><div class="crop" data-os="mac" data-clone="#win"></div><figcaption class="crop-l">macOS · góc trên trái: ba nút cửa sổ nằm trong thanh bên kính, logo gọn, viên chọn bo tròn</figcaption></figure>
+          <figure style="margin: 0"><div class="crop" data-os="win" data-clone="#win"></div><figcaption class="crop-l">Windows 11 · góc trên trái: thanh tiêu đề, nền Mica, vạch vàng ở mục đang chọn</figcaption></figure>
+          <figure style="margin: 0"><div class="crop right" data-os="mac" data-clone="#win"></div><figcaption class="crop-l">macOS · góc trên phải: nút che tên, góc nhìn, kỳ, tìm, nút chính dạng viên</figcaption></figure>
+          <figure style="margin: 0"><div class="crop right" data-os="win" data-clone="#win"></div><figcaption class="crop-l">Windows 11 · góc trên phải: ba nút cửa sổ; nút bo 4 px; ô tìm đã ở thanh tiêu đề nên không có nút kính lúp</figcaption></figure>
+        </div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Khác nhau ở đâu <small>cùng cấu trúc, cùng nội dung, cùng token màu</small></h3>
+          <table class="tok plain">
+            <tr><th>Phần</th><th>macOS</th><th>Windows 11</th></tr>
+            <tr><td>Nền cửa sổ</td><td>Kính: thấy màn hình desktop mờ phía sau vùng thanh bên</td><td>Mica: nền đục, nhuộm nhẹ màu desktop, không nhìn xuyên</td></tr>
+            <tr><td>Nút cửa sổ</td><td>Ba nút đỏ · vàng · xanh, trong thanh bên, góc trên trái</td><td>Thu nhỏ · phóng to · đóng, góc trên phải thanh tiêu đề</td></tr>
+            <tr><td>Thanh bên</td><td>Tấm kính nổi, bo đồng tâm với cửa sổ (16 px trong 24 px)</td><td>Phẳng trên nền Mica; vùng nội dung là tấm bo góc trên trái</td></tr>
+            <tr><td>Mục đang chọn</td><td>Viên bo 9 px, icon vàng</td><td>Viên bo 4 px, vạch vàng bên trái, icon vàng</td></tr>
+            <tr><td>Ô tìm</td><td>Nút kính lúp trên thanh công cụ, phím ⌘K</td><td>Ô tìm giữa thanh tiêu đề, phím Ctrl K</td></tr>
+            <tr><td>Bo góc</td><td class="num">cửa sổ 24 · thẻ 20 · nút 17 (viên) · ô nhập 12 · lớp nổi 20</td><td class="num">cửa sổ 8 · thẻ 8 · nút 4 · ô nhập 4 · lớp nổi 8</td></tr>
+            <tr><td>Chữ</td><td>SF Pro (font của macOS)</td><td>Segoe UI Variable (font của Windows 11)</td></tr>
+            <tr><td>Hộp thoại</td><td>Trượt xuống từ thanh công cụ</td><td>Nở ra ở giữa cửa sổ</td></tr>
+          </table>
+          <p class="foot-note">Hình macOS trên máy Windows dùng font Inter đứng thay SF Pro. Chưa kiểm trên Safari / máy Mac thật; kiểm khi có bản build Mac (T-413).</p>
+        </div>
+      </section>
+
+      <!-- ================= Thanh bên ================= -->
+      <section class="sec" id="sidebar">
+        <span class="kicker">Thanh bên · ý 05, 29</span>
+        <h2>Logo gọn, mỗi mục một icon, slogan ở chân.</h2>
+        <p class="lead">Anh đã chốt 11/11: <b>"Dùng logo gọn"</b>. Cây bên trái, chữ Heritas và L-CRM bên phải: vẫn là ba mảnh ảnh anh duyệt 27/10, chỉ xếp ngang. Slogan Playfair Display xuống chân thanh bên, dưới dòng trạng thái lưu. Mục <b>Forecast</b> nằm ngay trên Báo cáo.</p>
+        <div class="pgrid">
+          <div class="pcard">
+            <h3>Bộ icon <small>nét 1,7 px, cùng màu chữ; mục đang chọn thì icon vàng</small></h3>
+            <div class="icons">
+              <div><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</div>
+              <div><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</div>
+              <div><svg class="ic"><use href="#i-people" /></svg>Khách hàng</div>
+              <div><svg class="ic"><use href="#i-forecast" /></svg>Forecast<span class="tag rec">mới</span></div>
+              <div><svg class="ic"><use href="#i-report" /></svg>Báo cáo</div>
+              <div><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</div>
+              <div><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</div>
+              <div><svg class="ic"><use href="#i-search" /></svg>Tìm<span class="tag rec">mới</span></div>
+              <div><svg class="ic"><use href="#i-db" /></svg>Dữ liệu<span class="tag rec">mới</span></div>
+              <div><svg class="ic"><use href="#i-spark" /></svg>AI<span class="tag rec">mới</span></div>
+              <div><svg class="ic"><use href="#i-trash" /></svg>Thùng rác<span class="tag rec">mới</span></div>
+              <div><svg class="ic"><use href="#i-eye" /></svg>Che tên KH<span class="tag rec">mới</span></div>
+            </div>
+          </div>
+          <div class="pcard">
+            <h3>Luật của thanh bên</h3>
+            <ul class="bul">
+              <li><b>Thứ tự:</b> Tổng quan, Lịch hẹn, Khách hàng, Forecast, Báo cáo; nhóm "Quản lý": Team &amp; nhân sự, Cài đặt.</li>
+              <li><b>Logo:</b> cây 42 px, "Heritas" 108 px, "L-CRM" 95 px; cây và "Heritas" giữ viền champagne mỏng (<code>--brand-outline</code>) như bản đã duyệt.</li>
+              <li><b>Mục đang chọn:</b> một viên nền trượt tới mục mới (động tác "Trượt"), chữ đậm, icon vàng.</li>
+              <li><b>Chân thanh bên:</b> dòng trạng thái lưu đã duyệt ("Đã lưu 13:20", "Đang lưu…", "Chưa lưu được vào file"), rồi slogan <i>Where legacy meets trust</i>, Playfair Display nghiêng 13 px, màu <code>--brand-slogan</code>.</li>
+              <li><b>Rộng:</b> 244 px trên macOS (kể cả lề 8 px của tấm kính), 236 px trên Windows 11. Thanh bên không thu gọn ở v1.0: cửa sổ hẹp nhất 1100 px vẫn đủ chỗ.</li>
+            </ul>
+          </div>
+        </div>
+        <h3 class="sub-h">Icon của ba mục Cài đặt: chọn một kiểu</h3>
+        <p class="sub-p">Trong cửa sổ phía trên, bấm <b>Cài đặt</b> để xem kiểu A tại chỗ. Cả hai kiểu chỉ dùng màu đã có của app.</p>
+        <div class="gal">
+          <div class="opt rec">
+            <div class="opt-pic flat"><div class="card flat set-nav" style="width: 250px">
+              <span class="set-i on"><span class="sq" style="--c: var(--info)"><svg class="ic"><use href="#i-db" /></svg></span>Dữ liệu</span>
+              <span class="set-i"><span class="sq" style="--c: var(--n2)"><svg class="ic"><use href="#i-spark" /></svg></span>AI</span>
+              <span class="set-i"><span class="sq" style="--c: var(--n4)"><svg class="ic"><use href="#i-trash" /></svg></span>Thùng rác</span>
+            </div></div>
+            <div class="opt-t"><b>A · Ô màu <span class="tag rec">Đề xuất</span></b><p>Như Cài đặt hệ thống của Mac và như bảng ý tưởng anh đã chọn (ý 29). Mỗi mục một màu nên nhận ra ngay. Màu lấy từ token có sẵn: xanh <code>--info</code>, tím <code>--n2</code>, xám <code>--n4</code>; ở đây chúng chỉ là màu trang trí, không mang nghĩa nhóm KH.</p></div>
+          </div>
+          <div class="opt">
+            <div class="opt-pic flat"><div class="card flat set-nav" style="width: 250px">
+              <span class="set-i on"><span class="sq line"><svg class="ic"><use href="#i-db" /></svg></span>Dữ liệu</span>
+              <span class="set-i"><span class="sq line"><svg class="ic"><use href="#i-spark" /></svg></span>AI</span>
+              <span class="set-i"><span class="sq line"><svg class="ic"><use href="#i-trash" /></svg></span>Thùng rác</span>
+            </div></div>
+            <div class="opt-t"><b>B · Nét một màu</b><p>Cùng kiểu với icon thanh bên (ADR-0013 §6): nét cùng màu chữ, mục đang chọn thì vàng. Kín đáo hơn, và tím / xám chỉ còn một nghĩa là nhóm KH.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Thanh công cụ ================= -->
+      <section class="sec" id="toolbar">
+        <span class="kicker">Thanh công cụ · ý 12</span>
+        <h2>Góc nhìn và kỳ nằm chung một chỗ. Không còn nút "Lọc".</h2>
+        <p class="lead">Anh đã chốt 11/11: <b>"Bỏ nút Lọc"</b>. Hôm nay góc nhìn là ba nút và hai ô chọn, kỳ nằm ở thanh lọc của từng màn. Trong vỏ mới: một viên <b>góc nhìn</b> mở ra một menu, một viên <b>kỳ</b> có ‹ › để lùi / tới và bấm vào tên kỳ để mở bộ chọn kỳ quen thuộc (Ngày · Tuần · Tháng · Năm · Tùy chọn). Chọn xong là số cập nhật ngay.</p>
+        <div class="duo">
+          <div class="tb-spec">
+            <div class="bar-row">
+              <button class="btn icon" aria-label="Che tên khách hàng"><svg class="ic"><use href="#i-eye" /></svg></button>
+              <button class="cap is-hover"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+              <span class="cap"><button class="step" aria-label="Kỳ trước">&#x2039;</button><button class="num">Tháng 11/2026</button><button class="step" aria-label="Kỳ sau">&#x203A;</button></span>
+              <button class="btn primary"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button>
+            </div>
+            <div class="pops">
+              <div class="menu" role="menu" aria-label="Góc nhìn">
+                <div class="h">Góc nhìn</div>
+                <button class="on">Toàn bộ<svg class="ic"><use href="#i-check" /></svg></button>
+                <hr />
+                <button>Team Sao Mai<span class="n">10 RM</span></button>
+                <button class="sub">Cả team</button>
+                <button class="sub">Đỗ Khánh Linh</button>
+                <button class="sub is-hover">Hoàng Nam</button>
+                <button class="sub">… 8 RM khác</button>
+                <button>Team Bình Minh<span class="n">9 RM</span></button>
+                <button>Team Hừng Đông<span class="n">8 RM</span></button>
+              </div>
+              <div class="ppop" role="dialog" aria-label="Chọn kỳ">
+                <div class="seg"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+                <div class="py"><button aria-label="Năm trước">&#x2039;</button><span class="num">2026</span><button aria-label="Năm sau">&#x203A;</button></div>
+                <div class="plist">
+                  <button>Tháng 1</button><button>Tháng 2</button><button>Tháng 3</button><button>Tháng 4</button><button>Tháng 5</button><button>Tháng 6</button>
+                  <button>Tháng 7</button><button>Tháng 8</button><button>Tháng 9</button><button>Tháng 10</button><button class="on now">Tháng 11</button><button>Tháng 12</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Màn nào có gì trên thanh công cụ <small>đề xuất; nội dung từng màn chốt ở mockup của màn đó</small></h3>
+          <table class="tok plain">
+            <tr><th>Màn</th><th>Dòng dưới tên màn</th><th>Góc nhìn</th><th>Kỳ</th><th>Nút chính</th></tr>
+            <tr><td>Tổng quan</td><td>kỳ, khoảng ngày, góc nhìn</td><td>có</td><td>có</td><td>+ Lịch hẹn</td></tr>
+            <tr><td>Lịch hẹn</td><td>team → RM đang xem</td><td>có</td><td>trong màn: bộ chọn kỳ đã duyệt giữ nguyên chỗ</td><td>+ Lịch hẹn</td></tr>
+            <tr><td>Khách hàng</td><td>số KH đang hiện</td><td>có</td><td>không</td><td>+ Khách hàng</td></tr>
+            <tr><td>Forecast</td><td>khoảng ngày, góc nhìn</td><td>có</td><td>trong màn: Tuần này / Tháng (đợt d)</td><td>Xuất Excel</td></tr>
+            <tr><td>Báo cáo</td><td>kỳ, góc nhìn</td><td>có</td><td>có</td><td>Xuất Excel</td></tr>
+            <tr><td>Team &amp; nhân sự</td><td>số team, số RM</td><td>không</td><td>không</td><td>+ Team</td></tr>
+            <tr><td>Cài đặt</td><td>ba mục</td><td>không</td><td>không</td><td>không</td></tr>
+          </table>
+          <p class="foot-note">Nút che tên KH và ô tìm có ở mọi màn. Luật góc nhìn của từng màn (màn nào chọn được team, RM) giữ như hiện nay cho tới mockup của màn đó; ở đây chỉ duyệt hình thức. Viên "Lúc này" (ý 11) và ô lệnh ⌘K / Ctrl K (ý 09) vẽ ở đợt b; chỗ của chúng là khoảng giữa tên màn và cụm nút.</p>
+        </div>
+      </section>
+
+      <!-- ================= Thanh tiêu đề Windows ================= -->
+      <section class="sec" id="wintitle">
+        <span class="kicker">Windows 11 · cần anh chọn</span>
+        <h2>Thanh tiêu đề Windows 11: chọn một kiểu.</h2>
+        <p class="lead">Trên macOS nút cửa sổ do hệ điều hành vẽ, app chỉ dời chỗ. Trên Windows, muốn có ô tìm trên thanh tiêu đề thì app phải <b>tự vẽ cả thanh tiêu đề</b>, kể cả ba nút thu nhỏ, phóng to, đóng. Hai kiểu dưới đây là cùng một cửa sổ, thu còn một nửa.</p>
+        <div class="gal">
+          <div class="opt rec">
+            <div class="opt-pic crop half" data-os="win" data-clone="#win"></div>
+            <div class="opt-t"><b>A · Tự vẽ, ô tìm ở giữa <span class="tag rec">Đề xuất</span></b><p>Giống các app Windows 11 mới (Explorer, Teams): một thanh liền với nền Mica, ô tìm luôn trong tầm mắt. Phải kiểm trên máy thật khi làm: bảng Snap Layouts lúc rê chuột vào nút phóng to, kéo cửa sổ, bấm đúp để phóng to. Nếu chỗ nào không đạt thì lùi về kiểu B.</p></div>
+          </div>
+          <div class="opt">
+            <div class="opt-pic crop half" data-os="win" data-clone="#win" data-variant="native-tb"></div>
+            <div class="opt-t"><b>B · Thanh tiêu đề gốc của Windows</b><p>Windows vẽ thanh tiêu đề và ba nút: mọi thói quen của hệ điều hành chạy đúng ngay, ít việc và ít rủi ro nhất. Ô tìm thành nút kính lúp trên thanh công cụ như bản macOS. Thanh tiêu đề là một dải riêng, kém liền mạch hơn.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Che tên KH ================= -->
+      <section class="sec" id="privacy">
+        <span class="kicker">Ý mới 36 · làm trong v1.0</span>
+        <h2>Một nút che tên khách hàng khi chiếu màn hình.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Làm trong v1.0"</b>. Nút con mắt nằm trên thanh công cụ, cùng chỗ ở mọi màn và trên cả hai hệ điều hành. Bật lên thì tên KH thành chữ cái đầu, nút chuyển sang vàng và ghi rõ "Đang che tên" cho tới khi tắt. Thử ngay ở cửa sổ đầu trang.</p>
+        <div class="before-after">
+          <div class="ba maskable">
+            <div class="cap-l">Trước khi bật<span class="spacer"></span><button class="btn icon sm" aria-label="Che tên khách hàng"><svg class="ic"><use href="#i-eye" /></svg></button></div>
+            <div class="card flat">
+              <div class="card-head"><h3 class="num">28/09 14:00 · <span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></h3></div>
+              <table class="tbl">
+                <tr><td><b><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></b><small class="num">K-9A1C · <span class="kh-text">Hỏi lại về kế hoạch du học của con</span></small></td><td><span class="st dot n1">N1</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="P. G. L.">Phạm Gia Long</span></b><small class="num">K-7F3Q · <span class="kh-text">Đáo hạn tiền gửi 3 tỷ</span></small></td><td><span class="st dot n2">N2</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="Đ. C. H.">Đinh Công Hậu</span></b><small class="num">K-0H4A · <span class="kh-text">Giới thiệu từ KH Phạm Gia Long</span></small></td><td><span class="st dot n3">N3</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="P. G. L.">Phan Gia Lộc</span></b><small class="num">K-3T9B · <span class="kh-text">Sinh nhật KH</span></small></td><td><span class="st dot n3">N3</span></td></tr>
+              </table>
+              <p class="help" style="margin: 10px 0 0">RM Đỗ Khánh Linh · Team Sao Mai</p>
+            </div>
+          </div>
+          <div class="ba maskable" data-masked-init>
+            <div class="cap-l">Sau khi bật<span class="spacer"></span><button class="btn sm is-on"><svg class="ic"><use href="#i-eye-off" /></svg>Đang che tên</button></div>
+            <div class="card flat">
+              <div class="card-head"><h3 class="num">28/09 14:00 · <span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></h3></div>
+              <table class="tbl">
+                <tr><td><b><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></b><small class="num">K-9A1C · <span class="kh-text">Hỏi lại về kế hoạch du học của con</span></small></td><td><span class="st dot n1">N1</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="P. G. L.">Phạm Gia Long</span></b><small class="num">K-7F3Q · <span class="kh-text">Đáo hạn tiền gửi 3 tỷ</span></small></td><td><span class="st dot n2">N2</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="Đ. C. H.">Đinh Công Hậu</span></b><small class="num">K-0H4A · <span class="kh-text">Giới thiệu từ KH Phạm Gia Long</span></small></td><td><span class="st dot n3">N3</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="P. G. L.">Phan Gia Lộc</span></b><small class="num">K-3T9B · <span class="kh-text">Sinh nhật KH</span></small></td><td><span class="st dot n3">N3</span></td></tr>
+              </table>
+              <p class="help" style="margin: 10px 0 0">RM Đỗ Khánh Linh · Team Sao Mai</p>
+            </div>
+          </div>
+          <div class="ba mark-kh">
+            <div class="cap-l">Quy ước đánh dấu trong mockup</div>
+            <div class="card flat">
+              <div class="card-head"><h3 class="num">28/09 14:00 · <span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></h3></div>
+              <table class="tbl">
+                <tr><td><b><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></b><small class="num">K-9A1C · <span class="kh-text">Hỏi lại về kế hoạch du học của con</span></small></td><td><span class="st dot n1">N1</span></td></tr>
+                <tr><td><b><span class="kh" data-kh="Đ. C. H.">Đinh Công Hậu</span></b><small class="num">K-0H4A · <span class="kh-text">Giới thiệu từ KH Phạm Gia Long</span></small></td><td><span class="st dot n3">N3</span></td></tr>
+              </table>
+            </div>
+            <p style="margin: 14px 0 0"><span class="key"><i></i>tên KH: <code>.kh</code></span><span class="key"><i class="t"></i>chữ tự gõ: <code>.kh-text</code></span></p>
+            <pre class="code">&lt;span class="<b>kh</b>" data-kh="<b>T. M. A.</b>"&gt;Trịnh Minh Anh&lt;/span&gt;
+&lt;span class="<b>kh-text</b>"&gt;Giới thiệu từ KH Phạm Gia Long&lt;/span&gt;</pre>
+          </div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Che gì, không che gì <small>đề xuất</small></h3>
+            <ul class="bul">
+              <li><b>Tên KH</b> ở mọi nơi app hiện tên: bảng, thẻ kanban, tiêu đề hồ sơ, hộp thoại, gợi ý tìm kiếm, Forecast, Báo cáo. Hiện thành chữ cái đầu của từng tiếng: "Nguyễn Văn Hùng" → "N. V. H.".</li>
+              <li><b>Mã KH</b> (K-9A1C) giữ nguyên. Hai KH trùng chữ cái đầu (Phạm Gia Long và Phan Gia Lộc đều là "P. G. L.") vẫn phân biệt được bằng mã.</li>
+              <li><b>Chữ người dùng tự gõ</b> (ghi chú, mô tả trigger, dữ kiện KYC dạng chữ) có thể chứa tên, như "Giới thiệu từ KH Phạm Gia Long": app không đoán được, nên ẩn cả dòng thành "•••".</li>
+              <li><b>Không che:</b> tên RM, TL, team; nhóm N4–N1; mọi con số.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Nút chạy thế nào <small>đề xuất</small></h3>
+            <ul class="bul">
+              <li><b>Một lần bấm,</b> áp dụng tức thì cho mọi màn; có thông báo nổi xác nhận.</li>
+              <li><b>Luôn thấy đang bật:</b> nút vàng kèm chữ "Đang che tên" trên thanh công cụ.</li>
+              <li><b>Nhớ trạng thái:</b> tắt app rồi mở lại vẫn đang che, để không lộ tên giữa buổi chiếu chỉ vì mở lại app.</li>
+              <li><b>Tìm kiếm</b> vẫn tìm theo tên thật; kết quả hiện dạng đã che.</li>
+              <li><b>Chỉ là hiển thị:</b> dữ liệu không đổi. File Excel, bản in và backup luôn ghi tên đầy đủ (hộp xuất sẽ nhắc điều này; vẽ ở đợt e).</li>
+            </ul>
+          </div>
+        </div>
+        <p class="foot-note">Quy ước cho các mockup đợt b–g: mọi chỗ hiện tên KH viết bằng <code>.kh</code> kèm <code>data-kh</code>; chữ tự gõ có thể chứa tên viết bằng <code>.kh-text</code>. Nhờ vậy mockup nào cũng bật thử được, và khi ra Issue đếm được đủ các chỗ phải che.</p>
+      </section>
+
+      <!-- ================= Hai hình xem trước ================= -->
+      <section class="sec" id="previews">
+        <span class="kicker">Màn đã duyệt G3 · chỉ thay vỏ</span>
+        <h2>Lịch hẹn và một hộp thoại trong vỏ mới.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Giữ bố cục"</b> cho các màn đã duyệt G3. Hai hình dưới đây lấy đúng bố cục và nội dung của <a href="appointments.html">appointments.html</a> và hộp 6a của <a href="appointment-forms.html">appointment-forms.html</a>; chỉ khác chất liệu, chữ hệ thống, bo góc và chữ "RM" thay "RE". Màn nào anh thấy không ổn trong vỏ mới thì nêu riêng màn đó.</p>
+        <div class="frame-bar"><b style="color: var(--text)">Lịch hẹn</b><span class="seg" data-os-for="#pv-appt"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span><span class="spacer"></span><a class="btn sm" href="appointments.html">Mở bản đã duyệt để so →</a></div>
+        <div class="frame" id="pv-appt" data-os="mac" data-clone="#win" data-screen="appointments"></div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Giữ gì, đổi gì</h3>
+          <ul class="bul">
+            <li><b>Giữ:</b> thanh lọc (bộ chọn kỳ + bốn ô lọc), ba cột (cây Team → RM, tổng tháng, trigger · lịch tháng, chuyển nhóm · chi tiết lịch, KYC hiện hành, KYC Intelligence), bảng danh sách bên dưới, mọi nhãn và số.</li>
+            <li><b>Đổi theo vỏ:</b> tên màn, dòng "Team Sao Mai → Đỗ Khánh Linh" và nút "+ Lịch hẹn" lên thanh công cụ; ô tìm lên thanh tiêu đề (Windows) hoặc thành nút kính lúp (macOS); thẻ không viền, phân cấp bằng chất liệu; đề mục trong thẻ vẫn vàng (<code>--heading</code>).</li>
+            <li><b>Theo app hiện nay, khác hình cũ:</b> ô hôm nay viền xanh nhạt <code>--date-today</code> (duyệt 01/10, B4), không còn viền vàng; chữ "RM" thay "RE" (phần A).</li>
+            <li><b>Cửa sổ hẹp:</b> dưới 1240 px, cột chi tiết bên phải xuống dưới lịch tháng thành ba thẻ ngang; thử bằng nút "1100 × 700" ở cửa sổ đầu trang rồi bấm Lịch hẹn.</li>
+          </ul>
+        </div>
+        <h3 class="sub-h">Hộp "Lịch hẹn mới" (6a)</h3>
+        <p class="sub-p">Hộp thoại là lớp tiêu điểm: nền kính đậm, phần còn lại của cửa sổ mờ đi. Trong cửa sổ đầu trang, bấm <b>+ Lịch hẹn</b> để thấy nó mở và đóng. <a href="appointment-forms.html">Mở bản đã duyệt để so →</a></p>
+        <div class="duo" data-pane="center scrimmed"><div data-clone="#dlg-6a"></div></div>
+      </section>
+
+      <!-- ================= Làm được bằng gì ================= -->
+      <section class="sec" id="feasible">
+        <span class="kicker">Khả thi</span>
+        <h2>Làm được bằng Tauri 2, React và CSS. Không thêm dependency.</h2>
+        <p class="lead">Mọi thứ trong trang này là HTML và CSS chạy trong trình duyệt, cùng nhân với cửa sổ của app (WebView2 trên Windows, WKWebView trên macOS). Các điểm dưới đây cần kiểm trên máy thật khi ra Issue.</p>
+        <div class="pcard">
+          <table class="tok plain">
+            <tr><th>Phần</th><th>Cách làm</th><th>Cần kiểm</th></tr>
+            <tr><td>Nền cửa sổ macOS</td><td>Hiệu ứng cửa sổ của hệ điều hành qua cấu hình cửa sổ Tauri 2 (<code>windowEffects</code>, cửa sổ trong suốt). Trong mockup, <code>backdrop-filter</code> đứng thay.</td><td>Bản thử Mac (T-413). Cửa sổ trong suốt trên macOS dùng API riêng nên bản lên Mac App Store phải tắt hiệu ứng (tài liệu Mac §7).</td></tr>
+            <tr><td>Ba nút cửa sổ macOS</td><td>Thanh tiêu đề kiểu phủ (<code>titleBarStyle: Overlay</code>), ẩn tiêu đề, dời vị trí ba nút; vùng kéo cửa sổ bằng <code>data-tauri-drag-region</code>.</td><td>Vị trí ba nút khớp tấm thanh bên; kéo cửa sổ ở vùng trống của thanh công cụ.</td></tr>
+            <tr><td>Nền Mica Windows 11</td><td><code>windowEffects</code> kiểu Mica. Windows 10 không có Mica: dùng nền đặc <code>--bg-1</code>.</td><td>Mica khi cửa sổ mất tiêu điểm; máy tắt hiệu ứng trong suốt.</td></tr>
+            <tr><td>Thanh tiêu đề Windows tự vẽ</td><td>Tắt khung gốc (<code>decorations: false</code>), tự vẽ ba nút và vùng kéo.</td><td>Snap Layouts, bấm đúp để phóng to, viền và bóng cửa sổ, bo góc 8 px. Không đạt thì dùng kiểu B ở mục trên.</td></tr>
+            <tr><td>Lớp nổi (menu, hộp thoại, thông báo)</td><td><code>backdrop-filter</code> của CSS.</td><td>Độ mượt khi lớp nổi mở trên bảng dài.</td></tr>
+            <tr><td>Chữ hệ thống</td><td>Không nhúng file font: CSS gọi font của máy. Playfair Display (slogan) vẫn nhúng như hiện nay.</td><td>Dấu tiếng Việt và độ rộng cột số trên SF Pro và Segoe UI Variable.</td></tr>
+            <tr><td>Chuyển động</td><td>CSS thuần: chỉ đổi <code>transform</code> và <code>opacity</code>; lò xo viết bằng <code>linear()</code>. Tự tắt theo "Giảm chuyển động" của máy.</td><td><code>linear()</code> cần WebView2 113+ / Safari 17.2+; máy cũ hơn rơi về đường cong thường.</td></tr>
+            <tr><td>Giảm độ trong suốt</td><td>Máy bật "Giảm độ trong suốt" thì kính thành nền đặc; nền cửa sổ do hệ điều hành tự xử lý.</td><td>Truy vấn <code>prefers-reduced-transparency</code> trên WKWebView.</td></tr>
+          </table>
+          <p class="foot-note">Đổi cấu hình cửa sổ là sửa <code>tauri.conf.json</code> (PR gắn nhãn <code>build-exe</code>), không phải dependency mới, nên không qua G4. Chưa kiểm trên Safari; kiểm cùng bản thử Mac.</p>
+        </div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Cần anh quyết ở G3</span>
+        <h2>Mười điểm của vỏ app.</h2>
+        <p class="lead">Mỗi điểm có đề xuất của em. Các điều anh đã chốt (concept ba lớp, font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", giữ bố cục các màn đã duyệt) em không hỏi lại. Bảng thành phần và token mới có mục riêng ở <a href="components.html#ask">components.html</a>.</p>
+        <ol class="asks">
+          <li><b>Vỏ app hai nền tảng như cửa sổ đầu trang và mục "Một bố cục, hai hệ điều hành"?</b>Thanh bên kính nổi và ba nút cửa sổ trong thanh bên trên macOS; nền Mica, thanh tiêu đề và vạch chọn trên Windows 11.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Thanh tiêu đề Windows 11: kiểu A (tự vẽ, ô tìm ở giữa) hay kiểu B (thanh gốc của Windows)?</b>Xem mục "Thanh tiêu đề Windows 11: chọn một kiểu".<em>Đề xuất: A, kèm điều kiện kiểm Snap Layouts và kéo cửa sổ trên máy thật; không đạt thì lùi về B.</em></li>
+          <li><b>Thanh bên: logo gọn xếp ngang, mục Forecast trên Báo cáo, trạng thái lưu rồi slogan ở chân?</b>Cỡ logo và thứ tự mục ở mục "Logo gọn, mỗi mục một icon, slogan ở chân".<em>Đề xuất: duyệt.</em></li>
+          <li><b>Icon ba mục Cài đặt: kiểu A (ô màu) hay kiểu B (nét một màu)?</b>Xem "Icon của ba mục Cài đặt: chọn một kiểu".<em>Đề xuất: A, như bảng ý tưởng anh đã chọn.</em></li>
+          <li><b>Cụm góc nhìn + kỳ: một viên mở menu, một viên kỳ có ‹ ›, và bảng "Màn nào có gì trên thanh công cụ"?</b>Riêng Lịch hẹn giữ bộ chọn kỳ trong màn như bố cục đã duyệt.<em>Đề xuất: duyệt hình thức; nội dung menu của từng màn chốt ở mockup màn đó.</em></li>
+          <li><b>Nút che tên KH: nằm trên thanh công cụ, tên hiện thành chữ cái đầu "N. V. H.", mã KH giữ nguyên?</b>Xem mục "Một nút che tên khách hàng khi chiếu màn hình".<em>Đề xuất: duyệt.</em></li>
+          <li><b>Khi che tên, chữ người dùng tự gõ (ghi chú, mô tả trigger) ẩn thành "•••"?</b>Các dòng này có thể chứa tên KH mà app không nhận ra được.<em>Đề xuất: ẩn cả dòng. Cách khác: để nguyên, chỉ che ô tên.</em></li>
+          <li><b>Che tên có nhớ qua lần mở app sau không?</b><em>Đề xuất: có nhớ, vì nút luôn hiện "Đang che tên". Cách khác: mỗi lần mở app là tắt.</em></li>
+          <li><b>Hai hình xem trước (Lịch hẹn, hộp "Lịch hẹn mới") trong vỏ mới có ổn không?</b>Nếu ổn, các màn đã duyệt G3 khác nhận vỏ mới theo cùng cách, không vẽ lại.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Phụ lục ADR-0013: font hệ thống, lớp chất liệu theo nền tảng, token chuyển động?</b>Bảng token ở <a href="components.html#tokens">components.html · Token mới</a>; văn bản ở <code>docs/decisions/0013-huong-ui-dark-mode.md</code>, phụ lục 11/11/2026.<em>Đề xuất: duyệt cùng mockup này.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt a · T-416 #1212 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+  </body>
+</html>

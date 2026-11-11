@@ -1,0 +1,518 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi ở ui2.js):
+  Mockup G3 đợt a (T-416 #1212): bảng thành phần dùng chung của ngôn ngữ giao diện mới.
+  Trạng thái: CHỜ Owner duyệt G3. Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật.
+  Mỗi mẫu viết một lần trong <div class="duo">; ui2.js chép thành một khung macOS và một khung Windows 11.
+  #buttons  Nút: bốn cấp, hai cỡ, các trạng thái, nút có icon
+  #fields   Ô nhập: thường, đang gõ, lỗi, khóa, ngày / tiền có dòng đọc lại, ô nhiều dòng, ô tìm
+  #selects  Ô chọn: ô chọn và menu đang mở, nút trượt, viên chọn, ô đánh dấu
+  #cards    Thẻ: thẻ thường, thẻ số, thẻ bấm được, thẻ đang chọn
+  #tables   Bảng số: sắp xếp, Team → RM, dòng Tổng, thanh trong ô, dòng đang chọn
+  #dialogs  Hộp thoại: nhập liệu, xác nhận xóa, báo lỗi trong hộp
+  #badges   Nhãn trạng thái: nhóm KH, HĐ, lịch hẹn, tăng / giảm
+  #toasts   Thông báo nổi: xong, hoàn tác, cảnh báo, lỗi
+  #empty    Trạng thái trống: màn chưa có dữ liệu, lọc không ra, trong thẻ, bảng trống
+  #error    Trạng thái lỗi: cả app, một màn, trong thẻ
+  #tokens   Token mới (đề xuất, phụ lục ADR-0013 11/11/2026): chất liệu, bo góc, bóng, chuyển động, chữ
+  #contrast Tương phản đo trên chất liệu mới (WCAG AA)
+  #ask      Các điểm Owner cần quyết ở G3
+  Vỏ app: app-shell.html. Bảng mockup → màn hình → spec: README.md
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bảng thành phần — Heritas L-CRM (Project-2C mockup, đợt a)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem khung macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page ---- */
+      .hero { padding: 84px 0 8px; }
+      .hero h1 { margin: 0 0 16px; max-width: 900px; font-size: 54px; line-height: 1.05; font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
+      .hero p { margin: 0; max-width: 800px; font-size: 18px; line-height: 1.55; color: var(--text-2); }
+      .hero p b { color: var(--text); font-weight: 600; }
+      .index { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+      .index a { height: 32px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 16px; background: var(--fill-2); font-size: 13.5px; font-weight: 550; transition: background var(--t-1), color var(--t-1); }
+      .index a:hover { background: var(--accent-soft); color: var(--accent); }
+      .sec > h2 { font-size: 34px; }
+      .rules { margin: 18px 0 0; max-width: 900px; padding-left: 20px; font-size: 14.5px; color: var(--text-2); }
+      .rules li { margin-bottom: 5px; }
+      .rules b { color: var(--text); font-weight: 600; }
+      .w-form { display: grid; gap: 14px; max-width: 420px; }
+      .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .stack-v { display: grid; gap: 14px; }
+      .toasts { display: grid; justify-items: start; gap: 12px; }
+      .menu-wrap { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+      .menu-wrap .field { width: 210px; }
+      /* Token specimens */
+      .mats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .mat { min-height: 104px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; border-radius: var(--r-card); font-size: 13.5px; }
+      .mat b { font-weight: 650; }
+      .mat code { font-size: 11.5px; color: var(--text-2); }
+      .m-window { background: var(--mat-window); backdrop-filter: var(--blur-window); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1); }
+      .m-pane { background: var(--mat-pane), var(--mat-window); backdrop-filter: var(--blur-window); box-shadow: var(--mat-pane-edge); }
+      .m-card { background: var(--mat-card), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-1); }
+      .m-pop { background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); }
+      [data-os='win'] .m-pane { opacity: 0.45; }
+      .shapes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+      .shape { display: grid; justify-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+      .shape i { display: block; background: var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--border-control); }
+      .shape .s-win { width: 112px; height: 76px; border-radius: var(--r-window); }
+      .shape .s-card { width: 92px; height: 64px; border-radius: var(--r-card); }
+      .shape .s-pop { width: 92px; height: 64px; border-radius: var(--r-pop); }
+      .shape .s-ctl { width: 92px; height: 34px; border-radius: var(--r-control); }
+      .shape .s-fld { width: 92px; height: 36px; border-radius: var(--r-field); }
+      .lane { display: grid; grid-template-columns: 190px minmax(0, 1fr); align-items: center; gap: 14px; margin-bottom: 10px; font-size: 14px; color: var(--text-2); white-space: nowrap; }
+      .lane .track { height: 40px; padding: 4px; border-radius: 20px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); container-type: inline-size; }
+      .puck { display: grid; place-items: center; width: 100px; height: 32px; border-radius: 16px; background: var(--accent-fill); color: var(--on-accent); font-size: 12.5px; font-weight: 650; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35); transition: transform 300ms ease; }
+      .lab.go .puck { transform: translateX(calc(100cqw - 100px)); }
+      .lane.s1 .puck { transition: transform var(--t-4) var(--spring-smooth); }
+      .lane.s2 .puck { transition: transform 500ms var(--spring-snappy); }
+      .lane.s3 .puck { transition: transform 800ms var(--spring-bouncy); }
+      .cr { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .cr th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-3); }
+      .cr td { padding: 9px 12px 9px 0; border-top: 1px solid var(--hairline); color: var(--text-2); }
+      .cr td.n { text-align: right; font-weight: 650; color: var(--text); white-space: nowrap; }
+      .cr th.n { text-align: right; }
+      @media (max-width: 1100px) { .duo, .pgrid { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.5v.01" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.800 6 5M16 5.200a3.200 3.200 0 0 1 0 5.600M18 14.600c1.700.8 2.700 2.300 3 4.400" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.700 3.100 3 7 3s7-1.300 7-3V6M5 12v6c0 1.700 3.100 3 7 3s7-1.300 7-3v-6" /></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4M12 16V8M16 16v-6" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt a · Bảng thành phần</b>
+      <span class="state">Chờ G3</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#buttons">Nút</a><a href="#fields">Ô nhập</a><a href="#selects">Ô chọn</a><a href="#cards">Thẻ</a><a href="#tables">Bảng số</a><a href="#dialogs">Hộp thoại</a><a href="#badges">Nhãn</a><a href="#toasts">Thông báo</a><a href="#empty">Trống</a><a href="#error">Lỗi</a><a href="#tokens">Token</a><a href="#ask">Cần anh quyết</a><a href="app-shell.html">Vỏ app →</a>
+      </nav>
+    </header>
+
+    <div class="page">
+      <header class="hero">
+        <span class="kicker">Đợt a · bảng thành phần dùng chung</span>
+        <h1>Mười thành phần, mỗi thứ một lần, trên cả hai hệ điều hành.</h1>
+        <p>Anh đã trả lời 11/11: <b>"Có, kèm bảng"</b> và <b>"Có, vẽ kèm"</b> cho trạng thái trống và lỗi. Đây là bộ phận dựng nên mọi màn của vòng giao diện mới: các mockup đợt b–g chỉ ghép từ đây. Mỗi mẫu hiện hai lần cạnh nhau, <b>macOS</b> bên trái và <b>Windows 11</b> bên phải: cùng nội dung, cùng màu, khác bo góc, chữ và vài chi tiết của từng hệ điều hành. Các mẫu bấm được (nút trượt, viên chọn, ô đánh dấu, sắp xếp cột, mở Team).</p>
+        <nav class="index" aria-label="Thành phần">
+          <a href="#buttons">Nút</a><a href="#fields">Ô nhập</a><a href="#selects">Ô chọn</a><a href="#cards">Thẻ</a><a href="#tables">Bảng số</a><a href="#dialogs">Hộp thoại</a><a href="#badges">Nhãn trạng thái</a><a href="#toasts">Thông báo nổi</a><a href="#empty">Trạng thái trống</a><a href="#error">Trạng thái lỗi</a><a href="#tokens">Token mới</a><a href="#contrast">Tương phản</a>
+        </nav>
+      </header>
+
+      <!-- ================= Nút ================= -->
+      <section class="sec" id="buttons">
+        <span class="kicker">01 · Nút</span>
+        <h2>Bốn cấp, một chiều cao, một cú nhấn.</h2>
+        <p class="lead">Mỗi vùng chỉ có <b>một</b> nút chính màu champagne. Nhấn xuống thì nút thu nhẹ rồi bật lại bằng lò xo nhanh; rê chuột chỉ đổi độ sáng.</p>
+        <div class="duo">
+          <span class="spec-l">Cấp: chính · phụ · chữ · nguy hiểm</span>
+          <div class="spec-row"><button class="btn primary">Tạo lịch hẹn</button><button class="btn">Hủy</button><button class="btn quiet">Xem tất cả</button><button class="btn danger">Xóa lịch hẹn</button></div>
+          <span class="spec-l">Có icon · chỉ icon · viên chọn của thanh công cụ</span>
+          <div class="spec-row"><button class="btn primary"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button><button class="btn"><svg class="ic"><use href="#i-export" /></svg>Xuất Excel</button><button class="btn icon" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button><button class="cap"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button></div>
+          <span class="spec-l">Trạng thái của nút chính: thường · rê chuột · nhấn · bàn phím · tắt</span>
+          <div class="spec-row"><button class="btn primary">Lưu</button><button class="btn primary is-hover">Lưu</button><button class="btn primary is-press">Lưu</button><button class="btn primary is-focus">Lưu</button><button class="btn primary" disabled>Lưu</button></div>
+          <span class="spec-l">Trạng thái của nút phụ</span>
+          <div class="spec-row"><button class="btn">Hủy</button><button class="btn is-hover">Hủy</button><button class="btn is-press">Hủy</button><button class="btn is-focus">Hủy</button><button class="btn" disabled>Hủy</button></div>
+          <span class="spec-l">Cỡ nhỏ (trong thẻ, trong dòng bảng) · nút bật / tắt</span>
+          <div class="spec-row"><button class="btn primary sm">Ghi kết quả</button><button class="btn sm">Hồ sơ KH →</button><button class="btn sm is-on"><svg class="ic"><use href="#i-eye" /></svg>Đang che tên</button></div>
+        </div>
+        <ul class="rules">
+          <li><b>Cao 34 px</b> (nhỏ: 28 px). macOS: viên bo tròn hai đầu. Windows 11: bo 4 px.</li>
+          <li><b>Thứ tự trong hộp thoại:</b> nút phụ rồi nút chính, sát mép phải, giống các hộp đã duyệt; giữ nguyên trên cả hai hệ điều hành.</li>
+          <li><b>Nút nguy hiểm</b> chỉ dùng cho bước xác nhận cuối (xóa, hủy HĐ, dọn Thùng rác), không dùng ở nút mở hộp.</li>
+          <li><b>Vòng focus</b> vàng 2 px, cách nút 2 px, chỉ hiện khi dùng bàn phím.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Ô nhập ================= -->
+      <section class="sec" id="fields">
+        <span class="kicker">02 · Ô nhập</span>
+        <h2>Nhãn ở trên, điều app hiểu ở ngay dưới.</h2>
+        <p class="lead">Giữ cách làm đã duyệt: ô ngày và ô tiền luôn có dòng <b>→ đọc lại</b> bên dưới để thấy app hiểu giá trị thế nào. Viền ô vẫn là <code>--border-control</code> (tương phản từ 3:1).</p>
+        <div class="duo">
+          <div class="w-form">
+            <div class="field"><label>Họ và tên <span class="req">*</span></label><input class="input" type="text" placeholder="Ví dụ: Nguyễn Văn Hùng" /></div>
+            <div class="fields-2">
+              <div class="field"><label>Ngày <span class="req">*</span> <span class="opt-n">dd/mm</span></label><div class="input focus">28/9</div><div class="read"><b>Thứ Hai 28/09/2026</b> · 2 ngày nữa</div></div>
+              <div class="field"><label>Case size dự kiến</label><div class="input">500tr</div><div class="read"><b>500.000.000 ₫</b> (500 tr)</div></div>
+            </div>
+            <div class="field"><label>Ngày hủy <span class="req">*</span></label><div class="input error">31/02</div><div class="read err">Tháng 2 không có ngày 31.</div></div>
+            <div class="field"><label>Số HĐ <span class="opt-n">không sửa được sau khi phát hành</span></label><div class="input locked">2610-0457</div></div>
+            <div class="field"><label>Ghi chú <span class="opt-n">không bắt buộc</span></label><div class="input area">Con lớn dự định du học 2029; hai vợ chồng cùng quyết chi tiêu giáo dục.</div><span class="help">Ghi chú được lưu kèm cuộc gặp, sửa được về sau.</span></div>
+            <div class="field"><label>Người phối hợp <span class="opt-n">không tính chỉ số</span></label><div class="input"><span class="token"><span class="role">TL</span> Nguyễn Thu Hà ×</span><span class="token"><span class="role">IS</span> Phó Đức Huy ×</span><span class="muted">+ thêm</span></div></div>
+            <div class="field"><label>Ô tìm trong màn</label><div class="input search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng…</div></div>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>macOS:</b> viền đều bốn cạnh, bo 12 px; đang gõ thì viền vàng và quầng vàng nhạt. <b>Windows 11:</b> bo 4 px, nhấn ở cạnh dưới; đang gõ thì cạnh dưới vàng.</li>
+          <li><b>Lỗi:</b> viền đỏ và một dòng nói rõ sai gì, ngay dưới ô. Không chỉ dựa vào màu: dòng lỗi có dấu ✕.</li>
+          <li><b>Ô khóa:</b> viền đứt <code>--border-strong</code>, không nền (đúng quyết định T-303).</li>
+        </ul>
+      </section>
+
+      <!-- ================= Ô chọn ================= -->
+      <section class="sec" id="selects">
+        <span class="kicker">03 · Ô chọn</span>
+        <h2>Chọn một trong vài thứ: thấy hết thì dùng viên, nhiều thì dùng menu.</h2>
+        <p class="lead">Tới năm lựa chọn ngắn: <b>nút trượt</b> hoặc <b>viên chọn</b>, mọi lựa chọn đều nằm trên mặt. Nhiều hơn: <b>ô chọn</b> mở ra một menu kính. Bấm thử các mẫu.</p>
+        <div class="duo">
+          <span class="spec-l">Nút trượt: viên nền trượt tới lựa chọn mới</span>
+          <div class="spec-row"><span class="seg"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></span></div>
+          <span class="spec-l">Viên chọn: nhóm KH, kết quả cuộc gặp</span>
+          <div class="choices"><button class="choice">N4</button><button class="choice">N3</button><button class="choice on">N2</button><button class="choice">N1</button><button class="choice">Tạm hoãn</button><button class="choice">Mất cơ hội</button></div>
+          <span class="spec-l">Ô đánh dấu</span>
+          <div class="spec-row"><span class="check on" role="checkbox" aria-checked="true" tabindex="0"><i></i>Gồm cả bản ghi trong Thùng rác</span><span class="check" role="checkbox" aria-checked="false" tabindex="0"><i></i>Chỉ lịch chưa ghi kết quả</span></div>
+          <span class="spec-l">Ô chọn: đóng · đang mở</span>
+          <div class="menu-wrap">
+            <div class="field"><label>RM <span class="req">*</span></label><div class="input">Đỗ Khánh Linh<span class="caret"><svg class="ic"><use href="#i-down" /></svg></span></div></div>
+            <div class="field"><label>Trigger <span class="req">*</span></label><div class="input focus">Khác<span class="caret"><svg class="ic"><use href="#i-down" /></svg></span></div>
+              <div class="menu" role="listbox" style="margin-top: 2px">
+                <button>Giới thiệu từ KH</button><button>Đáo hạn tài sản</button><button class="is-hover">Hội thảo / sự kiện</button><button>Sinh nhật, dịp đặc biệt</button><button class="on">Khác<svg class="ic"><use href="#i-check" /></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>Lựa chọn đang chọn</b> luôn có hai dấu hiệu: màu vàng và một hình (viên nền, viền đậm, dấu ✓), không chỉ màu.</li>
+          <li><b>Menu</b> là lớp tiêu điểm nhỏ: kính đậm, bóng vừa, mở từ ô gọi nó; đóng bằng Esc hoặc bấm ra ngoài.</li>
+          <li>Bộ chọn kỳ và menu góc nhìn của thanh công cụ dùng đúng hai mẫu này: xem <a href="app-shell.html#toolbar">app-shell.html · Thanh công cụ</a>.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Thẻ ================= -->
+      <section class="sec" id="cards">
+        <span class="kicker">04 · Thẻ</span>
+        <h2>Thẻ không viền: phân cấp bằng chất liệu, cỡ chữ và khoảng trống.</h2>
+        <p class="lead">Thẻ là một lớp sáng hơn nền một chút, mép trên bắt sáng. Rê chuột qua thẻ có một quầng sáng nhẹ đi theo con trỏ. Đề mục <b>bên trong</b> thẻ vẫn vàng champagne (<code>--heading</code>, ADR-0013 §1).</p>
+        <div class="duo">
+          <div class="stack-v">
+            <div class="stats">
+              <section class="card stat lead-n"><span class="lbl">Doanh số</span><div class="val num">1,38<small>tỷ</small><span class="delta up">▲ 12,4%</span></div><p class="eq">Phát hành 1,46 tỷ − hủy 80 tr</p></section>
+              <section class="card stat"><span class="lbl">Tỷ lệ hủy</span><div class="val num">5,9<small>%</small><span class="delta bad">▲ 2,1 điểm</span></div><p class="eq">2 HĐ hủy ÷ 34 HĐ phát hành</p></section>
+            </div>
+            <section class="card">
+              <div class="card-head"><h3>KYC hiện hành</h3><span class="meta num">14/09/2026 · 6/8 chiều</span><span class="actions"><button class="btn sm">Cập nhật</button></span></div>
+              <div class="subhead" style="margin-top: 0">Gia đình</div>
+              <div class="dim">Đã kết hôn, 2 con (14, 10 tuổi)</div>
+              <div class="subhead">Mục tiêu</div>
+              <div class="dim">Con lớn du học 2029</div>
+            </section>
+            <div class="stats">
+              <section class="card link"><div class="card-head"><h3><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span></h3><span class="st dot n1">N1</span></div><div class="dim num">Lịch kế tiếp 28/09 14:00</div><p class="help" style="margin: 4px 0 0">Thẻ bấm được: nhấn thì thu nhẹ</p></section>
+              <section class="card link on"><div class="card-head"><h3><span class="kh" data-kh="P. G. L.">Phạm Gia Long</span></h3><span class="st dot n2">N2</span></div><div class="dim num">Lịch kế tiếp 02/10 09:00</div><p class="help" style="margin: 4px 0 0">Thẻ đang chọn: viền vàng</p></section>
+            </div>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>Thẻ số:</b> nhãn, con số lớn (số chủ đạo màu champagne), đơn vị nhỏ và nhạt, mức tăng / giảm, và phép tính ngay dưới số.</li>
+          <li><b>Bo góc:</b> 20 px trên macOS, 8 px trên Windows 11. Lề trong 18 × 20 px (thẻ dày đặc như lịch tháng: 16 px).</li>
+          <li><b>Mọi số</b> dùng chữ số đều cột (<code>tabular-nums</code>).</li>
+        </ul>
+      </section>
+
+      <!-- ================= Bảng số ================= -->
+      <section class="sec" id="tables">
+        <span class="kicker">05 · Bảng số</span>
+        <h2>Tên bên trái, số bên phải, mỗi dòng một hàng, dòng Tổng có kẻ trên.</h2>
+        <p class="lead">Bấm tiêu đề cột để sắp xếp (mũi tên chưa chọn màu <code>--border-control</code>, đang chọn màu vàng). Bấm một team để mở các RM. Số 0 nhạt đi; số xấu đỏ và đậm; cột chính có thanh mờ để so bằng mắt.</p>
+        <div class="duo">
+          <section class="card flat">
+            <div class="card-head"><h3>Theo team</h3><span class="meta num">Tháng 11/2026 · 01/11 – 10/11</span></div>
+            <table class="tbl">
+              <thead><tr><th class="sort">Team · RM</th><th class="sort desc">Doanh số</th><th class="sort">Số HĐ</th><th class="sort">Tỷ lệ hủy</th><th class="sort">Tỉ lệ chốt</th></tr></thead>
+              <tbody>
+                <tr class="team open" data-team="sm"><td><span class="tw"><svg class="ic"><use href="#i-chev" /></svg></span>Sao Mai</td><td class="bar" style="--w: 1"><span>620 tr</span></td><td>14</td><td>6,7%</td><td>75,0%</td></tr>
+                <tr class="rm" data-team="sm"><td>Đỗ Khánh Linh</td><td class="bar" style="--w: 0.42"><span>260 tr</span></td><td>6</td><td class="zero">0%</td><td>85,7%</td></tr>
+                <tr class="rm is-sel" data-team="sm"><td>Hoàng Văn Tùng<small>dòng đang chọn</small></td><td class="bar" style="--w: 0.35"><span>220 tr</span></td><td>5</td><td class="hot">16,7%</td><td>71,4%</td></tr>
+                <tr class="rm" data-team="sm"><td>Lý Quang Vinh</td><td class="bar" style="--w: 0.23"><span>140 tr</span></td><td>3</td><td class="zero">0%</td><td>66,7%</td></tr>
+                <tr class="team" data-team="bm"><td><span class="tw"><svg class="ic"><use href="#i-chev" /></svg></span>Bình Minh</td><td class="bar" style="--w: 0.726"><span>450 tr</span></td><td>11</td><td class="zero">0%</td><td>73,3%</td></tr>
+                <tr class="rm" data-team="bm" hidden><td>Mai Phương</td><td class="bar" style="--w: 0.4"><span>250 tr</span></td><td>6</td><td class="zero">0%</td><td>75,0%</td></tr>
+                <tr class="rm" data-team="bm" hidden><td>Châu Bảo Ngọc</td><td class="bar" style="--w: 0.32"><span>200 tr</span></td><td>5</td><td class="zero">0%</td><td>71,4%</td></tr>
+                <tr class="team" data-team="hd"><td><span class="tw"><svg class="ic"><use href="#i-chev" /></svg></span>Hừng Đông</td><td class="bar" style="--w: 0.5"><span>310 tr</span></td><td>7</td><td class="hot">12,5%</td><td>66,7%</td></tr>
+                <tr class="rm" data-team="hd" hidden><td>Hoàng Nam</td><td class="bar" style="--w: 0.5"><span>310 tr</span></td><td>7</td><td class="hot">12,5%</td><td>66,7%</td></tr>
+                <tr class="total"><td>Toàn bộ</td><td>1,38 tỷ</td><td>32</td><td>5,9%</td><td>72,3%</td></tr>
+              </tbody>
+            </table>
+            <div class="tbl-foot">Hiện 3 team · 27 RM<span class="spacer"></span><button class="btn sm">Hiện thêm</button></div>
+          </section>
+        </div>
+        <ul class="rules">
+          <li><b>Tiêu đề một dòng,</b> không viết hoa toàn bộ trong bảng số; số canh phải, chữ canh trái.</li>
+          <li><b>Dòng đang chọn</b> nền vàng nhạt; chữ phụ trong dòng đó sáng lên một bậc để vẫn đủ tương phản.</li>
+          <li>Số trong mẫu khớp nhau: 620 + 450 + 310 = 1,38 tỷ; 14 + 11 + 7 = 32 HĐ; 2 hủy ÷ 34 phát hành = 5,9%.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Hộp thoại ================= -->
+      <section class="sec" id="dialogs">
+        <span class="kicker">06 · Hộp thoại</span>
+        <h2>Lớp tiêu điểm: kính đậm ở trên, phần còn lại mờ đi.</h2>
+        <p class="lead">Ba phần cố định: đầu hộp (tên, một dòng ngữ cảnh, nút đóng), thân hộp, chân hộp (nút phụ rồi nút chính). Trên macOS hộp trượt xuống từ thanh công cụ; trên Windows 11 hộp nở ra ở giữa cửa sổ. Hộp nhập liệu đầy đủ: xem <a href="app-shell.html#previews">hộp "Lịch hẹn mới" trong app-shell.html</a>.</p>
+        <div class="duo" data-pane="center scrimmed">
+          <div class="stack-v" style="justify-items: center">
+            <div class="dlg sm" role="dialog" aria-label="Xóa lịch hẹn">
+              <div class="dlg-head"><div><h3 class="num">Xóa lịch hẹn 14/09/2026 10:00?</h3><div class="sub"><span class="kh" data-kh="T. M. A.">Trịnh Minh Anh</span> · Đã gặp</div></div><button class="x" aria-label="Đóng"><svg class="ic"><use href="#i-x" /></svg></button></div>
+              <div class="dlg-body"><p>Lịch hẹn vào Thùng rác và khôi phục được. Kết quả cuộc gặp của lịch này không còn tính vào chỉ số.</p></div>
+              <div class="dlg-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn danger">Xóa lịch hẹn</button></div>
+            </div>
+            <div class="dlg sm" role="dialog" aria-label="Sửa team">
+              <div class="dlg-head"><div><h3>Sửa team</h3><div class="sub">Sao Mai · 10 RM</div></div><button class="x" aria-label="Đóng"><svg class="ic"><use href="#i-x" /></svg></button></div>
+              <div class="dlg-body">
+                <div class="alert"><svg class="ic"><use href="#i-alert" /></svg><b>Chưa lưu được vào file</b><span>Thay đổi vẫn còn trong app. Kiểm tra thư mục dữ liệu rồi bấm Lưu lại.</span></div>
+                <div class="field"><label>Tên team <span class="req">*</span></label><div class="input">Sao Mai</div></div>
+              </div>
+              <div class="dlg-foot"><span class="hint">Esc để đóng</span><span class="spacer"></span><button class="btn">Hủy</button><button class="btn primary">Lưu lại</button></div>
+            </div>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>Rộng:</b> 400 px cho hộp xác nhận, 480 px cho hộp nhập liệu; hộp dài thì thân hộp cuộn, đầu và chân đứng yên.</li>
+          <li><b>Đóng</b> bằng nút ×, nút Hủy, phím Esc. Bấm ra vùng mờ không đóng hộp đang nhập dở.</li>
+          <li><b>Lỗi khi lưu</b> hiện thành một khối báo ngay đầu thân hộp và ở lại tới khi lưu được.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Nhãn trạng thái ================= -->
+      <section class="sec" id="badges">
+        <span class="kicker">07 · Nhãn trạng thái</span>
+        <h2>Nhãn luôn có chữ. Màu chỉ nhắc lại chữ.</h2>
+        <p class="lead">Màu lấy nguyên từ token đã duyệt (N4–N1, Tạm hoãn, Mất cơ hội, HĐ nộp, HĐ phát hành, bốn màu ngữ nghĩa). Nền nhãn là chính màu đó pha vào nền tối, nên nhãn đọc rõ như nhau trên thẻ, trên hộp thoại và trên dòng đang chọn.</p>
+        <div class="duo">
+          <span class="spec-l">Nhóm KH</span>
+          <div class="spec-row"><span class="st dot n4">N4</span><span class="st dot n3">N3</span><span class="st dot n2">N2</span><span class="st dot n1">N1</span><span class="st dot hold">Tạm hoãn</span><span class="st dot lost">Mất cơ hội</span></div>
+          <span class="spec-l">Hợp đồng</span>
+          <div class="spec-row"><span class="st s-sub">Đã nộp</span><span class="st s-iss">Phát hành</span></div>
+          <span class="spec-l">Lịch hẹn</span>
+          <div class="spec-row"><span class="st s-info">Dự kiến</span><span class="st s-ok">Đã gặp</span><span class="st s-todo">Chưa ghi kết quả</span><span class="st s-miss">Dời lịch</span><span class="st s-miss">Hủy</span><span class="st s-miss">Không đến</span></div>
+          <span class="spec-l">Tăng / giảm so với kỳ trước · số đếm · nhãn phụ</span>
+          <div class="spec-row"><span class="delta up">▲ 12,4%</span><span class="delta bad">▲ 2,1 điểm</span><span class="delta">0%</span><span class="count">12</span><span class="chip">Khẩu vị rủi ro</span><span class="st line s-info">PAIN_POINT_ANALYSIS</span></div>
+        </div>
+        <ul class="rules">
+          <li><b>Tăng không phải lúc nào cũng tốt:</b> tỷ lệ hủy tăng thì nhãn đỏ dù mũi tên đi lên. Màu theo nghĩa tốt / xấu, mũi tên theo chiều.</li>
+          <li>Nhóm "không diễn ra" (Dời lịch, Hủy, Không đến) dùng chữ <code>--text-2</code> trên nền nhãn: <code>--text-3</code> của token <code>--appt-missed</code> không đủ 4,5:1 ở cỡ nhãn.</li>
+          <li>Nhãn "Đã hủy" của HĐ vẽ ở đợt f (hộp hủy HĐ).</li>
+        </ul>
+      </section>
+
+      <!-- ================= Thông báo nổi ================= -->
+      <section class="sec" id="toasts">
+        <span class="kicker">08 · Thông báo nổi</span>
+        <h2>Vừa xảy ra gì, và một đường lui.</h2>
+        <p class="lead">Thông báo trồi lên ở giữa mép dưới cửa sổ bằng lò xo nảy, tự rời đi sau khoảng 4 giây, không chặn thao tác. Việc xóa hoặc hủy được thì kèm nút <b>Hoàn tác</b>. Thử thật trong <a href="app-shell.html#shell">cửa sổ của app-shell.html</a>: bấm nút con mắt, hoặc tạo một lịch hẹn.</p>
+        <div class="duo">
+          <div class="toasts">
+            <div class="toast"><svg class="ic"><use href="#i-check" /></svg><span>Đã tạo lịch hẹn <small class="num">· Thứ Hai 28/09/2026 14:00</small></span></div>
+            <div class="toast"><svg class="ic"><use href="#i-check" /></svg><span>Đã chuyển lịch hẹn vào Thùng rác</span><button class="btn quiet sm">Hoàn tác</button></div>
+            <div class="toast info"><svg class="ic"><use href="#i-info" /></svg><span>Đang che tên khách hàng <small>· bấm lại nút con mắt để hiện</small></span></div>
+            <div class="toast warn"><svg class="ic"><use href="#i-alert" /></svg><span>2 lịch hẹn thiếu case size <small>· chưa tính vào Forecast</small></span><button class="btn quiet sm">Điền ngay</button></div>
+            <div class="toast bad"><svg class="ic"><use href="#i-alert" /></svg><span>Chưa lưu được vào file</span><button class="btn quiet sm">Thử lại</button></div>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>Một dòng,</b> tối đa một nút. Điều cần đọc kỹ hoặc cần quyết thì dùng hộp thoại, không dùng thông báo nổi.</li>
+          <li><b>Lỗi không tự biến mất:</b> thông báo đỏ ở lại tới khi bấm Thử lại hoặc đóng; trạng thái lưu ở chân thanh bên cũng chuyển đỏ.</li>
+          <li>Trình đọc màn hình đọc thông báo qua vùng <code>aria-live</code>.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Trạng thái trống ================= -->
+      <section class="sec" id="empty">
+        <span class="kicker">09 · Trạng thái trống</span>
+        <h2>Trống thì nói rõ vì sao, và bước kế tiếp là gì.</h2>
+        <p class="lead">Một khuôn cho mọi chỗ trống: một hình tròn có icon, một dòng nói <b>ở đây chưa có gì</b>, một dòng nói <b>làm gì tiếp</b>, rồi nút. Ba cỡ: cả màn, trong thẻ, trong bảng. Anh đã chọn không vẽ trạng thái "đang tải".</p>
+        <div class="duo">
+          <div class="stack-v">
+            <section class="card flat"><div class="empty"><span class="mark"><svg class="ic"><use href="#i-cal" /></svg></span><b>Chưa có lịch hẹn nào</b><p>Tạo lịch hẹn đầu tiên để bắt đầu theo dõi các cuộc gặp và chỉ số của team.</p><div class="acts"><button class="btn primary"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button></div></div></section>
+            <section class="card flat"><div class="empty"><span class="mark"><svg class="ic"><use href="#i-search" /></svg></span><b class="num">Không có lịch hẹn nào khớp trong Tháng 09/2026</b><p>Đang lọc: Trạng thái Hoãn · Nhóm KH N1. Bỏ bớt điều kiện hoặc xem kỳ khác.</p><div class="acts"><button class="btn">Bỏ lọc</button><button class="btn quiet">Về tháng này</button></div></div></section>
+            <section class="card flat"><div class="card-head"><h3>Lịch hẹn hôm nay</h3><span class="meta num">Thứ Ba 10/11</span></div><div class="empty sm"><span class="mark"><svg class="ic"><use href="#i-cal" /></svg></span><b>Hôm nay không có lịch hẹn</b><p class="num">Lịch kế tiếp: Thứ Năm 12/11, 09:00</p><div class="acts"><button class="btn sm"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button></div></div></section>
+            <section class="card flat"><div class="card-head"><h3>Hợp đồng</h3><span class="meta">0 HĐ</span></div><table class="tbl"><thead><tr><th>Số HĐ</th><th>Ngày phát hành</th><th>FYP</th><th>Trạng thái</th></tr></thead></table><div class="empty sm"><span class="mark"><svg class="ic"><use href="#i-info" /></svg></span><b>KH chưa có hợp đồng</b><p>HĐ xuất hiện ở đây sau khi ghi kết quả "HĐ nộp" cho một cuộc gặp.</p></div></section>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>Hai loại trống khác nhau:</b> "chưa có dữ liệu" đưa nút tạo mới; "lọc không ra" nói đang lọc gì và đưa nút bỏ lọc. Không dùng chung một câu.</li>
+          <li><b>Bảng trống</b> vẫn giữ dòng tiêu đề cột để người dùng biết bảng này chứa gì.</li>
+          <li>Không có hình minh họa lớn, không có câu đùa: trạng thái trống là thông tin, giọng điệu như phần còn lại của app.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Trạng thái lỗi ================= -->
+      <section class="sec" id="error">
+        <span class="kicker">10 · Trạng thái lỗi</span>
+        <h2>Lỗi dùng chung khuôn với trống, thêm màu đỏ ở đúng một chỗ.</h2>
+        <p class="lead">Dòng đầu nói <b>cái gì hỏng</b>, dòng sau nói <b>dữ liệu có sao không và làm gì tiếp</b>, rồi nút. Chỉ hình tròn có icon mang màu đỏ; chữ vẫn màu thường để dễ đọc. Câu chữ lấy từ app hiện nay: ở đây chỉ duyệt hình thức.</p>
+        <div class="duo">
+          <div class="stack-v">
+            <section class="card flat"><div class="empty fail"><span class="mark"><svg class="ic"><use href="#i-db" /></svg></span><b>Không mở được file dữ liệu khi khởi động</b><p>File <span class="path">project2c.db</span> hỏng hoặc không đọc được. App không ghi đè file này.</p><div class="acts"><button class="btn primary">Mở từ backup tự động mới nhất</button><button class="btn">Mở thư mục</button></div></div></section>
+            <section class="card flat"><div class="empty fail"><span class="mark"><svg class="ic"><use href="#i-alert" /></svg></span><b>Màn này gặp lỗi và không hiển thị được</b><p>Dữ liệu đã lưu không bị ảnh hưởng. Chọn một màn khác ở thanh bên để làm tiếp; nếu lỗi lặp lại, gửi chi tiết kỹ thuật dưới đây cho người hỗ trợ.</p><div class="fail-detail">TypeError: Cannot read properties of undefined (reading 'teamId')<br />at ForecastScreen · bản 1.0.0</div></div></section>
+            <section class="card flat"><div class="card-head"><h3>Khách hàng theo nhóm</h3><span class="meta num">Tháng 11/2026</span></div><div class="empty sm fail"><span class="mark"><svg class="ic"><use href="#i-chart" /></svg></span><b>Không vẽ được biểu đồ</b><p>Các thẻ khác của màn vẫn dùng được.</p><div class="acts"><button class="btn sm">Thử lại</button></div></div></section>
+            <div class="alert"><svg class="ic"><use href="#i-alert" /></svg><b>Chưa lưu được vào file</b><span>Thay đổi vẫn còn trong app. Kiểm tra thư mục dữ liệu rồi lưu lại.</span></div>
+            <div class="alert warn"><svg class="ic"><use href="#i-alert" /></svg><b>2 lịch hẹn thiếu case size</b><span>Các lịch này chưa được tính vào Forecast.</span></div>
+          </div>
+        </div>
+        <ul class="rules">
+          <li><b>Ba tầng:</b> lỗi cả app (thay toàn bộ cửa sổ), lỗi một màn (thay vùng nội dung, thanh bên vẫn dùng được), lỗi một thẻ (chỉ thẻ đó, có nút Thử lại).</li>
+          <li><b>Chi tiết kỹ thuật</b> nằm trong một khung chữ đều nét, chọn và chép được.</li>
+          <li><b>Khối báo</b> (đỏ: lỗi, cam: cần chú ý) dùng trong hộp thoại và trong màn, ở lại tới khi nguyên nhân hết. Ô nhập sai: xem mục Ô nhập.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Token mới ================= -->
+      <section class="sec" id="tokens">
+        <span class="kicker">Token mới · đề xuất · điểm 6 của bảng ý tưởng</span>
+        <h2>Màu giữ nguyên. Thêm chất liệu, bo góc theo hệ điều hành, chuyển động, và đổi font.</h2>
+        <p class="lead">Mọi màu trong hai trang mockup là token đang có của app, chép nguyên từ <code>packages/ui/src/tokens.css</code>. Phần mới nằm tách riêng ở khối B của <code>ui2.css</code> và trong <b>phụ lục 11/11/2026 của ADR-0013</b>. Chưa có token nào vào app: anh duyệt ở G3 rồi mới ra Issue.</p>
+        <h3 class="sub-h">Chất liệu của ba lớp</h3>
+        <p class="sub-p">Đặt trên nền desktop để thấy độ trong. Trong app thật, nền cửa sổ là hiệu ứng của hệ điều hành; ba chất liệu còn lại là CSS.</p>
+        <div class="duo" data-pane="desk">
+          <div class="mats">
+            <div class="mat m-window"><b>Cửa sổ <span class="k-mac">· kính</span><span class="k-win">· Mica</span></b><code>--mat-window</code></div>
+            <div class="mat m-pane"><b>Thanh bên nổi <span class="k-win">· chỉ macOS</span></b><code>--mat-pane</code></div>
+            <div class="mat m-card"><b>Thẻ trên nền nội dung</b><code>--mat-card</code></div>
+            <div class="mat m-pop"><b>Lớp tiêu điểm</b><code>--mat-pop</code></div>
+          </div>
+        </div>
+        <h3 class="sub-h">Bo góc theo hệ điều hành</h3>
+        <div class="duo">
+          <div class="shapes">
+            <div class="shape"><i class="s-win"></i><span>cửa sổ</span><code>--r-window</code></div>
+            <div class="shape"><i class="s-card"></i><span>thẻ</span><code>--r-card</code></div>
+            <div class="shape"><i class="s-pop"></i><span>lớp nổi</span><code>--r-pop</code></div>
+            <div class="shape"><i class="s-ctl"></i><span>nút</span><code>--r-control</code></div>
+            <div class="shape"><i class="s-fld"></i><span>ô nhập</span><code>--r-field</code></div>
+          </div>
+        </div>
+        <h3 class="sub-h">Chuyển động</h3>
+        <div class="pgrid">
+          <div class="pcard lab">
+            <h3>Ba lò xo <small>bấm Chạy vài lần</small></h3>
+            <div class="lane"><span>Web thường · ease 300 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s1"><span>Êm · <code>--spring-smooth</code></span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s2"><span>Nhanh · <code>--spring-snappy</code></span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s3"><span>Nảy · <code>--spring-bouncy</code></span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="row" style="margin-top: 14px"><button class="btn primary" data-lab-run type="button">Chạy</button><span class="muted" style="font-size: 13.5px">Êm: màn và thẻ hiện ra. Nhanh: nút, viên chọn, hộp thoại. Nảy: chỉ cho thông báo nổi và điều cần chú ý.</span></div>
+          </div>
+          <div class="pcard">
+            <h3>Luật chuyển động</h3>
+            <ul class="bul">
+              <li><b>Chỉ đổi vị trí, tỉ lệ, độ trong</b> (<code>transform</code>, <code>opacity</code>): card đồ họa vẽ, không tính lại bố cục.</li>
+              <li><b>Đổi màu khi rê chuột</b> là chuyển màu ngắn 120 – 220 ms, không tính là chuyển động.</li>
+              <li><b>Bốn thời lượng:</b> 120 · 220 · 400 · 600 ms. Ra nhanh hơn vào: đóng dùng 120 ms.</li>
+              <li><b>Máy bật "Giảm chuyển động"</b> thì mọi thứ tới nơi ngay, không chạy.</li>
+              <li>Bốn động tác (Hiện, Mở, Trượt, Đếm) và cách dùng từng lò xo: duyệt ở đợt g (hệ chuyển động); ở đợt a chỉ duyệt bộ token.</li>
+            </ul>
+          </div>
+        </div>
+        <h3 class="sub-h">Bảng token đề xuất</h3>
+        <div class="pcard">
+          <table class="tok">
+            <tr><th>Token</th><th>macOS</th><th>Windows 11</th><th>Dùng cho</th></tr>
+            <tr><td>--font-ui</td><td class="v">SF Pro (font hệ thống)</td><td class="v">Segoe UI Variable, Segoe UI</td><td>Mọi chữ giao diện; thay <code>--font</code> (Be Vietnam Pro). <code>--font-brand</code> giữ cho slogan.</td></tr>
+            <tr><td>--accent-fill</td><td class="v" colspan="2"><i class="sw" style="background: #d9b26a"></i>#d9b26a</td><td>Nền nút chính. <code>--accent</code> vẫn là màu chữ, icon, focus, mục đang chọn.</td></tr>
+            <tr><td>--mat-window</td><td class="v">rgba(11, 16, 23, 0.62)</td><td class="v">rgba(17, 24, 34, 0.84)</td><td>Nền cửa sổ khi không có hiệu ứng gốc; trên app thật là kính (macOS) hoặc Mica (Windows 11).</td></tr>
+            <tr><td>--mat-pane · --mat-pane-edge</td><td class="v">trắng 10% → 4%, mép sáng</td><td class="v">không dùng</td><td>Tấm thanh bên nổi trên macOS.</td></tr>
+            <tr><td>--mat-card · --mat-card-edge</td><td class="v" colspan="2">trắng 7% → 3,5% trên <code>--bg-0</code>, mép trên sáng 10%</td><td>Thẻ trên lớp nội dung; thay nền <code>--bg-2</code> + viền <code>--border</code>.</td></tr>
+            <tr><td>--mat-glow · --mat-spec</td><td class="v" colspan="2">ánh vàng và xanh rất nhạt từ trên; quầng sáng theo con trỏ</td><td>Nền vùng nội dung; thẻ khi rê chuột.</td></tr>
+            <tr><td>--mat-pop · --mat-pop-edge · --blur-pop</td><td class="v" colspan="2">rgba(28, 37, 50, 0.84), làm mờ 34 px</td><td>Hộp thoại, menu, bộ chọn kỳ, thông báo nổi.</td></tr>
+            <tr><td>--mat-edge</td><td class="v" colspan="2">rgba(11, 16, 23, 0.9)</td><td>Mép cuộn: nội dung mờ dần dưới thanh công cụ.</td></tr>
+            <tr><td>--fill-1 · --fill-2 · --fill-3</td><td class="v" colspan="2">trắng 4,5% · 8,5% · 17%</td><td>Nền ô nhập và rê chuột · nút phụ và dòng đang chọn trên thanh bên · nút dưới con trỏ, viên trượt.</td></tr>
+            <tr><td>--hairline</td><td class="v" colspan="2">trắng 9%</td><td>Đường kẻ trong một bề mặt (dòng bảng, chân hộp thoại).</td></tr>
+            <tr><td>--scrim</td><td class="v" colspan="2">rgba(4, 7, 12, 0.55)</td><td>Lớp mờ sau hộp thoại.</td></tr>
+            <tr><td>--shadow-1 · -2 · -3</td><td class="v" colspan="2">thẻ · lớp nổi nhỏ · cửa sổ và hộp thoại</td><td>Ba mức bóng, đều là bóng đen mềm.</td></tr>
+            <tr><td>--r-window</td><td class="v">24 px</td><td class="v">8 px</td><td>Góc cửa sổ (app thật: do hệ điều hành vẽ).</td></tr>
+            <tr><td>--r-card · --r-pop</td><td class="v">20 px · 20 px</td><td class="v">8 px · 8 px</td><td>Thẻ · hộp thoại, menu.</td></tr>
+            <tr><td>--r-control · --r-field</td><td class="v">17 px (viên) · 12 px</td><td class="v">4 px · 4 px</td><td>Nút, viên chọn · ô nhập, ô trong lịch.</td></tr>
+            <tr><td>--t-1 … --t-4</td><td class="v" colspan="2">120 · 220 · 400 · 600 ms</td><td>Thời lượng: đổi màu và đóng · mở lớp nổi · trượt, hiện · thanh dài ra, thông báo.</td></tr>
+            <tr><td>--ease-out · --ease-in</td><td class="v" colspan="2">cubic-bezier(0.22, 1, 0.36, 1) · (0.4, 0, 1, 1)</td><td>Vào · ra, cho độ trong.</td></tr>
+            <tr><td>--spring-smooth · -snappy · -bouncy</td><td class="v" colspan="2">CSS <code>linear()</code>, không thư viện</td><td>Êm · nhanh · nảy (phòng thử ở trên).</td></tr>
+          </table>
+          <p class="foot-note">Token của app không đổi giá trị. Khi ra Issue: <code>--corner-sm / md / lg</code> hiện có nhường chỗ cho bộ <code>--r-*</code> theo hệ điều hành; <code>--bg-1 … --bg-3</code>, <code>--border</code>, <code>--border-strong</code> vẫn dùng cho nền đặc khi máy tắt hiệu ứng trong suốt, cho viền đứt và cho bản in. Máy bật "Giảm độ trong suốt": <code>--mat-window</code> thành <code>--bg-1</code>, <code>--mat-pop</code> thành <code>--bg-2</code>.</p>
+        </div>
+      </section>
+
+      <!-- ================= Tương phản ================= -->
+      <section class="sec" id="contrast">
+        <span class="kicker">WCAG AA</span>
+        <h2>Tương phản đo lại trên chất liệu mới.</h2>
+        <p class="lead">Chất liệu mới là lớp trắng mờ đặt chồng lên nhau, nên nền dưới chữ sáng hơn <code>--bg-0</code> một chút. Bảng dưới đo chỗ <b>sáng nhất</b> của từng bề mặt (chữ cần từ 4,5:1; viền ô nhập cần từ 3:1). Trên macOS nền cửa sổ là kính: số của thanh bên đo trên nền desktop của trang này; app thật dùng chất liệu tối của hệ điều hành và phải đo lại trên bản thử Mac.</p>
+        <div class="pgrid">
+          <div class="pcard">
+            <h3>Chữ trên bề mặt</h3>
+            <table class="cr">
+              <tr><th>Cặp</th><th class="n">Tỉ lệ</th></tr>
+              <tr><td><code>--text-3</code> trên thẻ</td><td class="n num">5,62 : 1</td></tr>
+              <tr><td><code>--text-2</code> trên thẻ</td><td class="n num">8,17 : 1</td></tr>
+              <tr><td><code>--text-3</code> trên ô nhập (<code>--fill-1</code> trên thẻ)</td><td class="n num">4,95 : 1</td></tr>
+              <tr><td><code>--text-2</code> trên nút phụ (<code>--fill-2</code> trên thẻ)</td><td class="n num">6,34 : 1</td></tr>
+              <tr><td><code>--text-2</code> trên nút dưới con trỏ (<code>--fill-3</code>)</td><td class="n num">4,74 : 1</td></tr>
+              <tr><td><code>--text-3</code> trên hộp thoại, menu</td><td class="n num">5,39 : 1</td></tr>
+              <tr><td><code>--text-3</code> trên ô nhập trong hộp thoại</td><td class="n num">4,73 : 1</td></tr>
+              <tr><td><code>--accent</code> trên thẻ</td><td class="n num">8,14 : 1</td></tr>
+              <tr><td><code>--accent</code>, <code>--text-2</code> trên dòng đang chọn</td><td class="n num">6,14 : 1</td></tr>
+              <tr><td><code>--on-accent</code> trên nút chính</td><td class="n num">9,56 : 1</td></tr>
+              <tr><td><code>--bg-0</code> trên nút nguy hiểm</td><td class="n num">7,26 : 1</td></tr>
+              <tr><td><code>--text-2</code> trên thanh bên kính (macOS)</td><td class="n num">6,90 : 1</td></tr>
+              <tr><td><code>--text-2</code> trên mục đang chọn của thanh bên (macOS)</td><td class="n num">5,30 : 1</td></tr>
+              <tr><td><code>--text-2</code> trên nền Mica (Windows 11)</td><td class="n num">8,84 : 1</td></tr>
+            </table>
+          </div>
+          <div class="pcard">
+            <h3>Nhãn và viền</h3>
+            <table class="cr">
+              <tr><th>Cặp</th><th class="n">Tỉ lệ</th></tr>
+              <tr><td>Nhãn N4 trên nền nhãn</td><td class="n num">5,83 : 1</td></tr>
+              <tr><td>Nhãn N3 · N2 · N1</td><td class="n num">6,14 · 6,28 · 7,62</td></tr>
+              <tr><td>Nhãn Tạm hoãn · Mất cơ hội</td><td class="n num">6,96 · 5,80</td></tr>
+              <tr><td>Nhãn Đã nộp · cảnh báo · thông tin</td><td class="n num">7,47 · 6,85 · 6,14</td></tr>
+              <tr><td>Chữ đỏ báo lỗi trên thẻ · trên hộp thoại</td><td class="n num">6,18 · 5,92</td></tr>
+              <tr><td>Số đỏ (<code>--danger</code>) trên dòng đang chọn</td><td class="n num">4,66 : 1</td></tr>
+              <tr><td>Viền ô nhập <code>--border-control</code> trên thẻ</td><td class="n num">3,18 : 1</td></tr>
+              <tr><td>Viền ô nhập trong hộp thoại</td><td class="n num">3,04 : 1</td></tr>
+              <tr><td>Viền viên chọn, ô đánh dấu trên thẻ</td><td class="n num">3,62 : 1</td></tr>
+            </table>
+            <ul class="bul" style="margin-top: 16px">
+              <li><b>Ba luật rút ra khi đo:</b> không đặt <code>--text-3</code> lên <code>--fill-2</code> / <code>--fill-3</code> hay lên dòng đang chọn (4,36 và 4,24 : 1, chưa đạt): ở đó dùng <code>--text-2</code>.</li>
+              <li>Nền nhãn pha vào <code>--bg-0</code> chứ không trong suốt: nhãn trong suốt trên dòng đang chọn chỉ đạt 3,6 : 1.</li>
+              <li>Ô nhập không đổi nền khi rê chuột (chỉ viền sáng lên): nền <code>--fill-2</code> làm viền tụt xuống 2,81 : 1.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Cần anh quyết ở G3</span>
+        <h2>Sáu điểm của bảng thành phần.</h2>
+        <p class="lead">Mỗi điểm có đề xuất của em. Mười điểm của vỏ app nằm ở <a href="app-shell.html#ask">app-shell.html</a>.</p>
+        <ol class="asks">
+          <li><b>Bộ mười thành phần này là bộ dựng cho các mockup đợt b–g?</b>Nút, ô nhập, ô chọn, thẻ, bảng số, hộp thoại, nhãn trạng thái, thông báo nổi, trạng thái trống, trạng thái lỗi.<em>Đề xuất: duyệt. Thành phần phát sinh ở đợt sau (biểu đồ, lịch, kanban) vẽ trong mockup của đợt đó.</em></li>
+          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS tròn (viên, 20 px), Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành".<em>Đề xuất: duyệt. Cách khác: một bộ bo góc chung cho cả hai, đơn giản hơn nhưng app trên Windows trông như app Mac.</em></li>
+          <li><b>Thẻ không viền, dùng chất liệu thay cho nền <code>--bg-2</code> + viền <code>--border</code>?</b>Đề mục trong thẻ vẫn vàng; tên thẻ màu chữ thường.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Trạng thái trống và lỗi theo một khuôn, ba cỡ (cả màn, trong thẻ, trong bảng)?</b>Xem hai mục 09 và 10. Câu chữ của lỗi giữ như app hiện nay.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Thông báo nổi ở giữa mép dưới cửa sổ, tự rời sau khoảng 4 giây, lỗi thì ở lại?</b>App hiện chưa có thông báo nổi dùng chung; đây là thành phần mới.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Bộ token mới và phụ lục ADR-0013 ngày 11/11/2026?</b>Font hệ thống thay Be Vietnam Pro (anh đã chốt), lớp chất liệu theo hệ điều hành, bo góc, bóng, token chuyển động, <code>--accent-fill</code>. Bảng ở mục "Token mới"; văn bản ở <code>docs/decisions/0013-huong-ui-dark-mode.md</code>.<em>Đề xuất: duyệt cùng mockup này. Bốn động tác chuyển động duyệt riêng ở đợt g.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt a · T-416 #1212 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+  </body>
+</html>
