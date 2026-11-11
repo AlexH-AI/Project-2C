@@ -1,0 +1,1025 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
+  Mockup G3 đợt b (T-417 #1217): ô lệnh, "Lúc này", tìm KH, trang RM, Team & nhân sự (ý 09, 11, 25, 27, 33 + phần C).
+  Trạng thái: CHỜ Owner duyệt G3. Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật.
+  Số viết theo luật mới của T-418 (#1221): "1.38 tỷ", "16.7%", "3,000,000 VNĐ"; ngày dd/mm/yyyy.
+  #shell     Cửa sổ app bấm được: Khách hàng (tìm là sáng), Team & nhân sự (đầu team ý 33, ô tìm RM),
+             trang RM (không có mục riêng trên thanh bên), hồ sơ KH (chỉ đường đi), ô lệnh ⌘K / Ctrl K,
+             viên "Lúc này" + bảng hôm nay, hộp Tạo / Sửa team (màu, icon); các màn khác chỉ có vỏ
+  #palette   Ô lệnh: hai hệ điều hành, ô trống, thứ tự gợi ý, luật tìm
+  #now       "Lúc này": các trạng thái, bảng hôm nay, việc chạy nền
+  #customers Tìm là sáng ở màn Khách hàng; KH khớp ngoài góc nhìn; giữ gì, đổi gì
+  #rm        Trang RM: đầu trang, danh sách KH phụ trách, dải 8 tuần; đường đi
+  #team      Team & nhân sự: giữ gì, đổi gì; hai cách bày (A / B); hộp Tạo / Sửa team; tương phản màu team
+  #states    Trạng thái trống và lỗi của đợt b
+  #mask      Che tên KH ở các chỗ mới của đợt b
+  #ask       Các điểm Owner cần quyết ở G3
+  Vỏ app và bảng thành phần (đợt a, đã duyệt): app-shell.html, components.html. Bảng mockup → màn hình → spec: README.md
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tìm kiếm, RM và Team — Heritas L-CRM (Project-2C mockup, đợt b)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page: the screens inside the window ---- */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later > b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p b { font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 480px; font-size: 13.5px; }
+      .view-note { margin: 14px 2px 0; font-size: 12.5px; color: var(--text-2); }
+      .av.lg { width: 52px; height: 52px; font-size: 16px; }
+      .lnk { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text); text-align: left; }
+      .lnk .ic { width: 13px; height: 13px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy); }
+      tr:hover .lnk .ic { transform: translateX(2px); color: var(--accent); }
+      .tbl tr[data-view-go] { cursor: pointer; }
+      .bar-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      /* The customer-name button of round a: an eye; once on it says so */
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+
+      /* Khách hàng: the approved kanban, a search field over it */
+      .cu { display: flex; flex-direction: column; gap: 14px; }
+      .cu .find { width: 380px; }
+      .kan { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 236px; gap: 12px; align-items: start; }
+      .kcol { display: flex; flex-direction: column; gap: 8px; padding: 10px 8px 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); }
+      .kcol > header { order: -2; display: flex; align-items: center; gap: 8px; padding: 0 4px 2px; }
+      .kcol > header .tot { margin-left: auto; font-size: 13px; color: var(--text-2); }
+      .kcard { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); /* concentric with the column: 8 px in */ background: var(--mat-card), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-1); text-align: left; transition: transform var(--t-3) var(--spring-snappy), opacity var(--t-2), box-shadow var(--t-2); }
+      [data-os='win'] .kcard { border-radius: 4px; }
+      .kcard:hover { transform: translateY(-2px); }
+      .kcard b { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; white-space: nowrap; }
+      .kcard b > .kh { overflow: hidden; text-overflow: ellipsis; }
+      .kcard .chip { color: var(--issued); }
+      .kcard > span { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+      .kcard > span > :first-child { overflow: hidden; text-overflow: ellipsis; }
+      .kcard.extra { display: none; }
+      .finding .kcard.extra.lit { display: flex; }
+      .kcol .more { order: 2; padding: 4px 4px 2px; font-size: 12px; color: var(--accent); text-align: left; }
+      .kclosed { display: flex; flex-direction: column; gap: 12px; }
+      .kclosed .kcol ul { margin: 0; padding: 0 4px; list-style: none; font-size: 13px; }
+      .kclosed .kcol li { display: flex; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--hairline); border-radius: 6px; }
+      .kclosed .kcol li:last-child { border-bottom: 0; }
+      .kclosed .kcol li .num { margin-left: auto; color: var(--text-2); }
+      .kclosed .help { padding: 2px 4px 0; }
+      @container (max-width: 1240px) { .kan { grid-template-columns: repeat(4, minmax(0, 1fr)); } .kclosed { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; } }
+
+      /* Team & nhân sự: the approved layout (team list, support people, the members of one team) */
+      .tm { display: flex; flex-direction: column; gap: 14px; }
+      .tm .find { width: 340px; }
+      .tm-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 16px; align-items: start; }
+      .tm-left { display: flex; flex-direction: column; gap: 16px; }
+      .tm-left .card { padding: 14px 10px 12px; }
+      .tm-left h3 { margin: 0 8px 8px; font-size: 13px; font-weight: 650; color: var(--heading); }
+      .tl-i { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); text-align: left; font-weight: 600; transition: background var(--t-1); }
+      [data-os='win'] .tl-i { border-radius: 4px; }
+      .tl-i:hover { background: var(--fill-1); }
+      .tl-i.on { background: var(--fill-2); }
+      .tl-i .n { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--text-2); white-space: nowrap; }
+      .support ul { margin: 0; padding: 0 8px; list-style: none; font-size: 13.5px; }
+      .support li { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+      .support .help { display: block; margin: 8px 8px 0; }
+      .th { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+      .th h3 { margin: 0; font-size: 24px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; }
+      .th .tl { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+      .th .tl b { font-size: 24px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; }
+      .th .sep { width: 1px; height: 26px; background: var(--hairline); }
+      .role-tl { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); }
+      [data-os='win'] .role-tl { border-radius: 4px; }
+      .role-tl .ic { width: 12px; height: 12px; }
+      .th .acts { margin-left: auto; display: flex; gap: 8px; }
+      .brief { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0 6px; padding: 14px 0; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
+      .brief b { display: block; font-size: 28px; line-height: 1.15; font-weight: 700; letter-spacing: -0.028em; color: var(--accent); white-space: nowrap; }
+      .brief span { display: block; font-size: 12.5px; color: var(--text-2); }
+      .brief small { display: block; font-size: 11.5px; color: var(--text-2); }
+      .tm-main .tbl { margin-top: 8px; }
+      .role { font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+      .tm-main .empty { padding-top: 26px; }
+      @container (max-width: 1240px) { .tm-layout { grid-template-columns: 220px minmax(0, 1fr); } .tm-main .tbl { font-size: 12.5px; } .tm-main .tbl th, .tm-main .tbl td { padding-left: 8px; padding-right: 8px; } .tm-main .tbl th { white-space: normal; vertical-align: bottom; } .brief b { font-size: 24px; } }
+
+      /* Trang RM and the customer profile: pages off the sidebar */
+      .rmp, .pf { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+      .rmp > .btn, .pf > .btn { align-self: flex-start; margin-left: -10px; }
+      .rm-id { display: flex; align-items: center; gap: 14px; }
+      .rm-id h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+      .rm-id p { margin: 3px 0 0; color: var(--text-2); }
+      .rm-id .acts { margin-left: auto; }
+      .rm-period { margin: 0; font-size: 12.5px; color: var(--text-2); }
+      .rm-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+      .rm-stats .stat .val { font-size: 30px; }
+      .rm-stats .stat.lead-n .val { font-size: 38px; }
+      .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: -2px 0 6px; font-size: 12px; color: var(--text-2); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend .cad i { margin: 0; }
+      .rm-list .card-head .actions .seg { font-size: 12.5px; }
+      .rm-list .tbl td small { white-space: nowrap; }
+      .rm-list .tbl td small.c-warn { color: var(--warn); }
+      .pf-head { display: flex; align-items: center; gap: 14px; }
+      .pf-head h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; }
+      .pf-head p { margin: 3px 0 0; color: var(--text-2); }
+      dl.facts { display: grid; grid-template-columns: 150px 1fr; gap: 8px 14px; margin: 0; font-size: 13.5px; }
+      dl.facts dt { color: var(--text-2); }
+      dl.facts dd { margin: 0; }
+      @container (max-width: 1240px) { .rm-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .crop.mid > .win { left: 50%; margin-left: -600px; }
+      .crop.tall { height: 560px; }
+      .crop.xl { height: 690px; }
+      .crop.half { height: 250px; }
+      .crop.half > .win { left: 16px; top: 16px; width: 1100px; height: 700px; transform: scale(0.5); transform-origin: 0 0; }
+      .opt-pic.crop { display: block; padding: 0; border-radius: 0; }
+      .frame-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13.5px; color: var(--text-2); }
+      .frame-bar b { color: var(--text); }
+      .pal.static { max-width: 100%; width: 100%; }
+      .now-spec { display: grid; gap: 10px; justify-items: start; }
+      .now-spec .row { gap: 12px; }
+      .now-spec .lbl { width: 190px; flex: none; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .now-spec .now-pill { margin: 0; }
+      .now-spec .now-pill.narrow { max-width: 200px; }
+      .now-spec .now-pill.narrow .who, .now-spec .now-pill.narrow .sep { display: none; }
+      .now-pop.static { width: 100%; max-width: 392px; }
+      .tgrid { width: 1000px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; transform: scale(0.5); transform-origin: 0 0; }
+      .opt-pic.b-pic { display: block; place-items: start; height: 250px; padding: 16px; overflow: hidden; }
+      .dlg .th h3, .dlg .th .tl b { font-size: 20px; }
+      .tgrid .card { padding: 18px 20px; }
+      .tgrid .th { flex-wrap: nowrap; }
+      .tgrid .th h3, .tgrid .th .tl b { font-size: 20px; }
+      .tgrid .rmrow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--hairline); font-size: 13.5px; }
+      .tgrid .rmrow .v { margin-left: auto; font-weight: 650; }
+      .cr { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .cr th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-3); }
+      .cr td { padding: 9px 12px 9px 0; border-top: 1px solid var(--hairline); color: var(--text-2); }
+      .cr td.n, .cr th.n { text-align: right; }
+      .cr td.n { font-weight: 650; color: var(--text); white-space: nowrap; }
+      .state-l { display: block; margin: 0 0 8px; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .stack-v { display: grid; gap: 18px; }
+      .find.static .sug { position: static; display: block; margin-top: 6px; width: 100%; max-width: none; }
+      .numbers td.v { font-variant-numeric: tabular-nums; }
+      @media (max-width: 1100px) { .gal, .pgrid { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.5v.01" /></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+      <symbol id="i-cmd" viewBox="0 0 24 24"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z" /></symbol>
+      <symbol id="i-crown" viewBox="0 0 24 24"><path d="M4 8l4 4 4-7 4 7 4-4-2 10H6z" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+      <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" /></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></symbol>
+      <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 19l6-10 3.5 5.5L15 11l6 8z" /></symbol>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7" /></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 .8-3.2 2-4.3.2 2 1 3 2 3.3-.3-3 .2-6 1-9z" /></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" /></symbol>
+      <symbol id="i-anchor" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="2" /><path d="M12 7.5V21M5 13c0 4 3 7 7 8 4-1 7-4 7-8M8.5 11h7" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt b · Tìm kiếm, RM, Team</b>
+      <span class="state">Chờ duyệt G3</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#palette">Ô lệnh</a><a href="#now">Lúc này</a><a href="#customers">Tìm KH</a><a href="#rm">Trang RM</a><a href="#team">Team</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh cần quyết</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i" data-go="overview" data-sub="Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ" data-tools="scope period find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</button>
+              <button class="nav-i" data-go="appointments" data-sub="Toàn bộ" data-tools="scope find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</button>
+              <button class="nav-i on" data-go="customers" data-sub="884 KH đang mở · 65 đã đóng · Toàn bộ" data-tools="scope find" data-act="Khách hàng"><svg class="ic"><use href="#i-people" /></svg>Khách hàng</button>
+              <button class="nav-i" data-go="forecast" data-sub="Tuần này 10/11 – 14/11 · Toàn bộ" data-tools="scope find" data-act="Xuất Excel" data-act-open="job" data-job="Đang xuất Excel Forecast|Đã xuất Forecast_2026-11-10.xlsx"><svg class="ic"><use href="#i-forecast" /></svg>Forecast</button>
+              <button class="nav-i" data-go="reports" data-sub="Tháng 11/2026 · Toàn bộ" data-tools="scope period find" data-act="Xuất Excel" data-act-open="job" data-job="Đang xuất Excel Báo cáo|Đã xuất Bao-cao_2026-11.xlsx"><svg class="ic"><use href="#i-report" /></svg>Báo cáo</button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team" data-sub="3 team · 3 TL · 27 RM · 3 người hỗ trợ" data-tools="find" data-act="Team" data-act-open="dialog"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button>
+              <button class="nav-i" data-go="settings" data-sub="Dữ liệu · AI · Thùng rác" data-tools="find"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i>Đã lưu 13:20</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2>Khách hàng</h2><span></span></div>
+              <button class="now-pill" aria-haspopup="dialog" title="Lúc này: lịch hẹn kế tiếp, việc hôm nay, việc chạy nền"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
+                <button class="cap" data-tool="scope" aria-haspopup="true"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <span class="cap" data-tool="period"><button class="step" aria-label="Kỳ trước">&#x2039;</button><button class="num" aria-haspopup="true">Tháng 11/2026</button><button class="step" aria-label="Kỳ sau">&#x203A;</button></span>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Ô lệnh (⌘K)" title="Ô lệnh · ⌘K"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn><svg class="ic"><use href="#i-plus" /></svg><span>Khách hàng</span></button>
+              </div>
+            </header>
+
+            <!-- "Lúc này": hôm nay theo góc nhìn đang chọn -->
+            <div class="now-pop" role="dialog" aria-label="Lúc này">
+              <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
+              <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
+              <div class="ag next"><span class="tm num">14:00</span><b><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></b><span class="st s-info">còn 25 phút</span><small>Case size dự kiến 30 tr · RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">15:00</span><b><span class="kh" data-kh="L. T. H.">Lê Thị Hồng</span></b><span class="st s-info">Dự kiến</span><small>RM Lê Minh Khang · Hừng Đông</small></div>
+              <div class="ag"><span class="tm num">16:30</span><b><span class="kh" data-kh="L. Q. H.">Lê Quốc Hùng</span></b><span class="st s-info">Dự kiến</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <hr />
+              <h4>Cần làm</h4>
+              <div class="todo"><button class="btn sm" data-jump="appointments"><span class="count">12</span>buổi chưa ghi kết quả</button><button class="btn sm" data-jump="forecast"><span class="count">2</span>lịch tuần này thiếu case size</button></div>
+              <hr />
+              <h4>Việc chạy nền</h4>
+              <div data-jobs><p class="help" style="margin: 0">Không có việc nào đang chạy. Xuất Excel, sao lưu, phân tích AI hiện tiến độ ở đây.</p></div>
+            </div>
+
+            <div class="views">
+              <div class="view" data-view="overview"><div class="later"><svg class="ic"><use href="#i-overview" /></svg><b>Tổng quan</b><p>Vẽ ở <b>đợt c</b>. Đợt b chỉ thêm viên "Lúc này" và ô lệnh lên thanh công cụ của mọi màn.</p></div></div>
+              <div class="view" data-view="appointments"><div class="later"><svg class="ic"><use href="#i-cal" /></svg><b>Lịch hẹn</b><p>Giữ bố cục đã duyệt, chỉ thay vỏ: xem <a class="c-accent" href="app-shell.html#previews">app-shell.html · Xem trước</a>.</p></div></div>
+
+              <!-- ===== Khách hàng: kanban đã duyệt + ô tìm (ý 25) ===== -->
+              <div class="view" data-view="customers">
+                <div class="cu">
+                  <div class="bar-row">
+                    <div class="find" data-lights=".kan">
+                      <label class="input search"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm KH theo tên hoặc mã, không cần dấu" aria-label="Tìm khách hàng" autocomplete="off" spellcheck="false" /></label>
+                      <div class="menu sug" role="listbox" data-max="8" data-cus-sug></div>
+                    </div>
+                    <span class="spacer"></span>
+                    <span class="seg" aria-label="Cách xem"><button class="on">Kanban</button><button>Bảng</button></span>
+                  </div>
+                  <div class="kan" data-kan></div>
+                </div>
+              </div>
+
+              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Vẽ ở <b>đợt d</b>. Nút <b>Xuất Excel</b> trên thanh công cụ chạy thử một việc nền: xem tiến độ ở viên "Lúc này".</p></div></div>
+              <div class="view" data-view="reports"><div class="later"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Vẽ ở <b>đợt e</b>. Nút <b>Xuất Excel</b> trên thanh công cụ chạy thử một việc nền: xem tiến độ ở viên "Lúc này".</p></div></div>
+
+              <!-- ===== Team & nhân sự: bố cục đã duyệt + đầu team ý 33 + ô tìm RM ===== -->
+              <div class="view" data-view="team">
+                <div class="tm">
+                  <div class="bar-row">
+                    <div class="find">
+                      <label class="input search"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm RM theo tên, không cần dấu" aria-label="Tìm RM" autocomplete="off" spellcheck="false" /></label>
+                      <div class="menu sug" role="listbox" data-max="8" data-rm-sug></div>
+                    </div>
+                    <span class="spacer"></span>
+                    <button class="btn" data-run="person"><svg class="ic"><use href="#i-plus" /></svg>Nhân sự</button>
+                  </div>
+                  <div class="tm-layout">
+                    <div class="tm-left">
+                      <section class="card flat"><h3>Team</h3><div data-team-list></div></section>
+                      <section class="card flat support">
+                        <h3>Người hỗ trợ</h3>
+                        <ul>
+                          <li>Ngô Quang Vinh <span class="role" style="margin-left: auto">BDM</span><button class="btn quiet sm" data-run="person">Sửa</button></li>
+                          <li>Phó Đức Huy <span class="role" style="margin-left: auto">IS</span><button class="btn quiet sm" data-run="person">Sửa</button></li>
+                          <li>Vũ Thanh Tâm <span class="role" style="margin-left: auto">BD</span><button class="btn quiet sm" data-run="person">Sửa</button></li>
+                        </ul>
+                        <span class="help">IS / BD / BDM chỉ là người phối hợp lịch hẹn, không có chỉ số.</span>
+                      </section>
+                    </div>
+                    <section class="card tm-main" data-team-main></section>
+                  </div>
+                </div>
+              </div>
+
+              <div class="view" data-view="settings"><div class="later"><svg class="ic"><use href="#i-gear" /></svg><b>Cài đặt</b><p>Ba mục có icon đã duyệt ở đợt a: xem <a class="c-accent" href="app-shell.html#sidebar">app-shell.html</a>.</p></div></div>
+
+              <!-- ===== Trang RM (ý 27): không có mục riêng trên thanh bên, Team & nhân sự vẫn sáng ===== -->
+              <div class="view" data-view="rm" data-nav="team" data-tools="period find" data-act="Lịch hẹn"><div class="rmp" data-rm-page></div></div>
+
+              <!-- ===== Hồ sơ KH: giữ bố cục customer.html; ở đây chỉ để thấy đường đi ===== -->
+              <div class="view" data-view="profile" data-nav="customers" data-title="Hồ sơ khách hàng" data-tools="find" data-act="Lịch hẹn"><div class="pf" data-profile></div></div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm: hộp Tạo / Sửa team, ô lệnh, thông báo nổi ===== -->
+          <div class="scrim"></div>
+          <div class="dlg" role="dialog" aria-modal="true" aria-label="Team">
+            <div class="dlg-head"><div><h3 data-dlg-title>Sửa team</h3><div class="sub" data-dlg-sub></div></div><button class="x" data-close aria-label="Đóng"><svg class="ic"><use href="#i-x" /></svg></button></div>
+            <div class="dlg-body">
+              <div class="card flat" style="padding: 14px 16px" data-dlg-preview></div>
+              <div class="field"><label>Tên team <span class="req">*</span></label><input class="input" type="text" maxlength="40" data-dlg-name /></div>
+              <div class="field"><span class="label">Màu chữ của tên team <span class="opt-n">tùy chọn</span></span><div class="swatches" data-pick="color" role="radiogroup" aria-label="Màu chữ của tên team"></div></div>
+              <div class="field"><span class="label">Icon <span class="opt-n">tùy chọn</span></span><div class="icon-pick" data-pick="icon" role="radiogroup" aria-label="Icon của team"></div><span class="help">Không chọn màu, icon thì team dùng kiểu mặc định (tên màu chữ thường, icon team chung). Ô "KPI tháng" (ý 32) thêm vào hộp này ở đợt d.</span></div>
+            </div>
+            <div class="dlg-foot"><span class="hint">Esc để đóng</span><span class="spacer"></span><button class="btn" data-close>Hủy</button><button class="btn primary" data-close="team" data-dlg-save>Lưu</button></div>
+          </div>
+          <div class="pal" role="dialog" aria-modal="true" aria-label="Ô lệnh">
+            <div class="pal-field"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm KH, RM, màn hay lệnh…" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>
+            <div class="pal-list" role="listbox"></div>
+            <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd>chọn</span><span><kbd>Enter</kbd>mở</span><span><kbd>Esc</kbd>đóng</span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd>mở ở mọi màn</span></div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-t"><b>Heritas L-CRM</b> · đợt b</span>
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="num" data-size-note></span>
+        <button class="btn sm" data-open="pal"><svg class="ic"><use href="#i-search" /></svg>Ô lệnh <kbd class="k-mac">⌘K</kbd></button>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Ô lệnh ================= -->
+      <section class="sec" id="palette">
+        <span class="kicker">Ý 09 · phần C</span>
+        <h2>Ô lệnh: một chỗ để tìm KH, tìm RM, đi tới màn và chạy lệnh.</h2>
+        <p class="lead">Bấm <b>⌘K</b> trên macOS, <b>Ctrl K</b> trên Windows, ở bất kỳ màn nào. Trên Windows 11 ô nằm sẵn giữa thanh tiêu đề (kiểu A anh chọn 11/11) và ô lệnh mở ngay dưới nó; trên macOS còn nút kính lúp của thanh công cụ, ô lệnh trượt xuống gần mép trên như Spotlight. Thử ở cửa sổ đầu trang: gõ <b>nguyen van hu</b>, dùng ↑ ↓ rồi Enter.</p>
+        <div class="frame-bar"><b>Đang gõ "nguyen van hu"</b><span class="seg" data-os-for="#pv-pal"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="crop mid tall" id="pv-pal" data-os="mac" data-clone="#win" data-pal="nguyen van hu"></div>
+        <p class="crop-l">Bốn KH cùng bắt đầu bằng "nguyen van hu" đứng đầu theo thứ tự tên của app; KH mẫu của phần C "Nguyễn Văn Hùng – RM Hoàng Văn Tùng – Sao Mai" là dòng đầu. RM trùng tên "RM Nguyễn Văn Hùng – Sao Mai" (mẫu tìm RM của §5) nằm ở nhóm RM.</p>
+
+        <h3 class="sub-h">Ô trống và tìm theo mã KH</h3>
+        <p class="sub-p">Chưa gõ gì: hiện các màn và các lệnh. Gõ một phần mã KH (ở đây "k-9a") cũng ra KH: mã sáng lên.</p>
+        <div class="duo">
+          <div class="stack-v">
+            <div class="pal static" data-q=""></div>
+            <div class="pal static" data-q="k-9a"></div>
+          </div>
+        </div>
+
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Tìm như thế nào <small>đề xuất, anh duyệt ở #ask 1</small></h3>
+            <ul class="bul">
+              <li><b>Không cần dấu, không phân biệt hoa thường:</b> cùng cách so chữ của app (<code>searchText</code> trong <code>packages/domain</code>), "nguyen van hu" ra "Nguyễn Văn Hùng".</li>
+              <li><b>Tìm trong mọi KH,</b> kể cả KH đã đóng (Tạm hoãn, Mất cơ hội), không theo góc nhìn đang chọn (§5). Tìm theo tên hoặc mã KH.</li>
+              <li><b>Thứ tự:</b> tên bắt đầu bằng chữ đã gõ → một tiếng trong tên bắt đầu bằng chữ đã gõ → tên chứa chữ đã gõ ở giữa → khớp mã KH. Cùng mức thì theo thứ tự tên của app (<code>byName</code>).</li>
+              <li><b>Mỗi dòng KH:</b> "Tên – RM – Team" như §5, kèm nhóm KH ở đầu dòng và mã KH ở cuối để phân biệt hai KH trùng tên.</li>
+              <li><b>Bốn nhóm, mỗi nhóm có trần:</b> Khách hàng tối đa 8, RM 4, Đi tới 4, Lệnh 4.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Phím và chỗ mở</h3>
+            <ul class="bul">
+              <li><b>⌘K / Ctrl K</b> mở ở mọi màn, kể cả khi đang gõ trong ô khác; bấm lại thì đóng.</li>
+              <li><b>↑ ↓</b> chọn, <b>Enter</b> mở, <b>Esc</b> hoặc bấm ra vùng mờ thì đóng. Dòng đang chọn có nền sáng, trên Windows thêm vạch vàng bên trái như mục thanh bên.</li>
+              <li><b>Mở KH</b> ra hồ sơ KH; <b>mở RM</b> ra trang RM; <b>Đi tới</b> đổi màn; <b>lệnh</b> chạy ngay hoặc mở hộp của lệnh đó.</li>
+              <li><b>Lệnh trong v1.0:</b> Lịch hẹn mới, Khách hàng mới, Team mới, Xuất Excel Báo cáo tháng này, Sao lưu ngay, Che / hiện tên KH. Ô lệnh trả lời bằng số (ý 10) và phím tắt riêng (ý 13) vẫn để sau.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Lúc này ================= -->
+      <section class="sec" id="now">
+        <span class="kicker">Ý 11</span>
+        <h2>"Lúc này": lịch hẹn kế tiếp, và việc đang chạy nền.</h2>
+        <p class="lead">Một viên kính giữa tên màn và cụm nút, có ở mọi màn. Lúc rảnh nó cho biết lịch hẹn kế tiếp và còn bao lâu; bấm vào thì ra việc hôm nay. Khi app đang xuất Excel, sao lưu hay phân tích AI, viên này hiện tiến độ thay vì khóa màn hình. Hình dạng là <b>chữ nhật bo như nút</b>, không phải viên tròn hai đầu, theo luật bo góc anh duyệt ở đợt a. Thử ở cửa sổ đầu trang: bấm viên "Lúc này", hoặc vào Báo cáo rồi bấm <b>Xuất Excel</b>.</p>
+        <div class="duo">
+          <div class="now-spec">
+            <div class="row"><span class="lbl">Lúc rảnh</span><button class="now-pill"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button></div>
+            <div class="row"><span class="lbl">Cửa sổ hẹp (dưới 1240 px)</span><button class="now-pill narrow"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button></div>
+            <div class="row"><span class="lbl">Đang chạy nền</span><button class="now-pill busy"><span class="now-face"><svg class="ic"><use href="#i-export" /></svg><span class="who">Đang xuất Excel Báo cáo</span><span class="now-bar"><i style="--p: 0.6"></i></span><span class="num left">60%</span></span></button></div>
+            <div class="row"><span class="lbl">Xong (tự trở lại sau khoảng 3 giây)</span><button class="now-pill done"><span class="now-face"><svg class="ic"><use href="#i-check" /></svg><b class="who">Đã xuất Bao-cao_2026-11.xlsx</b></span></button></div>
+            <div class="row"><span class="lbl">Lỗi (ở lại tới khi bấm)</span><button class="now-pill fail"><span class="now-face"><svg class="ic"><use href="#i-alert" /></svg><b class="who">Xuất Excel Báo cáo không xong · bấm để thử lại</b></span></button></div>
+            <div class="row"><span class="lbl">Hết lịch hôm nay</span><button class="now-pill"><span class="now-face"><svg class="ic"><use href="#i-clock" /></svg><span class="who">Hết lịch hôm nay</span><span class="sep muted">·</span><span class="left num">kế tiếp T4 11/11 09:00</span></span></button></div>
+          </div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="duo stack" data-only="mac">
+            <div class="now-pop static">
+              <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
+              <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
+              <div class="ag next"><span class="tm num">14:00</span><b><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></b><span class="st s-info">còn 25 phút</span><small>Case size dự kiến 30 tr · RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <hr />
+              <h4>Việc chạy nền</h4>
+              <div class="job-row"><svg class="ic"><use href="#i-export" /></svg><span>Đang xuất Excel Báo cáo</span><span class="num left">60%</span></div>
+              <div class="job-row ok"><svg class="ic"><use href="#i-check" /></svg><span>Đã sao lưu lúc 12:10</span><span class="num left">12:10</span></div>
+            </div>
+          </div>
+          <div class="pcard">
+            <h3>Nội dung và luật <small>đề xuất, anh duyệt ở #ask 3–4</small></h3>
+            <ul class="bul">
+              <li><b>Theo góc nhìn đang chọn</b> trên thanh công cụ: Toàn bộ thì lịch kế tiếp của mọi RM; một team thì của team đó.</li>
+              <li><b>Bảng hôm nay:</b> mọi lịch của hôm nay theo giờ, lịch kế tiếp nền vàng nhạt; buổi đã qua chưa ghi kết quả có nút <b>Ghi kết quả</b>; "Cần làm" dẫn tới Lịch hẹn và Forecast; "Việc chạy nền" ghi việc đang chạy và việc vừa xong.</li>
+              <li><b>Việc chạy nền:</b> tên việc, thanh tiến độ, phần trăm; xong thì ghi "Đã xuất …" khoảng 3 giây rồi trở lại; lỗi thì viền đỏ và ở lại tới khi bấm để thử lại. Không chặn thao tác.</li>
+              <li><b>Cửa sổ hẹp:</b> bỏ tên KH, giữ giờ và thời gian còn lại; khi có việc chạy nền thì còn icon, thanh tiến độ và phần trăm. Ở 1100 × 700 thanh công cụ vẫn đủ chỗ cho mọi nút.</li>
+              <li><b>Che tên KH</b> áp dụng cả ở viên này và bảng hôm nay.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Tìm KH ================= -->
+      <section class="sec" id="customers">
+        <span class="kicker">Ý 25 · phần C</span>
+        <h2>Tìm là sáng: thẻ khớp sáng lên, thẻ khác mờ đi, cột đứng yên.</h2>
+        <p class="lead">Ô tìm nằm đầu màn Khách hàng. Gõ đến đâu, thẻ khớp sáng viền vàng và <b>lên đầu cột của nó</b>, kể cả thẻ đang nằm trong phần "+ n KH"; thẻ khác mờ đi nhưng giữ chỗ và vẫn bấm được, nên vẫn thấy KH đang ở nhóm nào. Đầu cột ghi số thẻ khớp. Dưới ô là danh sách "KH – RM – Team", ↑ ↓ Enter để mở hồ sơ, Esc để xóa.</p>
+        <div class="frame-bar"><b>Đang gõ "nguyen van hu" ở màn Khách hàng</b><span class="seg" data-os-for="#pv-cus"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="crop mid xl" id="pv-cus" data-os="mac" data-clone="#win" data-screen="customers" data-find-q="nguyen van hu"></div>
+        <p class="crop-l">Cột N3: "Nguyễn Văn Hưng" vốn nằm sau năm thẻ đầu, khi khớp thì hiện lên đầu cột. Cột Tạm hoãn / Mất cơ hội cũng sáng / mờ theo.</p>
+
+        <h3 class="sub-h">KH khớp nằm ngoài góc nhìn</h3>
+        <p class="sub-p">§5 chốt: tìm trong mọi KH, không giới hạn theo góc nhìn. Khi màn Khách hàng đang xem một team hay một RM, kanban chỉ có KH của góc nhìn đó, nên KH khớp ở team khác không có thẻ để sáng. Đề xuất: những KH này nằm trong danh sách dưới ô, ở nhóm riêng <b>"Ngoài góc nhìn"</b>, bấm vẫn mở hồ sơ; kanban không tự đổi góc nhìn.</p>
+        <div class="duo">
+          <div class="find static">
+            <label class="input search"><svg class="ic"><use href="#i-search" /></svg><input type="text" value="nguyen van hu" aria-label="Tìm khách hàng" readonly /></label>
+            <div class="menu sug" role="listbox" data-out-of-scope></div>
+          </div>
+        </div>
+
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Giữ gì, đổi gì <small>so với customers.html (vòng 2) và màn Khách hàng của app hiện nay</small></h3>
+          <ul class="bul">
+            <li><b>Giữ:</b> kanban bốn cột N4 → N1 và cột Tạm hoãn / Mất cơ hội bên phải; nội dung thẻ (tên, số HĐ, RM, giới tính · năm sinh); "+ n KH · xem dạng bảng"; nút Kanban / Bảng; hàng chọn RM khi góc nhìn là một team (B2 của <code>phase-3-feedback.html</code>, không vẽ lại ở đây).</li>
+            <li><b>Đổi theo vỏ:</b> tên màn, dòng "884 KH đang mở · 65 đã đóng" và nút "+ Khách hàng" lên thanh công cụ; góc nhìn lên viên của thanh công cụ.</li>
+            <li><b>Mới:</b> ô tìm trong màn (thay ô "Tìm KH, ID… Ctrl K" của bản vòng 2, nay Ctrl K là của ô lệnh); thẻ sáng / mờ; số khớp ở đầu cột.</li>
+            <li><b>Thẻ mờ:</b> còn 70% độ đậm và bớt màu; thẻ khớp nổi lên nhờ viền vàng và lên đầu cột, không nhờ làm mờ thật sâu. Vì vậy chữ trên thẻ mờ vẫn đạt AA: tên 7.3:1, dòng phụ (RM, giới tính · năm sinh) 4.6:1, đo trên điểm ảnh của bản mẫu trong Edge. Thẻ mờ vẫn bấm được; bỏ tìm (Esc) là mọi thẻ rõ lại.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ================= Trang RM ================= -->
+      <section class="sec" id="rm">
+        <span class="kicker">Ý 27 · phần C</span>
+        <h2>Trang RM: số của kỳ, rồi KH do RM phụ trách và nhịp gặp 8 tuần.</h2>
+        <p class="lead">Bấm tên RM ở Team &amp; nhân sự, chọn RM ở ô tìm RM hay ở ô lệnh: ra trang RM. Đầu trang là năm số của kỳ trên thanh công cụ và Forecast tuần; dưới là <b>danh sách KH do RM phụ trách</b> (RM ghi trên hồ sơ KH, §5) với đúng năm cột anh chốt, thêm một dải 8 tuần cho thấy KH nào được gặp đều, KH nào bị bỏ lâu. Bấm một KH ra hồ sơ KH; nút quay lại ở đầu trang về đúng chỗ vừa mở.</p>
+        <div class="frame-bar"><b>RM Hoàng Văn Tùng · Sao Mai</b><span class="seg" data-os-for="#pv-rm"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="crop mid xl" id="pv-rm" data-os="mac" data-clone="#win" data-view="rm" data-rm="0"></div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Đầu trang và danh sách <small>đề xuất, anh duyệt ở #ask 7</small></h3>
+            <ul class="bul">
+              <li><b>Năm số:</b> Doanh số, Tổng số HĐ, Tỷ lệ hủy, Tỉ lệ chốt theo kỳ trên thanh công cụ (mặc định tháng đang chạy, đổi là số đổi ngay), mỗi số kèm phép tính; <b>Forecast tuần</b> luôn là tuần này (hôm nay tới thứ Bảy), như định nghĩa của phần D.</li>
+              <li><b>Danh sách:</b> KH do RM phụ trách, đúng các cột §5: KH (kèm mã), nhóm, lần gặp gần nhất, lịch hẹn sắp tới, số HĐ; thêm cột "Nhịp gặp · 8 tuần". Không thêm cột case size (thuộc Forecast, đợt d).</li>
+              <li><b>Đang mở / Đã đóng:</b> mặc định KH đang mở (N4 → N1); viên "Đã đóng" xem KH Tạm hoãn, Mất cơ hội.</li>
+              <li><b>Sắp xếp mặc định:</b> KH lâu chưa gặp nhất lên đầu, KH chưa gặp lần nào xếp cuối; bấm tiêu đề cột để sắp theo cột khác. Gặp gần nhất quá 4 tuần thì số ngày chuyển màu cam.</li>
+              <li><b>Đường đi:</b> Team → RM → hồ sơ KH → quay lại RM → quay lại Team. Mục Team &amp; nhân sự trên thanh bên vẫn sáng khi xem trang RM.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Nhịp gặp · 8 tuần <small>đề xuất, anh duyệt ở #ask 8</small></h3>
+            <p class="said">Mỗi ô một tuần (Thứ Hai → Chủ Nhật, như lịch của app): bảy tuần trước và tuần này, cũ bên trái, tuần này bên phải. Bản mẫu: 21/09 – 15/11/2026. Dải chỉ đọc các lịch hẹn đã có, không phải dữ liệu mới.</p>
+            <table class="cr">
+              <tr><th>Hình</th><th>Nghĩa</th></tr>
+              <tr><td><span class="cad"><i class="m"></i></span> ô đặc</td><td>Có buổi đã gặp trong tuần</td></tr>
+              <tr><td><span class="cad"><i class="u"></i></span> vòng có chấm</td><td>Buổi đã qua, chưa ghi kết quả</td></tr>
+              <tr><td><span class="cad"><i class="s"></i></span> vòng vàng</td><td>Có lịch, chưa tới ngày</td></tr>
+              <tr><td><span class="cad"><i class="x"></i></span> dấu chéo</td><td>Có hẹn nhưng không diễn ra (dời, hủy, không đến)</td></tr>
+              <tr><td><span class="cad"><i></i></span> ô nhạt</td><td>Không có lịch</td></tr>
+            </table>
+            <p class="foot-note" style="margin-top: 12px">Tuần có nhiều lịch lấy hình đầu tiên theo thứ tự trên. Hình khác nhau chứ không chỉ khác màu; rê chuột vào ô thấy tuần và trạng thái, trình đọc màn hình đọc cả dải thành một câu.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Team & nhân sự ================= -->
+      <section class="sec" id="team">
+        <span class="kicker">Ý 33 · phần C</span>
+        <h2>Team &amp; nhân sự: team có màu và icon, TL đứng ngang tên team.</h2>
+        <p class="lead">Anh ghi 10/11: tên team có thể chọn màu chữ và icon khi tạo; TL in đậm, ngang hàng, cỡ chữ như tên team; ba số Doanh số · Số HĐ · Forecast tuần in đậm, màu champagne. 11/11 anh làm rõ: màu và icon là <b>tùy chọn</b>, "Baseline là đã ổn rồi". Ở đây bố cục đã duyệt của màn Team giữ nguyên, chỉ đầu team đổi theo ý 33 và thêm ô tìm RM (phần C).</p>
+        <div class="frame-bar"><b>Team &amp; nhân sự · đang chọn Sao Mai</b><span class="seg" data-os-for="#pv-team"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="crop mid xl" id="pv-team" data-os="mac" data-clone="#win" data-screen="team"></div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Giữ gì, đổi gì <small>so với team.html (vòng 2) và B1 của phase-3-feedback.html</small></h3>
+          <ul class="bul">
+            <li><b>Giữ:</b> danh sách team bên trái ("TL · n RM", team chưa có TL thì "chưa có TL"); khối Người hỗ trợ (IS / BD / BDM) có nút Sửa; bảng RM của team đang chọn với các cột Họ tên, Vai trò, KH đang mở, Lịch hẹn 30 ngày, HĐ năm 2026, Sửa, sắp xếp được mọi cột; nút "+ Nhân sự"; nút "Xóa team"; "Sửa" của TL; team chưa có TL có "+ Thêm TL".</li>
+            <li><b>Đổi theo vỏ:</b> dòng tóm tắt "3 team · 3 TL · 27 RM · 3 người hỗ trợ" và nút "+ Team" lên thanh công cụ.</li>
+            <li><b>Đổi theo ý 33:</b> đầu team là icon + tên team theo màu đã chọn, TL cùng dòng, cùng cỡ chữ đậm; ba số tóm tắt dưới đầu team; nút "Đổi tên team" thành <b>"Sửa team"</b> (tên, màu, icon); danh sách team bên trái cũng có icon và màu.</li>
+            <li><b>Mới (phần C):</b> ô tìm RM; tên RM trong bảng bấm được để mở trang RM.</li>
+            <li><b>Ba số:</b> Doanh số và Số HĐ của tháng đang chạy tới hôm nay, Forecast tuần này. Màn Team không có bộ chọn kỳ nên ba số không đổi theo kỳ.</li>
+          </ul>
+        </div>
+
+        <h3 class="sub-h">Hai cách bày màn Team: chọn một</h3>
+        <p class="sub-p">Bảng ý tưởng vẽ màn Team thành lưới thẻ, mỗi team một thẻ. Mockup đợt b đề xuất cách A để giữ đủ các việc quản lý của màn đã duyệt.</p>
+        <div class="gal">
+          <div class="opt rec">
+            <div class="opt-pic crop half" data-os="mac" data-clone="#win" data-screen="team"></div>
+            <div class="opt-t"><b>A · Giữ bố cục đã duyệt, đổi đầu team <span class="tag rec">Đề xuất</span></b><p>Danh sách team bên trái, một team lớn bên phải với đầu team kiểu ý 33 và bảng RM đầy đủ cột. Đủ chỗ cho các việc quản lý (sửa nhân sự, sắp xếp, xóa team) và cho team có 10 RM trở lên.</p></div>
+          </div>
+          <div class="opt">
+            <div class="opt-pic b-pic" data-team-grid></div>
+            <div class="opt-t"><b>B · Lưới thẻ team như bảng ý tưởng</b><p>Mỗi team một thẻ: đầu team, ba số, danh sách RM ngắn. Nhìn ba team cùng lúc, nhưng thẻ hẹp nên không còn chỗ cho các cột KH đang mở, Lịch hẹn 30 ngày, HĐ năm và nút Sửa; các việc quản lý phải dời vào menu của từng thẻ.</p></div>
+          </div>
+        </div>
+
+        <h3 class="sub-h">Hộp Tạo / Sửa team</h3>
+        <p class="sub-p">Trong cửa sổ đầu trang: vào Team &amp; nhân sự, bấm <b>Sửa team</b> hay <b>+ Team</b>; đổi màu, icon thì phần xem trước ở đầu hộp đổi theo; Lưu thì đầu team đổi ngay. Hộp dưới đây là "Sửa team" Bình Minh.</p>
+        <div class="duo" data-pane="center scrimmed">
+          <div class="dlg" role="dialog" aria-label="Sửa team">
+            <div class="dlg-head"><div><h3>Sửa team</h3><div class="sub">Bình Minh · 9 RM · TL Vũ Đức Thành</div></div><button class="x" aria-label="Đóng"><svg class="ic"><use href="#i-x" /></svg></button></div>
+            <div class="dlg-body">
+              <div class="card flat" style="padding: 14px 16px" data-static-preview="1"></div>
+              <div class="field"><label>Tên team <span class="req">*</span></label><input class="input" type="text" value="Bình Minh" /></div>
+              <div class="field"><span class="label">Màu chữ của tên team <span class="opt-n">tùy chọn</span></span><div class="swatches" data-pick="color" data-static-color="warn"></div></div>
+              <div class="field"><span class="label">Icon <span class="opt-n">tùy chọn</span></span><div class="icon-pick" data-pick="icon" data-static-icon="sunrise"></div><span class="help">Không chọn màu, icon thì team dùng kiểu mặc định (tên màu chữ thường, icon team chung). Ô "KPI tháng" (ý 32) thêm vào hộp này ở đợt d.</span></div>
+            </div>
+            <div class="dlg-foot"><span class="hint">Esc để đóng</span><span class="spacer"></span><button class="btn">Hủy</button><button class="btn primary">Lưu</button></div>
+          </div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Màu và icon <small>đề xuất, anh duyệt ở #ask 10</small></h3>
+            <ul class="bul">
+              <li><b>Sáu màu</b> lấy từ token đã có (champagne, xanh dương, tím, xanh ngọc, xanh lá, cam) và <b>tám icon</b> (sao, bình minh, mặt trời, núi, lá, ngọn lửa, khiên, mỏ neo). Không thêm token mới.</li>
+              <li><b>Tùy chọn:</b> ô đầu tiên của mỗi hàng là "Mặc định" (tên màu chữ thường, icon team chung). Hừng Đông trong bản mẫu dùng kiểu mặc định.</li>
+              <li><b>Hiện ở:</b> danh sách team, đầu team, trang RM, gợi ý tìm RM và ô lệnh. Tổng quan, Forecast, Báo cáo quyết ở đợt c–e.</li>
+              <li><b>Dữ liệu mới của team</b> (hai trường để trống được): G2 khi ra Issue code.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Tương phản của tên team <small>WCAG AA: chữ từ 4.5:1</small></h3>
+            <table class="cr">
+              <tr><th>Màu</th><th class="n">Nền app</th><th class="n">Trên thẻ</th><th class="n">Dòng đang chọn</th><th class="n">Hộp thoại</th></tr>
+              <tr><td><span class="tname">Mặc định · --text</span></td><td class="n">16.2</td><td class="n">13.8</td><td class="n">10.7</td><td class="n">13.1</td></tr>
+              <tr><td><span class="tname" style="--c: var(--accent)">Champagne · --accent</span></td><td class="n">9.6</td><td class="n">8.1</td><td class="n">6.3</td><td class="n">7.7</td></tr>
+              <tr><td><span class="tname" style="--c: var(--info)">Xanh dương · --info</span></td><td class="n">7.9</td><td class="n">6.7</td><td class="n">5.2</td><td class="n">6.4</td></tr>
+              <tr><td><span class="tname" style="--c: var(--n2)">Tím · --n2</span></td><td class="n">8.1</td><td class="n">6.9</td><td class="n">5.4</td><td class="n">6.6</td></tr>
+              <tr><td><span class="tname" style="--c: var(--submitted)">Xanh ngọc · --submitted</span></td><td class="n">10.1</td><td class="n">8.6</td><td class="n">6.7</td><td class="n">8.2</td></tr>
+              <tr><td><span class="tname" style="--c: var(--ok)">Xanh lá · --ok</span></td><td class="n">10.3</td><td class="n">8.7</td><td class="n">6.8</td><td class="n">8.3</td></tr>
+              <tr><td><span class="tname" style="--c: var(--warn)">Cam · --warn</span></td><td class="n">8.9</td><td class="n">7.6</td><td class="n">5.9</td><td class="n">7.2</td></tr>
+            </table>
+            <p class="foot-note" style="margin-top: 12px">Nền tính bằng màu phẳng tương đương: app <code>#0b1017</code>, thẻ <code>#1c2127</code>, dòng đang chọn trong thẻ <code>#2f343a</code>, hộp thoại <code>#1c2532</code>. Cả bảy màu đều trên 5:1 ở mọi nền.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Trống và lỗi ================= -->
+      <section class="sec" id="states">
+        <span class="kicker">Trạng thái trống và lỗi</span>
+        <h2>Trống và lỗi của đợt b, theo khuôn của bảng thành phần.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Có, vẽ kèm"</b>. Khuôn chung (hình tròn có icon, một dòng nói chuyện gì, một dòng nói làm gì tiếp, rồi nút) đã duyệt ở <a href="components.html#empty">components.html</a>; ở đây là câu chữ của từng chỗ. Hai chỗ cũng thử được trong cửa sổ đầu trang: ô lệnh gõ "xyz"; ô lệnh gõ "nguyen van hu" rồi chọn RM Nguyễn Văn Hùng (RM mới, chưa có KH).</p>
+        <div class="duo">
+          <div class="stack-v">
+            <div><span class="state-l">Ô lệnh không có kết quả</span><div class="pal static" data-q="nguyen van hux"></div></div>
+            <div><span class="state-l">Tìm KH không ra (màn Khách hàng)</span>
+              <section class="card flat"><div class="empty sm"><span class="mark"><svg class="ic"><use href="#i-search" /></svg></span><b>Không có KH nào khớp "tran van x"</b><p>Tìm theo tên không cần dấu, hoặc mã KH như K-4H2N. Ô tìm xem mọi KH, kể cả KH đã đóng.</p><div class="acts"><button class="btn sm">Bỏ tìm</button></div></div></section>
+            </div>
+            <div><span class="state-l">RM chưa phụ trách KH nào (trang RM)</span>
+              <section class="card flat"><div class="card-head"><h3>Khách hàng phụ trách</h3><span class="meta">0 KH đang mở</span></div><table class="tbl"><thead><tr><th>Khách hàng</th><th class="l">Nhóm</th><th class="l">Nhịp gặp · 8 tuần</th><th>Gặp gần nhất</th><th>Lịch hẹn sắp tới</th><th>Số HĐ</th></tr></thead></table><div class="empty sm"><span class="mark"><svg class="ic"><use href="#i-people" /></svg></span><b>RM Nguyễn Văn Hùng chưa phụ trách KH nào</b><p>KH hiện ở đây khi hồ sơ KH ghi RM này là RM phụ trách.</p><div class="acts"><button class="btn sm"><svg class="ic"><use href="#i-plus" /></svg>Khách hàng</button></div></div></section>
+            </div>
+            <div><span class="state-l">Team chưa có RM, chưa có TL (Team &amp; nhân sự)</span>
+              <section class="card flat" data-empty-team></section>
+            </div>
+            <div><span class="state-l">Lỗi một màn: trang RM không hiển thị được</span>
+              <section class="card flat"><div class="empty fail"><span class="mark"><svg class="ic"><use href="#i-alert" /></svg></span><b>Trang RM này gặp lỗi và không hiển thị được</b><p>Dữ liệu đã lưu không bị ảnh hưởng. Bấm quay lại hoặc chọn một màn khác ở thanh bên; nếu lỗi lặp lại, gửi chi tiết kỹ thuật dưới đây cho người hỗ trợ.</p><div class="acts"><button class="btn"><svg class="ic"><use href="#i-back" /></svg>Team &amp; nhân sự</button></div><div class="fail-detail">TypeError: Cannot read properties of undefined (reading 'cadence')<br />at RmPage · bản 1.0.0</div></div></section>
+            </div>
+            <div><span class="state-l">Lỗi trong thẻ: không tính được nhịp gặp</span>
+              <section class="card flat"><div class="card-head"><h3>Khách hàng phụ trách</h3><span class="meta">16 KH đang mở</span></div><div class="empty sm fail"><span class="mark"><svg class="ic"><use href="#i-alert" /></svg></span><b>Không tính được nhịp gặp 8 tuần</b><p>Năm số ở đầu trang vẫn đúng. Thử lại, hoặc mở từng KH để xem lịch hẹn.</p><div class="acts"><button class="btn sm">Thử lại</button></div></div></section>
+            </div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px; color: var(--text-2)">
+          <li>Việc chạy nền lỗi nằm ở viên "Lúc này" (mục trên); lỗi khi lưu hộp Sửa team là khối báo đầu thân hộp đã duyệt ở <a class="c-accent" href="components.html#dialogs">components.html · Hộp thoại</a>.</li>
+          <li>"Tìm không ra" và "lọc không ra" là hai câu khác nhau: tìm không ra đưa nút <b>Bỏ tìm</b>, không đưa nút tạo mới.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Che tên KH ================= -->
+      <section class="sec" id="mask">
+        <span class="kicker">Ý 36 · đã duyệt ở đợt a</span>
+        <h2>Che tên KH ở mọi chỗ mới của đợt b.</h2>
+        <p class="lead">Luật che tên anh đã duyệt 11/11 không đổi: tên KH thành chữ cái đầu, mã KH giữ nguyên, <b>tìm vẫn theo tên thật</b>, kết quả hiện dạng đã che. Bấm nút con mắt trong cửa sổ đầu trang rồi mở ô lệnh, viên "Lúc này", trang RM để thử. Dưới đây là ô lệnh khi đang che tên.</p>
+        <div class="crop mid tall" data-os="mac" data-clone="#win" data-masked data-pal="nguyen van hu"></div>
+        <p class="crop-l">Chỗ hiện tên KH của đợt b, đều đánh dấu <code>.kh</code>: ô lệnh, danh sách dưới ô tìm KH, thẻ kanban, cột Tạm hoãn / Mất cơ hội, viên "Lúc này" và bảng hôm nay, danh sách KH của trang RM, đầu hồ sơ KH. Tên RM, TL, team không che.</p>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Anh cần quyết ở G3</span>
+        <h2>Mười hai điểm của đợt b.</h2>
+        <p class="lead">Không hỏi lại các điều anh đã chốt (font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", thanh tiêu đề Windows kiểu A, icon Cài đặt kiểu ô màu, che tên KH, nội dung phần C ở §5). Số trong mockup viết theo luật mới của T-418: dấu "," ngăn hàng nghìn, "." cho phần lẻ ("1.38 tỷ", "16.7%"); tiền đầy đủ ghi "VNĐ". Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <ol class="asks">
+          <li><b>Ô lệnh: chỗ mở, bốn nhóm, thứ tự gợi ý?</b>⌘K / Ctrl K ở mọi màn; ô giữa thanh tiêu đề (Windows) và nút kính lúp (macOS). Nhóm Khách hàng (tối đa 8), RM (4), Đi tới (4), Lệnh (4); ô trống hiện Đi tới và Lệnh. Thứ tự: tên bắt đầu bằng chữ đã gõ, rồi một tiếng của tên, rồi giữa tên, rồi mã KH; cùng mức theo thứ tự tên của app. Tìm mọi KH, kể cả KH đã đóng.</li>
+          <li><b>Sáu lệnh của ô lệnh trong v1.0?</b>Lịch hẹn mới, Khách hàng mới, Team mới, Xuất Excel Báo cáo tháng này, Sao lưu ngay, Che / hiện tên KH. Ý 10 (trả lời bằng số) và ý 13 (phím tắt riêng) vẫn để sau.</li>
+          <li><b>"Lúc này": hình dạng, chỗ đặt, nội dung?</b>Chữ nhật bo như nút, giữa tên màn và cụm nút; lịch kế tiếp và thời gian còn lại theo góc nhìn đang chọn; bấm ra bảng hôm nay (lịch, việc cần làm, việc chạy nền). Cửa sổ hẹp bỏ tên KH, giữ giờ.</li>
+          <li><b>Việc chạy nền hiện ở "Lúc này"?</b>Xuất Excel, sao lưu, phân tích AI: tên việc, thanh tiến độ, phần trăm; xong ghi "Đã xuất …" khoảng 3 giây; lỗi ở lại tới khi bấm thử lại. Không chặn màn hình.</li>
+          <li><b>"Tìm là sáng" ở màn Khách hàng như mục trên?</b>Ô tìm đầu màn; thẻ khớp lên đầu cột và sáng viền vàng; thẻ khác còn 70% độ đậm, giữ chỗ, vẫn bấm được, chữ vẫn đạt AA; đầu cột ghi "n khớp"; danh sách "KH – RM – Team" tối đa 8, ↑ ↓ Enter, Esc xóa.</li>
+          <li><b>KH khớp ngoài góc nhìn: nhóm "Ngoài góc nhìn" trong danh sách dưới ô?</b>Kanban giữ góc nhìn đang chọn; bấm KH ngoài góc nhìn vẫn mở hồ sơ.</li>
+          <li><b>Trang RM: năm số theo kỳ + Forecast tuần, danh sách KH phụ trách, sắp mặc định "lâu chưa gặp nhất lên đầu"?</b>Đúng năm cột của §5 thêm dải 8 tuần; viên Đang mở / Đã đóng; không thêm cột case size; có nút quay lại.</li>
+          <li><b>Dải 8 tuần: định nghĩa như bảng "Nhịp gặp · 8 tuần"?</b>Tuần Thứ Hai → Chủ Nhật, bảy tuần trước và tuần này; năm hình (đã gặp, chưa ghi kết quả, có lịch, không diễn ra, không có lịch); tuần nhiều lịch theo thứ tự đó.</li>
+          <li><b>Màn Team: cách A (giữ bố cục đã duyệt, đổi đầu team) hay cách B (lưới thẻ team)?</b>Xem "Hai cách bày màn Team". Đề xuất A.</li>
+          <li><b>Màu và icon của team: sáu màu, tám icon, đều tùy chọn; "Đổi tên team" thành "Sửa team"?</b>Hiện ở danh sách team, đầu team, trang RM, gợi ý tìm. <em>Màu và icon là dữ liệu mới của team: G2 (mô hình dữ liệu) khi ra Issue code.</em></li>
+          <li><b>Đầu team: TL cùng dòng, cùng cỡ chữ đậm với tên team; ba số Doanh số, Số HĐ (tháng đang chạy) và Forecast tuần, đậm, màu champagne?</b>Màn Team không có bộ chọn kỳ.</li>
+          <li><b>Trạng thái trống và lỗi của đợt như mục trên?</b>Ô lệnh không có kết quả; tìm KH không ra; RM chưa có KH; team chưa có RM, chưa có TL; lỗi trang RM; lỗi trong thẻ; việc chạy nền lỗi.</li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt b · T-417 #1217 · chờ Owner duyệt · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+    <script>
+      /* Round b: the mock data and the screens drawn from it. Behaviour shared with other rounds is in
+         ui2.js (window.ui2). Today in the mock: Tuesday 10/11/2026, 13:35. Money in triệu. */
+      (() => {
+        const $ = (s, el = document) => el.querySelector(s);
+        const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+        const ui2 = window.ui2;
+        const byName = new Intl.Collator('vi', { numeric: true }).compare;
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const ic = (n) => `<svg class="ic"><use href="#i-${n}" /></svg>`;
+
+        /* ---------- Data ---------- */
+        // name, TL, colour (token), icon, sales of the month so far, policies, Forecast of this week
+        const TEAMS = [
+          ['Sao Mai', 'Nguyễn Thu Hà', 'accent', 'star', 620, 14, 240],
+          ['Bình Minh', 'Vũ Đức Thành', 'warn', 'sunrise', 450, 11, 185],
+          ['Hừng Đông', 'Lâm Ngọc Diệp', null, null, 310, 7, 130],
+        ].map(([name, tl, color, icon, sales, pol, fc], i) => ({ i, name, tl, color, icon, sales, pol, fc }));
+        // name, team, open customers, appointments in 30 days, policies of 2026,
+        // this month [issued, cancelled, FYP issued, FYP cancelled, RF], Forecast of this week, closed customers
+        const RMS = [
+          ['Hoàng Văn Tùng', 0, 16, 14, 9, [6, 1, 270, 50, 8], 160, 2], ['Nguyễn Văn Hùng', 0, 0, 0, 0, [0, 0, 0, 0, 0], 0, 0],
+          ['Đỗ Khánh Linh', 0, 34, 18, 12, [6, 0, 260, 0, 7], 50, 3], ['Lý Quang Vinh', 0, 31, 15, 7, [3, 0, 140, 0, 5], 30, 2],
+          ['Trịnh Gia Bảo', 0, 29, 12, 6, [0, 0, 0, 0, 2], 0, 1], ['Đặng Văn Phúc', 0, 33, 16, 8, [0, 0, 0, 0, 3], 0, 4],
+          ['Lê Ngọc Hương', 0, 28, 11, 5, [0, 0, 0, 0, 1], 0, 2], ['Phan Minh Châu', 0, 30, 13, 7, [0, 0, 0, 0, 2], 0, 3],
+          ['Kiều Anh Thư', 0, 27, 10, 4, [0, 0, 0, 0, 1], 0, 1], ['Tô Hữu Nghĩa', 0, 26, 9, 5, [0, 0, 0, 0, 0], 0, 2],
+          ['Mai Phương', 1, 38, 19, 9, [6, 0, 250, 0, 8], 120, 3], ['Châu Bảo Ngọc', 1, 41, 16, 7, [5, 0, 200, 0, 7], 65, 2],
+          ['Phạm Thu Hà', 1, 36, 21, 11, [0, 0, 0, 0, 2], 0, 4], ['Bùi Ngọc Trâm', 1, 44, 12, 5, [0, 0, 0, 0, 1], 0, 3],
+          ['Đỗ Văn Hiếu', 1, 29, 14, 6, [0, 0, 0, 0, 2], 0, 2], ['Quách Gia Hân', 1, 40, 17, 8, [0, 0, 0, 0, 3], 0, 3],
+          ['Tạ Minh Khoa', 1, 33, 10, 4, [0, 0, 0, 0, 1], 0, 1], ['Lâm Bảo Anh', 1, 47, 20, 10, [0, 0, 0, 0, 2], 0, 5],
+          ['Hà Quốc Việt', 1, 35, 13, 6, [0, 0, 0, 0, 1], 0, 2],
+          ['Hoàng Nam', 2, 39, 17, 10, [7, 0, 310, 0, 10], 130, 3], ['Lê Minh Khang', 2, 44, 18, 8, [0, 0, 0, 0, 3], 0, 4],
+          ['Trần Quốc Thắng', 2, 37, 15, 6, [0, 0, 0, 0, 2], 0, 2], ['Huỳnh Kim Hùng', 2, 31, 12, 5, [0, 0, 0, 0, 1], 0, 2],
+          ['Võ Thị Lan', 2, 35, 14, 7, [0, 0, 0, 0, 2], 0, 3], ['Đinh Gia Huy', 2, 42, 19, 9, [0, 0, 0, 0, 2], 0, 3],
+          ['Hồ Thanh Vy', 2, 30, 11, 4, [0, 0, 0, 0, 1], 0, 1], ['Trương Đức Long', 2, 29, 10, 5, [0, 0, 0, 0, 1], 0, 2],
+        ].map(([name, team, open, appt, polYear, [issued, cancelled, fi, fc, rf], fw, closed], i) => ({ i, name, team, open, appt, polYear, issued, cancelled, fi, fc, rf, fw, closed }));
+        // name, stage, RM, code, met last, next appointment, policies, the last 8 weeks, sex · year
+        // (weeks: m met · u past, no outcome · s booked · x did not happen · . none). Closed ones: stage hold / lost, since.
+        const CUS = [
+          ['Nguyễn Văn Hùng', 'n2', 0, 'K-4H2N', '10/11', '19/11 10:00', 1, '.m..mx.m', 'Nam · 1979'],
+          ['Trần Minh Huệ', 'n1', 0, 'K-7B3Q', '03/11', '10/11 14:00', 0, '.m.m.mms', 'Nữ · 1985'],
+          ['Đỗ Quang Vinh', 'n1', 0, 'K-2M8D', '05/11', '11/11 09:00', 2, 'm.mm..ms', 'Nam · 1976'],
+          ['Lý Hoài Hùng', 'n1', 0, 'K-9C5T', '28/10', '', 2, 'mm.m.m..', 'Nam · 1981'],
+          ['Phạm Ngọc Lan', 'n2', 0, 'K-5R1K', '07/11', '11/11 10:30', 2, 'm.m.m.ms', 'Nữ · 1988'],
+          ['Võ Thanh Bình', 'n2', 0, 'K-3P6W', '05/11', '12/11 16:00', 0, '.m.x.mms', 'Nam · 1990'],
+          ['Hà Minh Trí', 'n2', 0, 'K-8E4J', '26/10', '', 0, '.m...m.u', 'Nam · 1984'],
+          ['Lê Quốc Hùng', 'n3', 0, 'K-6S9A', '28/10', '10/11 16:30', 0, '....xm.s', 'Nam · 1972'],
+          ['Ngô Minh Tâm', 'n3', 0, 'K-1F7G', '31/10', '12/11 09:30', 0, '..x..m.s', 'Nữ · 1987'],
+          ['Bùi Ngọc Hà', 'n3', 0, 'K-4V2L', '22/10', '12/11 10:00', 0, '..m.m..s', 'Nữ · 1992'],
+          ['Phan Thanh Quang', 'n3', 0, 'K-7N5H', '18/09', '', 0, '........', 'Nam · 1969'],
+          ['Đinh Thị Ngân', 'n3', 0, 'K-2X8R', '14/10', '', 1, 'm..m....', 'Nữ · 1980'],
+          ['Nguyễn Thị Hương', 'n4', 0, 'K-5D3U', '', '12/11 15:00', 0, '.......s', 'Nữ · 1994'],
+          ['Hồ Kim Hùng', 'n4', 0, 'K-9Q1Z', '', '16/11 09:00', 0, '........', 'Nam · 1983'],
+          ['Đinh Bảo Ngọc', 'n4', 0, 'K-3T6Y', '', '', 0, '......x.', 'Nữ · 1991'],
+          ['Vũ Thanh Thắng', 'n4', 0, 'K-8L2B', '21/10', '', 0, '....m...', 'Nam · 1986'],
+          ['Trương Gia Lộc', 'hold', 0, 'K-6W4E', '02/10', '', 0, '.x......', 'Nam · 1984'],
+          ['Kha Minh Triết', 'lost', 0, 'K-1J9P', '15/09', '', 0, '........', 'Nam · 1986'],
+          ['Nguyễn Văn Hưng', 'n3', 5, 'K-6G2C', '20/10', '', 0, '.m..m...', 'Nam · 1975'],
+          ['Nguyễn Văn Huy', 'n4', 10, 'K-1R7M', '', '13/11 10:00', 0, '.......s', 'Nam · 1995'],
+          ['Nguyễn Văn Hữu', 'n1', 19, 'K-8K5S', '06/11', '13/11 14:00', 1, 'm.m.m.ms', 'Nam · 1978'],
+          ['Nguyễn Hùng Cường', 'n2', 3, 'K-2Z4F', '29/10', '17/11 09:30', 0, '..m..m..', 'Nam · 1982'],
+          ['Trịnh Minh Anh', 'n1', 2, 'K-9A1C', '04/11', '11/11 15:00', 0, 'm.m.m.ms', 'Nữ · 1986'],
+          ['Phạm Gia Long', 'n2', 2, 'K-7F3Q', '30/10', '12/11 08:30', 1, '.m.m.m.s', 'Nam · 1974'],
+          ['Đinh Công Hậu', 'n3', 2, 'K-0H4A', '23/10', '', 0, '..m.m...', 'Nam · 1982'],
+          ['Hà Tuệ Mẫn', 'n1', 11, 'K-2Q7J', '05/11', '12/11 15:00', 1, 'm..m.mms', 'Nữ · 1983'],
+          ['Tống Gia Huy', 'n4', 2, 'K-6R3M', '', '', 0, '.....x..', 'Nam · 1983'],
+          ['Lưu Bích Ngọc', 'n3', 3, 'K-1U8Z', '27/10', '13/11 16:00', 0, '...m.m.s', 'Nữ · 1990'],
+          ['Quan Đình Phúc', 'n2', 12, 'K-4X2V', '02/11', '', 0, '.m..x.m.', 'Nam · 1968'],
+          ['Lê Thị Hồng', 'n1', 20, 'K-5H8N', '03/11', '10/11 15:00', 2, 'm.m.m.ms', 'Nữ · 1989'],
+          ['Trần Thị Mai Lan', 'n2', 2, 'K-3M6T', '27/10', '', 0, '...m.m.u', 'Nữ · 1987'],
+          ['Ngô Bảo Hân', 'n4', 3, 'K-7W1D', '', '18/11 10:00', 0, '........', 'Nữ · 1991'],
+          ['Kiều Thanh Tâm', 'n4', 13, 'K-4C9E', '', '', 0, '........', 'Nữ · 1993'],
+          ['Lâm Thị Hường', 'n3', 19, 'K-8P3V', '28/10', '', 0, '..m..m..', 'Nữ · 1968'],
+          ['Vũ Hải Đăng', 'n2', 23, 'K-6T2Q', '04/11', '16/11 14:00', 0, '.m.m..m.', 'Nam · 1985'],
+          ['Châu Minh Khôi', 'n1', 21, 'K-1E6H', '06/11', '12/11 10:30', 1, 'm.m.m.ms', 'Nam · 1977'],
+          ['Tạ Thu Uyên', 'n4', 25, 'K-9S4K', '', '13/11 09:00', 0, '.......s', 'Nữ · 1996'],
+          ['Đặng Quốc Bảo', 'n3', 15, 'K-5L7X', '21/10', '', 0, '....m...', 'Nam · 1980'],
+          ['Ông Thị Lan', 'hold', 19, 'K-2B8R', '12/10', '', 0, '...m....', 'Nữ · 1970'],
+          ['Viên Đức Mạnh', 'lost', 11, 'K-7Y5N', '28/09', '', 0, '.m......', 'Nam · 1977'],
+        ].map(([name, st, rm, code, last, next, pol, cad, who], i) => ({ i, name, st, rm, code, last, next, pol, cad, who }));
+        const STAGE = { n4: 'N4', n3: 'N3', n2: 'N2', n1: 'N1', hold: 'Tạm hoãn', lost: 'Mất cơ hội' };
+        const OPEN = ['n4', 'n3', 'n2', 'n1'];
+        // The whole book behind the sample: open customers by stage and closed ones (884 open, 65 closed)
+        const TOTAL = { n4: 361, n3: 219, n2: 134, n1: 170, hold: 21, lost: 44 };
+        const TEAM_COLORS = [['accent', 'Champagne'], ['info', 'Xanh dương'], ['n2', 'Tím'], ['submitted', 'Xanh ngọc'], ['ok', 'Xanh lá'], ['warn', 'Cam']];
+        const TEAM_ICONS = [['star', 'Sao'], ['sunrise', 'Bình minh'], ['sun', 'Mặt trời'], ['mountain', 'Núi'], ['leaf', 'Lá'], ['flame', 'Ngọn lửa'], ['shield', 'Khiên'], ['anchor', 'Mỏ neo']];
+        const WEEKS = ['21/09', '28/09', '05/10', '12/10', '19/10', '26/10', '02/11', '09/11'];
+        const WEEK_END = ['27/09', '04/10', '11/10', '18/10', '25/10', '01/11', '08/11', '15/11'];
+        const CAD = { m: 'đã gặp', u: 'đã qua, chưa ghi kết quả', s: 'có lịch, chưa tới ngày', x: 'có hẹn nhưng không diễn ra', '.': 'không có lịch' };
+        const LEGEND = Object.entries(CAD).map(([k, l]) => `<span><span class="cad" aria-hidden="true"><i class="${k === '.' ? '' : k}"></i></span>${l}</span>`).join('');
+
+        /* ---------- Format (the new rule of T-418: "," groups thousands, "." the decimals) ---------- */
+        const grp = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const money = (tr) => (Math.abs(tr) >= 1000 ? `${(tr / 1000).toFixed(2).replace(/\.?0+$/, '')} tỷ` : `${grp(tr)} tr`);
+        const pct = (a, b) => (b ? `${((a / b) * 100).toFixed(1)}%` : '—');
+        const shortName = (name) => name.split(' ').map((w) => `${w[0]}.`).join(' ');
+        const avatar = (name) => { const w = name.split(' '); return w[0][0] + w[w.length - 1][0]; };
+        const DAY = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const dateOf = (dm) => { const [d, m] = dm.split('/').map(Number); return new Date(Date.UTC(2026, m - 1, d)); };
+        const TODAY = dateOf('10/11');
+        const days = (dm) => Math.round((TODAY - dateOf(dm)) / 864e5);
+        const sortKey = (dm) => { if (!dm) return 9999; const [d, m] = dm.split(' ')[0].split('/').map(Number); return m * 100 + d; };
+
+        /* ---------- Pieces ---------- */
+        const look = (t) => ({ c: t.color ? `var(--${t.color})` : 'var(--text-2)', n: t.color ? `var(--${t.color})` : 'var(--text)', i: t.icon || 'team' });
+        const tmark = (t, cls = '') => `<span class="tmark ${cls}" style="--c: ${look(t).c}">${ic(look(t).i)}</span>`;
+        const tname = (t) => `<span class="tname" style="--c: ${look(t).n}">${esc(t.name)}</span>`;
+        const kh = (c, hl) => `<span class="kh" data-kh="${shortName(c.name)}"${hl ? ' data-hl' : ''}>${esc(c.name)}</span>`;
+        const stage = (st) => `<span class="st dot ${st}">${STAGE[st]}</span>`;
+        const rmOf = (c) => RMS[c.rm];
+        const teamOf = (r) => TEAMS[r.team];
+        function cad(s) {
+          const n = (ch) => [...s].filter((x) => x === ch).length;
+          const label = `Nhịp gặp 8 tuần, 21/09 – 15/11: ${n('m')} tuần đã gặp, ${n('x')} tuần không diễn ra, ${n('u')} tuần chưa ghi kết quả, ${n('s')} tuần có lịch`;
+          return `<span class="cad" role="img" aria-label="${label}">${[...s].map((ch, k) => `<i class="${ch === '.' ? '' : ch}" title="Tuần ${WEEKS[k]} – ${WEEK_END[k]}: ${CAD[ch]}"></i>`).join('')}</span>`;
+        }
+        const cusSub = (c) => `– RM ${esc(rmOf(c).name)} – ${esc(teamOf(rmOf(c)).name)}${c.st === 'hold' || c.st === 'lost' ? ` · ${STAGE[c.st]}` : ''}`;
+        const cusOpt = (c, kind = 'Hồ sơ') => `<button class="pal-o" data-find="${esc(c.name)} ${c.code}" data-view-go="profile" data-c="${c.i}">${stage(c.st)}<span class="t"><b>${kh(c, true)}</b> <small>${cusSub(c)}</small></span><span class="code num" data-hl>${c.code}</span><span class="kind">${kind}</span></button>`;
+        const rmOpt = (r) => `<button class="pal-o" data-find="${esc(r.name)}" data-view-go="rm" data-rm="${r.i}"><span class="av">${avatar(r.name)}</span><span class="t">RM <b data-hl>${esc(r.name)}</b> <small>– ${tmark(teamOf(r))} ${esc(teamOf(r).name)}</small></span><span class="kind">Trang RM</span></button>`;
+        const SCREENS = [['overview', 'Tổng quan'], ['appointments', 'Lịch hẹn'], ['customers', 'Khách hàng'], ['forecast', 'Forecast'], ['reports', 'Báo cáo'], ['team', 'Team & nhân sự'], ['settings', 'Cài đặt']];
+        const NAV_ICON = { overview: 'overview', appointments: 'cal', customers: 'people', forecast: 'forecast', reports: 'report', team: 'team', settings: 'gear' };
+        const CMDS = [
+          ['Lịch hẹn mới…', 'lich hen moi dat lich', 'data-run="appt"', 'plus'],
+          ['Khách hàng mới…', 'khach hang moi them kh', 'data-run="cust"', 'plus'],
+          ['Team mới…', 'team moi tao team', 'data-open="dialog" data-team-new', 'plus'],
+          ['Xuất Excel Báo cáo tháng 11/2026', 'xuat excel bao cao', 'data-run="export"', 'export'],
+          ['Sao lưu ngay', 'sao luu backup', 'data-run="backup"', 'db'],
+          ['Che / hiện tên khách hàng', 'che ten an ten hien ten', 'data-run="mask"', 'eye'],
+        ];
+        const cusSorted = [...CUS].sort((a, b) => byName(a.name, b.name));
+        const rmSorted = [...RMS].sort((a, b) => byName(a.name, b.name));
+        const none = (text) => `<div class="pal-none" hidden><div class="empty sm"><span class="mark">${ic('search')}</span><b>${text}</b><p>Gõ tên không cần dấu, hoặc mã KH như K-4H2N. Tìm trong mọi KH, không theo góc nhìn.</p></div></div>`;
+        const palHtml = () =>
+          `<div class="pal-g" data-max="8"><div class="pal-grp">Khách hàng</div>${cusSorted.map((c) => cusOpt(c)).join('')}</div>`
+          + `<div class="pal-g" data-max="4"><div class="pal-grp">RM</div>${rmSorted.map(rmOpt).join('')}</div>`
+          + `<div class="pal-g" data-max="4" data-idle="7"><div class="pal-grp">Đi tới</div>${SCREENS.map(([v, t]) => `<button class="pal-o" data-find="${esc(t)}" data-jump="${v}">${ic(NAV_ICON[v])}<span class="t" data-hl>${esc(t)}</span><span class="kind">Màn</span></button>`).join('')}</div>`
+          + `<div class="pal-g" data-max="4" data-idle="3"><div class="pal-grp">Lệnh</div>${CMDS.map(([t, words, act, i]) => `<button class="pal-o" data-find="${esc(t)} ${words}" ${act}>${ic(i)}<span class="t" data-hl>${esc(t)}</span><span class="kind">Lệnh</span></button>`).join('')}</div>`
+          + none('Không có KH, RM, màn hay lệnh nào khớp "<span data-q></span>"');
+
+        /* ---------- Khách hàng ---------- */
+        function card(c, extra) {
+          return `<button class="kcard${extra ? ' extra' : ''}" data-find="${esc(c.name)} ${c.code}" data-view-go="profile" data-c="${c.i}"><b>${kh(c)}${c.pol ? `<span class="chip">${c.pol} HĐ</span>` : ''}</b><span><span>RM ${esc(rmOf(c).name)}</span><span class="num">${c.who}</span></span></button>`;
+        }
+        function kanban() {
+          const cols = OPEN.map((st) => {
+            const list = cusSorted.filter((c) => c.st === st);
+            return `<section class="kcol" data-find-group aria-label="${STAGE[st]}"><header>${stage(st)}<span class="find-n" hidden></span><span class="tot num">${grp(TOTAL[st])}</span></header>${list.map((c, k) => card(c, k >= 5)).join('')}<button class="more num" data-run="table">+ ${grp(TOTAL[st] - Math.min(5, list.length))} KH · xem dạng bảng</button></section>`;
+          }).join('');
+          const closed = ['hold', 'lost'].map((st) => `<section class="kcol" data-find-group aria-label="${STAGE[st]}"><header>${stage(st)}<span class="find-n" hidden></span><span class="tot num">${TOTAL[st]}</span></header><ul>${cusSorted.filter((c) => c.st === st).map((c) => `<li data-find="${esc(c.name)} ${c.code}" data-view-go="profile" data-c="${c.i}">${kh(c)}<span class="num">${c.last}/2026</span></li>`).join('')}</ul><span class="help">Mở lại được bất cứ lúc nào</span></section>`).join('');
+          return cols + `<div class="kclosed">${closed}</div>`;
+        }
+
+        /* ---------- Team & nhân sự ---------- */
+        const teamRms = (t) => RMS.filter((r) => r.team === t).sort((a, b) => byName(a.name, b.name));
+        function teamHead(t, edit) {
+          return `<div class="th">${tmark(t, 'lg')}<h3>${tname(t)}</h3><span class="sep"></span><span class="tl"><span class="role-tl">${ic('crown')}TL</span><b>${esc(t.tl)}</b>${edit ? '<button class="btn quiet sm" data-run="person">Sửa</button>' : ''}</span>${edit ? `<span class="acts"><button class="btn sm" data-open="dialog" data-team-edit>Sửa team</button><button class="btn sm" data-run="del-team">Xóa team</button></span>` : ''}</div>`;
+        }
+        const brief = (t) => `<div class="brief num"><div><b>${money(t.sales)}</b><span>Doanh số</span><small>tháng 11, tới 10/11</small></div><div><b>${t.pol}</b><span>Số HĐ</span><small>tháng 11, tới 10/11</small></div><div><b>${money(t.fc)}</b><span>Forecast tuần</span><small>10/11 – 14/11</small></div></div>`;
+        const SORT_TEAM = { name: (a, b) => byName(a.name, b.name), open: (a, b) => a.open - b.open, appt: (a, b) => a.appt - b.appt, pol: (a, b) => a.polYear - b.polYear };
+        function teamRows(win) {
+          const s = win._teamSort || { k: 'name', desc: false };
+          const list = teamRms(win._team).sort(SORT_TEAM[s.k]);
+          if (s.desc) list.reverse();
+          return list.map((r) => `<tr data-view-go="rm" data-rm="${r.i}"><td><button class="lnk">${esc(r.name)}${ic('chev')}</button></td><td class="l"><span class="role">RM</span></td><td>${r.open}</td><td>${r.appt}</td><td>${r.polYear}</td><td><button class="btn quiet sm" data-run="person">Sửa</button></td></tr>`).join('');
+        }
+        function drawTeam(win) {
+          const t = TEAMS[win._team];
+          $('[data-team-list]', win).innerHTML = TEAMS.map((x) => `<button class="tl-i${x.i === t.i ? ' on' : ''}" data-team-pick="${x.i}" aria-pressed="${x.i === t.i}">${tmark(x)}${tname(x)}<span class="n num">${x.tl ? 'TL' : 'chưa có TL'} · ${teamRms(x.i).length} RM</span></button>`).join('');
+          const rms = teamRms(t.i);
+          const s = win._teamSort || { k: 'name', desc: false };
+          const th = (k, label, l) => `<th class="sort${s.k === k ? (s.desc ? ' desc' : ' asc') : ''}${l ? ' l' : ''}" data-tsort="${k}">${label}</th>`;
+          $('[data-team-main]', win).innerHTML = teamHead(t, true) + brief(t) + (rms.length
+            ? `<table class="tbl"><thead><tr>${th('name', 'Họ tên')}<th class="l">Vai trò</th>${th('open', 'KH đang mở')}${th('appt', 'Lịch hẹn 30 ngày')}${th('pol', 'HĐ năm 2026')}<th></th></tr></thead><tbody>${teamRows(win)}</tbody></table>`
+            : `<div class="empty sm"><span class="mark">${ic('team')}</span><b>Team ${esc(t.name)} chưa có RM</b><p>Thêm RM bằng "+ Nhân sự", hoặc chuyển RM từ team khác bằng nút Sửa của RM đó.</p><div class="acts"><button class="btn sm" data-run="person">${ic('plus')}Nhân sự</button></div></div>`);
+          remask(win);
+        }
+
+        /* ---------- Trang RM ---------- */
+        const SORT_RM = { name: (a, b) => byName(a.name, b.name), st: (a, b) => OPEN.indexOf(a.st) - OPEN.indexOf(b.st), last: (a, b) => sortKey(a.last) - sortKey(b.last), next: (a, b) => sortKey(a.next) - sortKey(b.next), pol: (a, b) => a.pol - b.pol };
+        function lastCell(c) {
+          if (!c.last) return '<span class="muted">Chưa gặp</span>';
+          const d = days(c.last);
+          return `${c.last}<small class="${d > 28 ? 'c-warn' : ''}">${d === 0 ? 'hôm nay' : `${d} ngày trước`}</small>`;
+        }
+        function nextCell(c) {
+          if (!c.next) return '<span class="muted">Chưa hẹn</span>';
+          const [dm, tm] = c.next.split(' '), d = -days(dm);
+          return `${dm} · ${tm}<small>${d === 0 ? 'hôm nay' : `${DAY[dateOf(dm).getUTCDay()]} · còn ${d} ngày`}</small>`;
+        }
+        function rmRows(win) {
+          const r = RMS[win._rm], s = win._rmSort || { k: 'last', desc: false };
+          const closed = win._rmClosed;
+          const list = CUS.filter((c) => c.rm === r.i && (closed ? !OPEN.includes(c.st) : OPEN.includes(c.st))).sort(SORT_RM[s.k]);
+          if (s.desc) list.reverse();
+          if (s.k === 'last' && !s.desc) list.sort((a, b) => (!a.last) - (!b.last)); // never met: last
+          return list.map((c) => `<tr data-view-go="profile" data-c="${c.i}"><td><button class="lnk">${kh(c)}</button><small class="num">${c.code}</small></td><td class="l">${stage(c.st)}</td><td class="l">${cad(c.cad)}</td><td>${lastCell(c)}</td><td>${nextCell(c)}</td><td>${c.pol || '<span class="muted">0</span>'}</td></tr>`).join('');
+        }
+        function drawRm(win) {
+          const r = RMS[win._rm], t = teamOf(r);
+          const view = $('.view[data-view="rm"]', win);
+          view.dataset.title = r.name;
+          view.dataset.sub = `RM · Team ${t.name} · Tháng 11/2026 · 01/11 – 10/11 (MTD)`;
+          const sales = r.fi - r.fc, mine = CUS.filter((c) => c.rm === r.i), shown = mine.filter((c) => OPEN.includes(c.st)).length;
+          const missing = r.i === 0 ? ' · 1 lịch thiếu case size' : '';
+          const s = win._rmSort || { k: 'last', desc: false };
+          const th = (k, label, l) => `<th class="sort${s.k === k ? (s.desc ? ' desc' : ' asc') : ''}${l ? ' l' : ''}" data-rsort="${k}">${label}</th>`;
+          $('[data-rm-page]', win).innerHTML = `<button class="btn quiet sm" data-back>${ic('back')}<span></span></button>
+            <section class="card"><div class="rm-id"><span class="av lg">${avatar(r.name)}</span><div><h3>${esc(r.name)} <span class="chip">RM</span></h3><p>${tmark(t)} ${tname(t)} · TL ${esc(t.tl)} · <span class="num">${r.open} KH đang mở · ${r.closed} đã đóng</span></p></div><span class="acts"><button class="btn sm" data-run="person">Sửa nhân sự</button></span></div></section>
+            <p class="rm-period num">Tháng 11/2026 · 01/11 – 10/11 (MTD): đổi kỳ ở thanh công cụ. Forecast tuần luôn là tuần này.</p>
+            <div class="rm-stats num">
+              <section class="card stat lead-n"><span class="lbl">Doanh số</span><div class="val">${money(sales).replace(/ (tr|tỷ)$/, '<small>$1</small>')}</div><p class="eq">${r.issued ? `Phát hành ${money(r.fi)} − hủy ${money(r.fc)}` : 'Chưa có HĐ trong kỳ'}</p></section>
+              <section class="card stat"><span class="lbl">Tổng số HĐ</span><div class="val">${r.issued - r.cancelled}</div><p class="eq">${r.issued} phát hành − ${r.cancelled} hủy</p></section>
+              <section class="card stat"><span class="lbl">Tỷ lệ hủy</span><div class="val">${pct(r.cancelled, r.issued).replace('%', '<small>%</small>')}</div><p class="eq">${r.issued ? `${r.cancelled} HĐ hủy ÷ ${r.issued} HĐ phát hành` : 'Chưa có HĐ phát hành'}</p></section>
+              <section class="card stat"><span class="lbl">Tỉ lệ chốt</span><div class="val">${pct(r.issued, r.rf).replace('%', '<small>%</small>')}</div><p class="eq">${r.rf ? `${r.issued} HĐ ÷ ${r.rf} RF` : 'Chưa có RF'}</p></section>
+              <section class="card stat"><span class="lbl">Forecast tuần</span><div class="val">${money(r.fw).replace(/ (tr|tỷ)$/, '<small>$1</small>')}</div><p class="eq">10/11 – 14/11${missing}</p></section>
+            </div>
+            <section class="card rm-list">
+              <div class="card-head"><h3>Khách hàng phụ trách</h3><span class="meta num">${r.open} KH đang mở · RM ghi trên hồ sơ KH</span><span class="actions"><span class="seg" data-rm-seg><button class="${win._rmClosed ? '' : 'on'}" data-v="open">Đang mở</button><button class="${win._rmClosed ? 'on' : ''}" data-v="closed">Đã đóng</button></span></span></div>
+              ${r.open || r.closed ? `<div class="legend">${LEGEND}</div>` : ''}
+              ${(() => {
+                const rows = rmRows(win);
+                const head = `<table class="tbl"><thead><tr>${th('name', 'Khách hàng')}${th('st', 'Nhóm', 1)}<th class="l">Nhịp gặp · 8 tuần</th>${th('last', 'Gặp gần nhất')}${th('next', 'Lịch hẹn sắp tới')}${th('pol', 'Số HĐ')}</tr></thead>`;
+                if (rows) return `${head}<tbody>${rows}</tbody></table>`;
+                if (!r.open && !r.closed) return `${head}</table><div class="empty sm"><span class="mark">${ic('people')}</span><b>RM ${esc(r.name)} chưa phụ trách KH nào</b><p>KH hiện ở đây khi hồ sơ KH ghi RM này là RM phụ trách. RM vào team ngày 02/11/2026.</p><div class="acts"><button class="btn sm" data-run="cust">${ic('plus')}Khách hàng</button></div></div>`;
+                return `${head}</table><div class="empty sm"><span class="mark">${ic('info')}</span><b>Bản mẫu không có KH ${win._rmClosed ? 'đã đóng' : 'đang mở'} của RM này</b><p>App thật hiện đủ ${win._rmClosed ? r.closed : r.open} KH.</p></div>`;
+              })()}
+              <div class="tbl-foot">${mine.length && (shown < r.open) ? `Bản mẫu chỉ có ${shown} trong ${r.open} KH đang mở của RM này · ` : ''}Bấm một KH để mở hồ sơ · sắp mặc định: lâu chưa gặp nhất lên đầu</div>
+            </section>`;
+        }
+        // Sorting or switching Đang mở / Đã đóng draws the page again; the back button keeps its name
+        function drawRmList(win) {
+          const label = $('.view[data-view="rm"] [data-back] span', win);
+          const keep = label ? label.textContent : '';
+          drawRm(win);
+          const again = $('.view[data-view="rm"] [data-back] span', win);
+          if (again) again.textContent = keep;
+          remask(win);
+        }
+
+        /* ---------- Hồ sơ KH (only the way there and back) ---------- */
+        function drawProfile(win, i) {
+          const c = CUS[i], r = rmOf(c), t = teamOf(r);
+          const view = $('.view[data-view="profile"]', win);
+          view.dataset.sub = `${STAGE[c.st]} · ${c.code} · RM ${r.name} · ${t.name}`;
+          $('[data-profile]', win).innerHTML = `<button class="btn quiet sm" data-back>${ic('back')}<span></span></button>
+            <section class="card"><div class="pf-head"><span class="av lg">${avatar(c.name)}</span><div><h3>${kh(c)} ${stage(c.st)}</h3><p class="num">${c.code} · ${c.who} · RM ${esc(r.name)} · ${tmark(t)} ${tname(t)}</p></div></div></section>
+            <section class="card"><dl class="facts num"><dt>Gặp gần nhất</dt><dd>${c.last ? `${c.last}/2026` : 'Chưa gặp'}</dd><dt>Lịch hẹn sắp tới</dt><dd>${c.next ? c.next.replace(' ', '/2026 · ') : 'Chưa hẹn'}</dd><dt>Số HĐ</dt><dd>${c.pol}</dd><dt>Nhịp gặp · 8 tuần</dt><dd>${cad(c.cad)}</dd></dl></section>
+            <div class="later" style="min-height: 220px">${ic('people')}<b>Hồ sơ KH giữ bố cục đã duyệt</b><p>Thông tin, KYC, KYC Intelligence, lịch hẹn, hợp đồng như <a class="c-accent" href="customer.html">customer.html</a>, chỉ thay vỏ (anh chốt 11/11 "Giữ bố cục"). Ở đây chỉ để thấy đường đi: bấm KH → hồ sơ → nút quay lại về đúng chỗ đã mở.</p></div>`;
+        }
+
+        /* ---------- Hộp Tạo / Sửa team ---------- */
+        function pickers(box, kind, value) {
+          box.innerHTML = kind === 'color'
+            ? `<button class="none${value ? '' : ' on'}" data-v="" role="radio" aria-checked="${!value}" title="Mặc định" aria-label="Màu mặc định"></button>${TEAM_COLORS.map(([c, l]) => `<button class="${c === value ? 'on' : ''}" data-v="${c}" style="--c: var(--${c})" role="radio" aria-checked="${c === value}" title="${l}" aria-label="Màu ${l}"></button>`).join('')}`
+            : `<button class="${value ? '' : 'on'}" data-v="" role="radio" aria-checked="${!value}" title="Mặc định" aria-label="Icon mặc định">${ic('team')}</button>${TEAM_ICONS.map(([i, l]) => `<button class="${i === value ? 'on' : ''}" data-v="${i}" role="radio" aria-checked="${i === value}" title="${l}" aria-label="Icon ${l}">${ic(i)}</button>`).join('')}`;
+        }
+        function openTeamDlg(win, t) {
+          const dlg = $(':scope > .dlg', win);
+          win._draft = t === null ? { i: null, name: 'Ánh Dương', tl: '', color: null, icon: null } : { ...TEAMS[t] };
+          $('[data-dlg-title]', dlg).textContent = t === null ? 'Tạo team' : 'Sửa team';
+          $('[data-dlg-sub]', dlg).textContent = t === null ? 'Chỉ cần tên; màu và icon là tùy chọn' : `${TEAMS[t].name} · ${teamRms(t).length} RM · TL ${TEAMS[t].tl}`;
+          $('[data-dlg-save]', dlg).textContent = t === null ? 'Tạo team' : 'Lưu';
+          $('[data-dlg-name]', dlg).value = win._draft.name;
+          pickers($('[data-pick="color"]', dlg), 'color', win._draft.color);
+          pickers($('[data-pick="icon"]', dlg), 'icon', win._draft.icon);
+          preview(win);
+        }
+        function preview(win) {
+          const d = win._draft;
+          $('[data-dlg-preview]', win).innerHTML = teamHead({ ...d, name: d.name || 'Tên team', tl: d.tl || 'chưa có TL' }, false);
+        }
+
+        /* ---------- Draw every window, and every copy of it ---------- */
+        function remask(root) {
+          const m = root.closest('.masked');
+          if (m) ui2.mask(m, true);
+        }
+        for (const pal of $$('.pal')) {
+          $('.pal-list', pal) || pal.insertAdjacentHTML('beforeend', '<div class="pal-list" role="listbox"></div>');
+          if (!$('.pal-field', pal)) pal.insertAdjacentHTML('afterbegin', `<div class="pal-field">${ic('search')}<input type="text" placeholder="Tìm KH, RM, màn hay lệnh…" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>`);
+          $('.pal-list', pal).innerHTML = palHtml();
+          if (!$('.pal-foot', pal)) pal.insertAdjacentHTML('beforeend', '<div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd>chọn</span><span><kbd>Enter</kbd>mở</span><span><kbd>Esc</kbd>đóng</span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd>mở ở mọi màn</span></div>');
+          if (pal.dataset.q !== undefined) { $('input', pal).value = pal.dataset.q; ui2.filter($('.pal-list', pal), pal.dataset.q); }
+        }
+        for (const win of $$('.win')) {
+          win._team = 0;
+          win._rm = 0;
+          $('[data-kan]', win).innerHTML = kanban();
+          $('[data-cus-sug]', win).innerHTML = cusSorted.map((c) => cusOpt(c, '')).join('') + none('Không có KH nào khớp "<span data-q></span>"');
+          $('[data-rm-sug]', win).innerHTML = rmSorted.map(rmOpt).join('') + '<div class="pal-none" hidden><div class="empty sm"><span class="mark">' + ic('search') + '</span><b>Không có RM nào khớp "<span data-q></span>"</b><p>Gõ tên RM không cần dấu.</p></div></div>';
+          drawTeam(win);
+          win.addEventListener('ui2:open', (e) => {
+            const from = e.detail.from || { dataset: {} };
+            if (e.detail.view === 'rm') { win._rm = +(from.dataset.rm || 0); win._rmClosed = false; win._rmSort = null; drawRm(win); }
+            if (e.detail.view === 'profile') drawProfile(win, +(from.dataset.c || 0));
+          });
+          win.addEventListener('ui2:run', (e) => {
+            const run = e.detail.run;
+            const say = { appt: 'Ở đây mở hộp "Lịch hẹn mới" (6a, đã duyệt)', cust: 'Ở đây mở hộp "Khách hàng mới" (đã duyệt)', person: 'Ở đây mở hộp Sửa / Thêm nhân sự (đã duyệt)', 'del-team': 'Ở đây mở hộp Xóa team (đã duyệt)', table: 'Ở đây chuyển sang dạng Bảng (đã duyệt)' }[run];
+            if (say) ui2.toast(win, `${say} <small>· bản mẫu</small>`);
+            if (run === 'export') ui2.job(win, 'Đang xuất Excel Báo cáo', 'Đã xuất Bao-cao_2026-11.xlsx');
+            if (run === 'backup') ui2.job(win, 'Đang sao lưu', 'Đã sao lưu lúc 13:36');
+            if (run === 'mask') { const b = $('.toolbar [data-mask]', win); if (b) b.click(); }
+          });
+          win.addEventListener('ui2:pick', (e) => {
+            const dlg = e.target.closest('.dlg');
+            if (!win._draft || !dlg || dlg.parentElement !== win) return;
+            win._draft[e.detail.group] = e.detail.value || null;
+            preview(win);
+          });
+        }
+        // Each copy of the window shown further down the page: a screen, a page, a palette, a search
+        for (const holder of $$('[data-clone]')) {
+          const win = $('.win', holder);
+          if (!win) continue;
+          if (holder.dataset.view) ui2.show(win, holder.dataset.view, { dataset: { rm: holder.dataset.rm || '0' } }, true, true);
+          if (holder.dataset.pal !== undefined) ui2.openPal(win, holder.dataset.pal, true);
+          if (holder.dataset.findQ) { const f = $('.view[data-view="customers"] .find', win); $('input', f).value = holder.dataset.findQ; ui2.findIn(f); f.classList.add('open'); }
+        }
+        // Option B of the team screen: a grid of team cards, as on the idea board
+        for (const box of $$('[data-team-grid]')) {
+          box.innerHTML = `<div class="tgrid">${TEAMS.map((t) => `<section class="card">${teamHead(t, false)}${brief(t)}${teamRms(t.i).slice(0, 3).map((r) => `<div class="rmrow"><span class="av">${avatar(r.name)}</span><span>${esc(r.name)}<br /><small class="muted num">${r.open} KH · Forecast tuần ${money(r.fw)}</small></span><span class="v num">${money(r.fi - r.fc)}</span></div>`).join('')}<div class="rmrow muted">+ ${teamRms(t.i).length - 3} RM khác</div></section>`).join('')}</div>`;
+        }
+        // The static dialog and the empty team of the states section
+        for (const p of $$('[data-static-preview]')) p.innerHTML = teamHead(TEAMS[1], false);
+        for (const b of $$('[data-static-color]')) pickers(b, 'color', b.dataset.staticColor);
+        for (const b of $$('[data-static-icon]')) pickers(b, 'icon', b.dataset.staticIcon);
+        for (const box of $$('[data-empty-team]')) {
+          box.innerHTML = teamHead({ name: 'Ánh Dương', tl: 'chưa có TL', color: 'info', icon: 'leaf' }, false).replace('<b>chưa có TL</b>', '<b class="muted">chưa có TL</b><button class="btn quiet sm">+ Thêm TL</button>') + brief({ sales: 0, pol: 0, fc: 0 }) + `<div class="empty sm"><span class="mark">${ic('team')}</span><b>Team Ánh Dương chưa có RM</b><p>Thêm RM bằng "+ Nhân sự", hoặc chuyển RM từ team khác bằng nút Sửa của RM đó.</p><div class="acts"><button class="btn sm">${ic('plus')}Nhân sự</button></div></div>`;
+        }
+        // Customers matched outside the view picked: their own group under the field
+        for (const box of $$('[data-out-of-scope]')) {
+          const q = 'nguyen van hu', hit = cusSorted.filter((c) => ui2.fold(c.name).includes(q));
+          const inside = hit.filter((c) => rmOf(c).team === 1), outside = hit.filter((c) => rmOf(c).team !== 1);
+          box.innerHTML = `<div class="pal-g"><div class="pal-grp">Trong góc nhìn Team Bình Minh</div>${inside.map((c) => cusOpt(c, '')).join('')}</div><div class="pal-g"><div class="pal-grp">Ngoài góc nhìn · chỉ mở hồ sơ, kanban không đổi</div>${outside.map((c) => cusOpt(c, '')).join('')}</div>`;
+          ui2.filter(box, q);
+        }
+        $$('.masked').forEach((m) => ui2.mask(m, true));
+
+        /* ---------- Clicks of this page ---------- */
+        document.addEventListener('click', (e) => {
+          const win = e.target.closest('.win');
+          if (!win) return;
+          const pick = e.target.closest('[data-team-pick]');
+          if (pick) { win._team = +pick.dataset.teamPick; win._teamSort = null; drawTeam(win); return; }
+          const ts = e.target.closest('th[data-tsort]');
+          if (ts) { win._teamSort = { k: ts.dataset.tsort, desc: ts.classList.contains('desc') }; drawTeam(win); return; }
+          const rs = e.target.closest('th[data-rsort]');
+          if (rs) { win._rmSort = { k: rs.dataset.rsort, desc: rs.classList.contains('desc') }; drawRmList(win); return; }
+          const seg = e.target.closest('[data-rm-seg] button');
+          if (seg) { win._rmClosed = seg.dataset.v === 'closed'; drawRmList(win); return; }
+          if (e.target.closest('[data-team-edit]')) return openTeamDlg(win, win._team);
+          if (e.target.closest('[data-open="dialog"]')) return openTeamDlg(win, null);
+          if (e.target.closest('[data-close="team"]') && win._draft) {
+            const d = win._draft;
+            d.name = $('[data-dlg-name]', win).value.trim() || d.name;
+            if (d.i === null) {
+              TEAMS.push({ ...d, i: TEAMS.length, tl: '', sales: 0, pol: 0, fc: 0 });
+              win._team = TEAMS.length - 1;
+              ui2.toast(win, `Đã tạo team ${esc(d.name)} <small>· chưa có RM, chưa có TL</small>`);
+            } else {
+              Object.assign(TEAMS[d.i], { name: d.name, color: d.color, icon: d.icon });
+              ui2.toast(win, `Đã lưu team ${esc(d.name)}`);
+            }
+            win._draft = null;
+            drawTeam(win);
+          }
+        });
+        document.addEventListener('input', (e) => {
+          const win = e.target.closest && e.target.closest('.win');
+          if (win && win._draft && e.target.matches('[data-dlg-name]')) { win._draft.name = e.target.value; preview(win); }
+        });
+      })();
+    </script>
+  </body>
+</html>

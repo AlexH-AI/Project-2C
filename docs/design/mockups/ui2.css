@@ -4,6 +4,8 @@
    3 stage + desktop · 4 window, title bar, sidebar · 5 toolbar · 6 buttons · 7 fields, choices, menus
    8 cards, numbers, tables · 9 labels · 10 focus layer (dialog, toast) · 11 empty + error
    12 customer-name mask · 13 motion, reduced motion, reduced transparency
+   14 round b (T-417, waiting for G3): command palette, "Lúc này", search field that lights what it
+      finds, meeting rhythm over 8 weeks, team colour and icon
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
    Hand-formatted, short rules on one line (docs/ is not run through Prettier). */
@@ -626,3 +628,140 @@ tr.open .tw .ic { transform: rotate(90deg); }
   :root, [data-os='win'] { --mat-window: var(--bg-1); --mat-pop: var(--bg-2); --mat-edge: var(--bg-0); }
   .win, .dlg, .menu, .ppop, .toast, .dock, .pagebar, .toolbar::before { backdrop-filter: none; }
 }
+
+/* ============ 14. Round b (T-417): palette, "Lúc này", search that lights, rhythm, team identity ============ */
+/* Built only from the tokens of section 0; waiting for the Owner's G3. Rounded rectangles of this
+   round take the rule of section 5: */
+.pal, .pal-o, .now-pill, .now-pop, .now-pop .ag, .job-row, .tmark, .icon-pick button, .cad i { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+
+/* Command palette (ý 09). The focus level, like a dialog: on macOS it drops near the top of the window
+   like Spotlight; on Windows 11 it opens from the search box of the title bar. Four groups: Khách hàng,
+   RM, Đi tới, Lệnh. Options are .pal-o (also the list under a search field, below). */
+.pal { width: 620px; max-width: calc(100% - 48px); display: flex; flex-direction: column; --r: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-3); font: 14px/1.45 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--text); text-align: left; overflow: hidden; }
+.pal-field { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px 0 18px; border-bottom: 1px solid var(--hairline); color: var(--text-2); }
+.pal-field > .ic { width: 20px; height: 20px; }
+.pal-field input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; font-size: 18px; color: var(--text); }
+.pal-field input::placeholder { color: var(--text-3); }
+.pal-list { min-height: 0; max-height: 470px; padding: 4px 6px 6px; overflow: hidden auto; }
+.pal-g { display: flex; flex-direction: column; }
+.pal-grp { order: -1; padding: 9px 10px 4px; font-size: 11.5px; font-weight: 600; color: var(--text-3); }
+.pal-o { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 10px; --r: calc(var(--r-pop) - 6px); /* concentric with the palette: 6 px in */ text-align: left; white-space: nowrap; }
+[data-os='win'] .pal-o { --r: 4px; }
+.pal-o:hover { background: var(--fill-1); }
+.pal-o.sel { background: var(--fill-2); }
+[data-os='win'] .pal-o.sel::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
+.pal-o > .ic { width: 16px; height: 16px; color: var(--text-2); }
+.pal-o .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pal-o .t small { font-size: 13px; color: var(--text-2); }
+.pal-o .code { flex: none; font-size: 12px; color: var(--text-2); }
+.pal-o .kind { flex: none; min-width: 44px; text-align: right; font-size: 11.5px; color: var(--text-2); }
+.pal-o.sel .kind::after { content: ' ↵'; }
+.pal-o .av { width: 24px; height: 24px; font-size: 10px; }
+.pal-o .tmark { vertical-align: -5px; }
+.pal-o mark, .find mark { background: none; color: var(--accent); font-weight: 700; }
+.pal-none { padding: 2px 4px 4px; }
+.pal-foot { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 9px 18px; border-top: 1px solid var(--hairline); font-size: 12px; color: var(--text-2); }
+.pal-foot kbd { margin-right: 4px; }
+.win > .pal { position: absolute; z-index: 30; left: 50%; top: 84px; max-height: calc(100% - 108px); opacity: 0; pointer-events: none; transform: translate(-50%, -10px) scale(0.98); transform-origin: top center; transition: opacity var(--t-1) var(--ease-in), transform var(--t-1) var(--ease-in); }
+[data-os='win'] .win > .pal { top: 6px; width: 560px; max-height: calc(100% - 30px); } /* grows out of the search box of the title bar */
+.win.pal-on > .pal { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); transition: opacity var(--t-2) var(--ease-out), transform var(--t-3) var(--spring-snappy); }
+.win.pal-on .scrim { opacity: 1; pointer-events: auto; }
+.win.pal-on .tb-search { visibility: hidden; } /* Windows 11: the palette takes the place of the box it opened from */
+
+/* "Lúc này" (ý 11): one control between the name of the screen and the controls of the toolbar, on
+   every screen. A rounded rectangle like the buttons (macOS: straight sides), not a capsule. */
+.now-pill { flex: none; max-width: 380px; height: 34px; margin: 0 auto; padding: 0 13px 0 11px; display: inline-flex; align-items: center; gap: 8px; --r: var(--r-control); background: var(--fill-1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px var(--hairline); font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; transition: background var(--t-1), transform var(--t-3) var(--spring-snappy); }
+.now-pill:hover { background: var(--fill-2); }
+.now-pill:active { transform: scale(0.97); }
+.win.now-on .now-pill { background: var(--fill-2); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+.now-face { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.now-pill .live { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); animation: live 2.4s ease-in-out infinite; }
+@keyframes live { 50% { opacity: 0.4; } }
+.now-pill b { font-weight: 650; }
+.now-pill .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.now-pill .left { color: var(--text-2); }
+.now-pill .ic { width: 15px; height: 15px; color: var(--text-2); }
+.now-pill.done .ic { color: var(--ok); }
+.now-pill.fail { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent); }
+.now-pill.fail .ic { color: var(--danger); }
+.now-bar { position: relative; width: 84px; height: 4px; flex: none; border-radius: 2px; background: var(--fill-2); overflow: hidden; }
+.now-bar i { position: absolute; inset: 0; border-radius: 2px; background: var(--accent); transform-origin: left; transform: scaleX(var(--p, 0)); transition: transform 400ms linear; }
+/* A narrow window keeps the time and what is left; the name goes first. A job keeps its bar and its
+   percent; the line that says it is done or failed is cut short. */
+@container (max-width: 1240px) { .now-pill .who, .now-pill .sep { display: none; } .now-pill.done .who, .now-pill.fail .who { display: inline; max-width: 150px; } .now-bar { width: 52px; } }
+/* Its popover: today in the view picked on the toolbar, what needs doing, the jobs */
+.now-pop { width: 392px; padding: 14px 16px 12px; --r: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); font: 14px/1.45 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--text); text-align: left; }
+.now-pop h4 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: 13px; font-weight: 650; }
+.now-pop h4 small { font-size: 12px; font-weight: 400; color: var(--text-2); }
+.now-pop .ag { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 1px 10px; margin: 0 -8px; padding: 7px 8px; --r: calc(var(--r-pop) - 8px); /* concentric: 8 px in */ }
+.now-pop .ag .tm { grid-row: 1 / 3; grid-column: 1; font-weight: 650; }
+.now-pop .ag > b { grid-row: 1; grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.now-pop .ag small { grid-row: 2; grid-column: 2; min-width: 0; font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now-pop .ag > .st, .now-pop .ag > .btn { grid-row: 1 / 3; grid-column: 3; }
+.now-pop .ag.next { background: var(--accent-soft); }
+.now-pop hr { border: 0; border-top: 1px solid var(--hairline); margin: 10px 0; }
+.now-pop .todo { display: flex; flex-wrap: wrap; gap: 6px; }
+.job-row { display: flex; align-items: center; gap: 8px; margin: 0 -8px; padding: 6px 8px; --r: calc(var(--r-pop) - 8px); font-size: 13px; }
+.job-row .ic { width: 15px; height: 15px; color: var(--text-2); }
+.job-row .left { margin-left: auto; font-size: 12px; color: var(--text-2); }
+.job-row.ok .ic { color: var(--ok); } .job-row.bad .ic { color: var(--danger); }
+.main > .now-pop { position: absolute; z-index: 25; left: 50%; top: 60px; opacity: 0; pointer-events: none; transform: translate(-50%, -6px) scale(0.98); transform-origin: top center; transition: opacity var(--t-1) var(--ease-in), transform var(--t-1) var(--ease-in); }
+.win.now-on .main > .now-pop { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); transition: opacity var(--t-2) var(--ease-out), transform var(--t-3) var(--spring-snappy); }
+
+/* A search field with the list of what it finds under it (ý 25, part C): a capsule on macOS like .input.search */
+.find { position: relative; min-width: 0; }
+.find .input.search { color: var(--text-2); }
+.find .input.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px; color: var(--text); }
+.find .input.search input::placeholder { color: var(--text-3); }
+.find .input.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+[data-os='win'] .find .input.search:focus-within { border-color: var(--hairline); border-bottom-color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); }
+.find .sug { position: absolute; z-index: 12; left: 0; top: calc(100% + 6px); width: max(100%, 480px); max-width: 580px; display: none; }
+.find.open .sug { display: block; }
+.sug .pal-o { min-height: 36px; --r: calc(var(--r-menu) - 6px); /* concentric with the menu */ }
+[data-os='win'] .sug .pal-o { --r: 4px; }
+/* "Tìm là sáng": while a field searches, what matches lights up and moves to the top of its column;
+   the rest dims but stays where it is and can still be opened. 70 %, not less: the second line of a
+   dimmed card (--text-2) keeps 4.5:1 on its column. */
+.finding [data-find] { transition: opacity var(--t-2), filter var(--t-2), box-shadow var(--t-2); }
+.finding [data-find]:not(.lit) { opacity: 0.7; filter: saturate(0.3); }
+.finding .lit { box-shadow: inset 0 0 0 1.5px var(--accent), var(--shadow-1); }
+.find-n { font-size: 11.5px; font-weight: 650; color: var(--accent); }
+
+/* Meeting rhythm over 8 weeks (ý 27): one square a week, the oldest left, this week right. The shape
+   says the state as well as the colour: filled = met · ring with a dot = past, no outcome recorded ·
+   ring = booked, not yet come · cross = did not happen (rescheduled, cancelled, no show) · faint = none.
+   A week with several appointments shows the first of these in that order. */
+.cad { display: inline-flex; gap: 3px; vertical-align: middle; }
+.cad i { position: relative; width: 12px; height: 12px; flex: none; --r: 3px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); }
+[data-os='win'] .cad i { --r: 2px; }
+.cad i.m { background: var(--ok); box-shadow: none; }
+.cad i.u { background: none; box-shadow: inset 0 0 0 1.5px var(--warn); }
+.cad i.u::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--warn); }
+.cad i.s { background: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.cad i.x { background: none; }
+.cad i.x::before, .cad i.x::after { content: ''; position: absolute; left: 1px; right: 1px; top: 5.25px; height: 1.5px; border-radius: 1px; background: var(--danger); transform: rotate(45deg); }
+.cad i.x::after { transform: rotate(-45deg); }
+
+/* Team identity (ý 33): an optional colour for the name and an optional icon; with neither, the
+   default look (the name in --text, the plain team icon in --text-2) */
+.tmark { --c: var(--text-2); display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; --r: 6px; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); vertical-align: -4px; }
+.tmark .ic { width: 13px; height: 13px; }
+.tmark.lg { width: 44px; height: 44px; --r: 12px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent), 0 8px 18px -12px var(--c); }
+.tmark.lg .ic { width: 22px; height: 22px; }
+[data-os='win'] .tmark { --r: 4px; }
+[data-os='win'] .tmark.lg { --r: 8px; }
+.tname { color: var(--c, var(--text)); }
+/* Pick one colour (circles) or one icon; the chosen one has a ring and a tick, not only a colour */
+.swatches, .icon-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatches button { position: relative; width: 28px; height: 28px; border-radius: 50%; background: var(--c); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); transition: transform var(--t-3) var(--spring-bouncy); }
+.swatches button:active { transform: scale(0.92); }
+.swatches button.on { box-shadow: 0 0 0 2px var(--bg-1), 0 0 0 4px var(--c); }
+.swatches button.on::after { content: ''; position: absolute; left: 10px; top: 6.5px; width: 6px; height: 11px; border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(42deg); }
+.swatches button.none { --c: var(--text-2); background: linear-gradient(135deg, transparent 45%, var(--text-3) 45% 55%, transparent 55%), var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--border-control); }
+.swatches button.none.on { box-shadow: inset 0 0 0 1.5px var(--border-control), 0 0 0 2px var(--bg-1), 0 0 0 4px var(--text-2); }
+.swatches button.none.on::after { display: none; }
+.icon-pick button { width: 34px; height: 34px; display: grid; place-items: center; --r: var(--r-control); background: var(--fill-2); color: var(--text-2); transition: background var(--t-1), color var(--t-1); }
+.icon-pick button:hover { background: var(--fill-3); color: var(--text); }
+.icon-pick button.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.icon-pick .ic { width: 18px; height: 18px; }
+@media (prefers-reduced-transparency: reduce) { .pal, .now-pop { backdrop-filter: none; } }
