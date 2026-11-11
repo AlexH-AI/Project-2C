@@ -1,0 +1,452 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS ở y-tuong-ui-ux.css, dữ liệu giả lập + hành vi ở y-tuong-ui-ux.js):
+  Bảng ý tưởng UI/UX, vòng 2 (T-415): concept mới, làm lại từ đầu theo yêu cầu Owner 10/11/2026.
+  Trạng thái: ý tưởng để Owner chọn, CHƯA phải mockup đã duyệt G3. Dữ liệu 100% giả lập.
+  #stage   Màn đầu: cửa sổ app bấm được trên nền desktop (cỡ theo khung nhìn, 1100×700 … 1440×900)
+           màn: overview, forecast, reports, customers, profile, team, rm, appointments, settings
+           lớp nổi: #pal ô lệnh, #sheet hộp Hủy HĐ / tạo team, #now-pop "Lúc này", #scope-menu, #miss-pop,
+           #day-pop lịch của một ngày Forecast, #period-pop chọn kỳ báo cáo
+           #dock: công tắc macOS / Windows 11, hai bộ chữ, năm kiểu nền, toàn màn hình (v1.0 chỉ Dark Mode)
+  #walls   Năm kiểu nền; Owner chọn kiểu 5 Heritas ngày 11/11/2026 (mặc định của trang)
+  #concept Ba nguyên lý (ba lớp, hai hệ điều hành, bốn động tác)
+  #ideas   Danh sách ý (do JS dựng từ mảng IDEAS), phiếu chọn
+  #motion  Bốn động tác, ba lò xo, token chuyển động, ghi chú khả thi
+  #excel   File Excel: 4 sheet (Tóm tắt, Theo team – RM, Forecast, Định nghĩa)
+  #ask     Các quyết định cần Owner
+  Bảng mockup → màn hình → spec: docs/design/mockups/README.md
+-->
+<html lang="vi" data-os="mac" data-theme="dark" data-font="system" data-wall="5">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Concept UI/UX vòng 2 — Heritas L-CRM (Project-2C mockup)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="y-tuong-ui-ux.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6l-1.9-4.9L4 9.8l5.1-1.9zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V4h10v5M7 14h10v6H7z" /><rect x="4" y="9" width="16" height="8" rx="2" /></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M12 17v3M8 20h8" /></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></symbol>
+      <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" /></symbol>
+      <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 19l6-10 3.5 5.5L15 11l6 8z" /></symbol>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7" /></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 .8-3.2 2-4.3.2 2 1 3 2 3.3-.3-3 .2-6 1-9z" /></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" /></symbol>
+      <symbol id="i-anchor" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="2" /><path d="M12 7.5V21M5 13c0 4 3 7 7 8 4-1 7-4 7-8M8.5 11h7" /></symbol>
+      <symbol id="i-crown" viewBox="0 0 24 24"><path d="M4 8l4 4 4-7 4 7 4-4-2 10H6z" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+    </svg>
+
+    <!-- ================= Màn đầu: bản thử ================= -->
+    <div class="stage" id="stage">
+        <div class="wall"></div>
+        <div class="menubar" data-idea="13">
+          <b>Heritas L-CRM</b><span>Tệp</span><span>Sửa</span><span>Xem</span>
+          <button id="menu-go" aria-haspopup="true" aria-expanded="false">Đi tới</button>
+          <span>Cửa sổ</span><span>Trợ giúp</span>
+          <span class="clock num">T3 10 thg 11&nbsp;&nbsp;13:35</span>
+        </div>
+        <div class="float menu" id="go-menu"></div>
+
+        <div class="slot"><div class="win" id="win" data-idea="01 02">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search" data-open="pal" data-idea="09"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i>&#x2014;</i><i>&#x25A2;</i><i>&#x2715;</i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" data-idea="05" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" id="nav">
+              <button class="nav-i on" data-go="overview"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan<kbd class="k-mac">⌘1</kbd><kbd class="k-win">Ctrl 1</kbd></button>
+              <button class="nav-i" data-go="appointments"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn<span class="bdg" title="12 buổi chưa ghi kết quả">12</span></button>
+              <button class="nav-i" data-go="customers"><svg class="ic"><use href="#i-people" /></svg>Khách hàng<kbd class="k-mac">⌘3</kbd><kbd class="k-win">Ctrl 3</kbd></button>
+              <button class="nav-i" data-go="forecast" data-idea="29"><svg class="ic"><use href="#i-forecast" /></svg>Forecast<kbd class="k-mac">⌘4</kbd><kbd class="k-win">Ctrl 4</kbd></button>
+              <button class="nav-i" data-go="reports"><svg class="ic"><use href="#i-report" /></svg>Báo cáo<kbd class="k-mac">⌘5</kbd><kbd class="k-win">Ctrl 5</kbd></button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự<kbd class="k-mac">⌘6</kbd><kbd class="k-win">Ctrl 6</kbd></button>
+              <button class="nav-i" data-go="settings"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt<kbd class="k-mac">⌘,</kbd><kbd class="k-win">Ctrl ,</kbd></button>
+            </nav>
+            <div class="sb-foot">
+              <span><i class="dot"></i>Đã sao lưu lúc 12:10</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar" id="toolbar">
+              <div class="tl-title"><h2 id="v-title">Tổng quan</h2><span id="v-sub"></span></div>
+              <button class="now" id="now" data-idea="11" aria-haspopup="true" aria-label="Lúc này"></button>
+              <div class="tl-right">
+                <button class="cap" id="scope" data-idea="12" aria-haspopup="true"><span id="scope-l">Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <span class="cap" id="period" data-idea="12"><button class="step" data-step="-1" aria-label="Kỳ trước">&#x2039;</button><button id="period-l" aria-haspopup="true">Tháng 11/2026</button><button class="step" data-step="1" aria-label="Kỳ sau">&#x203A;</button></span>
+                <button class="cap icon tl-find" data-open="pal" data-idea="09" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn" id="act"></button>
+              </div>
+            </header>
+
+            <div class="views" id="views">
+              <!-- ===== Tổng quan ===== -->
+              <div class="view on" data-view="overview">
+                <div class="ov">
+                  <section class="card hero rise" data-idea="14" style="--i: 0">
+                    <span class="lbl" id="ov-lbl"></span>
+                    <div class="hero-keys"><span><i></i>Tháng 11</span><span><i class="dash"></i>Dự kiến</span><span><i class="ghost"></i>Tháng 10</span></div>
+                    <div class="hero-row"><span class="xl"><span class="roll" id="ov-sales"></span><small id="ov-unit">tỷ</small></span><span class="delta up" id="ov-delta"></span></div>
+                    <p class="eq" id="ov-eq"></p>
+                    <div class="chart" id="ov-chart"></div>
+                  </section>
+                  <section class="card hl rise" data-idea="16" style="--i: 1">
+                    <h3>Điểm nhấn <small>viết từ số, không dùng AI</small></h3>
+                    <div id="ov-hl"></div>
+                  </section>
+                  <div class="tiles" id="ov-tiles" data-idea="15"></div>
+                  <div class="ov-bot">
+                    <section class="card rise" style="--i: 4"><h3>Lịch hẹn tháng này <small id="ov-appt-sub"></small></h3><div class="donut-row"><div class="donut" id="ov-appt"></div><div class="legend-v" id="ov-appt-keys"></div></div></section>
+                    <section class="card rise" style="--i: 5"><h3>Khách hàng theo nhóm <small id="ov-pipe-sub"></small></h3><div class="mini" id="ov-pipe"></div></section>
+                    <section class="card rise" style="--i: 6"><h3>Team <small>bấm để xem riêng một team</small></h3><div id="ov-race"></div></section>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== Forecast ===== -->
+              <div class="view" data-view="forecast">
+                <div class="fc-head">
+                  <div class="seg" id="fc-seg"><button class="on" data-fc="week">Tuần này<small>10/11 – 14/11</small></button><button data-fc="month">Tháng 11<small>10/11 – 30/11</small></button></div>
+                  <span class="rule">Lịch Đã lên lịch của KH đang ở N3, N2, N1 · từ hôm nay · thứ Hai → thứ Bảy</span>
+                  <span class="spacer"></span>
+                  <button class="chip warn" id="fc-miss" data-idea="20"><svg class="ic"><use href="#i-alert" /></svg>2 lịch thiếu case size · điền ngay</button>
+                </div>
+                <div class="fc-top">
+                  <section class="card fc-hero rise" style="--i: 0">
+                    <span class="lbl" id="fc-lbl"></span>
+                    <div class="hero-row"><span class="xl"><span class="roll" id="fc-num"></span><small id="fc-unit">tỷ</small></span></div>
+                    <p class="sub" id="fc-sub"></p>
+                    <div class="stack" id="fc-split"></div>
+                    <div class="keys" id="fc-keys"></div>
+                  </section>
+                  <section class="card runway rise" data-idea="17 32" style="--i: 1">
+                    <h3>Đường băng tháng 11 <small>đã đạt + dự kiến</small><span class="sum">về đích <b class="num">2,70 tỷ</b></span></h3>
+                    <div class="stack">
+                      <i style="--f: 1380; --c: var(--accent)"></i><i style="--f: 320; --c: var(--n1)"></i><i style="--f: 180; --c: var(--n2)"></i><i style="--f: 120; --c: var(--n3)"></i><i class="hatch" style="--f: 700"></i>
+                    </div>
+                    <div class="keys">
+                      <span><i style="--c: var(--accent)"></i>Đã đạt <b class="num">1,38 tỷ</b></span>
+                      <span><i style="--c: var(--n1)"></i>Tuần này N1 <b class="num">320 tr</b></span>
+                      <span><i style="--c: var(--n2)"></i>N2 <b class="num">180 tr</b></span>
+                      <span><i style="--c: var(--n3)"></i>N3 <b class="num">120 tr</b></span>
+                      <span><i style="--c: var(--accent); opacity: 0.5"></i>Các tuần còn lại <b class="num">700 tr</b></span>
+                    </div>
+                    <p class="note">Doanh số đã đạt là số thuần (FYP phát hành − FYP hủy). Phần dự kiến cộng thẳng case size, không nhân tỷ lệ chốt.</p>
+                  </section>
+                </div>
+                <section class="card strip rise" id="fc-strip-card" data-idea="18 19" style="--i: 2"><h3 id="fc-strip-h"></h3><div id="fc-strip"></div></section>
+                <section class="card fc-table rise" data-idea="20" style="--i: 3"><table class="tbl" id="fc-tbl"></table></section>
+              </div>
+
+              <!-- ===== Báo cáo ===== -->
+              <div class="view" data-view="reports">
+                <div class="rp-head">
+                  <div class="seg" id="rp-seg"><button class="on" data-rp="brief">Bản tin</button><button data-rp="ledger">Sổ số</button></div>
+                  <span class="muted" id="rp-hint">Một trang đọc trong 10 giây. In ra, xuất PDF và sheet đầu của file Excel giống hệt trang này.</span>
+                  <span class="spacer"></span>
+                  <button class="cap" id="rp-print"><svg class="ic"><use href="#i-print" /></svg><span>Xem bản in</span></button>
+                  <button class="cap" id="rp-show" data-idea="24"><svg class="ic"><use href="#i-play" /></svg>Trình chiếu</button>
+                </div>
+                <div id="papers" data-idea="21"></div>
+                <section class="card ledger" id="ledger" data-idea="22" hidden>
+                  <div class="tabs" id="lg-tabs"><button class="on" data-lg="result">Kết quả</button><button data-lg="appt">Lịch hẹn</button><button data-lg="kh">Khách hàng</button></div>
+                  <table class="tbl" id="lg-tbl"></table>
+                </section>
+              </div>
+
+              <!-- ===== Khách hàng ===== -->
+              <div class="view" data-view="customers">
+                <div class="cu-head">
+                  <label class="find" data-idea="25"><svg class="ic"><use href="#i-search" /></svg><input id="cu-q" type="text" placeholder="Tìm trong 884 khách hàng: tên hoặc mã KH" autocomplete="off" spellcheck="false" /><kbd class="k-mac">⌘F</kbd><kbd class="k-win">Ctrl F</kbd></label>
+                  <div class="sug" id="cu-sug" hidden></div>
+                  <span class="muted">884 KH đang mở · 316 đã đóng</span>
+                  <span class="spacer"></span>
+                  <span class="muted" data-idea="26">Rê chuột vào một thẻ rồi nhấn <kbd>Space</kbd> để xem nhanh</span>
+                </div>
+                <div class="kan" id="kan"></div>
+                <aside class="ql" id="ql" aria-label="Xem nhanh"></aside>
+              </div>
+
+              <!-- ===== Hồ sơ KH (rút gọn) ===== -->
+              <div class="view" data-view="profile">
+                <button class="back" data-go="customers"><svg class="ic"><use href="#i-back" /></svg>Khách hàng</button>
+                <section class="card pf-head" id="pf-head"></section>
+                <div class="pf-body">
+                  <section class="card"><h3>Dòng thời gian</h3><div class="tline" id="pf-tl"></div></section>
+                  <section class="card" data-idea="28"><h3>Hợp đồng <small>chỉ HĐ đã phát hành mới hủy được</small></h3><div id="pf-pol"></div><p class="note">Bản concept: hồ sơ rút gọn, đủ để thử hộp Hủy HĐ. Bố cục hồ sơ KH đã duyệt giữ nguyên.</p></section>
+                </div>
+              </div>
+
+              <!-- ===== Team & nhân sự ===== -->
+              <div class="view" data-view="team">
+                <div class="cu-head">
+                  <label class="find"><svg class="ic"><use href="#i-search" /></svg><input id="rm-q" type="text" placeholder="Tìm RM: gõ tên, không cần dấu" autocomplete="off" spellcheck="false" /></label>
+                  <div class="sug" id="rm-sug" hidden></div>
+                  <span class="muted">Bấm icon của team để sửa tên, màu, icon (tùy chọn), KPI · bấm một RM để xem KH đang phụ trách</span>
+                </div>
+                <p class="goal-all num" id="teams-goal"></p>
+                <div class="teams" id="teams"></div>
+              </div>
+
+              <!-- ===== Trang RM ===== -->
+              <div class="view" data-view="rm">
+                <button class="back" data-go="team"><svg class="ic"><use href="#i-back" /></svg>Team &amp; nhân sự</button>
+                <section class="card pf-head" id="rm-head"></section>
+                <section class="card" data-idea="27" style="margin-top: 14px"><h3>Khách hàng đang phụ trách <small id="rm-count"></small></h3><table class="tbl" id="rm-tbl"></table></section>
+              </div>
+
+              <!-- ===== Lịch hẹn ===== -->
+              <div class="view" data-view="appointments">
+                <section class="card agenda rise" style="--i: 0"><h3>Hôm nay <small>thứ Ba 10/11/2026</small></h3><div id="ag-today"></div></section>
+                <p class="note">Màn Lịch hẹn giữ bố cục đã duyệt (4 nhóm, lịch tháng, lưới năm). Ở vòng này chỉ đổi vỏ, chất liệu và chuyển động; đây là phần "hôm nay" để thấy cảm giác.</p>
+              </div>
+
+              <!-- ===== Cài đặt ===== -->
+              <div class="view" data-view="settings">
+                <div class="set">
+                  <nav class="card set-nav" id="set-nav" data-idea="29">
+                    <button class="set-i on" data-set-i="data"><span class="sq" style="--c: var(--info)"><svg class="ic"><use href="#i-db" /></svg></span>Dữ liệu</button>
+                    <button class="set-i" data-set-i="ai"><span class="sq" style="--c: var(--n2)"><svg class="ic"><use href="#i-spark" /></svg></span>AI</button>
+                    <button class="set-i" data-set-i="trash"><span class="sq" style="--c: var(--n4)"><svg class="ic"><use href="#i-trash" /></svg></span>Thùng rác</button>
+                  </nav>
+                  <div class="set-pane" id="set-pane"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm ===== -->
+          <div class="scrim" id="scrim"></div>
+          <div class="float pal" id="pal" role="dialog" aria-label="Ô lệnh">
+            <div class="field"><svg class="ic"><use href="#i-search" /></svg><input id="pal-q" type="text" placeholder="Tìm khách hàng, RM, màn hình, lệnh… hoặc hỏi một con số" autocomplete="off" spellcheck="false" /><kbd>esc</kbd></div>
+            <div class="list" id="pal-list" role="listbox" aria-label="Kết quả"></div>
+            <div class="foot"><span><kbd>↑</kbd> <kbd>↓</kbd> chọn</span><span><kbd>↵</kbd> mở</span><span>Thử: nguyen van hu · tung · forecast · doanh so sao mai · ty le huy</span></div>
+          </div>
+          <div class="float sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Hủy hợp đồng"></div>
+          <div class="float" id="now-pop"></div>
+          <div class="float menu" id="scope-menu"></div>
+          <div class="float" id="miss-pop"></div>
+          <div class="float" id="day-pop"></div>
+          <div class="float ppop" id="period-pop"></div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div></div>
+
+        <div class="dock" id="dock">
+          <span class="dock-t"><b>Heritas L-CRM</b> · concept vòng 2</span>
+          <span class="seg" data-set="os"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+          <span class="seg" data-set="font"><button class="on" data-v="system">Chữ hệ thống</button><button data-v="brand">Be Vietnam Pro</button></span>
+          <span class="dock-l">Nền</span><span class="seg walls" data-set="wall" aria-label="Nền của trang trình bày"><button data-v="1" title="Nền 1 · Hoàng hôn" aria-label="Nền Hoàng hôn"><i class="w1"></i></button><button data-v="2" title="Nền 2 · Studio" aria-label="Nền Studio"><i class="w2"></i></button><button data-v="3" title="Nền 3 · Champagne" aria-label="Nền Champagne"><i class="w3"></i></button><button data-v="4" title="Nền 4 · Lưới" aria-label="Nền Lưới"><i class="w4"></i></button><button class="on" data-v="5" title="Nền 5 · Heritas" aria-label="Nền Heritas"><i class="w5"></i></button></span><b id="wall-name">Heritas</b>
+          <button class="dock-b icon" id="full" aria-label="Toàn màn hình" title="Toàn màn hình"><svg class="ic"><use href="#i-full" /></svg></button>
+          <a class="dock-b" href="#ideas">34 ý tưởng<svg class="ic"><use href="#i-down" /></svg></a>
+        </div>
+      </div>
+
+    <div class="page">
+      <div class="onscreen" id="onscreen" aria-label="Ý tưởng ở màn đang mở"></div>
+
+      <!-- ================= Nền ================= -->
+      <section class="sec" id="walls">
+        <span class="kicker">Nền</span>
+        <h2>Nền: anh đã chọn Heritas.</h2>
+        <p class="lead">Nền là thứ nằm sau cửa sổ ở màn đầu của trang này, và sẽ là nền của ảnh giới thiệu. Trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. Anh chọn kiểu 5, Heritas, ngày 11/11/2026; bốn kiểu còn lại giữ ở đây để so. <b>Bấm một kiểu</b> để xem thử ở màn đầu; ở đó đổi tiếp bằng năm chấm cạnh chữ "Nền" trên thanh dưới cửa sổ.</p>
+        <div class="wgrid">
+          <button class="wcard" data-w="1" data-wall-pick="1"><span class="wmini"><i></i></span><b>1 · Hoàng hôn</b><span>Ánh cam ở góc dưới trái, xanh ở góc trên phải. Kiểu ban đầu, anh chưa vừa ý.</span></button>
+          <button class="wcard" data-w="2" data-wall-pick="2"><span class="wmini"><i></i></span><b>2 · Studio</b><span>Một nguồn sáng trung tính sau cửa sổ, viền tối, không màu. Giống ảnh chụp sản phẩm: mắt chỉ nhìn vào app.</span></button>
+          <button class="wcard" data-w="3" data-wall-pick="3"><span class="wmini"><i></i></span><b>3 · Champagne</b><span>Một dải sáng vàng champagne chạy chéo trên nền navy. Chỉ dùng màu thương hiệu.</span></button>
+          <button class="wcard" data-w="4" data-wall-pick="4"><span class="wmini"><i></i></span><b>4 · Lưới</b><span>Lưới chấm nhỏ, chút xanh ở giữa. Gọn, kỹ thuật, ít cảm xúc nhất.</span></button>
+          <button class="wcard on" data-w="5" data-wall-pick="5"><span class="wmini"><i></i></span><b>5 · Heritas<small>đang dùng</small></b><span>Cây của logo in chìm trên nền navy, ánh vàng nhẹ. Đậm thương hiệu nhất. Anh chọn kiểu này.</span></button>
+        </div>
+      </section>
+
+      <!-- ================= Concept ================= -->
+      <section class="sec" id="concept">
+        <span class="kicker">Concept</span>
+        <h2>Một cửa sổ, ba lớp, hai hệ điều hành.</h2>
+        <p class="lead">Bản thử phía trên là <b>một</b> app, không phải các ý rời. Mọi quyết định A–F anh đã chốt nằm trong đó. Phần mới là cách nó được dựng, cách nó chuyển động và cách nó trình bày con số.</p>
+        <div class="prs">
+          <article class="pr"><div class="art layers" aria-hidden="true"><i></i><i></i><i></i></div><h3>Nền · Kính · Tiêu điểm</h3><p>Nội dung là lớp nền, rộng và phẳng. Thanh bên và nút điều khiển là kính nổi phía trên. Hộp thoại, ô lệnh là lớp tiêu điểm, làm mờ phần còn lại. Rê chuột vào hình để thấy ba lớp tách ra.</p></article>
+          <article class="pr"><div class="art oses" aria-hidden="true"><i class="m"></i><i class="w"></i></div><h3>Mỗi hệ điều hành một chất</h3><p>Cùng bố cục, khác vỏ. Trên Mac: thanh bên kính, góc bo đồng tâm, menu ⌘. Trên Windows 11: nền Mica, ô tìm trên thanh tiêu đề, góc vuông hơn. Đổi ở thanh công tắc dưới cửa sổ.</p></article>
+          <article class="pr"><div class="art moves" aria-hidden="true"><i data-l="Hiện"><b></b></i><i data-l="Mở"><b></b></i><i data-l="Trượt"><b></b></i><i data-l="Đếm"><b></b></i></div><h3>Bốn động tác</h3><p>Cả app chỉ dùng bốn kiểu chuyển động, cùng thời lượng và cùng lò xo, nên chỗ nào cũng mượt như nhau. Màn đổi tức thì; chỉ thứ được mở mới "nở ra" từ chỗ bấm.</p></article>
+        </div>
+      </section>
+
+      <!-- ================= Danh sách ý ================= -->
+      <section class="sec" id="ideas">
+        <span class="kicker">Ý tưởng</span>
+        <h2>34 ý, đánh số để anh chọn.</h2>
+        <p class="lead">Bấm <b>Xem</b> để cửa sổ phía trên mở đúng chỗ. Ý có ⭐ là bộ em đề xuất cho v1.0, đã chọn sẵn; <b>anh đã lấy bộ ⭐ (27 ý) ngày 11/11/2026</b> làm danh sách vẽ mockup G3. Công sức: <b>S</b> ≈ 1 Issue · <b>M</b> 2–3 · <b>L</b> 4+. Nhãn A–F là phần của đợt phản hồi; nhãn vàng là cổng hoặc quyết định cũ phải mở lại.</p>
+        <div id="idea-list"></div>
+        <div class="pickbar" role="region" aria-label="Phiếu chọn">
+          <span>Đã chọn <b id="pick-n">0</b> ý</span>
+          <span class="codes num" id="pick-codes"></span>
+          <button class="btn" id="pick-copy" type="button">Chép danh sách</button>
+        </div>
+      </section>
+
+      <!-- ================= Chuyển động ================= -->
+      <section class="sec" id="motion">
+        <span class="kicker">Chuyển động</span>
+        <h2>Bốn động tác, ba lò xo.</h2>
+        <p class="lead">Di chuyển, phóng, hiện, ẩn chỉ đổi vị trí, tỉ lệ và độ trong (transform / opacity), card đồ họa vẽ. Riêng đổi màu nền hay viền khi rê chuột là chuyển màu ngắn 120–220 ms. Máy bật "Giảm chuyển động" thì tất cả tự tắt.</p>
+        <div class="two-col">
+          <div class="bcard lab" id="lab">
+            <h3>So đường cong <small>bấm Chạy vài lần</small></h3>
+            <div class="lane"><span>Web thường · ease 300 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s1"><span>Lò xo êm · 600 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s2"><span>Lò xo nhanh · 500 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s3"><span>Lò xo nảy · 800 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="row" style="margin-top: 12px"><button class="btn" id="lab-run" type="button">Chạy</button><span class="muted">Êm: màn và thẻ hiện ra. Nhanh: nút, ô, mở từ chỗ bấm. Nảy: chỉ cho điều đáng mừng hoặc cần chú ý (dấu "Đã hủy", thông báo).</span></div>
+          </div>
+          <div class="bcard">
+            <h3>Bốn động tác và token đề xuất</h3>
+            <table class="tok">
+              <tr><td>Hiện</td><td>Màn đổi tức thì; các phần của màn mới trồi lên 8 px và rõ dần, cách nhau 28 ms, xong trong 0,6 giây.</td></tr>
+              <tr><td>Mở</td><td>Thứ được bấm nở thành thứ được mở: thẻ KH → hồ sơ, dòng RM → trang RM. Quay lại thì thu về đúng chỗ cũ.</td></tr>
+              <tr><td>Trượt</td><td>Thứ đang chọn trượt tới chỗ mới: viên chọn trên thanh bên, nút trượt của công tắc. Lớp tiêu điểm đi từ nơi gọi nó: sheet từ thanh công cụ, bảng nhỏ từ nút.</td></tr>
+              <tr><td>Đếm</td><td>Khi đổi kỳ hay góc nhìn, chữ số cũ lăn đi, chữ số mới lăn vào (lên khi tăng, xuống khi giảm); thanh dài ra theo.</td></tr>
+              <tr><td>--t-1 … --t-4</td><td>120 · 220 · 400 · 600 ms. Ra nhanh hơn vào: đóng dùng --t-1.</td></tr>
+              <tr><td>--spring-*</td><td>smooth · snappy · bouncy, viết bằng CSS <code>linear()</code>: không thêm thư viện.</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="bcard" style="margin-top: 20px">
+          <h3>Làm được bằng gì <small>Tauri + React + CSS, không thêm dependency</small></h3>
+          <table class="tok">
+            <tr><td>Kính, Mica</td><td>Nền cửa sổ dùng hiệu ứng gốc của hệ điều hành qua cấu hình cửa sổ của Tauri 2 (vibrancy trên macOS, Mica trên Windows 11); lớp nổi bên trong dùng <code>backdrop-filter</code>. Cần kiểm trên bản thử Mac (T-413). Cửa sổ trong suốt trên macOS dùng API riêng, nên bản lên Mac App Store phải tắt hiệu ứng này.</td></tr>
+            <tr><td>Mở từ chỗ bấm</td><td>View Transitions có sẵn trong WebView2 và WKWebView (Safari 18 trở lên). Máy cũ hơn thì đổi màn không chuyển cảnh, không lỗi.</td></tr>
+            <tr><td>Excel</td><td>ExcelJS đang dùng làm được: đóng băng tiêu đề, nhóm gập Team ▸ RM, thanh dữ liệu và tô màu có điều kiện của Excel, công thức SUM, khổ in A4 ngang, đầu / chân trang. Không vẽ được biểu đồ gốc của Excel, nên sheet Tóm tắt dùng thanh dữ liệu thay biểu đồ.</td></tr>
+            <tr><td>Chỉ app gốc Apple</td><td>Widget màn hình, Spotlight, Shortcuts / Siri: ghi vào danh sách sau v1.0 (ý 31).</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Excel ================= -->
+      <section class="sec" id="excel">
+        <span class="kicker">File Excel</span>
+        <h2>Bản in của Bản tin, cộng sổ chi tiết.</h2>
+        <p class="lead">Sheet đầu là đúng trang Bản tin trong app. Các sheet sau là sổ: Team gập mở được RM ngay trong Excel, dòng Tổng là công thức nên người nhận sửa số vẫn đúng. Màu lấy từ logo: xanh navy và vàng champagne. Bấm các tab sheet ở dưới.</p>
+        <div class="xl-win" data-idea="23">
+          <div class="xl-top"><b>Excel</b><span>Heritas-L-CRM_Bao-cao_2026-11.xlsx</span></div>
+          <div class="xl-fx"><span id="xl-cell">G12</span><span id="xl-fx">=SUM(G9:G11)</span></div>
+
+          <table class="xl-sheet" data-sheet="sum" data-cell="G12" data-fx="=SUM(G9:G11)">
+            <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th></tr>
+            <tr class="band"><td class="rh">1</td><td colspan="9">Heritas L-CRM · Báo cáo kết quả kinh doanh tháng 11/2026</td></tr>
+            <tr class="sub"><td class="rh">2</td><td colspan="9">Toàn bộ · 01/11 – 10/11/2026 (MTD) · 3 team, 9 RM · lập 10/11/2026 13:35</td></tr>
+            <tr class="blank"><td class="rh">3</td><td colspan="9"></td></tr>
+            <tr class="kl"><td class="rh">4</td><td colspan="3">Doanh số</td><td colspan="2">Tổng số HĐ</td><td colspan="2">Tỉ lệ chốt</td><td colspan="2">Tỷ lệ hủy</td></tr>
+            <tr class="kv"><td class="rh">5</td><td colspan="3">1.380.000.000 đ</td><td colspan="2">32</td><td colspan="2">72,3%</td><td colspan="2">5,9%</td></tr>
+            <tr class="kl"><td class="rh">6</td><td colspan="3">▲ 12,4% so với 01/10 – 10/10</td><td colspan="2">34 phát hành − 2 hủy</td><td colspan="2">34 HĐ ÷ 47 RF</td><td colspan="2">▲ 2,5 điểm</td></tr>
+            <tr class="blank"><td class="rh">7</td><td colspan="9"></td></tr>
+            <tr class="hd"><td class="rh">8</td><td class="l">Team</td><td>HĐ phát hành</td><td>HĐ hủy</td><td>Tổng số HĐ</td><td>FYP phát hành</td><td>FYP hủy</td><td>Doanh số</td><td>Tỷ lệ hủy</td><td>Tỉ lệ chốt</td></tr>
+            <tr><td class="rh">9</td><td class="l">Sao Mai</td><td>13</td><td>1</td><td>12</td><td>570.000.000</td><td>50.000.000</td><td class="db" style="--w: 1"><span>520.000.000</span></td><td>7,7%</td><td>76,5%</td></tr>
+            <tr><td class="rh">10</td><td class="l">Bình Minh</td><td>11</td><td>0</td><td>11</td><td>480.000.000</td><td>0</td><td class="db" style="--w: 0.92"><span>480.000.000</span></td><td>0,0%</td><td>73,3%</td></tr>
+            <tr><td class="rh">11</td><td class="l">Hừng Đông</td><td>10</td><td>1</td><td>9</td><td>430.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.73"><span>380.000.000</span></td><td class="red">10,0%</td><td>66,7%</td></tr>
+            <tr class="tot"><td class="rh">12</td><td class="l">Tổng</td><td>34</td><td>2</td><td>32</td><td>1.480.000.000</td><td>100.000.000</td><td>1.380.000.000</td><td>5,9%</td><td>72,3%</td></tr>
+            <tr class="blank"><td class="rh">13</td><td colspan="9"></td></tr>
+            <tr class="def"><td class="rh">14</td><td colspan="9"><b>Nhận xét.</b> Doanh số đạt 1,38 tỷ, tăng 12,4% so với cùng kỳ tháng 10. Sao Mai dẫn đầu với 520 tr. Tỷ lệ hủy 5,9%, tăng 2,5 điểm: cả 2 HĐ hủy rơi vào tuần 02 – 08/11.</td></tr>
+          </table>
+
+          <table class="xl-sheet" data-sheet="rm" data-cell="D3" data-fx="=B3-C3" hidden>
+            <tr><th></th><th style="width: 30px"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th></tr>
+            <tr class="hd"><td class="rh">1</td><td class="out"></td><td class="l">Team / RM</td><td>HĐ phát hành</td><td>HĐ hủy</td><td>Tổng số HĐ</td><td>FYP phát hành</td><td>FYP hủy</td><td>Doanh số</td><td>Tỷ lệ hủy</td><td>Tỉ lệ chốt</td></tr>
+            <tr class="grp"><td class="rh">2</td><td class="out">−</td><td class="l">Sao Mai</td><td>13</td><td>1</td><td>12</td><td>570.000.000</td><td>50.000.000</td><td class="db" style="--w: 1"><span>520.000.000</span></td><td>7,7%</td><td>76,5%</td></tr>
+            <tr class="sub2"><td class="rh">3</td><td class="out"></td><td class="l">Hoàng Văn Tùng</td><td>6</td><td>0</td><td>6</td><td>280.000.000</td><td>0</td><td class="db" style="--w: 0.54"><span>280.000.000</span></td><td>0,0%</td><td>85,7%</td></tr>
+            <tr class="sub2"><td class="rh">4</td><td class="out"></td><td class="l">Đặng Văn Phúc</td><td>4</td><td>1</td><td>3</td><td>170.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.23"><span>120.000.000</span></td><td class="red">25,0%</td><td>80,0%</td></tr>
+            <tr class="sub2"><td class="rh">5</td><td class="out"></td><td class="l">Lê Ngọc Hương</td><td>3</td><td>0</td><td>3</td><td>120.000.000</td><td>0</td><td class="db" style="--w: 0.23"><span>120.000.000</span></td><td>0,0%</td><td>60,0%</td></tr>
+            <tr class="grp"><td class="rh">6</td><td class="out">−</td><td class="l">Bình Minh</td><td>11</td><td>0</td><td>11</td><td>480.000.000</td><td>0</td><td class="db" style="--w: 0.92"><span>480.000.000</span></td><td>0,0%</td><td>73,3%</td></tr>
+            <tr class="sub2"><td class="rh">7</td><td class="out"></td><td class="l">Phạm Thu Hà</td><td>5</td><td>0</td><td>5</td><td>230.000.000</td><td>0</td><td class="db" style="--w: 0.44"><span>230.000.000</span></td><td>0,0%</td><td>83,3%</td></tr>
+            <tr class="sub2"><td class="rh">8</td><td class="out"></td><td class="l">Bùi Ngọc Trâm</td><td>4</td><td>0</td><td>4</td><td>160.000.000</td><td>0</td><td class="db" style="--w: 0.31"><span>160.000.000</span></td><td>0,0%</td><td>80,0%</td></tr>
+            <tr class="sub2"><td class="rh">9</td><td class="out"></td><td class="l">Đỗ Văn Hiếu</td><td>2</td><td>0</td><td>2</td><td>90.000.000</td><td>0</td><td class="db" style="--w: 0.17"><span>90.000.000</span></td><td>0,0%</td><td>50,0%</td></tr>
+            <tr class="grp"><td class="rh">10</td><td class="out">+</td><td class="l">Hừng Đông <span style="font-weight: 400; color: #6b7280">(3 RM đang gập)</span></td><td>10</td><td>1</td><td>9</td><td>430.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.73"><span>380.000.000</span></td><td class="red">10,0%</td><td>66,7%</td></tr>
+            <tr class="tot"><td class="rh">14</td><td class="out"></td><td class="l">Tổng</td><td>34</td><td>2</td><td>32</td><td>1.480.000.000</td><td>100.000.000</td><td>1.380.000.000</td><td>5,9%</td><td>72,3%</td></tr>
+          </table>
+
+          <table class="xl-sheet" data-sheet="fc" data-cell="E7" data-fx="=SUM(B7:D7)" hidden>
+            <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th></tr>
+            <tr class="band"><td class="rh">1</td><td colspan="8">Forecast FYP · tuần 10/11 – 14/11 và tháng 11/2026</td></tr>
+            <tr class="sub"><td class="rh">2</td><td colspan="8">Lịch Đã lên lịch của KH đang ở N3, N2, N1 · từ hôm nay · thứ Hai → thứ Bảy · lập 10/11/2026 13:35</td></tr>
+            <tr class="blank"><td class="rh">3</td><td colspan="8"></td></tr>
+            <tr class="hd"><td class="rh">4</td><td class="l">Team</td><td>Tuần · N1</td><td>Tuần · N2</td><td>Tuần · N3</td><td>Tổng tuần</td><td>Tháng 11</td><td>Số lịch tuần</td><td>Thiếu case size</td></tr>
+            <tr><td class="rh">5</td><td class="l">Sao Mai</td><td>140.000.000</td><td>80.000.000</td><td>40.000.000</td><td class="db" style="--w: 1"><span>260.000.000</span></td><td>580.000.000</td><td>6</td><td class="red">1</td></tr>
+            <tr><td class="rh">6</td><td class="l">Bình Minh</td><td>100.000.000</td><td>70.000.000</td><td>40.000.000</td><td class="db" style="--w: 0.81"><span>210.000.000</span></td><td>440.000.000</td><td>6</td><td class="red">1</td></tr>
+            <tr><td class="rh">7</td><td class="l">Hừng Đông</td><td>80.000.000</td><td>30.000.000</td><td>40.000.000</td><td class="db" style="--w: 0.58"><span>150.000.000</span></td><td>300.000.000</td><td>4</td><td>0</td></tr>
+            <tr class="tot"><td class="rh">8</td><td class="l">Tổng</td><td>320.000.000</td><td>180.000.000</td><td>120.000.000</td><td>620.000.000</td><td>1.320.000.000</td><td>16</td><td>2</td></tr>
+          </table>
+
+          <table class="xl-sheet" data-sheet="def" data-cell="A1" data-fx="Chỉ số" hidden>
+            <tr><th></th><th style="width: 170px">A</th><th style="width: 420px">B</th><th>C</th></tr>
+            <tr class="hd"><td class="rh">1</td><td class="l">Chỉ số</td><td class="l">Công thức</td><td class="l">Ghi chú</td></tr>
+            <tr class="def"><td class="rh">2</td><td><b>Tổng số HĐ</b></td><td>HĐ phát hành − HĐ hủy</td><td>Có thể âm trong một kỳ ngắn</td></tr>
+            <tr class="def"><td class="rh">3</td><td><b>Doanh số</b></td><td>FYP phát hành − FYP hủy</td><td>HĐ hủy tính vào kỳ của ngày hủy</td></tr>
+            <tr class="def"><td class="rh">4</td><td><b>Tỷ lệ hủy</b></td><td>HĐ hủy ÷ HĐ phát hành</td><td>"—" khi kỳ không có HĐ phát hành; có thể vượt 100%</td></tr>
+            <tr class="def"><td class="rh">5</td><td><b>Tỉ lệ chốt</b></td><td>HĐ phát hành ÷ RF</td><td>Chưa trừ HĐ hủy: đo hiệu quả chốt</td></tr>
+            <tr class="def"><td class="rh">6</td><td><b>Forecast</b></td><td>Tổng case size dự kiến của các lịch Đã lên lịch, KH đang ở N3, N2, N1</td><td>Từ hôm nay; chỉ thứ Hai → thứ Bảy; mỗi KH tính một lần, theo số nhập gần nhất</td></tr>
+          </table>
+
+          <div class="xl-tabs" id="xl-tabs"><button class="on" data-sheet="sum">Tóm tắt</button><button data-sheet="rm">Theo team – RM</button><button data-sheet="fc">Forecast</button><button data-sheet="def">Định nghĩa</button></div>
+        </div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Quyết định</span>
+        <h2>Mười bốn điểm, anh đã quyết.</h2>
+        <p class="lead">Ngoài việc chọn ý, các điểm dưới đây đổi hướng giao diện, thêm dữ liệu hay dịch vụ, hoặc mở lại điều anh đã duyệt. Anh đã trả lời từng điểm trong chat ngày 10 – 11/11/2026; câu trả lời ghi ngay trong từng điểm. Riêng điểm 6 (token mới) anh duyệt cùng mockup vỏ app.</p>
+        <ol class="asks">
+          <li><b>Lấy concept này làm nền cho mockup G3?</b>Ba lớp Nền · Kính · Tiêu điểm, mỗi hệ điều hành một chất, bốn động tác. <em>Anh nhận hướng này 10/11/2026.</em></li>
+          <li><b>Chữ: font hệ thống hay Be Vietnam Pro?</b>Đổi công tắc chữ ở thanh dưới cửa sổ để so. Font hệ thống là SF Pro trên Mac, Segoe UI Variable trên Windows; Playfair vẫn chỉ cho slogan. <em>Đã chốt 11/11/2026: font hệ thống.</em></li>
+          <li><b>Giao diện Sáng làm khi nào?</b>Làm cho cả app phải kiểm lại tương phản mọi màn. Xem thử bằng nút Xem của ý 04. <em>Đã chốt 11/11/2026: để sau v1.0; v1.0 chỉ Dark Mode.</em></li>
+          <li><b>Logo gọn trên thanh bên?</b>Thay khối logo dọc anh duyệt 27/10 bằng cụm ngang (cây + chữ); slogan xuống chân thanh bên. <em>Đã chốt 11/11/2026: dùng logo gọn.</em></li>
+          <li><b>Bỏ nút "Lọc"?</b>Đổi kỳ hay góc nhìn là số chạy ngay; mở lại điều đã duyệt 03/10. <em>Đã chốt 11/11/2026: bỏ nút "Lọc".</em></li>
+          <li><b>Token mới.</b>Chất liệu kính, bóng, bo góc theo nền tảng, token chuyển động, <code>--accent-fill</code>. Cần phụ lục ADR-0013. <em>Đề xuất: duyệt cùng mockup đợt đầu (vỏ app).</em></li>
+          <li><b>"Điểm nhấn" và câu nhận xét của Bản tin.</b>Viết từ số theo luật cố định, không gọi AI. Bộ luật là nội dung mới, cần anh duyệt (G2). <em>Đã chốt 11/11/2026: làm, theo luật.</em> Sáu luật (bốn câu trong bản thử, thêm "về đích so với KPI tháng" và "lịch thiếu case size") em viết kèm ngưỡng và câu mẫu ở mockup Tổng quan để anh duyệt từng luật.</li>
+          <li><b>Màu file Excel.</b>Navy và champagne của logo, nền trắng. <em>Đã chốt 11/11/2026: dùng màu logo.</em></li>
+          <li><b>Các màn đã duyệt G3 khác</b> (Lịch hẹn, hồ sơ KH, KYC, các hộp thoại). <em>Đã chốt 11/11/2026: giữ bố cục, chỉ thay vỏ theo ngôn ngữ mới; không vẽ lại.</em> Mockup vỏ app kèm một hình Lịch hẹn và một hộp thoại trong vỏ mới để anh xem trước.</li>
+          <li><b>Forecast: 6 điểm mở D-a … D-f.</b>Bản thử đang theo đề xuất của em (mỗi KH tính một lần, hiện đã đạt + dự kiến, bỏ Chủ Nhật, không nhân trọng số, lịch thiếu case size không cộng, có sheet Excel). Em hỏi riêng từng điểm. <em>D-a đã chốt 11/11/2026: mỗi KH tính một lần, theo số case size nhập gần nhất. D-b đã chốt 11/11/2026: Forecast hiện dự kiến, đã đạt và KPI (của tổng các team và của từng team). D-c đã chốt 11/11/2026: bỏ Chủ Nhật (ngày nghỉ); buổi hẹn ngoại lệ vào Chủ Nhật thì nhập vào thứ Bảy tuần đó. D-d đã chốt 11/11/2026: không nhân hệ số theo nhóm, cộng thẳng case size. D-e đã chốt 11/11/2026: case size của Forecast do người dùng nhập, app không tự ước tính; lịch thiếu số được đếm và liệt kê để điền, không cộng vào tổng. D-f đã chốt 11/11/2026: có xuất Excel. Cả sáu điểm đã chốt.</em></li>
+          <li><b>Nền của trang trình bày.</b>Năm kiểu ở mục "Năm kiểu nền để anh chọn", ngay dưới màn đầu: Hoàng hôn, Studio, Champagne, Lưới, Heritas. Đây là nền của bảng này và của ảnh giới thiệu; trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. <em>Đã chốt 11/11/2026: kiểu 5, Heritas.</em></li>
+          <li><b>Team có màu và icon.</b>Sáu màu lấy từ token hiện có, tám icon; TL ngang hàng tên team. Màu và icon là dữ liệu mới của team (G2), đi theo team ở mọi màn. <em>Anh làm rõ 11/11/2026: màu và icon là tùy chọn khi tạo, không bắt buộc; kiểu mặc định giữ như hiện nay.</em></li>
+          <li><b>Nhiều nhà cung cấp AI.</b>Thêm WorkBuddy cạnh OpenCode, chọn model và mức suy luận. Mỗi nhà cung cấp mới qua G4, G5, G6; phải kiểm trước WorkBuddy có API cho app ngoài gọi không. <em>Đã chốt 11/11/2026: kiểm API trước.</em> Kết quả tra cứu cùng ngày: tài liệu chính thức của WorkBuddy không có API hay API key cho app bên ngoài; WorkBuddy là app dùng model, credit của gói chỉ dùng trong app. <em>Đã chốt 11/11/2026: WorkBuddy xử lý giống ChatGPT web: app xuất prompt, người dùng chép sang WorkBuddy rồi chép câu trả lời về app.</em> Bản thử ở Cài đặt → AI đã theo cách này.</li>
+          <li><b>Chỉ tiêu (KPI) doanh số đặt ở cấp nào?</b>Mốc để Forecast so sánh: vạch KPI trên đường băng, phần trăm về đích, số còn thiếu; bảng Forecast có cột KPI của từng team. Dữ liệu mới (G2). <em>Đã chốt 11/11/2026: chỉ tiêu của từng team và của toàn bộ; không đặt tới từng RM; mục tiêu toàn bộ là tổng mục tiêu các team, không nhập riêng; chỉ nhập theo tháng.</em> Tuần không có ô nhập: đường băng ghi "nhịp cần mỗi tuần", bằng phần còn thiếu của tháng chia cho số tuần còn lại (đề xuất của em, anh duyệt ở mockup Forecast).</li>
+        </ol>
+      </section>
+    </div>
+
+    <script src="y-tuong-ui-ux.js"></script>
+  </body>
+</html>
