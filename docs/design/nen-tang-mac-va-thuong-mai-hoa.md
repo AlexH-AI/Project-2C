@@ -78,9 +78,9 @@ Cỡ mã hiện có (`main` `ab1ff14`): ≈ 32 800 dòng TypeScript sản phẩm
 ## 6. Đa ngôn ngữ (tiếng Việt, English)
 
 - App đã đưa mọi chữ giao diện qua `vi.ts` (1 389 dòng): thêm `en.ts` và chỗ chọn ngôn ngữ trong Cài đặt.
-- Phải đổi thêm: định dạng tiền và ngày theo ngôn ngữ (vd. "1,9 tỷ" ↔ "1.9B VND"); prompt AI tiếng Anh hoặc chỉ định ngôn ngữ trả lời (G5); file Excel; hướng dẫn sử dụng.
+- Phải đổi thêm: định dạng tiền và ngày theo ngôn ngữ (vd. "1,9 tỷ" ↔ "1.9B VND"; cách viết đã chốt ở ADR-0018: "1.9 tỷ" ↔ "1.9 Bil"); prompt AI tiếng Anh hoặc chỉ định ngôn ngữ trả lời (G5); file Excel; hướng dẫn sử dụng.
 - T dùng một bộ chữ cho mọi nền tảng; S phải giữ hai bộ.
-- Nên làm trước khi thương mại hóa; không cần cho bản Mac chạy local của anh.
+- Nên làm trước khi thương mại hóa; không cần cho bản Mac chạy local của anh. **Hết hiệu lực 11/11/2026:** Owner đưa song ngữ và tiền tệ vào v1.0 ("Đưa vào v1.0"). Quyết định ở ADR-0018, kế hoạch ở `phase-6-phan-hoi-dung-thu.md` §11.
 
 ## 7. Rủi ro của khuyến nghị và cách giảm
 

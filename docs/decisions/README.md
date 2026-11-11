@@ -30,12 +30,13 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0008](0008-kyc-du-kien-co-cau-truc-va-cong-deterministic.md) | Structured KYC facts + deterministic gate | Accepted (G1); catalog + thresholds + golden profiles Accepted (G2) | Q8, Q9 |
 | [0009](0009-ai-copilot-provider-va-guardrail.md) | AI copilot: OpenCode Go + Mock, schema + validator | Accepted (G1); network + keys Accepted (D-1, G4 / G6, 2026-10-07); prompts → G5 | Q10, Q11, C2 |
 | [0010](0010-dong-bo-du-lieu-app-backup-va-repo-data.md) | App data sync: backup file + `Project-2C-data` repo | Accepted (G1); `Project-2C-data` out of v1.0 (2026-10-11), cloud backup to be decided later | Q2b |
-| [0011](0011-bao-cao-excel-va-ngon-ngu.md) | Excel export; Vietnamese UI via i18n | Accepted (G1) | Q12, Q13 |
+| [0011](0011-bao-cao-excel-va-ngon-ngu.md) | Excel export; Vietnamese UI via i18n (appendix 2026-11-11: UI language and money format partly superseded by 0018) | Accepted (G1); appendix Proposed with 0018 | Q12, Q13 |
 | [0012](0012-plugins-superpowers-va-mattpocock-skills.md) | Plugins: Superpowers + mattpocock/skills (vendored subset); Agent tool denied until 2026-10-17 (appendix: allowed, ADR-0001 M8) | Accepted (G4) | §4.3 |
 | [0013](0013-huong-ui-dark-mode.md) | UI direction: dark tokens, champagne accent, unified period filter, sortable dates | Accepted (G3) | §4.6, C6 |
 | [0014](0014-thu-vien-chart.md) | Chart library: ECharts 6 via echarts/core, own React wrapper | Accepted (G4) | §4.4 |
 | [0015](0015-ci-build-exe-theo-nhu-cau.md) | CI: exe built on `main` or `build-exe`-labelled PRs; docs-only PRs skip CI; reopen per-PR exe build at Phase 3 | Accepted (G1/G4) | §4.4 |
 | [0016](0016-luu-tru-sqljs-ghi-file-qua-rust.md) | Storage: sql.js everywhere; exe persists the DB file via a thin Rust command (amends 0006) | Accepted (G1/G4) | §4.4, Phase 3 |
 | [0017](0017-review-theo-muc-risk.md) | PR review tiered by risk label via project skill `review-pr`; built-in `code-review` at every tier since 2026-10-21 (low `high`, med `max`, high `max --max-findings all`), report-only | Accepted (G1); `code-review` levels appendix Accepted (G1, 2026-10-21, #730) | ADR-0001 §4 |
+| [0018](0018-ngon-ngu-va-tien-te.md) | Language and currency: Vietnamese / English UI, switchable any time, stored per machine (Vietnamese only with VND); one currency per database (VND, USD, EUR, GBP, AUD, CAD, SGD) chosen once at first-run setup and changed only by starting over; amounts as integers of the currency's minor unit, fee cap 100 billion main units; Excel-style separators in every language, strict input; dd/mm/yyyy in both languages; partly supersedes 0011 | Proposed (G1, G2) | OWNER 2026-11-11/12; spec Phase 6 feedback §11 (T-418, #1221) |
 
 Phase 3 data model: `docs/design/phase-3-du-lieu.md` — Accepted (G2, 26/09/2026). ADR-0001 and ADR-0006 carry accepted addenda (task size P1; storage).

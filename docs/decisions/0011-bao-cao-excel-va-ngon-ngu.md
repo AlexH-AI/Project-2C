@@ -27,3 +27,15 @@ Excel là định dạng Owner dùng để xem/chia sẻ số liệu; i18n từ 
 
 - Checklist review có mục "không chuỗi UI cứng".
 - Hướng thiết kế UI (tokens, font Be Vietnam Pro, bố cục màn hình) **chưa là ADR** — chốt ở G3.
+
+## Phụ lục — song ngữ và tiền tệ (11/11/2026, ADR-0018; chờ Owner duyệt cùng ADR-0018)
+
+Owner 11/11/2026 đưa giao diện song ngữ Việt / Anh và tiền tệ chọn một lần vào v1.0 ("Đưa vào v1.0"). ADR-0018 thay một phần ADR này:
+
+- **Điểm 2:**
+  - Thay phần "giao diện tiếng Việt": thêm English, đổi bất kỳ lúc nào trong Cài đặt; tiếng Việt chỉ chọn được khi tiền tệ của dữ liệu là VND.
+  - Giữ nguyên hai phần: thuật ngữ ngành tiếng Anh, mọi chuỗi qua i18n. Lớp i18n làm từ đầu nay là chỗ thêm `en.ts`.
+- **Điểm 3:**
+  - Tiền viết theo tiền tệ của dữ liệu và theo dấu kiểu Excel ở mọi ngôn ngữ: "500 tr", "1.2 tỷ", "3,000,000 VNĐ", "$1,250.50", không còn "1,2 tỷ".
+  - Giữ `tabular-nums`.
+- **Điểm 1** giữ nguyên. Thêm: file Excel lấy ngôn ngữ của app lúc xuất, `numFmt` theo tiền tệ; làm trong phần E của spec Phase 6 phản hồi dùng thử.
