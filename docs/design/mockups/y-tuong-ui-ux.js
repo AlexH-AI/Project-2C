@@ -501,20 +501,22 @@
     const rowsOf = (t) => {
       const rms = teamRms(t).map((r) => {
         const mine = f.ap.filter((a) => a.c.rm === r.i);
-        return { r, fw: ST3.map((s) => sum(mine.filter((a) => !a.flag && a.c.st === s), (a) => a.amt)), n: mine.length, miss: mine.filter((a) => a.flag === 'miss').length };
+        return { r, fw: ST3.map((s) => sum(mine.filter((a) => !a.flag && a.c.st === s), (a) => a.amt)), n: mine.length, miss: mine.filter((a) => a.flag === 'miss').length, sales: r.fi - r.fc };
       });
-      return { t, rms, fw: rms.reduce((a, x) => addV(a, x.fw), [0, 0, 0]), n: sum(rms, (x) => x.n), miss: sum(rms, (x) => x.miss), fm: sum(rms, (x) => x.r.fm) };
+      return { t, rms, fw: rms.reduce((a, x) => addV(a, x.fw), [0, 0, 0]), n: sum(rms, (x) => x.n), miss: sum(rms, (x) => x.miss), fm: sum(rms, (x) => x.r.fm), sales: sum(rms, (x) => x.sales), kpi: TEAMS[t].target || 0 };
     };
     const teams = f.teams.map(rowsOf);
     const max = Math.max(...teams.map((x) => sum(x.fw)), 1);
-    const line = (cls, attr, name, x, fm) => `<tr class="${cls}" ${attr}><td>${name}</td>${sum(x.fw) ? `<td class="bar" style="--w: ${(sum(x.fw) / max).toFixed(3)}"><span>${moneyS(sum(x.fw))}</span></td>` : zero}${x.fw.map(cell).join('')}${cell(fm)}<td>${x.n || '—'}</td><td>${x.miss ? `<span class="chip warn">${x.miss} thiếu case size</span>` : ''}</td></tr>`;
-    let h = '<thead><tr><th>Team / RM</th><th>Tuần này</th><th>N1</th><th>N2</th><th>N3</th><th>Tháng 11</th><th>Lịch tuần</th><th></th></tr></thead><tbody>';
+    // KPI: a team's own, the sum for the total row; an RM has none
+    const kpiCell = (x, fm) => (x.kpi === undefined ? zero : !x.kpi ? '<td class="zero">chưa đặt</td>' : `<td class="kpi">${moneyS(x.kpi)} <small class="${x.sales + fm >= x.kpi ? 'ok' : ''}">${nf(((x.sales + fm) / x.kpi) * 100)}%</small></td>`);
+    const line = (cls, attr, name, x, fm) => `<tr class="${cls}" ${attr}><td>${name}</td>${sum(x.fw) ? `<td class="bar" style="--w: ${Math.min(1, sum(x.fw) / max).toFixed(3)}"><span>${moneyS(sum(x.fw))}</span></td>` : zero}${x.fw.map(cell).join('')}${cell(fm)}${cell(x.sales)}${kpiCell(x, fm)}<td>${x.n || '—'}</td><td>${x.miss ? `<span class="chip warn">${x.miss} thiếu case size</span>` : ''}</td></tr>`;
+    let h = '<thead><tr><th>Team / RM</th><th>Tuần này</th><th>N1</th><th>N2</th><th>N3</th><th title="Dự kiến từ hôm nay tới hết tháng">Tháng 11</th><th title="Doanh số thuần đã có từ đầu tháng">Đã đạt</th><th title="KPI tháng và phần trăm về đích = (đã đạt + dự kiến tháng) ÷ KPI">KPI · về đích</th><th>Lịch tuần</th><th></th></tr></thead><tbody>';
     for (const x of teams) {
       const open = !!state.open['fc' + x.t];
       h += line('team' + (open ? ' open' : ''), `data-tw="fc${x.t}"`, `<span class="tw">${ic('chev')}</span>${teamMark(x.t)} ${TEAMS[x.t].name}`, x, x.fm);
       if (open) h += x.rms.map((y) => line('rm link', `data-rm="${y.r.i}"`, 'RM ' + y.r.name, y, y.r.fm)).join('');
     }
-    if (teams.length > 1) h += line('total', '', 'Tổng', { fw: f.fw, n: f.ap.length, miss: 0 }, f.month);
+    if (teams.length > 1) h += line('total', '', 'Tổng', { fw: f.fw, n: f.ap.length, miss: 0, sales: f.sales, kpi: f.teams.every((t) => TEAMS[t].target) ? sum(f.teams, (t) => TEAMS[t].target) : 0 }, f.month);
     $('#fc-tbl').innerHTML = h + '</tbody>';
   }
   const WEEKS_LEFT = 3;
@@ -538,12 +540,12 @@
 
     const rest = f.month - f.week, land = f.sales + f.month;
     const goal = f.teams.every((t) => TEAMS[t].target) ? sum(f.teams, (t) => TEAMS[t].target) : 0, span = Math.max(land, goal);
-    const goalTxt = goal ? ` · <b class="num pct ${land >= goal ? 'ok' : ''}">${nf((land / goal) * 100)}%</b> mục tiêu ${moneyS(goal)}` : ' · chưa đặt mục tiêu';
+    const goalTxt = goal ? ` · <b class="num pct ${land >= goal ? 'ok' : ''}">${nf((land / goal) * 100)}%</b> KPI ${moneyS(goal)}` : ' · chưa đặt KPI';
     const goalBar = goal ? `${goal > land ? `<i style="--f: ${goal - land}; --c: var(--fill-2)"></i>` : ''}<u class="goal" style="left: ${((goal / span) * 100).toFixed(2)}%"></u>` : '';
     // No weekly target is entered: the week's mark is what is left of the month's target over the weeks left
     // (18 working days, Mon-Sat, from 10/11 to 30/11 = 3 weeks)
     const pace = goal > f.sales ? (goal - f.sales) / WEEKS_LEFT : 0;
-    const goalKey = goal ? `<span><i class="goal-k"></i>Mục tiêu <b class="num">${moneyS(goal)}</b> · còn thiếu <b class="num">${moneyS(Math.max(goal - land, 0))}</b></span>${pace ? `<span class="pace">Nhịp cần mỗi tuần <b class="num">${moneyS(pace)}</b> · tuần này dự kiến <b class="num ${f.week >= pace ? 'ok' : 'low'}">${moneyS(f.week)}</b></span>` : ''}` : '';
+    const goalKey = goal ? `<span><i class="goal-k"></i>KPI tháng <b class="num">${moneyS(goal)}</b> · còn thiếu <b class="num">${moneyS(Math.max(goal - land, 0))}</b></span>${pace ? `<span class="pace">Nhịp cần mỗi tuần <b class="num">${moneyS(pace)}</b> · tuần này dự kiến <b class="num ${f.week >= pace ? 'ok' : 'low'}">${moneyS(f.week)}</b></span>` : ''}` : '';
     $('.runway').innerHTML = `<h3>Đường băng tháng 11 <small>đã đạt + dự kiến</small><span class="sum">về đích <b class="num">${moneyS(land)}</b>${goalTxt}</span></h3>
       <div class="stack"><i style="--f: ${f.sales}; --c: var(--accent)"></i>${f.fw.map((v, i) => `<i style="--f: ${v || 0.001}; --c: var(--${ST3[i]})"></i>`).join('')}<i class="hatch" style="--f: ${rest}"></i>${goalBar}</div>
       <div class="keys"><span><i style="--c: var(--accent)"></i>Đã đạt <b class="num">${moneyS(f.sales)}</b></span>${f.fw.map((v, i) => `<span><i style="--c: var(--${ST3[i]})"></i>${i ? '' : 'Tuần này '}${STAGE[ST3[i]]} <b class="num">${moneyS(v)}</b></span>`).join('')}<span><i style="--c: var(--accent); opacity: 0.5"></i>Các tuần còn lại <b class="num">${moneyS(rest)}</b></span>${goalKey}</div>
@@ -869,19 +871,19 @@
   // numbers are the loudest thing on the card (Owner 10/11)
   const teamHead = (name, color, icon, tl, edit) => {
     const [c, i] = look(color, icon);
-    const mark = edit === null ? `<span class="tmark lg">${ic(i)}</span>` : `<button class="tmark lg" data-edit-team="${edit}" title="Sửa team: tên, màu, icon, mục tiêu" aria-label="Sửa team ${esc(name)}">${ic(i)}</button>`;
+    const mark = edit === null ? `<span class="tmark lg">${ic(i)}</span>` : `<button class="tmark lg" data-edit-team="${edit}" title="Sửa team: tên, màu, icon, KPI" aria-label="Sửa team ${esc(name)}">${ic(i)}</button>`;
     return `<header class="${color ? '' : 'plain'}" style="--c: ${c}">${mark}<b class="tname">${esc(name)}</b><span class="tl"><i>${ic('crown')}TL</i><b>${tl}</b></span></header>`;
   };
   RENDER.team = () => {
     // The target of the whole: the sum of the teams' targets, only when every team has one
     const unset = TEAMS.filter((T) => !T.target).length, all = scopeData('all'), goal = sum(TEAMS, (T) => T.target || 0);
     $('#teams-goal').innerHTML = unset
-      ? `Mục tiêu tháng toàn bộ: còn ${unset} team chưa đặt mục tiêu`
-      : `Mục tiêu tháng toàn bộ <b>${moneyS(goal)}</b> = tổng mục tiêu ${TEAMS.length} team · đã đạt ${nf((all.sales / goal) * 100)}% · dự kiến về đích ${nf(((all.sales + all.fm) / goal) * 100)}%`;
+      ? `KPI tháng toàn bộ: còn ${unset} team chưa đặt KPI`
+      : `KPI tháng toàn bộ <b>${moneyS(goal)}</b> = tổng KPI ${TEAMS.length} team · đã đạt ${nf((all.sales / goal) * 100)}% · dự kiến về đích ${nf(((all.sales + all.fm) / goal) * 100)}%`;
     $('#teams').innerHTML = [0, 1, 2].map((t) => {
       const d = scopeData(t), T = TEAMS[t];
       return `<section class="card tcard rise" style="--i: ${t}">${teamHead(T.name, T.color, T.icon, T.tl, t)}
-        <div class="brief num"><div><b>${moneyS(d.sales)}</b><span>Doanh số</span></div><div><b>${d.total}</b><span>Số HĐ</span></div><div><b>${moneyS(sum(d.fw))}</b><span>Forecast tuần</span></div></div>${T.target ? `<p class="goal-line num">Mục tiêu tháng ${moneyS(T.target)} · đã đạt ${nf((d.sales / T.target) * 100)}% · dự kiến về đích ${nf(((d.sales + d.fm) / T.target) * 100)}%</p>` : '<p class="goal-line">Chưa đặt mục tiêu tháng</p>'}`
+        <div class="brief num"><div><b>${moneyS(d.sales)}</b><span>Doanh số</span></div><div><b>${d.total}</b><span>Số HĐ</span></div><div><b>${moneyS(sum(d.fw))}</b><span>Forecast tuần</span></div></div>${T.target ? `<p class="goal-line num">KPI tháng ${moneyS(T.target)} · đã đạt ${nf((d.sales / T.target) * 100)}% · dự kiến về đích ${nf(((d.sales + d.fm) / T.target) * 100)}%</p>` : '<p class="goal-line">Chưa đặt KPI tháng</p>'}`
         + teamRms(t).map((r) => `<button class="rmrow" data-rm="${r.i}"><span class="av">${initials(r.name)}</span><span><b>${r.name}</b><small class="num">${sum(r.kh)} KH · Forecast tuần ${moneyS(sum(fwOf((c) => c.rm === r.i)))}</small></span><span class="v num">${moneyS(r.fi - r.fc)}</span></button>`).join('') + '</section>';
     }).join('');
   };
@@ -894,7 +896,7 @@
       <div class="fld"><label for="team-name">Tên team</label><input id="team-name" type="text" value="${esc(d.name)}" maxlength="24" autocomplete="off" /></div>
       <div class="fld"><label>Màu</label><div class="swatches"><button class="none ${d.color ? '' : 'on'}" data-tc="" title="Mặc định" aria-label="Màu mặc định"></button>${TEAM_COLORS.map(([c, l]) => `<button class="${c === d.color ? 'on' : ''}" data-tc="${c}" style="--c: var(--${c})" title="${l}" aria-label="Màu ${l}"></button>`).join('')}</div><span class="muted">tùy chọn</span></div>
       <div class="fld"><label>Icon</label><div class="icons"><button class="${d.icon ? '' : 'on'}" data-ti="" title="Mặc định" aria-label="Icon mặc định">${ic('team')}</button>${TEAM_ICONS.map((i) => `<button class="${i === d.icon ? 'on' : ''}" data-ti="${i}" aria-label="Icon ${i}">${ic(i)}</button>`).join('')}</div></div>
-      <div class="fld"><label for="team-target">Mục tiêu</label><input id="team-target" class="num" type="text" inputmode="numeric" value="${d.target || ''}" placeholder="chưa đặt" /><span class="muted">triệu đồng / tháng · mốc để Forecast so sánh</span></div>
+      <div class="fld"><label for="team-target">KPI tháng</label><input id="team-target" class="num" type="text" inputmode="numeric" value="${d.target || ''}" placeholder="chưa đặt" /><span class="muted">triệu đồng · chỉ tiêu doanh số, nhập đầu tháng</span></div>
       <div class="acts"><button class="btn ghost" data-close>Đóng</button><button class="btn" data-team-save>${d.t === null ? 'Tạo team' : 'Lưu'}</button></div>`;
   }
   // what is typed stays when the sheet is drawn again
@@ -908,7 +910,7 @@
     readDraft();
     const d = draft;
     closeFloats();
-    if (d.t === null) return toast('Bản concept: team mới không được lưu. Phần này để anh thử tên, màu, icon và mục tiêu.');
+    if (d.t === null) return toast('Bản concept: team mới không được lưu. Phần này để anh thử tên, màu, icon và KPI.');
     Object.assign(TEAMS[d.t], { name: d.name.trim() || TEAMS[d.t].name, color: d.color, icon: d.icon, target: d.target });
     renderKan();
     if (RENDER[state.view]) RENDER[state.view]();
@@ -1092,7 +1094,7 @@
     ['18', 'Forecast', 'Dải tuần thứ Hai → thứ Bảy', 'Mỗi ngày một cột, mỗi lịch hẹn một thẻ có case size và màu nhóm; tổng tiền ở đầu cột. KH có hai lịch chỉ tính một lần, theo số case size nhập gần nhất; thẻ kia mờ đi.', 'Thấy tiền dự kiến nằm ở ngày nào, của ai, để biết hôm nào phải dồn sức.', 'M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'week'; } }],
     ['19', 'Forecast', 'Lưới tháng không có Chủ Nhật', 'Mỗi tuần một hàng, sáu cột thứ Hai → thứ Bảy; ô đậm nhạt theo số tiền; ngày đã qua và ngày ngoài tháng gạch chéo. Bấm một ô để thấy các lịch của ngày đó: KH nào, của RM nào, bao nhiêu; bấm KH để mở hồ sơ.', 'Đúng định nghĩa Forecast tháng của anh; nhìn là hiểu vì sao không có Chủ Nhật 15, 22, 29.', 'S–M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'month'; } }],
     ['20', 'Forecast', 'Bảng Team → RM, điền case size tại chỗ', 'Bấm một team để mở các RM; cột Tuần này có thanh. Lịch thiếu case size gom vào một nút: bấm, điền số, Forecast chạy theo ngay.', 'Forecast chỉ đúng khi đủ case size. Điền được ngay tại nơi phát hiện thiếu thì dữ liệu mới đầy.', 'M', [['D']], 1, { view: 'forecast' }],
-    ['32', 'Forecast', 'Mục tiêu doanh số', 'Mỗi team có một ô nhập mục tiêu doanh số tháng, trong hộp tạo / sửa team. Đường băng của Forecast có thêm vạch mục tiêu, phần trăm về đích và số còn thiếu; thẻ team ghi đã đạt bao nhiêu phần trăm.', 'Anh làm rõ 11/11: mục tiêu là trường nhập thêm để Forecast có cột mốc so sánh. Là dữ liệu mới nên qua G2; anh chốt 11/11: chỉ tiêu của từng team và của toàn bộ, không đặt tới từng RM; mục tiêu toàn bộ là tổng các team. Mục tiêu chỉ nhập theo tháng; tuần không nhập, app tự tính nhịp cần mỗi tuần.', 'M', [['D'], ['G2', 'gate'], ['Owner 11/11']], 1, { view: 'forecast' }],
+    ['32', 'Forecast', 'Chỉ tiêu (KPI) doanh số tháng', 'Mỗi team có một ô nhập KPI doanh số tháng, trong hộp tạo / sửa team, nhập đầu tháng; KPI toàn bộ là tổng các team. Forecast hiện ba số cạnh nhau: dự kiến, đã đạt, KPI. Đường băng có vạch KPI, phần trăm về đích và số còn thiếu; bảng Team → RM có cột Đã đạt và cột KPI của từng team.', 'Anh làm rõ 11/11: mục tiêu là trường nhập thêm để Forecast có cột mốc so sánh. Là dữ liệu mới nên qua G2; anh chốt 11/11: chỉ tiêu của từng team và của toàn bộ, không đặt tới từng RM; mục tiêu toàn bộ là tổng các team. KPI chỉ nhập theo tháng; tuần không nhập, app tự tính nhịp cần mỗi tuần. Anh gọi số này là "chỉ tiêu (KPI)", bảng đổi nhãn theo.', 'M', [['D'], ['G2', 'gate'], ['Owner 11/11']], 1, { view: 'forecast' }],
     ['21', 'Báo cáo và Excel', 'Bản tin ba trang, chọn được kỳ', 'Báo cáo là một tập ba trang có đầu thư: tóm tắt (câu tóm tắt, bốn số chính, doanh số theo team, nhận xét viết từ số), chi tiết từng RM và các HĐ hủy, rồi lịch hẹn, khách hàng theo nhóm và định nghĩa. Chọn kỳ ở viên kỳ trên thanh công cụ: tuần, tháng, năm, kỳ này và các kỳ trước. Nút "Xem bản in" cho thấy đúng trang sẽ in hoặc xuất PDF.', 'Anh cần "đẳng cấp, chuyên nghiệp": người đọc là cấp trên, đọc trong 10 giây. Trang này gửi đi được ngay.', 'M', [['E']], 1, { view: 'reports', pre: () => { state.rp = 'brief'; } }],
     ['22', 'Báo cáo và Excel', 'Sổ số kiểu báo cáo tài chính', 'Ba tab Kết quả · Lịch hẹn · Khách hàng thay cho 17 cột cuộn ngang. Team gập mở RM. Số canh phải, tiêu đề một dòng, dòng Tổng có kẻ trên.', 'Bảng hiện tại phải cuộn ngang và tiêu đề gãy ba, bốn dòng. Chia theo câu hỏi thì mỗi bảng vừa một màn.', 'M', [['E'], ['B']], 1, { view: 'reports', pre: () => { state.rp = 'ledger'; state.open.lg0 = true; } }],
     ['23', 'Báo cáo và Excel', 'File Excel là bản in của Bản tin', 'Sheet Tóm tắt giống hệt Bản tin. Sheet sổ có nhóm gập Team ▸ RM, thanh dữ liệu của Excel, dòng Tổng là công thức. Sheet Forecast và sheet Định nghĩa đi kèm.', 'File gửi đi phải đẹp như làm tay và vẫn đúng khi người nhận sửa số. Mẫu ở mục File Excel bên dưới.', 'M', [['E'], ['D']], 1, { scroll: '#excel' }],
