@@ -808,6 +808,8 @@ header.plain .tname { color: var(--text); }
 .keys i.goal-k { width: 3px; height: 12px; border-radius: 2px; background: var(--text); vertical-align: -2px; }
 .runway .sum .pct { font-size: 20px; color: var(--accent); }
 .runway .sum .pct.ok { color: var(--ok); }
+.keys .pace b.ok { color: var(--ok); }
+.keys .pace b.low { color: var(--warn); }
 
 /* --- Forecast: a day opens to its appointments --- */
 .day .dh { width: 100%; border-radius: 8px; transition: background var(--t-1); }
