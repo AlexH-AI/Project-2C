@@ -366,7 +366,7 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 Phần G (song ngữ, tiền tệ; §11) thêm vào thứ tự trên:
 
 - Bước 2 có thêm ADR-0018 và golden số / tiền (T-418), duyệt trước golden D và mockup đợt c–e. Golden D và các đợt đó viết số theo luật mới.
-- Bước 3 thành: A → G1–G5 → B → C / F → D → E → G12–G16. G6–G11 chạy song song từ sau G4 / G1. Chi tiết: §11.4.
+- Bước 3 thành: A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16. G-06 … G-11 chạy song song từ sau G-04 / G-01. Chi tiết: §11.4; tên Issue dự kiến: §11.7.
 
 ## 11. Phần G — Song ngữ Việt / Anh và tiền tệ (Owner duyệt G1, G2 ngày 12/11/2026)
 
@@ -415,8 +415,8 @@ Claude đề xuất, Owner trả lời từng điểm ngày 12/11/2026 (§11.3; 
   - Dạng gọn tiếng Việt: K / tr / tỷ.
 - **Ô nhập:** ADR §5.
   - Cách gõ sai luật bị từ chối, kèm gợi ý viết lại; người dùng bấm gợi ý thì mới điền.
-  - Không đơn vị thì số chữ số sau `.` không quá số lẻ của tiền tệ.
-  - Với VND, "1.500 tr" (một `.` + đúng 3 chữ số + đơn vị) bị từ chối kèm hai cách viết, vì hôm nay nó là 1,500 tr.
+  - Không đơn vị: VND không có chữ số nào sau `.` ("1.500" bị từ chối, gợi ý "1,500"); tiền có cent đọc `.` là phần lẻ, kết quả phải tròn cent ("1.500" là $1.50, Owner chốt 12/11 sau review PR #1222).
+  - Với VND, "1.500 tr" (một `.` + đúng 3 chữ số + đơn vị) bị từ chối kèm hai cách viết, vì hôm nay nó là 1,500 tr. Phần nguyên `0` không tính: "0.500 tr" là 0.5 tr (Owner chọn 12/11 sau review PR #1222).
   - Đơn vị theo ngôn ngữ giao diện (Owner chọn 12/11): tiếng Việt nghìn / k / tr / tỷ và "1tr5"; English K / Mil / Bil.
 - **DB mới / cũ:** DB mới là lúc thư mục dữ liệu chưa có file (nhánh `stored` của `app-data.ts`). Wizard dựng DB riêng và lưu một lần. Bản web giữ dữ liệu mẫu VND, không qua wizard. ADR §7.
 - **Nhập backup khác tiền tệ:** từ chối. `importBackup` nhận tiền tệ mong đợi từ app. ADR §7.
@@ -440,7 +440,7 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
 | Q3 | Bậc của dạng gọn tiếng Việt | "nghìn" cho bậc K; không có bậc nghìn tỷ ("1,500 tỷ"); dưới 1,000 hiện dạng đầy đủ | **Bậc K khác đề xuất:** ""K" như tiếng Anh" ("750K"). Bậc nghìn tỷ như đề xuất: ""1,500 tỷ"" | C04–C06, C17, C18 |
 | Q4 | Số âm | Dấu "-" đứng đầu: "-$1,250.50", "-1.2 tỷ"; chênh lệch dùng "−" / "+" | Như đề xuất: "Dấu "-" đứng đầu" | F08, F13, F20, C19, C31, D01–D07 |
 | Q5 | Dấu cách trước đơn vị | K, T viết liền ("$250K", "1.5T"); Mil, Bil, tr, tỷ cách một dấu cách | Như đề xuất: "K, T liền; chữ dài cách" | §3 |
-| Q6 | Đơn vị ở ô nhập | Một bảng cho cả hai ngôn ngữ; không nhận T, "m", "bn", "million" | **Khác đề xuất:** "Theo ngôn ngữ giao diện". Tiếng Việt nhận nghìn / k / tr / tỷ; English nhận K / Mil / Bil. Gõ đơn vị của ngôn ngữ kia là lỗi, kèm gợi ý đổi đơn vị | I06–I18, X29–X33 · ADR §5 |
+| Q6 | Đơn vị ở ô nhập | Một bảng cho cả hai ngôn ngữ; không nhận T, "m", "bn", "million" | **Khác đề xuất:** "Theo ngôn ngữ giao diện". Tiếng Việt nhận nghìn / k / tr / tỷ; English nhận K / Mil / Bil. Gõ đơn vị của ngôn ngữ kia là lỗi, kèm gợi ý đổi đơn vị | I06–I18, X13, X14, X30–X33 · ADR §5 |
 | Q7 | Cách nói "1tr5", "1 tỷ 2" | Giữ, chỉ với đơn vị tiếng Việt | Như đề xuất: "Giữ" | I17, I18, X32 |
 | Q8 | Nhóm bằng dấu cách "500 000 000" | Thành lỗi, kèm gợi ý "500,000,000" | Như đề xuất: "Từ chối, kèm gợi ý" | X07 |
 | Q9 | Ngày tiếng Anh ở chỗ rộng | "Thu 12 Nov 2026", "12 Nov", "9 – 15 Nov 2026", "November 2026"; năm "2026" | Như đề xuất: "Tên tháng ngắn" | Y02–Y11 |
@@ -451,7 +451,15 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
 | Q14 | Nạp lại dữ liệu mẫu | Giữ tiền tệ, nạp bộ mẫu của tiền tệ đó | Như đề xuất: "Nạp bộ mẫu của tiền tệ đó" | ADR §7 |
 | Q15 | Bộ mẫu tiếng Anh | Một bộ số chung cho sáu tiền tệ; một phần phí có số lẻ cent | Như đề xuất: "Một bộ số chung" | ADR §8 |
 | Q16 | Bảng thuật ngữ tiếng Anh | Bảng ngắn ở §11.6 | "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại". §11.6 viết lại đầy đủ, theo nhóm, lấy từ chữ đang có trong `vi.ts`. Owner sửa bốn từ rồi "Còn lại duyệt": Team & nhân sự → "Team management", Nhân sự → "staff", Mất cơ hội → "lost opportunity", "RF: referal" (giải thích ở §11.6) | §11.6 |
-| Q17 | "1.500 tr", "1.500 tỷ" với VND | Từ chối (mã `ambiguous`), gợi ý cả "1.5 tr" lẫn "1,500 tr" | Như đề xuất: "Từ chối, đưa hai cách viết" | X26–X29, I37 · ADR §5 |
+| Q17 | "1.500 tr", "1.500 tỷ" với VND | Từ chối (mã `ambiguous`), gợi ý cả "1.5 tr" lẫn "1,500 tr" | Như đề xuất: "Từ chối, đưa hai cách viết". Sau review: "0.500 tr" "Nhận là 0.5 tr" (dưới bảng) | X26–X29, I37, I39 · ADR §5 |
+
+**Sau review phiên sạch của PR #1222** (head `33f631a`, PASS kèm sáu ghi chú không chặn, cộng ghi chú X19 của vòng `27ebbd1`), Owner trả lời cùng ngày 12/11/2026 trong chat ở Home PC, nguyên văn:
+
+- Về các ghi chú review: "xử lý hết trong v1.0"; chọn "Sửa hết trên PR này". Các ghi chú được sửa trên PR này trước khi merge.
+- X19, tiền có cent gõ "1.500" không đơn vị: "USD khác nhé, 1.500 là 1.5, còn 1,500 là 1500 USD". Tiền có cent đọc `.` là phần lẻ, kết quả phải tròn cent: "1.500" lưu `150` ($1.50, I38). VND giữ như cũ: "1.500" bị từ chối, gợi ý "1,500" (X05). X19 đổi thành ca "1.505" (lẻ dưới 1 cent). ADR §5.
+- "0.500 tr" với VND: chọn "Nhận là 0.5 tr". Luật `ambiguous` chỉ áp khi phần nguyên khác `0` (I39). ADR §5.
+- Tên Issue dự kiến của phần G: chọn "G-01 … G-16", để khỏi lẫn với tên cổng G1–G8 (§11.7).
+- Hỏi duyệt lại G2 các dòng golden đổi (X19, I38, I39) và câu ADR §5: chọn "Duyệt".
 
 ### 11.4 Thứ tự, cổng
 
@@ -460,11 +468,11 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
   - **G3:** mockup (§11.5). **G5:** ngôn ngữ trả lời và câu "tại Việt Nam" của prompt, gộp vào A6.
   - Không có G4: không thêm dependency nào, kể cả thư viện số hay `Intl` polyfill.
 - **Thứ tự Issue code** (§11.7), tất cả sau A, vì A đổi khóa chuỗi và tên trong code:
-  1. G1–G5: cơ chế i18n, kiểu tiền và định dạng mới, khóa tiền tệ, dữ liệu mẫu VND. Làm trước B, để chuỗi và số tiền mới của B–E viết một lần bằng cách mới.
+  1. G-01 … G-05: cơ chế i18n, kiểu tiền và định dạng mới, khóa tiền tệ, dữ liệu mẫu VND. Làm trước B, để chuỗi và số tiền mới của B–E viết một lần bằng cách mới.
   2. B → C / F → D → E như §10.
-  3. G6–G11 chạy song song với B–E: bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
-  4. G12–G16 (các lượt dịch) làm cuối, sau E, vì B–E còn thêm chuỗi. Issue dịch cuối mới mở lựa chọn English trong Cài đặt.
-- Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417, chưa làm) cũng vậy: Issue #1217 đã ghi.
+  3. G-06 … G-11 chạy song song với B–E: bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
+  4. G-12 … G-16 (các lượt dịch) làm cuối, sau E, vì B–E còn thêm chuỗi. Issue dịch cuối mới mở lựa chọn English trong Cài đặt.
+- Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417, #1223) đã vẽ theo luật mới ("1.38 tỷ", "16.7%", "3,000,000 VNĐ" trong `search-rm-team.html`).
 
 ### 11.5 Mockup G3
 
@@ -482,7 +490,7 @@ Danh sách đầy đủ các thuật ngữ của giao diện, theo nhóm (Owner 
 
 - Cột Tiếng Việt là chữ đang có trong app (`apps/desktop/src/i18n/vi.ts`), cộng chữ của các phần B–G chưa code. Chữ "RE" của app viết thành "RM" theo phần A.
 - Câu chữ dài (câu hướng dẫn, câu lỗi) dịch ở các lượt dịch, theo đúng các từ dưới đây.
-- Bảng vào `CONTEXT.md` cùng Issue G1.
+- Bảng vào `CONTEXT.md` cùng Issue G-01.
 
 **Giữ nguyên ở cả hai ngôn ngữ:** Heritas L-CRM, FYP, KYC, KYC Intelligence, N1–N4, RM, TL, IS, BD, BDM, MTD, KPI, AUM, AI, Forecast, Case size, Team, Kanban, Trigger, Excel, ChatGPT, OpenCode, WorkBuddy.
 
@@ -727,18 +735,20 @@ Nút và chữ chung:
 
 ### 11.7 Issue dự kiến (chưa tạo)
 
+Tên Issue viết "G-" và hai chữ số (G-01 … G-16; Owner chọn 12/11/2026), để khỏi lẫn với tên cổng G1–G8: "Bị chặn bởi: G-04" là Issue, không phải cổng G4.
+
 | Issue | Nội dung | Rủi ro | Bị chặn bởi |
 |---|---|---|---|
-| G1 | Cơ chế i18n hai ngôn ngữ: `t()` theo ngôn ngữ, lưu theo máy, tải lại khi đổi, số nhiều tiếng Anh, `en.ts` dịch dần với test liệt kê khóa thiếu (chưa cho chọn English); sửa `.claude/rules/i18n-ui.md` và dòng i18n của `CLAUDE.md`; thuật ngữ vào `CONTEXT.md` | med | A4 |
-| G2 | `domain`: kiểu tiền chung, bảng tiền tệ, định dạng đầy đủ / gọn / chênh lệch, đọc ô nhập chặt kèm gợi ý, số đếm / phần trăm / cỡ file theo dấu mới; fixture của golden `so-va-tien-te.md` | med | A4 |
-| G3 | App dùng định dạng mới ở mọi chỗ hiện / nhập số (chữ mẫu, gợi ý dưới ô); hai dòng dạng số của golden `chi-so.md`; e2e đổi chữ | med | G2 |
-| G4 | Khóa `currency`: migration ghi VND, luật nhập backup (khóa, trần theo tiền tệ, `BACKUP_CURRENCY_MISMATCH`), `isFee` / `requireAmount` theo tiền tệ, Nạp lại mang khóa, app truyền tiền tệ vào định dạng | med | G3 |
-| G5 | Dữ liệu mẫu VND viết lại theo dấu mới (seed, AI giả lập) | low | G3 |
-| G6 | Bộ dữ liệu mẫu tiếng Anh cho tiền có cent; Nạp lại theo tiền tệ; AI giả lập với bộ tiếng Anh | med | G4 |
-| G7 | Ngày tiếng Anh: tên tháng, tên thứ, kỳ ở chỗ rộng | low | G1 |
-| G8 | Thiết lập ban đầu (wizard), DB mới, tùy chọn wizard của bản web cho e2e | med | G4, G6, mockup §11.5 |
-| G9 | Cài đặt → Ngôn ngữ / Tiền tệ chỉ xem / Thiết lập lại từ đầu | med | G8 |
-| G10–G11 | Gom chuỗi tiếng Việt ngoài `vi.ts` về i18n (hai Issue theo vùng code) | low | G1 |
-| G12–G16 | Các lượt dịch theo nhóm màn: vỏ, Tổng quan, Forecast · Lịch hẹn · Khách hàng, hồ sơ, KYC, AI · Báo cáo, Team · Cài đặt, lỗi, Thùng rác, wizard. Issue cuối mở lựa chọn English | low | G10–G11, E |
+| G-01 | Cơ chế i18n hai ngôn ngữ: `t()` theo ngôn ngữ, lưu theo máy, tải lại khi đổi, số nhiều tiếng Anh, `en.ts` dịch dần với test liệt kê khóa thiếu (chưa cho chọn English); sửa `.claude/rules/i18n-ui.md` và dòng i18n của `CLAUDE.md`; thuật ngữ vào `CONTEXT.md` | med | A4 |
+| G-02 | `domain`: kiểu tiền chung, bảng tiền tệ, định dạng đầy đủ / gọn / chênh lệch, đọc ô nhập chặt kèm gợi ý, số đếm / phần trăm / cỡ file theo dấu mới; fixture của golden `so-va-tien-te.md` | med | A4 |
+| G-03 | App dùng định dạng mới ở mọi chỗ hiện / nhập số (chữ mẫu, gợi ý dưới ô); mọi số viết kiểu Việt của golden `chi-so.md` (phần trăm "66,7%", tiền theo triệu nhóm bằng `.` như "1.500"; số lưu không đổi); e2e đổi chữ | med | G-02 |
+| G-04 | Khóa `currency`: migration ghi VND (ngoại lệ có chủ ý của R2-02, ADR-0018 §7), luật nhập backup (khóa, trần theo tiền tệ, `BACKUP_CURRENCY_MISMATCH`), `isFee` / `requireAmount` theo tiền tệ, Nạp lại mang khóa, app truyền tiền tệ vào định dạng | med | G-03 |
+| G-05 | Dữ liệu mẫu VND viết lại theo dấu mới (seed, AI giả lập) | low | G-03 |
+| G-06 | Bộ dữ liệu mẫu tiếng Anh cho tiền có cent; Nạp lại theo tiền tệ; AI giả lập với bộ tiếng Anh | med | G-04 |
+| G-07 | Ngày tiếng Anh: tên tháng, tên thứ, kỳ ở chỗ rộng | low | G-01 |
+| G-08 | Thiết lập ban đầu (wizard), DB mới, tùy chọn wizard của bản web cho e2e | med | G-04, G-06, mockup §11.5 |
+| G-09 | Cài đặt → Ngôn ngữ / Tiền tệ chỉ xem / Thiết lập lại từ đầu | med | G-08 |
+| G-10, G-11 | Gom chuỗi tiếng Việt ngoài `vi.ts` về i18n (hai Issue theo vùng code) | low | G-01 |
+| G-12 … G-16 | Các lượt dịch theo nhóm màn: vỏ, Tổng quan, Forecast · Lịch hẹn · Khách hàng, hồ sơ, KYC, AI · Báo cáo, Team · Cài đặt, lỗi, Thùng rác, wizard. Issue cuối mở lựa chọn English | low | G-10, G-11, E |
 
 Ngoài bảng: `numFmt` theo tiền tệ của file Excel làm trong E; ngôn ngữ trả lời của AI làm trong A6; ngôn ngữ của gói macOS làm ở một Issue Mac. Cả phần G ước 16 Issue.

@@ -1,15 +1,17 @@
 # Golden examples — Số, tiền tệ, ngày theo ngôn ngữ (G2)
 
 > **Trạng thái: Owner duyệt G2 ngày 12/11/2026** ("Duyệt G1 và G2"; T-418, #1221, PR #1222). Các dòng theo câu trả lời Q1–Q15, Q17 của Owner cùng ngày (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.3). Dòng nào ứng với một câu hỏi thì ghi số câu (vd. "Q3").
+>
+> **Sửa sau review PR #1222** (12/11/2026, Owner chọn "Sửa hết trên PR này"): X19 đổi ca, thêm I38, I39, luật `ambiguous` thêm điều kiện phần nguyên khác `0` (§6.2). Owner duyệt lại G2 các dòng này cùng ngày (chọn "Duyệt").
 
-Nguồn luật: ADR-0018 §3–§6. Sau khi Owner duyệt, bộ này thành fixture `packages/domain/src/golden/` (Issue G2 của spec §11.7, khớp 1–1 theo mã dòng) và là test bắt buộc của hàm định dạng / đọc trong `packages/domain`. **Không sửa để "cho xanh"**: muốn đổi phải qua Owner.
+Nguồn luật: ADR-0018 §3–§6. Sau khi Owner duyệt, bộ này thành fixture `packages/domain/src/golden/` (Issue G-02 của spec §11.7, khớp 1–1 theo mã dòng) và là test bắt buộc của hàm định dạng / đọc trong `packages/domain`. **Không sửa để "cho xanh"**: muốn đổi phải qua Owner.
 
 Quy ước đọc bảng:
 
 - **Số lưu** là số nguyên theo đơn vị nhỏ nhất: đồng với VND, cent với tiền có cent. Đây là hợp đồng của các Issue code. `125050` USD = $1,250.50.
 - Cột **Tiếng Việt** chỉ có với VND (tiếng Việt chỉ đi với VND). "—" = không áp dụng.
 - Dấu kiểu Excel ở mọi ngôn ngữ: `,` ngăn hàng nghìn, `.` cho phần lẻ.
-- Golden chỉ số (`chi-so.md`) giữ tiền theo triệu đồng; hai dòng dạng số tiếng Việt của nó đổi cùng PR code của dấu kiểu Excel.
+- Golden chỉ số (`chi-so.md`) giữ tiền theo triệu đồng. Mọi số viết kiểu Việt của nó (phần trăm "66,7%", tiền theo triệu nhóm bằng `.` như "1.500") đổi cùng PR code của dấu kiểu Excel (Issue G-03); số lưu của fixture không đổi.
 
 ## 1. Bảng tiền tệ
 
@@ -193,6 +195,8 @@ Cột **Ngôn ngữ**: "vi" / "en" là chỉ ngôn ngữ đó; "cả hai" là đ
 | I35 | `1,000 CAD` | CAD | en | `100000` | $1,000.00 CAD | |
 | I36 | `$99.90` | SGD | en | `9990` | $99.90 SGD | |
 | I37 | `1.500 Mil` | USD | en | `150000000` | $1,500,000.00 | luật "một `.` + đúng 3 chữ số" chỉ áp cho VND (Q17) |
+| I38 | `1.500` | USD | en | `150` | $1.50 | tiền có cent: `.` luôn là phần lẻ, kết quả tròn cent; khác X05 của VND (Owner 12/11, sau review) |
+| I39 | `0.500 tr` | VND | vi | `500000` | 500,000 VNĐ | phần nguyên `0`: không nhập nhằng, hôm nay cũng đọc là 0.5 tr (Owner 12/11, sau review) |
 
 ### 6.2 Cách gõ bị từ chối
 
@@ -201,10 +205,10 @@ Mỗi cách gõ bị từ chối hiện một trong hai thứ dưới ô:
 - **Gợi ý viết lại** (cột "Gợi ý"). Có khi một cách đọc khác ra số hợp lệ: cách đọc cũ (`splitNumber` hôm nay, nhóm bằng dấu cách), hay đơn vị đổi sang ngôn ngữ đang dùng. App không tự áp gợi ý; người dùng bấm thì mới điền (Q11).
 - **Câu lỗi theo mã lỗi, kèm ví dụ cách gõ đúng**, khi không có gợi ý viết lại (cột ghi "—").
   - `format`: gõ dạng "1,500,000" hay "1.5 tr" (VND tiếng Việt), "1,500,000" hay "1.5 Mil" (VND English), "1,250.50" hay "250K" (tiền có cent).
-  - `fraction`: VND không có số lẻ; tiền có cent tối đa 2 chữ số sau dấu `.`.
+  - `fraction`: VND không có số lẻ; tiền có cent phải tròn cent ("1.50" hay "1.500" được, "1.505" thì không).
   - Câu chữ chốt ở mockup và i18n, không phải golden.
 
-`ambiguous` là mã lỗi mới (Q17). Nó áp cho VND, ở cả hai ngôn ngữ: một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị. Hôm nay app đọc "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần. App từ chối và đưa cả hai cách viết.
+`ambiguous` là mã lỗi mới (Q17). Nó áp cho VND, ở cả hai ngôn ngữ: một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị, khi phần nguyên khác `0`. Hôm nay app đọc "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần. App từ chối và đưa cả hai cách viết. Phần nguyên `0` thì không nhập nhằng: hôm nay "0.500 tr" cũng là 0.5 tr, nên được nhận (I39).
 
 | Mã | Gõ | Tiền tệ | Ngôn ngữ | Lỗi | Gợi ý | Ghi chú |
 |---|---|---|---|---|---|---|
@@ -226,8 +230,8 @@ Mỗi cách gõ bị từ chối hiện một trong hai thứ dưới ô:
 | X16 | `-500tr` | VND | vi | `negative` | — | phí không âm |
 | X17 | (trống) | VND | cả hai | `empty` | — | |
 | X18 | `99,999,999,999,999,999` | VND | cả hai | `too-large` | — | quá số nguyên an toàn |
-| X19 | `1.500` | USD | en | `fraction` | `1,500` | không đơn vị: tối đa 2 chữ số sau `.`, kể cả số 0 |
-| X20 | `1,250.505` | USD | en | `fraction` | — | quá hai chữ số lẻ |
+| X19 | `1.505` | USD | en | `fraction` | `1,505` | không đơn vị, lẻ dưới 1 cent; cách đọc cũ là 1,505. "1.500" thì được nhận (I38) |
+| X20 | `1,250.505` | USD | en | `fraction` | — | lẻ dưới 1 cent |
 | X21 | `12,34` | USD | en | `format` | `12.34` | |
 | X22 | `1.234,56` | USD | en | `format` | `1,234.56` | kiểu châu Âu |
 | X23 | `1.234,56 €` | EUR | en | `format` | — | ký hiệu € đặt sau số không được nhận |

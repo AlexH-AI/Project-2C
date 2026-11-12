@@ -16,6 +16,13 @@ Mỗi điểm ghi rõ ai chốt: **Owner chốt** (nguyên văn ở `PROJECT-STA
 
 Q16, bảng thuật ngữ tiếng Anh (spec §11.6): Owner xem danh sách đầy đủ, sửa bốn từ, rồi "Còn lại duyệt". Bốn từ sửa: Team & nhân sự → "Team management"; Nhân sự → "staff"; Mất cơ hội → "lost opportunity"; RF → "referal", viết đúng chính tả là "Referral" (§1).
 
+**Sau review phiên sạch của PR #1222** (head `33f631a`), Owner cùng ngày bảo "xử lý hết trong v1.0" và chọn "Sửa hết trên PR này" (spec §11.3, dưới bảng). Hai chỗ đổi luật ô nhập (§5):
+
+- tiền có cent: "1.500" không đơn vị là 1.5 ("USD khác nhé, 1.500 là 1.5, còn 1,500 là 1500 USD");
+- VND: "0.500 tr" được nhận là 0.5 tr ("Nhận là 0.5 tr").
+
+Owner duyệt lại G2 cùng ngày cho các dòng golden đổi (X19, I38, I39) và các câu §5 ở trên (chọn "Duyệt"). Các sửa khác của vòng này chỉ là chữ: tên Issue dự kiến G-01 … G-16 (spec §11.7), câu về `chi-so.md` (Hệ quả), câu ngoại lệ của migration (§7).
+
 ## Bối cảnh
 
 Hôm nay app chỉ có tiếng Việt (ADR-0011) và mọi số tiền là VND. Tiền lưu bằng số nguyên đồng (`packages/domain/src/money.ts`) và viết kiểu Việt Nam: "500.000.000 ₫", "1,9 tỷ", "66,7%". Ô nhập đoán vai trò của `.` và `,` theo số chữ số đứng sau (`splitNumber`), nên "1.500" là 1500 còn "1,5" là 1,5.
@@ -122,7 +129,8 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
     - `.` chỉ cho phần lẻ, một lần.
     - Viết liền không dấu ngăn vẫn được: "3000000".
   - **Số lẻ:**
-    - Không có đơn vị: số chữ số sau `.` không quá số lẻ của tiền tệ (VND 0, tiền có cent 2), kể cả khi là số 0. Vì vậy "1.500" bị từ chối ở cả VND lẫn USD: hai cách hiểu 1.5 và 1500 không bao giờ lặng lẽ thành một số.
+    - Không có đơn vị, VND: không có chữ số nào sau `.`, kể cả số 0. Vì vậy "1.500" bị từ chối với VND, kèm gợi ý "1,500": hai cách hiểu 1.5 và 1500 không bao giờ lặng lẽ thành một số.
+    - Không có đơn vị, tiền có cent: `.` luôn là dấu phần lẻ; kết quả phải tròn cent, như khi có đơn vị. "1.500" là 1.5, lưu `150` ($1.50); "1.505" thì không (lẻ dưới 1 cent). Owner chốt 12/11, sau review PR #1222: "USD khác nhé, 1.500 là 1.5, còn 1,500 là 1500 USD". Thói quen viết "1.500" cho 1500 là của người dùng VND, như luật `ambiguous` dưới.
     - Có đơn vị: kết quả phải tròn đơn vị nhỏ nhất. "1.5 tỷ" được; "1.0000000001 tỷ" thì không.
   - **Đơn vị theo ngôn ngữ giao diện** (Owner chọn 12/11, Q6: "Theo ngôn ngữ giao diện"), không phân biệt hoa thường:
     - Tiếng Việt: nghìn / ngàn / k; triệu / tr; tỷ / tỉ; kèm các bản không dấu như hôm nay.
@@ -140,12 +148,13 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
     - Người dùng bấm vào gợi ý thì gợi ý mới được điền, như gợi ý năm của `parseQuickDate` (chỉ đưa ra, không tự áp). Hình chốt ở mockup.
   - **Nhóm số bằng dấu cách** ("500 000 000", hôm nay được nhận) cũng thành lỗi kèm gợi ý, để chỉ còn một luật.
   - **Chữ mẫu và dòng đọc:** ô nhập có chữ mẫu theo ngôn ngữ và tiền tệ, vd. "500 tr · 1.5 tỷ", "$1,250.50 · 250K". Dòng đọc dưới ô (`amountRead`, "500,000,000 VNĐ (500 tr)") giữ nguyên.
-  - **Với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị bị từ chối** (mã lỗi mới `ambiguous`), kèm cả hai cách viết. Ví dụ "1.500 tr" → gợi ý "1.5 tr" hay "1,500 tr".
+  - **Với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị, khi phần nguyên khác `0`, bị từ chối** (mã lỗi mới `ambiguous`), kèm cả hai cách viết. Ví dụ "1.500 tr" → gợi ý "1.5 tr" hay "1,500 tr".
     - Lý do: hôm nay "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần, đúng loại lỗi mà Phương án 6 tránh.
     - Luật này chỉ áp cho VND, ở cả hai ngôn ngữ ("1.500 Mil"), vì thói quen viết "1.500" là của người dùng VND. Tiền có cent vẫn đọc "1.500 Mil" là $1,500,000.00.
+    - Phần nguyên `0` không nhập nhằng: "0.500 tr" là 0.5 tr theo cả cách đọc hôm nay (`splitNumber` đọc một dấu đứng sau `0` là dấu phần lẻ) lẫn luật mới, nên được nhận. Từ chối thì gợi ý thứ hai, "0,500 tr", lại sai luật nhóm (nhóm đầu không bắt đầu bằng 0). Owner chọn 12/11, sau review PR #1222: "Nhận là 0.5 tr".
     - Owner chọn 12/11 (Q17): "Từ chối, đưa hai cách viết".
 - Ba trường tiền của KYC (`annualIncome`, `totalAssets`, `liabilities`) lưu chữ người dùng gõ; dòng đọc dưới các trường này (`kycAmountRead`) dùng cùng hàm đọc. Chữ đã lưu không đổi.
-  - Chữ viết theo kiểu cũ thì chỉ mất dòng đọc, không bao giờ đọc ra một số khác. Lý do: mọi cách viết mà luật cũ và luật mới hiểu khác nhau đều bị từ chối: nhiều dấu `.`, `,` đứng trước phần lẻ, VND không đơn vị có `.`, và "1.500 tr" theo luật trên.
+  - Chữ viết theo kiểu cũ thì chỉ mất dòng đọc, không bao giờ đọc ra một số khác. Lý do: mọi cách viết mà luật cũ và luật mới hiểu khác nhau đều bị từ chối: nhiều dấu `.`, `,` đứng trước phần lẻ, VND không đơn vị có `.`, và "1.500 tr" theo luật trên. Chữ kiểu cũ chỉ có ở dữ liệu VND (mọi dữ liệu hôm nay là VND), nên luật "1.500" = $1.50 của tiền có cent không chạm tới nó.
 
 ### 6. Ngày (Owner chốt 12/11)
 
@@ -172,6 +181,7 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
 - **Bản web** (`pnpm dev:web`, e2e) không có file. Bản này giữ như hôm nay: mở thẳng dữ liệu mẫu VND (seed ghi khóa `currency`), không qua wizard. E2e của wizard bật wizard bằng một tùy chọn của bản web, chốt ở Issue wizard.
 - **Khóa cho DB cũ (Claude đề xuất):**
   - Một migration mới ghi `currency = "VND"` khi bảng `settings` chưa có khóa này.
+    - Đây là khóa mới cho mọi DB cũ, không phải sửa dữ liệu sai. Nó là ngoại lệ có chủ ý của quy tắc "Dữ liệu hiện là giả lập" (R2-02, `CLAUDE.md` gốc) và câu "không viết migration dữ liệu" của `packages/db/CLAUDE.md`. Owner duyệt ngày 12/11/2026 (Q12: "Migration ghi VND").
   - File dữ liệu cũ (vd. của exe `5215b2e`) được nâng khi mở. Backup cũ được nâng khi nhập, như mọi migration (`importBackup` chạy các migration mà file còn thiếu).
   - Vì phiên bản schema tăng, exe cũ từ chối file mới (`SCHEMA_TOO_NEW`) thay vì đọc nhầm cent thành đồng. `BACKUP_FORMAT` (`project2c-backup`) giữ nguyên.
   - DB mới cũng có khóa VND sau migration; wizard hay seed ghi đè bằng tiền tệ đã chọn trước khi có dữ liệu.
@@ -256,7 +266,7 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
 ## Hệ quả
 
 - **Mọi chỗ hiện số đổi dấu:** "500.000.000 ₫" → "500,000,000 VNĐ", "1,9 tỷ" → "1.9 tỷ", "66,7%" → "66.7%".
-  - Golden `docs/golden/chi-so.md` (hai dòng dạng số tiếng Việt) đổi cùng PR code của dấu kiểu Excel; e2e đổi chữ theo.
+  - Golden `docs/golden/chi-so.md` đổi mọi số viết kiểu Việt cùng PR code của dấu kiểu Excel (Issue G-03, spec §11.7): phần trăm "66,7%" và tiền theo triệu nhóm bằng `.` ("1.000", "1.500", "2.580"…), mà luật mới đọc thành 1, 1.5, 2.58. Số lưu của fixture không đổi. E2e đổi chữ theo.
   - Mockup đợt a (`components.html`, `app-shell.html`) đổi số trong Issue mockup của phần G. Đợt b (T-417) và các đợt sau vẽ theo luật mới.
 - **Thêm thao tác:** một bước thiết lập ban đầu (wizard) và một thao tác "Thiết lập lại từ đầu". Danh sách nghiệm thu thêm dòng cho hai việc này; màn đổi thì nghiệm thu lại (K46).
 - **Exe cũ:** không mở được file DB / backup của bản mới (`SCHEMA_TOO_NEW`), như mọi lần nâng schema.
