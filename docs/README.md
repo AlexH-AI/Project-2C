@@ -24,7 +24,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `design/phase-5-prompts.md` | G5 Phase 5: chữ prompt (nay `analysis@6` / `discovery@6` / `extraction@1`; §10, §11, §12, §14, §15 là năm đợt G5 sau, §13 là luật T-291 không đổi version), message thử lại, danh sách chặn V3–V6 + ca kiểm | Task validator / prompt Phase 5 |
 | `design/state-machines.md` | Danh mục state machine (dữ liệu lưu, lúc chạy, UI): trạng thái, luật nằm ở đâu, máy nào còn ngầm; quyết định sửa P1–P3 (Owner mở K49 ngày 09/11) | Trước khi thêm trạng thái / lệnh / nút cho một thực thể, hay sửa luồng bận / hủy / lỗi |
 | `design/mockups/README.md` | Mockup → màn hình / route → G3 → mục spec; mục lục mockup lớn | Task UI |
-| `golden/*.md` | Spec của golden fixtures (`chi-so`, `kh-theo-nhom`, `kyc`, `lich-hen`); fixture ở `packages/domain/src/golden/` | Task đụng chỉ số / ngày / nhóm KH; không sửa khi chưa qua G2 |
+| `golden/*.md` | Spec của golden fixtures (`chi-so`, `kh-theo-nhom`, `kyc`, `lich-hen`; `so-va-tien-te`, ADR-0018); fixture ở `packages/domain/src/golden/` | Task đụng chỉ số / ngày / nhóm KH; không sửa khi chưa qua G2 |
 
 ## Quy trình
 

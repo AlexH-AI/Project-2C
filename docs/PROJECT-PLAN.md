@@ -222,6 +222,7 @@ Giữ **cùng bộ plugin với Project-2** (để so sánh công bằng), nhưn
 apps/desktop/        Tauri shell + React UI (routes, screens)
 packages/domain/     TS thuần: entity, state machine N4→N1, stats engine, KYC gate,
                      parse ngày dd/mm & tiền VND ("500tr", "1,2 tỷ") — không phụ thuộc gì
+                     (từ ADR-0018: tiền theo tiền tệ của dữ liệu, dấu kiểu Excel "1.2 tỷ")
 packages/db/         Drizzle schema + migrations + repositories;
                      sql.js ở mọi nơi; exe chỉ có lệnh Rust mỏng đọc/ghi file (ADR-0016)
 packages/ai/         provider adapters, prompt templates có version, zod schema, validators
@@ -232,7 +233,7 @@ tools/               bootstrap, session scripts, seed generator
 - **Chế độ trình duyệt**: `pnpm dev:web` chạy UI trên Vite với sql.js → dev nhanh và Playwright test không cần build Tauri.
 - **Portable**: dữ liệu ở `.\Project2C-data\` cạnh exe; tự backup khi khởi động; xuất/nhập backup `.p2cbackup` (thay toàn bộ, ADR-0016, spec Phase 3 §6).
 - **Xuất báo cáo (Q12 ✅)**: `.xlsx` (ExcelJS) có định dạng, mỗi sheet 1 bảng (tổng hợp / theo team / theo RE). PDF không làm ở v1.
-- **Ngôn ngữ (Q13 ✅)**: giao diện tiếng Việt, giữ thuật ngữ ngành tiếng Anh (FYP, KYC, N1–N4, submitted/issued); mọi chuỗi đi qua lớp i18n để sau này thêm ngôn ngữ.
+- **Ngôn ngữ (Q13 ✅)**: giao diện tiếng Việt, giữ thuật ngữ ngành tiếng Anh (FYP, KYC, N1–N4, submitted/issued); mọi chuỗi đi qua lớp i18n để sau này thêm ngôn ngữ. Từ v1.0 thêm English và tiền tệ chọn một lần: ADR-0018.
 - **Chart**: ✅ ECharts 6 (ADR-0014, G4 — chốt ở Phase 1 theo mockup).
 
 **Mô hình dữ liệu cốt lõi:**
@@ -279,7 +280,7 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 ### 4.6 UI/UX dark mode chuyên nghiệp
 
 - **Tokens**: nền phân lớp xám-xanh rất tối (không đen tuyệt đối), 1 màu nhấn, màu ngữ nghĩa riêng cho N4/N3/N2/N1 và trạng thái HĐ; tương phản đạt WCAG AA.
-- **Chữ**: Be Vietnam Pro (dấu tiếng Việt đẹp), số liệu `tabular-nums`, định dạng tiền "1,2 tỷ" / "500 tr".
+- **Chữ**: Be Vietnam Pro (dấu tiếng Việt đẹp), số liệu `tabular-nums`, định dạng tiền "1,2 tỷ" / "500 tr" (từ ADR-0018: dấu kiểu Excel, "1.2 tỷ", "3,000,000 VNĐ").
 - **Mật độ**: bảng dữ liệu gọn (TanStack Table), bộ lọc cố định, Ctrl+K command palette, phím tắt nhập nhanh.
 - **Màn hình**: Tổng quan (số KH theo nhóm N4–N1 theo kỳ, 1 chart Toàn bộ / RE, 3 chart Team — Owner 01/10/2026; lịch theo team + KPI ngày & MTD) · Lịch hẹn (theo team → RE → chi tiết + KYC + AI) · Khách hàng (kanban N4→N1 + bảng) · Hồ sơ KH (dữ kiện, dòng thời gian KYC, panel AI có lịch sử phiên bản) · Báo cáo (chọn kỳ, xuất Excel) · Team & nhân sự · Cài đặt (AI provider, key, backup/đồng bộ) · bộ chuyển vai trò Owner/TL/RE.
 - **Quy trình**: Opus + skill frontend-design làm mockup HTML 4 màn hình chính → **Owner duyệt (G3)** → dựng `packages/ui` → mọi màn hình chỉ được ghép từ component có sẵn. Thiết kế của 2C làm độc lập, không tham chiếu Project-2.

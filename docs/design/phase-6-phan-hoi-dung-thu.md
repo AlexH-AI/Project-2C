@@ -1,6 +1,6 @@
 # Spec Phase 6 — Phản hồi dùng thử exe `5215b2e` (G1)
 
-- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden G2 và mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8); hướng làm bản macOS (§9) là đề xuất, chờ Owner.
+- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden G2 và mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8); hướng làm bản macOS (§9) là đề xuất, chờ Owner. Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11; ADR-0018 và golden Owner duyệt G1, G2 ngày 12/11 (T-418).
 - **Soạn:** 10/11/2026, `main` `de9cde7` (code `5215b2e`). Nguồn: phản hồi dùng thử của Owner (§1), HANDOFF bước 0.
 
 ## 1. Phản hồi của Owner (nguyên văn)
@@ -60,8 +60,11 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3, cùng đợt mockup với C | 3 | Chờ mockup (§7.2) |
 | **D.** Forecast | 4 | G2, G3 | 4 | Nguồn số tiền đã chốt (§6.1); còn 6 điểm mở (§6.2) |
 | **E.** Làm lại Báo cáo trên app và file Excel | 3; tin thêm về "báo cáo" | G3: mockup cả màn Báo cáo lẫn file Excel | 5 | Chờ vòng ý tưởng UI/UX và mockup (§7.1) |
+| **G.** Song ngữ Việt / Anh, tiền tệ chọn một lần, dấu kiểu Excel | ngoài §1: Owner 11–12/11 | G1, G2 (T-418), G3 (wizard, Cài đặt), G5 (cùng A6) | sau A; dịch làm cuối | ADR-0018 và golden: Owner duyệt G1, G2 ngày 12/11 (§11) |
 
 E đi sau B vì bảng mới có cột HĐ hủy và tỷ lệ hủy, và dùng chung phong cách với màn Forecast của D.
+
+Phần G không nằm trong sáu điểm của §1: Owner thêm ngày 11–12/11 và đưa vào v1.0 ("Đưa vào v1.0"). G chen giữa các phần: cơ chế và cách hiện số làm ngay sau A, các lượt dịch làm sau E (§11.4).
 
 ## 3. Phần A — Đổi RE → RM (Owner duyệt 10/11/2026)
 
@@ -351,7 +354,7 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 - Phát hành cùng lúc với bản Windows hay sau? **Đã trả lời 10/11:** cùng lúc.
 - Có đăng ký Apple Developer (99 USD / năm) để ký và notarize không? **Đã trả lời 10/11:** chưa, có thể làm sau.
 - Mac và PC có cần dùng chung một dữ liệu không? **Đã trả lời 10/11:** chung. Cách dùng chung **chốt 11/11:** bằng file backup dùng được trên cả hai nền tảng (§9.2).
-- Thêm 10/11: bản thương mại hóa đa ngôn ngữ, trước mắt tiếng Việt và English.
+- Thêm 10/11: bản thương mại hóa đa ngôn ngữ, trước mắt tiếng Việt và English. Owner 11/11 đưa song ngữ và tiền tệ vào v1.0: §11, ADR-0018.
 
 ## 10. Thứ tự đề xuất của cả đợt
 
@@ -359,3 +362,402 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 2. Chốt: các điểm mở của D (§6.2), mockup B–F, golden B và D, ADR macOS.
 3. Owner bảo "ra issue": A → B → C / F → D → E; Issue macOS chạy song song.
 4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → G7 → phát hành v1.0 cho cả hai.
+
+Phần G (song ngữ, tiền tệ; §11) thêm vào thứ tự trên:
+
+- Bước 2 có thêm ADR-0018 và golden số / tiền (T-418), duyệt trước golden D và mockup đợt c–e. Golden D và các đợt đó viết số theo luật mới.
+- Bước 3 thành: A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16. G-06 … G-11 chạy song song từ sau G-04 / G-01. Chi tiết: §11.4; tên Issue dự kiến: §11.7.
+
+## 11. Phần G — Song ngữ Việt / Anh và tiền tệ (Owner duyệt G1, G2 ngày 12/11/2026)
+
+### 11.1 Phạm vi
+
+- Owner 11–12/11/2026 thêm, ngoài sáu điểm của §1 (chín lượt nguyên văn: `docs/PROJECT-STATE.md`, mục 2026-11-11 và 2026-11-12; Issue #1221):
+  - giao diện song ngữ Tiếng Việt / English, đổi bất kỳ lúc nào trong Cài đặt;
+  - tiền tệ chọn một lần khi thiết lập ban đầu;
+  - dấu kiểu Excel cho mọi con số.
+- Vào v1.0 (Owner 11/11: "Đưa vào v1.0"); bản Mac phát hành cùng lúc.
+- Quyết định, lý do, phương án đã loại: **ADR-0018** (`docs/decisions/0018-ngon-ngu-va-tien-te.md`). Đầu vào → đầu ra của từng luật: golden **`docs/golden/so-va-tien-te.md`**. Phần này tóm tắt luật, ghi cổng, thứ tự, thuật ngữ và các Issue dự kiến.
+- Không thuộc phần G:
+  - quy đổi tỷ giá (Owner: "Không áp tỉ giá quy đổi");
+  - hướng dẫn sử dụng tiếng Anh (sau v1.0);
+  - video demo (làm khi UI/UX final);
+  - JPY (Owner bỏ 12/11).
+
+### 11.2 Luật
+
+Đã chốt (Owner, 11–12/11/2026):
+
+- **Ngôn ngữ:** Tiếng Việt / English, đổi bất kỳ lúc nào ở Cài đặt → "Ngôn ngữ / Language". Tiếng Việt chỉ chọn được khi tiền tệ là VND; tiền tệ khác thì Tiếng Việt bị làm mờ.
+- **Tiền tệ:**
+  - Bảy tiền tệ: VND (không số lẻ); USD, EUR, GBP, AUD, CAD, SGD (có cent).
+  - Chọn một lần ở thiết lập ban đầu, sau đó không đổi được. Không quy đổi tỷ giá.
+  - Muốn đổi thì "Thiết lập lại từ đầu": app tự backup dữ liệu cũ, tạo DB mới hoàn toàn, quay về thiết lập ban đầu.
+- **Thiết lập ban đầu:** (video demo) → ngôn ngữ → tiền tệ → nguồn dữ liệu (trắng / dữ liệu mẫu / file backup cùng tiền tệ). Chọn Tiếng Việt thì chỉ có VND; chọn English thì có đủ bảy tiền tệ.
+- **Dấu kiểu Excel** cho mọi ngôn ngữ và mọi con số: `,` ngăn hàng nghìn, `.` cho phần lẻ. Ví dụ "3,000,000 VNĐ", "1.9 tỷ", "1,204", "66.7%", "3.1 MB".
+- **Ô nhập chặt** theo cùng luật: "1.500" là 1.5. Dữ liệu mẫu viết lại theo luật này, người dùng được hướng dẫn nhập đúng.
+- **Ký hiệu tiền:** tiền khác VND đặt ký hiệu trước số ("$1,250.50"). VND ghi chữ "VNĐ" sau số ở cả hai ngôn ngữ, thay "₫" ở mọi chỗ hiện tiền; ô nhập vẫn nhận "VNĐ" / "VND" / "₫" / "đ".
+- **Dạng gọn:** tiếng Việt tr / tỷ, thêm bậc khi cần; English K / Mil / Bil / T. VND sang tiếng Anh chỉ đổi chữ đơn vị: tỷ → Bil, triệu → Mil.
+- **Trần phí:** 100 Billions đơn vị chính, cho mọi tiền tệ; VND giữ 100 tỷ đồng của DR-23.
+- **Dữ liệu mẫu:**
+  - VND: bộ tiếng Việt hiện có.
+  - Tiền có cent: bộ tên tiếng Anh, con số theo độ lớn hợp với tiền có cent.
+- **Ngày:** nhập dd/mm/yyyy ở cả hai ngôn ngữ, không dùng mm/dd. English hiện tên tháng ở chỗ rộng.
+
+Claude đề xuất, Owner trả lời từng điểm ngày 12/11/2026 (§11.3; chi tiết ở ADR-0018):
+
+- **Cách lưu tiền:** số nguyên theo đơn vị nhỏ nhất của tiền tệ (đồng / cent); dữ liệu VND giữ nguyên. Ba cột tiền dùng tiền tệ của DB. Trần với tiền có cent là 10,000,000,000,000 cent, nên tổng chỉ chính xác tới 900 phí ở mức trần (VND 90,071). ADR §3.
+- **Tiền tệ là dữ liệu:** khóa `currency` của bảng `settings`, đi theo backup. Một migration ghi `"VND"` vào DB và backup cũ chưa có khóa. ADR §2, §7.
+- **Ngôn ngữ lưu theo máy** (`localStorage` của WebView), không vào backup; chưa lưu gì thì theo tiền tệ. Đổi ngôn ngữ thì tải lại giao diện. ADR §1.
+- **Định dạng bằng bảng cố định trong `domain`**, không dùng `Intl`. ADR §4.
+  - Owner chọn 12/11: AUD, CAD, SGD viết "$1,250.50 AUD" (mã chỉ ở dạng đầy đủ; USD chỉ "$").
+  - Tiền có cent luôn hai số lẻ ở dạng đầy đủ.
+  - Dạng gọn tiếng Việt: K / tr / tỷ.
+- **Ô nhập:** ADR §5.
+  - Cách gõ sai luật bị từ chối, kèm gợi ý viết lại; người dùng bấm gợi ý thì mới điền.
+  - Không đơn vị: VND không có chữ số nào sau `.` ("1.500" bị từ chối, gợi ý "1,500"); tiền có cent đọc `.` là phần lẻ, kết quả phải tròn cent ("1.500" là $1.50, Owner chốt 12/11 sau review PR #1222).
+  - EUR theo cùng luật với USD, dù người dùng EUR kiểu châu Âu viết "1.500" cho 1500: "1.500" là €1.50, không có lỗi `ambiguous`. Ô nhập tiền EUR có câu hướng dẫn cách nhập (Owner chốt 12/11 sau review `831ec95`, dưới bảng §11.3).
+  - Với VND, "1.500 tr" (một `.` + đúng 3 chữ số + đơn vị) bị từ chối kèm hai cách viết, vì hôm nay nó là 1,500 tr. Phần nguyên `0` không tính: "0.500 tr" là 0.5 tr (Owner chọn 12/11 sau review PR #1222).
+  - Đơn vị theo ngôn ngữ giao diện (Owner chọn 12/11): tiếng Việt nghìn / k / tr / tỷ và "1tr5"; English K / Mil / Bil.
+- **DB mới / cũ:** DB mới là lúc thư mục dữ liệu chưa có file (nhánh `stored` của `app-data.ts`). Wizard dựng DB riêng và lưu một lần. Bản web giữ dữ liệu mẫu VND, không qua wizard. ADR §7.
+- **Nhập backup khác tiền tệ:** từ chối. `importBackup` nhận tiền tệ mong đợi từ app. ADR §7.
+- **Thiết lập lại:**
+  - Dữ liệu cũ giữ nguyên cho tới khi wizard xong.
+  - DB mới không giữ cài đặt AI; key AI thuộc máy nên ở lại.
+  - ADR §7.
+- **Nạp lại dữ liệu mẫu:** giữ tiền tệ, nạp bộ mẫu của tiền tệ đó. ADR §7.
+- **Bộ mẫu tiếng Anh:** một bộ số chung cho cả sáu tiền tệ có cent. ADR §8.
+- **i18n:** `en.ts` cùng bộ khóa với `vi.ts`; số nhiều tiếng Anh; gom chuỗi tiếng Việt ngoài `vi.ts`. ADR §9.
+- **Đi cùng việc khác:** ngôn ngữ trả lời của AI ở A6 (G5); Excel ở E; ngôn ngữ của gói macOS ở một Issue Mac. ADR §10.
+
+### 11.3 Điểm Owner chọn (trả lời 12/11/2026)
+
+Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi kèm. Owner trả lời từng câu trong chat ở Home PC ngày 12/11/2026, bằng cách chọn trong hộp câu hỏi. Chữ trong ngoặc kép là nhãn Owner chọn, hay câu Owner tự gõ, giữ nguyên văn.
+
+| # | Điểm | Đề xuất của Claude | Owner trả lời 12/11 | Golden / ADR |
+|---|---|---|---|---|
+| Q1 | Ký hiệu AUD, CAD, SGD | "A$", "C$", "S$" | **Khác đề xuất:** "Ví dụ $250 AUD, $250 CAD, $250 SGD. Đưa 3 chữ cái viết tắt của tiền tệ cùng dùng đồng Dollar sau con số. Dễ nhìn, dễ phân biệt hơn." Hỏi thêm, Owner chọn "USD chỉ "$"" và "Chỉ dạng đầy đủ kèm mã" (dạng gọn "$250K") | §1, F17–F21, C34–C36, I33–I36, X34 · ADR §4 |
+| Q2 | Tiền có cent ở dạng đầy đủ | Luôn hai số lẻ: "$1,250.00" | Như đề xuất: "Luôn hai số lẻ" | F09, F12 |
+| Q3 | Bậc của dạng gọn tiếng Việt | "nghìn" cho bậc K; không có bậc nghìn tỷ ("1,500 tỷ"); dưới 1,000 hiện dạng đầy đủ | **Bậc K khác đề xuất:** ""K" như tiếng Anh" ("750K"). Bậc nghìn tỷ như đề xuất: ""1,500 tỷ"" | C04–C06, C17, C18 |
+| Q4 | Số âm | Dấu "-" đứng đầu: "-$1,250.50", "-1.2 tỷ"; chênh lệch dùng "−" / "+" | Như đề xuất: "Dấu "-" đứng đầu" | F08, F13, F20, C19, C31, D01–D07 |
+| Q5 | Dấu cách trước đơn vị | K, T viết liền ("$250K", "1.5T"); Mil, Bil, tr, tỷ cách một dấu cách | Như đề xuất: "K, T liền; chữ dài cách" | §3 |
+| Q6 | Đơn vị ở ô nhập | Một bảng cho cả hai ngôn ngữ; không nhận T, "m", "bn", "million" | **Khác đề xuất:** "Theo ngôn ngữ giao diện". Tiếng Việt nhận nghìn / k / tr / tỷ; English nhận K / Mil / Bil. Gõ đơn vị của ngôn ngữ kia là lỗi, kèm gợi ý đổi đơn vị | I06–I18, X13, X14, X30–X33 · ADR §5 |
+| Q7 | Cách nói "1tr5", "1 tỷ 2" | Giữ, chỉ với đơn vị tiếng Việt | Như đề xuất: "Giữ" | I17, I18, X32 |
+| Q8 | Nhóm bằng dấu cách "500 000 000" | Thành lỗi, kèm gợi ý "500,000,000" | Như đề xuất: "Từ chối, kèm gợi ý" | X07 |
+| Q9 | Ngày tiếng Anh ở chỗ rộng | "Thu 12 Nov 2026", "12 Nov", "9 – 15 Nov 2026", "November 2026"; năm "2026" | Như đề xuất: "Tên tháng ngắn" | Y02–Y11 |
+| Q10 | Nơi lưu ngôn ngữ | Theo máy (`localStorage`), không vào backup; chưa lưu thì theo tiền tệ | Như đề xuất: "Theo máy" | ADR §1 |
+| Q11 | Gợi ý dưới ô nhập | Bấm gợi ý thì điền; app không tự áp | Như đề xuất: "Bấm gợi ý là điền" | §6.2 · ADR §5 |
+| Q12 | DB cũ, backup cũ | Migration ghi VND khi chưa có khóa; backup khác tiền tệ bị từ chối | Như đề xuất: "Migration ghi VND" | ADR §7 |
+| Q13 | Thiết lập lại từ đầu | Dữ liệu cũ giữ tới khi wizard xong; DB mới không giữ cài đặt AI; key AI ở lại | Như đề xuất | ADR §7 |
+| Q14 | Nạp lại dữ liệu mẫu | Giữ tiền tệ, nạp bộ mẫu của tiền tệ đó | Như đề xuất: "Nạp bộ mẫu của tiền tệ đó" | ADR §7 |
+| Q15 | Bộ mẫu tiếng Anh | Một bộ số chung cho sáu tiền tệ; một phần phí có số lẻ cent | Như đề xuất: "Một bộ số chung" | ADR §8 |
+| Q16 | Bảng thuật ngữ tiếng Anh | Bảng ngắn ở §11.6 | "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại". §11.6 viết lại đầy đủ, theo nhóm, lấy từ chữ đang có trong `vi.ts`. Owner sửa bốn từ rồi "Còn lại duyệt": Team & nhân sự → "Team management", Nhân sự → "staff", Mất cơ hội → "lost opportunity", "RF: referal" (giải thích ở §11.6) | §11.6 |
+| Q17 | "1.500 tr", "1.500 tỷ" với VND | Từ chối (mã `ambiguous`), gợi ý cả "1.5 tr" lẫn "1,500 tr" | Như đề xuất: "Từ chối, đưa hai cách viết". Sau review: "0.500 tr" "Nhận là 0.5 tr" (dưới bảng) | X26–X29, I37, I39 · ADR §5 |
+
+**Sau review phiên sạch của PR #1222** (head `33f631a`, PASS kèm sáu ghi chú không chặn, cộng ghi chú X19 của vòng `27ebbd1`), Owner trả lời cùng ngày 12/11/2026 trong chat ở Home PC, nguyên văn:
+
+- Về các ghi chú review: "xử lý hết trong v1.0"; chọn "Sửa hết trên PR này". Các ghi chú được sửa trên PR này trước khi merge.
+- X19, tiền có cent gõ "1.500" không đơn vị: "USD khác nhé, 1.500 là 1.5, còn 1,500 là 1500 USD". Tiền có cent đọc `.` là phần lẻ, kết quả phải tròn cent: "1.500" lưu `150` ($1.50, I38). VND giữ như cũ: "1.500" bị từ chối, gợi ý "1,500" (X05). X19 đổi thành ca "1.505" (lẻ dưới 1 cent). ADR §5.
+- "0.500 tr" với VND: chọn "Nhận là 0.5 tr". Luật `ambiguous` chỉ áp khi phần nguyên khác `0` (I39). ADR §5.
+- Tên Issue dự kiến của phần G: chọn "G-01 … G-16", để khỏi lẫn với tên cổng G1–G8 (§11.7).
+- Hỏi duyệt lại G2 các dòng golden đổi (X19, I38, I39) và câu ADR §5: chọn "Duyệt".
+
+**Sau review phiên sạch ở `831ec95`** (PASS kèm một ghi chú không chặn: luật "1.500" = 1.5 của tiền có cent, khi áp cho EUR), Claude hỏi cùng ngày 12/11/2026 trong chat ở Home PC: "ADR-0018 §5 / golden I38: với tiền có cent, gõ "1.500" không đơn vị được nhận là 1.5 (anh chốt cho USD). Người dùng EUR kiểu châu Âu (Đức, Ý, Tây Ban Nha…) viết "1.500" nghĩa là 1500, nên sẽ bị lưu €1.50 (nhỏ đi 1000 lần). Anh muốn áp luật thế nào cho EUR?" Hai lựa chọn: "EUR từ chối (Recommended)" và "Giữ cho mọi tiền có cent". Owner tự gõ câu trả lời, nguyên văn:
+
+- "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng."
+  - EUR theo đúng luật của USD: "1.500" lưu `150` (€1.50, I40). Không có lỗi `ambiguous` cho EUR.
+  - Ô nhập tiền EUR có câu hướng dẫn cách nhập; câu chữ, vị trí và lúc hiện chốt ở mockup G3 (§11.5) và i18n. ADR §5.
+- Hỏi duyệt lại G2 dòng golden mới I40 và các câu ADR §5 vừa sửa: chọn "Duyệt".
+
+### 11.4 Thứ tự, cổng
+
+- **Cổng:**
+  - **G1:** ADR-0018 và phần này. **G2:** golden `so-va-tien-te.md` và khóa `currency` của bảng `settings`. Owner duyệt cả hai ngày 12/11/2026 ("Duyệt G1 và G2"), trong PR của T-418 (#1222).
+  - **G3:** mockup (§11.5). **G5:** ngôn ngữ trả lời và câu "tại Việt Nam" của prompt, gộp vào A6.
+  - Không có G4: không thêm dependency nào, kể cả thư viện số hay `Intl` polyfill.
+- **Thứ tự Issue code** (§11.7), tất cả sau A, vì A đổi khóa chuỗi và tên trong code:
+  1. G-01 … G-05: cơ chế i18n, kiểu tiền và định dạng mới, khóa tiền tệ, dữ liệu mẫu VND. Làm trước B, để chuỗi và số tiền mới của B–E viết một lần bằng cách mới.
+  2. B → C / F → D → E như §10.
+  3. G-06 … G-11 chạy song song với B–E: bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
+  4. G-12 … G-16 (các lượt dịch) làm cuối, sau E, vì B–E còn thêm chuỗi. Issue dịch cuối mới mở lựa chọn English trong Cài đặt.
+- Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417, #1223) đã vẽ theo luật mới ("1.38 tỷ", "16.7%", "3,000,000 VNĐ" trong `search-rm-team.html`).
+
+### 11.5 Mockup G3
+
+Issue docs riêng, hoặc ghép với đợt f (hộp hủy HĐ):
+
+- wizard (ngôn ngữ → tiền tệ → nguồn dữ liệu, kèm trạng thái lỗi khi file backup khác tiền tệ);
+- Cài đặt: Ngôn ngữ, Tiền tệ chỉ xem, nút Thiết lập lại từ đầu; hộp xác nhận thiết lập lại;
+- ô nhập tiền có chữ mẫu và gợi ý cách gõ đúng;
+- câu hướng dẫn cách nhập của ô tiền EUR (Owner chốt 12/11, §11.3 dưới bảng; vd. `,` ngăn hàng nghìn, `.` cho phần lẻ, "1,500.00"): câu chữ, vị trí, lúc hiện; làm ở Issue G-08 (§11.7);
+- một hai màn tiếng Anh với VND và với USD;
+- đổi số của đợt a (`components.html`, `app-shell.html`) theo luật mới.
+
+### 11.6 Bảng thuật ngữ tiếng Anh (Owner duyệt 12/11/2026)
+
+Danh sách đầy đủ các thuật ngữ của giao diện, theo nhóm (Owner 12/11: "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại"). Owner sửa bốn từ (ghi "Owner 12/11" ở cột Ghi chú), rồi: "Còn lại duyệt".
+
+- Cột Tiếng Việt là chữ đang có trong app (`apps/desktop/src/i18n/vi.ts`), cộng chữ của các phần B–G chưa code. Chữ "RE" của app viết thành "RM" theo phần A.
+- Câu chữ dài (câu hướng dẫn, câu lỗi) dịch ở các lượt dịch, theo đúng các từ dưới đây.
+- Bảng vào `CONTEXT.md` cùng Issue G-01.
+
+**Giữ nguyên ở cả hai ngôn ngữ:** Heritas L-CRM, FYP, KYC, KYC Intelligence, N1–N4, RM, TL, IS, BD, BDM, MTD, KPI, AUM, AI, Forecast, Case size, Team, Kanban, Trigger, Excel, ChatGPT, OpenCode, WorkBuddy.
+
+**RF:** tiếng Việt vẫn viết "RF"; English viết "Referral" (Owner 12/11). Owner giải thích: "RF là chỉ đích danh chỉ số chuyển RF: nghĩa là IS got referred from RM. RM đã khơi gợi nhu cầu thành công, phối hợp với IS để trình bày giải pháp (tương ứng với chuyển lên N2)". Định nghĩa chỉ số không đổi (ADR-0007). Trigger "Giới thiệu từ KH" ("Customer referral") là nghĩa khác: KH giới thiệu một KH mới.
+
+**Chữ "Hủy" có ba nghĩa, tiếng Anh tách ra:** nút đóng hộp thoại "Cancel"; lịch hẹn bị hủy "Cancelled"; hủy hợp đồng "Cancel policy", HĐ đã hủy "Cancelled".
+
+**Chữ "Dự kiến" có hai nghĩa:** trạng thái lịch hẹn "Scheduled"; số tiền dự kiến của Forecast "Forecast" / "Expected".
+
+Điều hướng và vỏ app:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Tổng quan | Overview | |
+| Forecast | Forecast | phần D |
+| Báo cáo | Reports | |
+| Lịch hẹn | Appointments | tên màn |
+| Khách hàng | Customers | tên màn |
+| Hồ sơ khách hàng | Customer profile | |
+| Team & nhân sự | Team management | Owner 12/11 |
+| Cài đặt | Settings | |
+| Quản lý | Manage | nhóm trên thanh bên |
+| Ô lệnh (⌘K / Ctrl+K) | Command bar | đợt b |
+| Lưu ý | Heads-up | đợt b, ý 11; Owner đổi tên từ "Lúc này" ở G3 đợt b (§8, điểm 3) |
+| Che tên KH | Hide names | đợt a |
+| Đã lưu / Đang lưu | Saved / Saving | trạng thái lưu ở chân thanh bên |
+
+Góc nhìn và kỳ:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Góc nhìn | View | |
+| Toàn bộ | All | |
+| Cả team {team} | All of {team} | |
+| Kỳ thống kê | Period | |
+| Loại kỳ | Period type | |
+| Ngày / Tuần / Tháng / Năm / Tùy chọn | Day / Week / Month / Year / Custom | |
+| Kỳ trước / Kỳ sau | Previous period / Next period | |
+| Hôm nay | Today | |
+| Từ ngày / Đến ngày | From / To | |
+| So với kỳ trước | vs. previous period | |
+| T2 … CN | Mon … Sun | tên thứ ngắn |
+| Thứ Hai … Chủ nhật | Monday … Sunday | tên thứ dài |
+| Tháng 11/2026 | November 2026 | golden Y10 |
+
+Người và team:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Nhân sự | Staff | Owner 12/11 |
+| Vai trò | Role | |
+| RM phụ trách | Assigned RM | |
+| Người phối hợp | Coordinator | TL / IS / BD / BDM |
+| Người đánh giá kết quả | Outcome reviewer | |
+| + Team / + Thêm TL | + Team / + Add TL | |
+| Màu, icon của team | Team colour, team icon | ý 33 |
+| Thao tác | Actions | cột bảng |
+| Tìm RM | Find RM | phần C |
+| KH của RM | RM's customers | phần C |
+
+Khách hàng:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Khách hàng (KH) | Customer | |
+| Mã KH | Customer ID | |
+| Họ tên | Full name | |
+| Ngày sinh | Date of birth | |
+| Giới tính: Nam / Nữ | Gender: Male / Female | |
+| Nhóm | Stage | N4 → N1 |
+| Tạm hoãn | On hold | |
+| Mất cơ hội | Lost opportunity | Owner 12/11 |
+| Mở lại | Reopen | |
+| KH đang mở / đã đóng | Open / closed customers | |
+| Đã có HĐ | Has policy | nhãn KH |
+| Từ ngày | Since | cột bảng KH |
+| Cách xem: Kanban / Bảng | View as: Kanban / Table | |
+| Chuyển nhóm | Stage change | |
+| Sửa tay | Manual change | đổi nhóm ngoài cuộc gặp |
+| Lần gặp gần nhất | Last met | |
+| Lịch hẹn sắp tới | Upcoming appointments | |
+| Tìm KH | Find customer | phần C |
+
+Lịch hẹn:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Lịch hẹn | Appointment | |
+| Lịch hẹn mới / Tạo lịch hẹn | New appointment / Create appointment | |
+| Dự kiến | Scheduled | trạng thái |
+| Đã gặp | Met | trạng thái |
+| Dời lịch | Rescheduled | trạng thái; nút "Reschedule" |
+| Hủy | Cancelled | trạng thái |
+| Không đến | No-show | trạng thái |
+| Giới thiệu từ KH | Customer referral | loại trigger |
+| Đáo hạn tài sản | Asset maturity | loại trigger |
+| Hội thảo / sự kiện | Seminar / event | loại trigger |
+| Sinh nhật, dịp đặc biệt | Birthday / special occasion | loại trigger |
+| Khác | Other | loại trigger |
+| Mô tả trigger | Trigger note | |
+| Kết quả cuộc gặp | Meeting outcome | |
+| Nhóm sau cuộc gặp | Stage after meeting | |
+| Giữ nguyên | Keep | |
+| Việc tiếp theo | Next step | |
+| Ghi chú cuộc gặp | Meeting note | |
+| Hẹn lần tiếp theo | Book next appointment | |
+| Các lần hẹn trước | Past appointments | |
+| Lần gặp thứ {n} | Meeting {n} | |
+| Chưa ghi kết quả | Outcome not recorded | |
+| Tính RF / Không tính RF | Counts as referral / Not a referral | Owner 12/11: "RF: referal" |
+
+Hợp đồng và chỉ số:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Hợp đồng (HĐ) | Policy | |
+| Đã nộp / Đã phát hành / Đã hủy | Submitted / Issued / Cancelled | trạng thái HĐ |
+| Hủy HĐ / Bỏ hủy | Cancel policy / Undo cancellation | phần B |
+| Ngày nộp / Ngày phát hành / Ngày hủy | Submission date / Issue date / Cancellation date | |
+| FYP nộp / FYP phát hành / FYP hủy | Submitted FYP / Issued FYP / Cancelled FYP | |
+| HĐ nộp / HĐ phát hành / HĐ hủy | Policies submitted / Policies issued / Policies cancelled | |
+| Tổng số HĐ | Total policies | Owner 10/11 |
+| Doanh số | Total FYP | Owner 10/11 |
+| Case size | Case size | |
+| Case size dự kiến | Expected case size | |
+| Chuyển RF | Referrals | Owner 12/11; Tỉ lệ chốt = HĐ phát hành ÷ Referrals |
+| Tỉ lệ chốt | Close rate | |
+| Tỷ lệ hủy | Cancellation rate | phần B |
+| Chỉ số của kỳ | Period metrics | |
+
+Forecast và mục tiêu (phần D):
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Forecast tuần / Forecast tháng | Weekly forecast / Monthly forecast | |
+| Dự kiến | Forecast | số tiền |
+| Đã đạt | Achieved | |
+| KPI tháng (mục tiêu doanh số) | Monthly target (KPI) | |
+| Về đích | Progress to target | |
+| Còn thiếu | Remaining | |
+| Nhịp cần mỗi tuần | Needed per week | |
+| Thiếu case size | Missing case size | |
+
+Báo cáo (phần E):
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Bản tin | Briefing | |
+| Điểm nhấn | Highlights | |
+| Xu hướng | Trends | ý 35 |
+| Bảng báo cáo | Report tables | |
+| Theo team / Theo RM | By team / By RM | |
+| Mốc | Interval | cột: ngày / tuần trong kỳ |
+| Tổng | Total | |
+| Xuất Excel | Export to Excel | |
+| In | Print | |
+
+KYC:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Dữ kiện KYC | KYC facts | |
+| Ghi chú KYC | KYC note | |
+| Hạng mục | Category | |
+| Trường / Trường chính / Trường cốt lõi | Field / Key field / Core field | |
+| Cổng KYC | KYC gate | |
+| Phiên bản KYC | KYC version | |
+| Thay đổi quan trọng | Material change | |
+| Mâu thuẫn / Đánh dấu mâu thuẫn | Conflict / Mark as conflict | |
+| Còn hiệu lực / Đã bị thay thế | Active / Superseded | trạng thái dữ kiện |
+| Cần chăm sóc, KYC thêm thông tin khách hàng | Needs care: gather more KYC | thông điệp của cổng |
+| Danh tính / tuổi | Identity / age | hạng mục |
+| Gia đình | Family | hạng mục |
+| Nghề nghiệp / nguồn thu | Occupation / income | hạng mục |
+| Tài sản / AUM | Assets / AUM | hạng mục |
+| Mục tiêu & mốc thời gian | Goals & timeline | hạng mục |
+| Khẩu vị rủi ro | Risk appetite | hạng mục |
+| Bảo vệ hiện có | Existing protection | hạng mục |
+| Mối quan tâm | Concerns | hạng mục |
+| Năm sinh | Birth year | trường |
+| Giới tính | Gender | trường |
+| Nơi sinh sống | Residence | trường |
+| Tình trạng hôn nhân | Marital status | trường |
+| Số con | Number of children | trường |
+| Người phụ thuộc | Dependents | trường |
+| Nghề nghiệp | Occupation | trường |
+| Thu nhập năm | Annual income | trường |
+| Nguồn thu | Income sources | trường |
+| Tổng tài sản | Total assets | trường |
+| Phân bổ tài sản | Asset allocation | trường |
+| Nợ phải trả | Liabilities | trường |
+| Mục tiêu chính | Primary goal | trường |
+| Mốc thời gian mục tiêu | Goal horizon | trường |
+| Mục tiêu khác | Other goals | trường |
+| Khẩu vị rủi ro | Risk appetite | trường |
+| Kinh nghiệm đầu tư | Investment experience | trường |
+| Đã có bảo vệ | Has protection | trường |
+| Chi tiết bảo vệ | Protection details | trường |
+| Mối quan tâm chính | Main concern | trường |
+| Mối quan tâm khác | Other concerns | trường |
+
+AI:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Phân tích / Phân tích lại | Analyze / Re-analyze | |
+| Lịch sử phân tích | Analysis history | |
+| Lần phân tích bị loại | Rejected analysis | |
+| AI trích xuất | AI extraction | |
+| Nhà cung cấp | Provider | |
+| Model | Model | |
+| Mức suy luận: Mặc định / Thấp / Vừa / Cao | Reasoning: Default / Low / Medium / High | |
+| Key AI | API key | |
+| Chép prompt / Dán câu trả lời | Copy prompt / Paste answer | ChatGPT web, WorkBuddy |
+
+Cài đặt, dữ liệu, Thùng rác:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Dữ liệu | Data | |
+| Xuất backup / Nhập backup | Export backup / Import backup | |
+| Nạp lại dữ liệu giả lập | Reload sample data | |
+| Thư mục dữ liệu | Data folder | |
+| Thùng rác | Trash | |
+| Khôi phục | Restore | |
+| Dọn sạch Thùng rác | Empty Trash | |
+| Ngôn ngữ / Language | Language | phần G |
+| Tiền tệ | Currency | phần G |
+| Thiết lập ban đầu | Setup | phần G |
+| Thiết lập lại từ đầu | Start over | phần G |
+| Trắng / Dữ liệu mẫu / File backup | Start empty / Sample data / From a backup file | nguồn dữ liệu của wizard |
+
+Nút và chữ chung:
+
+| Tiếng Việt | English (đề xuất) | Ghi chú |
+|---|---|---|
+| Lưu / Sửa / Xóa / Đóng | Save / Edit / Delete / Close | |
+| Hủy | Cancel | nút đóng hộp thoại |
+| Thêm | Add | |
+| Không bắt buộc | Optional | |
+| Hiện thêm / Đã hiện hết | Show more / All shown | chân bảng dài |
+
+### 11.7 Issue dự kiến (chưa tạo)
+
+Tên Issue viết "G-" và hai chữ số (G-01 … G-16; Owner chọn 12/11/2026), để khỏi lẫn với tên cổng G1–G8: "Bị chặn bởi: G-04" là Issue, không phải cổng G4.
+
+| Issue | Nội dung | Rủi ro | Bị chặn bởi |
+|---|---|---|---|
+| G-01 | Cơ chế i18n hai ngôn ngữ: `t()` theo ngôn ngữ, lưu theo máy, tải lại khi đổi, số nhiều tiếng Anh, `en.ts` dịch dần với test liệt kê khóa thiếu (chưa cho chọn English); sửa `.claude/rules/i18n-ui.md` và dòng i18n của `CLAUDE.md`; thuật ngữ vào `CONTEXT.md` | med | A4 |
+| G-02 | `domain`: kiểu tiền chung, bảng tiền tệ, định dạng đầy đủ / gọn / chênh lệch, đọc ô nhập chặt kèm gợi ý, số đếm / phần trăm / cỡ file theo dấu mới; fixture của golden `so-va-tien-te.md` | med | A4 |
+| G-03 | App dùng định dạng mới ở mọi chỗ hiện / nhập số (chữ mẫu, gợi ý dưới ô); mọi số viết kiểu Việt của golden `chi-so.md` (phần trăm "66,7%", tiền theo triệu nhóm bằng `.` như "1.500"; số lưu không đổi); e2e đổi chữ | med | G-02 |
+| G-04 | Khóa `currency`: migration ghi VND (ngoại lệ có chủ ý của R2-02, ADR-0018 §7), luật nhập backup (khóa, trần theo tiền tệ, `BACKUP_CURRENCY_MISMATCH`), `isFee` / `requireAmount` theo tiền tệ, Nạp lại mang khóa, app truyền tiền tệ vào định dạng | med | G-03 |
+| G-05 | Dữ liệu mẫu VND viết lại theo dấu mới (seed, AI giả lập) | low | G-03 |
+| G-06 | Bộ dữ liệu mẫu tiếng Anh cho tiền có cent; Nạp lại theo tiền tệ; AI giả lập với bộ tiếng Anh | med | G-04 |
+| G-07 | Ngày tiếng Anh: tên tháng, tên thứ, kỳ ở chỗ rộng | low | G-01 |
+| G-08 | Thiết lập ban đầu (wizard), DB mới, tùy chọn wizard của bản web cho e2e; câu hướng dẫn cách nhập của ô tiền EUR, theo mockup §11.5 (wizard là chỗ đầu tiên chọn được EUR) | med | G-04, G-06, mockup §11.5 |
+| G-09 | Cài đặt → Ngôn ngữ / Tiền tệ chỉ xem / Thiết lập lại từ đầu | med | G-08 |
+| G-10, G-11 | Gom chuỗi tiếng Việt ngoài `vi.ts` về i18n (hai Issue theo vùng code) | low | G-01 |
+| G-12 … G-16 | Các lượt dịch theo nhóm màn: vỏ, Tổng quan, Forecast · Lịch hẹn · Khách hàng, hồ sơ, KYC, AI · Báo cáo, Team · Cài đặt, lỗi, Thùng rác, wizard. Issue cuối mở lựa chọn English | low | G-10, G-11, E |
+
+Ngoài bảng: `numFmt` theo tiền tệ của file Excel làm trong E; ngôn ngữ trả lời của AI làm trong A6; ngôn ngữ của gói macOS làm ở một Issue Mac. Cả phần G ước 16 Issue.
