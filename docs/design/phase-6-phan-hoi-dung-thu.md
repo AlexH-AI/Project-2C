@@ -331,7 +331,7 @@ Owner 10/11 sau đó: bản Mac "phải theo triết lý thiết kế của Mac 
 | M7 | Phím tắt | Chữ "Ctrl+A / Ctrl+C / Ctrl+V"; chặn tải lại bằng Ctrl+R | ⌘A / ⌘C / ⌘V, ⌘R; menu Edit của macOS để sao chép / dán chạy trong app |
 | M8 | Chữ nói về Windows | "exe", Explorer, đường dẫn `backups\` trong giao diện và hướng dẫn | Chữ theo nền tảng; hướng dẫn có phần macOS |
 | M9 | Kiểm thử | E2E chạy trên Edge (cùng nhân với WebView2 của Windows) | WebView của macOS là WebKit (như Safari): chạy thêm e2e trên WebKit; nghiệm thu trên Mac thật |
-| M10 | Công cụ dev | `tools/bootstrap.ps1`, PowerShell | Không cần nếu vẫn code trên Windows và build bản Mac bằng CI |
+| M10 | Công cụ dev | `tools/bootstrap.ps1`, PowerShell | Không cần nếu vẫn code trên Windows và build bản Mac bằng CI. **Nay cần** (Owner 12/11: "Macbook sẽ là dev machine thứ 3"): bootstrap macOS, tài liệu dựng máy (Issue Mac-8, §9.3) |
 | M11 | Khóa thư mục dữ liệu, kiểm quyền ghi | Windows: mở file khóa không chia sẻ (một exe cho thư mục dữ liệu); hỏi quyền ghi thư mục / thay file trước khi lưu (`ACCESS_DENIED`, `READ_ONLY`, `FOLDER_READ_ONLY`) | Khóa file khóa bằng `std` (`File::try_lock`, kiểu `flock`): `open -n` hay chạy thẳng file trong gói mở được hai tiến trình. Kiểm quyền ghi theo bit quyền của thư mục / file, cùng mã lỗi như Windows. Làm ở bước thử (T-413) |
 
 ### 9.2 Dữ liệu giữa các máy
@@ -342,15 +342,30 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 ### 9.3 Cách làm đề xuất
 
-1. **Thử trên Mac (spike):** build bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Sửa tối thiểu để chạy được (M2, M3, M4); bản Windows không đổi. Chi tiết: `nen-tang-mac-va-thuong-mai-hoa.md` §9. Owner 10/11 chọn chung mã Tauri: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp".
-2. **ADR "Hỗ trợ macOS"** (G1): nơi để dữ liệu, kho key, ký hay không, cách phát hành; G4 cho crate Keychain và (nếu ký) Apple Developer.
-3. **Issue chuyển nền tảng** (M1–M9), xen kẽ với các Issue A–G theo luật song song theo file (Owner hỏi 12/11/2026, Claude trả lời; `PROJECT-STATE.md` mục 2026-11-12):
+1. **Thử trên Mac (spike):** build bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Sửa tối thiểu để chạy được (M2, M3, M4, M11; T-413, PR #1219); bản Windows không đổi. Chi tiết: `nen-tang-mac-va-thuong-mai-hoa.md` §9. Owner 10/11 chọn chung mã Tauri: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp". **Xong 12/11/2026** (#1226): MacBook Pro M5 Pro, macOS 27.2.1, bản `f7b82ad`, C1–C8 đều OK, không có Issue `build-mac` nào. Đường tải bằng trình duyệt trên Mac chưa thử (ADR-0019 §6).
+2. **ADR-0019 "Bản macOS và phân phối hai nền tảng"** (T-420, #1230; G1, G4 từng điểm): nơi để dữ liệu, kho key, ký, dạng phát hành và tự cập nhật cho cả hai nền tảng, CI, kiểm thử trên WebKit. Owner 12/11 gộp câu "portable hay bản cài" vào ADR này ("Gộp vào ADR").
+3. **Issue Mac** (bảng dưới), xen kẽ với các Issue A–G theo luật song song theo file (Owner hỏi 12/11/2026, Claude trả lời; `PROJECT-STATE.md` mục 2026-11-12):
    - hai Issue chạy song song chỉ khi không chung file;
    - Issue Mac chỉ sửa phần Rust phía Mac xen kẽ được;
    - M7, M8 (sửa `vi.ts`) xếp sau A1 / G-01;
    - phần Rust của ADR lưu trữ (đề xuất, chờ Owner) không chạy cùng Issue Mac sửa `storage.rs`;
    - mỗi lần merge một PR code, PR đang mở kia chạy `gh pr update-branch` → CI → review lại.
-4. **Phát hành:** v1.0 cho cả hai cùng lúc (Owner 10/11: "bản Mac phát hành cùng lúc với bản windows").
+4. **Phát hành:** v1.0 cho cả hai cùng lúc (Owner 10/11: "bản Mac phát hành cùng lúc với bản windows"), từ cùng một SHA (ADR-0019 §8).
+
+**Issue dự kiến (Mac), chưa tạo.** Theo ADR-0019; nội dung theo đề xuất của Claude, cột "Cổng" ghi các câu hỏi Q… của PR T-420 mà Issue phụ thuộc. Owner trả lời khác thì dòng đó đổi theo. Nhãn sổ ghi chú vẫn là một tên `Mac` (§12.1); khi tạo Issue, PR sổ đổi nhãn từng mục thành `[T-… #…]` theo cột "Mục sổ [Mac]" (số dòng @`d3d738b`, khớp theo đường dẫn khi số dòng đổi). M2 (phía macOS), M3, M11 đã xong ở T-413; các mục sổ còn lại của chúng nằm ở Mac-1.
+
+| Issue | Nội dung | M | File chính | Mục sổ [Mac] | Rủi ro | Cổng | Bị chặn bởi / chỗ trong thứ tự |
+|---|---|---|---|---|---|---|---|
+| Mac-1 | Module `platform::{windows, macos}` của vỏ Rust (ADR-0019 §1): thư mục dữ liệu, khóa, kiểm quyền ghi, mở thư mục / URL, kho key; thu hồi tiến trình `open`; tên biến `opener`; chú thích mã lỗi chung hai nền tảng; ngoài Windows, lưu báo `READ_ONLY` khi file DB chỉ đọc (hay ghi khác biệt ở M11). Hành vi Windows không đổi. Có thể phải tách đôi theo trần cỡ | — | `src-tauri/src/lib.rs`, `storage.rs`, `ai.rs`, module mới | L130, L132, L134, L135, L136 | med | — | ADR-0019. Chỉ Rust, xen kẽ được với A–G; không chạy cùng phần Rust của ADR lưu trữ (`storage.rs`). Trước Mac-2, Mac-4 |
+| Mac-2 | Nơi để dữ liệu và bản cài Windows (ADR-0019 §2, §5): bản cài NSIS theo người dùng, dữ liệu `%LOCALAPPDATA%\<mã>\`, chế độ portable khi có `Project2C-data\` cạnh exe, bản debug dùng thư mục cạnh file chạy (cả macOS), mã định danh mới; CI build file cài; NT-EX viết lại và nghiệm thu lại (K46) | — (ADR-0019 §2, §5) | `tauri.conf.json`, `tauri.windows.conf.json` (mới), module `platform`, `.github/workflows/ci.yml`, `package.json`, `docs/testing/nghiem-thu-v1.md` | — | high | Q1, Q4, Q9 (G4 NSIS), Q11 (K49) | Mac-1. Nhãn `build-exe` + `build-mac` |
+| Mac-3 | Đóng gói macOS: `.dmg` (Q2; dựng trên runner hỏng thì giữ zip), `minimumSystemVersion` (Q5), kiểm chỉ arm64, khai ngôn ngữ vi + en của gói (ADR-0018 §10), `macos.yml` đòi `Signature=adhoc` | M4 | `tauri.macos.conf.json`, `.github/workflows/macos.yml` | L133 | low | Q2, Q5 | ADR-0019. Khác file với Mac-1, Mac-2: chạy song song được. Trước Mac-7 |
+| Mac-4 | Key AI qua Keychain: crate `apple-native-keyring-store` (ADR-0019 §4), test chấp nhận có bước macOS hỏi lại mật khẩu sau bản build mới | M1 | `src-tauri/Cargo.toml`, `Cargo.lock`, module `platform` / `ai.rs` | — | med | Q8 (G4 crate) | Mac-1, Mac-2 (cùng module `platform`). Nhãn `build-exe` + `build-mac` |
+| Mac-5 | Chữ, phím và hướng dẫn theo nền tảng: ⌘A / ⌘C / ⌘V, ⌘R thay Ctrl ở chữ giao diện và chặn tải lại; chữ "exe", Explorer, `backups\` theo nền tảng; hướng dẫn sử dụng phần macOS ("Vẫn mở" với chữ hộp chặn của macOS 27, Keychain, nơi để dữ liệu) và phần cài đặt Windows | M6 (hướng dẫn), M7, M8 | `apps/desktop/src/i18n/vi.ts`, xử lý phím của vỏ app, `docs/user-guide/` | — | low | — | A1, G-01 (`vi.ts`); Mac-2, Mac-3 (hướng dẫn tả bản cài, `.dmg`). Có thể tách phần hướng dẫn |
+| Mac-6 | Luật `build-mac` (Q6): `merge-pr` chặn PR đụng `EXE_PATHS` thiếu nhãn; `CLAUDE.md`, `.claude/rules/ci.md`; bước phát hành hai nền tảng từ một SHA | M5 | `tools/pr-core.mjs`, `tools/merge-pr.mjs` (+ test), `CLAUDE.md`, `.claude/rules/ci.md` | — | med | Q6, Q12 (K49 công cụ pipeline; chỉ làm khi `auto-issues` không chạy) | DS-1 (cùng `tools/`); không chạy cùng Mac-8 (`CLAUDE.md`) |
+| Mac-7 | E2E trên WebKit (project Playwright, job trong `macos.yml`), sửa test phụ thuộc Edge; thêm các dòng nghiệm thu macOS vào `nghiem-thu-v1.md` (C1–C8 của #1226, Keychain, `.dmg`, "Vẫn mở") | M9 | `playwright.config.ts`, `.github/workflows/macos.yml`, `e2e/**`, `docs/testing/nghiem-thu-v1.md` | — | med | Q7, Q10 (G4 WebKit) | Mac-3 (`macos.yml`); Mac-2 (`nghiem-thu-v1.md`). Owner chạy nghiệm thu Mac ở §10 bước 4 |
+| Mac-8 | Dựng MacBook làm máy dev thứ 3: tài liệu `docs/setup/`, bootstrap macOS, `tools/session-start` chạy được trên macOS, phụ lục ADR-0003 ba máy, `CLAUDE.md` mục "Môi trường Windows và 2 máy" | M10 | `docs/setup/`, `tools/` (bootstrap, session-start), ADR-0003, `CLAUDE.md` | — | med | G1 (phụ lục ADR-0003); G4 nếu thêm công cụ | ADR-0019 (Owner 11/11: task riêng sau ADR này). Không chạy cùng DS-1 (`tools/`), Mac-6 (`CLAUDE.md`) |
+
+Ngoài bảng: tự cập nhật, ký Developer ID, Store và mở `.p2cbackup` bằng nhấp đúp để sau v1.0, kèm điều kiện xét lại (ADR-0019 §5, §6). Cả bản Mac ước 8 Issue.
 
 ### 9.4 Câu hỏi chờ Owner
 
@@ -365,8 +380,8 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 Thứ tự dưới (bước 2, 3) do Claude đề xuất ngày 12/11/2026 (T-419, #1227); Owner duyệt G1 cùng ngày, trong PR #1228: "Duyệt G1". Nó thay thứ tự trước đó (A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16, G-06 … G-11 chạy song song, Issue macOS chạy song song) bằng một chuỗi có Issue dọn sổ (§12) và luật song song theo file (§9.3 bước 3).
 
-1. Vòng ý tưởng UI/UX (§8). Thử bản macOS (§9.3 bước 1): bản thử T-413 đã merge; Owner thử theo Issue #1226.
-2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B → mockup đợt c → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F, Mac). ADR macOS viết sau bước thử. ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
+1. Vòng ý tưởng UI/UX (§8). Thử bản macOS (§9.3 bước 1): xong 12/11/2026, C1–C8 OK (#1226).
+2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B → mockup đợt c → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F). ADR macOS: ADR-0019 (T-420, #1230), viết sau bước thử; bảng Issue dự kiến Mac đã viết (§9.3). ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
 3. Owner bảo "ra issue": DS-1 → A1–A7 → DS-2 → G-01 … G-05 → vỏ app → B1–B3 → DS-3 → C1 / C2, F → D → E → DS-4 → G-06 … G-11 → G-12 … G-16. Issue Mac xen kẽ theo luật song song theo file (§9.3 bước 3). Mỗi Issue gộp các mục sổ mang nhãn đích của nó (§12). Chi tiết phần G: §11.4; tên Issue dự kiến: §3.6, §4.6, §5, §11.7, §12.2.
 4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → đóng phase → G7 → phát hành v1.0 cho cả hai.
 
@@ -783,7 +798,7 @@ Nhãn của một mục là `[T-… #…]` (Issue đang mở sẽ sửa mục) h
 | đợt c … đợt g | mockup G3 các đợt c–g (§8); đợt f gồm cả mockup phần G (§11.5) |
 | vỏ app | Issue code của mockup đợt a: vỏ app hai nền tảng, bảng thành phần, token mới (§8). Bảng Issue dự kiến viết sau (§10 bước 2) |
 | D, E, F | Issue code của phần D, E, F; bảng Issue dự kiến viết sau (§10 bước 2) |
-| Mac | Issue Mac sau bước thử (§9.3; Issue #1226) |
+| Mac | Issue dự kiến Mac-1 … Mac-8 (§9.3, theo ADR-0019); bước thử #1226 đã xong |
 | đóng phase | PR đóng Phase 6: số đo `docs/metrics/phase-6.md`, review đóng phase |
 | G7 | nhãn chờ đã dùng từ 23/10/2026: mục chặn phát hành chờ bước G7 |
 

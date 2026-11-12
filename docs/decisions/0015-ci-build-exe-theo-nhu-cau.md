@@ -70,3 +70,7 @@ Repo public (từ 28/09) → tag của Action (`@v7`) có thể bị chủ repo 
 - **Mỗi `uses:` ghim SHA 40 ký tự** + comment bản phát hành đang trỏ tới (`# v7.0.1`). Lần ghim đầu lấy đúng commit tag lớn đang trỏ lúc đó, nên hành vi CI không đổi (tag `v6` của `pnpm/action-setup` vẫn ở 6.0.10, chưa lên 6.1.0).
 - **Cập nhật mỗi phase** (khi đóng phase, cùng việc ghi `docs/metrics/phase-<N>.md`): với từng Action, `gh api repos/<owner>/<repo>/commits/<tag lớn> --jq .sha` → thay SHA + comment, qua PR có nhãn `build-exe` để chạy đủ các job. Lên tag lớn mới (`v8`) là đổi công cụ → xem changelog trước. Dependabot là công cụ mới → G4, chưa dùng.
 - **Coverage** (`vitest.config.ts`): bỏ ngưỡng gộp 95, mỗi vùng một ngưỡng riêng (`coverage.thresholds` theo glob) để tụt ở một gói không bị gói khác che: `packages/domain/src/**` 100; `packages/db/src/**`, `apps/desktop/src/data/**`, `apps/desktop/src/shell/*.ts` lấy phần nguyên của số đo lúc đặt. Lớp app (`data/`, `shell/*.ts`) nay có trong báo cáo. Chỉ nâng ngưỡng, không hạ; task làm tụt dưới ngưỡng thì thêm test.
+
+## Phụ lục — bản macOS (ADR-0019, 12/11/2026)
+
+Workflow `.github/workflows/macos.yml` (T-413) build bản Mac ở PR gắn nhãn `build-mac` và khi chạy tay; `ci.yml` vẫn như trên. Khi nào bắt buộc nhãn `build-mac`, phát hành hai nền tảng từ một SHA, e2e trên WebKit và chi phí phút macOS khi repo private: ADR-0019 §8, §9. Phụ lục này có hiệu lực khi ADR-0019 được Accepted.

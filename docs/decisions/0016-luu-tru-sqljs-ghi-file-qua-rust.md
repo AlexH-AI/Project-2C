@@ -45,3 +45,7 @@ Transaction tin cậy là điều kiện bắt buộc cho quy tắc nhóm KH và
 - File `project2c.db` là SQLite chuẩn, mở được bằng công cụ ngoài để kiểm tra.
 - Nếu app bị tắt ngang giữa hai lần ghi: mất tối đa thao tác đang ghi; file trên đĩa luôn là bản trọn vẹn gần nhất.
 - Không mở app trên 2 cửa sổ cùng lúc (app một cửa sổ, ADR-0004).
+
+## Phụ lục — bản macOS, nơi để dữ liệu (ADR-0019, 12/11/2026)
+
+§2 dòng "Thư mục: `Project2C-data\` cạnh exe" chỉ còn đúng cho exe Windows hôm nay. Thư mục dữ liệu theo nền tảng và dạng phát hành: ADR-0019 §2, §5. Lệnh Rust, bố cục trong thư mục (`project2c.db`, `backups`, `exports`) và các điểm khác của ADR này không đổi. Phụ lục này có hiệu lực khi ADR-0019 được Accepted.

@@ -1,6 +1,6 @@
 # Phân tích — Bản Mac: chung mã Tauri hay viết riêng; desktop hay web khi thương mại hóa
 
-- **Trạng thái:** **Owner chọn T (chung mã Tauri) ngày 10/11/2026**: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp". Bước thử ở §9; ADR "Bản macOS" và `PROJECT-PLAN.md` viết sau bước thử, khi đã biết chỗ cần sửa. Hướng thương mại hóa (§4) chưa quyết.
+- **Trạng thái:** **Owner chọn T (chung mã Tauri) ngày 10/11/2026**: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp". Bước thử (§9) xong ngày 12/11/2026: C1–C8 OK (Issue #1226). Quyết định của bản Mac và phân phối cho cả hai nền tảng: **ADR-0019** (`docs/decisions/0019-ban-macos-va-phan-phoi.md`, T-420); Issue Mac dự kiến ở spec `phase-6-phan-hoi-dung-thu.md` §9.3. Hướng thương mại hóa (§4) chưa quyết.
 - **Soạn:** 10/11/2026, `main` `ab1ff14`. Nguồn: yêu cầu Owner (§0), spec `phase-6-phan-hoi-dung-thu.md` §9, rà code ở `main`, nguồn ngoài (§10).
 
 ## 0. Yêu cầu và thông tin của Owner (10/11/2026, nguyên văn)
@@ -112,13 +112,14 @@ Cách chuyển ít đau: dữ liệu chung (SQLite và file backup), golden exam
    - **Cách tải và mở bản thử:**
      1. Mở link run `macos.yml` Claude gửi (trang Actions của repo, đã đăng nhập GitHub), mục Artifacts, tải `Heritas-L-CRM-macos-<SHA>`.
      2. Bấm đúp file tải về: được `Heritas-L-CRM-macos-<SHA>.zip`; bấm đúp file này: được `Heritas L-CRM.app`. Kéo app vào thư mục Applications.
-     3. Mở app lần đầu: macOS chặn vì app chưa ký bằng Developer ID. Bấm Xong (không chuyển vào Thùng rác), vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật, mục Bảo mật, bấm "Vẫn mở" cạnh dòng nói về Heritas L-CRM, xác nhận bằng mật khẩu hay Touch ID. Từ macOS 15 không còn mở bằng chuột phải → Open. Những lần sau mở như app thường.
-     4. Lần đầu app bắt đầu với dữ liệu trống, ở `~/Library/Application Support/dev.alexh.project2c/` (Finder → Đi → Đi tới thư mục…).
-     5. **Nhập backup từ bản Windows** (Owner 11/11: dữ liệu chung là file backup dùng được trên cả hai nền tảng): trên bản Windows, Cài đặt → Dữ liệu → "Xuất backup" (file `.p2cbackup` trong `Project2C-data\exports\`); chép file sang Mac (AirDrop, USB, iCloud Drive…); trên Mac, Cài đặt → Dữ liệu → "Nhập backup" → "Chọn file…". So số KH, HĐ, lịch hẹn với bản Windows. Nếu kịp, làm chiều ngược lại: xuất trên Mac, nhập trên Windows.
+     3. Mở app lần đầu: macOS chặn vì app chưa ký bằng Developer ID. Bấm Xong (không chuyển vào Thùng rác), vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật, mục Bảo mật, bấm "Vẫn mở" cạnh dòng nói về Heritas L-CRM, xác nhận bằng mật khẩu hay Touch ID. Từ macOS 15 không còn mở bằng chuột phải → Open. Những lần sau mở như app thường. (Lần thử 12/11 không bị chặn: Owner tải trên PC rồi mở qua thư mục chia sẻ mạng, file không mang cờ quarantine; ADR-0019 §6.)
+     4. Lần đầu app tạo dữ liệu giả lập như bản Windows, lưu ở `~/Library/Application Support/dev.alexh.project2c/` (Finder → Đi → Đi tới thư mục…). Bước 5 thay toàn bộ dữ liệu đó.
+     5. **Nhập backup từ bản Windows** (Owner 11/11: dữ liệu chung là file backup dùng được trên cả hai nền tảng): trên bản Windows, Cài đặt → Dữ liệu → "Xuất backup" (file `.p2cbackup` trong `Project2C-data\exports\`); chép file sang Mac (thư mục chia sẻ mạng, USB, iCloud Drive…; AirDrop không chạy từ Windows); trên Mac, Cài đặt → Dữ liệu → "Nhập backup" → "Chọn file…". So số KH, HĐ, lịch hẹn với bản Windows. Nếu kịp, làm chiều ngược lại: xuất trên Mac, nhập trên Windows.
      6. Gửi Claude các chỗ hỏng: màn hình, thao tác, thông báo lỗi (ảnh chụp nếu có).
-2. **ADR "Bản macOS"** (G1): nơi để dữ liệu, kho key Keychain (G4), cách phát hành; ghi lựa chọn T và điểm xét lại §8.
+   - **Xong 12/11/2026** (Issue #1226): MacBook Pro M5 Pro, macOS 27.2.1, bản `f7b82ad`; C1–C8 đều OK, không có chỗ hỏng nên không có Issue `build-mac` nào. Đường tải bằng trình duyệt trên Mac chưa thử (Owner: "Không cần, viết ADR").
+2. **ADR "Bản macOS"** (G1): **ADR-0019** "Bản macOS và phân phối hai nền tảng" (T-420, #1230). Ngoài nơi để dữ liệu, Keychain (G4) và cách phát hành, ADR gồm cả dạng phát hành, tự cập nhật, ký mã cho hai nền tảng (Owner 12/11: "Gộp vào ADR"); ghi lựa chọn T và điểm xét lại §8.
 3. **Vòng ý tưởng UI/UX** cho cả hai nền tảng, gồm lớp giao diện Mac và hệ chuyển động (spec `phase-6-phan-hoi-dung-thu.md` §8).
-4. **Issue chuyển nền tảng** M1–M11.
+4. **Issue Mac** Mac-1 … Mac-8: bảng "Issue dự kiến (Mac)" ở spec `phase-6-phan-hoi-dung-thu.md` §9.3, phủ các M còn mở của M1–M11.
 
 **Phương án S (để tham khảo khi xét lại theo §8):** ADR và kế hoạch viết lại (≈ 70–100 Issue cho phần sản phẩm); phát triển trên Mac bằng Xcode, Claude Code chạy trên Mac; bản Windows giữ Tauri; định dạng dữ liệu và golden examples là hợp đồng chung.
 
