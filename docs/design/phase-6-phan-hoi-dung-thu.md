@@ -363,7 +363,7 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 ## 10. Thứ tự đề xuất của cả đợt
 
-Thứ tự dưới (bước 2, 3) là đề xuất của Claude ngày 12/11/2026 (T-419, #1227), chờ Owner duyệt G1. Nó thay thứ tự trước đó (A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16, G-06 … G-11 chạy song song, Issue macOS chạy song song) bằng một chuỗi có Issue dọn sổ (§12) và luật song song theo file (§9.3 bước 3).
+Thứ tự dưới (bước 2, 3) do Claude đề xuất ngày 12/11/2026 (T-419, #1227); Owner duyệt G1 cùng ngày, trong PR #1228: "Duyệt G1". Nó thay thứ tự trước đó (A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16, G-06 … G-11 chạy song song, Issue macOS chạy song song) bằng một chuỗi có Issue dọn sổ (§12) và luật song song theo file (§9.3 bước 3).
 
 1. Vòng ý tưởng UI/UX (§8). Thử bản macOS (§9.3 bước 1): bản thử T-413 đã merge; Owner thử theo Issue #1226.
 2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B → mockup đợt c → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F, Mac). ADR macOS viết sau bước thử. ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
@@ -479,8 +479,8 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
   - Không có G4: không thêm dependency nào, kể cả thư viện số hay `Intl` polyfill.
 - **Thứ tự Issue code** (§11.7), tất cả sau A, vì A đổi khóa chuỗi và tên trong code:
   1. G-01 … G-05: cơ chế i18n, kiểu tiền và định dạng mới, khóa tiền tệ, dữ liệu mẫu VND. Làm trước B, để chuỗi và số tiền mới của B–E viết một lần bằng cách mới.
-  2. B → C / F → D → E như §10 bước 3 (giữa chúng có vỏ app và các Issue dọn sổ DS-2 … DS-4).
-  3. G-06 … G-11 sau E và DS-4 (§10 bước 3; đề xuất 12/11/2026, chờ G1): bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
+  2. B → C / F → D → E như §10 bước 3: giữa B và C có Issue dọn sổ DS-3; vỏ app và DS-2 đứng trước B, DS-4 sau E.
+  3. G-06 … G-11 sau E và DS-4 (§10 bước 3; Owner duyệt G1 ngày 12/11/2026): bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
   4. G-12 … G-16 (các lượt dịch) làm cuối, sau E, vì B–E còn thêm chuỗi. Issue dịch cuối mới mở lựa chọn English trong Cài đặt.
 - Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417, #1223) đã vẽ theo luật mới ("1.38 tỷ", "16.7%", "3,000,000 VNĐ" trong `search-rm-team.html`).
 
@@ -764,9 +764,9 @@ Tên Issue viết "G-" và hai chữ số (G-01 … G-16; Owner chọn 12/11/202
 
 Ngoài bảng: `numFmt` theo tiền tệ của file Excel làm trong E; ngôn ngữ trả lời của AI làm trong A6; ngôn ngữ của gói macOS làm ở một Issue Mac. Mục sổ ghi chú nhãn `[G-03]` về các chuỗi i18n ghi cứng VND hay dạy luật nhập cũ (`apps/desktop/src/i18n/vi.ts`, review PR #1222): G-03 sửa các câu dạy cách gõ; câu lỗi trần theo tiền tệ (`error.AMOUNT_TOO_LARGE`, cần một chỗ điền trần) làm cùng G-04, nơi trần theo tiền tệ. Cả phần G ước 16 Issue.
 
-## 12. Sổ ghi chú review: nhãn đích và Issue dọn sổ (Owner quyết 12/11/2026; bảng chờ G1)
+## 12. Sổ ghi chú review: nhãn đích và Issue dọn sổ (Owner quyết 12/11/2026, duyệt G1 cùng ngày)
 
-Owner 12/11/2026, chat ở Home PC: "Anh không muốn để lại sau 1.0 vì sổ open sẽ nhiều lên sau mỗi lần review, vì vậy cái nào gộp vào cùng loại thì em cho vào để làm." Mỗi mục OPEN của `docs/state/review-notes.md` mang đúng một **nhãn đích**, là việc cùng loại sẽ sửa nó, và mọi mục làm trước v1.0 (ADR-0001 phụ lục M14; luật ở đầu mục OPEN của sổ). Danh sách tên đích, bảng ghép 90 mục, DS-1…DS-4 và thứ tự §10 là đề xuất của Claude (T-419, #1227), chờ Owner duyệt G1.
+Owner 12/11/2026, chat ở Home PC: "Anh không muốn để lại sau 1.0 vì sổ open sẽ nhiều lên sau mỗi lần review, vì vậy cái nào gộp vào cùng loại thì em cho vào để làm." Mỗi mục OPEN của `docs/state/review-notes.md` mang đúng một **nhãn đích**, là việc cùng loại sẽ sửa nó, và mọi mục làm trước v1.0 (ADR-0001 phụ lục M14; luật ở đầu mục OPEN của sổ). Danh sách tên đích, bảng ghép 90 mục, DS-1…DS-4 và thứ tự §10 do Claude đề xuất (T-419, #1227); Owner duyệt G1 ngày 12/11/2026, trong PR #1228: "Duyệt G1".
 
 ### 12.1 Tên đích
 
