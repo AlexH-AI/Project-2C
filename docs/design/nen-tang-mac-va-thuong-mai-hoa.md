@@ -1,6 +1,6 @@
 # Phân tích — Bản Mac: chung mã Tauri hay viết riêng; desktop hay web khi thương mại hóa
 
-- **Trạng thái:** **Owner chọn T (chung mã Tauri) ngày 10/11/2026**: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp". Bước thử (§9) xong ngày 12/11/2026: C1–C8 OK (Issue #1226). Quyết định của bản Mac và phân phối cho cả hai nền tảng: **ADR-0019** (`docs/decisions/0019-ban-macos-va-phan-phoi.md`, T-420); Issue Mac dự kiến ở spec `phase-6-phan-hoi-dung-thu.md` §9.3. Hướng thương mại hóa (§4) chưa quyết.
+- **Trạng thái:** **Owner chọn T (chung mã Tauri) ngày 10/11/2026**: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp". Bước thử (§9) xong ngày 12/11/2026: C1–C8 OK (Issue #1226). Quyết định của bản Mac và phân phối cho cả hai nền tảng: **ADR-0019** (`docs/decisions/0019-ban-macos-va-phan-phoi.md`, T-420; Owner duyệt G1, G4, G6 ngày 12/11/2026); Issue Mac dự kiến ở spec `phase-6-phan-hoi-dung-thu.md` §9.3. Hướng thương mại hóa (§4) chưa quyết.
 - **Soạn:** 10/11/2026, `main` `ab1ff14`. Nguồn: yêu cầu Owner (§0), spec `phase-6-phan-hoi-dung-thu.md` §9, rà code ở `main`, nguồn ngoài (§10).
 
 ## 0. Yêu cầu và thông tin của Owner (10/11/2026, nguyên văn)

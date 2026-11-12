@@ -1,9 +1,9 @@
 # ADR-0019: Bản macOS và phân phối hai nền tảng
 
-- **Trạng thái:** Proposed. Chờ Owner duyệt G1 (quyết định), G4 từng điểm (Q8–Q10) và G6 cho kho key macOS (Q8). Câu hỏi Q1–Q12 ở thân PR của T-420. Ký mã và Store không chốt ở đây: Owner "cân nhắc sau" (§6).
+- **Trạng thái:** Accepted (G1, G4, G6): Owner duyệt ngày 12/11/2026 ("Duyệt tất cả"). G1 là quyết định Q1–Q7; G4 là crate Keychain (Q8), NSIS (Q9), WebKit của Playwright (Q10); G6 là kho key macOS (Q8). Cùng câu trả lời, Owner mở K49 cho Q11 và Q12. Ký mã và Store không chốt ở đây: Owner "cân nhắc sau" (§6).
 - **Ngày:** 2026-11-12
 - **Nguồn:** Owner 10–12/11/2026 trong chat ở Home PC (nguyên văn: `docs/PROJECT-STATE.md`, các mục 2026-11-10, 2026-11-11, 2026-11-12; Issue #1230 mục Bối cảnh). Kết quả thử bản Mac: Issue #1226. Phân tích: `docs/design/nen-tang-mac-va-thuong-mai-hoa.md`. Spec: `docs/design/phase-6-phan-hoi-dung-thu.md` §9.
-- **Thay một phần (khi Accepted):**
+- **Thay một phần:**
   - ADR-0005: câu "Build ra 1 file `.exe` portable" và bối cảnh "app desktop Windows x64 portable"; phụ lục kho key "chỉ kho Windows".
   - ADR-0006: dòng "Portable: dữ liệu ở `.\Project2C-data\` cạnh exe".
   - ADR-0009 phụ lục D-1: kho key chỉ Windows.
@@ -13,6 +13,12 @@
 - **Commit / PR:** T-420 (#1230) · PR: #1232
 
 Mỗi điểm ghi rõ ai chốt: **Owner chốt** (ngày, câu nguyên văn) hay **Claude đề xuất** (kèm số câu hỏi Q… ở thân PR).
+
+**Owner trả lời ngày 12/11/2026** (chat ở Home PC, sau khi mở PR #1232):
+
+- Với câu hỏi "Q1–Q12 theo đề xuất của Claude?", Owner chọn "Take recommendations". Mọi đề xuất giữ như ghi.
+- Q4 chưa có chữ cụ thể nên Claude hỏi lại. Owner chọn "com.heritas.lcrm (Recommended)": mã định danh mới là `com.heritas.lcrm` (§2).
+- Hỏi duyệt cổng (G1 cho Q1–Q7, G4 cho Q8–Q10, G6 cho Q8, mở K49 cho Q11, Q12), Owner chọn "Duyệt tất cả (Recommended)".
 
 ## Bối cảnh
 
@@ -93,7 +99,7 @@ Vì vậy ADR này:
 - **Mã định danh** (`identifier` của `tauri.conf.json`, hôm nay `dev.alexh.project2c`; Claude đề xuất, Q4):
   - Mã này đặt tên thư mục dữ liệu macOS, thư mục dữ liệu Windows của bản cài, thư mục WebView2, và là mã gói (bundle ID) khi lên Mac App Store.
   - Đổi sau khi phát hành thì dữ liệu người dùng nằm lại ở thư mục cũ. Test `the_macos_data_folder_is_named_by_the_identifier_of_the_build` của `storage.rs` giữ mã và tên thư mục khớp nhau.
-  - Đề xuất: đổi một lần trước G7 sang mã theo tên sản phẩm. Claude gợi ý `com.heritas.lcrm`; Owner gõ chữ chốt. Mã thường viết theo tên miền đảo ngược, nhưng chỉ cần không trùng app khác, không cần sở hữu tên miền đó (Apple Developer Forums, "Code Signing Identifiers Explained"; tra 12/11/2026).
+  - Đề xuất: đổi một lần trước G7 sang mã theo tên sản phẩm. **Owner chốt 12/11/2026: `com.heritas.lcrm`** (Issue Mac-2 đổi; tới lúc đó code vẫn là `dev.alexh.project2c`). Mã thường viết theo tên miền đảo ngược, nhưng chỉ cần không trùng app khác, không cần sở hữu tên miền đó (Apple Developer Forums, "Code Signing Identifiers Explained"; tra 12/11/2026).
   - Lúc này đổi gần như không tốn gì: dữ liệu còn giả lập, máy đã có dữ liệu thì nhập lại backup. Key AI giữ nguyên, vì tên dịch vụ trong kho key là `Project-2C` (`KEY_SERVICE` của `ai.rs`), không theo mã định danh.
   - Giữ `dev.alexh.project2c` cũng chạy được; mã đó mang tên nội bộ "project2c" mãi mãi.
 - **Sửa ADR khác (khi Accepted):** ADR-0006 dòng "Portable" và ADR-0016 §2 dòng "Thư mục" chỉ còn đúng cho chế độ portable của Windows; nơi để dữ liệu theo điểm này.
@@ -121,7 +127,7 @@ Vì vậy ADR này:
   - cùng tên dịch vụ `Project-2C` và cùng tên người dùng của mục key như bản Windows;
   - Cài đặt → AI không đổi;
   - key không bao giờ nằm trong file dữ liệu hay backup.
-  - Nguyên tắc "key trong kho của hệ điều hành" đã qua G4 / G6 ở D-1 (07/10/2026). Claude coi macOS chỉ thêm một kho, nhưng kho key là việc G6: Owner duyệt G6 cùng Q8.
+  - Nguyên tắc "key trong kho của hệ điều hành" đã qua G4 / G6 ở D-1 (07/10/2026). Claude coi macOS chỉ thêm một kho, nhưng kho key là việc G6: Owner duyệt G6 cùng Q8 ngày 12/11/2026.
 - **Hệ quả của ký ad-hoc** (chưa kiểm trên Mac):
   - Keychain dạng file nhận ra app theo "yêu cầu chỉ định" (designated requirement) của chữ ký. Với chữ ký ad-hoc, yêu cầu này gắn với đúng một bản build (Apple TN3127).
   - Vì vậy mỗi bản app mới là "app khác" với Keychain. Lần đầu đọc key sau khi cập nhật, macOS hỏi mật khẩu đăng nhập ("Cho phép" / "Luôn cho phép"); "Luôn cho phép" giữ tới bản sau.
@@ -149,7 +155,7 @@ Vì vậy ADR này:
   - Tự cập nhật và Store về sau chỉ đi qua bản cài. Chọn bản cài bây giờ giữ đường đó mở mà không phải chuyển dữ liệu lần nữa.
   - Hai nền tảng cùng một kiểu: dữ liệu ở thư mục ứng dụng của người dùng, như macOS đã làm.
   - Chế độ portable giữ ba việc đang dùng: nghiệm thu ở thư mục riêng, chạy từ USB, và exe dùng thử cũ (`C:\heritas-dung-thu\`) vẫn đọc dữ liệu cũ.
-- **Giá của C+P:** code Windows phải mở K49 (Q11), NSIS là công cụ mới (G4, Q9), các dòng NT-EX nghiệm thu lại (K46), hướng dẫn sử dụng viết lại phần cài đặt.
+- **Giá của C+P:** code Windows phải mở K49 (Q11, Owner mở 12/11/2026), NSIS là công cụ mới (G4, Q9, Owner duyệt 12/11/2026), các dòng NT-EX nghiệm thu lại (K46), hướng dẫn sử dụng viết lại phần cài đặt.
 - **Giá của P (giữ như hôm nay):** không tốn gì lúc này. Muốn tự cập nhật hay lên Store sau phát hành thì phải chuyển dữ liệu thật. Hai nền tảng để dữ liệu theo hai kiểu.
 - **MSI bị loại:** tài liệu của Tauri chỉ nói `installMode` (cài theo người dùng) cho NSIS. MSI cài cho cả máy thường cần quyền admin, mà Office Laptop không có quyền admin. Chưa kiểm MSI của Tauri có cài theo người dùng được không.
 - **Tải về:** bản phát hành chỉ có file cài. Exe chạy thẳng vẫn là artifact CI của mỗi commit trên `main`, dùng cho nghiệm thu và thử.
@@ -222,7 +228,7 @@ Vì vậy ADR này:
 - **Claude đề xuất (Q6):** `build-mac` bắt buộc khi PR đụng cùng danh sách file bắt buộc `build-exe` (`EXE_PATHS` của `tools/pr-core.mjs`: `src-tauri`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml`, cấu hình build). Lý do:
   - v1.0 phát hành cả hai nền tảng, nên lỗi build Mac phải lộ trước khi merge, không phải ở G7;
   - code `cfg(not(windows))` chỉ được biên dịch và test trên runner macOS.
-  - `merge-pr` chặn khi thiếu nhãn, như với `build-exe`. Việc này sửa công cụ pipeline nên cần mở K49 (Q12), như DS-1.
+  - `merge-pr` chặn khi thiếu nhãn, như với `build-exe`. Việc này sửa công cụ pipeline nên cần mở K49 (Q12); Owner mở ngày 12/11/2026. Như DS-1, chỉ làm khi `auto-issues` không chạy.
   - `CLAUDE.md` và `.claude/rules/ci.md` đổi cùng Issue Mac-6.
 - **Phát hành:** GitHub Release v1.0 gồm file cài Windows, `.dmg` và hướng dẫn sử dụng, build từ cùng một SHA. CI trên `main` build bản Windows; chạy tay `macos.yml` trên SHA đó cho bản Mac.
 - **Chi phí:**
@@ -274,8 +280,9 @@ Vì vậy ADR này:
 
 - **Thay một phần** ADR-0005, 0006, 0009 (D-1), 0016 §2; bổ sung ADR-0015 (đầu ADR này).
 - **Issue dự kiến Mac-1 … Mac-8:** spec `phase-6-phan-hoi-dung-thu.md` §9.3, gồm task dựng MacBook làm máy dev thứ 3. Mỗi M còn mở của §9.1 và mỗi mục `[Mac]` của sổ ghi chú thuộc đúng một Issue.
-- **Nghiệm thu:** nếu chọn bản cài (Q1), các dòng NT-EX của bản Windows viết lại cho bản cài và chạy lại (K46), thêm dòng gỡ cài. Thêm các dòng macOS (§9).
-- **Hướng dẫn sử dụng:** phần macOS ("Vẫn mở", Keychain, nơi để dữ liệu, phím ⌘); phần cài đặt Windows nếu chọn bản cài.
+- **Nghiệm thu:** bản Windows thành bản cài (Q1), nên các dòng NT-EX viết lại cho bản cài và chạy lại (K46), thêm dòng gỡ cài và dòng chế độ portable. Thêm các dòng macOS (§9).
+- **Hướng dẫn sử dụng:** phần macOS ("Vẫn mở", Keychain, nơi để dữ liệu, phím ⌘) và phần cài đặt Windows.
+- **Mã định danh** đổi thành `com.heritas.lcrm` (Mac-2). Máy đã chạy app (Home PC, Office Laptop, MacBook) bắt đầu ở thư mục mới: nhập lại backup. Dữ liệu WebView2 cũ không mang sang thư mục mới.
 - **Máy dev:** bản debug dùng thư mục riêng, nên MacBook vừa dev vừa dùng app được. `CLAUDE.md` mục "Môi trường Windows và 2 máy" đổi ở task dựng máy (Mac-8).
 - **Keychain:** hỏi mật khẩu sau mỗi bản Mac mới, tới khi ký Developer ID (§4).
 - **ADR lưu trữ** (chưa có) dùng thư mục dữ liệu của §2.

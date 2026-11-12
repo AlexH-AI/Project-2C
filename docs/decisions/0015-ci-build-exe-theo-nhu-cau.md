@@ -73,4 +73,9 @@ Repo public (từ 28/09) → tag của Action (`@v7`) có thể bị chủ repo 
 
 ## Phụ lục — bản macOS (ADR-0019, 12/11/2026)
 
-Workflow `.github/workflows/macos.yml` (T-413) build bản Mac ở PR gắn nhãn `build-mac` và khi chạy tay; `ci.yml` vẫn như trên. Khi nào bắt buộc nhãn `build-mac`, phát hành hai nền tảng từ một SHA, e2e trên WebKit và chi phí phút macOS khi repo private: ADR-0019 §8, §9. Phụ lục này có hiệu lực khi ADR-0019 được Accepted.
+Workflow `.github/workflows/macos.yml` (T-413) build bản Mac ở PR gắn nhãn `build-mac` và khi chạy tay; `ci.yml` vẫn như trên. Theo ADR-0019 §8, §9 (Accepted 12/11/2026):
+
+- nhãn `build-mac` bắt buộc với cùng danh sách file như `build-exe`; `merge-pr` chặn khi thiếu (Issue Mac-6);
+- hai nền tảng phát hành từ một SHA;
+- e2e trên WebKit chạy trong `macos.yml`;
+- repo chuyển sang private thì bỏ bắt buộc `build-mac`, vì phút macOS tính ×10.

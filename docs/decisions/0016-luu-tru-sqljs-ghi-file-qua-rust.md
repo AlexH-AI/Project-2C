@@ -48,4 +48,4 @@ Transaction tin cậy là điều kiện bắt buộc cho quy tắc nhóm KH và
 
 ## Phụ lục — bản macOS, nơi để dữ liệu (ADR-0019, 12/11/2026)
 
-§2 dòng "Thư mục: `Project2C-data\` cạnh exe" chỉ còn đúng cho exe Windows hôm nay. Thư mục dữ liệu theo nền tảng và dạng phát hành: ADR-0019 §2, §5. Lệnh Rust, bố cục trong thư mục (`project2c.db`, `backups`, `exports`) và các điểm khác của ADR này không đổi. Phụ lục này có hiệu lực khi ADR-0019 được Accepted.
+§2 dòng "Thư mục: `Project2C-data\` cạnh exe" chỉ còn đúng cho chế độ portable của Windows. Thư mục dữ liệu theo nền tảng và dạng phát hành: ADR-0019 §2, §5 (Accepted 12/11/2026). Lệnh Rust, bố cục trong thư mục (`project2c.db`, `backups`, `exports`) và các điểm khác của ADR này không đổi.

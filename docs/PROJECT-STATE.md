@@ -300,7 +300,15 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   3. The OWNER: "Gộp vào ADR".
   4. The OWNER: "ký mã phát hành qua Microsoft/Mac App Store là bước anh sẽ cân nhắc sau. Cái anh muốn là việc chuẩn bị trước cho quy mô tương lai nếu data lớn thì cần SQLite hay nền tảng tương tự SQgre gì đó. Data sẽ là lưu tại máy của user, data giả lập hay KH thật thì cũng là việc cá nhân user dùng tự quản lý và chịu trách nhiệm. App chỉ là nền tảng."
   5. Claude proposed measuring at 5× / 10× the data, then a separate "storage ADR for large data". That proposal waits for the OWNER (HANDOFF #284).
-  - So ADR-0019 settles the release form, the data folder and auto-update for both platforms before G7, records code signing and the Stores as the OWNER's later call, and does **not** settle storage for large data (the storage ADR, not written). ADR-0019 is Proposed on the PR of T-420; Claude's proposals and the questions Q1–Q12 for the OWNER (G1, G4 per point, G6 for the macOS key store, K49) are in the PR body.
+  - So ADR-0019 settles the release form, the data folder and auto-update for both platforms before G7, records code signing and the Stores as the OWNER's later call, and does **not** settle storage for large data (the storage ADR, not written). Claude's proposals and the questions Q1–Q12 for the OWNER (G1, G4 per point, G6 for the macOS key store, K49) are in the body of PR #1232.
+  - The OWNER's answers, the same day, in chat on the Home PC, verbatim:
+    - Asked "Do you take Claude's recommendation on Q1–Q12?", he chose "Take recommendations". Every proposal of ADR-0019 stands as written:
+      - Windows: a per-user NSIS installer, data in `%LOCALAPPDATA%\<identifier>\`, with a portable mode when `Project2C-data\` sits next to the exe; debug builds keep their data next to the binary.
+      - macOS: a `.dmg`, Apple chips only, macOS 26 at least.
+      - No auto-update in v1.0. `build-mac` is required for the same files as `build-exe`. E2e runs on WebKit in `macos.yml`.
+    - Q4 named no identifier, so Claude asked again; he chose "com.heritas.lcrm (Recommended)". The app identifier becomes `com.heritas.lcrm`, changed once before G7 by issue Mac-2.
+    - Asked to approve the gates (G1 for Q1–Q7; G4 for the Keychain crate `apple-native-keyring-store` 1.0.2, NSIS and Playwright's WebKit; G6 for the macOS key store; lifting K49 for the Windows code of the installer (Q11) and for `merge-pr` requiring `build-mac` (Q12)), he chose "Duyệt tất cả (Recommended)".
+    - **ADR-0019 is Accepted (G1, G4, G6).** K49 is lifted for issues Mac-2 and Mac-6 (Mac-6 only while `auto-issues` is not running). Still no code issue until the OWNER says so.
 
 ## Next decision
 
