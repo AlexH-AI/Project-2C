@@ -300,7 +300,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   3. The OWNER: "Gộp vào ADR".
   4. The OWNER: "ký mã phát hành qua Microsoft/Mac App Store là bước anh sẽ cân nhắc sau. Cái anh muốn là việc chuẩn bị trước cho quy mô tương lai nếu data lớn thì cần SQLite hay nền tảng tương tự SQgre gì đó. Data sẽ là lưu tại máy của user, data giả lập hay KH thật thì cũng là việc cá nhân user dùng tự quản lý và chịu trách nhiệm. App chỉ là nền tảng."
   5. Claude proposed measuring at 5× / 10× the data, then a separate "storage ADR for large data". That proposal waits for the OWNER (HANDOFF #284).
-  - So ADR-0019 settles the release form, the data folder and auto-update for both platforms before G7, records code signing and the Stores as the OWNER's later call, and does **not** settle storage for large data (the storage ADR, not written). ADR-0019 is Proposed on the PR of T-420; Claude's proposals and the OWNER's questions Q1–Q12 (G1, G4 per point, K49) are in the PR body.
+  - So ADR-0019 settles the release form, the data folder and auto-update for both platforms before G7, records code signing and the Stores as the OWNER's later call, and does **not** settle storage for large data (the storage ADR, not written). ADR-0019 is Proposed on the PR of T-420; Claude's proposals and the questions Q1–Q12 for the OWNER (G1, G4 per point, G6 for the macOS key store, K49) are in the PR body.
 
 ## Next decision
 

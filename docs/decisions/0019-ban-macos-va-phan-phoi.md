@@ -1,6 +1,6 @@
 # ADR-0019: Bản macOS và phân phối hai nền tảng
 
-- **Trạng thái:** Proposed. Chờ Owner duyệt G1 (quyết định) và G4 từng điểm (Q8–Q10). Câu hỏi Q1–Q12 ở thân PR của T-420. Ký mã và Store không chốt ở đây: Owner "cân nhắc sau" (§6).
+- **Trạng thái:** Proposed. Chờ Owner duyệt G1 (quyết định), G4 từng điểm (Q8–Q10) và G6 cho kho key macOS (Q8). Câu hỏi Q1–Q12 ở thân PR của T-420. Ký mã và Store không chốt ở đây: Owner "cân nhắc sau" (§6).
 - **Ngày:** 2026-11-12
 - **Nguồn:** Owner 10–12/11/2026 trong chat ở Home PC (nguyên văn: `docs/PROJECT-STATE.md`, các mục 2026-11-10, 2026-11-11, 2026-11-12; Issue #1230 mục Bối cảnh). Kết quả thử bản Mac: Issue #1226. Phân tích: `docs/design/nen-tang-mac-va-thuong-mai-hoa.md`. Spec: `docs/design/phase-6-phan-hoi-dung-thu.md` §9.
 - **Thay một phần (khi Accepted):**
@@ -93,7 +93,7 @@ Vì vậy ADR này:
 - **Mã định danh** (`identifier` của `tauri.conf.json`, hôm nay `dev.alexh.project2c`; Claude đề xuất, Q4):
   - Mã này đặt tên thư mục dữ liệu macOS, thư mục dữ liệu Windows của bản cài, thư mục WebView2, và là mã gói (bundle ID) khi lên Mac App Store.
   - Đổi sau khi phát hành thì dữ liệu người dùng nằm lại ở thư mục cũ. Test `the_macos_data_folder_is_named_by_the_identifier_of_the_build` của `storage.rs` giữ mã và tên thư mục khớp nhau.
-  - Đề xuất: đổi một lần trước G7 sang mã theo tên sản phẩm, vd. `com.heritas.lcrm`; Owner chọn chữ. Mã thường viết theo tên miền đảo ngược, nhưng chỉ cần không trùng app khác, không cần sở hữu tên miền.
+  - Đề xuất: đổi một lần trước G7 sang mã theo tên sản phẩm. Claude gợi ý `com.heritas.lcrm`; Owner gõ chữ chốt. Mã thường viết theo tên miền đảo ngược, nhưng chỉ cần không trùng app khác, không cần sở hữu tên miền đó (Apple Developer Forums, "Code Signing Identifiers Explained"; tra 12/11/2026).
   - Lúc này đổi gần như không tốn gì: dữ liệu còn giả lập, máy đã có dữ liệu thì nhập lại backup. Key AI giữ nguyên, vì tên dịch vụ trong kho key là `Project-2C` (`KEY_SERVICE` của `ai.rs`), không theo mã định danh.
   - Giữ `dev.alexh.project2c` cũng chạy được; mã đó mang tên nội bộ "project2c" mãi mãi.
 - **Sửa ADR khác (khi Accepted):** ADR-0006 dòng "Portable" và ADR-0016 §2 dòng "Thư mục" chỉ còn đúng cho chế độ portable của Windows; nơi để dữ liệu theo điểm này.
@@ -121,7 +121,7 @@ Vì vậy ADR này:
   - cùng tên dịch vụ `Project-2C` và cùng tên người dùng của mục key như bản Windows;
   - Cài đặt → AI không đổi;
   - key không bao giờ nằm trong file dữ liệu hay backup.
-  - Nguyên tắc "key trong kho của hệ điều hành" đã qua G4 / G6 ở D-1 (07/10/2026); macOS chỉ thêm một kho.
+  - Nguyên tắc "key trong kho của hệ điều hành" đã qua G4 / G6 ở D-1 (07/10/2026). Claude coi macOS chỉ thêm một kho, nhưng kho key là việc G6: Owner duyệt G6 cùng Q8.
 - **Hệ quả của ký ad-hoc** (chưa kiểm trên Mac):
   - Keychain dạng file nhận ra app theo "yêu cầu chỉ định" (designated requirement) của chữ ký. Với chữ ký ad-hoc, yêu cầu này gắn với đúng một bản build (Apple TN3127).
   - Vì vậy mỗi bản app mới là "app khác" với Keychain. Lần đầu đọc key sau khi cập nhật, macOS hỏi mật khẩu đăng nhập ("Cho phép" / "Luôn cho phép"); "Luôn cho phép" giữ tới bản sau.
@@ -130,7 +130,7 @@ Vì vậy ADR này:
 
 ### 5. Dạng phát hành
 
-- **Owner chốt 12/11/2026:** gộp câu "portable hay bản cài" vào ADR này ("Gộp vào ADR"); dạng phát hành "không nên bị gò bó bởi yêu cầu portable file exe"; ký mã và Store để sau (§6).
+- **Owner chốt 12/11/2026:** gộp câu "portable hay bản cài" vào ADR này ("Gộp vào ADR"); ký mã và Store để sau (§6). Câu Owner dẫn tới việc này, nguyên văn: "anh có 1 chút lăn tăn về quy mô của app trên cả 2 nền tảng, nếu portable file không đủ thì có thể phát triển full app, không nên bị gò bó bởi yêu cầu portable file exe".
 
 **Windows (Claude đề xuất C+P, Q1):**
 
@@ -139,19 +139,19 @@ Vì vậy ADR này:
 | Quyền admin | Không | Không: `installMode` mặc định `currentUser`, cài vào `%LOCALAPPDATA%\<tên app>` | Như C |
 | Dữ liệu | Cạnh exe | `%LOCALAPPDATA%\<mã định danh>\` | Như C; có `Project2C-data\` cạnh exe thì dùng nó |
 | Lối tắt, gỡ cài | Không; xóa thư mục bằng tay | Lối tắt Start; gỡ ở Cài đặt → Ứng dụng của Windows; gỡ giữ dữ liệu trừ khi tích ô | Như C |
-| SmartScreen (chưa ký) | Hỏi khi mở exe tải bằng trình duyệt (NT-EX-01) | Hỏi khi mở file cài; app đã cài không mang dấu "tải từ mạng" nên không hỏi lại | Như C |
+| SmartScreen (chưa ký) | Hỏi khi mở exe tải bằng trình duyệt (NT-EX-01) | Hỏi khi mở file cài. App đã cài chắc không mang dấu "tải từ mạng" nên không hỏi lại (chưa kiểm) | Như C |
 | Tự cập nhật về sau | Không được: updater của Tauri chỉ nhận bản cài NSIS / MSI trên Windows | Có đường, không phải chuyển dữ liệu | Như C, cho bản cài |
-| Nghiệm thu tách thư mục (`C:\nghiem-thu\…`, `C:\heritas-dung-thu\`) | Như hôm nay | Mất: mỗi người dùng Windows chỉ một thư mục dữ liệu | Giữ, bằng chế độ portable |
+| Nghiệm thu tách thư mục (`C:\nghiem-thu\…`, `C:\heritas-dung-thu\`) | Như hôm nay | Mất: mỗi người dùng Windows chỉ một thư mục dữ liệu | Giữ: người nghiệm thu tạo thư mục `Project2C-data\` trống cạnh exe chạy thẳng. Dữ liệu WebView2 (ngôn ngữ, "che tên KH") vẫn chung theo người dùng Windows, như hôm nay |
 | Công sức | 0 | Code Windows (Mac-2): thư mục dữ liệu, cấu hình NSIS, CI build file cài; viết và nghiệm thu lại NT-EX | Như C, thêm một nhánh đọc thư mục cạnh exe (có test) |
 
-- **Lý do đề xuất C+P:**
+- **Lý do đề xuất C+P** (của Claude):
   - Dữ liệu còn giả lập: đổi chỗ để dữ liệu lúc này chỉ cần nạp lại seed hay nhập backup (R2-02). Sau phát hành thì phải chuyển dữ liệu thật của người dùng.
-  - "Chuẩn bị trước cho quy mô tương lai" (Owner 12/11): tự cập nhật và Store chỉ đi qua bản cài. Chọn bản cài bây giờ giữ đường đó mở mà không phải chuyển dữ liệu lần nữa.
-  - Hai nền tảng cùng một kiểu: dữ liệu ở thư mục ứng dụng của người dùng ("Data sẽ là lưu tại máy của user", Owner 12/11).
+  - Tự cập nhật và Store về sau chỉ đi qua bản cài. Chọn bản cài bây giờ giữ đường đó mở mà không phải chuyển dữ liệu lần nữa.
+  - Hai nền tảng cùng một kiểu: dữ liệu ở thư mục ứng dụng của người dùng, như macOS đã làm.
   - Chế độ portable giữ ba việc đang dùng: nghiệm thu ở thư mục riêng, chạy từ USB, và exe dùng thử cũ (`C:\heritas-dung-thu\`) vẫn đọc dữ liệu cũ.
 - **Giá của C+P:** code Windows phải mở K49 (Q11), NSIS là công cụ mới (G4, Q9), các dòng NT-EX nghiệm thu lại (K46), hướng dẫn sử dụng viết lại phần cài đặt.
 - **Giá của P (giữ như hôm nay):** không tốn gì lúc này. Muốn tự cập nhật hay lên Store sau phát hành thì phải chuyển dữ liệu thật. Hai nền tảng để dữ liệu theo hai kiểu.
-- **MSI bị loại:** `installMode` chỉ có ở NSIS. MSI (WiX) của Tauri cài cho cả máy, thường cần quyền admin, mà Office Laptop không có quyền admin. Chưa kiểm trên Office Laptop.
+- **MSI bị loại:** tài liệu của Tauri chỉ nói `installMode` (cài theo người dùng) cho NSIS. MSI cài cho cả máy thường cần quyền admin, mà Office Laptop không có quyền admin. Chưa kiểm MSI của Tauri có cài theo người dùng được không.
 - **Tải về:** bản phát hành chỉ có file cài. Exe chạy thẳng vẫn là artifact CI của mỗi commit trên `main`, dùng cho nghiệm thu và thử.
 
 **macOS (Claude đề xuất `.dmg`, Q2):**
@@ -202,14 +202,14 @@ Vì vậy ADR này:
 
 - **Nguồn Apple, tra 12/11/2026:**
   - support.apple.com/en-us/127455: "macOS 27 is compatible with any Mac with Apple silicon".
-  - support.apple.com/en-us/127255: danh sách máy chạy được macOS 27, chỉ gồm máy chip Apple; trang không nhắc máy Intel.
+  - support.apple.com/en-us/127255: danh sách máy chạy được macOS 27, theo dòng máy và năm.
   - Apple nói ở WWDC 2025 rằng macOS 26 Tahoe là bản cuối hỗ trợ máy Intel (9to5mac, 09/06/2025).
 - **Claude đề xuất (Q5):** chỉ chip Apple (arm64, như T-413).
   - Universal (arm64 + Intel) làm file chạy gần gấp đôi và build lâu hơn, mà không có máy Intel để thử.
   - Máy Intel còn chạy macOS 26 bị loại có chủ ý: bản arm64 không chạy trên Intel.
 - **Bản macOS tối thiểu (`minimumSystemVersion`, Claude đề xuất 26.0, Q5):**
-  - Hôm nay chưa đặt, nên Tauri ghi mặc định 10.13, không đúng thực tế.
-  - Lý do chọn 26: lớp giao diện Mac theo ngôn ngữ thiết kế của macOS 26 (Liquid Glass; mockup đợt a, ADR-0013 phụ lục 11/11/2026). Máy chip Apple còn ở macOS 26 vẫn mở được.
+  - Hôm nay chưa đặt, nên dùng mặc định của Tauri (10.13 theo tài liệu cấu hình; chưa kiểm trong `Info.plist` của bản build), không đúng thực tế.
+  - Lý do chọn 26: bản phân tích §3 tính dùng hiệu ứng nền cửa sổ gốc của macOS 26 (Liquid Glass, qua `window-vibrancy`, hàm chỉ có trên macOS 26; bản phân tích §10). Tối thiểu 26 thì không phải viết đường dự phòng cho macOS cũ hơn. Máy chip Apple còn ở macOS 26 vẫn mở được.
   - Đã kiểm trên máy thật: chỉ macOS 27.2.1 (#1226). macOS 26 chỉ được runner CI kiểm (macOS 26.7.2 lúc 11/11/2026: Rust, build, và e2e WebKit nếu chọn Q7); giao diện trên macOS 26 chưa kiểm trên máy thật.
   - Phương án khác: 27.0, chỉ bản đã kiểm trên máy thật; mọi máy chip Apple lên được 27. Nhưng runner đang ở 26 có thể chưa có SDK 27 để build với mức tối thiểu đó (chưa kiểm).
 
@@ -265,7 +265,7 @@ Vì vậy ADR này:
 
 ## Lý do
 
-- Một mã: mọi tính năng và bản sửa ra cả hai nền tảng cùng lúc. Bước thử cho thấy app chạy đúng trên Mac mà không phải sửa gì thêm.
+- Một mã: mọi tính năng và bản sửa ra cả hai nền tảng cùng lúc. Bước thử cho thấy app chạy đúng trên Mac; chỉ còn các việc đã biết trước (Keychain, chữ và phím theo nền tảng, đóng gói), không có chỗ hỏng mới.
 - Chốt dạng phát hành và nơi để dữ liệu trước G7, khi dữ liệu còn giả lập, là lúc đổi rẻ nhất. Sau phát hành, mỗi lần đổi chỗ là một lần chuyển dữ liệu thật.
 - Dữ liệu theo người dùng trên cả hai nền tảng đúng với cách hai hệ điều hành và updater của Tauri mong đợi. Chế độ portable giữ lại những gì portable đang làm tốt cho dự án (nghiệm thu, USB).
 - Ký mã, Store, tự cập nhật và lưu trữ khi dữ liệu lớn có điều kiện xét lại rõ ràng. Chúng không chặn v1.0 cho một người dùng trên ba máy.
@@ -283,6 +283,7 @@ Vì vậy ADR này:
 ## Nguồn ngoài (tra 12/11/2026)
 
 - Apple: <https://support.apple.com/en-us/127455>, <https://support.apple.com/en-us/127255>; WWDC 2025, macOS 26 là bản cuối cho máy Intel: <https://9to5mac.com/2025/06/09/apple-will-end-support-for-intel-macs/>
+- Apple Developer Forums, mã gói không cần tên miền mình sở hữu, chỉ cần không trùng: <https://developer.apple.com/forums/thread/811970>
 - Apple TN3127, yêu cầu chỉ định của chữ ký ad-hoc gắn với một bản build: <https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements>
 - `apple-native-keyring-store`: <https://crates.io/crates/apple-native-keyring-store>, README (`keychain` / `protected`): <https://github.com/open-source-cooperative/apple-native-keyring-store>
 - Tauri updater (chữ ký bắt buộc; Windows dùng bản cài NSIS / MSI): <https://v2.tauri.app/plugin/updater/>
