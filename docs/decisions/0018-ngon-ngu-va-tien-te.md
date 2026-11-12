@@ -23,6 +23,8 @@ Q16, bảng thuật ngữ tiếng Anh (spec §11.6): Owner xem danh sách đầy
 
 Owner duyệt lại G2 cùng ngày cho các dòng golden đổi (X19, I38, I39) và các câu §5 ở trên (chọn "Duyệt"). Các sửa khác của vòng này chỉ là chữ: tên Issue dự kiến G-01 … G-16 (spec §11.7), câu về `chi-so.md` (Hệ quả), câu ngoại lệ của migration (§7).
 
+**Sau review phiên sạch ở `831ec95`** (PASS kèm một ghi chú: luật "1.500" = 1.5 của tiền có cent, khi áp cho EUR), Owner cùng ngày chọn một quy chuẩn cho mọi tiền có cent, kể cả EUR: "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng." §5 sửa hai câu lý do (người dùng EUR kiểu châu Âu cũng viết "1.500" cho 1500) và thêm câu hướng dẫn cách nhập của ô tiền EUR; golden thêm I40 (EUR "1.500" → €1.50). Owner duyệt lại G2 cùng ngày cho dòng I40 và các câu §5 này (chọn "Duyệt").
+
 ## Bối cảnh
 
 Hôm nay app chỉ có tiếng Việt (ADR-0011) và mọi số tiền là VND. Tiền lưu bằng số nguyên đồng (`packages/domain/src/money.ts`) và viết kiểu Việt Nam: "500.000.000 ₫", "1,9 tỷ", "66,7%". Ô nhập đoán vai trò của `.` và `,` theo số chữ số đứng sau (`splitNumber`), nên "1.500" là 1500 còn "1,5" là 1,5.
@@ -130,7 +132,10 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
     - Viết liền không dấu ngăn vẫn được: "3000000".
   - **Số lẻ:**
     - Không có đơn vị, VND: không có chữ số nào sau `.`, kể cả số 0. Vì vậy "1.500" bị từ chối với VND, kèm gợi ý "1,500": hai cách hiểu 1.5 và 1500 không bao giờ lặng lẽ thành một số.
-    - Không có đơn vị, tiền có cent: `.` luôn là dấu phần lẻ; kết quả phải tròn cent, như khi có đơn vị. "1.500" là 1.5, lưu `150` ($1.50); "1.505" thì không (lẻ dưới 1 cent). Owner chốt 12/11, sau review PR #1222: "USD khác nhé, 1.500 là 1.5, còn 1,500 là 1500 USD". Thói quen viết "1.500" cho 1500 là của người dùng VND, như luật `ambiguous` dưới.
+    - Không có đơn vị, tiền có cent: `.` luôn là dấu phần lẻ; kết quả phải tròn cent, như khi có đơn vị. "1.500" là 1.5, lưu `150` ($1.50); "1.505" thì không (lẻ dưới 1 cent). Owner chốt 12/11, sau review PR #1222: "USD khác nhé, 1.500 là 1.5, còn 1,500 là 1500 USD".
+    - **EUR theo cùng luật**, dù người dùng EUR kiểu châu Âu (Đức, Ý, Tây Ban Nha…) viết "1.500" cho 1500. Gõ theo thói quen đó thì app lưu `150` (€1.50, nhỏ đi 1000 lần) mà không báo lỗi, đúng loại lỗi mà luật `ambiguous` của VND (dưới) tránh. Chỗ chặn còn lại là câu hướng dẫn cách nhập của ô tiền EUR (gạch "Chữ mẫu và dòng đọc") và dòng đọc dưới ô ("€1.50").
+      - Claude hỏi lại sau review `831ec95`, đưa hai lựa chọn: "EUR từ chối" (Claude đề xuất: "1.500" không đơn vị bị từ chối, kèm hai cách viết, như luật `ambiguous`) và "Giữ cho mọi tiền có cent". Owner không chọn cái nào mà tự gõ câu trả lời, chốt 12/11: "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng."
+      - Vì vậy sáu tiền có cent dùng một luật, có đơn vị cũng vậy: với EUR, "1.500 Mil" là 1.5 Mil như với USD (I37).
     - Có đơn vị: kết quả phải tròn đơn vị nhỏ nhất. "1.5 tỷ" được; "1.0000000001 tỷ" thì không.
   - **Đơn vị theo ngôn ngữ giao diện** (Owner chọn 12/11, Q6: "Theo ngôn ngữ giao diện"), không phân biệt hoa thường:
     - Tiếng Việt: nghìn / ngàn / k; triệu / tr; tỷ / tỉ; kèm các bản không dấu như hôm nay.
@@ -148,9 +153,10 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
     - Người dùng bấm vào gợi ý thì gợi ý mới được điền, như gợi ý năm của `parseQuickDate` (chỉ đưa ra, không tự áp). Hình chốt ở mockup.
   - **Nhóm số bằng dấu cách** ("500 000 000", hôm nay được nhận) cũng thành lỗi kèm gợi ý, để chỉ còn một luật.
   - **Chữ mẫu và dòng đọc:** ô nhập có chữ mẫu theo ngôn ngữ và tiền tệ, vd. "500 tr · 1.5 tỷ", "$1,250.50 · 250K". Dòng đọc dưới ô (`amountRead`, "500,000,000 VNĐ (500 tr)") giữ nguyên.
+    - **Ô nhập tiền EUR có câu hướng dẫn cách nhập.** Owner chốt 12/11, sau review `831ec95`: "Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng." Nội dung, vd.: `,` ngăn hàng nghìn, `.` cho phần lẻ, "1,500.00". Câu chữ, vị trí và lúc hiện chốt ở mockup G3 (spec §11.5) và i18n.
   - **Với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị, khi phần nguyên khác `0`, bị từ chối** (mã lỗi mới `ambiguous`), kèm cả hai cách viết. Ví dụ "1.500 tr" → gợi ý "1.5 tr" hay "1,500 tr".
     - Lý do: hôm nay "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần, đúng loại lỗi mà Phương án 6 tránh.
-    - Luật này chỉ áp cho VND, ở cả hai ngôn ngữ ("1.500 Mil"), vì thói quen viết "1.500" là của người dùng VND. Tiền có cent vẫn đọc "1.500 Mil" là $1,500,000.00.
+    - Luật này chỉ áp cho VND, ở cả hai ngôn ngữ ("1.500 Mil"). Nó giữ cho cách đọc và dữ liệu cũ của app, vốn đều là VND (hôm nay "1.500 tr" là 1,500 tr), không lặng lẽ đổi nghĩa. Tiền có cent là mới, chưa có dữ liệu hay cách đọc cũ nào trong app. Người dùng EUR kiểu châu Âu cũng quen viết "1.500" cho 1500, nhưng Owner chọn một quy chuẩn như USD, kèm câu hướng dẫn cách nhập (gạch "Không có đơn vị, tiền có cent" ở trên). Tiền có cent vẫn đọc "1.500 Mil" là $1,500,000.00 (€1,500,000.00 với EUR).
     - Phần nguyên `0` không nhập nhằng: "0.500 tr" là 0.5 tr theo cả cách đọc hôm nay (`splitNumber` đọc một dấu đứng sau `0` là dấu phần lẻ) lẫn luật mới, nên được nhận. Từ chối thì gợi ý thứ hai, "0,500 tr", lại sai luật nhóm (nhóm đầu không bắt đầu bằng 0). Owner chọn 12/11, sau review PR #1222: "Nhận là 0.5 tr".
     - Owner chọn 12/11 (Q17): "Từ chối, đưa hai cách viết".
 - Ba trường tiền của KYC (`annualIncome`, `totalAssets`, `liabilities`) lưu chữ người dùng gõ; dòng đọc dưới các trường này (`kycAmountRead`) dùng cùng hàm đọc. Chữ đã lưu không đổi.

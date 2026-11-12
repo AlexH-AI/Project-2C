@@ -416,6 +416,7 @@ Claude đề xuất, Owner trả lời từng điểm ngày 12/11/2026 (§11.3; 
 - **Ô nhập:** ADR §5.
   - Cách gõ sai luật bị từ chối, kèm gợi ý viết lại; người dùng bấm gợi ý thì mới điền.
   - Không đơn vị: VND không có chữ số nào sau `.` ("1.500" bị từ chối, gợi ý "1,500"); tiền có cent đọc `.` là phần lẻ, kết quả phải tròn cent ("1.500" là $1.50, Owner chốt 12/11 sau review PR #1222).
+  - EUR theo cùng luật với USD, dù người dùng EUR kiểu châu Âu viết "1.500" cho 1500: "1.500" là €1.50, không có lỗi `ambiguous`. Ô nhập tiền EUR có câu hướng dẫn cách nhập (Owner chốt 12/11 sau review `831ec95`, dưới bảng §11.3).
   - Với VND, "1.500 tr" (một `.` + đúng 3 chữ số + đơn vị) bị từ chối kèm hai cách viết, vì hôm nay nó là 1,500 tr. Phần nguyên `0` không tính: "0.500 tr" là 0.5 tr (Owner chọn 12/11 sau review PR #1222).
   - Đơn vị theo ngôn ngữ giao diện (Owner chọn 12/11): tiếng Việt nghìn / k / tr / tỷ và "1tr5"; English K / Mil / Bil.
 - **DB mới / cũ:** DB mới là lúc thư mục dữ liệu chưa có file (nhánh `stored` của `app-data.ts`). Wizard dựng DB riêng và lưu một lần. Bản web giữ dữ liệu mẫu VND, không qua wizard. ADR §7.
@@ -461,6 +462,13 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
 - Tên Issue dự kiến của phần G: chọn "G-01 … G-16", để khỏi lẫn với tên cổng G1–G8 (§11.7).
 - Hỏi duyệt lại G2 các dòng golden đổi (X19, I38, I39) và câu ADR §5: chọn "Duyệt".
 
+**Sau review phiên sạch ở `831ec95`** (PASS kèm một ghi chú không chặn: luật "1.500" = 1.5 của tiền có cent, khi áp cho EUR), Claude hỏi cùng ngày 12/11/2026 trong chat ở Home PC: "ADR-0018 §5 / golden I38: với tiền có cent, gõ "1.500" không đơn vị được nhận là 1.5 (anh chốt cho USD). Người dùng EUR kiểu châu Âu (Đức, Ý, Tây Ban Nha…) viết "1.500" nghĩa là 1500, nên sẽ bị lưu €1.50 (nhỏ đi 1000 lần). Anh muốn áp luật thế nào cho EUR?" Hai lựa chọn: "EUR từ chối (Recommended)" và "Giữ cho mọi tiền có cent". Owner tự gõ câu trả lời, nguyên văn:
+
+- "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng."
+  - EUR theo đúng luật của USD: "1.500" lưu `150` (€1.50, I40). Không có lỗi `ambiguous` cho EUR.
+  - Ô nhập tiền EUR có câu hướng dẫn cách nhập; câu chữ, vị trí và lúc hiện chốt ở mockup G3 (§11.5) và i18n. ADR §5.
+- Hỏi duyệt lại G2 dòng golden mới I40 và các câu ADR §5 vừa sửa: chọn "Duyệt".
+
 ### 11.4 Thứ tự, cổng
 
 - **Cổng:**
@@ -481,6 +489,7 @@ Issue docs riêng, hoặc ghép với đợt f (hộp hủy HĐ):
 - wizard (ngôn ngữ → tiền tệ → nguồn dữ liệu, kèm trạng thái lỗi khi file backup khác tiền tệ);
 - Cài đặt: Ngôn ngữ, Tiền tệ chỉ xem, nút Thiết lập lại từ đầu; hộp xác nhận thiết lập lại;
 - ô nhập tiền có chữ mẫu và gợi ý cách gõ đúng;
+- câu hướng dẫn cách nhập của ô tiền EUR (Owner chốt 12/11, §11.3 dưới bảng; vd. `,` ngăn hàng nghìn, `.` cho phần lẻ, "1,500.00"): câu chữ, vị trí, lúc hiện;
 - một hai màn tiếng Anh với VND và với USD;
 - đổi số của đợt a (`components.html`, `app-shell.html`) theo luật mới.
 
@@ -741,7 +750,7 @@ Tên Issue viết "G-" và hai chữ số (G-01 … G-16; Owner chọn 12/11/202
 |---|---|---|---|
 | G-01 | Cơ chế i18n hai ngôn ngữ: `t()` theo ngôn ngữ, lưu theo máy, tải lại khi đổi, số nhiều tiếng Anh, `en.ts` dịch dần với test liệt kê khóa thiếu (chưa cho chọn English); sửa `.claude/rules/i18n-ui.md` và dòng i18n của `CLAUDE.md`; thuật ngữ vào `CONTEXT.md` | med | A4 |
 | G-02 | `domain`: kiểu tiền chung, bảng tiền tệ, định dạng đầy đủ / gọn / chênh lệch, đọc ô nhập chặt kèm gợi ý, số đếm / phần trăm / cỡ file theo dấu mới; fixture của golden `so-va-tien-te.md` | med | A4 |
-| G-03 | App dùng định dạng mới ở mọi chỗ hiện / nhập số (chữ mẫu, gợi ý dưới ô); mọi số viết kiểu Việt của golden `chi-so.md` (phần trăm "66,7%", tiền theo triệu nhóm bằng `.` như "1.500"; số lưu không đổi); e2e đổi chữ | med | G-02 |
+| G-03 | App dùng định dạng mới ở mọi chỗ hiện / nhập số (chữ mẫu, gợi ý dưới ô, câu hướng dẫn cách nhập của ô tiền EUR); mọi số viết kiểu Việt của golden `chi-so.md` (phần trăm "66,7%", tiền theo triệu nhóm bằng `.` như "1.500"; số lưu không đổi); e2e đổi chữ | med | G-02 |
 | G-04 | Khóa `currency`: migration ghi VND (ngoại lệ có chủ ý của R2-02, ADR-0018 §7), luật nhập backup (khóa, trần theo tiền tệ, `BACKUP_CURRENCY_MISMATCH`), `isFee` / `requireAmount` theo tiền tệ, Nạp lại mang khóa, app truyền tiền tệ vào định dạng | med | G-03 |
 | G-05 | Dữ liệu mẫu VND viết lại theo dấu mới (seed, AI giả lập) | low | G-03 |
 | G-06 | Bộ dữ liệu mẫu tiếng Anh cho tiền có cent; Nạp lại theo tiền tệ; AI giả lập với bộ tiếng Anh | med | G-04 |

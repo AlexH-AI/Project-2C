@@ -3,6 +3,8 @@
 > **Trạng thái: Owner duyệt G2 ngày 12/11/2026** ("Duyệt G1 và G2"; T-418, #1221, PR #1222). Các dòng theo câu trả lời Q1–Q15, Q17 của Owner cùng ngày (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.3). Dòng nào ứng với một câu hỏi thì ghi số câu (vd. "Q3").
 >
 > **Sửa sau review PR #1222** (12/11/2026, Owner chọn "Sửa hết trên PR này"): X19 đổi ca, thêm I38, I39, luật `ambiguous` thêm điều kiện phần nguyên khác `0` (§6.2). Owner duyệt lại G2 các dòng này cùng ngày (chọn "Duyệt").
+>
+> **Sửa sau review `831ec95`** (12/11/2026): thêm I40, EUR "1.500" → €1.50, một quy chuẩn cho mọi tiền có cent như USD. Owner: "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng." Câu hướng dẫn của ô tiền EUR chốt ở mockup và i18n, không ở golden. Owner duyệt lại G2 dòng I40 cùng ngày (chọn "Duyệt").
 
 Nguồn luật: ADR-0018 §3–§6. Sau khi Owner duyệt, bộ này thành fixture `packages/domain/src/golden/` (Issue G-02 của spec §11.7, khớp 1–1 theo mã dòng) và là test bắt buộc của hàm định dạng / đọc trong `packages/domain`. **Không sửa để "cho xanh"**: muốn đổi phải qua Owner.
 
@@ -197,6 +199,7 @@ Cột **Ngôn ngữ**: "vi" / "en" là chỉ ngôn ngữ đó; "cả hai" là đ
 | I37 | `1.500 Mil` | USD | en | `150000000` | $1,500,000.00 | luật "một `.` + đúng 3 chữ số" chỉ áp cho VND (Q17) |
 | I38 | `1.500` | USD | en | `150` | $1.50 | tiền có cent: `.` luôn là phần lẻ, kết quả tròn cent; khác X05 của VND (Owner 12/11, sau review) |
 | I39 | `0.500 tr` | VND | vi | `500000` | 500,000 VNĐ | phần nguyên `0`: không nhập nhằng, hôm nay cũng đọc là 0.5 tr (Owner 12/11, sau review) |
+| I40 | `1.500` | EUR | en | `150` | €1.50 | một quy chuẩn như USD (I38), dù kiểu châu Âu viết "1.500" cho 1500; ô nhập EUR có câu hướng dẫn cách nhập (Owner 12/11, sau review `831ec95`) |
 
 ### 6.2 Cách gõ bị từ chối
 
