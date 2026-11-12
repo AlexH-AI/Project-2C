@@ -10,7 +10,7 @@ Closes #
 
 ## Ghi chú OPEN liên quan
 
-<!-- `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng, `L<dòng>` + đầu mục → đã sửa, hoặc để lại + lý do (ngoài phạm vi, vượt cỡ, cần cổng G…, chỉ ghi lại). Mục nhãn [sau v1.0] không gộp tới khi phát hành v1.0: ghi "để lại (K49)". Không có mục nào: ghi "Không có". Thiếu dòng là mục chặn của review; mục đã sửa chuyển sang RESOLVED ở PR sổ sau review (T-261). -->
+<!-- `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng, `L<dòng>` + đầu mục → đã sửa, hoặc để lại + lý do. Mục mang nhãn của Issue này ([T-… #<issue>], tìm cả mục không trùng file: `rg -n "#<issue>\]" docs/state/review-notes.md`) phải đã sửa; vượt cỡ hay cần cổng G… thì ghi nhãn đích mới cùng loại (PR sổ đổi nhãn). Mục mang nhãn việc khác: "để lại → <nhãn>". Không có mục nào: ghi "Không có". Thiếu dòng là mục chặn của review; mục đã sửa chuyển sang RESOLVED ở PR sổ sau review (T-261). -->
 
 -
 
@@ -30,7 +30,7 @@ Closes #
 
 ## Cỡ so ngân sách
 
-<!-- Dòng thêm + xóa của `git diff --numstat -M origin/main...HEAD`, xếp bằng `classifyFile` của `tools/size-report-core.mjs` (khối `#[cfg(test)]` của Rust là test; tài liệu, file sinh tự động không tính). Ngân sách là khoảng thì so với cận trên. -->
+<!-- Dòng thêm + xóa của `git diff --numstat -M origin/<base>...HEAD` (<base> là base của PR, như review tính), xếp bằng `classifyFile` của `tools/size-report-core.mjs`; tài liệu, file sinh tự động không tính. Tính tay: file Rust tách theo hunk (dòng đổi trong khối `#[cfg(test)]` là test, còn lại là sản phẩm); file đổi tên lấy đường dẫn mới. Ngân sách là khoảng thì so với cận trên; ngân sách thiếu số của một loại (hay bằng 0) thì không so loại đó, chỉ ghi số thực tế (skill review-pr §3.A). -->
 
 - Sản phẩm: … / ngân sách … (… lần)
 - Test: … / ngân sách … (… lần)

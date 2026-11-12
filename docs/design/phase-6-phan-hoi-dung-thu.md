@@ -48,7 +48,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 
 ## 2. Phạm vi, thứ tự, cổng
 
-- Mọi ý ở §1 làm **trước v1.0**. Owner mở đóng băng code K49 cho đúng các việc này (`PROJECT-STATE.md`, mục 2026-11-10). Mục [sau v1.0] của sổ ghi chú review vẫn để lại (K49), trừ mục Owner kéo vào.
+- Mọi ý ở §1 làm **trước v1.0**. Owner mở đóng băng code K49 cho đúng các việc này (`PROJECT-STATE.md`, mục 2026-11-10). Ghi chú OPEN của sổ ghi chú review cũng làm trước v1.0, mỗi mục ở việc mang nhãn đích của nó (Owner quyết 12/11/2026, §12).
 - G7 chờ tới khi Owner dùng thử exe mới có đủ các phần dưới. Dòng nghiệm thu của màn / hành vi đổi được nghiệm thu lại (K46).
 - Mỗi phần đi một vòng: thiết kế với Owner → mục spec trong file này → mockup / golden khi phần đó cần → Issue. Owner 10/11 dừng ở mức kế hoạch: Issue chỉ tạo khi Owner bảo, sau vòng ý tưởng UI/UX (§8). Thứ tự làm cả đợt: §10.
 
@@ -57,7 +57,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | **A.** Đổi RE → RM | 1 | G2, G3 (duyệt cùng phần A), G5 (PR của A6) | 1 | Đã duyệt (§3) |
 | **B.** HĐ hủy, tỷ lệ hủy | 5, 6 | G2, G3 | 2 | Nội dung đã duyệt (§4); chờ golden và mockup |
 | **C.** Tìm KH, tìm RM; danh sách KH của một RM | 2; tin thêm về "Team & nhân sự" | G3 | 3 | Nội dung đã chốt (§5); chờ mockup |
-| **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3, cùng đợt mockup với C | 3 | Chờ mockup (§7.2) |
+| **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3: mockup đợt a (vỏ app) | 3 | Owner duyệt G3 ở đợt a ngày 11/11 (§7.2) |
 | **D.** Forecast | 4 | G2, G3 | 4 | Nguồn số tiền đã chốt (§6.1); còn 6 điểm mở (§6.2) |
 | **E.** Làm lại Báo cáo trên app và file Excel | 3; tin thêm về "báo cáo" | G3: mockup cả màn Báo cáo lẫn file Excel | 5 | Chờ vòng ý tưởng UI/UX và mockup (§7.1) |
 | **G.** Song ngữ Việt / Anh, tiền tệ chọn một lần, dấu kiểu Excel | ngoài §1: Owner 11–12/11 | G1, G2 (T-418), G3 (wizard, Cài đặt), G5 (cùng A6) | sau A; dịch làm cuối | ADR-0018 và golden: Owner duyệt G1, G2 ngày 12/11 (§11) |
@@ -180,7 +180,7 @@ B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm ch�
 - **Ô tìm KH** (icon kính lúp) trên màn Khách hàng. Gõ không cần dấu, không phân biệt hoa thường ("nguyen van hu" ra "Nguyễn Văn Hùng"), tìm cả mã KH. Tên bắt đầu bằng chữ đã gõ xếp trước; tối đa khoảng 8 gợi ý, mỗi dòng "Nguyễn Văn Hùng – RM Hoàng Văn Tùng – Sao Mai". Chọn gợi ý → hồ sơ KH. Tìm trong mọi KH, không giới hạn theo góc nhìn. Dùng lại cách so chữ đã có (`searchText` của `domain`).
 - **Ô tìm RM** ở Team & nhân sự: gõ tên ra "RM Nguyễn Văn Hùng – Sao Mai". Chọn một RM (từ ô tìm, hoặc bấm tên RM trong danh sách team) → hiện **danh sách KH của RM**; bấm một KH → hồ sơ KH.
 - **Danh sách KH của một RM** = KH do RM đó **phụ trách** (RM ghi trên hồ sơ KH), như màn Khách hàng ở góc nhìn RM đó (Owner chọn "RM phụ trách"). Cột: KH, nhóm, lần gặp gần nhất, lịch hẹn sắp tới, số HĐ. Cách bị bỏ: KH có lịch hẹn với RM (khác ở KH chưa có lịch, KH đã chuyển RM, buổi RM khác đi gặp thay).
-- Bố cục (chỗ đặt ô tìm, khung danh sách KH của RM) chốt ở mockup G3, cùng đợt với F. Mockup đợt b (`docs/design/mockups/search-rm-team.html`, T-417 #1217, Owner duyệt G3 12/11/2026) vẽ phần này: ô tìm KH ở màn Khách hàng và ô lệnh ⌘K / Ctrl K, ô tìm RM ở Team & nhân sự, trang RM có danh sách KH phụ trách (gạch "Mockup đợt b" ở §8).
+- Bố cục (chỗ đặt ô tìm, khung danh sách KH của RM) chốt ở mockup G3 đợt b. Mockup đợt b (`docs/design/mockups/search-rm-team.html`, T-417 #1217, Owner duyệt G3 12/11/2026) vẽ phần này: ô tìm KH ở màn Khách hàng và ô lệnh ⌘K / Ctrl K, ô tìm RM ở Team & nhân sự, trang RM có danh sách KH phụ trách (gạch "Mockup đợt b" ở §8).
 - Issue dự kiến (chưa tạo): C1 tìm KH · C2 tìm RM và danh sách KH của RM.
 
 ## 6. Phần D — Forecast
@@ -215,7 +215,7 @@ B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm ch�
 
 ### 7.2 F — Icon cho Cài đặt
 
-- Icon cho ba mục Dữ liệu, AI, Thùng rác; cùng đợt mockup với C, kèm icon cho mục Forecast trên thanh bên và icon ô tìm.
+- Icon cho ba mục Dữ liệu, AI, Thùng rác, kèm icon cho mục Forecast trên thanh bên và icon ô tìm. Vẽ ở mockup đợt a (vỏ app, `docs/design/mockups/app-shell.html`), Owner duyệt G3 ngày 11/11/2026, chọn ô màu cho ba icon Cài đặt ("Kiểu A ô màu", §8 gạch "G3 đợt a"); C vẽ ở đợt b.
 
 ## 8. Vòng ý tưởng UI/UX (đề xuất, trước mockup)
 
@@ -344,7 +344,12 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 1. **Thử trên Mac (spike):** build bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Sửa tối thiểu để chạy được (M2, M3, M4); bản Windows không đổi. Chi tiết: `nen-tang-mac-va-thuong-mai-hoa.md` §9. Owner 10/11 chọn chung mã Tauri: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp".
 2. **ADR "Hỗ trợ macOS"** (G1): nơi để dữ liệu, kho key, ký hay không, cách phát hành; G4 cho crate Keychain và (nếu ký) Apple Developer.
-3. **Issue chuyển nền tảng** (M1–M9), chạy song song A–F vì chủ yếu đụng vỏ Rust, CI và chữ theo nền tảng.
+3. **Issue chuyển nền tảng** (M1–M9), xen kẽ với các Issue A–G theo luật song song theo file (Owner hỏi 12/11/2026, Claude trả lời; `PROJECT-STATE.md` mục 2026-11-12):
+   - hai Issue chạy song song chỉ khi không chung file;
+   - Issue Mac chỉ sửa phần Rust phía Mac xen kẽ được;
+   - M7, M8 (sửa `vi.ts`) xếp sau A1 / G-01;
+   - phần Rust của ADR lưu trữ (đề xuất, chờ Owner) không chạy cùng Issue Mac sửa `storage.rs`;
+   - mỗi lần merge một PR code, PR đang mở kia chạy `gh pr update-branch` → CI → review lại.
 4. **Phát hành:** v1.0 cho cả hai cùng lúc (Owner 10/11: "bản Mac phát hành cùng lúc với bản windows").
 
 ### 9.4 Câu hỏi chờ Owner
@@ -358,15 +363,12 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 ## 10. Thứ tự đề xuất của cả đợt
 
-1. Vòng ý tưởng UI/UX (§8); thử bản macOS (§9.3 bước 1) chạy song song, khi Owner bảo tạo Issue.
-2. Chốt: các điểm mở của D (§6.2), mockup B–F, golden B và D, ADR macOS.
-3. Owner bảo "ra issue": A → B → C / F → D → E; Issue macOS chạy song song.
-4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → G7 → phát hành v1.0 cho cả hai.
+Thứ tự dưới (bước 2, 3) do Claude đề xuất ngày 12/11/2026 (T-419, #1227); Owner duyệt G1 cùng ngày, trong PR #1228: "Duyệt G1". Nó thay thứ tự trước đó (A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16, G-06 … G-11 chạy song song, Issue macOS chạy song song) bằng một chuỗi có Issue dọn sổ (§12) và luật song song theo file (§9.3 bước 3).
 
-Phần G (song ngữ, tiền tệ; §11) thêm vào thứ tự trên:
-
-- Bước 2 có thêm ADR-0018 và golden số / tiền (T-418), duyệt trước golden D và mockup đợt c–e. Golden D và các đợt đó viết số theo luật mới.
-- Bước 3 thành: A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16. G-06 … G-11 chạy song song từ sau G-04 / G-01. Chi tiết: §11.4; tên Issue dự kiến: §11.7.
+1. Vòng ý tưởng UI/UX (§8). Thử bản macOS (§9.3 bước 1): bản thử T-413 đã merge; Owner thử theo Issue #1226.
+2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B → mockup đợt c → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F, Mac). ADR macOS viết sau bước thử. ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
+3. Owner bảo "ra issue": DS-1 → A1–A7 → DS-2 → G-01 … G-05 → vỏ app → B1–B3 → DS-3 → C1 / C2, F → D → E → DS-4 → G-06 … G-11 → G-12 … G-16. Issue Mac xen kẽ theo luật song song theo file (§9.3 bước 3). Mỗi Issue gộp các mục sổ mang nhãn đích của nó (§12). Chi tiết phần G: §11.4; tên Issue dự kiến: §3.6, §4.6, §5, §11.7, §12.2.
+4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → đóng phase → G7 → phát hành v1.0 cho cả hai.
 
 ## 11. Phần G — Song ngữ Việt / Anh và tiền tệ (Owner duyệt G1, G2 ngày 12/11/2026)
 
@@ -477,8 +479,8 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
   - Không có G4: không thêm dependency nào, kể cả thư viện số hay `Intl` polyfill.
 - **Thứ tự Issue code** (§11.7), tất cả sau A, vì A đổi khóa chuỗi và tên trong code:
   1. G-01 … G-05: cơ chế i18n, kiểu tiền và định dạng mới, khóa tiền tệ, dữ liệu mẫu VND. Làm trước B, để chuỗi và số tiền mới của B–E viết một lần bằng cách mới.
-  2. B → C / F → D → E như §10.
-  3. G-06 … G-11 chạy song song với B–E: bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
+  2. B → C / F → D → E như §10 bước 3: giữa B và C có Issue dọn sổ DS-3; vỏ app và DS-2 đứng trước B, DS-4 sau E.
+  3. G-06 … G-11 sau E và DS-4 (§10 bước 3; Owner duyệt G1 ngày 12/11/2026): bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
   4. G-12 … G-16 (các lượt dịch) làm cuối, sau E, vì B–E còn thêm chuỗi. Issue dịch cuối mới mở lựa chọn English trong Cài đặt.
 - Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417, #1223) đã vẽ theo luật mới ("1.38 tỷ", "16.7%", "3,000,000 VNĐ" trong `search-rm-team.html`).
 
@@ -760,4 +762,50 @@ Tên Issue viết "G-" và hai chữ số (G-01 … G-16; Owner chọn 12/11/202
 | G-10, G-11 | Gom chuỗi tiếng Việt ngoài `vi.ts` về i18n (hai Issue theo vùng code) | low | G-01 |
 | G-12 … G-16 | Các lượt dịch theo nhóm màn: vỏ, Tổng quan, Forecast · Lịch hẹn · Khách hàng, hồ sơ, KYC, AI · Báo cáo, Team · Cài đặt, lỗi, Thùng rác, wizard. Issue cuối mở lựa chọn English | low | G-10, G-11, E |
 
-Ngoài bảng: `numFmt` theo tiền tệ của file Excel làm trong E; ngôn ngữ trả lời của AI làm trong A6; ngôn ngữ của gói macOS làm ở một Issue Mac. Cả phần G ước 16 Issue.
+Ngoài bảng: `numFmt` theo tiền tệ của file Excel làm trong E; ngôn ngữ trả lời của AI làm trong A6; ngôn ngữ của gói macOS làm ở một Issue Mac. Mục sổ ghi chú nhãn `[G-03]` về các chuỗi i18n ghi cứng VND hay dạy luật nhập cũ (`apps/desktop/src/i18n/vi.ts`, review PR #1222): G-03 sửa các câu dạy cách gõ; câu lỗi trần theo tiền tệ (`error.AMOUNT_TOO_LARGE`, cần một chỗ điền trần) làm cùng G-04, nơi trần theo tiền tệ. Cả phần G ước 16 Issue.
+
+## 12. Sổ ghi chú review: nhãn đích và Issue dọn sổ (Owner quyết 12/11/2026, duyệt G1 cùng ngày)
+
+Owner 12/11/2026, chat ở Home PC: "Anh không muốn để lại sau 1.0 vì sổ open sẽ nhiều lên sau mỗi lần review, vì vậy cái nào gộp vào cùng loại thì em cho vào để làm." Mỗi mục OPEN của `docs/state/review-notes.md` mang đúng một **nhãn đích**, là việc cùng loại sẽ sửa nó, và mọi mục làm trước v1.0 (ADR-0001 phụ lục M14; luật ở đầu mục OPEN của sổ). Danh sách tên đích, bảng ghép 90 mục, DS-1…DS-4 và thứ tự §10 do Claude đề xuất (T-419, #1227); Owner duyệt G1 ngày 12/11/2026, trong PR #1228: "Duyệt G1".
+
+### 12.1 Tên đích
+
+Nhãn của một mục là `[T-… #…]` (Issue đang mở sẽ sửa mục) hay một tên dưới đây (việc chưa có Issue). Khi tạo Issue cho việc đó, PR sổ (không cần review) đổi nhãn các mục của nó thành `[T-… #…]`.
+
+| Tên đích | Việc |
+|---|---|
+| A1–A7 | Issue dự kiến của phần A (§3.6) |
+| B1–B3 | Issue dự kiến của phần B (§4.6) |
+| C1, C2 | Issue dự kiến của phần C (§5) |
+| G-01 … G-16 | Issue dự kiến của phần G (§11.7) |
+| DS-1 … DS-4 | Issue dọn sổ (§12.2) |
+| golden B | golden của phần B trong `docs/golden/chi-so.md` (§4.5), Owner duyệt G2 |
+| đợt c … đợt g | mockup G3 các đợt c–g (§8); đợt f gồm cả mockup phần G (§11.5) |
+| vỏ app | Issue code của mockup đợt a: vỏ app hai nền tảng, bảng thành phần, token mới (§8). Bảng Issue dự kiến viết sau (§10 bước 2) |
+| D, E, F | Issue code của phần D, E, F; bảng Issue dự kiến viết sau (§10 bước 2) |
+| Mac | Issue Mac sau bước thử (§9.3; Issue #1226) |
+| đóng phase | PR đóng Phase 6: số đo `docs/metrics/phase-6.md`, review đóng phase |
+| G7 | nhãn chờ đã dùng từ 23/10/2026: mục chặn phát hành chờ bước G7 |
+
+### 12.2 Issue dọn sổ dự kiến (chưa tạo)
+
+Mục sổ không thuộc việc dự kiến nào ở §12.1 gom theo loại thành bốn Issue. Số mục tính @`2f972e4` theo bảng ghép của Issue #1227.
+
+| Issue | Nội dung | Mục | Rủi ro | Bị chặn bởi | Chỗ trong thứ tự (§10 bước 3) |
+|---|---|---|---|---|---|
+| DS-1 | Công cụ, CI, test, tài liệu review: hook gợi ý review, `tools/`, cấu hình ESLint / Vitest, hàm e2e chung, ca hợp đồng capability, workflow, `docs/reviews/**`, khối script của kế hoạch deep review | 14 | med (công cụ pipeline, CI) | DS-0 (#1227) | đầu tiên, trước A1. Đụng công cụ pipeline: K49 mở cho DS-1 ngày 12/11/2026 (ADR-0001 M14); chỉ làm khi `auto-issues` không chạy |
+| DS-2 | Dữ liệu, đồng hồ: `packages/db`, `packages/domain`, hôm nay của app (`apps/desktop/src/data/today.ts`); phần lớn là test và chú thích | 10 | low | A4 | sau A1–A7 (A4 đổi tên `re_id` trong cùng file) |
+| DS-3 | Hộp thoại và màn Lịch hẹn: 6c / 6f, hộp đặt / dời lịch, người phối hợp, báo lỗi trong hộp, e2e kết quả cuộc gặp | 12 | low | G-03 | sau vỏ app và B1–B3, trước C1 / C2 (G-03 đổi cùng hộp thoại) |
+| DS-4 | KH, KYC, Thùng rác: tên truy cập, dòng thời gian KYC, câu lỗi chuyển nhóm, khung AI | 4 | low | A4 | sau E, trước G-06 … G-16 (chuỗi đổi xong trước các lượt dịch) |
+
+DS-1 (14 mục) và DS-3 (12 mục) có thể phải tách đôi theo trần cỡ khi viết Issue. Mỗi Issue dọn sổ là Issue sửa ghi chú của sổ: có mục "Ngân sách" và "Quét cùng mẫu" (skill `review-pr` §3.A).
+
+### 12.3 Lưu ý khi viết Issue, theo bảng ghép
+
+- `[DS-1]`: DR6-205 chỉ thêm test, kể cả cho nhánh regex G5; không đổi G5. DR6-208 chạm rào "không tự sửa" của `auto-issues` (K45): hỏi Owner trước. DR6-211, phần bộ quét: đổi job build exe của CI.
+- `[A6]`: DR6-212 sửa golden / ADR đã duyệt: Owner chốt cách ghi. Hai mục của review PR #1149 (`packages/ai/src/blocklists.ts`, `docs/design/phase-5-prompts.md`) là G5. `[A7]`: mục R7 của eval 09/11 cân nhắc khi sửa prompt (G5).
+- `[G-06]`: DR6-198 thêm luật cho Mock trích xuất, là hành vi mới.
+- `[C2]`: DR6-185 (hai RM trùng họ tên trong một team) cần Owner chọn: nhãn phân biệt khi trùng, hay cấm tên trùng trong một team (luật mới, G2).
+- `[B1]`: các mục của `docs/design/state-machines.md` làm khi B1 cập nhật máy trạng thái HĐ (§4.5).
+- `[G-03]`: câu lỗi trần theo tiền tệ làm cùng G-04 (§11.7, đoạn dưới bảng).
+- `[đợt f]`: chữ "Lúc này" còn sót ở `docs/design/mockups/app-shell.html` sửa khi vẽ đợt f (Owner đã đổi tên thành "Lưu ý" ở G3 đợt b).

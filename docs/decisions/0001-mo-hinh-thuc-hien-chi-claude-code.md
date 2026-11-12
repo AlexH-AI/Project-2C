@@ -211,3 +211,15 @@ Thêm **lượt 6** của deep review Phase 1–6, lượt deep review toàn b�
 - WorkBuddy không phải OpenCode, nên lượt 6 không là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
 
 Phần Owner chọn cùng G1 (chi tiết tiêu chí và đóng băng, ba phiên chủ đề, cách chạy đợt 2, chi phí WorkBuddy, T-386 cho `review-pr`, T-387 cho `dot2.mjs`, số đo): `docs/process/deep-review-phase-1-6.md` §L6.11. Spec Phase 6 §1, §6 sửa theo. Owner duyệt G1 ngày 07/11/2026 trong chat (PR #1118): "Chọn như ghi" cho đề xuất 5, 6, 8–12; đề xuất 7 Owner đổi cùng ngày (không ultracode / Workflow, subagent chỉ Sonnet 5.5 / Opus 5.5 mức `xhigh`).
+
+## Phụ lục — sổ ghi chú review theo nhãn đích, bỏ [sau v1.0] (M14 — Accepted G1, Owner quyết 12/11/2026 · Issue #1227)
+
+Owner 12/11/2026, chat ở Home PC: "Anh không muốn để lại sau 1.0 vì sổ open sẽ nhiều lên sau mỗi lần review, vì vậy cái nào gộp vào cùng loại thì em cho vào để làm."
+
+- **Sổ ghi chú review không còn nhãn [sau v1.0].** Mỗi mục OPEN của `docs/state/review-notes.md` có đúng một **nhãn đích**, là việc cùng loại sẽ sửa nó: `[T-… #…]` (Issue đang mở) hay `[<tên việc>]` (việc chưa có Issue; tên lấy từ danh sách tên đích của spec `docs/design/phase-6-phan-hoi-dung-thu.md` §12, gồm các Issue dọn sổ DS-1…DS-4). **Mọi mục làm trước v1.0**; chỉ Owner chuyển một mục sang ACCEPTED (không sửa).
+- **Thay phần này của M13:** câu "Low khác và Nit ghi sổ với nhãn [sau v1.0], không sửa trước G7" ở gạch "Tiêu chí xong chốt trước khi chạy", và luật K49 đi kèm (tới v1.0 task không gộp mục [sau v1.0], PR ghi "để lại (K49)"). Thân M13 giữ nguyên làm lịch sử. Thước mức §4.3 và trục §4.1 của K48 vẫn dùng, để xếp thứ tự: Medium trở lên và Low ở trục D, S, G làm trước.
+- **Cách làm:** task gộp mọi mục mang nhãn của mình (tính vào cỡ); mục "Trùng file" mang nhãn việc khác thì PR ghi "để lại → <nhãn>"; mục vượt cỡ hay cần cổng đổi nhãn sang việc khác cùng loại, không bỏ trống. Review đề xuất nhãn đích cho mỗi ghi chú không chặn (skill `review-pr` §4); `auto-issues` gắn nhãn theo đề xuất đó (§3.5) và gom sổ theo nhãn (§3.6).
+- **K49 cho công cụ pipeline:** Claude hỏi "DS-0 và DS-1 phải sửa công cụ pipeline (skill review-pr / auto-issues, hook, tools/). HANDOFF đang ghi K49 cấm phần này. Anh có mở K49 cho hai Issue này không? Em chỉ làm chúng khi pipeline auto-issues không chạy". Owner 12/11: "Đồng ý, có làm". K49 mở cho công cụ pipeline ở DS-0 (T-419, #1227) và DS-1, chỉ làm khi pipeline `auto-issues` không chạy. Ngoài phần này, đóng băng K49 vẫn như `docs/PROJECT-STATE.md` ghi.
+- **G1:** danh sách tên đích, bảng ghép 90 mục OPEN (Issue #1227), DS-1…DS-4 và thứ tự spec §10 do Claude đề xuất. Owner duyệt G1 ngày 12/11/2026, trong PR #1228 của T-419: "Duyệt G1".
+
+`CLAUDE.md` (Mô hình thực hiện; "Quy trình một task" bước 2, bước 4), `docs/process/REVIEW-CHECKLIST.md`, skill `review-pr` §3.A, §4, skill `auto-issues` §3.5, §3.6, mẫu Issue / PR, `docs/agents/issue-tracker.md`, `.claude/commands/session-start.md`, `tools/notes-for.mjs` và đầu sổ ghi chú sửa theo phụ lục này.
