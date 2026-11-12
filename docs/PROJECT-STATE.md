@@ -317,6 +317,10 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Spelling (ledger note L126, Q4 of the PR). Asked to pick one spelling for both rates, the OWNER answered on 13/11, in chat with the T-421 session on the Home PC: "Tỷ".
     - The metrics are written "Tỷ lệ hủy" and "Tỷ lệ chốt".
     - Issue B3 changes the app string "Tỉ lệ chốt" (`vi.ts`, two tests). Issue A5 changes the mockups and current docs. History docs and verbatim quotes keep their spelling (spec §4.3, §4.6).
+  - G2. Asked to approve Q1–Q3 of the PR (the scenario data, the results G23–G41 with the rule for the new columns of G01–G22, and the data model), the OWNER answered the same day, in chat with the T-421 session on the Home PC: "Duyệt G2 cả ba".
+    - **Golden B and the data model of a cancelled policy are approved at G2.** The ADR-0007 appendix is Accepted (G2), and rows G23–G41 are required tests of issue B1.
+    - The approval covers all ten of Claude's model proposals, among them "bỏ hủy = xóa ngày hủy": uncancelling clears the cancellation date, and the policy is issued again with no trace.
+    - Still no code issue until the OWNER says so.
 
 ## Next decision
 

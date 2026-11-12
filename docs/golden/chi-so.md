@@ -2,7 +2,7 @@
 
 Bảng đối chiếu cho Owner duyệt. Khớp 1–1 với fixture `packages/domain/src/golden/metrics.fixture.ts` (cùng mã `hd-…`, `ap-…`, `G…`). Sau khi Owner duyệt, bộ này là test bắt buộc của stats engine (#31, #32); **không sửa để "cho xanh"** — muốn đổi phải qua Owner.
 
-Định nghĩa áp dụng: ADR-0007 (bản chốt G2, 26/09/2026). HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Tỷ lệ hủy và nghĩa mới của Doanh số: phụ lục "HĐ hủy" của ADR-0007 (Phase 6 phần B, chờ G2), golden ở mục 4.
+Định nghĩa áp dụng: ADR-0007 (bản chốt G2, 26/09/2026). HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Tỷ lệ hủy và nghĩa mới của Doanh số: phụ lục "HĐ hủy" của ADR-0007 (Phase 6 phần B, Owner duyệt G2 13/11/2026), golden ở mục 4.
 
 | Chỉ số | Cách tính |
 |---|---|
@@ -130,9 +130,9 @@ Cột: **Nộp** = HĐ đã nộp · **Case size** (tr) · **PH** = HĐ phát h�
 - [ ] Kết quả G01–G22 đúng (mục 2)
 - [ ] Mô hình dữ liệu (`packages/domain/src/model.ts`, tóm tắt trong PR)
 
-## 4. Golden B — HĐ hủy, tỷ lệ hủy (Phase 6 phần B, chờ G2)
+## 4. Golden B — HĐ hủy, tỷ lệ hủy (Phase 6 phần B, Owner duyệt G2 13/11/2026)
 
-Phần B của spec `docs/design/phase-6-phan-hoi-dung-thu.md` (§4, nội dung Owner duyệt 10/11/2026): HĐ hủy tính vào kỳ chứa **ngày hủy**; Doanh số đổi nghĩa thành FYP phát hành − FYP hủy; thêm HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Tỷ lệ hủy (bảng định nghĩa ở đầu file). Mục này chưa có fixture: Issue B1 viết fixture khớp 1–1 (cùng mã `kh-…`, `ap-…`, `hd-…`, `G…`) và hàm chỉ số; sau khi Owner duyệt G2, các dòng G23–G41 là test bắt buộc của B1, **không sửa để "cho xanh"**.
+Phần B của spec `docs/design/phase-6-phan-hoi-dung-thu.md` (§4, nội dung Owner duyệt 10/11/2026): HĐ hủy tính vào kỳ chứa **ngày hủy**; Doanh số đổi nghĩa thành FYP phát hành − FYP hủy; thêm HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Tỷ lệ hủy (bảng định nghĩa ở đầu file). Mục này chưa có fixture: Issue B1 viết fixture khớp 1–1 (cùng mã `kh-…`, `ap-…`, `hd-…`, `G…`) và hàm chỉ số. Owner duyệt G2 ngày 13/11/2026 (mục 4.5), nên các dòng G23–G41 là test bắt buộc của B1, **không sửa để "cho xanh"**.
 
 **Kịch bản B là bộ dữ liệu riêng, mọi ngày ở năm 2028.** G19–G22 là dòng cả năm 2026 / 2027, nên một HĐ mới trong hai năm đó làm đổi số của chúng; mục 1 không có gì ở năm 2028, nên tính G23–G41 trên kịch bản B hay trên mục 1 + kịch bản B đều ra cùng số (kiểm ở mục 4.3).
 
@@ -222,7 +222,7 @@ Cột: **Nộp**, **Case size** (tr), **PH**, **RF**, **Tỷ lệ chốt** như 
 - Bỏ hủy, sửa ngày hủy: trong hộp Sửa của HĐ. Xóa HĐ (xóa mềm) giữ như cũ.
 - Hủy không đổi nhóm KH. KH mà mọi HĐ đều đã hủy thì không còn nhãn "Đã có HĐ"; số HĐ trên thẻ KH không đếm HĐ hủy.
 
-**Claude đề xuất** (Owner duyệt cùng G2; code ở B1):
+**Claude đề xuất, Owner duyệt G2 ngày 13/11/2026** (code ở B1):
 
 1. **Cột:** `policies.cancelled_date` (ngày ISO như `submitted_date`, `issued_date`; trống = chưa hủy); trường `cancelledDate: CalendarDate | null` của kiểu `Policy`. Không có cột FYP hủy, không có cột trạng thái: trạng thái suy từ ngày, như hôm nay (không ngày phát hành → Đã nộp; có ngày phát hành, không ngày hủy → Đã phát hành; có ngày hủy → Đã hủy). Migration thêm cột sau hai migration của phần A (spec §4.5); HĐ có sẵn và file backup cũ đều thành chưa hủy.
 2. **Ràng buộc của bảng** (CHECK, như `policies_issued`): ngày hủy chỉ có khi đã có ngày phát hành, và không trước ngày phát hành (`cancelled_date IS NULL OR (issued_date IS NOT NULL AND cancelled_date >= issued_date)`). Hủy đúng ngày phát hành được (G39).
@@ -242,8 +242,10 @@ Cột: **Nộp**, **Case size** (tr), **PH**, **RF**, **Tỷ lệ chốt** như 
 - G36 là biến thể (`hd-18` có ngày hủy 08/02); test DB đi qua lệnh: hủy `hd-18` ngày 08/02 → so G36, bỏ hủy → so G37.
 - Kiểu kết quả của golden thêm năm trường mới; G01–G22 lấy theo luật ở cuối mục 4.2.
 
-### 4.5 Owner duyệt (chờ G2)
+### 4.5 Owner duyệt — đã duyệt G2 13/11/2026 (PR #1236)
 
-- [ ] Dữ liệu kịch bản B đúng ý (mục 4.1)
-- [ ] Kết quả G23–G41 đúng, cùng luật cột mới của G01–G22 (mục 4.2)
-- [ ] Mô hình dữ liệu HĐ hủy (mục 4.4)
+Owner, trong chat với phiên T-421 ở Home PC, trả lời câu hỏi Q1–Q3 của PR #1236: "Duyệt G2 cả ba".
+
+- [x] Dữ liệu kịch bản B đúng ý (mục 4.1)
+- [x] Kết quả G23–G41 đúng, cùng luật cột mới của G01–G22 (mục 4.2)
+- [x] Mô hình dữ liệu HĐ hủy (mục 4.4)

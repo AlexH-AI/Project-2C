@@ -25,7 +25,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 
 ## Hợp đồng và chỉ số
 
-- **HĐ** (`Policy`) — hợp đồng bảo hiểm; một KH có nhiều HĐ. Ba trạng thái: **submitted / đã nộp** (KH đã đóng phí) → **issued / phát hành** → **cancelled / đã hủy** (ngày hủy `cancelledDate`). Chỉ HĐ đã phát hành mới hủy được; ngày hủy không trước ngày phát hành. Trạng thái suy từ ngày, không có cột riêng (ADR-0007, phụ lục HĐ hủy).
+- **HĐ** (`Policy`) — hợp đồng bảo hiểm; một KH có nhiều HĐ. Ba trạng thái: **submitted / đã nộp** (KH đã đóng phí) → **issued / phát hành** → **cancelled / đã hủy** (ngày hủy `cancelledDate`). Chỉ HĐ đã phát hành mới hủy được; ngày hủy không trước ngày phát hành. **Bỏ hủy** = xóa ngày hủy: HĐ trở lại phát hành, không giữ dấu vết lần hủy. Trạng thái suy từ ngày, không có cột riêng (ADR-0007, phụ lục HĐ hủy).
 - **FYP** — phí năm đầu. **FYP nộp** (`submittedFyp`) ghi khi nộp; **FYP phát hành** (`issuedFyp`) mặc định bằng FYP nộp, sửa tay được. HĐ hủy không có FYP riêng: FYP hủy là FYP phát hành của HĐ. Mỗi phí (FYP, case size dự kiến) tối đa 100 tỷ đồng; số tiền bảo hiểm không phải phí, không có trần này.
 - **Case size** — Σ FYP nộp của HĐ nộp trong kỳ (tổng, không trung bình).
 - **HĐ phát hành** — HĐ có ngày phát hành trong kỳ, kể cả HĐ bị hủy sau đó. **FYP phát hành** (total issued FYP) của kỳ là Σ FYP phát hành của các HĐ này.

@@ -1,6 +1,6 @@
 # ADR-0007: Định nghĩa chỉ số và vòng đời khách hàng / hợp đồng
 
-- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): chờ G2
+- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): Accepted (G2, 13/11/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W3, W4, W5, W8), §2.3, §4.4, §7 (Q3–Q7)
 - **Commit / PR:** `20e9c5e` · G2: #28
@@ -88,7 +88,7 @@ Luật đã duyệt: "Gõ ngày nhanh đầu năm: nếu ngày đó năm nay ch�
 - Vd. hôm nay 02/01/2027: "28/12" → 28/12/2027, gợi ý 28/12/2026; "15/03" → 15/03/2027, không gợi ý; "28/12/2026" (có năm) → không gợi ý. Hai gợi ý không bao giờ cùng lúc: gợi ý năm sau cần ngày đã qua, gợi ý năm trước cần ngày chưa tới. "29/02" không có gợi ý năm trước: ngày đó cách đầu năm sau hơn 300 ngày.
 - Luật chỉ thêm gợi ý: ngày đã hiểu, lỗi và gợi ý năm sau giữ như nay (các ca DR-39 giữ nguyên). Đã thử mọi chuỗi `d/m` (d 0–32, m 0–13) với mọi hôm nay từ 01/01/2026 tới 31/12/2029 (674 982 lần đọc): 7 320 lần có gợi ý năm trước, không lần nào cùng gợi ý năm sau, muộn nhất hôm nay 01/03 năm không nhuận (gõ "31/12").
 
-## Phụ lục — HĐ hủy (Phase 6 phần B; G2 chờ Owner duyệt)
+## Phụ lục — HĐ hủy (Phase 6 phần B; Owner duyệt G2 13/11/2026, PR #1236)
 
 Nguồn: phản hồi dùng thử của Owner ngày 10/11/2026 (ý 5, 6) và các câu trả lời cùng ngày, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §1, §4; golden B: `docs/golden/chi-so.md` mục 4 (G23–G41, T-421 #1234).
 
@@ -112,10 +112,10 @@ Phụ lục này thêm trạng thái Đã hủy vào vòng đời HĐ (thân ghi
 - **Cách viết:** "Tỷ lệ hủy" và "Tỷ lệ chốt". Owner chọn ngày 13/11/2026 (PR #1236): "Tỷ". Thân ADR này giữ chữ "Tỉ lệ chốt" như đã viết.
 
 - **Góc nhìn:** HĐ hủy tính cho RE ghi trên HĐ và team hiện tại của RE, như HĐ phát hành (G2 E).
-- **Mô hình dữ liệu** (Claude đề xuất, Owner duyệt cùng G2; chi tiết và ví dụ ở golden mục 4.4):
+- **Mô hình dữ liệu** (Claude đề xuất, Owner duyệt G2 13/11/2026; chi tiết và ví dụ ở golden mục 4.4):
   - cột `policies.cancelled_date` (trống = chưa hủy; trường `Policy.cancelledDate`); không có cột FYP hủy hay cột trạng thái, trạng thái suy từ ngày;
   - ràng buộc của bảng: ngày hủy chỉ có khi đã có ngày phát hành, không trước ngày phát hành; luật ngày khác như ngày phát hành (không sau hôm nay, miền năm 1900–2100);
   - bỏ hủy = xóa ngày hủy, HĐ trở lại Đã phát hành, không giữ dấu vết; hộp Sửa của HĐ đã hủy từ chối xóa ngày phát hành và đổi ngày phát hành sang sau ngày hủy; FYP hủy đổi theo FYP phát hành;
   - HĐ đã xóa (xóa mềm), hủy hay không, và HĐ của KH đã xóa không tính ở mọi chỉ số; khôi phục giữ ngày hủy;
   - nhập backup: ràng buộc trên áp cho mọi HĐ, luật 10 (không sau hôm nay) thêm ngày hủy của HĐ chưa xóa.
-- **Duyệt G2:** chờ Owner.
+- **Duyệt G2:** Owner ngày 13/11/2026, PR #1236 (chat với phiên T-421 ở Home PC): "Duyệt G2 cả ba". Câu này duyệt dữ liệu kịch bản B, kết quả G23–G41 (cùng luật cột mới của G01–G22) và mô hình dữ liệu HĐ hủy.
