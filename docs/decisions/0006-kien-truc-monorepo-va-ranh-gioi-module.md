@@ -56,3 +56,11 @@ Bối cảnh: luật nhập backup 3 của Phase 5 (`docs/design/phase-5-ai.md` 
 4. `ai` chỉ phụ thuộc `domain` + `zod` (spec Phase 5 §10); không import `db`, `ui`, `apps`, Tauri, `node:*`.
 
 `pnpm lint:deps` kiểm bằng ba luật thay cho `db-and-ai-only-on-domain`: `ai-only-on-domain-and-zod`, `db-only-on-domain-and-ai-schema`, `ai-schema-standalone`.
+
+## Phụ lục — bản macOS, nơi để dữ liệu (ADR-0019, 12/11/2026)
+
+Dòng "**Portable**: dữ liệu ở `.\Project2C-data\` cạnh exe" chỉ còn đúng cho chế độ portable của Windows: exe có thư mục `Project2C-data\` cạnh nó. Theo ADR-0019 §2, §5 (Accepted 12/11/2026):
+
+- bản Windows phát hành là bản cài NSIS theo người dùng, dữ liệu ở `%LOCALAPPDATA%\<mã định danh>\`;
+- macOS để dữ liệu ở `~/Library/Application Support/<mã định danh>/`;
+- mã định danh là `com.heritas.lcrm`.
