@@ -17,7 +17,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
   - **N3** — KH quan tâm, lắng nghe; khơi gợi nhu cầu thành công.
   - **N2** — KH được IS trình bày giải pháp cụ thể, hoặc được gửi giải pháp cụ thể.
   - **N1** — KH chấp nhận giải pháp, chưa chốt HĐ chỉ vì một số yếu tố: cân nhắc tài chính, thời gian, lý do khác.
-  - Sau khi HĐ đã nộp, KH vẫn giữ nhóm và có thêm nhãn **"Đã có HĐ"**.
+  - Sau khi HĐ đã nộp, KH vẫn giữ nhóm và có thêm nhãn **"Đã có HĐ"** (số HĐ). Nhãn và số chỉ đếm HĐ chưa hủy: KH mà mọi HĐ đều đã hủy thì không còn nhãn. Hủy HĐ không đổi nhóm KH (ADR-0007, phụ lục HĐ hủy).
 - **Chuyển nhóm** (`StageTransition`) — mỗi lần đổi nhóm là một sự kiện, có ngày và (nếu có) cuộc hẹn gây ra.
 - **Cuộc hẹn** (`Appointment`) — trạng thái: Đã lên lịch (`SCHEDULED`) / Đã gặp (`MET`) / Dời lịch (`RESCHEDULED`) / KH hủy (`CANCELLED`) / Không gặp được (`NO_SHOW`). Kết quả có trường **nhóm sau cuộc gặp** (`stageAfter`), chỉ cuộc hẹn Đã gặp mới được ghi.
 - **Sửa tay** — đổi nhóm ngoài cuộc gặp (vd. KH được gửi giải pháp, chuyển hóa qua điện thoại); không bao giờ tính RF.
@@ -25,13 +25,17 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 
 ## Hợp đồng và chỉ số
 
-- **HĐ** (`Policy`) — hợp đồng bảo hiểm; một KH có nhiều HĐ. Hai trạng thái: **submitted / đã nộp** (KH đã đóng phí) → **issued / phát hành**.
-- **FYP** — phí năm đầu. **FYP nộp** (`submittedFyp`) ghi khi nộp; **FYP phát hành** (`issuedFyp`) mặc định bằng FYP nộp, sửa tay được. Mỗi phí (FYP, case size dự kiến) tối đa 100 tỷ đồng; số tiền bảo hiểm không phải phí, không có trần này.
+- **HĐ** (`Policy`) — hợp đồng bảo hiểm; một KH có nhiều HĐ. Ba trạng thái: **submitted / đã nộp** (KH đã đóng phí) → **issued / phát hành** → **cancelled / đã hủy** (ngày hủy `cancelledDate`). Chỉ HĐ đã phát hành mới hủy được; ngày hủy không trước ngày phát hành. Trạng thái suy từ ngày, không có cột riêng (ADR-0007, phụ lục HĐ hủy).
+- **FYP** — phí năm đầu. **FYP nộp** (`submittedFyp`) ghi khi nộp; **FYP phát hành** (`issuedFyp`) mặc định bằng FYP nộp, sửa tay được. HĐ hủy không có FYP riêng: FYP hủy là FYP phát hành của HĐ. Mỗi phí (FYP, case size dự kiến) tối đa 100 tỷ đồng; số tiền bảo hiểm không phải phí, không có trần này.
 - **Case size** — Σ FYP nộp của HĐ nộp trong kỳ (tổng, không trung bình).
-- **Doanh số** — Σ FYP phát hành của HĐ phát hành trong kỳ.
-- **Tỉ lệ chốt** — HĐ phát hành trong kỳ ÷ chuyển RF trong kỳ; không lũy kế; 0 RF hiện "—".
+- **HĐ phát hành** — HĐ có ngày phát hành trong kỳ, kể cả HĐ bị hủy sau đó. **FYP phát hành** (total issued FYP) của kỳ là Σ FYP phát hành của các HĐ này.
+- **HĐ hủy** — HĐ có ngày hủy trong kỳ: tính vào kỳ của ngày hủy, không phải kỳ phát hành. **FYP hủy** (total cancelled FYP) của kỳ là Σ FYP phát hành của các HĐ này.
+- **Tổng số HĐ** (total policies) — HĐ phát hành − HĐ hủy trong kỳ; có thể âm.
+- **Doanh số** (total FYP) — FYP phát hành − FYP hủy trong kỳ; có thể âm. Trước Phase 6 phần B, Doanh số chỉ là FYP phát hành.
+- **Tỉ lệ chốt** — HĐ phát hành trong kỳ ÷ chuyển RF trong kỳ; không lũy kế, không trừ HĐ hủy; 0 RF hiện "—".
+- **Tỷ lệ hủy** — HĐ hủy trong kỳ ÷ HĐ phát hành trong kỳ; không lũy kế; 0 HĐ phát hành hiện "—"; có thể vượt 100%. Dòng Tổng = Σ HĐ hủy ÷ Σ HĐ phát hành.
 - **Kỳ** (`Period`) — ngày / tuần (Thứ Hai → Chủ Nhật) / tháng / năm / tùy chọn. **MTD** = ngày 1 của tháng → ngày đang xem.
-- **Golden examples** — ví dụ có kết quả viết tay, Owner duyệt, là test bắt buộc: `docs/golden/chi-so.md` (chỉ số), `docs/golden/kyc.md` (cổng KYC).
+- **Golden examples** — ví dụ có kết quả viết tay, Owner duyệt, là test bắt buộc: `docs/golden/chi-so.md` (chỉ số, gồm golden B của HĐ hủy), `docs/golden/kyc.md` (cổng KYC).
 
 ## KYC
 

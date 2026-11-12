@@ -1,6 +1,6 @@
 # ADR-0007: Định nghĩa chỉ số và vòng đời khách hàng / hợp đồng
 
-- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2
+- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): chờ G2
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W3, W4, W5, W8), §2.3, §4.4, §7 (Q3–Q7)
 - **Commit / PR:** `20e9c5e` · G2: #28
@@ -87,3 +87,33 @@ Luật đã duyệt: "Gõ ngày nhanh đầu năm: nếu ngày đó năm nay ch�
 - Ô có gợi ý: ô ngày đang có gợi ý năm sau mà có đường ghi một ngày đã qua: lịch hẹn mới (6b), và Dời lịch (6e) cả khi chưa tick "Nhập bù" lẫn khi đã tick. Ở 6e chưa tick "Nhập bù", bấm gợi ý thì ngày thành ngày đã qua: ô báo lỗi "đã qua" (`reschedule.past`: "… ngày đã qua chỉ dùng để nhập bù") và hiện ô "Nhập bù"; RE tự tick, app không tự tick, không tự đổi năm (Owner 25/10/2026, review #824 lần 3). Ô chỉ nhận ngày từ hôm nay (hẹn tiếp 6h) không gợi ý ngày năm trước, vì ngày đó đã qua và ô không có đường nhập bù. Ô chỉ nhận ngày đã qua (ngày tạo KH, chuyển nhóm tay, ngày nộp / phát hành HĐ, ngày ghi chú KYC) giữ như nay: ngày sau hôm nay báo lỗi và nhắc gõ đủ năm, nên không lưu nhầm năm. Ô ngày của hộp Sửa kết quả (6f, điền sẵn ngày cũ) giữ như nay, không gợi ý năm nào: ô này không có gợi ý năm sau, kể cả khi trạng thái KH hủy cho nhận ngày tương lai.
 - Vd. hôm nay 02/01/2027: "28/12" → 28/12/2027, gợi ý 28/12/2026; "15/03" → 15/03/2027, không gợi ý; "28/12/2026" (có năm) → không gợi ý. Hai gợi ý không bao giờ cùng lúc: gợi ý năm sau cần ngày đã qua, gợi ý năm trước cần ngày chưa tới. "29/02" không có gợi ý năm trước: ngày đó cách đầu năm sau hơn 300 ngày.
 - Luật chỉ thêm gợi ý: ngày đã hiểu, lỗi và gợi ý năm sau giữ như nay (các ca DR-39 giữ nguyên). Đã thử mọi chuỗi `d/m` (d 0–32, m 0–13) với mọi hôm nay từ 01/01/2026 tới 31/12/2029 (674 982 lần đọc): 7 320 lần có gợi ý năm trước, không lần nào cùng gợi ý năm sau, muộn nhất hôm nay 01/03 năm không nhuận (gõ "31/12").
+
+## Phụ lục — HĐ hủy (Phase 6 phần B; G2 chờ Owner duyệt)
+
+Nguồn: phản hồi dùng thử của Owner ngày 10/11/2026 (ý 5, 6) và các câu trả lời cùng ngày, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §1, §4; golden B: `docs/golden/chi-so.md` mục 4 (G23–G41, T-421 #1234).
+
+Phụ lục này thêm trạng thái Đã hủy vào vòng đời HĐ (thân ghi "chỉ `submitted → issued`") và đổi nghĩa Doanh số (Q5 ở bảng chỉ số). Dòng "Theo dõi từ chối/hủy/pending HĐ — hoãn, ngoài v1" ở "Phương án đã cân nhắc" không còn đúng cho hủy; từ chối và pending vẫn ngoài v1. Các định nghĩa khác giữ nguyên; G01–G22 giữ nguyên số.
+
+- **Vòng đời HĐ:** `submitted → issued → cancelled` (Đã nộp → Đã phát hành → Đã hủy). Chỉ HĐ đã phát hành mới hủy được; ngày hủy không trước ngày phát hành; FYP hủy bằng FYP phát hành, không nhập riêng. Hủy không đổi nhóm KH; nhãn "Đã có HĐ" và số HĐ trên thẻ KH không đếm HĐ hủy.
+- **Kỳ:** HĐ hủy tính vào kỳ chứa **ngày hủy** (Owner: "Ngày hủy"). Số của kỳ đã qua không đổi khi có HĐ hủy về sau. Hệ quả đã biết: kỳ ngắn có thể ra tỷ lệ hủy trên 100% hay doanh số âm. Cách bị bỏ: trừ vào kỳ của ngày phát hành (tỷ lệ luôn ≤ 100%, nhưng số của kỳ đã qua tự đổi về sau).
+- **Chỉ số.** Tên do Owner chốt: "Đồng ý nhưng dùng từ Tổng số HĐ (total policies), tương tự Doanh số (Total FYP = Total issued FYP - total cancelled FYP)".
+
+| Chỉ số | Định nghĩa |
+|---|---|
+| HĐ phát hành | Giữ nguyên: số HĐ có `issued_date` trong kỳ, kể cả HĐ bị hủy sau đó |
+| FYP phát hành | Σ issued FYP theo `issued_date` (Doanh số trước phụ lục này) |
+| HĐ hủy | Số HĐ có `cancelled_date` trong kỳ |
+| FYP hủy | Σ issued FYP của các HĐ có `cancelled_date` trong kỳ |
+| Tổng số HĐ | HĐ phát hành − HĐ hủy; có thể âm |
+| Doanh số | **FYP phát hành − FYP hủy**; có thể âm (thay Q5) |
+| Tỷ lệ hủy | HĐ hủy ÷ HĐ phát hành, cùng kỳ, không lũy kế; 0 HĐ phát hành → "—"; có thể > 100%; dòng Tổng = Σ HĐ hủy ÷ Σ HĐ phát hành, không lấy trung bình |
+| Tỉ lệ chốt | Giữ nguyên: HĐ phát hành ÷ chuyển RF, **không trừ HĐ hủy**. Tỉ lệ chốt đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+
+- **Góc nhìn:** HĐ hủy tính cho RE ghi trên HĐ và team hiện tại của RE, như HĐ phát hành (G2 E).
+- **Mô hình dữ liệu** (Claude đề xuất, Owner duyệt cùng G2; chi tiết và ví dụ ở golden mục 4.4):
+  - cột `policies.cancelled_date` (trống = chưa hủy; trường `Policy.cancelledDate`); không có cột FYP hủy hay cột trạng thái, trạng thái suy từ ngày;
+  - ràng buộc của bảng: ngày hủy chỉ có khi đã có ngày phát hành, không trước ngày phát hành; luật ngày khác như ngày phát hành (không sau hôm nay, miền năm 1900–2100);
+  - bỏ hủy = xóa ngày hủy, HĐ trở lại Đã phát hành, không giữ dấu vết; hộp Sửa của HĐ đã hủy từ chối xóa ngày phát hành và đổi ngày phát hành sang sau ngày hủy; FYP hủy đổi theo FYP phát hành;
+  - HĐ đã xóa (xóa mềm), hủy hay không, và HĐ của KH đã xóa không tính ở mọi chỉ số; khôi phục giữ ngày hủy;
+  - nhập backup: ràng buộc trên áp cho mọi HĐ, luật 10 (không sau hôm nay) thêm ngày hủy của HĐ chưa xóa.
+- **Duyệt G2:** chờ Owner.
