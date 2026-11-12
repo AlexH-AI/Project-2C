@@ -15,7 +15,7 @@ Bảng đối chiếu cho Owner duyệt. Khớp 1–1 với fixture `packages/do
 | Tổng số HĐ | HĐ phát hành − HĐ hủy; có thể âm |
 | Doanh số | FYP phát hành − FYP hủy; có thể âm |
 | Chuyển RF | Số cuộc hẹn **Đã gặp**, ngày gặp trong kỳ, mà "nhóm sau cuộc gặp" đưa KH từ **N4/N3** lên **N2/N1** |
-| Tỉ lệ chốt | HĐ phát hành ÷ chuyển RF, cùng kỳ, không lũy kế, không trừ HĐ hủy; 0 RF → "—" |
+| Tỷ lệ chốt | HĐ phát hành ÷ chuyển RF, cùng kỳ, không lũy kế, không trừ HĐ hủy; 0 RF → "—" |
 | Tỷ lệ hủy | HĐ hủy ÷ HĐ phát hành, cùng kỳ, không lũy kế; 0 HĐ phát hành → "—"; có thể vượt 100%. Dòng Tổng = Σ HĐ hủy ÷ Σ HĐ phát hành, không lấy trung bình |
 
 Chỉ cuộc hẹn **Đã gặp** mới có "nhóm sau cuộc gặp"; Đã lên lịch / Dời lịch / KH hủy / Không gặp được thì để trống. KH lên nhóm ngoài cuộc gặp (vd. được **gửi** giải pháp, chuyển hóa qua điện thoại) → sửa nhóm bằng tay, không tính RF.
@@ -91,9 +91,9 @@ KH 04 lên N2 ngày 08/01 và KH 07 lên N2 ngày 11/01 bằng sửa tay (không
 
 ## 2. Kết quả mong đợi
 
-Cột: **Nộp** = HĐ đã nộp · **Case size** (tr) · **PH** = HĐ phát hành · **Doanh số** (tr) · **RF** = chuyển RF · **Tỉ lệ chốt** = PH ÷ RF.
+Cột: **Nộp** = HĐ đã nộp · **Case size** (tr) · **PH** = HĐ phát hành · **Doanh số** (tr) · **RF** = chuyển RF · **Tỷ lệ chốt** = PH ÷ RF.
 
-| Mã | Kỳ | Góc nhìn | Nộp | Case size | PH | Doanh số | RF | Tỉ lệ chốt | Kiểm điều gì |
+| Mã | Kỳ | Góc nhìn | Nộp | Case size | PH | Doanh số | RF | Tỷ lệ chốt | Kiểm điều gì |
 |---|---|---|---|---|---|---|---|---|---|
 | G01 | Ngày 02/01/2027 | Toàn bộ | 0 | 0 | 0 | 0 | 1 | 0/1 = 0% | Có RF, chưa có HĐ → 0%, không phải "—" |
 | G02 | Ngày 31/01/2027 | Toàn bộ | 2 | 500 | 0 | 0 | 0 | — | 0 RF → "—" |
@@ -136,13 +136,15 @@ Phần B của spec `docs/design/phase-6-phan-hoi-dung-thu.md` (§4, nội dung 
 
 **Kịch bản B là bộ dữ liệu riêng, mọi ngày ở năm 2028.** G19–G22 là dòng cả năm 2026 / 2027, nên một HĐ mới trong hai năm đó làm đổi số của chúng; mục 1 không có gì ở năm 2028, nên tính G23–G41 trên kịch bản B hay trên mục 1 + kịch bản B đều ra cùng số (kiểm ở mục 4.3).
 
+Cách viết "Tỷ lệ" cho cả hai chỉ số, Tỷ lệ hủy và Tỷ lệ chốt: Owner chọn ngày 13/11/2026, "Tỷ". Bảng định nghĩa và nhãn cột của mục 2 đã đổi theo; chữ "Tỉ lệ > 100%" ở ô G11, G20 giữ nguyên tới Issue A5 (spec §4.6).
+
 ### 4.1 Dữ liệu kịch bản B
 
 Người như mục 1: An, Bình (Team A), Chi, Dũng (Team B). Ngày không ghi năm là năm **2028**. Tuần của tháng 01/2028: 03/01 – 09/01, 10/01 – 16/01, 17/01 – 23/01, 24/01 – 30/01 (01/01 và 02/01/2028 thuộc tuần 27/12/2027 – 02/01/2028; kịch bản B không có gì trong hai ngày đó).
 
 #### Khách hàng và cuộc hẹn
 
-Mọi KH được tạo ngày 03/01/2028 ở nhóm ghi trong cột "Tạo". Mỗi cuộc hẹn dưới là một cuộc gặp chuyển RF (Đã gặp, N4/N3 → N2/N1), để Tỉ lệ chốt có số ở tháng có HĐ hủy.
+Mọi KH được tạo ngày 03/01/2028 ở nhóm ghi trong cột "Tạo". Mỗi cuộc hẹn dưới là một cuộc gặp chuyển RF (Đã gặp, N4/N3 → N2/N1), để Tỷ lệ chốt có số ở tháng có HĐ hủy.
 
 | KH | RE | Tạo | Cuộc gặp chuyển RF | Nhóm hiện tại |
 |---|---|---|---|---|
@@ -174,9 +176,9 @@ Bảng trên là trạng thái cuối, sau khi bỏ hủy `hd-18`. Dòng G36 tí
 
 ### 4.2 Kết quả mong đợi
 
-Cột: **Nộp**, **Case size** (tr), **PH**, **RF**, **Tỉ lệ chốt** như mục 2 · **Hủy** = HĐ hủy · **Tổng số HĐ** = PH − Hủy · **FYP PH** = FYP phát hành (tr) · **FYP hủy** (tr) · **Doanh số** = FYP PH − FYP hủy (tr) · **Tỷ lệ hủy** = Hủy ÷ PH.
+Cột: **Nộp**, **Case size** (tr), **PH**, **RF**, **Tỷ lệ chốt** như mục 2 · **Hủy** = HĐ hủy · **Tổng số HĐ** = PH − Hủy · **FYP PH** = FYP phát hành (tr) · **FYP hủy** (tr) · **Doanh số** = FYP PH − FYP hủy (tr) · **Tỷ lệ hủy** = Hủy ÷ PH.
 
-| Mã | Kỳ | Góc nhìn | Nộp | Case size | PH | Hủy | Tổng số HĐ | FYP PH | FYP hủy | Doanh số | RF | Tỉ lệ chốt | Tỷ lệ hủy | Kiểm điều gì |
+| Mã | Kỳ | Góc nhìn | Nộp | Case size | PH | Hủy | Tổng số HĐ | FYP PH | FYP hủy | Doanh số | RF | Tỷ lệ chốt | Tỷ lệ hủy | Kiểm điều gì |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | G23 | Tuần 03/01 – 09/01/2028 | RE Dũng | 1 | 200 | 1 | 0 | 1 | 200 | 0 | 200 | 0 | — | 0/1 = 0% | Spec §4.1, tuần 1: `hd-11` phát hành, doanh số +200; có PH, 0 hủy → 0%, không phải "—" |
 | G24 | Tuần 10/01 – 16/01/2028 | RE Dũng | 0 | 0 | 0 | 1 | −1 | 0 | 200 | −200 | 0 | — | — | Spec §4.1, tuần 2: `hd-11` hủy, doanh số −200; 0 PH → "—"; Tổng số HĐ và Doanh số âm |
@@ -185,10 +187,10 @@ Cột: **Nộp**, **Case size** (tr), **PH**, **RF**, **Tỉ lệ chốt** như 
 | G27 | Tuần 10/01 – 16/01/2028 | Toàn bộ | 2 | 650 | 4 | 2 | 2 | 1.300 | 300 | 1.000 | 1 | 4/1 = 400% | 2/4 = 50% | Ví dụ của Owner: 4 phát hành, 2 hủy → 50%; `hd-11` phát hành tuần trước, `hd-14` phát hành cùng tuần |
 | G28 | Tuần 17/01 – 23/01/2028 | Toàn bộ | 0 | 0 | 1 | 2 | −1 | 250 | 780 | −530 | 1 | 1/1 = 100% | 2/1 = 200% | 1 phát hành, 2 hủy → 200%; FYP hủy của `hd-12` là 280 (FYP phát hành sửa tay), không phải 300 |
 | G29 | Tháng 01/2028 | Toàn bộ | 7 | 2.050 | 7 | 4 | 3 | 2.030 | 1.080 | 950 | 5 | 7/5 = 140% | 4/7 ≈ 57,1% | `hd-16` hủy 07/02 không tính vào tháng 1 |
-| G30 | Tháng 01/2028 | Team A | 3 | 900 | 3 | 2 | 1 | 900 | 600 | 300 | 3 | 3/3 = 100% | 2/3 ≈ 66,7% | Dòng Tổng của team: Σ hủy ÷ Σ PH = 2/3, không phải trung bình 50% và 100% (75%); Tỉ lệ chốt không trừ hủy |
+| G30 | Tháng 01/2028 | Team A | 3 | 900 | 3 | 2 | 1 | 900 | 600 | 300 | 3 | 3/3 = 100% | 2/3 ≈ 66,7% | Dòng Tổng của team: Σ hủy ÷ Σ PH = 2/3, không phải trung bình 50% và 100% (75%); Tỷ lệ chốt không trừ hủy |
 | G31 | Tháng 01/2028 | Team B | 4 | 1.150 | 4 | 2 | 2 | 1.130 | 480 | 650 | 2 | 4/2 = 200% | 2/4 = 50% | Σ hủy ÷ Σ PH = 2/4, không phải trung bình ≈ 33,3% và 100% (≈ 66,7%) |
 | G32 | Tháng 01/2028 | RE An | 2 | 400 | 2 | 1 | 1 | 400 | 100 | 300 | 2 | 2/2 = 100% | 1/2 = 50% | |
-| G33 | Tháng 01/2028 | RE Bình | 1 | 500 | 1 | 1 | 0 | 500 | 500 | 0 | 1 | 1/1 = 100% | 1/1 = 100% | Tỉ lệ chốt vẫn 1/1 dù HĐ duy nhất đã hủy (không phải 0/1) |
+| G33 | Tháng 01/2028 | RE Bình | 1 | 500 | 1 | 1 | 0 | 500 | 500 | 0 | 1 | 1/1 = 100% | 1/1 = 100% | Tỷ lệ chốt vẫn 1/1 dù HĐ duy nhất đã hủy (không phải 0/1) |
 | G34 | Tháng 01/2028 | RE Chi | 3 | 950 | 3 | 1 | 2 | 930 | 280 | 650 | 2 | 3/2 = 150% | 1/3 ≈ 33,3% | `hd-16` phát hành tháng 1, hủy tháng 2: tháng 1 không đổi |
 | G35 | Tháng 02/2028 | RE Chi | 0 | 0 | 0 | 1 | −1 | 0 | 400 | −400 | 0 | — | — | Kỳ có hủy, 0 phát hành: "—", Tổng số HĐ và Doanh số âm |
 | G36 | Tháng 02/2028 (biến thể: `hd-18` còn hủy 08/02) | RE An | 1 | 200 | 1 | 1 | 0 | 200 | 200 | 0 | 0 | — | 1/1 = 100% | Trước khi bỏ hủy |
@@ -202,7 +204,7 @@ Cột: **Nộp**, **Case size** (tr), **PH**, **RF**, **Tỉ lệ chốt** như 
 
 ### 4.3 Diễn giải vài dòng
 
-- **G29 (Tháng 01/2028, toàn bộ)**: Nộp `hd-11` … `hd-17` → 7 HĐ, 200 + 300 + 300 + 100 + 500 + 400 + 250 = 2.050 tr. Phát hành cũng `hd-11` … `hd-17` → 7 HĐ, FYP PH 200 + 280 + 300 + 100 + 500 + 400 + 250 = 2.030 tr. Hủy trong tháng: `hd-11` 12/01, `hd-14` 14/01, `hd-15` 19/01, `hd-12` 20/01 → 4 HĐ, FYP hủy 200 + 100 + 500 + 280 = 1.080 tr (`hd-16` hủy 07/02, tính ở tháng 2). Tổng số HĐ 7 − 4 = 3; Doanh số 2.030 − 1.080 = 950 tr; Tỷ lệ hủy 4/7 ≈ 57,1%. RF `ap-21` … `ap-25` → 5; Tỉ lệ chốt 7/5 = 140%, dùng PH chứ không phải Tổng số HĐ (3/5 = 60%).
+- **G29 (Tháng 01/2028, toàn bộ)**: Nộp `hd-11` … `hd-17` → 7 HĐ, 200 + 300 + 300 + 100 + 500 + 400 + 250 = 2.050 tr. Phát hành cũng `hd-11` … `hd-17` → 7 HĐ, FYP PH 200 + 280 + 300 + 100 + 500 + 400 + 250 = 2.030 tr. Hủy trong tháng: `hd-11` 12/01, `hd-14` 14/01, `hd-15` 19/01, `hd-12` 20/01 → 4 HĐ, FYP hủy 200 + 100 + 500 + 280 = 1.080 tr (`hd-16` hủy 07/02, tính ở tháng 2). Tổng số HĐ 7 − 4 = 3; Doanh số 2.030 − 1.080 = 950 tr; Tỷ lệ hủy 4/7 ≈ 57,1%. RF `ap-21` … `ap-25` → 5; Tỷ lệ chốt 7/5 = 140%, dùng PH chứ không phải Tổng số HĐ (3/5 = 60%).
 - **G26 + G27 + G28 = G29** (tuần 24/01 – 30/01 không có gì): Nộp 5 + 2 + 0 = 7; Case size 1.400 + 650 + 0 = 2.050; PH 2 + 4 + 1 = 7; Hủy 0 + 2 + 2 = 4; FYP PH 480 + 1.300 + 250 = 2.030; FYP hủy 0 + 300 + 780 = 1.080; Doanh số 480 + 1.000 − 530 = 950; RF 3 + 1 + 1 = 5.
 - **Kiểm cộng team** (G32 + G33 = G30, G25 + G34 = G31, G30 + G31 = G29): Team A: PH 2 + 1 = 3, Hủy 1 + 1 = 2, FYP PH 400 + 500 = 900, FYP hủy 100 + 500 = 600, Doanh số 300 + 0 = 300, RF 2 + 1 = 3. Team B: PH 1 + 3 = 4, Hủy 1 + 1 = 2, FYP PH 200 + 930 = 1.130, FYP hủy 200 + 280 = 480, Doanh số 0 + 650 = 650, RF 0 + 2 = 2. Toàn bộ: Nộp 3 + 4 = 7, Case size 900 + 1.150 = 2.050, PH 3 + 4 = 7, Hủy 2 + 2 = 4, FYP PH 900 + 1.130 = 2.030, FYP hủy 600 + 480 = 1.080, Doanh số 300 + 650 = 950, RF 3 + 2 = 5. Tỷ lệ hủy luôn tính từ tổng: Team A 2/3, Team B 2/4, Toàn bộ 4/7.
 - **G40 (Tháng 02/2028, toàn bộ)**: Nộp `hd-18` 01/02 (200), `hd-20` 14/02 (100) → 2, 300 tr; `hd-19` đã xóa không tính. Phát hành `hd-18` 03/02, `hd-20` 15/02 → 2, 300 tr. Hủy `hd-16` 07/02 (400), `hd-20` 15/02 (100) → 2, 500 tr; `hd-18` đã bỏ hủy, `hd-19` đã xóa. Doanh số 300 − 500 = −200 tr. Theo RE: An 200 (G37) + Bình 0 (G38) + Chi −400 (G35) + Dũng 0 = −200.

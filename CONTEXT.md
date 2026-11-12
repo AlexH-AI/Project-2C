@@ -32,7 +32,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **HĐ hủy** — HĐ có ngày hủy trong kỳ: tính vào kỳ của ngày hủy, không phải kỳ phát hành. **FYP hủy** (total cancelled FYP) của kỳ là Σ FYP phát hành của các HĐ này.
 - **Tổng số HĐ** (total policies) — HĐ phát hành − HĐ hủy trong kỳ; có thể âm.
 - **Doanh số** (total FYP) — FYP phát hành − FYP hủy trong kỳ; có thể âm. Trước Phase 6 phần B, Doanh số chỉ là FYP phát hành.
-- **Tỉ lệ chốt** — HĐ phát hành trong kỳ ÷ chuyển RF trong kỳ; không lũy kế, không trừ HĐ hủy; 0 RF hiện "—".
+- **Tỷ lệ chốt** — HĐ phát hành trong kỳ ÷ chuyển RF trong kỳ; không lũy kế, không trừ HĐ hủy; 0 RF hiện "—".
 - **Tỷ lệ hủy** — HĐ hủy trong kỳ ÷ HĐ phát hành trong kỳ; không lũy kế; 0 HĐ phát hành hiện "—"; có thể vượt 100%. Dòng Tổng = Σ HĐ hủy ÷ Σ HĐ phát hành.
 - **Kỳ** (`Period`) — ngày / tuần (Thứ Hai → Chủ Nhật) / tháng / năm / tùy chọn. **MTD** = ngày 1 của tháng → ngày đang xem.
 - **Golden examples** — ví dụ có kết quả viết tay, Owner duyệt, là test bắt buộc: `docs/golden/chi-so.md` (chỉ số, gồm golden B của HĐ hủy), `docs/golden/kyc.md` (cổng KYC).

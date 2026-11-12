@@ -154,10 +154,10 @@ Tên do Owner chốt: "Tổng số HĐ" (total policies), "Doanh số" (Total FY
 | **FYP phát hành** (mới, tách ra) | Σ FYP phát hành của HĐ phát hành trong kỳ (Total issued FYP; trước đây chính là Doanh số) |
 | **FYP hủy** (mới) | Σ FYP phát hành của HĐ hủy trong kỳ (Total cancelled FYP) |
 | **Doanh số** (đổi nghĩa) | FYP phát hành − FYP hủy (Total FYP); có thể âm |
-| **Tỷ lệ hủy** (mới) | HĐ hủy ÷ HĐ phát hành; kỳ không có HĐ phát hành → "—"; có thể vượt 100%, như Tỉ lệ chốt (golden G11, 150%). Dòng Tổng = Σ hủy ÷ Σ phát hành, không lấy trung bình |
-| Tỉ lệ chốt, HĐ nộp, Case size | Giữ nguyên. Tỉ lệ chốt vẫn = HĐ phát hành ÷ RF, chưa trừ hủy: nó đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+| **Tỷ lệ hủy** (mới) | HĐ hủy ÷ HĐ phát hành; kỳ không có HĐ phát hành → "—"; có thể vượt 100%, như Tỷ lệ chốt (golden G11, 150%). Dòng Tổng = Σ hủy ÷ Σ phát hành, không lấy trung bình |
+| Tỷ lệ chốt, HĐ nộp, Case size | Giữ nguyên. Tỷ lệ chốt vẫn = HĐ phát hành ÷ RF, chưa trừ hủy: nó đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
 
-Cách viết "Tỷ lệ" hay "Tỉ lệ", một cách cho cả Tỷ lệ hủy và Tỉ lệ chốt: chờ Owner chọn (T-421, PR golden B).
+Cách viết: **"Tỷ lệ hủy"** và **"Tỷ lệ chốt"**, một cách viết cho cả hai chỉ số. Owner chọn ngày 13/11/2026 (câu Q4 của PR #1236, T-421): "Tỷ". Việc đổi chữ "Tỉ lệ chốt" đang có trong app và tài liệu: §4.6.
 
 ### 4.4 Hiện ở đâu
 
@@ -170,7 +170,7 @@ Cách viết "Tỷ lệ" hay "Tỉ lệ", một cách cho cả Tỷ lệ hủy v
 
 - Cột ngày hủy của `policies` + migration (sau hai migration của A); lệnh hủy / bỏ hủy; luật kiểm khi nhập backup (ngày hủy chỉ có khi đã phát hành, không trước ngày phát hành).
 - Golden mới trong `docs/golden/chi-so.md`, Owner duyệt G2 trước khi code: tuần có 4 HĐ phát hành, 2 HĐ hủy → 50% (ví dụ của Owner); phát hành tuần 1, hủy tuần 2 (§4.1); tuần có 1 HĐ phát hành, 2 HĐ hủy → 200%; HĐ hủy rồi bỏ hủy; dòng Tổng của một team.
-  - **Golden B** (T-421, #1234; chờ G2): `docs/golden/chi-so.md` mục 4, kịch bản riêng ở năm 2028, dòng G23–G41. Năm ca trên: G27 (4 / 2 → 50%); G23, G24, G25 (§4.1); G28 (1 / 2 → 200%); G36 → G37 (bỏ hủy); G30, G31 (dòng Tổng của team, kiểm cộng ở mục 4.3). Thêm: kỳ có hủy, 0 phát hành (G24, G35); FYP phát hành sửa tay (G28); hủy khác tháng phát hành (G34, G35); hủy rồi xóa mềm (G38); hủy đúng ngày phát hành (G39); Tỉ lệ chốt không trừ hủy (G29, G30, G33). G01–G22 giữ số; cột mới của chúng theo một luật (mục 4.2).
+  - **Golden B** (T-421, #1234; chờ G2): `docs/golden/chi-so.md` mục 4, kịch bản riêng ở năm 2028, dòng G23–G41. Năm ca trên: G27 (4 / 2 → 50%); G23, G24, G25 (§4.1); G28 (1 / 2 → 200%); G36 → G37 (bỏ hủy); G30, G31 (dòng Tổng của team, kiểm cộng ở mục 4.3). Thêm: kỳ có hủy, 0 phát hành (G24, G35); FYP phát hành sửa tay (G28); hủy khác tháng phát hành (G34, G35); hủy rồi xóa mềm (G38); hủy đúng ngày phát hành (G39); Tỷ lệ chốt không trừ hủy (G29, G30, G33). G01–G22 giữ số; cột mới của chúng theo một luật (mục 4.2).
   - Mô hình dữ liệu HĐ hủy: golden mục 4.4 và phụ lục "HĐ hủy" của ADR-0007.
 - Mockup G3: `policy-forms.html` (nút, hộp hủy, nhãn), `overview.html` (ô KPI).
 - Cập nhật `docs/design/state-machines.md` (máy trạng thái HĐ).
@@ -178,6 +178,11 @@ Cách viết "Tỷ lệ" hay "Tỉ lệ", một cách cho cả Tỷ lệ hủy v
 ### 4.6 Issue dự kiến (chưa tạo)
 
 B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm chỉ số, golden, dữ liệu giả lập) · B2 hồ sơ KH (nút, hộp hủy, nhãn) · B3 Tổng quan, Báo cáo, Excel. Cả ba sau A4 (không đụng file đang đổi tên). Test bắt buộc của B1: G23–G41 và cột mới của G01–G22 (golden B, sau khi Owner duyệt G2); fixture viết theo "Ghi chú cho B1" ở golden mục 4.4.
+
+Đổi chữ "Tỉ lệ chốt" thành "Tỷ lệ chốt" (Owner chọn "Tỷ" ngày 13/11/2026, §4.3):
+
+- **B3:** chuỗi `overview.kpi.closeRate` (`apps/desktop/src/i18n/vi.ts:987`; Tổng quan, Báo cáo, Excel lấy chữ từ đây), hai test đang so chữ (`e2e/overview.spec.ts:36`, `apps/desktop/src/routes/reports/report-workbook.test.ts:122`) và chú thích code.
+- **A5**, cùng script đổi chữ của tài liệu: mockup, golden (cả chữ "Tỉ lệ > 100%" ở ô G11, G20 của `chi-so.md`), bảng thuật ngữ §11.6. `CONTEXT.md` và golden B đã viết "Tỷ" từ T-421. Tài liệu lịch sử (§3.4) và lời Owner nguyên văn giữ nguyên.
 
 ## 5. Phần C — Tìm KH, tìm RM, danh sách KH của RM (nội dung chốt 10/11/2026)
 

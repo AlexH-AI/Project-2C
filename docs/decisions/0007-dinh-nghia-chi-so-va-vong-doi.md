@@ -107,7 +107,9 @@ Phụ lục này thêm trạng thái Đã hủy vào vòng đời HĐ (thân ghi
 | Tổng số HĐ | HĐ phát hành − HĐ hủy; có thể âm |
 | Doanh số | **FYP phát hành − FYP hủy**; có thể âm (thay Q5) |
 | Tỷ lệ hủy | HĐ hủy ÷ HĐ phát hành, cùng kỳ, không lũy kế; 0 HĐ phát hành → "—"; có thể > 100%; dòng Tổng = Σ HĐ hủy ÷ Σ HĐ phát hành, không lấy trung bình |
-| Tỉ lệ chốt | Giữ nguyên: HĐ phát hành ÷ chuyển RF, **không trừ HĐ hủy**. Tỉ lệ chốt đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+| Tỷ lệ chốt | Giữ nguyên: HĐ phát hành ÷ chuyển RF, **không trừ HĐ hủy**. Tỷ lệ chốt đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+
+- **Cách viết:** "Tỷ lệ hủy" và "Tỷ lệ chốt". Owner chọn ngày 13/11/2026 (PR #1236): "Tỷ". Thân ADR này giữ chữ "Tỉ lệ chốt" như đã viết.
 
 - **Góc nhìn:** HĐ hủy tính cho RE ghi trên HĐ và team hiện tại của RE, như HĐ phát hành (G2 E).
 - **Mô hình dữ liệu** (Claude đề xuất, Owner duyệt cùng G2; chi tiết và ví dụ ở golden mục 4.4):
