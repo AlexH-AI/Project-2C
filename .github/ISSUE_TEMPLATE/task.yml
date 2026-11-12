@@ -39,9 +39,10 @@ body:
       label: Ghi chú OPEN liên quan
       description: >-
         `node tools/notes-for.mjs --files <các đường dẫn ở ô trên>`: chép các mục "Trùng file" của
-        `docs/state/review-notes.md`, ghi mục nào gộp vào task (tính vào cỡ) và mục nào để lại, vì
-        sao. Phiên làm task chạy lại `notes-for <issue>` lúc bắt đầu, vì sổ có thể thêm mục sau khi
-        viết Issue.
+        `docs/state/review-notes.md`, và mọi mục mang nhãn đích của việc này (`[<tên việc>]` của
+        spec; PR sổ đổi thành `[T-… #…]` khi tạo Issue). Task gộp mọi mục mang nhãn của mình (tính
+        vào cỡ); mục mang nhãn việc khác: để lại → <nhãn>. Phiên làm task chạy lại `notes-for
+        <issue>` lúc bắt đầu, vì sổ có thể thêm mục sau khi viết Issue.
   - type: textarea
     id: budget
     attributes:
@@ -49,7 +50,7 @@ body:
       description: >-
         Chỉ Issue sửa phát hiện (vấn đề deep review `DR6-*`, ghi chú của sổ): dòng sản phẩm / dòng
         test, lấy từ cỡ ước lượng của tổng hợp hay của người viết Issue (vd. `≈ 15–40 SP + ≈ 120
-        test`). Issue khác để trống. Có mục này thì PR là PR sửa phát hiện: review chặn khi thiếu ba
+        test`). Issue khác để trống (`_No response_`). Có mục này thì PR là PR sửa phát hiện: review chặn khi thiếu ba
         mục của nó, và ra CHANGES khi cỡ vượt 1,5 lần ngân sách (skill `review-pr` §3.A, T-386).
   - type: textarea
     id: same-pattern
@@ -57,8 +58,8 @@ body:
       label: Quét cùng mẫu
       description: >-
         Chỉ Issue sửa phát hiện: lệnh `rg` / probe đã chạy và danh sách mọi chỗ cùng mẫu
-        (`path:dòng`), không chỉ chỗ báo cáo nêu. Phần Issue để ngoài thì ghi rõ (sổ [sau v1.0]
-        hay ACCEPTED). Issue khác để trống.
+        (`path:dòng`), không chỉ chỗ báo cáo nêu. Phần Issue để ngoài thì ghi rõ (sổ, kèm nhãn
+        đích, hay ACCEPTED). Issue khác để trống (`_No response_`).
   - type: textarea
     id: contract
     attributes:

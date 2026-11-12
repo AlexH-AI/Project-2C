@@ -88,11 +88,12 @@ PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Corr
 - thiếu dòng, kể cả khi thân PR không có mục này → **chặn**, loại (a);
 - ghi "đã sửa" mà diff không sửa → **chặn**, loại (c);
 - lý do "để lại" yếu (mục nhỏ, đúng file, vừa phạm vi) → không chặn, ghi gợi ý;
-- mục nhãn `[sau v1.0]` ghi "để lại (K49)" → lý do đủ, không gợi ý gộp. Tới khi phát hành v1.0, task không gộp mục `[sau v1.0]` (`CLAUDE.md`, "Quy trình một task" bước 2): PR sửa một mục như vậy → **chặn**, loại (b).
+- mục mang nhãn đích của việc khác ghi "để lại → <nhãn>" → lý do đủ, không gợi ý gộp (luật nhãn đích: đầu mục OPEN của sổ, `CLAUDE.md` "Quy trình một task" bước 2, ADR-0001 phụ lục M14);
+- mục mang nhãn của chính Issue (`[T-… #<issue>]`) phải "đã sửa". Để lại mà không nêu nhãn đích mới cùng loại (vượt cỡ, cần cổng) → **chặn**, loại (a). `notes-for` chỉ in mục trùng file: tìm cả mục nhãn của Issue mà không trùng file bằng `rg -n "#<issue>\]" docs/state/review-notes.md`, áp cùng luật.
 
 Head chưa có `tools/notes-for.mjs` (nhánh cắt trước khi T-261 merge) → vẫn đứng trong worktree review, chạy bản của checkout chính: `node C:/workspace/Project-2C/tools/notes-for.mjs --pr <N>` (dấu `/` chạy được cả trong Bash lẫn PowerShell). Lệnh đọc sổ và danh sách file của thư mục đang đứng, tức của head.
 
-**PR sửa phát hiện** (T-386; kế hoạch deep review `docs/process/deep-review-phase-1-6.md` §L6.10) là PR đóng Issue có mục "Ngân sách": Issue sửa vấn đề deep review `DR6-*` hay ghi chú của sổ. Mục đó trống (form ghi `_No response_`) hay Issue không có mục đó → bỏ qua đoạn này. Thân PR sửa phát hiện có ba mục, đúng tên:
+**PR sửa phát hiện** (T-386; kế hoạch deep review `docs/process/deep-review-phase-1-6.md` §L6.10) là PR đóng Issue có mục "Ngân sách": Issue sửa vấn đề deep review `DR6-*` hay ghi chú của sổ. Mục đó trống (form ghi `_No response_`, hay chỉ ghi "Không", "—", "Không áp dụng") hay Issue không có mục đó → bỏ qua đoạn này. Thân PR sửa phát hiện có ba mục, đúng tên:
 
 | Mục của thân PR | Ghi gì | Review kiểm |
 |---|---|---|
@@ -101,8 +102,11 @@ Head chưa có `tools/notes-for.mjs` (nhánh cắt trước khi T-261 merge) →
 | "Cỡ so ngân sách" | Dòng sản phẩm / dòng test thực tế so với ngân sách của Issue | Tự tính ở head như dưới, so với số của thân PR |
 
 - Thiếu một mục, hay mục ghi mà không khớp diff → **chặn**, loại (a) hay (c).
-- **Cỡ** = dòng thêm + xóa của `git diff --numstat -M origin/<baseRefName>...<headRefOid>`, mỗi file xếp bằng `classifyFile` của `tools/size-report-core.mjs` (như §L6.3 của kế hoạch): `product` là dòng sản phẩm, `test` là dòng test; trong file Rust, dòng của khối `#[cfg(test)]` là dòng test. File sinh tự động và file `classifyFile` không đếm (`docs/**`, `*.md`, `.json`…) không tính. Ngân sách là một khoảng thì lấy cận trên.
-- Dòng sản phẩm vượt 1,5 lần ngân sách sản phẩm, hay dòng test vượt 1,5 lần ngân sách test → **chặn**, nên `REVIEW: CHANGES`; trừ khi thân PR trích câu Owner đồng ý, nguyên văn, có ngày. Comment ghi số thực tế, ngân sách và tỉ lệ của cả hai.
+- **Cỡ** = dòng thêm + xóa của `git diff --numstat -M origin/<baseRefName>...<headRefOid>`, mỗi file xếp bằng `classifyFile` của `tools/size-report-core.mjs` (như §L6.3 của kế hoạch): `product` là dòng sản phẩm, `test` là dòng test. File sinh tự động và file `classifyFile` không đếm (`docs/**`, `*.md`, `.json`…) không tính. Ngân sách là một khoảng thì lấy cận trên. Ba chỗ lệnh không tự làm, tính tay theo cùng cách:
+  - file Rust: `numstat` chỉ cho một tổng mỗi file, `classifyFile` xếp mọi `.rs` là `product`. Tách theo hunk của `git diff -M origin/<baseRefName>...<headRefOid> -- <file>.rs`: dòng đổi nằm trong khối `#[cfg(test)]` là dòng test, còn lại là dòng sản phẩm;
+  - file đổi tên: `numstat` in dạng `dir/{a.ts => b.ts}`, chuỗi đó `classifyFile` không xếp được (trả `null`). Lấy đường dẫn mới (`dir/b.ts`) rồi xếp;
+  - ngân sách thiếu số của một loại, hay số đó bằng 0: không so 1,5 lần cho loại đó, chỉ ghi số thực tế.
+- Dòng sản phẩm vượt 1,5 lần ngân sách sản phẩm, hay dòng test vượt 1,5 lần ngân sách test (loại có ngân sách, như trên) → **chặn**, nên `REVIEW: CHANGES`; trừ khi thân PR trích câu Owner đồng ý, nguyên văn, có ngày. Comment ghi số thực tế, ngân sách và tỉ lệ của cả hai.
 
 ### B. Trục Standards
 
@@ -135,11 +139,12 @@ Mọi mức gọi Skill `code-review` (Owner quyết 21/10/2026, ADR-0017 phụ 
 
 - **Chặn** = sai spec (A), vi phạm checklist (B), bug được xác nhận (C). **Không chặn** = mùi code, NIT, gợi ý.
 - Mục không chặn sẽ được PR sổ ghi vào `docs/state/review-notes.md`: đối chiếu sổ (OPEN / ACCEPTED) trước khi ghi một mục là MỚI, và mỗi mục nêu ít nhất một đường dẫn file trong backtick để `notes-for` khớp nó với task sau.
-- **Đề xuất K48** cho mỗi mục không chặn, tới khi phát hành v1.0 (kế hoạch deep review `docs/process/deep-review-phase-1-6.md` §L6.1, bảng K48; sau v1.0 Owner xét lại). Ghi mức theo thước §4.3 của kế hoạch (Critical / High / Medium / Low / Nit) và trục chính theo §4.1 (E, C, D, G, S, P, B, T, A), rồi đề xuất:
-  - **chặn phát hành**: Critical, High, Medium; Low ở trục D (dữ liệu), S (an toàn ở ranh giới), G (guardrail AI). Low có hậu quả lên dữ liệu đã lưu, backup, key hay output AI thì xếp D / S / G, dù trục khác cũng hợp;
-  - **[sau v1.0]**: Low ở trục khác (E, C, P, B, T, A), Nit.
+- **Đề xuất nhãn đích** cho mỗi mục không chặn (Owner quyết 12/11/2026, ADR-0001 phụ lục M14; luật ở đầu mục OPEN của sổ). Ghi mức theo thước §4.3 của kế hoạch deep review `docs/process/deep-review-phase-1-6.md` (Critical / High / Medium / Low / Nit) và trục chính theo §4.1 (E, C, D, G, S, P, B, T, A), để xếp thứ tự: Medium trở lên, và Low ở trục D (dữ liệu), S (an toàn ở ranh giới), G (guardrail AI) làm trước; Low có hậu quả lên dữ liệu đã lưu, backup, key hay output AI thì xếp D / S / G, dù trục khác cũng hợp. Rồi đề xuất nhãn, lấy bậc đầu tiên có:
+  1. Issue đang mở phụ trách file đó → `[T-… #…]`;
+  2. việc dự kiến cùng loại trong spec (danh sách tên đích, `docs/design/phase-6-phan-hoi-dung-thu.md` §12) → `[<tên việc>]`;
+  3. Issue dọn sổ cùng loại → `[DS-…]`; không DS nào cùng loại thì đề xuất một DS mới, nêu loại.
 
-  Đề xuất không đổi kết luận PASS / CHANGES của PR. PR sổ gắn nhãn theo nó (`auto-issues` §3.5).
+  Mọi mục làm trước v1.0; chỉ Owner chuyển một mục sang ACCEPTED (không sửa). Đề xuất không đổi kết luận PASS / CHANGES của PR. PR sổ gắn nhãn theo nó (`auto-issues` §3.5).
 - Có ít nhất một mục chặn → `REVIEW: CHANGES`. Ngược lại → `REVIEW: PASS` (có thể "kèm ghi chú").
 - Không gộp và không xếp hạng lẫn nhau giữa các trục.
 
@@ -155,17 +160,17 @@ PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có)
 
 ## Standards
 - [chặn] `file:line`: … (checklist §…)
-- [không chặn · K48: sau v1.0, Nit / C] `file:line`: … (checklist §…)
+- [không chặn · Nit / C · đích: [DS-1]] `file:line`: … (checklist §…)
 
 ## Correctness
 - [chặn] `file:line`: … (tái hiện: …)
-- [không chặn · K48: chặn phát hành, Low / D] `file:line`: …
+- [không chặn · Low / D · đích: [T-… #…]] `file:line`: …
 
 ## Tóm tắt
 Spec: n mục (nặng nhất: …) · Standards: n · Correctness: n
 ```
 
-Trục nào không có mục thì ghi "Không có phát hiện". Mục không chặn ở trục nào cũng ghi đề xuất K48 như hai dòng mẫu trên.
+Trục nào không có mục thì ghi "Không có phát hiện". Mục không chặn ở trục nào cũng ghi mức / trục và đề xuất nhãn đích như hai dòng mẫu trên.
 
 ## 5. Sau comment
 

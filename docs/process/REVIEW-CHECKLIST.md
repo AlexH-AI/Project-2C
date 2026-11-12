@@ -12,7 +12,7 @@ Quy trình đầy đủ nằm ở skill `review-pr` (ADR-0017): xác định m�
 - [ ] Không làm ngoài phạm vi; chỉ sửa các file được phép trong Issue. File ngoài danh sách phải được PR liệt kê kèm lý do (P-2).
 - [ ] Code sản phẩm ≤ ~400 dòng, tổng diff kể cả test ≤ ~800 dòng (không tính lockfile, migration SQL, snapshot, fixture / dữ liệu seed tĩnh sinh tự động — PR phải liệt kê).
 - [ ] PR sửa phát hiện (Issue có mục "Ngân sách", T-386): thân PR có ba mục "Test đỏ khi gỡ phần sửa", "Quét cùng mẫu", "Cỡ so ngân sách", khớp diff; dòng sản phẩm và dòng test, mỗi loại, không vượt 1,5 lần ngân sách của Issue, trừ khi thân PR trích câu Owner đồng ý (skill `review-pr` §3.A).
-- [ ] Mục OPEN nhãn `[sau v1.0]` trùng file: không gộp, thân PR ghi "để lại (K49)" (tới khi phát hành v1.0).
+- [ ] Nhãn đích của sổ ghi chú (ADR-0001 phụ lục M14): PR gộp mọi mục OPEN mang nhãn của Issue (`[T-… #<issue>]`), hoặc thân PR nêu nhãn đích mới cùng loại cho mục vượt cỡ / cần cổng; mục "Trùng file" mang nhãn việc khác ghi "để lại → <nhãn>".
 
 ## 2. Kiểm thử
 

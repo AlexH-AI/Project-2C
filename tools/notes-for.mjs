@@ -33,13 +33,14 @@ const gh = (args) => run('gh', args, { timeout: 30000 });
 
 const isNumber = (value) => /^\d+$/.test(value ?? '');
 
-// What to do with the "Trùng file" notes, by what the files come from.
+// What to do with the "Trùng file" notes, by what the files come from. Each OPEN note carries
+// one target label, the work that fixes it (ADR-0001 appendix M14, T-419).
 const PLAN =
-  'Gộp vào task những mục "Trùng file" còn vừa phạm vi và cỡ (tính vào ước lượng); trước khi mở PR chạy lại với --diff.';
+  'Gộp vào task mọi mục mang nhãn đích của task, [T-… #<issue>] (tính vào ước lượng; cả mục không trùng file: rg -n "#<issue>\\]" docs/state/review-notes.md). Mục mang nhãn việc khác: để lại → <nhãn>. Mục vượt cỡ hay cần cổng: đổi nhãn sang việc khác cùng loại. Trước khi mở PR chạy lại với --diff.';
 const ANSWER =
-  'Thân PR, mục "Ghi chú OPEN liên quan": mỗi mục "Trùng file" một dòng — đã sửa, hoặc để lại + lý do (ngoài phạm vi, vượt cỡ, cần cổng G…, chỉ ghi lại). Mục đã sửa chuyển sang RESOLVED ở PR sổ sau review.';
+  'Thân PR, mục "Ghi chú OPEN liên quan": mỗi mục "Trùng file" một dòng — đã sửa (mục mang nhãn của task), hoặc để lại → <nhãn> + lý do (mục mang nhãn việc khác; mục của task vượt cỡ / cần cổng thì nêu nhãn đích mới cùng loại). Mục đã sửa chuyển sang RESOLVED ở PR sổ sau review.';
 const CHECK =
-  'review-pr (Spec): mục "Trùng file" không có dòng trong "Ghi chú OPEN liên quan" của thân PR → chặn; ghi "đã sửa" mà diff không sửa → chặn.';
+  'review-pr (Spec): mục "Trùng file" không có dòng trong "Ghi chú OPEN liên quan" của thân PR → chặn; ghi "đã sửa" mà diff không sửa → chặn; mục mang nhãn của Issue để lại mà không nêu nhãn đích mới → chặn.';
 
 /** The files to look for, how the first output line names them, and the hint to end with. */
 function targetsOf(argv, root, files) {
@@ -47,7 +48,8 @@ function targetsOf(argv, root, files) {
   if (isNumber(mode)) {
     const body = gh(['issue', 'view', mode, '--json', 'body', '--jq', '.body']);
     const targets = allowedPatterns(body, files);
-    return { targets, source: `Issue #${mode} (${targets.length} đường dẫn / glob)`, hint: PLAN };
+    const hint = PLAN.replaceAll('<issue>', mode);
+    return { targets, source: `Issue #${mode} (${targets.length} đường dẫn / glob)`, hint };
   }
   if (mode === '--pr' && isNumber(rest[0])) {
     // A renamed file counts under its old name too: a note may name it so.
