@@ -1,6 +1,6 @@
 # Spec Phase 6 — Phản hồi dùng thử exe `5215b2e` (G1)
 
-- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden B và mô hình dữ liệu: Owner duyệt G2 ngày 13/11/2026, T-421; mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8). Hướng làm bản macOS (§9): ADR-0019, Accepted ngày 12/11/2026 (G1, G4, G6). Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11; ADR-0018 và golden Owner duyệt G1, G2 ngày 12/11 (T-418).
+- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden B và mô hình dữ liệu: Owner duyệt G2 ngày 13/11/2026, T-421; mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1) và sáu điểm D-a … D-f (§6.2, Owner chốt 11/11/2026; mockup đợt d `forecast.html` và golden D `docs/golden/forecast.md` chờ Owner duyệt G3 / G2, T-423). Còn mở: **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8). Hướng làm bản macOS (§9): ADR-0019, Accepted ngày 12/11/2026 (G1, G4, G6). Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11; ADR-0018 và golden Owner duyệt G1, G2 ngày 12/11 (T-418).
 - **Soạn:** 10/11/2026, `main` `de9cde7` (code `5215b2e`). Nguồn: phản hồi dùng thử của Owner (§1), HANDOFF bước 0.
 
 ## 1. Phản hồi của Owner (nguyên văn)
@@ -58,7 +58,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | **B.** HĐ hủy, tỷ lệ hủy | 5, 6 | G2, G3 | 2 | Nội dung đã duyệt (§4); golden B và mô hình dữ liệu: G2 13/11/2026; ô chỉ số của Tổng quan: G3 đợt c 13/11/2026; chờ mockup hộp hủy HĐ (đợt f) |
 | **C.** Tìm KH, tìm RM; danh sách KH của một RM | 2; tin thêm về "Team & nhân sự" | G3 | 3 | Nội dung đã chốt (§5); chờ mockup |
 | **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3: mockup đợt a (vỏ app) | 3 | Owner duyệt G3 ở đợt a ngày 11/11 (§7.2) |
-| **D.** Forecast | 4 | G2, G3 | 4 | Nguồn số tiền đã chốt (§6.1); còn 6 điểm mở (§6.2) |
+| **D.** Forecast | 4 | G2, G3 | 4 | Nguồn số tiền chốt 10/11 (§6.1); D-a … D-f chốt 11/11 (§6.2); mockup đợt d và golden D: chờ G3 / G2 (T-423, #1242) |
 | **E.** Làm lại Báo cáo trên app và file Excel | 3; tin thêm về "báo cáo" | G3: mockup cả màn Báo cáo lẫn file Excel | 5 | Chờ vòng ý tưởng UI/UX và mockup (§7.1) |
 | **G.** Song ngữ Việt / Anh, tiền tệ chọn một lần, dấu kiểu Excel | ngoài §1: Owner 11–12/11 | G1, G2 (T-418), G3 (wizard, Cài đặt), G5 (cùng A6) | sau A; dịch làm cuối | ADR-0018 và golden: Owner duyệt G1, G2 ngày 12/11 (§11) |
 
@@ -215,6 +215,18 @@ B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm ch�
 | D-e | Lịch thiếu case size | **Đã chốt 11/11/2026**, Owner: "case size FC là owner/user nhập, không dùng AI hay thuật toán tự tính tỉ lệ". Mọi số tiền trong Forecast là số người dùng nhập; app không dùng AI hay thuật toán để ước tính case size hay tỷ lệ. Lịch thiếu case size: đếm, liệt kê để người dùng điền (điền tại chỗ trong Forecast), không cộng vào tổng. Ô "Case size dự kiến" điền sẵn số gần nhất của KH trong hộp đặt / dời lịch (§6.1, Owner 10/11) giữ nguyên: đó là gợi ý người dùng thấy và sửa được trước khi lưu, không phải số app tự đưa vào Forecast. |
 | D-f | Xuất Excel cho Forecast | **Đã chốt 11/11/2026**, Owner: "Có xuất Excel". Forecast có nút xuất Excel và một sheet "Forecast" trong file Excel mới của E, cùng phong cách và màu logo (§8, điểm 8); bố cục sheet duyệt ở mockup Báo cáo + Excel. |
 
+**Mockup đợt d và golden D (T-423, #1242; chờ Owner duyệt G3 / G2).** Sáu điểm trên đã chốt; các chỗ ghi "cách hiểu của Claude" được vẽ ở `docs/design/mockups/forecast.html` và viết thành ví dụ tính tay ở `docs/golden/forecast.md` (kịch bản riêng, tháng 03/2029, F01–F41, kèm mô hình dữ liệu). Chín điểm G2 Owner quyết nằm ở mục `#ask` của mockup:
+
+1. KH có lịch ở hai tuần khác nhau (D-a mới nói về hai lịch trong cùng một khoảng). Đề xuất: mỗi KH một số, chọn trên mọi lịch Đã lên lịch từ hôm nay của KH, nằm ở ngày của lịch mang số; mọi khoảng là tổng theo ngày. Phương án khác: tính riêng trong từng khoảng đang xem, đúng chữ "nằm trong khoảng" của D-a ở trên.
+2. Bảy cách hiểu của D-a, D-b, D-c: so theo thời điểm nhập / sửa số; cùng lúc thì lịch ngày muộn hơn; lịch thiếu số không tham gia so; số nằm ở ngày của lịch mang số và tính cho RM ghi trên lịch đó; "đã đạt" đặt cạnh dự kiến; hôm nay Chủ Nhật thì lấy tuần sau; lịch đặt vào Chủ Nhật không tính.
+3. Nhịp cần mỗi tuần (§8, gạch "Mục tiêu doanh số"): không hiện khi đã đạt KPI hoặc khi tháng còn dưới 6 ngày Thứ Hai → Thứ Bảy.
+4. Case size dự kiến bằng 0: giữ luật phí hiện có (lớn hơn 0 hoặc để trống), hay nhận 0.
+5. KPI toàn bộ chỉ hiện khi mọi team đã có KPI của tháng.
+6. KPI lưu theo từng tháng; tháng đã qua có hiện KPI không (câu còn mở ở "Luật chung" của bảng luật "Điểm nhấn", §8).
+7. Đã đạt vượt KPI; ba điều kiện biên của bảng luật "Điểm nhấn" (ghi chú review PR #1240).
+8. Dời lịch có mang số và thời điểm nhập sang lịch mới không.
+9. Duyệt kịch bản D, kết quả F01–F41 và mô hình dữ liệu: dùng lại cột `appointments.expected_case_size`, thêm cột thời điểm nhập số, thêm bảng KPI tháng theo team (golden D mục 4, phụ lục "Forecast" của ADR-0007).
+
 ## 7. Phần E, F (chờ vòng ý tưởng UI/UX)
 
 ### 7.1 E — Báo cáo trên app và file Excel
@@ -365,6 +377,13 @@ Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đ
      5. Bảng luật bảy dòng (điều kiện, câu mẫu, nơi tới; kỳ đã qua chỉ còn luật 1, 2, 6, 7; góc nhìn RM không có luật mục tiêu tháng và luật thứ hạng): "Duyệt G2".
 
      Đợt c vậy là qua G3, và bộ luật "Điểm nhấn" qua G2: bảng luật ở gạch trên là nội dung Issue code làm theo (câu chữ, ngưỡng, thứ tự, nơi tới). `tong-quan.html` thay phần 1a–1e của `overview.html`. Chưa kiểm trên Safari / máy Mac thật; vẫn chưa ra Issue code. Còn lại: d Forecast + golden D, e Báo cáo + Excel, f hộp hủy HĐ, g hệ chuyển động.
+   - **Mockup đợt d (T-423 #1242, chờ Owner duyệt G3; golden D chờ G2):** `docs/design/mockups/forecast.html`, ghép từ bảng thành phần của đợt a và các thành phần của đợt b, c; thành phần mới thêm ở `ui2.css` mục 16 và `ui2.js` mục 19 (ba số cạnh nhau, đường băng tháng, dải tuần, lưới tháng, danh sách lịch của một ngày, ô điền case size tại chỗ, bảng nổi cạnh chỗ bấm), không đổi phần đã duyệt. Một cửa sổ bấm được trên macOS và Windows 11:
+     - **Ý 17 + 32:** công tắc Tuần này / Tháng này (Forecast không có bộ chọn kỳ: luôn là kỳ hiện tại, §1 ý 4); số lớn nhất là phần dự kiến, tách N1 / N2 / N3; đường băng tháng có ba số cạnh nhau (Đã đạt, Dự kiến, KPI tháng), thanh đã đạt + tuần này theo nhóm + các tuần còn lại, vạch KPI, % về đích, còn thiếu hay vượt, nhịp cần mỗi tuần kèm phép tính.
+     - **Ý 18, 19:** dải tuần Thứ Hai → Thứ Bảy (mỗi lịch một thẻ) và lưới tháng không có Chủ Nhật (ô đậm nhạt theo số tiền); ngày đã qua và ngày ngoài tháng gạch chéo; bấm một ngày ra danh sách lịch của ngày (giờ, KH, nhóm, RM, team, case size), bấm một dòng mở hồ sơ KH, nút quay lại về Forecast.
+     - **Ý 20:** bảng Team → RM (Tuần này, N1, N2, N3, Tháng này, Đã đạt, KPI tháng · về đích; dòng RM không có KPI); góc nhìn RM đổi thành danh sách lịch của RM; KH có hai lịch: lịch không mang số vẽ mờ kèm ghi chú; nút gom "lịch thiếu case size", điền tại chỗ, lưu là cộng ngay.
+     - **Hộp thoại:** ô "Case size dự kiến" ở hộp đặt lịch (6a) và hộp dời lịch (6e); ô "KPI tháng" ở hộp Tạo / Sửa team của đợt b; phần cũ của ba hộp giữ nguyên. Nút Xuất Excel là nút chính của thanh công cụ (D-f; sheet duyệt ở đợt e).
+     - Các cảnh: Toàn bộ · Tháng, Team · Tuần, RM; hôm nay là Chủ Nhật; chưa đặt KPI; KPI toàn bộ thiếu một team; đã đạt vượt KPI; đã đạt âm; KPI của tháng đã qua (hai phương án); trạng thái trống và lỗi; che tên KH. Số khớp `tong-quan.html` và `search-rm-team.html`: tuần này 555 tr (Sao Mai 240, Bình Minh 185, Hừng Đông 130), 17 lịch có case size, 2 lịch thiếu; tới cuối tháng 1.32 tỷ; đã đạt 1.38 tỷ; về đích 2.7 tỷ trên KPI 3 tỷ. Chưa kiểm trên Safari.
+     - Mười ba điểm Owner quyết ở G3 và chín điểm G2 nằm ở mục `#ask` của mockup (các điểm G2: §6.2); năm điểm có hình hai phương án (thứ tự của màn, lưới tháng, danh sách của ngày, KPI của tháng đã qua, KH có lịch ở hai tuần).
 2. **Owner thêm và chọn ý.**
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".
@@ -438,7 +457,7 @@ Ngoài bảng: tự cập nhật, ký Developer ID, Store và mở `.p2cbackup` 
 Thứ tự dưới (bước 2, 3) do Claude đề xuất ngày 12/11/2026 (T-419, #1227); Owner duyệt G1 cùng ngày, trong PR #1228: "Duyệt G1". Nó thay thứ tự trước đó (A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16, G-06 … G-11 chạy song song, Issue macOS chạy song song) bằng một chuỗi có Issue dọn sổ (§12) và luật song song theo file (§9.3 bước 3).
 
 1. Vòng ý tưởng UI/UX (§8). Thử bản macOS (§9.3 bước 1): xong 12/11/2026, C1–C8 OK (#1226).
-2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B (T-421, #1234: §4.5; Owner duyệt G2 ngày 13/11/2026) → mockup đợt c (T-422, #1238: `docs/design/mockups/tong-quan.html`, kèm bảng luật "Điểm nhấn" ở §8; Owner duyệt G3 và G2 ngày 13/11/2026) → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F). ADR macOS: ADR-0019 (T-420, #1230), viết sau bước thử; bảng Issue dự kiến Mac đã viết (§9.3). ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
+2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B (T-421, #1234: §4.5; Owner duyệt G2 ngày 13/11/2026) → mockup đợt c (T-422, #1238: `docs/design/mockups/tong-quan.html`, kèm bảng luật "Điểm nhấn" ở §8; Owner duyệt G3 và G2 ngày 13/11/2026) → đợt d + golden D (T-423, #1242: `docs/design/mockups/forecast.html`, `docs/golden/forecast.md`; chờ Owner duyệt G3 / G2) → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F). ADR macOS: ADR-0019 (T-420, #1230), viết sau bước thử; bảng Issue dự kiến Mac đã viết (§9.3). ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
 3. Owner bảo "ra issue": DS-1 → A1–A7 → DS-2 → G-01 … G-05 → vỏ app → B1–B3 → DS-3 → C1 / C2, F → D → E → DS-4 → G-06 … G-11 → G-12 … G-16. Issue Mac xen kẽ theo luật song song theo file (§9.3 bước 3). Mỗi Issue gộp các mục sổ mang nhãn đích của nó (§12). Chi tiết phần G: §11.4; tên Issue dự kiến: §3.6, §4.6, §5, §11.7, §12.2.
 4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → đóng phase → G7 → phát hành v1.0 cho cả hai.
 

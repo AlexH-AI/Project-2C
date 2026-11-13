@@ -8,6 +8,7 @@
    that lights what it finds · 14 pick one swatch or icon · 15 window.ui2 for the page's own script
    Round c (T-422, approved at G3 13/11/2026): 16 popovers of the toolbar (view menu, period picker) · 17 "Đếm", a number that runs to
    its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
+   Round d (T-423, waiting for G3): 19 a popover beside what opened it (ui2.placeBeside, "ui2:pop-at")
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
 (() => {
@@ -657,4 +658,46 @@
     box.addEventListener('pointerleave', () => box.classList.remove('scrubbing'));
   }
   Object.assign(window.ui2, { count, cum, closePops });
+
+  /* ---------- 19. A popover beside what opened it (round d: the appointments of one day, a list to fill in) ---------- */
+  // The popovers of section 16 hang under the toolbar. A control inside the screen opens one the same
+  // way (data-pop, .tl-pop with data-pop-for, data-pop-close) and adds data-pop-side ("left", or "right"
+  // to line up the right edges): the popover then sits beside that control, under it when there is
+  // room and above it when not, always inside .main. Several controls may open the same popover (the
+  // days of a grid): a click on another one moves it. Just before it is placed the window hears
+  // "ui2:pop-at" (detail: pop, from = the control), so the page can fill it first. It closes when the
+  // screen under it scrolls.
+  function placeBeside(pop, trigger) {
+    const host = pop.offsetParent || pop.parentElement, h = host.getBoundingClientRect(), t = trigger.getBoundingClientRect();
+    const s = h.width / host.offsetWidth || 1, W = host.offsetWidth, H = host.offsetHeight;
+    const left = trigger.dataset.popSide === 'right' ? (t.right - h.left) / s - pop.offsetWidth : (t.left - h.left) / s;
+    const under = (t.bottom - h.top) / s + 6, above = (t.top - h.top) / s - 6 - pop.offsetHeight;
+    pop.style.left = `${Math.max(12, Math.min(left, W - pop.offsetWidth - 12))}px`;
+    pop.style.top = `${under + pop.offsetHeight <= H - 12 || above < 72 ? Math.max(72, Math.min(under, H - pop.offsetHeight - 12)) : above}px`;
+  }
+  document.addEventListener('click', (e) => {
+    const win = e.target.closest('.win'), trigger = e.target.closest('[data-pop][data-pop-side]');
+    if (!win || !trigger) return;
+    const pop = $(`.tl-pop[data-pop-for="${trigger.dataset.pop}"]`, win);
+    if (!pop) return;
+    // Section 16 has just toggled it: closed by a click on another control means "show that one"
+    if (!pop.classList.contains('open')) {
+      if (pop._by === trigger || !pop._by) { pop._by = null; return; }
+      pop.classList.add('open');
+    }
+    pop._by = trigger;
+    $$(`[data-pop="${trigger.dataset.pop}"]`, win).forEach((t) => t.setAttribute('aria-expanded', String(t === trigger)));
+    win.dispatchEvent(new CustomEvent('ui2:pop-at', { detail: { pop: trigger.dataset.pop, from: trigger } }));
+    placeBeside(pop, trigger);
+  });
+  // Closed by a click elsewhere or by Esc: the next click on the same control opens it again
+  document.addEventListener('click', (e) => {
+    const win = e.target.closest('.win');
+    for (const pop of $$('.tl-pop', win || document)) if (pop._by && !pop.classList.contains('open')) pop._by = null;
+  });
+  document.addEventListener('scroll', (e) => {
+    const view = e.target.closest && e.target.closest('.view');
+    if (view === e.target) closePops(view.closest('.win'));
+  }, true);
+  Object.assign(window.ui2, { placeBeside });
 })();
