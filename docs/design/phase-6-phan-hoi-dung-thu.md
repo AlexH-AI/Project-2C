@@ -1,6 +1,6 @@
 # Spec Phase 6 — Phản hồi dùng thử exe `5215b2e` (G1)
 
-- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden G2 và mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8); hướng làm bản macOS (§9) là đề xuất, chờ Owner. Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11; ADR-0018 và golden Owner duyệt G1, G2 ngày 12/11 (T-418).
+- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden B và mô hình dữ liệu: Owner duyệt G2 ngày 13/11/2026, T-421; mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8). Hướng làm bản macOS (§9): ADR-0019, Accepted ngày 12/11/2026 (G1, G4, G6). Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11; ADR-0018 và golden Owner duyệt G1, G2 ngày 12/11 (T-418).
 - **Soạn:** 10/11/2026, `main` `de9cde7` (code `5215b2e`). Nguồn: phản hồi dùng thử của Owner (§1), HANDOFF bước 0.
 
 ## 1. Phản hồi của Owner (nguyên văn)
@@ -140,6 +140,7 @@ HĐ hủy tính vào kỳ chứa **ngày hủy** (Owner chọn "Ngày hủy" gi�
 - Đã nộp → Đã phát hành → **Đã hủy**. Chỉ HĐ đã phát hành mới hủy được.
 - Ngày hủy không trước ngày phát hành; luật ngày khác như ngày phát hành. FYP hủy bằng FYP phát hành của HĐ, không nhập riêng.
 - Bỏ hủy, sửa ngày hủy: trong hộp Sửa của HĐ. Xóa HĐ (xóa mềm) giữ như cũ.
+  - Bỏ hủy = xóa ngày hủy: HĐ trở lại Đã phát hành, app không giữ dấu vết lần hủy. Đây là đề xuất của Claude, Owner duyệt cùng G2 ngày 13/11/2026. Các luật khác của mô hình dữ liệu: golden `docs/golden/chi-so.md` mục 4.4.
 - Hủy không đổi nhóm KH. KH mà mọi HĐ đều đã hủy thì không còn nhãn "Đã có HĐ"; số HĐ trên thẻ KH không đếm HĐ hủy.
 
 ### 4.3 Chỉ số (G2)
@@ -154,8 +155,10 @@ Tên do Owner chốt: "Tổng số HĐ" (total policies), "Doanh số" (Total FY
 | **FYP phát hành** (mới, tách ra) | Σ FYP phát hành của HĐ phát hành trong kỳ (Total issued FYP; trước đây chính là Doanh số) |
 | **FYP hủy** (mới) | Σ FYP phát hành của HĐ hủy trong kỳ (Total cancelled FYP) |
 | **Doanh số** (đổi nghĩa) | FYP phát hành − FYP hủy (Total FYP); có thể âm |
-| **Tỷ lệ hủy** (mới) | HĐ hủy ÷ HĐ phát hành; kỳ không có HĐ phát hành → "—"; có thể vượt 100%, như Tỉ lệ chốt (golden G11, 150%). Dòng Tổng = Σ hủy ÷ Σ phát hành, không lấy trung bình |
-| Tỉ lệ chốt, HĐ nộp, Case size | Giữ nguyên. Tỉ lệ chốt vẫn = HĐ phát hành ÷ RF, chưa trừ hủy: nó đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+| **Tỷ lệ hủy** (mới) | HĐ hủy ÷ HĐ phát hành; kỳ không có HĐ phát hành → "—"; có thể vượt 100%, như Tỷ lệ chốt (golden G11, 150%). Dòng Tổng = Σ hủy ÷ Σ phát hành, không lấy trung bình |
+| Tỷ lệ chốt, HĐ nộp, Case size | Giữ nguyên. Tỷ lệ chốt vẫn = HĐ phát hành ÷ RF, chưa trừ hủy: nó đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+
+Cách viết: **"Tỷ lệ hủy"** và **"Tỷ lệ chốt"**, một cách viết cho cả hai chỉ số. Owner chọn ngày 13/11/2026 (câu Q4 của PR #1236, T-421): "Tỷ". Việc đổi chữ "Tỉ lệ chốt" đang có trong app và tài liệu: §4.6.
 
 ### 4.4 Hiện ở đâu
 
@@ -168,12 +171,19 @@ Tên do Owner chốt: "Tổng số HĐ" (total policies), "Doanh số" (Total FY
 
 - Cột ngày hủy của `policies` + migration (sau hai migration của A); lệnh hủy / bỏ hủy; luật kiểm khi nhập backup (ngày hủy chỉ có khi đã phát hành, không trước ngày phát hành).
 - Golden mới trong `docs/golden/chi-so.md`, Owner duyệt G2 trước khi code: tuần có 4 HĐ phát hành, 2 HĐ hủy → 50% (ví dụ của Owner); phát hành tuần 1, hủy tuần 2 (§4.1); tuần có 1 HĐ phát hành, 2 HĐ hủy → 200%; HĐ hủy rồi bỏ hủy; dòng Tổng của một team.
+  - **Golden B** (T-421, #1234; Owner duyệt G2 ngày 13/11/2026, PR #1236: "Duyệt G2 cả ba"): `docs/golden/chi-so.md` mục 4, kịch bản riêng ở năm 2028, dòng G23–G41. Năm ca trên: G27 (4 / 2 → 50%); G23, G24, G25 (§4.1); G28 (1 / 2 → 200%); G36 → G37 (bỏ hủy); G30, G31 (dòng Tổng của team, kiểm cộng ở mục 4.3). Thêm: kỳ có hủy, 0 phát hành (G24, G35); FYP phát hành sửa tay (G28); hủy khác tháng phát hành (G34, G35); hủy rồi xóa mềm (G38); hủy đúng ngày phát hành (G39); Tỷ lệ chốt không trừ hủy (G29, G30, G33). G01–G22 giữ số; cột mới của chúng theo một luật (mục 4.2).
+  - Mô hình dữ liệu HĐ hủy: golden mục 4.4 và phụ lục "HĐ hủy" của ADR-0007.
 - Mockup G3: `policy-forms.html` (nút, hộp hủy, nhãn), `overview.html` (ô KPI).
 - Cập nhật `docs/design/state-machines.md` (máy trạng thái HĐ).
 
 ### 4.6 Issue dự kiến (chưa tạo)
 
-B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm chỉ số, golden, dữ liệu giả lập) · B2 hồ sơ KH (nút, hộp hủy, nhãn) · B3 Tổng quan, Báo cáo, Excel. Cả ba sau A4 (không đụng file đang đổi tên).
+B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm chỉ số, golden, dữ liệu giả lập) · B2 hồ sơ KH (nút, hộp hủy, nhãn) · B3 Tổng quan, Báo cáo, Excel. Cả ba sau A4 (không đụng file đang đổi tên). Test bắt buộc của B1: G23–G41 và cột mới của G01–G22 (golden B, Owner duyệt G2 ngày 13/11/2026); fixture viết theo "Ghi chú cho B1" ở golden mục 4.4.
+
+Đổi chữ "Tỉ lệ chốt" thành "Tỷ lệ chốt" (Owner chọn "Tỷ" ngày 13/11/2026, §4.3):
+
+- **B3:** chuỗi `overview.kpi.closeRate` (`apps/desktop/src/i18n/vi.ts:987`; Tổng quan, Báo cáo, Excel lấy chữ từ đây), hai test đang so chữ (`e2e/overview.spec.ts:36`, `apps/desktop/src/routes/reports/report-workbook.test.ts:122`) và chú thích code.
+- **A5**, cùng script đổi chữ của tài liệu: mockup, golden (cả chữ "Tỉ lệ > 100%" ở ô G11, G20 của `chi-so.md`), bảng thuật ngữ §11.6. `CONTEXT.md` và golden B đã viết "Tỷ" từ T-421. Tài liệu lịch sử (§3.4) và lời Owner nguyên văn giữ nguyên.
 
 ## 5. Phần C — Tìm KH, tìm RM, danh sách KH của RM (nội dung chốt 10/11/2026)
 
@@ -338,7 +348,7 @@ Owner 10/11 sau đó: bản Mac "phải theo triết lý thiết kế của Mac 
 
 Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, gộp backup) để sau v1.0 (Owner 11/10/2026). Owner 10/11: Mac và PC **dùng chung một dữ liệu** ("chung vì các báo cáo nhập và xuất ra dạng excel, nên làm chung cho tiện"). Ba cách được nêu: backup / khôi phục tay giữa hai máy (đã có, cùng định dạng file), thư mục đồng bộ như OneDrive / iCloud, hay đồng bộ thật.
 
-**Owner chốt 11/11/2026** (chat ở Home PC, khi duyệt danh sách việc sau PR #1215): "Dữ liệu chung là file backup có thể dùng được trên cả 2 nền tảng". Mac và PC dùng chung dữ liệu bằng **file backup**: cùng một định dạng, xuất trên máy này và nhập được trên máy kia, cả hai chiều. v1.0 không có thư mục đồng bộ hay đồng bộ thật; hai cách đó xét sau v1.0, cùng phương án backup cloud. ADR "Bản macOS" (viết sau bước thử) sẽ ghi lại quyết định này; bước 5 của bước thử bản Mac (`nen-tang-mac-va-thuong-mai-hoa.md` §9) là nhập trên Mac một file `.p2cbackup` xuất từ bản Windows.
+**Owner chốt 11/11/2026** (chat ở Home PC, khi duyệt danh sách việc sau PR #1215): "Dữ liệu chung là file backup có thể dùng được trên cả 2 nền tảng". Mac và PC dùng chung dữ liệu bằng **file backup**: cùng một định dạng, xuất trên máy này và nhập được trên máy kia, cả hai chiều. v1.0 không có thư mục đồng bộ hay đồng bộ thật; hai cách đó xét sau v1.0, cùng phương án backup cloud. ADR-0019 §3 ghi lại quyết định này; bước 5 của bước thử bản Mac (`nen-tang-mac-va-thuong-mai-hoa.md` §9) là nhập trên Mac một file `.p2cbackup` xuất từ bản Windows.
 
 ### 9.3 Cách làm đề xuất
 
@@ -363,7 +373,7 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 | Mac-5 | Chữ, phím và hướng dẫn theo nền tảng: ⌘A / ⌘C / ⌘V, ⌘R thay Ctrl ở chữ giao diện và chặn tải lại; chữ "exe", Explorer, `backups\` theo nền tảng; hướng dẫn sử dụng phần macOS ("Vẫn mở" với chữ hộp chặn của macOS 27, Keychain, nơi để dữ liệu) và phần cài đặt Windows | M6 (hướng dẫn), M7, M8 | `apps/desktop/src/i18n/vi.ts`, xử lý phím của vỏ app, `docs/user-guide/` | — | low | — | A1, G-01 (`vi.ts`); Mac-2, Mac-3 (hướng dẫn tả bản cài, `.dmg`). Có thể tách phần hướng dẫn |
 | Mac-6 | Luật `build-mac` (Q6): `merge-pr` chặn PR đụng `EXE_PATHS` thiếu nhãn; `CLAUDE.md`, `.claude/rules/ci.md`; bước phát hành hai nền tảng từ một SHA | M5 | `tools/pr-core.mjs`, `tools/merge-pr.mjs` (+ test), `CLAUDE.md`, `.claude/rules/ci.md` | — | med | Q6, Q12 (K49 công cụ pipeline; chỉ làm khi `auto-issues` không chạy) | DS-1 (cùng `tools/`); không chạy cùng Mac-8 (`CLAUDE.md`) |
 | Mac-7 | E2E trên WebKit (project Playwright, job trong `macos.yml`), sửa test phụ thuộc Edge; thêm các dòng nghiệm thu macOS vào `nghiem-thu-v1.md` (C1–C8 của #1226, Keychain, `.dmg`, "Vẫn mở") | M9 | `playwright.config.ts`, `.github/workflows/macos.yml`, `e2e/**`, `docs/testing/nghiem-thu-v1.md` | — | med | Q7, Q10 (G4 WebKit) | Mac-3 (`macos.yml`); Mac-2 (`nghiem-thu-v1.md`). Owner chạy nghiệm thu Mac ở §10 bước 4 |
-| Mac-8 | Dựng MacBook làm máy dev thứ 3: tài liệu `docs/setup/`, bootstrap macOS, `tools/session-start` chạy được trên macOS, phụ lục ADR-0003 ba máy, `CLAUDE.md` mục "Môi trường Windows và 2 máy" | M10 | `docs/setup/`, `tools/` (bootstrap, session-start), ADR-0003, `CLAUDE.md` | — | med | G1 (phụ lục ADR-0003); G4 nếu thêm công cụ | ADR-0019 (Owner 11/11: task riêng sau ADR này). Không chạy cùng DS-1 (`tools/`), Mac-6 (`CLAUDE.md`) |
+| Mac-8 | Dựng MacBook làm máy dev thứ 3: tài liệu `docs/setup/`, bootstrap macOS, `tools/session-start` chạy được trên macOS, phụ lục ADR-0003 ba máy, `CLAUDE.md` mục "Môi trường Windows và 2 máy" | M10 | `docs/setup/`, `tools/` (bootstrap, session-start), ADR-0003, `CLAUDE.md` | — | med | G1 (phụ lục ADR-0003); G4 nếu thêm công cụ | ADR-0019 §1 (Owner chốt 12/11/2026: "Macbook sẽ là dev machine thứ 3"; ADR ghi dựng máy là task riêng sau ADR). Không chạy cùng DS-1 (`tools/`), Mac-6 (`CLAUDE.md`) |
 
 Ngoài bảng: tự cập nhật, ký Developer ID, Store và mở `.p2cbackup` bằng nhấp đúp để sau v1.0, kèm điều kiện xét lại (ADR-0019 §5, §6). Cả bản Mac ước 8 Issue.
 
@@ -381,7 +391,7 @@ Ngoài bảng: tự cập nhật, ký Developer ID, Store và mở `.p2cbackup` 
 Thứ tự dưới (bước 2, 3) do Claude đề xuất ngày 12/11/2026 (T-419, #1227); Owner duyệt G1 cùng ngày, trong PR #1228: "Duyệt G1". Nó thay thứ tự trước đó (A → G-01 … G-05 → B → C / F → D → E → G-12 … G-16, G-06 … G-11 chạy song song, Issue macOS chạy song song) bằng một chuỗi có Issue dọn sổ (§12) và luật song song theo file (§9.3 bước 3).
 
 1. Vòng ý tưởng UI/UX (§8). Thử bản macOS (§9.3 bước 1): xong 12/11/2026, C1–C8 OK (#1226).
-2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B → mockup đợt c → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F). ADR macOS: ADR-0019 (T-420, #1230), viết sau bước thử; bảng Issue dự kiến Mac đã viết (§9.3). ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
+2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B (T-421, #1234: §4.5; Owner duyệt G2 ngày 13/11/2026) → mockup đợt c → đợt d + golden D → đợt e → đợt f + mockup phần G (§11.5) → đợt g → viết các bảng "Issue dự kiến" còn thiếu (vỏ app, D, E, F). ADR macOS: ADR-0019 (T-420, #1230), viết sau bước thử; bảng Issue dự kiến Mac đã viết (§9.3). ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
 3. Owner bảo "ra issue": DS-1 → A1–A7 → DS-2 → G-01 … G-05 → vỏ app → B1–B3 → DS-3 → C1 / C2, F → D → E → DS-4 → G-06 … G-11 → G-12 … G-16. Issue Mac xen kẽ theo luật song song theo file (§9.3 bước 3). Mỗi Issue gộp các mục sổ mang nhãn đích của nó (§12). Chi tiết phần G: §11.4; tên Issue dự kiến: §3.6, §4.6, §5, §11.7, §12.2.
 4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → đóng phase → G7 → phát hành v1.0 cho cả hai.
 

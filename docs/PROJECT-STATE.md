@@ -309,6 +309,18 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - Q4 named no identifier, so Claude asked again; he chose "com.heritas.lcrm (Recommended)". The app identifier becomes `com.heritas.lcrm`, changed once before G7 by issue Mac-2.
     - Asked to approve the gates (G1 for Q1–Q7; G4 for the Keychain crate `apple-native-keyring-store` 1.0.2, NSIS and Playwright's WebKit; G6 for the macOS key store; lifting K49 for the Windows code of the installer (Q11) and for `merge-pr` requiring `build-mac` (Q12)), he chose "Duyệt tất cả (Recommended)".
     - **ADR-0019 is Accepted (G1, G4, G6).** K49 is lifted for issues Mac-2 and Mac-6 (Mac-6 only while `auto-issues` is not running). Still no code issue until the OWNER says so.
+- 2026-11-13: golden B of part B (cancelled policies, cancellation rate; T-421 #1234, PR #1236). The OWNER asked for it on 12/11 (Issue #1234): "Làm golden B".
+  - Claude wrote three things, with the G2 questions Q1–Q3 in the PR body:
+    - scenario B, set in 2028 so that G01–G22 keep their numbers (rows G23–G41 of `docs/golden/chi-so.md` §4);
+    - the data model of a cancelled policy;
+    - an ADR-0007 appendix.
+  - Spelling (ledger note L126, Q4 of the PR). Asked to pick one spelling for both rates, the OWNER answered on 13/11, in chat with the T-421 session on the Home PC: "Tỷ".
+    - The metrics are written "Tỷ lệ hủy" and "Tỷ lệ chốt".
+    - Issue B3 changes the app string "Tỉ lệ chốt" (`vi.ts`, two tests). Issue A5 changes the mockups and current docs. History docs and verbatim quotes keep their spelling (spec §4.3, §4.6).
+  - G2. Asked to approve Q1–Q3 of the PR (the scenario data, the results G23–G41 with the rule for the new columns of G01–G22, and the data model), the OWNER answered the same day, in chat with the T-421 session on the Home PC: "Duyệt G2 cả ba".
+    - **Golden B and the data model of a cancelled policy are approved at G2.** The ADR-0007 appendix is Accepted (G2), and rows G23–G41 are required tests of issue B1.
+    - The approval covers all ten of Claude's model proposals, among them "bỏ hủy = xóa ngày hủy": uncancelling clears the cancellation date, and the policy is issued again with no trace.
+    - Still no code issue until the OWNER says so.
 
 ## Next decision
 
