@@ -40,16 +40,16 @@ Owner 11/11/2026 đưa giao diện song ngữ Việt / Anh và tiền tệ chọ
   - Giữ `tabular-nums`.
 - **Điểm 1** giữ nguyên. Thêm: file Excel lấy ngôn ngữ của app lúc xuất, `numFmt` theo tiền tệ; làm trong phần E của spec Phase 6 phản hồi dùng thử.
 
-## Phụ lục — Báo cáo và file Excel của đợt e (13/11/2026; CHỜ Owner duyệt G3, T-424 #1247)
+## Phụ lục — Báo cáo và file Excel của đợt e (13/11/2026; Owner duyệt G3 cùng ngày, T-424 #1247)
 
-Mockup `docs/design/mockups/bao-cao.html` (đợt e của vòng UI/UX mới; phần E của spec `docs/design/phase-6-phan-hoi-dung-thu.md` §7.1, §8) trình bày lại màn Báo cáo và file Excel. Phụ lục này ghi phần đổi so với thân ADR; nó có hiệu lực khi Owner duyệt G3 đợt e. Lời Owner làm căn cứ: "cả báo cáo trên app và báo cáo trên excel phải được mockup trình bày lại cho anh duyệt, phong cách đẳng cấp, chuyên nghiệp" (10/11); "Dùng màu logo", "In giấy sáng", "Có xuất Excel" cho Forecast (11/11).
+Mockup `docs/design/mockups/bao-cao.html` (đợt e của vòng UI/UX mới; phần E của spec `docs/design/phase-6-phan-hoi-dung-thu.md` §7.1, §8) trình bày lại màn Báo cáo và file Excel. Phụ lục này ghi phần đổi so với thân ADR. Owner duyệt G3 đợt e ngày 13/11/2026 (16 điểm, chọn phương án đề xuất ở mọi điểm; spec §8, gạch "G3 đợt e"): "A · Bảy sheet", "Duyệt" bảng màu và kiểu của file, "Duyệt cả hai" cho sheet Forecast và file của màn Forecast, "Duyệt" luật của file, "Duyệt" bản in. Lời Owner làm căn cứ: "cả báo cáo trên app và báo cáo trên excel phải được mockup trình bày lại cho anh duyệt, phong cách đẳng cấp, chuyên nghiệp" (10/11); "Dùng màu logo", "In giấy sáng", "Có xuất Excel" cho Forecast (11/11).
 
 - **Điểm 1, cấu trúc file** ("mỗi sheet 1 bảng"): đổi thành bảy sheet.
   - **Tóm tắt:** trang 1 của Bản tin (đầu sheet có logo, bốn số chính, bảng theo team, nhận xét theo bảng luật Điểm nhấn); in vừa một tờ A4 dọc.
   - **Team – RM** và **Theo mốc:** hai sheet sổ, mỗi dòng đủ 23 cột trong bốn nhóm cột có tên (Kết quả 8, Chuyển đổi 3, Lịch hẹn 5, Khách hàng cuối kỳ 7); RM là dòng nhóm gập dưới team; dòng tiêu đề và cột tên đứng yên khi cuộn.
   - **HĐ hủy:** mỗi dòng một HĐ có ngày hủy trong kỳ. **Xu hướng:** 6 kỳ gần nhất cùng loại (không có ở kỳ Ngày, Tùy chọn). **Forecast:** chỉ khi kỳ của báo cáo đang chạy. **Định nghĩa.**
   - Nút Xuất Excel của màn Forecast (spec §6.2, D-f) ghi một file riêng: Forecast, Lịch hẹn, Định nghĩa.
-  - Phương án Owner có thể chọn thay: mỗi bảng của Sổ số một sheet (mười sheet hẹp).
+  - Phương án bị bỏ: mỗi bảng của Sổ số một sheet (mười sheet hẹp). Các sheet Tóm tắt, Team – RM, Xu hướng của kỳ Tháng có cột / dòng "KPI tháng" (Owner: "A · Báo cáo có KPI").
 - **Luật của file:**
   - Số là số thật có `numFmt` (tiền đủ đồng `#,##0`, tiêu đề cột ghi "(VNĐ)"; tỷ lệ `0.0%`); chỗ màn ghi "—" là ô trống. `numFmt` theo tiền tệ và ngôn ngữ theo app lúc xuất: ADR-0018 §4, §10.
   - Công thức kèm kết quả tính sẵn: Tổng số HĐ, Doanh số, hai tỷ lệ (`IFERROR`), dòng team (`SUM` các RM), dòng Tổng (tổng các dòng team). Ở sheet Theo mốc, các cột Khách hàng của dòng Tổng là ảnh chụp cuối kỳ, không phải tổng các mốc.

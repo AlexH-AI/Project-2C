@@ -10,7 +10,7 @@
       line with what is expected, a tile that carries its sum, "Điểm nhấn"
    16 round d (T-423, approved at G3 13/11/2026): Forecast — three numbers side by side, the runway of the month, the week
       strip, the month grid, the list of one day, a case size filled in place
-   17 round e (T-424, waiting for G3): Báo cáo — the colours of paper (print, Excel), a page of "Bản tin", bars by
+   17 round e (T-424, approved at G3 13/11/2026): Báo cáo — the colours of paper (print, Excel), a page of "Bản tin", bars by
       team, a trend of six periods, an Excel sheet
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
@@ -985,12 +985,12 @@ button.dl-r:hover { background: var(--fill-1); }
 @media (prefers-reduced-transparency: reduce) { .day-pop { backdrop-filter: none; } }
 
 /* ============ 17. Round e (T-424): Báo cáo — the pages of "Bản tin", the paper they print on, a trend of six periods, an Excel sheet ============ */
-/* Built from the tokens of section 0 and one new block, the colours of paper; waiting for the Owner at G3.
+/* Built from the tokens of section 0 and one new block, the colours of paper; approved by the Owner at G3 on 13/11/2026.
    Nothing above this line changed. Rounded rectangles of this round take the rule of section 5: */
 .paper, .p-goal, .tbar .stack, .trend i, .xl { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
 
 /* Paper: what the report prints on, and the Excel file. Light, in the navy and the champagne of the
-   logo (Owner 11/11/2026: "In giấy sáng", "Dùng màu logo"). The app itself stays dark. Proposed: the
+   logo (Owner 11/11/2026: "In giấy sáng", "Dùng màu logo"). The app itself stays dark. Not in the app yet: the
    list, with the contrast of each pair, is in the round e appendix of ADR-0011. Champagne as text on
    white is the darker --paper-gold-ink (the --accent of the app is 2:1 on white). */
 :root {

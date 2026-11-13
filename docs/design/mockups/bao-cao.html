@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
   Mockup G3 đợt e (T-424 #1247): màn Báo cáo trong app và file Excel (ý 21, 22, 23, 35; phần E; sheet Forecast của D-f).
-  Trạng thái: CHỜ Owner duyệt G3 (16 điểm ở #ask).
+  Trạng thái: Owner duyệt G3 13/11/2026 (16 điểm ở #ask; điểm nào cũng chọn phương án đề xuất). Thay reports.html (03/10/2026).
   Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026, 13:35.
   Số viết theo ADR-0018: "1.38 tỷ", "555 tr", "40,000,000 VNĐ"; ngày dd/mm/yyyy; chữ "RM", "Tỷ lệ".
   Số lấy từ đúng bảng ngày của tong-quan.html (đợt c) và các lịch hẹn của forecast.html (đợt d): Tháng 11 MTD
@@ -22,7 +22,7 @@
   #states    Trạng thái trống và lỗi
   #mask      Che tên KH
   #feasible  Làm được bằng gì
-  #ask       16 điểm G3 chờ Owner
+  #ask       16 điểm G3 Owner đã quyết (13/11/2026)
   Vỏ app, bảng thành phần (đợt a), ô lệnh, "Lưu ý" (đợt b), Tổng quan (đợt c), Forecast (đợt d): app-shell.html,
   components.html, search-rm-team.html, tong-quan.html, forecast.html.
 -->
@@ -167,9 +167,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt e · Báo cáo và Excel</b>
-      <span class="state">Chờ Owner duyệt G3</span>
+      <span class="state ok">Đã duyệt G3 · 13/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#brief">Bản tin</a><a href="#trend">Xu hướng</a><a href="#print">Bản in</a><a href="#ledger">Sổ số</a><a href="#excel">File Excel</a><a href="#arrive">Từ Tổng quan</a><a href="#views">Góc nhìn</a><a href="#keep">Giữ / đổi</a><a href="#states">Trống / lỗi</a><a href="#ask">Cần anh quyết</a>
+        <a href="#brief">Bản tin</a><a href="#trend">Xu hướng</a><a href="#print">Bản in</a><a href="#ledger">Sổ số</a><a href="#excel">File Excel</a><a href="#arrive">Từ Tổng quan</a><a href="#views">Góc nhìn</a><a href="#keep">Giữ / đổi</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a>
       </nav>
     </header>
 
@@ -311,7 +311,7 @@
         <h3 class="sub-h" id="opt-says">Nhận xét của Bản tin: lấy câu nào <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 4 ở #ask</small></h3>
         <p class="sub-p">Anh chốt 11/11: nhận xét viết <b>theo luật, không gọi AI</b>, và bảng luật "Điểm nhấn" đã qua G2 ngày 13/11. Em không thêm luật mới: Bản tin dùng lại đúng các câu đó, bỏ mũi tên vì trang giấy không bấm được. Còn một lựa chọn: lấy đủ các câu như Tổng quan, hay chỉ các câu nói về kết quả.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 22px 26px"><h4>Nhận xét</h4><div data-spec="says"></div></div></div><div class="opt-t"><b>A · Như Tổng quan <span class="tag rec">đề xuất</span></b><p>Cùng kỳ, cùng góc nhìn thì Tổng quan và Bản tin nói cùng những câu, tối đa bốn, theo thứ tự ưu tiên của bảng luật. Câu "còn buổi hẹn chưa ghi kết quả" cho người đọc biết số của kỳ chưa đủ.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 22px 26px"><h4>Nhận xét</h4><div data-spec="says"></div></div></div><div class="opt-t"><b>A · Như Tổng quan <span class="tag rec">anh chọn 13/11</span></b><p>Cùng kỳ, cùng góc nhìn thì Tổng quan và Bản tin nói cùng những câu, tối đa bốn, theo thứ tự ưu tiên của bảng luật. Câu "còn buổi hẹn chưa ghi kết quả" cho người đọc biết số của kỳ chưa đủ.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div class="paper" style="padding: 22px 26px"><h4>Nhận xét</h4><div data-spec="says" data-only="1,4,6,7"></div></div></div><div class="opt-t"><b>B · Chỉ các câu về kết quả</b><p>Giữ luật 1, 7 (Tỷ lệ hủy), 4 (mục tiêu tháng), 6 (team dẫn đầu); bỏ ba câu nhắc việc (chưa ghi kết quả, thiếu case size, Forecast tuần). Bản gửi cấp trên gọn hơn, nhưng khác với câu đang hiện ở Tổng quan.</p></div></div>
         </div>
         <ul class="rules" style="margin-top: 18px">
@@ -429,7 +429,7 @@
         <h3 class="sub-h" id="opt-sheets">Chia sheet thế nào <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 11 ở #ask</small></h3>
         <p class="sub-p">Cả hai cách đều có đủ số. Khác nhau ở chỗ người nhận làm gì với file: lọc, sắp xếp, dựng pivot (cần mọi cột của một RM trên một dòng), hay chỉ mở xem từng bảng.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span class="wide">Team – RM</span><span class="wide">Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>A · Bảy sheet, hai sheet sổ rộng <span class="tag rec">đề xuất</span></b><p>Mỗi RM một dòng với đủ 23 cột, chia bốn nhóm cột có dải tên (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng); cột tên và dòng tiêu đề đứng yên khi cuộn. Hợp với lọc, sắp xếp, pivot. Hai file mẫu phía trên vẽ theo cách này.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span class="wide">Team – RM</span><span class="wide">Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>A · Bảy sheet, hai sheet sổ rộng <span class="tag rec">anh chọn 13/11</span></b><p>Mỗi RM một dòng với đủ 23 cột, chia bốn nhóm cột có dải tên (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng); cột tên và dòng tiêu đề đứng yên khi cuộn. Hợp với lọc, sắp xếp, pivot. Hai file mẫu phía trên vẽ theo cách này.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span>Kết quả</span><span>Chuyển đổi</span><span>Lịch hẹn</span><span>Khách hàng</span><span>Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>B · Mỗi bảng của Sổ số một sheet</b><p>Mười sheet hẹp, giống hệt các bảng trên màn, sheet nào cũng in vừa một tờ A4 ngang. Dễ nhận ra, nhưng muốn xem Doanh số cạnh số lịch hẹn của một RM thì phải ghép hai sheet.</p></div></div>
         </div>
         <div class="pgrid" style="margin-top: 20px">
@@ -470,19 +470,19 @@
             <tr><td>Ô Tỷ lệ chốt, Chuyển RF, HĐ nộp, Case size</td><td>Sổ số · bảng <b>Chuyển đổi</b>, cột đó được tô</td><td><button class="btn sm" data-arrive="conv:rf">Thử</button></td></tr>
             <tr><td>Câu "Tỷ lệ hủy … tăng / giảm" (luật 1, 7)</td><td>Sổ số · danh sách <b>HĐ hủy</b> của kỳ</td><td><button class="btn sm" data-arrive="cut:">Thử</button></td></tr>
             <tr><td>Câu "… dẫn đầu doanh số" / thứ hạng của team (luật 6)</td><td>Sổ số · bảng <b>Kết quả</b> theo team, cột Doanh số được tô (góc nhìn một team: về Toàn bộ để thấy các team)</td><td><button class="btn sm" data-arrive="result:sales">Thử</button></td></tr>
-            <tr><td>Câu "Đã đạt … mục tiêu tháng" của <b>kỳ Tháng đã qua</b> (luật 4)</td><td><b>Bản tin</b> của tháng đó, dòng KPI tháng ở trang 1 (đề xuất, xem dưới)</td><td><button class="btn sm" data-arrive="goal:">Thử</button></td></tr>
+            <tr><td>Câu "Đã đạt … mục tiêu tháng" của <b>kỳ Tháng đã qua</b> (luật 4)</td><td><b>Bản tin</b> của tháng đó, dòng KPI tháng ở trang 1 (anh chọn 13/11, xem dưới)</td><td><button class="btn sm" data-arrive="goal:">Thử</button></td></tr>
           </table>
         </div>
         <h3 class="sub-h" id="opt-kpi">KPI tháng trong Báo cáo, và nơi tới của luật 4 ở tháng đã qua <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 9 ở #ask</small></h3>
-        <p class="sub-p">Ở đợt d anh chọn "Mỗi tháng một KPI": tháng đã qua vẫn giữ KPI của nó, và câu luật 4 chạy thêm ở kỳ Tháng đã qua. Nơi tới "Báo cáo" của câu đó là do em tự đặt, anh chưa duyệt (phiên review ghi lại). Muốn nó có nghĩa thì Báo cáo của một kỳ Tháng phải cho thấy KPI.</p>
+        <p class="sub-p">Ở đợt d anh chọn "Mỗi tháng một KPI": tháng đã qua vẫn giữ KPI của nó, và câu luật 4 chạy thêm ở kỳ Tháng đã qua. Nơi tới "Báo cáo" của câu đó ở đợt d là do em tự đặt (phiên review ghi lại); muốn nó có nghĩa thì Báo cáo của một kỳ Tháng phải cho thấy KPI. Anh chọn A ngày 13/11.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goal" data-period="m:2026-10"></div><div data-spec="goalTable" data-period="m:2026-10" style="margin-top: 14px"></div></div></div><div class="opt-t"><b>A · Báo cáo của kỳ Tháng có KPI <span class="tag rec">đề xuất</span></b><p>Bản tin trang 1 có một dòng "KPI tháng": đã đạt bao nhiêu phần, vượt hay thiếu. Bảng Kết quả, trang Xu hướng và hai sheet Excel thêm cột "KPI tháng · đạt" ở dòng team. Chỉ ở kỳ Tháng; RM không có KPI. Câu luật 4 của tháng đã qua mở Bản tin của tháng đó.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goal" data-period="m:2026-10"></div><div data-spec="goalTable" data-period="m:2026-10" style="margin-top: 14px"></div></div></div><div class="opt-t"><b>A · Báo cáo của kỳ Tháng có KPI <span class="tag rec">anh chọn 13/11</span></b><p>Bản tin trang 1 có một dòng "KPI tháng": đã đạt bao nhiêu phần, vượt hay thiếu. Bảng Kết quả, trang Xu hướng và hai sheet Excel thêm cột "KPI tháng · đạt" ở dòng team. Chỉ ở kỳ Tháng; RM không có KPI. Câu luật 4 của tháng đã qua mở Bản tin của tháng đó.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goalTable" data-period="m:2026-10" data-nokpi></div></div></div><div class="opt-t"><b>B · Báo cáo không nói về KPI</b><p>KPI chỉ có ở Forecast và ở câu Điểm nhấn. Báo cáo chỉ ghi số thực tế như hôm nay. Khi đó câu luật 4 của tháng đã qua không có nơi tới: bỏ mũi tên, câu chỉ để đọc.</p></div></div>
         </div>
         <ul class="rules" style="margin-top: 18px">
           <li>Kỳ Tháng <b>đang chạy</b>: dòng KPI của Báo cáo chỉ ghi phần đã đạt (vd. "đã đạt 46%"). Số "dự kiến về đích" thuộc Forecast; nó vẫn có trong câu Điểm nhấn ở phần Nhận xét và trong sheet Forecast của file.</li>
           <li>KPI toàn bộ chỉ có khi mọi team đã đặt KPI của tháng đó (đã duyệt G2 ở đợt d). Tháng chưa đặt KPI: không có dòng KPI, cột ghi "—".</li>
-          <li><b>Ba chỗ của bảng luật Điểm nhấn em xin sửa chữ theo ghi chú review</b> (không đổi luật): ghi rõ "Owner 13/11 đợt d thay phần mục tiêu" cạnh hai câu của đợt c nói "kỳ đã qua không có câu về mục tiêu"; ghi rõ điều kiện biên (c) (câu "Đã đạt / Đã vượt mục tiêu tháng: …") chỉ dành cho kỳ Tháng đang chạy; kỳ Tháng đã qua mà đã đạt đúng bằng KPI thì dòng phụ không ghi "vượt" hay "thiếu".</li>
+          <li><b>Ba chỗ của bảng luật Điểm nhấn đã sửa chữ theo ghi chú review</b> (anh duyệt 13/11 cùng điểm 9; không đổi luật): ghi rõ "Owner 13/11 đợt d thay phần mục tiêu" cạnh hai câu của đợt c nói "kỳ đã qua không có câu về mục tiêu"; ghi rõ điều kiện biên (c) (câu "Đã đạt / Đã vượt mục tiêu tháng: …") chỉ dành cho kỳ Tháng đang chạy; kỳ Tháng đã qua mà đã đạt đúng bằng KPI thì dòng phụ không ghi "vượt" hay "thiếu".</li>
         </ul>
       </section>
 
@@ -519,7 +519,7 @@
         <h3 class="sub-h" id="opt-layout">Hai bố cục của màn <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 1 ở #ask</small></h3>
         <p class="sub-p">Hai hình là cả cửa sổ 1440 × 900, thu nhỏ để thấy bố cục.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="brief"></div><div class="opt-t"><b>A · Công tắc Bản tin / Sổ số <span class="tag rec">đề xuất</span></b><p>Mở Báo cáo là thấy Bản tin: câu tóm tắt và bốn số. Cần tra thì bấm sang Sổ số. Mỗi mặt một việc, không mặt nào phải cuộn qua mặt kia.</p></div></div>
+          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="brief"></div><div class="opt-t"><b>A · Công tắc Bản tin / Sổ số <span class="tag rec">anh chọn 13/11</span></b><p>Mở Báo cáo là thấy Bản tin: câu tóm tắt và bốn số. Cần tra thì bấm sang Sổ số. Mỗi mặt một việc, không mặt nào phải cuộn qua mặt kia.</p></div></div>
           <div class="opt"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="ledger"></div><div class="opt-t"><b>B · Chỉ có Sổ số trên màn</b><p>Màn Báo cáo là các bảng (như hình); Bản tin chỉ hiện khi bấm "Xem bản in". Gần bản đang có hơn, nhưng phần "đọc trong mười giây" bị giấu sau một nút.</p></div></div>
         </div>
       </section>
@@ -528,7 +528,7 @@
       <section class="sec" id="keep">
         <span class="kicker">So với bản đã duyệt 03/10/2026</span>
         <h2>Giữ gì, đổi gì so với Báo cáo đang có.</h2>
-        <p class="lead">Màn Báo cáo hiện tại làm theo <a href="reports.html">reports.html</a> (G3 #254, duyệt 03/10/2026). Các luật tính giữ nguyên; đổi cách bày. Duyệt đợt e thì mockup này thay <code>reports.html</code> (điểm 15 ở #ask).</p>
+        <p class="lead">Màn Báo cáo hiện tại làm theo <a href="reports.html">reports.html</a> (G3 #254, duyệt 03/10/2026). Các luật tính giữ nguyên; đổi cách bày. Anh duyệt ngày 13/11/2026 (điểm 15 ở #ask): mockup này thay <code>reports.html</code>.</p>
         <div class="pcard">
           <table class="law">
             <tr><th>Điều đã duyệt 03/10</th><th>Ở đợt e</th></tr>
@@ -594,28 +594,28 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Cần anh quyết · G3 đợt e</span>
+        <span class="kicker">Anh đã quyết · G3 · 13/11/2026</span>
         <h2>Mười sáu điểm của đợt e.</h2>
-        <p class="lead">Em sẽ hỏi anh từng điểm trong chat, mỗi điểm kèm phương án đề xuất và một phương án khác; lựa chọn có hình thì có mục riêng trong trang này (tên mục ghi ở từng điểm). Không hỏi lại điều anh đã chốt: bỏ nút "Lọc", màu logo cho file Excel, in giấy sáng, trang Xu hướng có trong Báo cáo, nhận xét viết theo luật và bảng luật Điểm nhấn, có xuất Excel cho Forecast, định nghĩa chỉ số của golden B và golden D, che tên KH, font hệ thống, chỉ Dark Mode. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <p class="lead">Anh đã trả lời cả mười sáu điểm ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt e". Không hỏi lại điều anh đã chốt: bỏ nút "Lọc", màu logo cho file Excel, in giấy sáng, trang Xu hướng có trong Báo cáo, nhận xét viết theo luật và bảng luật Điểm nhấn, có xuất Excel cho Forecast, định nghĩa chỉ số của golden B và golden D, che tên KH, font hệ thống, chỉ Dark Mode. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
         <ol class="asks">
-          <li><b>Bố cục màn Báo cáo?</b>Công tắc Bản tin / Sổ số, mở ra là Bản tin; thanh công cụ có góc nhìn, kỳ và nút Xuất Excel. Hình: <a href="#opt-layout">hai bố cục của màn</a>.<em>Đề xuất: A · Công tắc Bản tin / Sổ số. Phương án khác: B · chỉ có Sổ số trên màn, Bản tin chỉ hiện ở "Xem bản in".</em></li>
-          <li><b>Bản tin bốn trang như mục "Bản tin"?</b>Tóm tắt; chi tiết từng RM và HĐ hủy; hoạt động (lịch hẹn, từ buổi gặp tới hợp đồng, KH theo nhóm); Xu hướng và định nghĩa. Góc nhìn một RM còn ba trang.<em>Đề xuất: duyệt bốn trang. Phương án khác: ba trang như bảng ý tưởng (bỏ trang hoạt động, đưa các bảng đó sang Sổ số).</em></li>
-          <li><b>Câu tóm tắt và đoạn dẫn viết từ số theo khuôn?</b>Bảng khuôn ở mục <a href="#brief">Bản tin</a>: mức đổi viết bằng tiền; khuôn riêng cho Doanh số âm, kỳ chưa có HĐ, kỳ chưa bắt đầu; đoạn dẫn tối đa bốn câu.<em>Đề xuất: duyệt khuôn. Phương án khác: bỏ câu tóm tắt, trang 1 mở thẳng bằng bốn số.</em></li>
-          <li><b>Nhận xét của Bản tin lấy câu nào?</b>Hình: <a href="#opt-says">hai cách</a>.<em>Đề xuất: A · như Tổng quan (đúng các câu Điểm nhấn của kỳ, tối đa bốn). Phương án khác: B · chỉ các câu về kết quả (luật 1, 4, 6, 7).</em></li>
-          <li><b>Trang Xu hướng?</b>6 kỳ gần nhất cùng loại, có ở kỳ Tuần / Tháng / Năm; kỳ Ngày và Tùy chọn không có. Hình ở mục <a href="#trend">Xu hướng</a>.<em>Đề xuất: duyệt. Phương án khác: thêm cả kỳ Ngày (sáu ngày liền trước).</em></li>
-          <li><b>Bản in?</b>Công tắc "Xem bản in" đổi các trang sang giấy sáng; nút "In…" mở hộp in của hệ điều hành, lưu PDF từ hộp đó; A4 dọc; app không tự sinh PDF. Hình ở mục <a href="#print">Bản in</a>.<em>Đề xuất: duyệt. Phương án khác: v1.0 chưa có nút In, chỉ xuất Excel (sheet Tóm tắt in được từ Excel).</em></li>
-          <li><b>Sổ số năm bảng?</b>Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng, HĐ hủy; cột từng bảng như mục <a href="#ledger">Sổ số</a>; xếp dòng Theo team hoặc Theo mốc; bốn số trên cùng có so với kỳ trước.<em>Đề xuất: duyệt. Phương án khác: gộp Chuyển đổi vào Lịch hẹn, còn bốn bảng.</em></li>
-          <li><b>Từ Tổng quan tới đâu?</b>Bảng ở mục <a href="#arrive">Từ Tổng quan</a>: ô chỉ số tới bảng có cột đó (cột được tô), câu về Tỷ lệ hủy tới danh sách HĐ hủy, câu team dẫn đầu tới bảng Kết quả theo team.<em>Đề xuất: duyệt. Phương án khác: mọi đường đều mở Bản tin.</em></li>
-          <li><b>KPI tháng trong Báo cáo, và nơi tới của câu mục tiêu ở tháng đã qua?</b>Hình: <a href="#opt-kpi">hai cách</a>. Kèm ba chỗ sửa chữ của bảng luật Điểm nhấn theo ghi chú review (không đổi luật).<em>Đề xuất: A · Báo cáo của kỳ Tháng có KPI; câu đó mở Bản tin của tháng. Phương án khác: B · Báo cáo không nói về KPI, câu đó không có nơi tới.</em></li>
-          <li><b>Kỳ và góc nhìn của Báo cáo?</b>Năm loại kỳ như đang có; menu góc nhìn Toàn bộ / team / RM; đổi là áp dụng ngay; Xuất Excel theo đúng kỳ và góc nhìn đang xem.<em>Đề xuất: duyệt. Phương án khác: Báo cáo chỉ có kỳ Tuần / Tháng / Năm (bỏ Ngày và Tùy chọn).</em></li>
-          <li><b>File Excel chia sheet thế nào?</b>Hình: <a href="#opt-sheets">hai cách</a>.<em>Đề xuất: A · bảy sheet, hai sheet sổ rộng có nhóm cột. Phương án khác: B · mỗi bảng của Sổ số một sheet (mười sheet).</em></li>
-          <li><b>Bảng màu của giấy và kiểu của file Excel?</b>Bảng màu ở mục <a href="#print">Bản in</a>; đầu sheet có logo và vạch champagne, dòng tiêu đề nền navy chữ champagne, dòng Tổng kẻ đôi, số âm đỏ, không tô theo ngưỡng.<em>Đề xuất: duyệt. Phương án khác: dòng tiêu đề nền champagne nhạt chữ navy (nhẹ hơn, ít mực khi in).</em></li>
-          <li><b>Sheet Forecast và file của màn Forecast?</b>File Báo cáo có sheet Forecast khi kỳ đang chạy; nút Xuất Excel của màn Forecast ghi file riêng (Forecast, Lịch hẹn, Định nghĩa). Hình ở mục <a href="#excel">File Excel</a>.<em>Đề xuất: duyệt cả hai. Phương án khác: chỉ có file riêng của màn Forecast, file Báo cáo không có sheet Forecast.</em></li>
-          <li><b>Luật của file?</b>Số thật có định dạng; công thức cho dòng team, dòng Tổng và các cột tính; nhóm gập Team ▸ RM; khổ in; tên file theo luật đang có; tên KH đầy đủ; ngôn ngữ theo app.<em>Đề xuất: duyệt. Phương án khác: mọi ô là giá trị, không có công thức (file đơn giản hơn, nhưng sửa số thì tổng không đổi theo).</em></li>
-          <li><b>Giữ / đổi so với bản 03/10?</b>Bảng ở mục <a href="#keep">Giữ / đổi</a>; duyệt thì mockup này thay <code>reports.html</code>.<em>Đề xuất: duyệt.</em></li>
-          <li><b>Trạng thái trống và lỗi?</b>Kỳ chưa bắt đầu; kỳ chưa có số liệu; không có HĐ hủy; lỗi đọc dữ liệu cả màn; lỗi xuất Excel ở "Lưu ý".<em>Đề xuất: duyệt.</em></li>
+          <li><b>Bố cục màn Báo cáo?</b>Công tắc Bản tin / Sổ số, mở ra là Bản tin; thanh công cụ có góc nhìn, kỳ và nút Xuất Excel. Hình: <a href="#opt-layout">hai bố cục của màn</a>.<em>Anh trả lời 13/11: <b>"A · Công tắc"</b> (phương án đề xuất: công tắc Bản tin / Sổ số, mở ra là Bản tin; phương án bỏ: chỉ có Sổ số trên màn).</em></li>
+          <li><b>Bản tin bốn trang như mục "Bản tin"?</b>Tóm tắt; chi tiết từng RM và HĐ hủy; hoạt động (lịch hẹn, từ buổi gặp tới hợp đồng, KH theo nhóm); Xu hướng và định nghĩa. Góc nhìn một RM còn ba trang.<em>Anh trả lời 13/11: <b>"Duyệt bốn trang"</b> (phương án bỏ: ba trang, không có trang hoạt động).</em></li>
+          <li><b>Câu tóm tắt và đoạn dẫn viết từ số theo khuôn?</b>Bảng khuôn ở mục <a href="#brief">Bản tin</a>: mức đổi viết bằng tiền; khuôn riêng cho Doanh số âm, kỳ chưa có HĐ, kỳ chưa bắt đầu; đoạn dẫn tối đa bốn câu.<em>Anh trả lời 13/11: <b>"Duyệt khuôn"</b> (phương án bỏ: không có câu tóm tắt).</em></li>
+          <li><b>Nhận xét của Bản tin lấy câu nào?</b>Hình: <a href="#opt-says">hai cách</a>.<em>Anh trả lời 13/11: <b>"A · Như Tổng quan"</b> (đúng các câu Điểm nhấn của kỳ, tối đa bốn; phương án bỏ: chỉ các câu về kết quả).</em></li>
+          <li><b>Trang Xu hướng?</b>6 kỳ gần nhất cùng loại, có ở kỳ Tuần / Tháng / Năm; kỳ Ngày và Tùy chọn không có. Hình ở mục <a href="#trend">Xu hướng</a>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (có ở kỳ Tuần / Tháng / Năm; phương án bỏ: thêm cả kỳ Ngày).</em></li>
+          <li><b>Bản in?</b>Công tắc "Xem bản in" đổi các trang sang giấy sáng; nút "In…" mở hộp in của hệ điều hành, lưu PDF từ hộp đó; A4 dọc; app không tự sinh PDF. Hình ở mục <a href="#print">Bản in</a>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (có "Xem bản in" và "In…", app không tự sinh PDF; phương án bỏ: v1.0 chưa có nút In).</em></li>
+          <li><b>Sổ số năm bảng?</b>Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng, HĐ hủy; cột từng bảng như mục <a href="#ledger">Sổ số</a>; xếp dòng Theo team hoặc Theo mốc; bốn số trên cùng có so với kỳ trước.<em>Anh trả lời 13/11: <b>"Duyệt năm bảng"</b> (phương án bỏ: gộp Chuyển đổi vào Lịch hẹn).</em></li>
+          <li><b>Từ Tổng quan tới đâu?</b>Bảng ở mục <a href="#arrive">Từ Tổng quan</a>: ô chỉ số tới bảng có cột đó (cột được tô), câu về Tỷ lệ hủy tới danh sách HĐ hủy, câu team dẫn đầu tới bảng Kết quả theo team.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: mọi đường đều mở Bản tin).</em></li>
+          <li><b>KPI tháng trong Báo cáo, và nơi tới của câu mục tiêu ở tháng đã qua?</b>Hình: <a href="#opt-kpi">hai cách</a>. Kèm ba chỗ sửa chữ của bảng luật Điểm nhấn theo ghi chú review (không đổi luật).<em>Anh trả lời 13/11: <b>"A · Báo cáo có KPI"</b> (Báo cáo của kỳ Tháng có KPI; câu mục tiêu của tháng đã qua mở Bản tin của tháng đó; ba chỗ sửa chữ của bảng luật đã làm, và câu đó đã vẽ vào cảnh Tháng 10 của tong-quan.html; phương án bỏ: Báo cáo không nói về KPI).</em></li>
+          <li><b>Kỳ và góc nhìn của Báo cáo?</b>Năm loại kỳ như đang có; menu góc nhìn Toàn bộ / team / RM; đổi là áp dụng ngay; Xuất Excel theo đúng kỳ và góc nhìn đang xem.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: chỉ kỳ Tuần / Tháng / Năm).</em></li>
+          <li><b>File Excel chia sheet thế nào?</b>Hình: <a href="#opt-sheets">hai cách</a>.<em>Anh trả lời 13/11: <b>"A · Bảy sheet"</b> (phương án bỏ: mỗi bảng của Sổ số một sheet).</em></li>
+          <li><b>Bảng màu của giấy và kiểu của file Excel?</b>Bảng màu ở mục <a href="#print">Bản in</a>; đầu sheet có logo và vạch champagne, dòng tiêu đề nền navy chữ champagne, dòng Tổng kẻ đôi, số âm đỏ, không tô theo ngưỡng.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: dòng tiêu đề nền champagne nhạt chữ navy).</em></li>
+          <li><b>Sheet Forecast và file của màn Forecast?</b>File Báo cáo có sheet Forecast khi kỳ đang chạy; nút Xuất Excel của màn Forecast ghi file riêng (Forecast, Lịch hẹn, Định nghĩa). Hình ở mục <a href="#excel">File Excel</a>.<em>Anh trả lời 13/11: <b>"Duyệt cả hai"</b> (sheet Forecast trong file Báo cáo của kỳ đang chạy, và file riêng của màn Forecast; phương án bỏ: chỉ có file riêng).</em></li>
+          <li><b>Luật của file?</b>Số thật có định dạng; công thức cho dòng team, dòng Tổng và các cột tính; nhóm gập Team ▸ RM; khổ in; tên file theo luật đang có; tên KH đầy đủ; ngôn ngữ theo app.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (file có công thức; phương án bỏ: mọi ô là giá trị).</em></li>
+          <li><b>Giữ / đổi so với bản 03/10?</b>Bảng ở mục <a href="#keep">Giữ / đổi</a>; duyệt thì mockup này thay <code>reports.html</code>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (mockup này thay reports.html).</em></li>
+          <li><b>Trạng thái trống và lỗi?</b>Kỳ chưa bắt đầu; kỳ chưa có số liệu; không có HĐ hủy; lỗi đọc dữ liệu cả màn; lỗi xuất Excel ở "Lưu ý".<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt e · T-424 #1247 · chờ Owner duyệt G3 · dữ liệu 100% giả lập · chỉ Dark Mode trong app, giấy in sáng · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt e · T-424 #1247 · Owner duyệt G3 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode trong app, giấy in sáng · chưa kiểm trên Safari.</p>
       </section>
     </div>
 
