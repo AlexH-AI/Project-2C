@@ -119,7 +119,7 @@ Phụ lục này thêm trạng thái Đã hủy vào vòng đời HĐ (thân ghi
   - HĐ đã xóa (xóa mềm), hủy hay không, và HĐ của KH đã xóa không tính ở mọi chỉ số; khôi phục giữ ngày hủy;
   - nhập backup: ràng buộc trên áp cho mọi HĐ, luật 10 (không sau hôm nay) thêm ngày hủy của HĐ chưa xóa.
 - **Duyệt G2:** Owner ngày 13/11/2026, PR #1236 (chat với phiên T-421 ở Home PC): "Duyệt G2 cả ba". Câu này duyệt dữ liệu kịch bản B, kết quả G23–G41 (cùng luật cột mới của G01–G22) và mô hình dữ liệu HĐ hủy.
-- **Giao diện (G3 đợt f, T-425 #1250; chờ G3):** mockup `docs/design/mockups/huy-hd.html` vẽ nút "Hủy HĐ", hộp hủy, nhãn "Đã hủy {ngày}", hộp Sửa của HĐ đã hủy và số HĐ trên thẻ KH, theo đúng các luật trên. Đề xuất của Claude, có hiệu lực khi Owner duyệt (9 điểm ở mục `#ask` của mockup): hộp hủy chỉ hỏi ngày hủy (mở sẵn hôm nay), báo trước bằng hai câu theo khuôn "Ảnh hưởng chỉ số" của hộp Sửa; nút "Bỏ hủy" cạnh ô Ngày hủy của hộp Sửa, có hiệu lực khi Lưu. Không đổi định nghĩa hay mô hình dữ liệu nào.
+- **Giao diện (G3 đợt f, T-425 #1250; Owner duyệt ngày 13/11/2026, PR #1251):** mockup `docs/design/mockups/huy-hd.html` vẽ nút "Hủy HĐ", hộp hủy, nhãn "Đã hủy {ngày}", hộp Sửa của HĐ đã hủy và số HĐ trên thẻ KH, theo đúng các luật trên. Owner chọn phương án đề xuất ở cả 9 điểm của mục `#ask` (nhãn nguyên văn ở spec `phase-6-phan-hoi-dung-thu.md` §8, gạch "G3 đợt f"): hộp hủy chỉ hỏi ngày hủy, mở sẵn hôm nay; báo trước bằng hai câu theo khuôn "Ảnh hưởng chỉ số" của hộp Sửa; hai nút "Đóng" và "Hủy HĐ"; dòng của HĐ đã hủy mang nhãn đỏ, chữ lùi lại; nút "Bỏ hủy" cạnh ô Ngày hủy của hộp Sửa, có hiệu lực khi Lưu. Không đổi định nghĩa hay mô hình dữ liệu nào.
 
 ## Phụ lục — Forecast (Phase 6 phần D; Owner duyệt G2 13/11/2026, PR #1243)
 

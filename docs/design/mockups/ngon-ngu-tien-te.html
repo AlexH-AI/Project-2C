@@ -2,7 +2,8 @@
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css mục 18, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
   Mockup G3 đợt f (T-425 #1250), phần G: song ngữ Việt / Anh và tiền tệ (spec §11.5; luật §11.2, điểm Owner chọn §11.3,
   thuật ngữ §11.6; ADR-0018; golden docs/golden/so-va-tien-te.md).
-  Trạng thái: CHỜ G3 (14 điểm ở #ask). Phần B của đợt f (hộp hủy HĐ): huy-hd.html.
+  Trạng thái: Owner duyệt G3 13/11/2026 (14 điểm ở #ask; điểm nào cũng chọn phương án đề xuất). Phần B của đợt f
+  (hộp hủy HĐ): huy-hd.html.
   Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
   Số viết theo ADR-0018 và golden: "3,000,000 VNĐ", "1.38 tỷ" / "1.38 Bil", "$1,250.50", "$250K", "$1,250.50 AUD".
   Bộ VND khớp đợt c, e: Tháng 11 MTD 1.38 tỷ = 1.43 tỷ − 50 tr, 33 phát hành, 1 hủy, 78 RF; Sao Mai 620 tr, Bình Minh
@@ -21,7 +22,7 @@
   #english   Màn tiếng Anh với VND và với USD; chỗ rộng dùng tên tháng; hộp có ô tiền
   #rounda    Đổi số của đợt a (components.html, app-shell.html) theo luật mới
   #states    Trạng thái trống và lỗi
-  #ask       14 điểm chờ Owner quyết ở G3
+  #ask       14 điểm G3 Owner đã quyết (13/11/2026)
   Vỏ app, bảng thành phần (đợt a), "Lưu ý" (đợt b), Tổng quan (đợt c): app-shell.html, components.html,
   search-rm-team.html, tong-quan.html. Cài đặt → Dữ liệu đã duyệt: settings-data.html (10a–10c).
 -->
@@ -172,9 +173,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt f · Ngôn ngữ và tiền tệ</b>
-      <span class="state">Chờ G3</span>
+      <span class="state ok">Đã duyệt G3 · 13/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#wizard">Thiết lập ban đầu</a><a href="#settings">Cài đặt</a><a href="#money">Ô nhập tiền</a><a href="#eur">EUR</a><a href="#english">Tiếng Anh</a><a href="#rounda">Số đợt a</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh quyết</a><a href="huy-hd.html">← Hủy HĐ</a>
+        <a href="#wizard">Thiết lập ban đầu</a><a href="#settings">Cài đặt</a><a href="#money">Ô nhập tiền</a><a href="#eur">EUR</a><a href="#english">Tiếng Anh</a><a href="#rounda">Số đợt a</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a><a href="huy-hd.html">← Hủy HĐ</a>
       </nav>
     </header>
 
@@ -489,26 +490,26 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Chờ anh quyết · G3 đợt f · phần G</span>
+        <span class="kicker">Anh đã quyết · G3 · 13/11/2026 · phần G</span>
         <h2>Mười bốn điểm của song ngữ và tiền tệ.</h2>
-        <p class="lead">Mỗi điểm có một phương án đề xuất và một phương án khác; ba điểm có hình hai phương án. Không hỏi lại điều anh đã chốt ở ADR-0018, golden và Q1–Q17: hai ngôn ngữ, bảy tiền tệ, tiền tệ chọn một lần, Tiếng Việt chỉ đi với VNĐ, thứ tự ba bước, dấu kiểu Excel, ký hiệu tiền, dạng gọn, đơn vị theo ngôn ngữ, bấm gợi ý mới điền, "1.500 tr" đưa hai cách viết, EUR theo luật của USD, dd/mm/yyyy, bảng thuật ngữ §11.6. Chín điểm của hộp hủy HĐ: <a href="huy-hd.html#ask">huy-hd.html</a>.</p>
+        <p class="lead">Anh đã trả lời cả mười bốn điểm ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt f". Ba điểm có hình hai phương án. Không hỏi lại điều anh đã chốt ở ADR-0018, golden và Q1–Q17: hai ngôn ngữ, bảy tiền tệ, tiền tệ chọn một lần, Tiếng Việt chỉ đi với VNĐ, thứ tự ba bước, dấu kiểu Excel, ký hiệu tiền, dạng gọn, đơn vị theo ngôn ngữ, bấm gợi ý mới điền, "1.500 tr" đưa hai cách viết, EUR theo luật của USD, dd/mm/yyyy, bảng thuật ngữ §11.6. Chín điểm của hộp hủy HĐ: <a href="huy-hd.html#ask">huy-hd.html</a>.</p>
         <ol class="asks">
-          <li><b>Bố cục của thiết lập ban đầu?</b>Hình: <a href="#opt-wizard">hai bố cục</a>.<em>Đề xuất: A · mỗi bước một màn. Phương án khác: B · một trang, ba khối.</em></li>
-          <li><b>Bước ngôn ngữ chọn sẵn gì?</b>Tiêu đề và hai thẻ viết bằng cả hai ngôn ngữ.<em>Đề xuất: A · chọn sẵn theo ngôn ngữ của máy (máy tiếng Việt thì Tiếng Việt, còn lại English). Phương án khác: B · không chọn sẵn, bắt buộc bấm một thẻ.</em></li>
-          <li><b>Bước tiền tệ như mục "Thiết lập ban đầu"?</b>Bảy thẻ có ví dụ cách viết số; với Tiếng Việt sáu thẻ kia mờ kèm lý do; câu "chọn một lần" dưới tiêu đề; không có hộp hỏi lại.<em>Đề xuất: duyệt. Phương án khác: thêm một hộp hỏi lại khi rời bước tiền tệ.</em></li>
-          <li><b>Bước dữ liệu chọn sẵn gì?</b>Ba nguồn: Trắng, Dữ liệu mẫu, File backup.<em>Đề xuất: A · chọn sẵn "Dữ liệu mẫu" (như app hiện nay tự nạp dữ liệu giả lập). Phương án khác: B · chọn sẵn "Trắng".</em></li>
-          <li><b>File backup khác tiền tệ, và thiết lập lại?</b>Thông báo nêu hai tiền tệ, hai nút "Chọn file khác" và "Quay lại bước Tiền tệ"; khi tới từ Thiết lập lại có dải nhắc dữ liệu cũ còn nguyên và nút "Quay về dữ liệu đang dùng".<em>Đề xuất: duyệt. Phương án khác: thiết lập lại không có nút quay về (muốn bỏ thì đóng app).</em></li>
-          <li><b>Mục "Ngôn ngữ / Language" của Cài đặt?</b>Mục thứ tư, đứng đầu danh sách, icon quả địa cầu ô màu; hai thẻ; bấm là đổi ngay và tải lại giao diện.<em>Đề xuất: duyệt. Phương án khác: có nút "Áp dụng" riêng, bấm rồi mới tải lại.</em></li>
-          <li><b>Tiền tệ chỉ xem và nút "Thiết lập lại từ đầu" đặt ở đâu?</b>Hình: <a href="#opt-place">hai chỗ đặt</a>.<em>Đề xuất: A · trong mục Dữ liệu. Phương án khác: B · trong mục "Ngôn ngữ &amp; tiền tệ".</em></li>
-          <li><b>Hộp xác nhận thiết lập lại, và nhập backup khác tiền tệ?</b>Gõ chữ THIẾT LẬP LẠI; bốn điều của Q13; hộp "Không nhập được file" thêm ca khác tiền tệ kèm nút mở thiết lập lại.<em>Đề xuất: duyệt. Phương án khác: hộp xác nhận chỉ có hai nút, không bắt gõ chữ.</em></li>
-          <li><b>Ô nhập tiền: chữ mẫu, tên tiền tệ cuối ô, viên gợi ý?</b>Chín ca ở mục "Ô nhập tiền"; gợi ý là viên bấm được, ghi cả số tiền nó ứng với.<em>Đề xuất: duyệt. Phương án khác: gợi ý là một dòng chữ có gạch chân, không ghi số tiền.</em></li>
-          <li><b>Câu lỗi của ô tiền?</b>Bảng câu chữ ở cuối mục "Ô nhập tiền" (tiếng Việt, và bản dịch đề xuất).<em>Đề xuất: duyệt. Phương án khác: anh sửa câu nào thì nói câu đó.</em></li>
-          <li><b>Câu hướng dẫn của ô tiền EUR: vị trí và lúc hiện?</b>Hình: <a href="#opt-eur">hai cách</a>; câu chữ ở bảng đầu mục "EUR".<em>Đề xuất: A · luôn hiện dưới mọi ô tiền, thêm gợi ý khi gõ kiểu "1.500", và nói một lần ở bước tiền tệ. Phương án khác: B · chỉ hiện khi ô đang được gõ.</em></li>
-          <li><b>Màn tiếng Anh và danh sách chỗ rộng?</b>Hai màn ở mục "Tiếng Anh"; bảng chỗ rộng dùng tên tháng (dòng dưới tên màn, đầu bảng Lưu ý, dòng đọc dưới ô ngày) và chỗ hẹp giữ số.<em>Đề xuất: duyệt. Phương án khác: English cũng chỉ viết ngày bằng số ở mọi chỗ.</em></li>
-          <li><b>Đổi số của đợt a?</b>Bảng ở mục "Số đợt a": chỉ đổi cách viết, giữ giá trị của hình minh họa.<em>Đề xuất: duyệt. Phương án khác: đổi luôn giá trị cho bằng số của đợt c (1.43 tỷ − 50 tr, 33 HĐ, 3%).</em></li>
-          <li><b>Trạng thái trống và lỗi như mục trên?</b>File hỏng; không ghi được khi bấm Bắt đầu; chưa đổi được ngôn ngữ; Tổng quan khi dữ liệu trắng.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Bố cục của thiết lập ban đầu?</b>Hình: <a href="#opt-wizard">hai bố cục</a>.<em>Anh trả lời 13/11: <b>"A · Mỗi bước một màn"</b> (phương án đề xuất; phương án bỏ: một trang, ba khối).</em></li>
+          <li><b>Bước ngôn ngữ chọn sẵn gì?</b>Tiêu đề và hai thẻ viết bằng cả hai ngôn ngữ.<em>Anh trả lời 13/11: <b>"A · Theo máy"</b> (phương án đề xuất; phương án bỏ: không chọn sẵn, bắt buộc bấm một thẻ).</em></li>
+          <li><b>Bước tiền tệ như mục "Thiết lập ban đầu"?</b>Bảy thẻ có ví dụ cách viết số; với Tiếng Việt sáu thẻ kia mờ kèm lý do; câu "chọn một lần" dưới tiêu đề; không có hộp hỏi lại.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: thêm một hộp hỏi lại khi rời bước tiền tệ).</em></li>
+          <li><b>Bước dữ liệu chọn sẵn gì?</b>Ba nguồn: Trắng, Dữ liệu mẫu, File backup.<em>Anh trả lời 13/11: <b>"A · Dữ liệu mẫu"</b> (phương án đề xuất; phương án bỏ: chọn sẵn "Trắng").</em></li>
+          <li><b>File backup khác tiền tệ, và thiết lập lại?</b>Thông báo nêu hai tiền tệ, hai nút "Chọn file khác" và "Quay lại bước Tiền tệ"; khi tới từ Thiết lập lại có dải nhắc dữ liệu cũ còn nguyên và nút "Quay về dữ liệu đang dùng".<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: thiết lập lại không có nút quay về).</em></li>
+          <li><b>Mục "Ngôn ngữ / Language" của Cài đặt?</b>Mục thứ tư, đứng đầu danh sách, icon quả địa cầu ô màu; hai thẻ; bấm là đổi ngay và tải lại giao diện.<em>Anh trả lời 13/11: <b>"Duyệt: bấm là đổi"</b> (phương án đề xuất; phương án bỏ: nút "Áp dụng" riêng).</em></li>
+          <li><b>Tiền tệ chỉ xem và nút "Thiết lập lại từ đầu" đặt ở đâu?</b>Hình: <a href="#opt-place">hai chỗ đặt</a>.<em>Anh trả lời 13/11: <b>"A · Trong Dữ liệu"</b> (phương án đề xuất; phương án bỏ: mục "Ngôn ngữ &amp; tiền tệ").</em></li>
+          <li><b>Hộp xác nhận thiết lập lại, và nhập backup khác tiền tệ?</b>Gõ chữ THIẾT LẬP LẠI; bốn điều của Q13; hộp "Không nhập được file" thêm ca khác tiền tệ kèm nút mở thiết lập lại.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: hộp xác nhận không bắt gõ chữ).</em></li>
+          <li><b>Ô nhập tiền: chữ mẫu, tên tiền tệ cuối ô, viên gợi ý?</b>Chín ca ở mục "Ô nhập tiền"; gợi ý là viên bấm được, ghi cả số tiền nó ứng với.<em>Anh trả lời 13/11: <b>"Duyệt: viên bấm được"</b> (phương án đề xuất; phương án bỏ: dòng chữ gạch chân, không ghi số tiền).</em></li>
+          <li><b>Câu lỗi của ô tiền?</b>Bảng câu chữ ở cuối mục "Ô nhập tiền" (tiếng Việt, và bản dịch đề xuất).<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Câu hướng dẫn của ô tiền EUR: vị trí và lúc hiện?</b>Hình: <a href="#opt-eur">hai cách</a>; câu chữ ở bảng đầu mục "EUR".<em>Anh trả lời 13/11: <b>"A · Luôn hiện dưới ô"</b> (phương án đề xuất; phương án bỏ: chỉ hiện khi ô đang được gõ).</em></li>
+          <li><b>Màn tiếng Anh và danh sách chỗ rộng?</b>Hai màn ở mục "Tiếng Anh"; bảng chỗ rộng dùng tên tháng (dòng dưới tên màn, đầu bảng Lưu ý, dòng đọc dưới ô ngày) và chỗ hẹp giữ số.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: English cũng chỉ viết ngày bằng số).</em></li>
+          <li><b>Đổi số của đợt a?</b>Bảng ở mục "Số đợt a": chỉ đổi cách viết, giữ giá trị của hình minh họa.<em>Anh trả lời 13/11: <b>"Duyệt: chỉ cách viết"</b> (phương án đề xuất; phương án bỏ: đổi luôn giá trị cho bằng số của đợt c).</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>File hỏng; không ghi được khi bấm Bắt đầu; chưa đổi được ngôn ngữ; Tổng quan khi dữ liệu trắng.<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt f · T-425 #1250 · chờ G3 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt f · T-425 #1250 · Owner duyệt G3 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 

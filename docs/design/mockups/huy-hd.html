@@ -2,7 +2,8 @@
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css mục 18, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
   Mockup G3 đợt f (T-425 #1250), phần B: nút "Hủy HĐ", hộp hủy, nhãn "Đã hủy {ngày}", bỏ hủy và sửa ngày hủy trong
   hộp Sửa, số HĐ trên thẻ KH (ý 28; spec §4.2, §4.4; golden chi-so.md mục 4.4; phụ lục "HĐ hủy" của ADR-0007).
-  Trạng thái: CHỜ G3 (9 điểm ở #ask). Phần G của đợt f: ngon-ngu-tien-te.html.
+  Trạng thái: Owner duyệt G3 13/11/2026 (9 điểm ở #ask; điểm nào cũng chọn phương án đề xuất). Phần G của đợt f:
+  ngon-ngu-tien-te.html.
   Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
   Số viết theo ADR-0018: "60 tr", "1.38 tỷ", "60,000,000 VNĐ", "16.7%"; ngày dd/mm/yyyy; chữ "RM".
   Số khớp bảng ngày của tong-quan.html / bao-cao.html (đợt c, e): RM Hoàng Văn Tùng (Sao Mai), tháng 11 MTD: 6 HĐ phát
@@ -18,7 +19,7 @@
   #count     Thẻ KH và số HĐ: không đếm HĐ hủy; KH mà mọi HĐ đều đã hủy
   #states    Trạng thái trống và lỗi
   #mask      Che tên KH; cửa sổ hẹp nhất
-  #ask       9 điểm chờ Owner quyết ở G3
+  #ask       9 điểm G3 Owner đã quyết (13/11/2026)
   Vỏ app, bảng thành phần (đợt a), thẻ KH và hồ sơ KH (đợt b), bảng ngày (đợt c, e): app-shell.html, components.html,
   search-rm-team.html, tong-quan.html, bao-cao.html. Hộp HĐ đã duyệt 8a–8d: policy-forms.html.
 -->
@@ -124,9 +125,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt f · Hủy HĐ</b>
-      <span class="state">Chờ G3</span>
+      <span class="state ok">Đã duyệt G3 · 13/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#cancel">Hộp hủy</a><a href="#effect">Báo trước</a><a href="#row">Dòng HĐ</a><a href="#edit">Sửa · bỏ hủy</a><a href="#count">Thẻ KH</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh quyết</a><a href="ngon-ngu-tien-te.html">Phần G →</a>
+        <a href="#cancel">Hộp hủy</a><a href="#effect">Báo trước</a><a href="#row">Dòng HĐ</a><a href="#edit">Sửa · bỏ hủy</a><a href="#count">Thẻ KH</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a><a href="ngon-ngu-tien-te.html">Phần G →</a>
       </nav>
     </header>
 
@@ -394,21 +395,21 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Chờ anh quyết · G3 đợt f · phần B</span>
+        <span class="kicker">Anh đã quyết · G3 · 13/11/2026 · phần B</span>
         <h2>Chín điểm của hộp hủy HĐ.</h2>
-        <p class="lead">Mỗi điểm có một phương án đề xuất và một phương án khác; bốn điểm có hình hai phương án. Không hỏi lại điều anh đã chốt: chỉ HĐ đã phát hành mới hủy được, HĐ hủy tính vào kỳ của ngày hủy, FYP hủy bằng FYP phát hành, bỏ hủy = xóa ngày hủy và không giữ dấu vết, bỏ hủy và sửa ngày hủy nằm trong hộp Sửa, số HĐ của KH không đếm HĐ hủy (10/11; G2 13/11). Mười bốn điểm của phần G: <a href="ngon-ngu-tien-te.html#ask">ngon-ngu-tien-te.html</a>. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <p class="lead">Anh đã trả lời cả chín điểm ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt f". Bốn điểm có hình hai phương án. Không hỏi lại điều anh đã chốt: chỉ HĐ đã phát hành mới hủy được, HĐ hủy tính vào kỳ của ngày hủy, FYP hủy bằng FYP phát hành, bỏ hủy = xóa ngày hủy và không giữ dấu vết, bỏ hủy và sửa ngày hủy nằm trong hộp Sửa, số HĐ của KH không đếm HĐ hủy (10/11; G2 13/11). Mười bốn điểm của phần G: <a href="ngon-ngu-tien-te.html#ask">ngon-ngu-tien-te.html</a>. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
         <ol class="asks">
-          <li><b>Hộp hủy như mục "Hộp hủy"?</b>Một ô Ngày hủy có dòng đọc lại; FYP hủy là ô khóa; khối báo trước; không bắt gõ chữ xác nhận vì bỏ hủy được; lưu xong có thông báo nổi nhắc chỗ bỏ hủy.<em>Đề xuất: duyệt. Phương án khác: bỏ ô FYP hủy (số chỉ còn nằm trong câu báo trước).</em></li>
-          <li><b>Ngày hủy mở sẵn giá trị gì?</b><em>Đề xuất: A · mở sẵn hôm nay (đa số lần hủy được ghi ngay trong ngày; sửa được). Phương án khác: B · để trống, bắt buộc gõ.</em></li>
-          <li><b>Báo trước ảnh hưởng chỉ số nói gì?</b>Hình: <a href="#opt-effect">hai cách báo trước</a>.<em>Đề xuất: A · hai câu theo khuôn của 8d. Phương án khác: B · bảng trước → sau cho RM, team, Toàn bộ.</em></li>
-          <li><b>Tên hai nút của hộp hủy?</b>Hình: <a href="#opt-buttons">tên hai nút</a>.<em>Đề xuất: A · "Đóng" và "Hủy HĐ". Phương án khác: B · "Không hủy" và "Hủy HĐ".</em></li>
-          <li><b>Dòng của HĐ đã hủy trong hồ sơ KH?</b>Hình: <a href="#opt-row">hai cách vẽ dòng</a>. Đầu khối ghi "1 HĐ · 1 đã hủy".<em>Đề xuất: A · nhãn đỏ, dòng lùi lại, FYP phát hành gạch ngang. Phương án khác: B · nhãn xám, dòng như thường.</em></li>
-          <li><b>Bỏ hủy bằng cách nào?</b>Hình: <a href="#opt-undo">hai cách bỏ hủy</a>.<em>Đề xuất: A · nút "Bỏ hủy" cạnh ô Ngày hủy, có hiệu lực khi Lưu. Phương án khác: B · nút "Bỏ hủy…" ở chân hộp, làm ngay sau một hộp hỏi lại.</em></li>
-          <li><b>Hộp Sửa của HĐ đã hủy như mục "Sửa · bỏ hủy"?</b>Thêm hàng Ngày hủy; sửa ngày hủy sang tháng khác thì mỗi tháng một câu và một dòng số HĐ; ba luật của golden mục 4.4 (không xóa ngày phát hành, không dời ngày phát hành ra sau ngày hủy, FYP hủy đổi theo FYP phát hành).<em>Đề xuất: duyệt. Phương án khác: ô Ngày hủy chỉ để xem, muốn đổi ngày thì bỏ hủy rồi hủy lại.</em></li>
-          <li><b>Thẻ KH và số HĐ như mục "Thẻ KH"?</b>Nhãn số HĐ không đếm HĐ hủy; KH mà mọi HĐ đều đã hủy không có nhãn và không khớp ô lọc "Đã có HĐ".<em>Đề xuất: duyệt. Phương án khác: KH đó có nhãn xám "HĐ đã hủy".</em></li>
-          <li><b>Trạng thái trống và lỗi như mục trên?</b>Ba lỗi của ô ngày; lỗi ghi ở lại trong hộp; KH chưa có HĐ; KH mà mọi HĐ đều đã hủy.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Hộp hủy như mục "Hộp hủy"?</b>Một ô Ngày hủy có dòng đọc lại; FYP hủy là ô khóa; khối báo trước; không bắt gõ chữ xác nhận vì bỏ hủy được; lưu xong có thông báo nổi nhắc chỗ bỏ hủy.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: bỏ ô FYP hủy).</em></li>
+          <li><b>Ngày hủy mở sẵn giá trị gì?</b><em>Anh trả lời 13/11: <b>"A · Hôm nay"</b> (phương án đề xuất; phương án bỏ: để trống, bắt buộc gõ).</em></li>
+          <li><b>Báo trước ảnh hưởng chỉ số nói gì?</b>Hình: <a href="#opt-effect">hai cách báo trước</a>.<em>Anh trả lời 13/11: <b>"A · Hai câu như 8d"</b> (phương án đề xuất; phương án bỏ: bảng trước → sau cho RM, team, Toàn bộ).</em></li>
+          <li><b>Tên hai nút của hộp hủy?</b>Hình: <a href="#opt-buttons">tên hai nút</a>.<em>Anh trả lời 13/11: <b>"A · Đóng + Hủy HĐ"</b> (phương án đề xuất; phương án bỏ: "Không hủy" và "Hủy HĐ").</em></li>
+          <li><b>Dòng của HĐ đã hủy trong hồ sơ KH?</b>Hình: <a href="#opt-row">hai cách vẽ dòng</a>. Đầu khối ghi "1 HĐ · 1 đã hủy".<em>Anh trả lời 13/11: <b>"A · Nhãn đỏ, dòng lùi"</b> (phương án đề xuất; phương án bỏ: nhãn xám, dòng như thường).</em></li>
+          <li><b>Bỏ hủy bằng cách nào?</b>Hình: <a href="#opt-undo">hai cách bỏ hủy</a>.<em>Anh trả lời 13/11: <b>"A · Nút cạnh ô ngày"</b> (phương án đề xuất; phương án bỏ: nút "Bỏ hủy…" ở chân hộp, làm ngay sau một hộp hỏi lại).</em></li>
+          <li><b>Hộp Sửa của HĐ đã hủy như mục "Sửa · bỏ hủy"?</b>Thêm hàng Ngày hủy; sửa ngày hủy sang tháng khác thì mỗi tháng một câu và một dòng số HĐ; ba luật của golden mục 4.4 (không xóa ngày phát hành, không dời ngày phát hành ra sau ngày hủy, FYP hủy đổi theo FYP phát hành).<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: ô Ngày hủy chỉ để xem).</em></li>
+          <li><b>Thẻ KH và số HĐ như mục "Thẻ KH"?</b>Nhãn số HĐ không đếm HĐ hủy; KH mà mọi HĐ đều đã hủy không có nhãn và không khớp ô lọc "Đã có HĐ".<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: nhãn xám "HĐ đã hủy" cho KH mà mọi HĐ đều đã hủy).</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>Ba lỗi của ô ngày; lỗi ghi ở lại trong hộp; KH chưa có HĐ; KH mà mọi HĐ đều đã hủy.<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt f · T-425 #1250 · chờ G3 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt f · T-425 #1250 · Owner duyệt G3 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 

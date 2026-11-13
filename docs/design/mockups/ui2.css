@@ -12,7 +12,7 @@
       strip, the month grid, the list of one day, a case size filled in place
    17 round e (T-424, approved at G3 13/11/2026): Báo cáo — the colours of paper (print, Excel), a page of "Bản tin", bars by
       team, a trend of six periods, an Excel sheet
-   18 round f (T-425, waiting for G3): a cancelled policy — the policies of a customer, what a change does to the
+   18 round f (T-425, approved at G3 13/11/2026): a cancelled policy — the policies of a customer, what a change does to the
       numbers; language and currency — the first-run wizard, a choice card, the way to write an amount
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
@@ -1134,8 +1134,8 @@ button.dl-r:hover { background: var(--fill-1); }
 .xl-tabs button.on { background: var(--paper); color: #107c41; font-weight: 600; border-bottom-color: #107c41; }
 
 /* ============ 18. Round f (T-425): a cancelled policy; language and currency ============ */
-/* Built from the tokens of section 0; no new token. Waiting for the Owner at G3. Nothing above this line
-   changed. Rounded rectangles of this round take the rule of section 5: */
+/* Built from the tokens of section 0; no new token. Approved by the Owner at G3 on 13/11/2026. Nothing above
+   this line changed. Rounded rectangles of this round take the rule of section 5: */
 .fx, .sg, .pick, .eur-tip { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
 
 /* The policies of a customer (hồ sơ KH → Hợp đồng): one line each, as in the app today, newest
