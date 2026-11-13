@@ -6,7 +6,7 @@
    Round b (T-417): 9 pages off the sidebar, with a way back · 10 search shared by the palette and the
    fields · 11 command palette ⌘K / Ctrl K · 12 "Lưu ý" and jobs in the background · 13 a search field
    that lights what it finds · 14 pick one swatch or icon · 15 window.ui2 for the page's own script
-   Round c (T-422): 16 popovers of the toolbar (view menu, period picker) · 17 "Đếm", a number that runs to
+   Round c (T-422, approved at G3 13/11/2026): 16 popovers of the toolbar (view menu, period picker) · 17 "Đếm", a number that runs to
    its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */

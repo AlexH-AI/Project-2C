@@ -1,7 +1,8 @@
 <!doctype html>
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
   Mockup G3 đợt c (T-422 #1238): màn Tổng quan (ý 08, 14, 15, 16 + phần B) và bộ luật "Điểm nhấn" (G2).
-  Trạng thái: chờ Owner duyệt G3, và G2 cho bảng luật "Điểm nhấn" (bảng ở #highlights, bản gốc ở spec §8).
+  Trạng thái: Owner duyệt G3 13/11/2026 (11 điểm ở #ask) và duyệt G2 bảng luật "Điểm nhấn" cùng ngày (5 điểm ở #ask;
+  bảng ở #highlights, bản gốc ở spec §8).
   Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
   Số viết theo ADR-0018: "1.38 tỷ", "42.3%", "0 VNĐ"; ngày dd/mm/yyyy; "Tỷ lệ"; chữ "RM".
   #shell      Cửa sổ app bấm được: Tổng quan (đổi góc nhìn ở viên góc nhìn, đổi kỳ ở viên kỳ, không có nút "Lọc";
@@ -14,9 +15,9 @@
   #blocks     Các khối đã duyệt 03/10/2026 trong bố cục mới: giữ gì, đổi gì; bảng khối ↔ chỉ số
   #states     Trạng thái trống và lỗi
   #mask       Che tên KH
-  #ask        Các điểm Owner cần quyết ở G3, và G2 của bộ luật
+  #ask        11 điểm G3 và 5 điểm G2 Owner đã quyết (13/11/2026)
   Vỏ app và bảng thành phần (đợt a), ô lệnh và "Lưu ý" (đợt b): app-shell.html, components.html, search-rm-team.html.
-  Mockup này thay overview.html phần 1a–1e khi qua G3 (màn Lịch hẹn 4 nhóm ở phần 2 của overview.html giữ nguyên).
+  Mockup này thay overview.html phần 1a–1e từ G3 13/11/2026 (màn Lịch hẹn 4 nhóm ở phần 2 của overview.html giữ nguyên).
 -->
 <html lang="vi">
   <head>
@@ -177,9 +178,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt c · Tổng quan</b>
-      <span class="state">Chờ G3 · luật Điểm nhấn chờ G2</span>
+      <span class="state ok">Đã duyệt G3 và G2 · 13/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#hero">Số chủ đạo</a><a href="#tiles">Ô chỉ số</a><a href="#highlights">Điểm nhấn</a><a href="#views">Kỳ và góc nhìn</a><a href="#blocks">Khối đã duyệt</a><a href="#states">Trống / lỗi</a><a href="#ask">Cần anh quyết</a>
+        <a href="#hero">Số chủ đạo</a><a href="#tiles">Ô chỉ số</a><a href="#highlights">Điểm nhấn</a><a href="#views">Kỳ và góc nhìn</a><a href="#blocks">Khối đã duyệt</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a>
       </nav>
     </header>
 
@@ -320,7 +321,7 @@
         <h3 class="sub-h" id="opt-ghost">Hai cách vẽ nét mờ <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 2 ở #ask</small></h3>
         <p class="sub-p">Con số so sánh ("▲ … so với 01/10 – 10/10") giống nhau ở cả hai cách; chỉ khác độ dài của nét mờ.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="hero" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Vẽ cả kỳ trước <span class="tag rec">đề xuất</span></b><p>Thấy tháng trước về đích ở đâu, và phần dự kiến của tháng này đang hướng tới mức nào so với nó.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="hero" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Vẽ cả kỳ trước <span class="tag rec">anh chọn 13/11</span></b><p>Thấy tháng trước về đích ở đâu, và phần dự kiến của tháng này đang hướng tới mức nào so với nó.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div data-spec="hero" data-sc="all" data-period="m:2026-11" data-cut></div></div><div class="opt-t"><b>B · Chỉ vẽ tới cùng số ngày</b><p>Nét mờ dừng ở ngày 10, đúng khoảng mà con số so sánh đang dùng; nửa sau của biểu đồ chỉ còn phần dự kiến.</p></div></div>
         </div>
       </section>
@@ -350,21 +351,21 @@
         <h3 class="sub-h" id="opt-tiles">Sáu ô hay tám ô <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 4 ở #ask</small></h3>
         <p class="sub-p">Bản đã duyệt 03/10 có ô HĐ phát hành riêng. Phần B thêm HĐ hủy. Hai số này đã nằm trong phép tính của ô Tổng số HĐ, nên em đề xuất không lặp lại.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="kpis" data-cols="3" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Sáu ô <span class="tag rec">đề xuất</span></b><p>HĐ phát hành và HĐ hủy là hai vế của ô Tổng số HĐ. Một hàng ở cửa sổ rộng, hai hàng ở cửa sổ hẹp.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="kpis" data-cols="3" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Sáu ô <span class="tag rec">anh chọn 13/11</span></b><p>HĐ phát hành và HĐ hủy là hai vế của ô Tổng số HĐ. Một hàng ở cửa sổ rộng, hai hàng ở cửa sổ hẹp.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div data-spec="kpis" data-cols="4" data-eight data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>B · Tám ô</b><p>Thêm ô HĐ phát hành và ô HĐ hủy, mỗi ô có so sánh riêng. Hai hàng ở mọi cỡ cửa sổ; số 33 và số 1 hiện hai lần.</p></div></div>
         </div>
       </section>
 
       <!-- ================= Điểm nhấn ================= -->
       <section class="sec" id="highlights">
-        <span class="kicker">Ý 16 · nội dung là G2</span>
+        <span class="kicker">Ý 16 · nội dung duyệt G2 13/11/2026</span>
         <h2>"Điểm nhấn": app viết vài câu từ số của kỳ, theo luật cố định.</h2>
-        <p class="lead">Anh chốt 11/11: <b>"Làm, theo luật"</b>. App không gọi AI; mỗi câu sinh ra từ một luật có điều kiện và ngưỡng rõ, nên luôn đúng với số đang hiện trên màn. Mỗi câu là một nút: bấm là tới đúng nơi nói về nó. Bộ luật dưới đây là <b>nội dung anh duyệt G2</b>: bốn luật của bản thử, và hai luật em đề xuất thêm (về đích so với mục tiêu tháng; lịch hẹn thiếu case size).</p>
+        <p class="lead">Anh chốt 11/11: <b>"Làm, theo luật"</b>. App không gọi AI; mỗi câu sinh ra từ một luật có điều kiện và ngưỡng rõ, nên luôn đúng với số đang hiện trên màn. Mỗi câu là một nút: bấm là tới đúng nơi nói về nó. Bộ luật dưới đây anh đã <b>duyệt G2 ngày 13/11/2026</b>: bốn luật của bản thử và hai luật em đề xuất thêm (về đích so với mục tiêu tháng; lịch hẹn thiếu case size); anh nhận cả sáu.</p>
         <div class="duo">
           <div class="spec-hl" data-spec="hl" data-sc="all" data-period="m:2026-11"></div>
         </div>
         <div class="pcard" style="margin-top: 20px">
-          <h3>Bảng luật <small>thứ tự trong bảng là thứ tự ưu tiên · bản gốc ở spec §8 · <span class="tag gate">G2</span></small></h3>
+          <h3>Bảng luật <small>thứ tự trong bảng là thứ tự ưu tiên · bản gốc ở spec §8 · <span class="tag rec">anh duyệt G2 13/11/2026</span></small></h3>
           <table class="law">
             <tr><th>#</th><th>Luật</th><th>Hiện khi</th><th>Ngưỡng</th><th>Câu mẫu (dòng chính, dòng phụ)</th><th>Bấm tới</th><th>Kỳ đã qua</th></tr>
             <tr><td>1</td><td><b>Tỷ lệ hủy tăng</b><br />màu đỏ</td><td>Tỷ lệ hủy của kỳ cao hơn kỳ trước; cả hai kỳ có HĐ phát hành. Kỳ trước theo luật so sánh đã duyệt (cùng số ngày, hoặc cả kỳ liền trước).<br />Biến thể: kỳ có HĐ hủy mà không có HĐ phát hành.</td><td>tăng từ <b>1 điểm %</b></td><td><span class="say">Tỷ lệ hủy 3%, tăng 3 điểm %<small>1 hủy ÷ 33 phát hành · 01/10 – 10/10 là 0%</small></span><span class="say">1 HĐ hủy, kỳ này chưa có HĐ phát hành<small>Tỷ lệ hủy không tính được ("—") · Doanh số -50 tr</small></span></td><td>Báo cáo, danh sách HĐ hủy, cùng kỳ và góc nhìn</td><td>có</td></tr>
@@ -393,13 +394,13 @@
         <h3 class="sub-h" id="opt-max">Tối đa bốn câu, hay hiện mọi luật khớp <small class="dim" style="font-size: 14px; font-weight: 400">· điểm G2-3 ở #ask</small></h3>
         <p class="sub-p">Toàn bộ · Tháng 11/2026 có sáu luật khớp. Bốn câu thì vừa chiều cao của số chủ đạo; sáu câu thì thẻ dài hơn và đẩy các ô chỉ số xuống.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="hl" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Tối đa 4 câu <span class="tag rec">đề xuất</span></b><p>Lấy bốn câu đầu theo thứ tự ưu tiên. Câu về Forecast tuần và team dẫn đầu nhường chỗ; hai số đó vẫn thấy ở Forecast và ở bảng So sánh team.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="hl" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Tối đa 4 câu <span class="tag rec">anh chọn 13/11</span></b><p>Lấy bốn câu đầu theo thứ tự ưu tiên. Câu về Forecast tuần và team dẫn đầu nhường chỗ; hai số đó vẫn thấy ở Forecast và ở bảng So sánh team.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div data-spec="hl" data-max="7" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>B · Hiện mọi luật khớp</b><p>Không bỏ sót câu nào, nhưng thẻ dài và câu quan trọng nhất kém nổi hơn.</p></div></div>
         </div>
         <h3 class="sub-h" id="opt-place">Hai chỗ đặt Điểm nhấn <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 1 ở #ask</small></h3>
         <p class="sub-p">Hai hình là cả cửa sổ 1440 × 900, thu nhỏ để thấy bố cục.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win"></div><div class="opt-t"><b>A · Cạnh số chủ đạo <span class="tag rec">đề xuất</span></b><p>Số chủ đạo và các câu nhận xét về nó nằm cùng một tầm mắt; sáu ô chỉ số ngay hàng dưới.</p></div></div>
+          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win"></div><div class="opt-t"><b>A · Cạnh số chủ đạo <span class="tag rec">anh chọn 13/11</span></b><p>Số chủ đạo và các câu nhận xét về nó nằm cùng một tầm mắt; sáu ô chỉ số ngay hàng dưới.</p></div></div>
           <div class="opt"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-variant="hl-top"></div><div class="opt-t"><b>B · Một dải ngang trên cùng</b><p>Câu nhận xét là thứ đọc đầu tiên; số chủ đạo rộng hết hàng nhưng bị đẩy xuống, sáu ô chỉ số xuống gần mép dưới cửa sổ.</p></div></div>
         </div>
       </section>
@@ -559,31 +560,31 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Cần anh quyết ở G3 · và G2 cho bộ luật</span>
+        <span class="kicker">Anh đã quyết · G3 và G2 · 13/11/2026</span>
         <h2>Mười một điểm của đợt c, và bảng luật Điểm nhấn.</h2>
-        <p class="lead">Em sẽ hỏi anh từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; câu trả lời ghi nguyên văn vào spec <code>phase-6-phan-hoi-dung-thu.md</code> §8. Không hỏi lại các điều anh đã chốt (font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", thanh tiêu đề Windows kiểu A, che tên KH, Forecast D-a … D-f, mục tiêu theo tháng ở cấp team và tổng các team). Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026; số của tháng 11 khớp với màn Team &amp; nhân sự của đợt b.</p>
+        <p class="lead">Anh đã trả lời cả mười một điểm G3 và năm điểm G2 ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt c". Không hỏi lại các điều anh đã chốt (font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", thanh tiêu đề Windows kiểu A, che tên KH, Forecast D-a … D-f, mục tiêu theo tháng ở cấp team và tổng các team). Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026; số của tháng 11 khớp với màn Team &amp; nhân sự của đợt b.</p>
         <ol class="asks">
-          <li><b>Bố cục màn Tổng quan?</b>Hàng đầu: số chủ đạo (rộng) cạnh Điểm nhấn. Rồi sáu ô chỉ số; ô Lịch hẹn cạnh KH theo nhóm; cuối là bảng So sánh team. Cửa sổ hẹp: Điểm nhấn xuống dưới số chủ đạo, sáu ô thành ba cột.<em>Đề xuất: duyệt như hình. Phương án khác: Điểm nhấn lên trên cùng, thành một dải ngang.</em></li>
-          <li><b>Đường lũy kế: ba nét như mục "Số chủ đạo"?</b>Nét liền là kỳ đang xem, nét đứt là phần dự kiến, nét mờ là <b>cả</b> kỳ trước. Con số so sánh vẫn theo luật cùng số ngày đã duyệt.<em>Đề xuất: nét mờ vẽ cả kỳ trước. Phương án khác: nét mờ chỉ vẽ tới cùng số ngày.</em></li>
-          <li><b>Phần dự kiến ở từng loại kỳ?</b>Tuần: tới hết Thứ Bảy. Tháng: tới cuối tháng. Năm: chỉ tới hết tháng đang chạy, vì Forecast chỉ định nghĩa cho tuần và tháng. Ngày và Tùy chọn: không có.<em>Đề xuất: như bảng "Mỗi loại kỳ vẽ gì". Phương án khác: kỳ Năm không vẽ phần dự kiến.</em></li>
-          <li><b>Sáu ô chỉ số: bộ ô và phép tính?</b>Tổng số HĐ, Tỷ lệ hủy, Tỷ lệ chốt, Chuyển RF, HĐ nộp, Case size. Doanh số lên làm số chủ đạo; HĐ phát hành nằm trong phép tính của Tổng số HĐ, không còn ô riêng.<em>Đề xuất: sáu ô như hình. Phương án khác: giữ thêm ô HĐ phát hành và thêm ô HĐ hủy (tám ô, hai hàng).</em></li>
-          <li><b>Số âm màu đỏ; bấm ô mở Báo cáo?</b>Doanh số và Tổng số HĐ âm viết "-50 tr", "-1", màu đỏ. Bấm ô nào cũng mở Báo cáo ở đúng kỳ và góc nhìn (đích đến vẽ ở đợt e).<em>Đề xuất: duyệt. Phương án khác: số âm giữ màu thường, chỉ có dấu "-".</em></li>
-          <li><b>Menu góc nhìn của Tổng quan?</b>Toàn bộ, một team, hoặc một RM trong cùng một menu. Thay cách cũ "Team = mọi team, mỗi team một chart" đã duyệt 03/10.<em>Đề xuất: như mục "Menu góc nhìn". Phương án khác: thêm mục "Mọi team" giữ bố cục mỗi team một chart.</em></li>
-          <li><b>Bộ chọn kỳ và động tác "Đếm"?</b>Năm loại kỳ như hiện có; đổi loại kỳ giữ ngày đang xem; nút Hôm nay trong bảng chọn. Số chạy tới giá trị mới khi đổi (chỉ minh họa; duyệt ở đợt g).<em>Đề xuất: duyệt. Phương án khác: nút Hôm nay nằm thẳng trên thanh công cụ, cạnh viên kỳ.</em></li>
-          <li><b>Kỳ đã qua như mục "Kỳ đã qua"?</b>Không nét đứt, không câu Điểm nhấn về Forecast, mục tiêu, case size; so với cả kỳ liền trước; nhãn "kỳ đã qua".<em>Đề xuất: duyệt.</em></li>
-          <li><b>Các khối đã duyệt 03/10: giữ ô Lịch hẹn, KH theo nhóm, So sánh team?</b>Bảng So sánh team thêm hai cột HĐ hủy và Tỷ lệ hủy (chín cột số); Tổng số HĐ, FYP phát hành, FYP hủy theo team để ở Báo cáo.<em>Đề xuất: như bảng "Giữ, gộp, đổi". Phương án khác: bảng có đủ năm cột mới của phần B (mười hai cột số, phải cuộn ngang ở cửa sổ hẹp).</em></li>
-          <li><b>Điểm nhấn: chỗ đặt và hình thức?</b>Một thẻ cạnh số chủ đạo; mỗi câu có icon màu, một dòng chính đậm, một dòng phụ, mũi tên; bấm là tới nơi liên quan. Nội dung luật hỏi riêng (G2).<em>Đề xuất: duyệt.</em></li>
-          <li><b>Trạng thái trống và lỗi như mục trên?</b>Kỳ chưa có số liệu, kỳ chưa bắt đầu, team chưa có RM, lỗi đọc dữ liệu cả màn, lỗi trong một thẻ.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Bố cục màn Tổng quan?</b>Hàng đầu: số chủ đạo (rộng) cạnh Điểm nhấn. Rồi sáu ô chỉ số; ô Lịch hẹn cạnh KH theo nhóm; cuối là bảng So sánh team. Cửa sổ hẹp: Điểm nhấn xuống dưới số chủ đạo, sáu ô thành ba cột.<em>Anh trả lời 13/11: <b>"A · Cạnh số chủ đạo"</b> (phương án đề xuất; phương án bỏ: Điểm nhấn thành một dải ngang trên cùng).</em></li>
+          <li><b>Đường lũy kế: ba nét như mục "Số chủ đạo"?</b>Nét liền là kỳ đang xem, nét đứt là phần dự kiến, nét mờ là <b>cả</b> kỳ trước. Con số so sánh vẫn theo luật cùng số ngày đã duyệt.<em>Anh trả lời 13/11: <b>"A · Vẽ cả kỳ trước"</b> (phương án bỏ: chỉ vẽ tới cùng số ngày).</em></li>
+          <li><b>Phần dự kiến ở từng loại kỳ?</b>Tuần: tới hết Thứ Bảy. Tháng: tới cuối tháng. Năm: chỉ tới hết tháng đang chạy, vì Forecast chỉ định nghĩa cho tuần và tháng. Ngày và Tùy chọn: không có.<em>Anh trả lời 13/11: <b>"Năm: tới hết tháng này"</b> (các loại kỳ khác như bảng "Mỗi loại kỳ vẽ gì"; phương án bỏ: kỳ Năm không vẽ phần dự kiến).</em></li>
+          <li><b>Sáu ô chỉ số: bộ ô và phép tính?</b>Tổng số HĐ, Tỷ lệ hủy, Tỷ lệ chốt, Chuyển RF, HĐ nộp, Case size. Doanh số lên làm số chủ đạo; HĐ phát hành nằm trong phép tính của Tổng số HĐ, không còn ô riêng.<em>Anh trả lời 13/11: <b>"A · Sáu ô"</b> (phương án bỏ: tám ô, thêm ô HĐ phát hành và ô HĐ hủy).</em></li>
+          <li><b>Số âm màu đỏ; bấm ô mở Báo cáo?</b>Doanh số và Tổng số HĐ âm viết "-50 tr", "-1", màu đỏ. Bấm ô nào cũng mở Báo cáo ở đúng kỳ và góc nhìn (đích đến vẽ ở đợt e).<em>Anh trả lời 13/11: <b>"Số âm màu đỏ"</b> (phương án bỏ: giữ màu thường). Bấm ô mở Báo cáo.</em></li>
+          <li><b>Menu góc nhìn của Tổng quan?</b>Toàn bộ, một team, hoặc một RM trong cùng một menu. Thay cách cũ "Team = mọi team, mỗi team một chart" đã duyệt 03/10.<em>Anh trả lời 13/11: <b>"Toàn bộ / team / RM"</b> (phương án bỏ: thêm mục "Mọi team" với mỗi team một chart).</em></li>
+          <li><b>Bộ chọn kỳ và động tác "Đếm"?</b>Năm loại kỳ như hiện có; đổi loại kỳ giữ ngày đang xem; nút Hôm nay trong bảng chọn. Số chạy tới giá trị mới khi đổi (chỉ minh họa; duyệt ở đợt g).<em>Anh trả lời 13/11: <b>"Trong bảng chọn kỳ"</b> (chỗ của nút Hôm nay; phương án bỏ: trên thanh công cụ). Động tác "Đếm" duyệt ở đợt g.</em></li>
+          <li><b>Kỳ đã qua như mục "Kỳ đã qua"?</b>Không nét đứt, không câu Điểm nhấn về Forecast, mục tiêu, case size; so với cả kỳ liền trước; nhãn "kỳ đã qua".<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Các khối đã duyệt 03/10: giữ ô Lịch hẹn, KH theo nhóm, So sánh team?</b>Bảng So sánh team thêm hai cột HĐ hủy và Tỷ lệ hủy (chín cột số); Tổng số HĐ, FYP phát hành, FYP hủy theo team để ở Báo cáo.<em>Anh trả lời 13/11: <b>"Thêm 2 cột"</b> (HĐ hủy và Tỷ lệ hủy; phương án bỏ: đủ năm cột mới của phần B).</em></li>
+          <li><b>Điểm nhấn: chỗ đặt và hình thức?</b>Một thẻ cạnh số chủ đạo; mỗi câu có icon màu, một dòng chính đậm, một dòng phụ, mũi tên; bấm là tới nơi liên quan. Nội dung luật hỏi riêng (G2).<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>Kỳ chưa có số liệu, kỳ chưa bắt đầu, team chưa có RM, lỗi đọc dữ liệu cả màn, lỗi trong một thẻ.<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
         </ol>
         <h3 class="sub-h">G2 · Bộ luật "Điểm nhấn"</h3>
         <ol class="asks">
-          <li><b>Sáu luật: bốn của bản thử và hai luật thêm?</b>Tỷ lệ hủy tăng / giảm; buổi hẹn chưa ghi kết quả; Forecast tuần này; team dẫn đầu hoặc thứ hạng; thêm: về đích so với mục tiêu tháng, lịch hẹn thiếu case size.<em>Đề xuất: nhận cả sáu. Phương án khác: chỉ bốn luật của bản thử.</em></li>
-          <li><b>Ngưỡng của luật Tỷ lệ hủy?</b>Chỉ nói khi chênh từ 1 điểm % trở lên so với kỳ trước; nhỏ hơn thì im.<em>Đề xuất: 1 điểm %. Phương án khác: hễ có chênh là nói.</em></li>
-          <li><b>Thứ tự ưu tiên và số câu tối đa?</b>Hủy tăng → chưa ghi kết quả → thiếu case size → mục tiêu tháng → Forecast tuần → team → hủy giảm; tối đa 4 câu.<em>Đề xuất: như bảng, tối đa 4. Phương án khác: tối đa 6, hiện mọi luật khớp.</em></li>
-          <li><b>Khi không luật nào khớp?</b>Thẻ giữ chỗ, ghi "Kỳ này không có điểm nào cần lưu ý".<em>Đề xuất: giữ thẻ. Phương án khác: ẩn cả thẻ, số chủ đạo rộng hết hàng.</em></li>
-          <li><b>Câu mẫu, nơi tới, và luật nào chạy ở kỳ đã qua, ở góc nhìn RM?</b>Như bảy dòng của bảng luật.<em>Đề xuất: duyệt bảng.</em></li>
+          <li><b>Sáu luật: bốn của bản thử và hai luật thêm?</b>Tỷ lệ hủy tăng / giảm; buổi hẹn chưa ghi kết quả; Forecast tuần này; team dẫn đầu hoặc thứ hạng; thêm: về đích so với mục tiêu tháng, lịch hẹn thiếu case size.<em>Anh trả lời 13/11: <b>"Cả sáu luật"</b> (phương án bỏ: chỉ bốn luật của bản thử).</em></li>
+          <li><b>Ngưỡng của luật Tỷ lệ hủy?</b>Chỉ nói khi chênh từ 1 điểm % trở lên so với kỳ trước; nhỏ hơn thì im.<em>Anh trả lời 13/11: <b>"Từ 1 điểm %"</b> (phương án bỏ: hễ có chênh là nói).</em></li>
+          <li><b>Thứ tự ưu tiên và số câu tối đa?</b>Hủy tăng → chưa ghi kết quả → thiếu case size → mục tiêu tháng → Forecast tuần → team → hủy giảm; tối đa 4 câu.<em>Anh trả lời 13/11: <b>"A · Tối đa 4 câu"</b> (thứ tự ưu tiên như bảng; phương án bỏ: hiện mọi luật khớp).</em></li>
+          <li><b>Khi không luật nào khớp?</b>Thẻ giữ chỗ, ghi "Kỳ này không có điểm nào cần lưu ý".<em>Anh trả lời 13/11: <b>"Giữ thẻ, một dòng"</b> (phương án bỏ: ẩn cả thẻ).</em></li>
+          <li><b>Câu mẫu, nơi tới, và luật nào chạy ở kỳ đã qua, ở góc nhìn RM?</b>Như bảy dòng của bảng luật.<em>Anh trả lời 13/11: <b>"Duyệt G2"</b>.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt c · T-422 #1238 · chờ Owner duyệt · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt c · T-422 #1238 · Owner duyệt G3 và G2 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 
