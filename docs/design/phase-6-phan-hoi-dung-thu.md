@@ -538,7 +538,7 @@ Bảng này và ba bảng D (§6.3), E (§7.1), F (§7.2) do Claude soạn ngày
 
 - **Tên:** VA1 … VA9 (VA = vỏ app), D1 … D8, E1 … E6, F1, cùng kiểu A1, B1, C1. Không lẫn với các dòng golden F01 – F41 (Forecast), D01 – D07 (số và tiền), hay các quyết định D-a … D-f.
 - **Khuôn:** như bảng Mac (§9.3). "Hợp đồng" là mockup đã duyệt G3, golden đã duyệt G2 và phụ lục ADR mà Issue làm theo; số trong ngoặc là số điểm `#ask` ở gạch G3 của đợt đó trong §8. "Rủi ro" là nhãn `risk:*` dự kiến.
-- **Mục sổ:** số dòng của `docs/state/review-notes.md` @`b798560`. Nhãn trong sổ giữ tên đích "vỏ app", "D", "E", "F" (§12.1) tới khi tạo Issue; khi đó PR sổ đổi nhãn từng mục thành `[T-… #…]` theo cột này (khớp theo đường dẫn khi số dòng đổi), như bảng Mac.
+- **Mục sổ:** số dòng của `docs/state/review-notes.md` @`b798560`. T-427 đã đổi nhãn các mục trong sổ sang tên Issue dự kiến theo cột này (Owner 14/11/2026: "đưa vào các issue", §10.1); khi tạo Issue, PR sổ đổi nhãn thành `[T-… #…]` (khớp theo đường dẫn khi số dòng đổi).
 - **Mỗi Issue có màn:** làm theo mockup trên cả macOS và Windows 11, kể cả trạng thái trống và lỗi; chỗ hiện tên KH dùng thành phần che tên của VA6; chuyển động theo bảng `#where` của `chuyen-dong.html` (VA7); chuỗi qua i18n, số và tiền qua hàm của `domain` (G-01 … G-05 làm trước). Chỗ mockup ghi "chưa kiểm trên Safari" kiểm cùng bản Mac (Mac-7, nghiệm thu Mac).
 - **Nghiệm thu (K46):** Issue nào đổi màn hay hành vi thì sửa dòng của vùng đó trong `docs/testing/nghiem-thu-v1.md` ngay trong PR, cả bảng "Lệch mockup đã biết" và "Đối chiếu mockup → mã dòng": vỏ app `NT-CH`, Tổng quan `NT-TQ`, Forecast một vùng mới, Báo cáo `NT-BC`, Cài đặt `NT-CD` / `NT-CA` / `NT-TR`.
 - **Cỡ:** ước theo trần một Issue (≈ 400 dòng code, ≈ 800 dòng tổng). "Có thể tách" đánh dấu chỗ dễ vượt trần; tách khi viết Issue.
@@ -622,12 +622,12 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
    - mỗi lần merge một PR code, PR đang mở kia chạy `gh pr update-branch` → CI → review lại.
 4. **Phát hành:** v1.0 cho cả hai cùng lúc (Owner 10/11: "bản Mac phát hành cùng lúc với bản windows"), từ cùng một SHA (ADR-0019 §8).
 
-**Issue dự kiến (Mac), chưa tạo.** Theo ADR-0019. Nội dung theo đề xuất của Claude; Owner duyệt cùng ADR ngày 12/11/2026. Cột "Cổng" ghi các câu hỏi Q… của PR #1232 mà Issue dựa vào; G4, G6 và việc mở K49 của chúng đã duyệt cùng ADR. Nhãn sổ ghi chú vẫn là một tên `Mac` (§12.1); khi tạo Issue, PR sổ đổi nhãn từng mục thành `[T-… #…]` theo cột "Mục sổ [Mac]" (số dòng @`d3d738b`, khớp theo đường dẫn khi số dòng đổi). M2 (phía macOS), M3, M11 đã xong ở T-413; các mục sổ còn lại của chúng nằm ở Mac-1.
+**Issue dự kiến (Mac), chưa tạo.** Theo ADR-0019. Nội dung theo đề xuất của Claude; Owner duyệt cùng ADR ngày 12/11/2026. Cột "Cổng" ghi các câu hỏi Q… của PR #1232 mà Issue dựa vào; G4, G6 và việc mở K49 của chúng đã duyệt cùng ADR. Nhãn sổ ghi chú là tên Issue `Mac-1` … `Mac-8`, đổi từ tên nhóm `Mac` ở T-427 (14/11/2026, §10.1) theo cột "Mục sổ [Mac]" (số dòng @`d3d738b`; @`b798560` là L127, L128, L130–L132 → Mac-1, L129 → Mac-3, và hai mục mới L148, L149 → Mac-2); khi tạo Issue, PR sổ đổi nhãn thành `[T-… #…]`. M2 (phía macOS), M3, M11 đã xong ở T-413; các mục sổ còn lại của chúng nằm ở Mac-1.
 
 | Issue | Nội dung | M | File chính | Mục sổ [Mac] | Rủi ro | Cổng | Bị chặn bởi / chỗ trong thứ tự |
 |---|---|---|---|---|---|---|---|
 | Mac-1 | Module `platform::{windows, macos}` của vỏ Rust (ADR-0019 §1): thư mục dữ liệu, khóa, kiểm quyền ghi, mở thư mục / URL, kho key; thu hồi tiến trình `open`; tên biến `opener`; chú thích mã lỗi chung hai nền tảng; ngoài Windows, lưu báo `READ_ONLY` khi file DB chỉ đọc (hay ghi khác biệt ở M11). Hành vi Windows không đổi. Có thể phải tách đôi theo trần cỡ | — | `src-tauri/src/lib.rs`, `storage.rs`, `ai.rs`, module mới | L130, L132, L134, L135, L136 | med | — | ADR-0019. Chỉ Rust, xen kẽ được với A–G; không chạy cùng phần Rust của ADR lưu trữ (`storage.rs`). Trước Mac-2, Mac-4 |
-| Mac-2 | Nơi để dữ liệu và bản cài Windows (ADR-0019 §2, §5): bản cài NSIS theo người dùng, dữ liệu `%LOCALAPPDATA%\<mã>\`, chế độ portable khi có `Project2C-data\` cạnh exe, bản debug dùng thư mục cạnh file chạy (cả macOS), mã định danh mới `com.heritas.lcrm`; CI build file cài; NT-EX viết lại và nghiệm thu lại (K46) | — (ADR-0019 §2, §5) | `tauri.conf.json`, `tauri.windows.conf.json` (mới), module `platform`, `.github/workflows/ci.yml`, `package.json`, `docs/testing/nghiem-thu-v1.md` | — | high | Q1, Q4, Q9 (G4 NSIS), Q11 (K49) | Mac-1. Nhãn `build-exe` + `build-mac` |
+| Mac-2 | Nơi để dữ liệu và bản cài Windows (ADR-0019 §2, §5): bản cài NSIS theo người dùng, dữ liệu `%LOCALAPPDATA%\<mã>\`, chế độ portable khi có `Project2C-data\` cạnh exe, bản debug dùng thư mục cạnh file chạy (cả macOS), mã định danh mới `com.heritas.lcrm`; CI build file cài; NT-EX viết lại và nghiệm thu lại (K46) | — (ADR-0019 §2, §5) | `tauri.conf.json`, `tauri.windows.conf.json` (mới), module `platform`, `.github/workflows/ci.yml`, `package.json`, `docs/testing/nghiem-thu-v1.md` | L148, L149 @`b798560` (thêm 14/11/2026) | high | Q1, Q4, Q9 (G4 NSIS), Q11 (K49) | Mac-1. Nhãn `build-exe` + `build-mac` |
 | Mac-3 | Đóng gói macOS: `.dmg` (Q2; dựng trên runner hỏng thì giữ zip), `minimumSystemVersion` (Q5), kiểm chỉ arm64, khai ngôn ngữ vi + en của gói (ADR-0018 §10), `macos.yml` đòi `Signature=adhoc` | M4 | `tauri.macos.conf.json`, `.github/workflows/macos.yml` | L133 | low | Q2, Q5 | ADR-0019. Khác file với Mac-1, Mac-2: chạy song song được. Trước Mac-7 |
 | Mac-4 | Key AI qua Keychain: crate `apple-native-keyring-store` (ADR-0019 §4), test chấp nhận có bước macOS hỏi lại mật khẩu sau bản build mới | M1 | `src-tauri/Cargo.toml`, `Cargo.lock`, module `platform` / `ai.rs` | — | med | Q8 (G4 crate) | Mac-1, Mac-2 (cùng module `platform`). Nhãn `build-exe` + `build-mac` |
 | Mac-5 | Chữ, phím và hướng dẫn theo nền tảng: ⌘A / ⌘C / ⌘V, ⌘R thay Ctrl ở chữ giao diện và chặn tải lại; chữ "exe", Explorer, `backups\` theo nền tảng; hướng dẫn sử dụng phần macOS ("Vẫn mở" với chữ hộp chặn của macOS 27, Keychain, nơi để dữ liệu) và phần cài đặt Windows | M6 (hướng dẫn), M7, M8 | `apps/desktop/src/i18n/vi.ts`, xử lý phím của vỏ app, `docs/user-guide/` | — | low | — | A1, G-01 (`vi.ts`); Mac-2, Mac-3 (hướng dẫn tả bản cài, `.dmg`). Có thể tách phần hướng dẫn |
@@ -654,6 +654,41 @@ Thứ tự dưới (bước 2, 3) do Claude đề xuất ngày 12/11/2026 (T-419
 2. Việc tài liệu, lần lượt: DS-0 (T-419, #1227: sổ ghi chú theo nhãn đích, §12) → golden B (T-421, #1234: §4.5; Owner duyệt G2 ngày 13/11/2026) → mockup đợt c (T-422, #1238: `docs/design/mockups/tong-quan.html`, kèm bảng luật "Điểm nhấn" ở §8; Owner duyệt G3 và G2 ngày 13/11/2026) → đợt d + golden D (T-423, #1242: `docs/design/mockups/forecast.html`, `docs/golden/forecast.md`; Owner duyệt G3 và G2 ngày 13/11/2026) → đợt e (T-424, #1247: `docs/design/mockups/bao-cao.html`, phụ lục đợt e của ADR-0011; Owner duyệt G3 ngày 13/11/2026) → đợt f + mockup phần G (T-425, #1250: `docs/design/mockups/huy-hd.html`, `docs/design/mockups/ngon-ngu-tien-te.html`; §11.5; Owner duyệt G3 ngày 13/11/2026) → đợt g (T-426, #1253: `docs/design/mockups/chuyen-dong.html`, phụ lục 14/11/2026 của ADR-0013; Owner duyệt G3 ngày 14/11/2026) → viết các bảng "Issue dự kiến" còn thiếu (T-427, #1256: vỏ app §8.1, D §6.3, E §7.1, F §7.2; Owner duyệt G1 ngày 14/11/2026). ADR macOS: ADR-0019 (T-420, #1230), viết sau bước thử; bảng Issue dự kiến Mac đã viết (§9.3). ADR-0018 và golden số / tiền (T-418) đã qua G1, G2 ngày 12/11/2026; golden D và mockup đợt c–e viết số theo luật mới.
 3. Owner bảo "ra issue": DS-1 → A1–A7 → DS-2 → G-01 … G-05 → VA1 … VA7 → B1–B3 → DS-3 → F1 → C1 / C2 / C3 → VA8, VA9 → D1 … D8 → E1 … E6 → HD1 → DS-4 → G-06 … G-11 → G-12 … G-16 (viết rõ theo bốn bảng của T-427, Owner duyệt G1 ngày 14/11/2026, §8.1; chuỗi trước đó: "… G-05 → vỏ app → B1–B3 → DS-3 → C1 / C2, F → D → E → DS-4 → …"). Issue Mac xen kẽ theo luật song song theo file (§9.3 bước 3). Mỗi Issue gộp các mục sổ mang nhãn đích của nó (§12). Chi tiết phần G: §11.4; tên Issue dự kiến: §3.6, §4.6, §5, §6.3, §7.1, §7.2, §8.1, §11.7, §12.2. VA8, VA9 (ô lệnh, "Lưu ý") chạy sau C vì dùng chung hàm tìm; D7, D8 (Tổng quan đợt c) nằm trong D vì cần số Forecast; C3 (team màu, icon) và HD1 (ảnh hướng dẫn sử dụng) thêm theo câu 3, 5 của §8.1.
 4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → đóng phase → G7 → phát hành v1.0 cho cả hai.
+
+### 10.1 Lịch chạy `auto-issues` và model (Owner duyệt 14/11/2026)
+
+Owner 14/11/2026, chat ở Home PC: "kiểm tra các mục open trong sổ ghi chú và đưa vào các issue. Liệt kê các chuỗi issue thực sự phức tạp cần Fable 5.2 làm. Lên lịch chạy auto-issue cho các chuỗi với model khuyến nghị Opus 5.5 xhigh (với advisor Fable 5.2) và Fable 5.2 high". Lịch dưới do Claude đề xuất (T-427, #1256). Owner duyệt cùng ngày, chọn phương án đề xuất ở ba câu trong hộp câu hỏi: lịch tám đợt và bốn chuỗi Fable ("Duyệt lịch"; phương án bỏ: Fable chỉ làm A6, VA và D, E chạy Opus); tách DS-1 ("DS-1a tay, DS-1b pipeline"; phương án bỏ: cả DS-1 làm tay); Issue code tạo theo đợt ("Theo đợt"; phương án bỏ: tạo hết ngay).
+
+**Sổ ghi chú đã vào Issue (T-427).** Rà @`b798560`: 101 mục OPEN, mục nào cũng có đúng một nhãn đích, mọi nhãn là tên một Issue dự kiến (hay "đóng phase"), file được trỏ tới đều còn (một file đã dời chỗ, chính mục ghi rõ). Các nhãn nhóm đã đổi sang tên Issue: `[vỏ app]` → VA1, VA2, VA3, VA7 (§8.1); `[D]` → D2 … D5 (§6.3); `[E]` → E5, E6 (§7.1); `[Mac]` → Mac-1, Mac-2, Mac-3 (§9.3); `[DS-1]` → DS-1a, DS-1b (§12.2). Số mục theo Issue: DS-1b 13 · DS-3 12 · DS-2 10 · A6 7 · B1 7 · Mac-1 5 · DS-1a 4 · DS-4 4 · G-09 4 · C2 3 · G-02 3 · VA7 3 · còn lại 1–2. Khi tạo Issue, PR sổ đổi nhãn thành `[T-… #…]` như cũ.
+
+**Model theo đợt.** Phiên con của `auto-issues` theo model và effort của phiên điều phối (skill `auto-issues` §1 bước 3), nên mỗi đợt một model: Owner chọn model và advisor ở phiên điều phối trước khi gõ `/goal`. **Opus** = Opus 5.5 xhigh + `/advisor` Fable 5.2; **Fable** = Fable 5.2 high + `/advisor off` (như M1, Owner 11/11/2026). Phiên con có nhận theo cài đặt advisor của phiên điều phối hay không: chưa kiểm, xem ở phiên con đầu tiên của đợt.
+
+**Chuỗi cần Fable 5.2** (việc thật sự phức tạp; còn lại Opus làm):
+
+1. **A6 (+ A7):** prompt và bộ lọc chặn (G5); Owner đã chọn Fable cho A6 ngày 11/11.
+2. **VA1 … VA7, vỏ app:** cả hệ giao diện mới trên hai hệ điều hành (token, chất liệu, bo góc kiểu Apple, cửa sổ Mica / kính của Tauri, View Transitions, lò xo), chạm mọi màn, lỗi lan sang mọi Issue sau; đây là chỗ Owner đặt mức "đẳng cấp", và mockup a, g do Fable vẽ.
+3. **D2 … D8, Forecast và Tổng quan:** thuật toán "một KH một số" với các bậc so, Chủ Nhật, KPI, nhịp (F01–F41); màn dày hình (đường băng, dải tuần, lưới tháng, bảng nổi); bảng luật "Điểm nhấn" với ba điều kiện biên; bố cục Tổng quan mới.
+4. **E1 … E6, Báo cáo và Excel:** chỗ Owner chê "sơ sài, không chuyên nghiệp, đẳng cấp" (§1 ý 3); khuôn câu của Bản tin, bản in giấy sáng, file Excel bảy sheet với nhóm gập, thanh dữ liệu, công thức, logo, khổ in.
+
+Opus đủ cho: A1 … A5 (đổi tên bằng script), DS-*, G-01 … G-16 (golden `so-va-tien-te.md` định nghĩa từng dòng), B1 … B3 (golden B), C1 … C3, F1, VA8, VA9 (dựng trên vỏ đã xong, theo mockup), D1 (dữ liệu và migration, như B1), Mac-1 … Mac-8, HD1.
+
+| Đợt | Cách chạy · model | Hàng đợi, theo thứ tự | Owner làm / chỗ dừng |
+|---|---|---|---|
+| 0 (xen giữa các đợt) | Phiên thường · Opus | DS-1a trước đợt 1. Sau đợt 1: một Issue làm tay phần chạm rào "không tự sửa" của A và G-01 (dòng "RE" ở `.claude/rules/i18n-ui.md`, `.claude/rules/tests.md`, `docs/process/REVIEW-CHECKLIST.md`; luật i18n ở `.claude/rules/i18n-ui.md` và dòng i18n của `CLAUDE.md`). Mac-6 sau DS-1a, trước đợt 3 | Chạm rào nên review, merge theo cách thường (`risk:med` trở lên chờ Owner); chỉ làm khi `auto-issues` không chạy. DS-1a: DR6-208 hỏi Owner trước (§12.3) |
+| 1 | `auto-issues` · Opus | DS-1b → A1 → A2 → A3 → A4 → A5 → DS-2 → G-01 → G-02 → G-03 → G-04 → G-05 | Không dự kiến dừng (A theo §3.5) |
+| 2 | Phiên thường · **Fable** | A6 → A7 | G5: Owner duyệt chữ prompt trên PR của A6; A7 Owner bấm eval thật (tốn credit, G4) |
+| 3 | `auto-issues` · Opus | Mac-1 → Mac-2 → Mac-3 → Mac-4 → Mac-5 → Mac-7 | Owner thử trên MacBook: bản cài Windows, `.dmg`, Keychain hỏi lại mật khẩu, e2e WebKit. Trước đợt 4 vì VA5 cùng file cấu hình Tauri với Mac-2, Mac-3 |
+| 4 | `auto-issues` · **Fable** | VA1 → VA2 → VA3 → VA4 → VA5 → VA6 → VA7 | VA5: Owner thử exe của PR (Snap Layouts, kéo cửa sổ, bản Mac); không đạt thì lùi về thanh tiêu đề gốc |
+| 5 | `auto-issues` · Opus | B1 → B2 → B3 → DS-3 → F1 → C1 → C2 → C3 → VA8 → VA9 → D1 | C3 cần G2 (hai cột màu, icon của `teams`): Owner duyệt khi Claude viết Issue, trước đợt |
+| 6 | `auto-issues` · **Fable** | D2 → D3 → D4 → D5 → D6 → D7 → D8 → E1 → E2 → E3 → E4 → E5 → E6 | E4: Owner thử lệnh in trên máy thật; E5, E6: Owner mở file Excel thật |
+| 7 | `auto-issues` · Opus | HD1 → DS-4 → G-06 → G-07 → G-08 → G-09 → G-10 → G-11 → G-12 → G-13 → G-14 → G-15 → G-16 | G-16 mở lựa chọn English |
+| 8 | Phiên thường · Opus | Mac-8 khi Owner bảo dựng MacBook (chạm `CLAUDE.md`, `tools/`) | Owner làm trên MacBook |
+
+Sau đợt 7: Owner nghiệm thu Windows + Mac (§10 bước 4), đóng phase, G7.
+
+- **Issue tạo theo đợt:** trước mỗi đợt, Claude viết Issue của đợt đó trong một phiên thường (Opus) khi Owner bảo "ra issue đợt N", gắn `ready-for-agent`, rồi Owner mở phiên điều phối và gõ `/goal … Hàng đợi: #… #….` (skill `auto-issues`, "Owner chạy thế nào"). Viết theo đợt để Issue sau đọc được code của đợt trước, như đợt mockup.
+- **Một pipeline một lúc:** `auto-issues` giữ checkout chính và hai worktree review, nên các đợt chạy nối nhau, không song song; phiên thường của đợt 0, 2, 8 chạy khi không có đợt `auto-issues` nào đang chạy.
+- **Cỡ:** đợt 1 (12 Issue), 5 (11) và 6 (13) dài; Owner có thể dừng giữa đợt và gõ lại `/goal` (skill `auto-issues`, "Owner chạy thế nào" bước 5).
 
 ## 11. Phần G — Song ngữ Việt / Anh và tiền tệ (Owner duyệt G1, G2 ngày 12/11/2026)
 
@@ -1064,12 +1099,12 @@ Nhãn của một mục là `[T-… #…]` (Issue đang mở sẽ sửa mục) h
 | C1, C2, C3 | Issue dự kiến của phần C (§5; C3 thêm 14/11/2026) |
 | HD1 | Chụp lại ảnh hướng dẫn sử dụng một lần sau E (§8.1 câu 5) |
 | G-01 … G-16 | Issue dự kiến của phần G (§11.7) |
-| DS-1 … DS-4 | Issue dọn sổ (§12.2) |
+| DS-1a, DS-1b, DS-2 … DS-4 | Issue dọn sổ (§12.2; DS-1 tách đôi ngày 14/11/2026) |
 | golden B | golden của phần B trong `docs/golden/chi-so.md` (§4.5), Owner duyệt G2 |
 | đợt c … đợt g | mockup G3 các đợt c–g (§8); đợt f gồm cả mockup phần G (§11.5) |
-| vỏ app | Issue code của mockup đợt a và g, cùng ô lệnh và "Lưu ý" của đợt b: Issue dự kiến VA1 … VA9 (§8.1) |
-| D, E, F | Issue dự kiến D1 … D8 (§6.3; gồm Tổng quan đợt c), E1 … E6 (§7.1), F1 (§7.2) |
-| Mac | Issue dự kiến Mac-1 … Mac-8 (§9.3, theo ADR-0019); bước thử #1226 đã xong |
+| VA1 … VA9 | Issue dự kiến của vỏ app (§8.1): mockup đợt a và g, cùng ô lệnh và "Lưu ý" của đợt b. Thay tên nhóm "vỏ app" (T-427) |
+| D1 … D8, E1 … E6, F1 | Issue dự kiến của phần D (§6.3; gồm Tổng quan đợt c), E (§7.1), F (§7.2). Thay tên nhóm "D", "E", "F" (T-427) |
+| Mac-1 … Mac-8 | Issue dự kiến Mac (§9.3, theo ADR-0019); thay tên nhóm "Mac" (T-427); bước thử #1226 đã xong |
 | đóng phase | PR đóng Phase 6: số đo `docs/metrics/phase-6.md`, review đóng phase |
 | G7 | nhãn chờ đã dùng từ 23/10/2026: mục chặn phát hành chờ bước G7 |
 
@@ -1084,7 +1119,7 @@ Mục sổ không thuộc việc dự kiến nào ở §12.1 gom theo loại th�
 | DS-3 | Hộp thoại và màn Lịch hẹn: 6c / 6f, hộp đặt / dời lịch, người phối hợp, báo lỗi trong hộp, e2e kết quả cuộc gặp | 12 | low | G-03 | sau vỏ app và B1–B3, trước C1 / C2 (G-03 đổi cùng hộp thoại) |
 | DS-4 | KH, KYC, Thùng rác: tên truy cập, dòng thời gian KYC, câu lỗi chuyển nhóm, khung AI | 4 | low | A4 | sau E, trước G-06 … G-16 (chuỗi đổi xong trước các lượt dịch) |
 
-DS-1 (14 mục) và DS-3 (12 mục) có thể phải tách đôi theo trần cỡ khi viết Issue. Mỗi Issue dọn sổ là Issue sửa ghi chú của sổ: có mục "Ngân sách" và "Quét cùng mẫu" (skill `review-pr` §3.A).
+DS-1 (14 mục) và DS-3 (12 mục) có thể phải tách đôi theo trần cỡ khi viết Issue. **DS-1 tách đôi (T-427; Owner duyệt 14/11/2026, §10.1):** DS-1a làm tay ở phiên thường, 4 mục chạm rào "không tự sửa" của `auto-issues` (`tools/review-hint-core.mjs`, `tools/auto-wait-core.mjs`, `tools/notes-core.mjs`, `tools/notes-for.mjs`; L43, L126, L143, L144 @`b798560`); DS-1b (13 mục còn lại: cấu hình ESLint / Vitest, e2e, ca hợp đồng capability, `docs/reviews/**`, kế hoạch deep review, `docs/agents/issue-tracker.md`) chạy được trong `auto-issues`. Mỗi Issue dọn sổ là Issue sửa ghi chú của sổ: có mục "Ngân sách" và "Quét cùng mẫu" (skill `review-pr` §3.A).
 
 ### 12.3 Lưu ý khi viết Issue, theo bảng ghép
 
