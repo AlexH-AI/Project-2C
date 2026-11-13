@@ -1,0 +1,1164 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css mục 13 và 19, hành vi chung ở ui2.js mục 20, dữ liệu và vẽ màn ở <script> cuối file):
+  Mockup G3 đợt g (T-426 #1253): hệ chuyển động. Ý 06 "Bốn động tác, ba lò xo", ý 07 "Mở từ chỗ bấm" (spec §8).
+  Trạng thái: CHỜ G3. Token chuyển động đã duyệt ở đợt a (ADR-0013 phụ lục 11/11/2026 điểm 6): trang này không thêm token.
+  Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
+  Số viết theo ADR-0018: "1.38 tỷ", "310 tr", "60,000,000 VNĐ", "42.3%"; ngày dd/mm/yyyy; chữ "RM".
+  Số khớp các đợt đã duyệt (đo trong trang): Tổng quan tháng 11 MTD của tong-quan.html (Toàn bộ 1.38 tỷ, Sao Mai 620 tr,
+  Hừng Đông 310 tr, Bình Minh 450 tr), Forecast của forecast.html (Toàn bộ: tuần này 555 tr, tháng này 1.32 tỷ),
+  HĐ đem hủy của huy-hd.html (KH Đỗ Quang Vinh, phát hành 05/11/2026, 60 tr). Thẻ KH và RM: tên của search-rm-team.html.
+  #shell     Cửa sổ app bấm được, vẽ gọn từ các màn đã duyệt: Tổng quan (số chủ đạo, sáu ô, thanh theo team, viên góc
+             nhìn), Khách hàng (thẻ KH → hồ sơ), Forecast (công tắc Tuần này / Tháng này), Team & nhân sự (dòng RM →
+             trang RM), hồ sơ KH (Hủy HĐ → hộp thoại → nhãn "Đã hủy {ngày}" → thông báo nổi). Thanh dưới: hệ điều hành,
+             cỡ cửa sổ, năm cảnh (Hiện, Mở, Trượt, Đếm, Nảy), Chạy lại, tốc độ (1× / chậm 4× / chậm 10×), Giảm chuyển động
+  #rules     Luật chung: chỉ transform / opacity, token, ra nhanh hơn vào, không chặn tay
+  #hien      Hiện: màn mới, các phần trồi lên lần lượt; hai cách (#opt-stagger)
+  #mo        Mở từ chỗ bấm: thẻ nở thành trang, thu về đúng chỗ cũ; lúc thu về (#opt-back); khi không có API (#opt-fallback)
+  #truot     Trượt: viên chọn, công tắc, bảng nổi, ô lệnh, hộp thoại, thông báo nổi
+  #dem       Đếm: số chạy tới giá trị mới; qua ranh giới tỷ ↔ tr (#opt-count); chạy ở đâu, không chạy ở đâu
+  #springs   Ba lò xo: lò xo nào cho việc gì; lò xo nảy dùng ở đâu (#opt-bounce)
+  #where     Bảng "động tác → nơi dùng" của mọi màn đợt a–f, và nơi không có chuyển động
+  #calm      Bản "Giảm chuyển động" của từng động tác
+  #feasible  Khả thi và hiệu năng: WebView2, WKWebView, điều đã đo, điều chưa kiểm
+  #ask       Các điểm G3 cần Owner quyết
+  Vỏ app, bảng thành phần, token (đợt a): app-shell.html, components.html. Màn đầy đủ: search-rm-team.html (b),
+  tong-quan.html (c), forecast.html (d), bao-cao.html (e), huy-hd.html và ngon-ngu-tien-te.html (f).
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chuyển động — Heritas L-CRM (Project-2C mockup, đợt g)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Proposed in round g, waiting for G3: two changes to how approved parts move (points 1 and 8 of #ask).
+         They live here until the Owner answers; once approved they move to ui2.css section 19 so the mockups of
+         rounds a–f follow. Nothing else of the approved rounds is changed by this page. ---- */
+      .view.on .rise { animation-delay: calc(min(var(--i, 0), 7) * 28ms); } /* "Hiện": at most 8 steps, the last part lands within 0.6 s */
+      .nav-i .ic { transition: color var(--t-2), transform var(--t-3) var(--spring-snappy); } /* the bouncy spring is kept for three places */
+
+      /* ---- Only this page: the screens inside the window (short forms of the approved screens, for watching motion) ---- */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later > b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 560px; font-size: 13.5px; }
+      .later p b { font-weight: 650; color: var(--text); }
+      .later.kept { min-height: 0; height: auto; padding: 16px; grid-auto-flow: column; justify-content: start; gap: 12px; text-align: left; }
+      .later.kept .ic { width: 20px; height: 20px; }
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+      .scr { display: grid; gap: 14px; max-width: 1180px; }
+      .scr > .btn { justify-self: start; margin-left: -10px; }
+      .cnt { display: inline-block; }
+      /* Tổng quan */
+      .ov-top { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; }
+      .ov-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+      .bar-r { display: grid; grid-template-columns: 136px minmax(0, 1fr) 62px; align-items: center; gap: 12px; padding: 8px 0; font-size: 13.5px; white-space: nowrap; }
+      .bar-r > span { overflow: hidden; text-overflow: ellipsis; }
+      .bar-r b { text-align: right; font-weight: 650; }
+      .bar-r .hbar { height: 8px; border-radius: 4px; }
+      /* Forecast */
+      .sw-row { display: flex; align-items: center; gap: 12px; min-height: 34px; }
+      .sw-row .note { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* Khách hàng: the board of round b, four groups */
+      .kan { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; max-width: 1180px; }
+      .kcol { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); }
+      .kcol h4 { margin: 0 2px 2px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 650; }
+      .kcol h4 .n { margin-left: auto; font-weight: 500; color: var(--text-2); }
+      .kcol .more { padding: 4px 2px 0; font-size: 12px; color: var(--text-2); }
+      .kcard { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); background: var(--mat-card), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-1); text-align: left; transition: transform var(--t-3) var(--spring-snappy); }
+      [data-os='win'] .kcard { border-radius: 4px; }
+      .kcard:hover { transform: translateY(-2px); }
+      .kcard b { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; white-space: nowrap; }
+      .kcard b > .kh { overflow: hidden; text-overflow: ellipsis; }
+      .kcard .chip { color: var(--issued); }
+      .kcard > span { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+      .kcard > span > :first-child { overflow: hidden; text-overflow: ellipsis; }
+      /* Hồ sơ KH, trang RM, Team */
+      .pf-head { display: flex; align-items: center; gap: 14px; }
+      .pf-head h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; }
+      .pf-head .meta { margin: 2px 0 0; font-size: 13px; color: var(--text-2); }
+      .pf-head .acts { margin-left: auto; }
+      .av.lg { width: 52px; height: 52px; font-size: 16px; }
+      .pol-empty { color: var(--text-2); font-size: 13.5px; }
+      .rm-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+      .lnk { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text); text-align: left; }
+      .lnk .ic { width: 13px; height: 13px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy), color var(--t-1); }
+      tr:hover .lnk .ic { transform: translateX(2px); color: var(--accent); }
+      tr[data-grow] { cursor: pointer; }
+      .dlg .input input { flex: 1; width: 100%; min-width: 0; border: 0; outline: 0; background: none; font-variant-numeric: tabular-nums; }
+      .dlg .help { margin: 0; }
+      @container (max-width: 1240px) { .ov-top { grid-template-columns: minmax(0, 1fr); } .ov-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .dock .btn { font-size: 12.5px; }
+      .dock .btn .ic { width: 14px; height: 14px; }
+      @media (max-width: 1320px) { .dock [data-set='size'] { display: none; } }
+      .rules { margin: 0; padding-left: 20px; color: var(--text-2); }
+      .rules li { margin-bottom: 7px; }
+      .rules b { color: var(--text); font-weight: 600; }
+      .law { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .law th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+      .law td { padding: 11px 12px 11px 0; border-top: 1px solid var(--hairline); vertical-align: top; line-height: 1.5; color: var(--text-2); }
+      .law td:first-child { font-weight: 650; color: var(--text); }
+      .law td b { color: var(--text); font-weight: 600; }
+      .law td.n, .law th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .law tr.grp td { padding-top: 22px; border-top: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+      .law .mv { display: inline-flex; align-items: center; height: 21px; padding: 0 8px; border-radius: 7px; font-size: 11.5px; font-weight: 650; white-space: nowrap; color: var(--c, var(--text-2)); background: color-mix(in srgb, var(--c, var(--text-2)) 16%, var(--bg-0)); }
+      .mv.m1 { --c: var(--accent); } .mv.m2 { --c: var(--info); } .mv.m3 { --c: var(--ok); } .mv.m4 { --c: var(--n2); } .mv.m5 { --c: var(--warn); }
+      /* A time line of one move: each part is a bar from when it starts to when it ends, on a scale of --max ms */
+      .tm { --max: 700; display: grid; gap: 7px; font-size: 13px; font-variant-numeric: tabular-nums; }
+      .tm-r { display: grid; grid-template-columns: 200px minmax(0, 1fr) 210px; align-items: center; gap: 14px; color: var(--text-2); }
+      .tm-r > span:first-child { color: var(--text); font-weight: 550; }
+      .tm-t { position: relative; height: 16px; border-radius: 4px; background: repeating-linear-gradient(90deg, var(--hairline) 0 1px, transparent 1px calc(100% / 7)), var(--fill-1); }
+      .tm-t i { position: absolute; top: 3px; bottom: 3px; left: calc(var(--s, 0) / var(--max) * 100%); width: max(3px, calc(var(--d) / var(--max) * 100%)); border-radius: 3px; background: var(--c, var(--accent)); }
+      .tm-t i.sm { --c: var(--info); } .tm-t i.sn { --c: var(--accent); } .tm-t i.bo { --c: var(--warn); } .tm-t i.fa { --c: var(--text-2); } .tm-t i.out { --c: var(--danger); }
+      .tm-ax { display: grid; grid-template-columns: 200px minmax(0, 1fr) 210px; gap: 14px; font-size: 11.5px; color: var(--text-2); }
+      .tm-ax div { position: relative; height: 16px; }
+      .tm-ax span { position: absolute; left: calc(var(--at) / var(--max) * 100%); transform: translateX(-50%); white-space: nowrap; }
+      .tm-ax span:first-child { transform: none; }
+      .tm-key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 12.5px; color: var(--text-2); }
+      .tm-key i { display: inline-block; width: 18px; height: 8px; margin-right: 7px; border-radius: 3px; background: var(--c); }
+      .tm-h { margin: 18px 0 8px; font-size: 13px; font-weight: 650; color: var(--heading); }
+      .tm-h:first-child { margin-top: 0; }
+      /* A small screen to try one move on */
+      .mini { position: relative; width: 100%; min-height: 250px; padding: 14px; border-radius: 14px; background: var(--mat-glow), var(--bg-0); box-shadow: inset 0 0 0 1px var(--hairline); font: 14px/1.45 var(--font-ui); font-variant-numeric: tabular-nums; text-align: left; overflow: hidden; }
+      .mini-bar { display: flex; align-items: center; gap: 10px; margin-top: 14px; font: 13px/1.4 var(--font-page); color: var(--text-2); }
+      .mini-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .mini-page { position: absolute; inset: 14px; display: grid; align-content: start; gap: 10px; }
+      .mini-page .btn { justify-self: start; margin-left: -8px; }
+      .mini-page .card { padding: 14px 16px; }
+      .mini-page h4 { margin: 0; font-size: 17px; font-weight: 700; }
+      .mini-page p { margin: 2px 0 0; font-size: 12.5px; color: var(--text-2); }
+      .part { height: 46px; border-radius: 10px; background: var(--mat-card); box-shadow: var(--mat-card-edge); display: flex; align-items: center; padding: 0 14px; font-size: 12.5px; color: var(--text-2); }
+      .parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .parts .part.wide { grid-column: 1 / -1; height: 60px; }
+      .mini.play .part { animation: rise var(--t-3) var(--spring-snappy) both; animation-delay: calc(min(var(--i, 0), 7) * 28ms); }
+      .mini.play.once .part { animation-delay: 0ms; }
+      /* A number tile to try "Đếm" on, and the two ways of the choice */
+      .tile { display: grid; gap: 4px; justify-items: start; width: 100%; }
+      .tile .lbl { font-size: 12.5px; font-weight: 550; color: var(--text-2); }
+      .tile .val { display: flex; align-items: baseline; gap: 6px; min-height: 62px; font-size: 54px; line-height: 1.1; font-weight: 650; letter-spacing: -0.035em; color: var(--accent); white-space: nowrap; }
+      .tile .val small { font-size: 22px; font-weight: 500; letter-spacing: 0; color: var(--text-2); }
+      .tile .eq { font-size: 12.5px; color: var(--text-2); }
+      .cases { display: flex; flex-wrap: wrap; gap: 6px; }
+      .roll-box { display: inline-grid; overflow: hidden; }
+      .roll-box > span { grid-area: 1 / 1; display: flex; align-items: baseline; gap: 6px; }
+      @keyframes roll-in { from { opacity: 0; transform: translateY(calc(var(--dir, 1) * 55%)); } }
+      @keyframes roll-out { to { opacity: 0; transform: translateY(calc(var(--dir, 1) * -55%)); } }
+      .roll-box > .in { animation: roll-in var(--t-2) var(--spring-snappy) both; }
+      .roll-box > .out { animation: roll-out var(--t-1) var(--ease-in) both; }
+      .frames { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font: 12.5px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+      .frames span { display: inline-grid; gap: 5px; justify-items: center; min-width: 66px; padding: 7px 8px; border-radius: 8px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); color: var(--text); font-weight: 600; white-space: nowrap; }
+      .frames span small { font-size: 11px; font-weight: 400; color: var(--text-2); }
+      .frames span.bad { color: var(--danger); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent); }
+      .frames-l { display: block; margin: 16px 0 0; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      /* The spring lab: the three springs side by side on the same travel */
+      .lane { display: grid; grid-template-columns: 190px minmax(0, 1fr) 150px; align-items: center; gap: 14px; margin-bottom: 10px; font-size: 13.5px; color: var(--text-2); white-space: nowrap; }
+      .lane .track { position: relative; height: 40px; padding: 4px; border-radius: 20px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); container-type: inline-size; }
+      .lane .track::after { content: ''; position: absolute; right: 4px; top: 4px; bottom: 4px; width: 100px; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--border-control); pointer-events: none; }
+      .puck { position: relative; z-index: 1; display: grid; place-items: center; width: 100px; height: 32px; border-radius: 16px; background: var(--accent-fill); color: var(--on-accent); font-size: 12.5px; font-weight: 650; }
+      .lab.go .puck { transform: translateX(calc(100cqw - 100px)); }
+      .lane.s1 .puck { transition: transform var(--t-3) var(--spring-smooth); }
+      .lane.s2 .puck { transition: transform var(--t-3) var(--spring-snappy); }
+      .lane.s3 .puck { transition: transform var(--t-4) var(--spring-bouncy); }
+      .lane.s0 .puck { transition: transform var(--t-3) var(--ease-out); }
+      /* Where the bouncy spring is used: the two ways of the choice */
+      .bn { display: grid; gap: 14px; width: 100%; max-width: 420px; padding: 16px; border-radius: 14px; background: var(--mat-glow), var(--bg-0); box-shadow: inset 0 0 0 1px var(--hairline); font: 14px/1.45 var(--font-ui); text-align: left; }
+      .bn-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .bn-row > small { flex-basis: 100%; font: 12px/1.3 var(--font-page); color: var(--text-2); }
+      .bn .nav { flex-direction: row; gap: 4px; }
+      .bn .nav-i { width: auto; padding: 0 12px; }
+      .bn.b .nav-i .ic { transition: color var(--t-2), transform var(--t-3) var(--spring-bouncy); }
+      .bn.a .swatches button { transition: transform var(--t-3) var(--spring-snappy); }
+      .bn .toast { position: static; }
+      .bn .toast.pop { animation: toast-in var(--t-4) var(--spring-bouncy) both, land-in var(--t-2) var(--ease-out) both; }
+      @keyframes toast-in { from { transform: translateY(24px) scale(0.96); } }
+      /* The way back of "Mở" at the length of the way in: only for the choice of #opt-back */
+      :root.vt-back.vt-long::view-transition-group(open) { animation-duration: var(--t-3); animation-timing-function: var(--spring-smooth); }
+      .opt-pic.blk { display: block; place-items: normal; padding: 16px; min-height: 0; }
+      .opt-pic.mid { flex: 1; display: grid; justify-items: center; align-content: center; padding: 22px 16px; }
+      .stack-v { display: grid; gap: 18px; }
+      .state-l { display: block; margin: 0 0 8px; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .tag.no { color: var(--text-2); }
+      @media (max-width: 1100px) { .gal, .pgrid, .duo { grid-template-columns: minmax(0, 1fr); } .tm-r, .tm-ax { grid-template-columns: 150px minmax(0, 1fr) 170px; } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4.5h4.5" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt g · Chuyển động</b>
+      <span class="state">Chờ G3</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#rules">Luật chung</a><a href="#hien">Hiện</a><a href="#mo">Mở</a><a href="#truot">Trượt</a><a href="#dem">Đếm</a><a href="#springs">Ba lò xo</a><a href="#where">Nơi dùng</a><a href="#calm">Giảm chuyển động</a><a href="#feasible">Khả thi</a><a href="#ask">Cần anh quyết</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i on" data-go="overview" data-sub="Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ" data-tools="scope find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</button>
+              <button class="nav-i" data-go="appointments" data-sub="Toàn bộ" data-tools="find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</button>
+              <button class="nav-i" data-go="customers" data-sub="884 KH đang mở · 65 đã đóng · Toàn bộ" data-tools="find" data-act="Khách hàng"><svg class="ic"><use href="#i-people" /></svg>Khách hàng</button>
+              <button class="nav-i" data-go="forecast" data-sub="Hôm nay Thứ Ba 10/11/2026 · Toàn bộ" data-tools="scope find" data-act="Xuất Excel"><svg class="ic"><use href="#i-forecast" /></svg>Forecast</button>
+              <button class="nav-i" data-go="reports" data-sub="Tháng 11/2026 · Toàn bộ" data-tools="find" data-act="Xuất Excel"><svg class="ic"><use href="#i-report" /></svg>Báo cáo</button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team" data-sub="3 team · 3 TL · 27 RM · 3 người hỗ trợ" data-tools="find" data-act="Team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button>
+              <button class="nav-i" data-go="settings" data-sub="Dữ liệu · AI · Thùng rác" data-tools="find"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i>Đã lưu 13:20</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2>Tổng quan</h2><span></span></div>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
+                <button class="cap" data-tool="scope" data-pop="scope" aria-haspopup="true" aria-expanded="false" title="Góc nhìn"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Ô lệnh (⌘K)" title="Ô lệnh · ⌘K"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn><svg class="ic"><use href="#i-plus" /></svg><span>Lịch hẹn</span></button>
+              </div>
+            </header>
+
+            <!-- Bảng nổi của viên góc nhìn (đợt c): chọn là đổi ngay -->
+            <div class="menu tl-pop" data-pop-for="scope" role="menu" aria-label="Góc nhìn">
+              <button class="on" data-scope="all" data-pop-close role="menuitemradio">Toàn bộ<span class="n">27 RM</span></button>
+              <hr />
+              <button data-scope="bm" data-pop-close role="menuitemradio">Team Bình Minh<span class="n">9 RM</span></button>
+              <button data-scope="hd" data-pop-close role="menuitemradio">Team Hừng Đông<span class="n">8 RM</span></button>
+              <button data-scope="sm" data-pop-close role="menuitemradio">Team Sao Mai<span class="n">10 RM</span></button>
+            </div>
+
+            <div class="views">
+              <div class="view on" data-view="overview"><div class="scr" data-ov></div></div>
+              <div class="view" data-view="appointments"><div class="later rise"><svg class="ic"><use href="#i-cal" /></svg><b>Lịch hẹn</b><p>Giữ bố cục đã duyệt, chỉ thay vỏ: xem <a class="c-accent" href="app-shell.html#previews">app-shell.html · Xem trước</a>. Vào màn này bằng thanh bên là động tác <b>Hiện</b>; hộp "Lịch hẹn mới" mở bằng động tác <b>Trượt</b>.</p></div></div>
+              <div class="view" data-view="customers"><div data-board></div></div>
+              <div class="view" data-view="forecast"><div class="scr" data-fc></div></div>
+              <div class="view" data-view="reports"><div class="later rise"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Đã duyệt ở đợt e: xem <a class="c-accent" href="bao-cao.html">bao-cao.html</a>. Trang Bản tin là một trang giấy: số trên đó <b>không chạy</b> (mục <a class="c-accent" href="#dem">Đếm</a>).</p></div></div>
+              <div class="view" data-view="team"><div class="scr" data-team></div></div>
+              <div class="view" data-view="settings"><div class="later rise"><svg class="ic"><use href="#i-gear" /></svg><b>Cài đặt</b><p>Đã duyệt ở đợt a và f: xem <a class="c-accent" href="app-shell.html">app-shell.html</a>, <a class="c-accent" href="ngon-ngu-tien-te.html">ngon-ngu-tien-te.html</a>. Không có công tắc chuyển động trong app: app theo cài đặt "Giảm chuyển động" của máy (mục <a class="c-accent" href="#calm">Giảm chuyển động</a>).</p></div></div>
+              <div class="view" data-view="profile" data-nav="customers" data-title="Hồ sơ khách hàng" data-sub="" data-tools="find" data-act="Lịch hẹn"><div class="scr" data-profile></div></div>
+              <div class="view" data-view="rm" data-nav="team" data-title="Trang RM" data-sub="" data-tools="find"><div class="scr" data-rm-page></div></div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm: hộp hủy HĐ (đợt f), ô lệnh (đợt b), thông báo nổi ===== -->
+          <div class="scrim"></div>
+          <div class="dlg" role="dialog" aria-modal="true" aria-label="Hủy HĐ" data-dlg></div>
+          <div class="pal" role="dialog" aria-modal="true" aria-label="Ô lệnh">
+            <div class="pal-field"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm KH, RM, màn hay lệnh…" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>
+            <div class="pal-list" role="listbox">
+              <div class="pal-g" data-max="7" data-idle="7"><div class="pal-grp">Đi tới</div>
+                <button class="pal-o" data-find="Tổng quan" data-jump="overview"><svg class="ic"><use href="#i-overview" /></svg><span class="t" data-hl>Tổng quan</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Lịch hẹn" data-jump="appointments"><svg class="ic"><use href="#i-cal" /></svg><span class="t" data-hl>Lịch hẹn</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Khách hàng" data-jump="customers"><svg class="ic"><use href="#i-people" /></svg><span class="t" data-hl>Khách hàng</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Forecast" data-jump="forecast"><svg class="ic"><use href="#i-forecast" /></svg><span class="t" data-hl>Forecast</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Báo cáo" data-jump="reports"><svg class="ic"><use href="#i-report" /></svg><span class="t" data-hl>Báo cáo</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Team &amp; nhân sự" data-jump="team"><svg class="ic"><use href="#i-team" /></svg><span class="t" data-hl>Team &amp; nhân sự</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Cài đặt" data-jump="settings"><svg class="ic"><use href="#i-gear" /></svg><span class="t" data-hl>Cài đặt</span><span class="kind">Màn</span></button>
+              </div>
+              <div class="pal-none" hidden>Không có gì khớp "<span data-q></span>". Ô lệnh đầy đủ (KH, RM, lệnh): đợt b.</div>
+            </div>
+            <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd>chọn</span><span><kbd>Enter</kbd>mở</span><span><kbd>Esc</kbd>đóng</span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd>mở ở mọi màn</span></div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="seg" data-scene aria-label="Xem một động tác"><button data-v="hien" title="Đổi màn: các phần trồi lên lần lượt">Hiện</button><button data-v="mo" title="Thẻ KH nở thành hồ sơ, rồi thu về">Mở</button><button data-v="truot" title="Công tắc, rồi bảng nổi của viên góc nhìn">Trượt</button><button data-v="dem" title="Đổi góc nhìn: 1.38 tỷ ↔ 310 tr">Đếm</button><button data-v="nay" title="Hủy một HĐ: hộp thoại, nhãn Đã hủy, thông báo nổi">Nảy</button></span>
+        <button class="btn sm" data-replay title="Chạy lại cảnh vừa xem"><svg class="ic"><use href="#i-replay" /></svg>Chạy lại</button>
+        <span class="seg" data-pace aria-label="Tốc độ"><button class="on" data-v="1">1×</button><button data-v="4">Chậm 4×</button><button data-v="10">Chậm 10×</button></span>
+        <button class="btn sm" data-calm aria-pressed="false" title="Xem bản Giảm chuyển động mà không đổi cài đặt của máy">Giảm chuyển động</button>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Luật chung ================= -->
+      <section class="sec" id="rules">
+        <span class="kicker">Ý 06 · hệ chuyển động</span>
+        <h2>Bốn động tác, ba lò xo, một bộ luật.</h2>
+        <p class="lead">Anh đã chốt (10/11, 11/11): chuyển động chỉ đổi vị trí, tỉ lệ và độ trong; thời lượng và đường cong là token dùng chung; máy bật "Giảm chuyển động" thì tắt hết; không thêm thư viện. Đợt g chốt phần còn lại: <b>bốn động tác dùng ở đâu, dài bao lâu, theo đường cong nào</b>. Bố cục các màn đã duyệt không đổi. Xem ở cửa sổ đầu trang: thanh dưới có năm cảnh, nút <b>Chạy lại</b>, <b>Chậm 4×</b> / <b>Chậm 10×</b> và nút <b>Giảm chuyển động</b>; anh cũng tự bấm được mọi thứ trong cửa sổ.</p>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Động tác</th><th>Là gì</th><th>Vào</th><th>Ra</th><th>Đường cong</th></tr></thead>
+            <tbody>
+              <tr><td><a href="#hien">Hiện</a></td><td>Đổi màn: màn mới tới ngay, các phần của nó trồi lên 8 px và rõ dần, lần lượt</td><td>400 ms mỗi phần, cách nhau 28 ms, tối đa 8 nhịp (xong trong 0.6 giây)</td><td>Không có: màn cũ biến mất ngay</td><td>Lò xo nhanh</td></tr>
+              <tr><td><a href="#mo">Mở</a></td><td>Thứ được bấm nở thành trang nó mở ra; quay lại thì trang thu về đúng thứ đó</td><td>400 ms</td><td>220 ms</td><td>Lò xo êm lúc nở, ease-out lúc thu</td></tr>
+              <tr><td><a href="#truot">Trượt</a></td><td>Thứ đang chọn trượt tới chỗ mới; lớp nổi đi một quãng ngắn ra từ nơi gọi nó</td><td>400 ms (rõ dần trong 220 ms)</td><td>120 ms (thông báo nổi 220 ms)</td><td>Lò xo nhanh; thông báo nổi dùng lò xo nảy 600 ms</td></tr>
+              <tr><td><a href="#dem">Đếm</a></td><td>Con số đang hiện chạy tới giá trị mới; thanh đi kèm dài ra theo</td><td>400 ms (thanh 600 ms)</td><td>—</td><td>Ease-out, không lò xo (thanh: lò xo êm)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Luật chung</h3>
+            <ul class="rules">
+              <li><b>Chỉ đổi vị trí, tỉ lệ, độ trong</b> (<code>transform</code>, <code>opacity</code>). Không chuyển động nào đổi chiều rộng, chiều cao hay lề: màn không phải dàn lại giữa chừng. Một ngoại lệ có tên: "Đếm" đổi chữ của con số (mục <a href="#dem">Đếm</a>).</li>
+              <li><b>Rê chuột chỉ đổi màu</b>, 120 ms. Nhấn: nút thu 4%, thẻ thu 1.5%; nhả tay thì về bằng lò xo nhanh. Đây là phản hồi của nút, không phải một động tác.</li>
+              <li><b>Ra nhanh hơn vào.</b> Thứ vừa gọi ra mất 220–400 ms để tới; thứ bị đóng đi trong 120 ms. Màn cũ không có chuyển động rời đi.</li>
+              <li><b>Không chặn tay.</b> Đang chuyển động vẫn bấm được; bấm việc khác thì chuyển động đang chạy dừng ngay ở đích.</li>
+              <li><b>Mỗi thứ một động tác một lúc.</b> Trang nở ra từ thẻ thì các phần của nó không trồi lên thêm.</li>
+              <li><b>Không vòng lặp</b>, trừ hai thứ đã duyệt ở đợt b: chấm "sắp tới giờ" của viên Lưu ý, thanh của việc chạy nền.</li>
+              <li><b>Số không dùng lò xo.</b> Một con số vượt quá giá trị thật rồi quay lại là một con số sai.</li>
+              <li><b>Máy bật "Giảm chuyển động":</b> không gì dịch chuyển (mục <a href="#calm">Giảm chuyển động</a>).</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Token <small>đã duyệt ở đợt a, không đổi</small></h3>
+            <table class="tok">
+              <tr><td>--t-1</td><td class="v">120 ms</td><td>Rê chuột; mọi thứ rời đi</td></tr>
+              <tr><td>--t-2</td><td class="v">220 ms</td><td>Mờ / rõ; đổi màu khi chọn; "Mở" lúc thu về</td></tr>
+              <tr><td>--t-3</td><td class="v">400 ms</td><td>Dịch chuyển: Hiện, Mở, Trượt; Đếm</td></tr>
+              <tr><td>--t-4</td><td class="v">600 ms</td><td>Thanh dài ra; thứ dùng lò xo nảy</td></tr>
+              <tr><td>--ease-out</td><td class="v">vào</td><td>Mờ → rõ; Đếm; "Mở" lúc thu về</td></tr>
+              <tr><td>--ease-in</td><td class="v">ra</td><td>Rõ → mờ, thứ bị đóng</td></tr>
+              <tr><td>--spring-*</td><td class="v">3 lò xo</td><td>Êm · nhanh · nảy: mục <a href="#springs">Ba lò xo</a></td></tr>
+            </table>
+            <p class="foot-note" style="margin-top: 14px">Trang này không thêm token nào. Số đo ghi ở các mục dưới đều là bội của bốn thời lượng trên, trừ khoảng cách giữa các phần (28 ms, 40 ms, 80 ms).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Hiện ================= -->
+      <section class="sec" id="hien">
+        <span class="kicker">Động tác 1 · Hiện</span>
+        <h2>Hiện: màn mới tới ngay, các phần trồi lên lần lượt.</h2>
+        <p class="lead">Dùng khi <b>đổi màn</b>: bấm một mục của thanh bên, chọn một màn trong ô lệnh, bấm một ô chỉ số hay một câu Điểm nhấn dẫn sang màn khác, sang bước kế của thiết lập ban đầu. Màn cũ biến mất ngay, không mờ dần: người dùng không phải chờ thứ họ vừa rời. Thử: cảnh <b>Hiện</b> ở thanh dưới của cửa sổ đầu trang, hoặc bấm thanh bên.</p>
+        <div class="pgrid">
+          <div class="pcard">
+            <h3>Thứ tự <small>mỗi vạch 100 ms</small></h3>
+            <div class="tm">
+              <div class="tm-r"><span>Viên chọn của thanh bên</span><div class="tm-t"><i class="sn" style="--s: 0; --d: 400"></i></div><span>0 → 400 · trượt (lò xo nhanh)</span></div>
+              <div class="tm-r"><span>Tên màn</span><div class="tm-t"><i class="sn" style="--s: 0; --d: 400"></i></div><span>0 → 400 · trồi 8 px</span></div>
+              <div class="tm-r"><span>Dòng dưới tên màn</span><div class="tm-t"><i class="sn" style="--s: 40; --d: 400"></i></div><span>40 → 440</span></div>
+              <div class="tm-r"><span>Phần 1</span><div class="tm-t"><i class="sn" style="--s: 0; --d: 400"></i></div><span>0 → 400 · trồi 8 px, rõ dần</span></div>
+              <div class="tm-r"><span>Phần 2</span><div class="tm-t"><i class="sn" style="--s: 28; --d: 400"></i></div><span>28 → 428</span></div>
+              <div class="tm-r"><span>Phần 3</span><div class="tm-t"><i class="sn" style="--s: 56; --d: 400"></i></div><span>56 → 456</span></div>
+              <div class="tm-r"><span>…</span><div class="tm-t"><i class="sn" style="--s: 84; --d: 400"></i><i class="sn" style="--s: 168; --d: 400"></i></div><span>mỗi phần sau 28 ms</span></div>
+              <div class="tm-r"><span>Phần 8 và các phần sau</span><div class="tm-t"><i class="sn" style="--s: 196; --d: 400"></i></div><span>196 → 596</span></div>
+              <div class="tm-r"><span>Thanh trong một phần</span><div class="tm-t"><i class="sm" style="--s: 100; --d: 600"></i></div><span>100 → 700 · dài ra (lò xo êm)</span></div>
+              <div class="tm-ax"><span></span><div><span style="--at: 0">0</span><span style="--at: 200">200</span><span style="--at: 400">400</span><span style="--at: 600">600 ms</span></div><span></span></div>
+            </div>
+            <div class="tm-key"><span><i style="--c: var(--accent)"></i>lò xo nhanh</span><span><i style="--c: var(--info)"></i>lò xo êm</span></div>
+          </div>
+          <div class="pcard">
+            <h3>Luật của Hiện</h3>
+            <ul class="rules">
+              <li><b>Một "phần"</b> là một khối của màn: một thẻ, một ô chỉ số, một bảng. Dòng của bảng và thẻ KH trên bảng Khách hàng (884 thẻ) không phải là phần: cả bảng trồi lên một lần.</li>
+              <li><b>Tối đa 8 nhịp.</b> Phần thứ 9 trở đi tới cùng lúc với phần thứ 8, nên màn nào cũng xong trong 0.6 giây. (Tổng quan của đợt c có 11 phần: hôm nay phần cuối tới ở 680 ms, theo luật này là 596 ms.)</li>
+              <li><b>Chỉ chạy khi màn được mở.</b> Đổi góc nhìn hay kỳ trong cùng một màn không chạy lại Hiện: số thì Đếm, khối vẽ lại thì đổi ngay.</li>
+              <li><b>Thanh</b> (thanh theo team, đường băng) dài ra từ trái, bắt đầu sau 100 ms, mỗi thanh sau 40 ms.</li>
+              <li><b>Ra:</b> không có. <b>Giảm chuyển động:</b> màn mới hiện đủ ngay.</li>
+            </ul>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-stagger">Các phần tới lần lượt, hay cùng lúc</h3>
+        <p class="sub-p">Bấm <b>Chạy</b> ở từng hình (thanh dưới của cửa sổ đầu trang có nút chạy chậm, có tác dụng cả ở đây).</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="mini" data-hien><div class="parts"><div class="part wide" style="--i: 0">Số chủ đạo</div><div class="part" style="--i: 1">Ô chỉ số 1</div><div class="part" style="--i: 2">Ô chỉ số 2</div><div class="part" style="--i: 3">Ô chỉ số 3</div><div class="part" style="--i: 4">Ô chỉ số 4</div><div class="part" style="--i: 5">Ô chỉ số 5</div><div class="part" style="--i: 6">Ô chỉ số 6</div><div class="part wide" style="--i: 7">Lịch hẹn · KH theo nhóm</div><div class="part wide" style="--i: 8">So sánh team</div></div></div><div class="mini-bar"><button class="btn sm" data-hien-run>Chạy</button><span>9 phần · phần cuối tới ở 596 ms</span></div></div><div class="opt-t"><b>A · Lần lượt, cách nhau 28 ms, tối đa 8 nhịp <span class="tag rec">đề xuất</span></b><p>Mắt được dẫn từ trên xuống: số chủ đạo trước, bảng sau. Trần 8 nhịp giữ cho màn nhiều phần không kéo dài.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div class="mini once" data-hien><div class="parts"><div class="part wide" style="--i: 0">Số chủ đạo</div><div class="part" style="--i: 1">Ô chỉ số 1</div><div class="part" style="--i: 2">Ô chỉ số 2</div><div class="part" style="--i: 3">Ô chỉ số 3</div><div class="part" style="--i: 4">Ô chỉ số 4</div><div class="part" style="--i: 5">Ô chỉ số 5</div><div class="part" style="--i: 6">Ô chỉ số 6</div><div class="part wide" style="--i: 7">Lịch hẹn · KH theo nhóm</div><div class="part wide" style="--i: 8">So sánh team</div></div></div><div class="mini-bar"><button class="btn sm" data-hien-run>Chạy</button><span>9 phần · tất cả tới ở 400 ms</span></div></div><div class="opt-t"><b>B · Cả màn trồi lên cùng lúc</b><p>Nhanh hơn 0.2 giây và đơn giản hơn, nhưng cả màn nhúc nhích một lần, không có thứ tự đọc.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Mở ================= -->
+      <section class="sec" id="mo">
+        <span class="kicker">Động tác 2 · Mở · ý 07</span>
+        <h2>Mở từ chỗ bấm: thẻ nở thành trang, quay lại thì thu về đúng chỗ cũ.</h2>
+        <p class="lead">Ý 07 anh đã nhận (10/11): bấm thẻ KH, thẻ nở thành hồ sơ; bấm một RM, dòng đó nở thành trang RM. Mắt không mất dấu: luôn biết mình vừa từ đâu tới. Thử ở cửa sổ đầu trang: màn <b>Khách hàng</b>, bấm một thẻ; màn <b>Team &amp; nhân sự</b>, bấm một dòng RM; trong trang RM, bấm một KH. Ở cỡ 1100 × 700 hãy cuộn bảng Khách hàng xuống rồi mới bấm: lúc quay lại, bảng vẫn ở đúng chỗ đã cuộn và trang thu về đúng thẻ đó.</p>
+        <div class="pgrid">
+          <div class="pcard">
+            <h3>Thứ tự <small>mỗi vạch 100 ms</small></h3>
+            <div class="tm">
+              <p class="tm-h">Lúc nở · 400 ms</p>
+              <div class="tm-r"><span>Khung: ô của thẻ → ô của trang</span><div class="tm-t"><i class="sm" style="--s: 0; --d: 400"></i></div><span>0 → 400 · lò xo êm</span></div>
+              <div class="tm-r"><span>Thẻ vừa bấm</span><div class="tm-t"><i class="out" style="--s: 0; --d: 120"></i></div><span>0 → 120 · mờ đi</span></div>
+              <div class="tm-r"><span>Trang mới</span><div class="tm-t"><i class="fa" style="--s: 80; --d: 220"></i></div><span>80 → 300 · rõ dần</span></div>
+              <div class="tm-r"><span>Phần còn lại của màn cũ</span><div class="tm-t"><i class="out" style="--s: 0; --d: 120"></i></div><span>0 → 120 · nhường chỗ</span></div>
+              <p class="tm-h">Lúc thu về · 220 ms</p>
+              <div class="tm-r"><span>Khung: ô của trang → ô của thẻ</span><div class="tm-t"><i class="fa" style="--s: 0; --d: 220"></i></div><span>0 → 220 · ease-out</span></div>
+              <div class="tm-r"><span>Trang</span><div class="tm-t"><i class="out" style="--s: 0; --d: 120"></i></div><span>0 → 120 · mờ đi</span></div>
+              <div class="tm-r"><span>Thẻ</span><div class="tm-t"><i class="fa" style="--s: 60; --d: 120"></i></div><span>60 → 180 · rõ lại</span></div>
+              <div class="tm-r"><span>Danh sách, ở chỗ đã cuộn</span><div class="tm-t"><i class="fa" style="--s: 0; --d: 120"></i></div><span>0 → 120 · hiện lại</span></div>
+              <div class="tm-ax"><span></span><div><span style="--at: 0">0</span><span style="--at: 200">200</span><span style="--at: 400">400</span><span style="--at: 600">600 ms</span></div><span></span></div>
+            </div>
+            <div class="tm-key"><span><i style="--c: var(--info)"></i>lò xo êm</span><span><i style="--c: var(--text-2)"></i>mờ → rõ, ease-out</span><span><i style="--c: var(--danger)"></i>rời đi, ease-in</span></div>
+          </div>
+          <div class="pcard">
+            <h3>Luật của Mở</h3>
+            <ul class="rules">
+              <li><b>Dùng ở ba nơi:</b> thẻ KH → hồ sơ KH (màn Khách hàng); dòng RM → trang RM (Team &amp; nhân sự); dòng KH trong trang RM → hồ sơ KH. Luật: thứ được bấm là chính thứ được mở, và nó vẫn nằm trên màn khi quay lại.</li>
+              <li><b>Không dùng</b> khi chỗ bấm nằm trong một lớp nổi sẽ đóng lại: mở hồ sơ từ ô lệnh, từ viên Lưu ý, từ gợi ý dưới ô tìm, từ danh sách của một ngày ở Forecast. Các đường đó dùng Hiện.</li>
+              <li><b>Quay lại:</b> màn trước trở về đúng như lúc rời (cuộn tới đâu ở nguyên đó), trang thu về đúng thẻ / dòng đã bấm. Nếu thẻ không còn ở đó (KH vừa đổi nhóm, bị lọc mất), trang chỉ mờ đi trong 120 ms.</li>
+              <li><b>Trang nở ra là một khối:</b> các phần của nó không trồi lên thêm, và màn quay về không chạy lại Hiện.</li>
+              <li><b>Lò xo êm, không vượt đích.</b> Trang rộng 1,150 px mà vượt đích 1.5% thì lòi ra ngoài mép cửa sổ 17 px.</li>
+              <li><b>Bấm trong lúc đang nở:</b> chuyển động dừng ngay ở đích, cú bấm được nhận.</li>
+              <li><b>Giảm chuyển động:</b> đổi màn ngay, không nở, không thu.</li>
+            </ul>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-back">Lúc thu về: nhanh hơn lúc nở, hay bằng</h3>
+        <p class="sub-p">Bấm một thẻ để mở, bấm nút quay lại để thu về; hoặc bấm <b>Chạy</b> để xem cả hai chiều. Hai hình chỉ khác nhau ở chiều về.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="mini" data-mo></div><div class="mini-bar"><button class="btn sm" data-mo-run>Chạy</button><span>nở 400 ms · thu về 220 ms</span></div></div><div class="opt-t"><b>A · Thu về trong 220 ms <span class="tag rec">đề xuất</span></b><p>Theo luật "ra nhanh hơn vào": người dùng đã biết nơi mình quay về, không cần được dẫn đường lần nữa. Bấm qua lại nhiều hồ sơ liên tiếp không thấy chờ.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div class="mini" data-mo data-back-cls="vt-long"></div><div class="mini-bar"><button class="btn sm" data-mo-run>Chạy</button><span>nở 400 ms · thu về 400 ms</span></div></div><div class="opt-t"><b>B · Thu về trong 400 ms, bằng lúc nở</b><p>Hai chiều đối xứng, nhìn rõ trang thu về đâu. Chậm hơn 0.18 giây ở mỗi lần quay lại.</p></div></div>
+        </div>
+        <h3 class="sub-h" id="opt-fallback">Khi WebView không có View Transitions</h3>
+        <p class="sub-p">"Mở" dùng View Transitions có sẵn của WebView (anh chốt 10/11). WebView2 trên Windows và WKWebView trên macOS 26 trở lên đều có (mục <a href="#feasible">Khả thi</a>), nhưng app vẫn phải chạy đúng khi không có. Nút dưới đây tắt API trong trang này để anh xem đường lui ở cửa sổ đầu trang và ở hai hình trên.</p>
+        <div class="pcard">
+          <div class="row" style="margin-bottom: 14px"><button class="btn sm" data-novt aria-pressed="false">Thử: coi như WebView không có View Transitions</button><span class="muted" data-novt-note>Đang dùng View Transitions.</span></div>
+          <table class="law">
+            <thead><tr><th>Phương án</th><th>Khi không có API</th><th>Cái giá</th></tr></thead>
+            <tbody>
+              <tr><td>A · Lui về Hiện <span class="tag rec">đề xuất</span></td><td>Bấm thẻ thì đổi màn như bấm thanh bên: trang mới tới ngay, các phần trồi lên. Quay lại cũng vậy, bảng vẫn ở chỗ đã cuộn.</td><td>Không thêm dòng code chuyển động nào; chỉ mất cảm giác "nở ra từ thẻ" trên máy đó.</td></tr>
+              <tr><td>B · Tự viết phép phóng</td><td>App tự đo ô của thẻ và ô của trang rồi phóng trang bằng <code>transform</code>, không cần API.</td><td>Thêm một đoạn code riêng phải kiểm trên cả hai WebView cho một trường hợp hiếm gặp; chữ bị kéo giãn trong lúc phóng.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Trượt ================= -->
+      <section class="sec" id="truot">
+        <span class="kicker">Động tác 3 · Trượt</span>
+        <h2>Trượt: thứ đang chọn đi tới chỗ mới, lớp nổi đi ra từ nơi gọi nó.</h2>
+        <p class="lead">Hai nhóm. <b>Thứ đang chọn</b> (viên chọn của thanh bên, nút trượt của công tắc) không tắt ở chỗ cũ rồi bật ở chỗ mới: nó trượt tới. <b>Lớp nổi</b> (bảng nổi, ô lệnh, hộp thoại, thông báo nổi) đi một quãng ngắn ra từ phía thứ gọi nó, và rời đi nhanh. Các số dưới đây là số đang có trong <code>ui2.css</code> đã duyệt ở đợt a–d; đợt g gọi tên và chốt chúng. Thử: cảnh <b>Trượt</b> và <b>Nảy</b> ở thanh dưới.</p>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Thứ</th><th>Đi từ đâu</th><th>Vào</th><th>Ra</th></tr></thead>
+            <tbody>
+              <tr class="grp"><td colspan="4">Thứ đang chọn</td></tr>
+              <tr><td>Viên chọn của thanh bên</td><td>Trượt dọc từ mục cũ tới mục mới; chỉ có một viên</td><td>400 ms · lò xo nhanh</td><td>—</td></tr>
+              <tr><td>Nút trượt của công tắc</td><td>Trượt ngang tới lựa chọn mới (Tuần này / Tháng này, Bản tin / Sổ số, Đang mở / Đã đóng); bề rộng đổi ngay theo chữ</td><td>400 ms · lò xo nhanh</td><td>—</td></tr>
+              <tr><td>Mũi tên của hàng team</td><td>Xoay 90° khi mở / gập; các dòng RM hiện và ẩn ngay, không trượt chiều cao</td><td>400 ms · lò xo nhanh</td><td>400 ms</td></tr>
+              <tr class="grp"><td colspan="4">Lớp nổi</td></tr>
+              <tr><td>Bảng nổi, menu</td><td>Từ 6 px phía nút gọi, 98% → 100% (viên góc nhìn, viên kỳ, danh sách của một ngày, Lưu ý, gợi ý dưới ô tìm)</td><td>Rõ 220 ms · dịch 400 ms lò xo nhanh</td><td>120 ms</td></tr>
+              <tr><td>Ô lệnh <span class="k-mac">⌘K</span> / Ctrl K</td><td>Từ 10 px phía trên, 98% → 100%</td><td>Rõ 220 ms · dịch 400 ms lò xo nhanh</td><td>120 ms</td></tr>
+              <tr><td>Hộp thoại · macOS</td><td>Tấm rơi xuống từ dưới thanh công cụ: 36 px, 98% → 100%; nền sau mờ đi</td><td>Rõ 220 ms · dịch 400 ms lò xo nhanh · nền 220 ms</td><td>120 ms · nền 220 ms</td></tr>
+              <tr><td>Hộp thoại · Windows 11</td><td>Ở giữa cửa sổ, 94% → 100%; nền sau mờ đi</td><td>Như macOS</td><td>120 ms · nền 220 ms</td></tr>
+              <tr><td>Thông báo nổi</td><td>Từ 24 px dưới mép dưới, 96% → 100%</td><td>Rõ 220 ms · dịch 600 ms lò xo nảy</td><td>220 ms, tự đi sau 4.2 giây</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Thứ tự <small>một hộp thoại, rồi một thông báo nổi</small></h3>
+            <div class="tm">
+              <p class="tm-h">Mở hộp thoại</p>
+              <div class="tm-r"><span>Nền sau mờ đi</span><div class="tm-t"><i class="fa" style="--s: 0; --d: 220"></i></div><span>0 → 220</span></div>
+              <div class="tm-r"><span>Hộp rõ dần</span><div class="tm-t"><i class="fa" style="--s: 0; --d: 220"></i></div><span>0 → 220 · ease-out</span></div>
+              <div class="tm-r"><span>Hộp tới chỗ</span><div class="tm-t"><i class="sn" style="--s: 0; --d: 400"></i></div><span>0 → 400 · lò xo nhanh</span></div>
+              <p class="tm-h">Đóng hộp thoại</p>
+              <div class="tm-r"><span>Hộp</span><div class="tm-t"><i class="out" style="--s: 0; --d: 120"></i></div><span>0 → 120 · ease-in</span></div>
+              <div class="tm-r"><span>Nền sau sáng lại</span><div class="tm-t"><i class="fa" style="--s: 0; --d: 220"></i></div><span>0 → 220</span></div>
+              <p class="tm-h">Thông báo nổi</p>
+              <div class="tm-r"><span>Rõ dần</span><div class="tm-t"><i class="fa" style="--s: 0; --d: 220"></i></div><span>0 → 220</span></div>
+              <div class="tm-r"><span>Trồi lên từ mép dưới</span><div class="tm-t"><i class="bo" style="--s: 0; --d: 600"></i></div><span>0 → 600 · lò xo nảy</span></div>
+              <div class="tm-ax"><span></span><div><span style="--at: 0">0</span><span style="--at: 200">200</span><span style="--at: 400">400</span><span style="--at: 600">600 ms</span></div><span></span></div>
+            </div>
+            <div class="tm-key"><span><i style="--c: var(--accent)"></i>lò xo nhanh</span><span><i style="--c: var(--warn)"></i>lò xo nảy</span><span><i style="--c: var(--text-2)"></i>mờ → rõ</span><span><i style="--c: var(--danger)"></i>rời đi</span></div>
+          </div>
+          <div class="pcard">
+            <h3>Luật của Trượt</h3>
+            <ul class="rules">
+              <li><b>Lớp nổi không "Mở" từ nút gọi nó:</b> nó nhỏ và ở ngay cạnh, một quãng 6–36 px là đủ để biết nó từ đâu ra.</li>
+              <li><b>Hai hệ điều hành khác nhau ở một chỗ:</b> hộp thoại trên macOS là tấm rơi từ thanh công cụ, trên Windows 11 mở ở giữa cửa sổ (đã duyệt ở đợt a). Thời lượng và lò xo giống nhau.</li>
+              <li><b>Ra nhanh hơn vào:</b> 120 ms cho mọi lớp nổi bị đóng. Thông báo nổi tự đi nên rời chậm hơn một bậc (220 ms).</li>
+              <li><b>Nội dung trong lớp nổi không chuyển động riêng:</b> các dòng của menu, các ô của hộp thoại tới cùng lớp nổi.</li>
+              <li><b>Khối đổi theo công tắc</b> (dải tuần ↔ lưới tháng, Bản tin ↔ Sổ số) đổi ngay; chỉ nút trượt là trượt, số thì Đếm.</li>
+              <li><b>Giảm chuyển động:</b> viên chọn và nút trượt nhảy tới chỗ mới; lớp nổi hiện và ẩn ngay.</li>
+            </ul>
+            <span class="state-l" style="margin-top: 16px">Thử tại chỗ (thành phần của đợt a)</span>
+            <div class="spec-row" style="font: 14px/1.45 var(--font-ui)"><span class="seg" aria-label="Kỳ của Forecast"><button class="on">Tuần này</button><button>Tháng này</button></span><span class="seg" aria-label="Kiểu Báo cáo"><button class="on">Bản tin</button><button>Sổ số</button></span><label class="check on"><i></i>Chỉ KH có lịch</label></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Đếm ================= -->
+      <section class="sec" id="dem">
+        <span class="kicker">Động tác 4 · Đếm</span>
+        <h2>Đếm: con số đang hiện chạy tới giá trị mới.</h2>
+        <p class="lead">Đợt c và d dùng "Đếm" để minh họa; đợt g chốt. Dùng khi <b>một con số đang hiện đổi giá trị</b>: đổi góc nhìn, đổi kỳ, bấm công tắc Tuần này / Tháng này, vừa lưu một thay đổi. Mở một màn thì số có sẵn ngay, <b>không đếm từ 0</b>. Thử: cảnh <b>Đếm</b> ở thanh dưới, hoặc đổi viên góc nhìn ở màn Tổng quan và Forecast.</p>
+        <div class="pgrid">
+          <div class="pcard">
+            <h3>Gõ thử <small>bấm một ca</small></h3>
+            <div class="tile" data-dem="run"><span class="lbl">Doanh số</span><div class="val num"><span class="cnt"></span><small></small></div><span class="eq" data-dem-note>Bấm một ca bên dưới.</span></div>
+            <div class="cases" style="margin-top: 12px" data-dem-cases></div>
+            <span class="frames-l">Từng khung hình, cách nhau 50 ms, của ca vừa bấm</span>
+            <div class="frames" data-dem-frames></div>
+            <span class="frames-l">Cùng ca đó theo cách của mockup đợt c, d hôm nay (đơn vị lấy của giá trị đích)</span>
+            <div class="frames" data-dem-old></div>
+          </div>
+          <div class="pcard">
+            <h3>Luật của Đếm</h3>
+            <ul class="rules">
+              <li><b>400 ms, ease-out, không lò xo.</b> Mọi số của màn chạy cùng lúc, không so le.</li>
+              <li><b>Mỗi khung hình là một cách viết đúng ADR-0018.</b> Số đang chạy được làm tròn về ba chữ số có nghĩa, rồi viết bằng chính hàm dạng gọn của app. Đơn vị vì thế luôn là đơn vị của con số đang hiện: <span class="num">1.38 tỷ → 1.03 tỷ → 761 tr → 310 tr</span>. Không khung hình nào viết "1,231 tr".</li>
+              <li><b>Khung cuối là giá trị thật</b>, viết đủ như lúc đứng yên (vd. <span class="num">999.99 tr</span>); ba chữ số có nghĩa chỉ áp cho các khung ở giữa.</li>
+              <li><b>Số đếm</b> chạy theo số nguyên; <b>phần trăm</b> theo một số lẻ như lúc đứng yên.</li>
+              <li><b>"—" ↔ một con số:</b> đổi ngay, không chạy. <b>Đổi tiếp khi số đang chạy:</b> chạy tiếp từ con số đang hiện.</li>
+              <li><b>Thanh đi kèm</b> (thanh theo team, đường băng) dài ra tới bề rộng mới trong 600 ms, lò xo êm. Đường lũy kế vẽ lại rồi rõ dần trong 400 ms.</li>
+              <li><b>Ngoại lệ của luật transform / opacity:</b> "Đếm" đổi chữ của con số ở mỗi khung hình. Con số dùng chữ số đều bề rộng và nằm trên dòng riêng, nên không khối nào quanh nó bị dàn lại.</li>
+              <li><b>Giảm chuyển động:</b> số đổi thẳng sang giá trị mới.</li>
+            </ul>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-count">Khi số đi qua ranh giới tỷ ↔ tr</h3>
+        <p class="sub-p">Ca của sổ ghi chú (review PR #1240): đổi góc nhìn Toàn bộ → Team Hừng Đông, Doanh số từ <span class="num">1.38 tỷ</span> xuống <span class="num">310 tr</span>. Mockup đợt c giữ đơn vị của giá trị đích trong lúc chạy nên có khung hình hiện "1,231 tr", sai dạng gọn. Hai cách sửa:</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="tile" data-dem="run" data-auto><span class="lbl">Doanh số</span><div class="val num"><span class="cnt"></span><small></small></div></div><div class="cases" style="margin-top: 10px" data-dem-cases="short"></div><span class="frames-l">Khung hình mỗi 50 ms · 1.38 tỷ → 310 tr</span><div class="frames" data-frames-a></div></div><div class="opt-t"><b>A · Số chạy, đơn vị theo số đang hiện <span class="tag rec">đề xuất</span></b><p>Giữ cảm giác "số đang đổi" anh đã thấy ở đợt c, d. Mỗi khung hình tự chọn đơn vị như một con số đứng yên, nên chữ "tỷ" đổi thành "tr" đúng lúc con số xuống dưới 1 tỷ.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div class="tile" data-dem="roll" data-auto><span class="lbl">Doanh số</span><div class="val num"><span class="roll-box"><span><span class="cnt"></span><small></small></span></span></div></div><div class="cases" style="margin-top: 10px" data-dem-cases="short"></div><span class="frames-l">Chỉ có hai con số · 1.38 tỷ → 310 tr</span><div class="frames" data-frames-b></div></div><div class="opt-t"><b>B · Lăn: số cũ lăn đi, số mới lăn vào</b><p>Không có con số trung gian nào, nên không có gì để viết sai; số tăng thì lăn lên, giảm thì lăn xuống (220 ms). Đúng luật transform / opacity, nhưng mất cảm giác con số "chạy tới" giá trị mới.</p></div></div>
+        </div>
+        <h3 class="sub-h">Chạy ở đâu, không chạy ở đâu</h3>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Nơi</th><th>Số</th><th>Đếm</th></tr></thead>
+            <tbody>
+              <tr><td>Tổng quan (đợt c)</td><td>Số chủ đạo Doanh số; sáu ô chỉ số; số "đã gặp" của ô Lịch hẹn</td><td><span class="mv m4">Đếm</span> khi đổi góc nhìn, đổi kỳ</td></tr>
+              <tr><td>Forecast (đợt d)</td><td>Số dự kiến; ba số Đã đạt · Dự kiến · KPI</td><td><span class="mv m4">Đếm</span> khi đổi góc nhìn, bấm công tắc, điền case size</td></tr>
+              <tr><td>Trang RM (đợt b)</td><td>Các ô số đầu trang</td><td><span class="mv m4">Đếm</span> khi đổi kỳ</td></tr>
+              <tr><td>Báo cáo (đợt e)</td><td>Trang Bản tin, Sổ số, bản in, file Excel</td><td><span class="mv">Không</span> Bản tin là một trang giấy: đổi kỳ thì trang đổi ngay</td></tr>
+              <tr><td>Mọi bảng</td><td>So sánh team, bảng Team → RM, danh sách KH, Sổ số</td><td><span class="mv">Không</span> hàng chục số cùng chạy thì không đọc được số nào</td></tr>
+              <tr><td>Số trong câu</td><td>Điểm nhấn, phép tính dưới ô chỉ số, khối "Ảnh hưởng chỉ số", thông báo nổi</td><td><span class="mv">Không</span> câu đổi ngay</td></tr>
+              <tr><td>Số nhỏ</td><td>Nhãn số HĐ trên thẻ KH, số đếm trên nút ("4 lịch thiếu case size"), số của nhóm KH</td><td><span class="mv">Không</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Ba lò xo ================= -->
+      <section class="sec" id="springs">
+        <span class="kicker">Ý 06 · ba lò xo</span>
+        <h2>Ba lò xo: êm cho thứ lớn, nhanh cho thứ nhỏ, nảy cho điều cần chú ý.</h2>
+        <p class="lead">Ba lò xo đã là token từ đợt a; đợt g chốt lò xo nào cho việc gì. Khác nhau ở mức <b>vượt đích</b>: êm không vượt, nhanh vượt 1.5% (mắt gần như không thấy), nảy vượt 12.6% rồi lắc về. Bấm <b>Chạy</b> vài lần, và thử cả ở tốc độ chậm.</p>
+        <div class="pgrid">
+          <div class="pcard lab">
+            <h3>So ba lò xo <small>cùng một quãng đường; khung mờ là đích</small></h3>
+            <div class="lane s0"><span>Ease-out · 400 ms</span><div class="track"><span class="puck">Thẻ KH</span></div><span>để đối chiếu</span></div>
+            <div class="lane s1"><span>Lò xo êm · 400 ms</span><div class="track"><span class="puck">Thẻ KH</span></div><span>không vượt đích</span></div>
+            <div class="lane s2"><span>Lò xo nhanh · 400 ms</span><div class="track"><span class="puck">Thẻ KH</span></div><span>vượt 1.5%</span></div>
+            <div class="lane s3"><span>Lò xo nảy · 600 ms</span><div class="track"><span class="puck">Thẻ KH</span></div><span>vượt 12.6%</span></div>
+            <div class="row" style="margin-top: 12px"><button class="btn" data-lab-run type="button">Chạy</button></div>
+          </div>
+          <div class="pcard">
+            <h3>Lò xo nào cho việc gì</h3>
+            <table class="law">
+              <thead><tr><th>Lò xo</th><th>Dùng cho</th></tr></thead>
+              <tbody>
+                <tr><td>Êm</td><td>Thứ lớn hoặc đi xa: <b>Mở</b> (trang nở ra từ thẻ), thanh và đường băng dài ra.</td></tr>
+                <tr><td>Nhanh</td><td>Thứ nhỏ đi gần, và thứ đáp lại tay: <b>Hiện</b>, <b>Trượt</b> (viên chọn, nút trượt, bảng nổi, ô lệnh, hộp thoại), nút và thẻ lúc nhả tay, icon của mục thanh bên đang chọn, mẫu màu của team.</td></tr>
+                <tr><td>Nảy</td><td><b>Chỉ ba nơi:</b> thông báo nổi hiện ra; nhãn "Đã hủy {ngày}" lúc vừa hủy; dấu ✓ (ô chọn vừa được tick, việc chạy nền vừa xong).</td></tr>
+                <tr><td>Không lò xo</td><td>Mờ / rõ (ease-out vào, ease-in ra), đổi màu, <b>Đếm</b>, "Mở" lúc thu về.</td></tr>
+              </tbody>
+            </table>
+            <p class="foot-note" style="margin-top: 14px">Chưa màn nào vẽ một "điều đáng mừng" (vd. vừa đạt KPI tháng). Khi có, nó dùng lò xo nảy, và qua G3 cùng màn của nó.</p>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-bounce">Lò xo nảy dùng ở đâu</h3>
+        <p class="sub-p">Anh đã chốt (10/11): lò xo nảy chỉ cho điều đáng mừng hay cần chú ý. Mockup đợt a, b hôm nay còn dùng nó ở hai nơi nữa: icon của mục thanh bên đang chọn và mẫu màu của team. Bấm các mục, mẫu màu, ô chọn và nút trong từng hình (nên xem ở tốc độ chậm).</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat mid"><div class="bn a" data-os="mac" data-bn></div></div><div class="opt-t"><b>A · Chỉ ba nơi <span class="tag rec">đề xuất</span></b><p>Nảy: thông báo nổi, nhãn "Đã hủy", dấu ✓. Icon thanh bên và mẫu màu chuyển sang lò xo nhanh: đó là thao tác chọn lặp lại hàng trăm lần một ngày, không phải điều cần chú ý.</p></div></div>
+          <div class="opt"><div class="opt-pic flat mid"><div class="bn b" data-os="mac" data-bn></div></div><div class="opt-t"><b>B · Giữ thêm hai nơi của đợt a, b</b><p>Icon của mục thanh bên vừa chọn và mẫu màu vừa chọn cũng nảy, như các mockup đợt a, b đang vẽ. Sinh động hơn, nhưng lò xo nảy xuất hiện ở mỗi lần đổi màn.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Nơi dùng ================= -->
+      <section class="sec" id="where">
+        <span class="kicker">Động tác → nơi dùng · đợt a–f</span>
+        <h2>Mỗi màn đã duyệt dùng động tác nào, và nơi không có chuyển động.</h2>
+        <p class="lead">Bảng này phủ mọi màn của đợt a–f. Các màn giữ bố cục cũ (Lịch hẹn, KYC, các hộp thoại 5a–8d) nhận đúng hai thứ qua bộ khung chung: <b>Hiện</b> khi vào màn, <b>Trượt</b> cho hộp thoại và bảng nổi. Chỗ nào mockup đợt a–f đang chuyển động khác bảng này thì theo bảng này (điểm 10 ở mục Cần anh quyết).</p>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Nơi (đợt)</th><th>Việc xảy ra</th><th>Động tác</th></tr></thead>
+            <tbody>
+              <tr class="grp"><td colspan="3">Vỏ app và thành phần chung (a)</td></tr>
+              <tr><td>Thanh bên</td><td>Bấm một mục: viên chọn trượt, màn mới hiện</td><td><span class="mv m3">Trượt</span> <span class="mv m1">Hiện</span></td></tr>
+              <tr><td>Nút, thẻ bấm được</td><td>Rê chuột đổi màu; nhấn thu lại, nhả về</td><td><span class="mv">Phản hồi của nút</span> 120 ms · lò xo nhanh</td></tr>
+              <tr><td>Hộp thoại, menu, bảng chọn kỳ</td><td>Mở và đóng</td><td><span class="mv m3">Trượt</span></td></tr>
+              <tr><td>Thông báo nổi</td><td>Hiện ra, tự đi sau 4.2 giây</td><td><span class="mv m3">Trượt</span> <span class="mv m5">Nảy</span></td></tr>
+              <tr><td>Ô chọn</td><td>Dấu ✓ hiện khi tick</td><td><span class="mv m5">Nảy</span></td></tr>
+              <tr><td>Nút che tên KH</td><td>Tên đổi sang dạng viết tắt</td><td><span class="mv">Không</span> chữ đổi ngay</td></tr>
+              <tr class="grp"><td colspan="3">Ô lệnh, Lưu ý, Khách hàng, trang RM, Team (b)</td></tr>
+              <tr><td>Ô lệnh ⌘K / Ctrl K</td><td>Mở, đóng; chọn một kết quả thì sang màn đó</td><td><span class="mv m3">Trượt</span> rồi <span class="mv m1">Hiện</span></td></tr>
+              <tr><td>Viên Lưu ý</td><td>Bảng nổi mở dưới viên; việc chạy nền: thanh dài ra, xong thì dấu ✓</td><td><span class="mv m3">Trượt</span> · thanh: lò xo êm · ✓: <span class="mv m5">Nảy</span></td></tr>
+              <tr><td>Khách hàng</td><td>Bấm thẻ KH → hồ sơ KH, quay lại</td><td><span class="mv m2">Mở</span></td></tr>
+              <tr><td>Khách hàng · ô tìm</td><td>Thẻ khớp sáng lên, thẻ khác mờ đi; thẻ khớp lên đầu nhóm</td><td><span class="mv">Không</span> đổi màu 220 ms; thẻ đổi chỗ ngay</td></tr>
+              <tr><td>Team &amp; nhân sự</td><td>Bấm dòng RM → trang RM; mở / gập một team</td><td><span class="mv m2">Mở</span> · mũi tên: <span class="mv m3">Trượt</span></td></tr>
+              <tr><td>Trang RM</td><td>Bấm một KH → hồ sơ KH; đổi kỳ</td><td><span class="mv m2">Mở</span> · số đầu trang: <span class="mv m4">Đếm</span></td></tr>
+              <tr><td>Hộp team: màu, icon</td><td>Chọn một mẫu</td><td><span class="mv">Phản hồi của nút</span> lò xo nhanh</td></tr>
+              <tr class="grp"><td colspan="3">Tổng quan (c)</td></tr>
+              <tr><td>Vào màn</td><td>Số chủ đạo, Điểm nhấn, sáu ô, các khối bên dưới</td><td><span class="mv m1">Hiện</span> tối đa 8 nhịp</td></tr>
+              <tr><td>Đổi góc nhìn, đổi kỳ</td><td>Số chủ đạo và sáu ô đổi; đường lũy kế vẽ lại; câu Điểm nhấn và bảng So sánh team đổi</td><td><span class="mv m4">Đếm</span> · đường: rõ dần 400 ms · câu và bảng: đổi ngay</td></tr>
+              <tr><td>Viên góc nhìn, viên kỳ</td><td>Bảng nổi mở dưới viên</td><td><span class="mv m3">Trượt</span></td></tr>
+              <tr><td>Ô chỉ số, câu Điểm nhấn</td><td>Bấm thì sang Báo cáo / Forecast / Lịch hẹn</td><td><span class="mv m1">Hiện</span></td></tr>
+              <tr><td>Đường lũy kế</td><td>Rê chuột: vạch và nhãn của ngày đi theo chuột</td><td><span class="mv">Không</span> theo tay, không trễ</td></tr>
+              <tr class="grp"><td colspan="3">Forecast (d)</td></tr>
+              <tr><td>Công tắc Tuần này / Tháng này</td><td>Nút trượt đi; số đổi; dải tuần ↔ lưới tháng</td><td><span class="mv m3">Trượt</span> <span class="mv m4">Đếm</span> · khối: đổi ngay</td></tr>
+              <tr><td>Đường băng tháng</td><td>Thanh Đã đạt · Dự kiến dài ra khi số đổi</td><td>Lò xo êm 600 ms</td></tr>
+              <tr><td>Một ngày</td><td>Bấm ngày: danh sách lịch mở cạnh ô ngày; bấm một lịch → hồ sơ KH</td><td><span class="mv m3">Trượt</span> rồi <span class="mv m1">Hiện</span></td></tr>
+              <tr><td>Điền case size tại chỗ</td><td>Số dự kiến và số của bảng đổi</td><td>Số dự kiến: <span class="mv m4">Đếm</span> · bảng: đổi ngay</td></tr>
+              <tr class="grp"><td colspan="3">Báo cáo và Excel (e)</td></tr>
+              <tr><td>Công tắc Bản tin / Sổ số</td><td>Nút trượt đi; nội dung đổi</td><td><span class="mv m3">Trượt</span> · nội dung: <span class="mv m1">Hiện</span> một nhịp</td></tr>
+              <tr><td>Đổi kỳ, đổi góc nhìn</td><td>Trang Bản tin, các bảng Sổ số</td><td><span class="mv">Không</span> đổi ngay</td></tr>
+              <tr><td>Xem bản in, Xuất Excel</td><td>Bản in mở; việc xuất chạy ở viên Lưu ý rồi báo bằng thông báo nổi</td><td><span class="mv m1">Hiện</span> · <span class="mv m3">Trượt</span></td></tr>
+              <tr class="grp"><td colspan="3">Hủy HĐ, ngôn ngữ và tiền tệ (f)</td></tr>
+              <tr><td>Hộp hủy, hộp Sửa</td><td>Mở, đóng; khối "Ảnh hưởng chỉ số" đổi theo ngày gõ</td><td><span class="mv m3">Trượt</span> · khối: đổi ngay</td></tr>
+              <tr><td>Dòng HĐ vừa hủy</td><td>Nhãn "Đã hủy {ngày}" đáp xuống; chữ của dòng nhạt đi</td><td><span class="mv m5">Nảy</span> 600 ms · màu 220 ms</td></tr>
+              <tr><td>Bỏ hủy</td><td>Nhãn trở lại "Đã phát hành"</td><td><span class="mv">Không</span> nhãn đổi ngay</td></tr>
+              <tr><td>Thiết lập ban đầu</td><td>Sang bước kế, quay lại bước trước</td><td><span class="mv m1">Hiện</span></td></tr>
+              <tr><td>Thẻ chọn, viên gợi ý dưới ô tiền</td><td>Chọn, bấm</td><td><span class="mv">Phản hồi của nút</span></td></tr>
+              <tr class="grp"><td colspan="3">Nơi không có chuyển động</td></tr>
+              <tr><td>Bảng và danh sách</td><td>Dòng của bảng; thẻ trên bảng Khách hàng; kết quả lọc, tìm, sắp xếp</td><td><span class="mv">Không</span> hiện ngay, đổi chỗ ngay</td></tr>
+              <tr><td>Ô nhập</td><td>Chữ đang gõ, dòng đọc lại, câu lỗi, gợi ý dưới ô</td><td><span class="mv">Không</span> viền đổi màu 120 ms</td></tr>
+              <tr><td>Cuộn, đổi cỡ cửa sổ</td><td>Cuộn của hệ điều hành; bố cục co giãn theo cửa sổ</td><td><span class="mv">Không</span></td></tr>
+              <tr><td>Giấy và file</td><td>Bản in, file Excel</td><td><span class="mv">Không</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Giảm chuyển động ================= -->
+      <section class="sec" id="calm">
+        <span class="kicker">Trợ năng</span>
+        <h2>Máy bật "Giảm chuyển động": không gì dịch chuyển.</h2>
+        <p class="lead">Anh đã chốt (10/11): máy bật "Giảm chuyển động" thì tất cả tự tắt. App <b>không có công tắc riêng</b>: nó theo cài đặt của hệ điều hành, đổi cài đặt là app đổi theo ngay. Bấm nút <b>Giảm chuyển động</b> ở thanh dưới của cửa sổ đầu trang để xem bản này mà không phải đổi cài đặt của máy; nút có tác dụng với mọi hình trong trang.</p>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Động tác</th><th>Bình thường</th><th>Giảm chuyển động</th></tr></thead>
+            <tbody>
+              <tr><td>Hiện</td><td>Các phần trồi lên 8 px, lần lượt</td><td>Màn mới hiện đủ ngay</td></tr>
+              <tr><td>Mở</td><td>Thẻ nở thành trang; trang thu về thẻ</td><td>Đổi màn ngay; quay lại, bảng vẫn ở chỗ đã cuộn</td></tr>
+              <tr><td>Trượt</td><td>Viên chọn và nút trượt đi tới chỗ mới; lớp nổi đi ra từ nơi gọi</td><td>Viên chọn và nút trượt nhảy tới chỗ mới; lớp nổi hiện và ẩn ngay</td></tr>
+              <tr><td>Đếm</td><td>Số chạy 400 ms; thanh dài ra</td><td>Số và thanh đổi thẳng sang giá trị mới</td></tr>
+              <tr><td>Lò xo nảy</td><td>Thông báo nổi, nhãn "Đã hủy", dấu ✓ đáp xuống</td><td>Hiện ngay ở đúng chỗ</td></tr>
+              <tr><td>Vòng lặp</td><td>Chấm "sắp tới giờ" của viên Lưu ý nhấp nháy</td><td>Chấm đứng yên</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Vẫn giữ:</b> đổi màu khi rê chuột và khi chọn (đổi tức thì), viền tiêu điểm của bàn phím, thông báo nổi vẫn tự đi sau 4.2 giây. Không thông tin nào chỉ có trong chuyển động: nhãn, số và thông báo đều đọc được khi đứng yên.</li>
+          <li><b>Bật ở đâu:</b> Windows 11: Cài đặt → Trợ năng → Hiệu ứng hình ảnh → tắt "Hiệu ứng hoạt hình". macOS: Cài đặt hệ thống → Trợ năng → "Giảm chuyển động" (tên mục chứa nó khác nhau giữa các bản macOS; chưa kiểm trên macOS 27).</li>
+          <li><b>"Giảm độ trong suốt"</b> là một cài đặt khác, đã duyệt ở đợt a: lớp kính thành nền đặc, chuyển động không đổi.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Khả thi ================= -->
+      <section class="sec" id="feasible">
+        <span class="kicker">Khả thi và hiệu năng</span>
+        <h2>Làm được bằng gì, đã đo gì, chưa kiểm gì.</h2>
+        <p class="lead">Mọi thứ ở trang này làm bằng CSS và API có sẵn của WebView: <b>không thêm thư viện, không thêm dependency</b> (G4). Bản macOS tối thiểu của app là macOS 26 (ADR-0019).</p>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Việc</th><th>Dùng gì</th><th>WebView2 · Windows</th><th>WKWebView · macOS 26+</th><th>Khi không có</th></tr></thead>
+            <tbody>
+              <tr><td>Ba lò xo</td><td>Hàm <code>linear()</code> của CSS (token đợt a)</td><td>Có từ Edge 113; WebView2 tự cập nhật theo Edge</td><td>Có từ Safari 17.2</td><td>Trình duyệt bỏ qua khai báo: thứ đó đổi ngay, không lỗi</td></tr>
+              <tr><td>Hiện, Trượt</td><td>CSS <code>animation</code> / <code>transition</code> trên <code>transform</code>, <code>opacity</code></td><td>Có</td><td>Có</td><td>—</td></tr>
+              <tr><td>Mở</td><td><code>document.startViewTransition</code> (trong cùng một trang)</td><td>Có từ Edge 111</td><td>Có từ Safari 18</td><td>App kiểm trước khi gọi; không có thì lui về Hiện (mục <a href="#opt-fallback">Khi không có View Transitions</a>)</td></tr>
+              <tr><td>Mở trong React</td><td>Đổi màn bên trong <code>flushSync</code> của <code>react-dom</code> (React 19 đang dùng), để trình duyệt chụp đúng màn mới</td><td colspan="2">Không phụ thuộc WebView</td><td>—</td></tr>
+              <tr><td>Đếm</td><td><code>requestAnimationFrame</code> và hàm dạng gọn của <code>packages/domain</code></td><td>Có</td><td>Có</td><td>—</td></tr>
+              <tr><td>Giảm chuyển động</td><td><code>prefers-reduced-motion</code></td><td>Theo cài đặt của Windows</td><td>Theo cài đặt của macOS</td><td>—</td></tr>
+            </tbody>
+          </table>
+          <p class="foot-note" style="margin-top: 14px">Số phiên bản: bảng hỗ trợ của Chrome for Developers và MDN, tra ngày 14/11/2026. Chưa chạy thử trên Safari hay máy Mac thật.</p>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Hiệu năng <small>vì sao chỉ transform / opacity</small></h3>
+            <ul class="rules">
+              <li><b>Hiện, Trượt:</b> <code>transform</code> và <code>opacity</code> do card đồ họa vẽ, trang không dàn lại. Cùng lúc nhiều nhất 8 phần và 3 thứ của vỏ (tên màn, dòng dưới, viên chọn) chuyển động.</li>
+              <li><b>Mở:</b> trình duyệt chụp ba ảnh (thẻ, trang mới, phần còn lại của cửa sổ) rồi chỉ di chuyển ảnh; trang mới được dàn đúng một lần, trước khi chụp. Thời gian trước khung hình đầu vì thế bằng thời gian vẽ màn mới.</li>
+              <li><b>Đếm:</b> nhiều nhất 9 số cùng chạy, mỗi số đổi chữ 24 lần trong 400 ms (màn hình 60 Hz).</li>
+              <li><b>Lớp kính:</b> thứ gì chuyển động phía sau một lớp kính (<code>backdrop-filter</code>) buộc trình duyệt làm mờ lại ở mỗi khung hình. Vì vậy nội dung chỉ trồi 8 px, và không có gì trượt dài phía sau thanh bên.</li>
+              <li><b>Đã đo</b> (Edge chạy không cửa sổ trên Home PC, cửa sổ 1440 × 900, bản mockup này, hai lượt): trong lúc từng động tác chạy, các khung hình cách nhau 16.7 ms (60 khung hình mỗi giây), không khung nào quá 20 ms; riêng lần đầu mở bảng Khách hàng (38 thẻ) có một khung 83 ms vì phải dàn bảng. Số này đo nhịp của luồng chính, không đo card đồ họa.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Chưa kiểm <small>việc của Issue code và nghiệm thu</small></h3>
+            <ul class="rules">
+              <li><b>Safari / WKWebView trên máy Mac thật:</b> lò xo <code>linear()</code>, View Transitions, góc cong liên tục trong lúc chuyển động.</li>
+              <li><b>App thật trong Tauri:</b> cửa sổ có Mica (Windows 11) hay vibrancy (macOS) phía sau; mockup chỉ chạy trong trình duyệt.</li>
+              <li><b>Dữ liệu lớn:</b> bảng Khách hàng 884 thẻ, hồ sơ KH có nhiều lịch và HĐ, Tổng quan của kỳ Năm. Mockup có vài chục thẻ.</li>
+              <li><b>Máy yếu hơn, màn hình 120 Hz</b> (MacBook Pro): số khung hình của "Đếm" tăng gấp đôi.</li>
+              <li><b>Đường lui theo từng màn:</b> nếu "Mở" trên một màn nặng không giữ được khung hình ở nghiệm thu, màn đó lui về Hiện; luật không đổi.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Cần anh quyết · G3 đợt g</span>
+        <h2>Mười điểm của hệ chuyển động.</h2>
+        <p class="lead">Mỗi điểm có phương án em đề xuất và một phương án khác; bốn điểm có hình ở mục riêng. Không hỏi lại điều anh đã chốt: token chuyển động (đợt a), chỉ đổi transform / opacity, "Giảm chuyển động" tắt hết, "Mở" dùng View Transitions của WebView, lò xo nảy chỉ cho điều đáng mừng hay cần chú ý, không thêm thư viện (10/11, 11/11), và bố cục các màn đã duyệt. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <ol class="asks">
+          <li><b>"Hiện": các phần tới thế nào?</b>Màn cũ biến mất ngay; mỗi phần trồi 8 px trong 400 ms, lò xo nhanh; dòng của bảng và thẻ KH không trồi riêng. Hình: <a href="#opt-stagger">lần lượt hay cùng lúc</a>.<em>Em đề xuất: <b>A · Lần lượt, cách nhau 28 ms, tối đa 8 nhịp</b>. Phương án khác: B · cả màn trồi lên cùng lúc.</em></li>
+          <li><b>"Mở" như mục Mở?</b>Dùng ở ba nơi (thẻ KH → hồ sơ, dòng RM → trang RM, dòng KH của trang RM → hồ sơ); nở 400 ms bằng lò xo êm; chỗ bấm nằm trong lớp nổi thì dùng Hiện; thẻ không còn thì trang chỉ mờ đi.<em>Em đề xuất: <b>duyệt</b>. Phương án khác: chỉ thẻ KH dùng Mở, dòng của bảng dùng Hiện.</em></li>
+          <li><b>"Mở": lúc thu về dài bao lâu?</b>Hình: <a href="#opt-back">hai chiều về</a>.<em>Em đề xuất: <b>A · 220 ms</b> (ra nhanh hơn vào). Phương án khác: B · 400 ms, bằng lúc nở.</em></li>
+          <li><b>Khi WebView không có View Transitions?</b>Bảng và nút thử: <a href="#opt-fallback">đường lui</a>.<em>Em đề xuất: <b>A · Lui về Hiện</b>. Phương án khác: B · app tự viết phép phóng.</em></li>
+          <li><b>"Trượt" như mục Trượt?</b>Viên chọn và nút trượt đi tới chỗ mới (400 ms, lò xo nhanh); lớp nổi đi 6–36 px ra từ nơi gọi, rời đi trong 120 ms; hộp thoại macOS rơi từ thanh công cụ, Windows 11 mở ở giữa.<em>Em đề xuất: <b>duyệt</b>. Phương án khác: lớp nổi chỉ mờ / rõ, không dịch chuyển.</em></li>
+          <li><b>"Đếm": số đi qua ranh giới tỷ ↔ tr thế nào?</b>Hình: <a href="#opt-count">hai cách</a>.<em>Em đề xuất: <b>A · Số chạy, đơn vị theo số đang hiện</b> (mỗi khung hình làm tròn ba chữ số có nghĩa, viết bằng hàm dạng gọn của ADR-0018). Phương án khác: B · lăn, số cũ lăn đi và số mới lăn vào.</em></li>
+          <li><b>"Đếm" chạy ở đâu?</b>Bảng: <a href="#dem">chạy ở đâu, không chạy ở đâu</a>.<em>Em đề xuất: <b>A · Số lớn đứng riêng</b> của Tổng quan, Forecast, trang RM; không chạy trong bảng, trong câu, trong Báo cáo. Phương án khác: B · thêm các số lớn của trang Bản tin (Báo cáo).</em></li>
+          <li><b>Ba lò xo, và nơi dùng lò xo nảy?</b>Êm cho Mở và thanh; nhanh cho Hiện, Trượt, nút; số không dùng lò xo. Hình: <a href="#opt-bounce">lò xo nảy dùng ở đâu</a>.<em>Em đề xuất: <b>A · Nảy chỉ ở ba nơi</b> (thông báo nổi, nhãn "Đã hủy", dấu ✓). Phương án khác: B · giữ thêm icon thanh bên và mẫu màu team như đợt a, b.</em></li>
+          <li><b>Bảng "động tác → nơi dùng" như mục Nơi dùng?</b>Kể cả nơi không có chuyển động: dòng của bảng, kết quả lọc và sắp xếp, ô nhập, cuộn, bản in.<em>Em đề xuất: <b>duyệt</b>. Phương án khác: dòng của bảng cũng chuyển động (dòng trượt tới chỗ mới khi sắp xếp, lọc).</em></li>
+          <li><b>Sửa các mockup đã duyệt cho khớp luật mới?</b>Hai dòng script ở <code>tong-quan.html</code> và <code>forecast.html</code> (số đang chạy theo điểm 6; mục sổ ghi chú của PR #1240), và hai luật ở <code>ui2.css</code> mục 19 để mockup đợt a–f theo (trần 8 nhịp của điểm 1; icon thanh bên và mẫu màu dùng lò xo nhanh của điểm 8). Không đổi hình, bố cục, nội dung.<em>Em đề xuất: <b>A · Sửa</b>. Phương án khác: B · để nguyên các mockup đó; code làm theo trang này.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt g · T-426 #1253 · chờ G3 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+    <script>
+      (() => {
+        const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const ic = (n) => `<svg class="ic"><use href="#i-${n}" /></svg>`;
+        const win = $('#win');
+
+        /* ---------- Numbers (ADR-0018; golden so-va-tien-te.md mục 3 and 5: "," groups thousands, "." is the decimal mark) ---------- */
+        const grp = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const dec = (x, d) => { const [i, f] = x.toFixed(d).split('.'), t = (f || '').replace(/0+$/, ''); return grp(i) + (t ? `.${t}` : ''); };
+        // Compact money, VND in Vietnamese: K (joined to the number), tr, tỷ; at most two decimals, half away
+        // from zero; a value that rounds to 1,000 of a tier moves up one tier; under 1,000 đồng the full form.
+        function compact(d) {
+          const a = Math.abs(Math.round(d)), sign = d < 0 && a ? '-' : '';
+          if (a < 1000) return { n: sign + grp(a), u: 'VNĐ', gap: ' ' };
+          const T = [[1e3, 'K', ''], [1e6, 'tr', ' '], [1e9, 'tỷ', ' ']];
+          let i = a >= 1e9 ? 2 : a >= 1e6 ? 1 : 0, q = Math.round((a * 100) / T[i][0]);
+          if (q >= 100000 && i < 2) { i += 1; q = Math.round((a * 100) / T[i][0]); }
+          return { n: sign + dec(q / 100, 2), u: T[i][1], gap: T[i][2] };
+        }
+        const money = (d) => { const c = compact(d); return c.n + c.gap + c.u; };
+        const M = (tr) => Math.round(tr * 1e6); // the data below is written in triệu đồng
+        const cnt = (n) => (n < 0 ? '-' : '') + grp(Math.abs(Math.round(n)));
+        const pct = (v) => { const r = Math.round(Math.abs(v) * 10) / 10; return (v < 0 && r ? '-' : '') + dec(r, 1); };
+        // One frame of a running number. A value in between is rounded to three significant digits and then
+        // written by the same formatter as a number at rest, so its unit is the unit of what is on screen.
+        const frame = (v, exact) => compact(exact ? v : ui2.sig3(v));
+        const WRITE = {
+          money: (el) => (v, exact) => { const c = frame(v, exact), u = el.nextElementSibling; el.textContent = c.n; if (u) u.textContent = c.u; if (window.motionLog) window.motionLog.push(c.n + c.gap + c.u); },
+          count: (el) => (v) => { el.textContent = cnt(v); },
+          pct: (el) => (v) => { el.textContent = pct(v); },
+        };
+        const numEl = (k, f) => `<span class="cnt" data-k="${k}" data-f="${f}"></span>${f === 'money' ? '<small></small>' : f === 'pct' ? '<small>%</small>' : ''}`;
+        // Every number of a block goes to its new value: from what is on screen now, or at once the first time
+        const runAll = (root, vals) => { for (const el of $$('.cnt[data-k]', root)) if (vals[el.dataset.k] !== undefined) ui2.run(el, el._now, vals[el.dataset.k], WRITE[el.dataset.f](el)); };
+
+        /* ---------- Data: 100% made up; the numbers are those of the approved rounds (measured in those pages) ---------- */
+        const TODAY = '10/11/2026';
+        const SCOPE = { all: 'Toàn bộ', bm: 'Team Bình Minh', hd: 'Team Hừng Đông', sm: 'Team Sao Mai' };
+        // Tháng 11/2026 MTD as in tong-quan.html: [name, đã gặp, chuyển RF, HĐ phát hành, HĐ hủy, FYP phát hành, FYP hủy] (tr)
+        const TEAMS = [
+          { k: 'bm', name: 'Bình Minh', sub: 6, cs: 240, cmp: ['bad', '▼ 90 tr'], rms: [['Bùi Ngọc Trâm', 6, 1, 0, 0, 0, 0], ['Châu Bảo Ngọc', 9, 7, 5, 0, 200, 0], ['Đỗ Văn Hiếu', 7, 2, 0, 0, 0, 0], ['Hà Quốc Việt', 7, 1, 0, 0, 0, 0], ['Lâm Bảo Anh', 8, 2, 0, 0, 0, 0], ['Mai Phương', 8, 8, 6, 0, 250, 0], ['Phạm Thu Hà', 9, 2, 0, 0, 0, 0], ['Quách Gia Hân', 6, 3, 0, 0, 0, 0], ['Tạ Minh Khoa', 5, 1, 0, 0, 0, 0]] },
+          { k: 'hd', name: 'Hừng Đông', sub: 5, cs: 180, cmp: ['up', '▲ 30 tr'], rms: [['Đinh Gia Huy', 10, 2, 0, 0, 0, 0], ['Hoàng Nam', 11, 10, 7, 0, 310, 0], ['Hồ Thanh Vy', 6, 1, 0, 0, 0, 0], ['Huỳnh Kim Hùng', 6, 1, 0, 0, 0, 0], ['Lê Minh Khang', 7, 3, 0, 0, 0, 0], ['Trần Quốc Thắng', 10, 2, 0, 0, 0, 0], ['Trương Đức Long', 6, 1, 0, 0, 0, 0], ['Võ Thị Lan', 8, 2, 0, 0, 0, 0]] },
+          { k: 'sm', name: 'Sao Mai', sub: 16, cs: 560, cmp: ['up', '▲ 110 tr'], rms: [['Đặng Văn Phúc', 7, 3, 0, 0, 0, 0], ['Đỗ Khánh Linh', 9, 7, 6, 0, 260, 0], ['Hoàng Văn Tùng', 9, 8, 6, 1, 270, 50], ['Kiều Anh Thư', 6, 1, 0, 0, 0, 0], ['Lê Ngọc Hương', 4, 1, 0, 0, 0, 0], ['Lý Quang Vinh', 8, 5, 3, 0, 140, 0], ['Nguyễn Văn Hùng', 0, 0, 0, 0, 0, 0], ['Phan Minh Châu', 5, 2, 0, 0, 0, 0], ['Tô Hữu Nghĩa', 10, 0, 0, 0, 0, 0], ['Trịnh Gia Bảo', 5, 2, 0, 0, 0, 0]] },
+        ];
+        const RMS = TEAMS.flatMap((t) => t.rms.map(([name, met, rf, iss, can, fi, fc]) => ({ name, team: t.k, met, rf, iss, can, fi, fc })));
+        RMS.forEach((r, i) => { r.i = i; });
+        const rmByName = (n) => RMS.find((r) => r.name === n);
+        const teamOf = (k) => TEAMS.find((t) => t.k === k);
+        const ALL = { sub: 27, cs: 980, cmp: ['up', '▲ 50 tr'] };
+        const sumOf = (rms) => rms.reduce((a, r) => ({ met: a.met + r.met, rf: a.rf + r.rf, iss: a.iss + r.iss, can: a.can + r.can, fi: a.fi + r.fi, fc: a.fc + r.fc }), { met: 0, rf: 0, iss: 0, can: 0, fi: 0, fc: 0 });
+        const scopeRms = (s) => (s === 'all' ? RMS : RMS.filter((r) => r.team === s));
+        // Forecast as in forecast.html: [dự kiến (tr), số lịch, có "1 lịch khác của KH đã tính"]
+        const FC = {
+          all: { week: [555, 17, 1], month: [1320, 45, 1], kpi: 3000, who: 'tổng 3 team' },
+          bm: { week: [185, 6, 0], month: [420, 15, 0], kpi: 950, who: 'Team Bình Minh' },
+          hd: { week: [130, 4, 0], month: [290, 10, 0], kpi: 950, who: 'Team Hừng Đông' },
+          sm: { week: [240, 7, 1], month: [610, 20, 1], kpi: 1100, who: 'Team Sao Mai' },
+        };
+        // The board of Khách hàng (names of search-rm-team.html): group, how many in the group, then name|RM|giới · năm sinh|số HĐ
+        const BOARD = [
+          [4, 361, ['Đinh Bảo Ngọc|Hoàng Văn Tùng|Nữ · 1991', 'Hồ Kim Hùng|Hoàng Văn Tùng|Nam · 1983', 'Kiều Thanh Tâm|Bùi Ngọc Trâm|Nữ · 1993', 'Ngô Bảo Hân|Lý Quang Vinh|Nữ · 1991', 'Nguyễn Thị Hương|Hoàng Văn Tùng|Nữ · 1994', 'Nguyễn Văn Huy|Mai Phương|Nam · 1995', 'Tạ Thu Uyên|Hồ Thanh Vy|Nữ · 1996', 'Tống Gia Huy|Đỗ Khánh Linh|Nam · 1983', 'Vũ Thanh Thắng|Hoàng Văn Tùng|Nam · 1986']],
+          [3, 219, ['Bùi Ngọc Hà|Hoàng Văn Tùng|Nữ · 1992', 'Đặng Quốc Bảo|Quách Gia Hân|Nam · 1980', 'Đinh Công Hậu|Đỗ Khánh Linh|Nam · 1982', 'Đinh Thị Ngân|Hoàng Văn Tùng|Nữ · 1980|1', 'Lâm Thị Hường|Hoàng Nam|Nữ · 1968', 'Lê Quốc Hùng|Hoàng Văn Tùng|Nam · 1972', 'Lưu Bích Ngọc|Lý Quang Vinh|Nữ · 1990', 'Ngô Minh Tâm|Hoàng Văn Tùng|Nữ · 1987', 'Nguyễn Văn Hưng|Đặng Văn Phúc|Nam · 1975', 'Phan Thanh Quang|Hoàng Văn Tùng|Nam · 1969']],
+          [2, 134, ['Hà Minh Trí|Hoàng Văn Tùng|Nam · 1984', 'Nguyễn Hùng Cường|Lý Quang Vinh|Nam · 1982', 'Nguyễn Văn Hùng|Hoàng Văn Tùng|Nam · 1979|1', 'Phạm Gia Long|Đỗ Khánh Linh|Nam · 1974|1', 'Phạm Ngọc Lan|Hoàng Văn Tùng|Nữ · 1988|2', 'Quan Đình Phúc|Phạm Thu Hà|Nam · 1968', 'Trần Thị Mai Lan|Đỗ Khánh Linh|Nữ · 1987', 'Võ Thanh Bình|Hoàng Văn Tùng|Nam · 1990', 'Vũ Hải Đăng|Võ Thị Lan|Nam · 1985']],
+          [1, 170, ['Châu Minh Khôi|Trần Quốc Thắng|Nam · 1977|1', 'Đỗ Quang Vinh|Hoàng Văn Tùng|Nam · 1976|2', 'Hà Tuệ Mẫn|Châu Bảo Ngọc|Nữ · 1983|1', 'Lê Thị Hồng|Lê Minh Khang|Nữ · 1989|2', 'Lý Hoài Hùng|Hoàng Văn Tùng|Nam · 1981|2', 'Nguyễn Văn Hữu|Hoàng Nam|Nam · 1978|1', 'Trần Minh Huệ|Hoàng Văn Tùng|Nữ · 1985', 'Trịnh Minh Anh|Đỗ Khánh Linh|Nữ · 1986']],
+        ];
+        const KHS = BOARD.flatMap(([g, , list]) => list.map((s) => { const [name, rm, who, pol] = s.split('|'); return { name, rm, who, g, n: +pol || 0 }; }));
+        KHS.forEach((c, i) => { c.i = i; });
+        const VINH = KHS.find((c) => c.name === 'Đỗ Quang Vinh');
+        const initials = (name) => name.split(' ').map((w) => `${w[0]}.`).join(' ');
+        const avatar = (name) => { const w = name.split(' '); return w[0][0] + w[w.length - 1][0]; };
+        const kh = (c) => `<span class="kh" data-kh="${initials(c.name)}">${esc(c.name)}</span>`;
+        // The policies of a customer. Đỗ Quang Vinh is the customer of huy-hd.html (issued 05/11/2026, 60 tr); the
+        // others get plain policies issued earlier in the year.
+        const polsOf = (c) => {
+          if (!c.pols) c.pols = c === VINH
+            ? [{ sub: '06/11/2026', sfyp: 40, iss: null }, { sub: '28/10/2026', sfyp: 60, iss: '05/11/2026', ifyp: 60, can: null }]
+            : [{ sub: '14/09/2026', sfyp: 50, iss: '22/09/2026', ifyp: 50, can: null }, { sub: '03/08/2026', sfyp: 80, iss: '11/08/2026', ifyp: 80, can: null }].slice(0, c.n);
+          return c.pols;
+        };
+        const live = (c) => polsOf(c).filter((p) => !p.can).length; // "số HĐ" does not count cancelled policies (đợt f)
+
+        /* ---------- The window: state and screens ---------- */
+        const S = { scope: 'all', mode: 'month', kh: null, pol: null, scene: 'hien' };
+        const ovOf = (s) => {
+          const d = sumOf(scopeRms(s)), x = s === 'all' ? ALL : teamOf(s);
+          return { d, x, vals: { sales: M(d.fi - d.fc), total: d.iss - d.can, cancel: d.iss ? Math.round((d.can / d.iss) * 1000) / 10 : 0, close: d.rf ? Math.round((d.iss / d.rf) * 1000) / 10 : 0, rf: d.rf, sub: x.sub, cs: M(x.cs) } };
+        };
+        const TILES = [['total', 'Tổng số HĐ', 'count'], ['cancel', 'Tỷ lệ hủy', 'pct'], ['close', 'Tỷ lệ chốt', 'pct'], ['rf', 'Chuyển RF', 'count'], ['sub', 'HĐ nộp', 'count'], ['cs', 'Case size', 'money']];
+        function drawOv() {
+          $('[data-ov]', win).innerHTML = `<div class="ov-top">
+              <section class="card stat hero rise" style="--i: 0"><span class="lbl">Doanh số</span><div class="val num">${numEl('sales', 'money')}</div><p class="eq num" data-eq="sales"></p><p class="cmp num" data-cmp></p></section>
+              <section class="card rise" style="--i: 1"><div class="card-head"><h3 data-bars-t></h3><span class="meta num">01/11 – 10/11 (MTD)</span></div><div data-bars></div></section>
+            </div>
+            <div class="ov-kpis">${TILES.map(([k, l, f], i) => `<button class="card stat kpi rise" style="--i: ${i + 2}" data-jump="reports" title="Mở Báo cáo"><span class="lbl">${l}</span><div class="val num">${numEl(k, f)}</div><p class="eq num" data-eq="${k}"></p></button>`).join('')}</div>
+            <div class="later kept rise" style="--i: 8">${ic('overview')}<p>Màn vẽ gọn để xem chuyển động. Bố cục đầy đủ (Điểm nhấn, đường lũy kế, Lịch hẹn, KH theo nhóm, So sánh team): <a class="c-accent" href="tong-quan.html">tong-quan.html</a>, đã duyệt ở đợt c. Đổi <b>góc nhìn</b> ở thanh công cụ để thấy số chạy; bấm một ô chỉ số để sang Báo cáo.</p></div>`;
+        }
+        function updateOv() {
+          const root = $('[data-ov]', win), { d, vals } = ovOf(S.scope), x = S.scope === 'all' ? ALL : teamOf(S.scope);
+          runAll(root, vals);
+          const eq = { sales: `FYP phát hành <b>${money(M(d.fi))}</b> − FYP hủy <b>${money(M(d.fc))}</b>`, total: `${cnt(d.iss)} phát hành − ${cnt(d.can)} hủy`, cancel: `${cnt(d.can)} hủy ÷ ${cnt(d.iss)} phát hành`, close: `${cnt(d.iss)} HĐ ÷ ${cnt(d.rf)} RF`, rf: `từ ${cnt(d.met)} buổi đã gặp`, sub: 'HĐ có ngày nộp trong kỳ', cs: `FYP nộp của ${cnt(x.sub)} HĐ` };
+          for (const p of $$('[data-eq]', root)) p.innerHTML = eq[p.dataset.eq];
+          $('[data-cmp]', root).innerHTML = `<span class="delta ${x.cmp[0]}">${x.cmp[1]}</span><span>so với 01/10 – 10/10, cùng số ngày của tháng trước</span>`;
+          const rows = S.scope === 'all'
+            ? TEAMS.map((t) => { const s = sumOf(t.rms.map((r) => rmByName(r[0]))); return [`Team ${t.name}`, s.fi - s.fc]; })
+            : scopeRms(S.scope).map((r) => [r.name, r.fi - r.fc]).filter((r) => r[1] > 0);
+          rows.sort((a, b) => b[1] - a[1]);
+          const top = Math.max(1, ...rows.map((r) => r[1]));
+          $('[data-bars-t]', root).textContent = S.scope === 'all' ? 'Doanh số theo team' : `Doanh số theo RM · ${teamOf(S.scope).name}`;
+          $('[data-bars]', root).innerHTML = rows.map(([n, v], i) => `<div class="bar-r"><span>${esc(n)}</span><div class="hbar"><i style="--w: ${(v / top).toFixed(3)}; --i: ${i}"></i></div><b class="num">${money(M(v))}</b></div>`).join('');
+        }
+        function drawFc() {
+          $('[data-fc]', win).innerHTML = `<div class="sw-row rise" style="--i: 0"><span class="seg" data-fc-seg aria-label="Kỳ của Forecast"><button data-v="week">Tuần này</button><button class="on" data-v="month">Tháng này</button></span><span class="note num" data-fc-note></span></div>
+            <section class="card stat hero rise" style="--i: 1"><span class="lbl"><span data-fc-lbl></span><span class="chip" data-fc-chip></span></span><div class="val num">${numEl('fc', 'money')}</div><p class="eq num" data-fc-eq></p></section>
+            <section class="card rise" style="--i: 2"><div class="trio num"><div><span class="lbl">Đã đạt</span><b>${numEl('done', 'money')}</b><span class="sub">Doanh số 01/11 – 10/11</span></div><div><span class="lbl">+ Dự kiến tới cuối tháng</span><b>${numEl('exp', 'money')}</b><span class="sub" data-fc-exp></span></div><div><span class="lbl">KPI tháng</span><b>${numEl('kpi', 'money')}</b><span class="sub" data-fc-kpi></span></div></div>
+              <div class="hbar" style="margin-top: 14px; height: 8px; border-radius: 4px" role="img" data-fc-bar-l><i data-fc-bar style="transition: transform var(--t-4) var(--spring-smooth)"></i></div></section>
+            <div class="later kept rise" style="--i: 3">${ic('forecast')}<p>Màn vẽ gọn. Đường băng tháng, dải tuần, lưới tháng, bảng Team → RM: <a class="c-accent" href="forecast.html">forecast.html</a>, đã duyệt ở đợt d. Bấm <b>công tắc</b> để thấy nút trượt và số chạy qua ranh giới tỷ ↔ tr.</p></div>`;
+        }
+        function updateFc() {
+          const root = $('[data-fc]', win), f = FC[S.scope], wk = S.mode === 'week', [sum, n, dup] = wk ? f.week : f.month, d = sumOf(scopeRms(S.scope)), done = d.fi - d.fc;
+          runAll(root, { fc: M(sum), done: M(done), exp: M(f.month[0]), kpi: M(f.kpi) });
+          $('[data-fc-lbl]', root).textContent = wk ? 'Dự kiến · Tuần này' : 'Dự kiến · Tháng 11, từ hôm nay';
+          $('[data-fc-chip]', root).textContent = wk ? 'hôm nay → Thứ Bảy' : 'tới cuối tháng, không tính Chủ Nhật';
+          $('[data-fc-note]', root).textContent = wk ? 'Hôm nay Thứ Ba 10/11 → Thứ Bảy 14/11/2026 · Thứ Hai đã qua không tính' : 'Hôm nay 10/11 → 30/11/2026 · chỉ Thứ Hai → Thứ Bảy, bỏ Chủ Nhật 15, 22, 29';
+          $('[data-fc-eq]', root).innerHTML = `${wk ? '10/11 – 14/11/2026' : '10/11 – 30/11/2026'} · <b>${cnt(n)}</b> lịch có case size${dup ? ' · 1 lịch khác của KH đã tính' : ''}`;
+          $('[data-fc-exp]', root).textContent = `10/11 – 30/11 · ${cnt(f.month[1])} lịch`;
+          const share = (done / f.kpi) * 100;
+          $('[data-fc-kpi]', root).textContent = `${f.who} · đã đạt ${pct(share)}%`;
+          $('[data-fc-bar]', root).style.setProperty('--w', Math.max(0, Math.min(1, share / 100)).toFixed(3));
+          $('[data-fc-bar-l]', root).setAttribute('aria-label', `Đã đạt ${pct(share)}% KPI tháng`);
+        }
+        const card = (c) => `<button class="kcard" data-grow="profile" data-key="c${c.i}" data-c="${c.i}"><b>${kh(c)}${live(c) ? `<span class="chip">${live(c)} HĐ</span>` : ''}</b><span><span>RM ${esc(c.rm)}</span><span class="num">${c.who}</span></span></button>`;
+        function drawBoard() {
+          $('[data-board]', win).innerHTML = `<div class="kan rise">${BOARD.map(([g, total, list]) => `<div class="kcol"><h4><span class="st dot n${g}">N${g}</span><span class="n num">${cnt(total)}</span></h4>${KHS.filter((c) => c.g === g).map(card).join('')}<span class="more num">+ ${cnt(total - list.length)} KH · xem dạng bảng</span></div>`).join('')}</div>`;
+        }
+        function drawTeam() {
+          const cells = (s) => `<td>${cnt(s.met)}</td><td>${cnt(s.rf)}</td><td>${cnt(s.iss)}</td><td>${money(M(s.fi - s.fc))}</td>`;
+          const body = TEAMS.map((t) => { const rms = RMS.filter((r) => r.team === t.k), open = t.k === 'sm';
+            return `<tr class="team${open ? ' open' : ''}" data-team="${t.k}"><td><span class="tw">${ic('chev')}</span>Team ${esc(t.name)}</td>${cells(sumOf(rms))}</tr>`
+              + rms.map((r) => `<tr class="rm" data-team="${t.k}" data-grow="rm" data-key="rm${r.i}" data-rm="${r.i}"${open ? '' : ' hidden'}><td><span class="lnk">${esc(r.name)}${ic('chev')}</span></td>${cells(r)}</tr>`).join(''); }).join('');
+          $('[data-team]', win).innerHTML = `<section class="card rise" style="--i: 0"><div class="card-head"><h3>Team và RM</h3><span class="meta num">Tháng 11/2026 · 01/11 – 10/11 (MTD)</span><span class="actions meta">bấm một team để mở, bấm một RM để tới trang RM</span></div>
+              <table class="tbl"><thead><tr><th>Team / RM</th><th>Đã gặp</th><th>Chuyển RF</th><th>HĐ phát hành</th><th>Doanh số</th></tr></thead><tbody>${body}</tbody></table></section>
+            <div class="later kept rise" style="--i: 1">${ic('team')}<p>Màn vẽ gọn. Team &amp; nhân sự đầy đủ (TL, màu và icon của team, ô tìm RM, hộp team): <a class="c-accent" href="search-rm-team.html#team">search-rm-team.html</a>, đã duyệt ở đợt b.</p></div>`;
+        }
+        const backBtn = `<button class="btn quiet sm" data-shrink>${ic('back')}<span></span></button>`;
+        function drawRm(i) {
+          const r = RMS[i], t = teamOf(r.team), list = KHS.filter((c) => c.rm === r.name), view = $('.view[data-view="rm"]', win);
+          view.dataset.sub = `Team ${t.name} · tháng 11/2026 · 01/11 – 10/11 (MTD)`;
+          const stat = (l, v, eq) => `<section class="card stat"><span class="lbl">${l}</span><div class="val num">${v}</div><p class="eq num">${eq}</p></section>`, c = compact(M(r.fi - r.fc));
+          $('[data-rm-page]', win).innerHTML = `${backBtn}
+            <section class="card rise" style="--i: 0"><div class="pf-head"><span class="av lg">${avatar(r.name)}</span><div><h3>${esc(r.name)} <span class="chip">RM</span></h3><p class="meta num">Team ${esc(t.name)} · ${cnt(list.length)} KH trong bản mẫu</p></div></div></section>
+            <div class="rm-stats rise" style="--i: 1">${stat('Doanh số', `${c.n}<small>${c.u}</small>`, `FYP phát hành ${money(M(r.fi))} − FYP hủy ${money(M(r.fc))}`)}${stat('Tổng số HĐ', cnt(r.iss - r.can), `${cnt(r.iss)} phát hành − ${cnt(r.can)} hủy`)}${stat('Chuyển RF', cnt(r.rf), `từ ${cnt(r.met)} buổi đã gặp`)}${stat('Tỷ lệ chốt', r.rf ? `${pct((r.iss / r.rf) * 100)}<small>%</small>` : '—', r.rf ? `${cnt(r.iss)} HĐ ÷ ${cnt(r.rf)} RF` : 'Chưa có chuyển RF')}</div>
+            <section class="card rise" style="--i: 2"><div class="card-head"><h3>Khách hàng phụ trách</h3><span class="meta">bấm một KH để mở hồ sơ</span></div>${list.length
+              ? `<table class="tbl"><thead><tr><th>Khách hàng</th><th class="l">Nhóm</th><th>Giới · năm sinh</th><th>Số HĐ</th></tr></thead><tbody>${list.map((k) => `<tr data-grow="profile" data-key="c${k.i}" data-c="${k.i}"><td><span class="lnk">${kh(k)}${ic('chev')}</span></td><td class="l"><span class="st dot n${k.g}">N${k.g}</span></td><td>${k.who}</td><td>${cnt(live(k))}</td></tr>`).join('')}</tbody></table>`
+              : `<div class="empty sm"><span class="mark">${ic('people')}</span><b>Bản mẫu không có KH nào của RM này</b><p>Trang RM đầy đủ (nhịp gặp 8 tuần, lịch sắp tới): search-rm-team.html, đợt b.</p></div>`}</section>`;
+        }
+        const polRow = (c, p, k) => {
+          const st = p.can ? 'can' : p.iss ? 'iss' : 'sub';
+          const badge = st === 'can' ? `<span class="st s-bad">Đã hủy ${p.can}</span>` : st === 'iss' ? '<span class="st s-iss">Đã phát hành</span>' : '<span class="st s-sub">Đã nộp</span>';
+          return `<div class="pol${st === 'can' ? ' off' : ''}" role="listitem" data-pol="${k}"><div class="pol-main">${badge}<span>Nộp ${p.sub} · ${money(M(p.sfyp))}</span>${p.iss ? `<span>Phát hành ${p.iss} · <span class="fyp">${money(M(p.ifyp))}</span></span>` : ''}<span class="who">${esc(c.rm)}</span></div><span class="acts">${st === 'sub' ? '<button class="btn quiet sm" data-say="Hộp Phát hành giữ như 8b đã duyệt <small>· policy-forms.html</small>">Phát hành</button>' : ''}${st === 'iss' ? `<button class="btn quiet sm" data-pol-cancel="${k}">Hủy HĐ</button>` : ''}${st === 'can' ? `<button class="btn quiet sm" data-pol-undo="${k}">Sửa</button>` : '<button class="btn quiet sm" data-say="Hộp Sửa giữ như 8d đã duyệt <small>· policy-forms.html</small>">Sửa</button>'}</span></div>`;
+        };
+        const polCount = (c) => { const all = polsOf(c), off = all.length - live(c); return `${cnt(live(c))} HĐ${off ? ` · ${cnt(off)} đã hủy` : ''}`; };
+        function drawProfile(i) {
+          const c = KHS[i], r = rmByName(c.rm), pols = polsOf(c), view = $('.view[data-view="profile"]', win);
+          S.kh = i;
+          view.dataset.sub = `RM ${c.rm} · ${teamOf(r.team).name}`;
+          $('[data-profile]', win).innerHTML = `${backBtn}
+            <section class="card rise" style="--i: 0"><div class="pf-head"><span class="av lg">${avatar(c.name)}</span><div><h3>${kh(c)} <span class="st dot n${c.g}">N${c.g}</span></h3><p class="meta num">${c.who} · RM ${esc(c.rm)} · Team ${esc(teamOf(r.team).name)}</p></div></div></section>
+            <section class="card rise" style="--i: 1"><div class="card-head"><h3>Hợp đồng</h3><span class="meta num" data-pol-n>${polCount(c)}</span></div>${pols.length ? `<div class="pols" role="list" aria-label="Hợp đồng">${pols.map((p, k) => polRow(c, p, k)).join('')}</div>` : '<p class="pol-empty">Chưa có HĐ. Khi KH đóng phí, ghi HĐ submitted (FYP, ngày nộp) → sau đó issued (ngày phát hành).</p>'}</section>
+            <div class="later kept rise" style="--i: 2">${ic('people')}<p>Hồ sơ KH giữ bố cục đã duyệt (Thông tin, KYC, lịch hẹn: <a class="c-accent" href="customer.html">customer.html</a>). Khối Hợp đồng và hộp hủy đầy đủ: <a class="c-accent" href="huy-hd.html">huy-hd.html</a>, đợt f. Ở đây: bấm <b>Hủy HĐ</b> để thấy hộp thoại, nhãn "Đã hủy" đáp xuống và thông báo nổi; bấm <b>Sửa</b> trên dòng đã hủy để bỏ hủy và thử lại.</p></div>`;
+        }
+        // The cancel dialog of round f, short: the day is today, nothing is typed here (the full dialog: huy-hd.html)
+        function openCancel(k) {
+          const c = KHS[S.kh], p = polsOf(c)[k];
+          S.pol = k;
+          $('[data-dlg]', win).innerHTML = `<div class="dlg-head"><div><h3>Hủy HĐ</h3><div class="sub">${kh(c)} · phát hành ${p.iss} · FYP phát hành ${money(M(p.ifyp))}</div></div><button class="x" data-close aria-label="Đóng">${ic('x')}</button></div>
+            <div class="dlg-body"><div class="fields-2">
+                <div class="field"><label>Ngày hủy <span class="req">*</span> <span class="opt-n">dd/mm</span></label><label class="input"><input type="text" value="10/11" aria-label="Ngày hủy" readonly tabindex="-1" /></label><div class="read"><b>Thứ Ba ${TODAY}</b> · hôm nay</div></div>
+                <div class="field"><label>FYP hủy <span class="opt-n">bằng FYP phát hành</span></label><div class="input locked">${grp(M(p.ifyp))}<span class="unit">VNĐ</span></div><div class="read"><b>${money(M(p.ifyp))}</b> · không nhập riêng</div></div>
+              </div>
+              <div class="fx"><b>Ảnh hưởng chỉ số</b><div>Doanh số tháng 11/2026 của RM ${esc(c.rm)} <b>giảm ${money(M(p.ifyp))}</b></div><div>tháng 11/2026: <b>+1</b> HĐ hủy</div><small>${p.iss.endsWith('/11/2026') ? `HĐ phát hành và FYP phát hành của ngày ${p.iss} giữ nguyên.` : `HĐ phát hành tháng ${p.iss.slice(3)} vẫn tính phát hành vào tháng ${p.iss.slice(3)}: số của tháng đó không đổi.`}</small></div>
+              <span class="help">Bỏ hủy hoặc sửa ngày hủy về sau: nút Sửa trên dòng của HĐ này.</span></div>
+            <div class="dlg-foot"><span class="hint">Esc để đóng</span><span class="spacer"></span><button class="btn" data-close>Đóng</button><button class="btn danger" data-do="cancel">Hủy HĐ</button></div>`;
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+          win.classList.add('modal');
+        }
+        // Cancel or take the cancellation back: the numbers of the RM follow (a cancelled policy counts in the month of the day it was cancelled)
+        function setCancelled(c, k, on, quiet) {
+          const p = polsOf(c)[k], r = rmByName(c.rm), row = $(`[data-profile] [data-pol="${k}"]`, win);
+          p.can = on ? TODAY : null;
+          r.can += on ? 1 : -1;
+          r.fc += on ? p.ifyp : -p.ifyp;
+          if (row && S.kh === c.i) {
+            row.outerHTML = polRow(c, p, k);
+            const st = $(`[data-profile] [data-pol="${k}"] .st`, win);
+            if (on && !quiet) st.classList.add('land'); // the label lands: the bouncy spring
+            $('[data-pol-n]', win).textContent = polCount(c);
+          }
+          drawBoard(); drawTeam(); updateOv(); updateFc();
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+          if (!quiet) ui2.toast(win, on ? `Đã hủy HĐ · Doanh số tháng 11/2026 của RM ${esc(c.rm)} giảm ${money(M(p.ifyp))} <small>· bỏ hủy ở nút Sửa</small>` : `Đã bỏ hủy · HĐ trở lại Đã phát hành <small>· trong app: nút Bỏ hủy của hộp Sửa (huy-hd.html)</small>`);
+        }
+        // The toolbar says the view of the screen on show (the sidebar items carry the text of "Toàn bộ")
+        function sync() {
+          const on = $('.view.on', win), sub = $('.tl-title span', win);
+          if (!on) return;
+          $('[data-tool="scope"] span', win).textContent = SCOPE[S.scope];
+          if (on.dataset.view === 'overview') sub.textContent = `Tháng 11/2026 · 01/11 – 10/11 (MTD) · ${SCOPE[S.scope]}`;
+          if (on.dataset.view === 'forecast') { sub.textContent = `Hôm nay Thứ Ba 10/11/2026 · ${SCOPE[S.scope]}`; if (!$('[data-fc-seg] .thumb', win)) dispatchEvent(new Event('resize')); } // the thumb is placed once the switch is on show
+        }
+        function setScope(s) {
+          S.scope = s;
+          $$('[data-scope]', win).forEach((b) => { b.classList.toggle('on', b.dataset.scope === s); b.setAttribute('aria-checked', String(b.dataset.scope === s)); });
+          sync(); updateOv(); updateFc();
+        }
+        function setMode(m) {
+          S.mode = m;
+          const seg = $('[data-fc-seg]', win);
+          $$('button', seg).forEach((b) => b.classList.toggle('on', b.dataset.v === m));
+          dispatchEvent(new Event('resize')); // ui2 places the thumbs again
+          updateFc();
+        }
+        drawOv(); drawFc(); drawBoard(); drawTeam(); updateOv(); updateFc(); sync();
+
+        win.addEventListener('ui2:open', (e) => {
+          const from = e.detail.from;
+          if (e.detail.view === 'profile' && from && from.dataset.c !== undefined) drawProfile(+from.dataset.c);
+          if (e.detail.view === 'rm' && from && from.dataset.rm !== undefined) drawRm(+from.dataset.rm);
+        });
+        win.addEventListener('ui2:back', sync);
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('#win')) return;
+          const sc = e.target.closest('[data-scope]');
+          if (sc) return setScope(sc.dataset.scope);
+          const mode = e.target.closest('[data-fc-seg] button');
+          if (mode) { S.mode = mode.dataset.v; return updateFc(); }
+          const can = e.target.closest('[data-pol-cancel]');
+          if (can) return openCancel(+can.dataset.polCancel);
+          const un = e.target.closest('[data-pol-undo]');
+          if (un) return setCancelled(KHS[S.kh], +un.dataset.polUndo, false);
+          if (e.target.closest('[data-do="cancel"]')) { win.classList.remove('modal'); return setCancelled(KHS[S.kh], S.pol, true); }
+          const say = e.target.closest('[data-say]');
+          if (say) return ui2.toast(win, say.dataset.say);
+          if (e.target.closest('[data-act-btn]')) return ui2.toast(win, 'Các hộp tạo mới đã duyệt ở đợt a–f <small>· trang này chỉ xem chuyển động</small>');
+          sync();
+        });
+
+        /* ---------- The dock: five scenes, again, slow, less motion ---------- */
+        let PACE = 1, runId = 0;
+        // Wait for a move of `move` ms (longer when the page is slowed down), then `hold` ms to look at the result
+        const after = (move, hold = 500) => new Promise((r) => setTimeout(r, (ui2.calm(win) ? 0 : move * PACE) + hold));
+        const settle = () => { win.classList.remove('modal'); ui2.closePops(win); win.classList.remove('pal-on', 'now-on'); };
+        const onView = () => $('.view.on', win).dataset.view;
+        const SCENES = {
+          // "Hiện": the next screen of the sidebar
+          async hien() { const order = ['overview', 'customers', 'forecast', 'team'], next = order[(order.indexOf(onView()) + 1) % order.length]; win._grown = []; $$('.view.still', win).forEach((v) => v.classList.remove('still')); ui2.go(win, next); sync(); },
+          // "Mở": a customer card grows into the profile, then the profile shrinks back to the card
+          async mo(ok) {
+            if (onView() !== 'customers') { win._grown = []; ui2.go(win, 'customers', true); sync(); await after(0, 350); if (!ok()) return; }
+            await ui2.grow(win, 'profile', $(`.kcard[data-key="c${VINH.i}"]`, win));
+            await after(0, 1000);
+            if (ok() && onView() === 'profile') await ui2.shrink(win);
+          },
+          // "Trượt": the thumb of the switch, then the popover of the view picker
+          async truot(ok) {
+            if (onView() !== 'forecast') { win._grown = []; ui2.go(win, 'forecast', true); sync(); await after(0, 350); if (!ok()) return; }
+            setMode(S.mode === 'week' ? 'month' : 'week');
+            await after(400, 600); if (!ok()) return;
+            $('[data-pop="scope"]', win).click();
+            await after(400, 1000); if (!ok()) return;
+            ui2.closePops(win);
+          },
+          // "Đếm": the view changes, the lead number crosses the tỷ ↔ tr boundary
+          async dem(ok) {
+            if (onView() !== 'overview') { win._grown = []; ui2.go(win, 'overview', true); sync(); await after(0, 350); if (!ok()) return; }
+            setScope(S.scope === 'all' ? 'hd' : 'all');
+          },
+          // "Nảy": a policy is cancelled — the dialog, the label that lands, the toast
+          async nay(ok) {
+            const k = 1;
+            if (onView() !== 'profile' || S.kh !== VINH.i) { win._grown = []; ui2.go(win, 'customers', true); ui2.show(win, 'profile', $(`.kcard[data-key="c${VINH.i}"]`, win), true); sync(); await after(0, 350); if (!ok()) return; }
+            if (polsOf(VINH)[k].can) { setCancelled(VINH, k, false, true); await after(0, 350); if (!ok()) return; }
+            openCancel(k);
+            await after(400, 900); if (!ok()) return;
+            $('[data-do="cancel"]', win).click();
+          },
+        };
+        function play(name) {
+          const id = ++runId;
+          S.scene = name;
+          const seg = $('[data-scene]');
+          $$('button', seg).forEach((b) => b.classList.toggle('on', b.dataset.v === name));
+          dispatchEvent(new Event('resize'));
+          settle();
+          SCENES[name](() => id === runId);
+        }
+        document.addEventListener('click', (e) => {
+          const sc = e.target.closest('[data-scene] button');
+          if (sc) return play(sc.dataset.v);
+          if (e.target.closest('[data-replay]')) return play(S.scene);
+          const pace = e.target.closest('[data-pace] button');
+          if (pace) { PACE = +pace.dataset.v; return ui2.setPace(PACE); }
+          const calm = e.target.closest('[data-calm]');
+          if (calm) { const on = document.body.classList.toggle('calm'); calm.classList.toggle('is-on', on); calm.setAttribute('aria-pressed', String(on)); return; }
+          const novt = e.target.closest('[data-novt]');
+          if (novt) {
+            ui2.noVT = !ui2.noVT;
+            novt.classList.toggle('is-on', ui2.noVT); novt.setAttribute('aria-pressed', String(ui2.noVT));
+            $('[data-novt-note]').textContent = ui2.noVT ? 'Đang coi như không có API: bấm một thẻ KH ở cửa sổ đầu trang, màn đổi bằng động tác Hiện.' : 'Đang dùng View Transitions.';
+          }
+        });
+
+        /* ---------- Specimens of the sections ---------- */
+        // "Hiện": play the parts of a small screen again
+        document.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-hien-run]');
+          if (!b) return;
+          const m = $('[data-hien]', b.closest('.opt-pic'));
+          m.classList.remove('play'); void m.offsetWidth; m.classList.add('play');
+        });
+        // "Mở": three cards and the page one of them opens
+        const MINI = ['Đỗ Quang Vinh', 'Lê Thị Hồng', 'Trần Minh Huệ'].map((n) => KHS.find((c) => c.name === n));
+        for (const m of $$('[data-mo]')) {
+          m.innerHTML = `<div class="mini-list">${MINI.map((c) => `<button class="kcard" data-mo-open="${c.i}"><b>${kh(c)}${c.n ? `<span class="chip">${c.n} HĐ</span>` : ''}</b><span><span>RM ${esc(c.rm)}</span><span class="num">${c.who}</span></span></button>`).join('')}</div>
+            <div class="mini-page" hidden><button class="btn quiet sm" data-mo-back>${ic('back')}<span>Khách hàng</span></button><section class="card flat"><h4></h4><p class="num"></p></section><section class="card flat"><p class="num" style="margin: 0">Hợp đồng · KYC · lịch hẹn</p></section></div>`;
+        }
+        const moOpen = (m, btn) => { const c = KHS[+btn.dataset.moOpen], page = $('.mini-page', m);
+          m._from = btn;
+          return ui2.morph(btn, () => { $('.mini-list', m).hidden = true; page.hidden = false; $('h4', page).innerHTML = `${kh(c)} <span class="st dot n${c.g}">N${c.g}</span>`; $('p', page).textContent = `${c.who} · RM ${c.rm}`; }, () => page); };
+        const moBack = (m) => ui2.morph($('.mini-page', m), () => { $('.mini-page', m).hidden = true; $('.mini-list', m).hidden = false; }, () => m._from, { back: true, cls: m.dataset.backCls });
+        document.addEventListener('click', async (e) => {
+          const open = e.target.closest('[data-mo-open]');
+          if (open) return void moOpen(open.closest('[data-mo]'), open);
+          const back = e.target.closest('[data-mo-back]');
+          if (back) return void moBack(back.closest('[data-mo]'));
+          const run = e.target.closest('[data-mo-run]');
+          if (!run) return;
+          const m = $('[data-mo]', run.closest('.opt-pic'));
+          if (!$('.mini-page', m).hidden) await moBack(m);
+          await moOpen(m, $('[data-mo-open]', m));
+          await after(0, 700);
+          if (!$('.mini-page', m).hidden) await moBack(m);
+        });
+        // "Đếm": a tile, cases to try, and every frame of a case written out
+        const CASES = [[1380, 310], [310, 1380], [980, 1020], [620, 450], [1500, 999.99], [0.75, 2]]; // triệu đồng
+        const framesOf = (a, b, text) => { const out = []; for (let t = 0; t <= 400; t += 50) { const k = t / 400, v = k < 1 ? a + (b - a) * (1 - (1 - k) ** 3) : b; out.push([t, text(v, t === 0 || t === 400), v]); } return out; };
+        const newLaw = (v, exact) => { const c = frame(v, exact); return c.n + c.gap + c.u; };
+        // What rounds c and d draw today: the unit of the target for every frame
+        const oldLaw = (to) => { const u = compact(to).u; return (v) => (u === 'tỷ' ? `${dec(v / 1e9, 2)} tỷ` : u === 'tr' ? `${grp(Math.round(v / 1e6))} tr` : money(v)); };
+        const strip = (list, bad) => list.map(([t, s, v]) => `<span${bad && bad(s, v) ? ' class="bad"' : ''}>${s}<small>${t} ms</small></span>`).join('');
+        const wrongUnit = (s, v) => !s.endsWith(compact(v).u);
+        function playCase(tile, a, b) {
+          const el = $('.cnt', tile), A = M(a), B = M(b);
+          if (tile.dataset.dem === 'roll') {
+            const box = $('.roll-box', tile), old = box.lastElementChild, c = compact(B), next = document.createElement('span');
+            box.style.setProperty('--dir', B >= A ? 1 : -1);
+            $$('.out', box).forEach((n) => n.remove());
+            const from = compact(A);
+            $('.cnt', old).textContent = from.n; $('small', old).textContent = from.u;
+            if (ui2.calm(tile)) { $('.cnt', old).textContent = c.n; $('small', old).textContent = c.u; return; }
+            next.innerHTML = `<span class="cnt">${c.n}</span><small>${c.u}</small>`;
+            old.className = 'out'; next.className = 'in';
+            box.append(next);
+            old.addEventListener('animationend', () => old.remove(), { once: true });
+            return;
+          }
+          ui2.run(el, A, B, WRITE.money(el));
+        }
+        for (const box of $$('[data-dem-cases]')) box.innerHTML = (box.dataset.demCases === 'short' ? CASES.slice(0, 2) : CASES).map(([a, b]) => `<button class="btn sm" data-case="${a}|${b}">${money(M(a))} → ${money(M(b))}</button>`).join('');
+        for (const tile of $$('[data-dem]')) { const c = compact(M(1380)); $('.cnt', tile).textContent = c.n; $('small', tile).textContent = c.u; }
+        $('[data-frames-a]').innerHTML = strip(framesOf(M(1380), M(310), newLaw));
+        $('[data-frames-b]').innerHTML = strip([[0, money(M(1380))], [220, money(M(310))]]);
+        function showFrames(a, b) {
+          $('[data-dem-frames]').innerHTML = strip(framesOf(M(a), M(b), newLaw));
+          $('[data-dem-old]').innerHTML = strip(framesOf(M(a), M(b), oldLaw(M(b))), wrongUnit);
+          $('[data-dem-note]').textContent = `${money(M(a))} → ${money(M(b))} · 400 ms`;
+        }
+        showFrames(1380, 310);
+        document.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-case]');
+          if (!b) return;
+          const [x, y] = b.dataset.case.split('|').map(Number), tile = $('[data-dem]', b.closest('.pcard, .opt-pic'));
+          playCase(tile, x, y);
+          if (!tile.hasAttribute('data-auto')) showFrames(x, y);
+        });
+        // Where the bouncy spring is used: the same four things in both pictures, the spring differs
+        for (const bn of $$('[data-bn]')) {
+          bn.innerHTML = `<div class="bn-row"><small>Mục của thanh bên · bấm để chọn</small><div class="nav" data-bn-nav><button class="nav-i on">${ic('overview')}Tổng quan</button><button class="nav-i">${ic('cal')}Lịch hẹn</button><button class="nav-i">${ic('people')}Khách hàng</button></div></div>
+            <div class="bn-row"><small>Mẫu màu của team · nhấn rồi nhả</small><div class="swatches" data-pick="colour" role="radiogroup" aria-label="Màu của team"><button class="on" style="--c: var(--accent)" aria-label="Vàng" aria-checked="true"></button><button style="--c: var(--info)" aria-label="Xanh dương" aria-checked="false"></button><button style="--c: var(--ok)" aria-label="Xanh lá" aria-checked="false"></button><button style="--c: var(--warn)" aria-label="Cam" aria-checked="false"></button></div></div>
+            <div class="bn-row"><small>Ô chọn · dấu ✓ (nảy ở cả hai phương án)</small><label class="check on"><i></i>Chỉ KH có lịch</label></div>
+            <div class="bn-row"><small>Nhãn của HĐ vừa hủy và thông báo nổi (nảy ở cả hai phương án)</small><span class="st s-bad">Đã hủy ${TODAY}</span><button class="btn sm" data-bn-land>Hủy lại</button><div class="toast"><svg class="ic"><use href="#i-check" /></svg><span>Đã hủy HĐ</span></div></div>`;
+        }
+        document.addEventListener('click', (e) => {
+          const nav = e.target.closest('[data-bn-nav] .nav-i');
+          if (nav) return $$('.nav-i', nav.parentElement).forEach((n) => n.classList.toggle('on', n === nav));
+          const land = e.target.closest('[data-bn-land]');
+          if (!land) return;
+          const row = land.closest('.bn-row'), st = $('.st', row), toast = $('.toast', row);
+          st.classList.remove('land'); toast.classList.remove('pop'); void st.offsetWidth; st.classList.add('land'); toast.classList.add('pop');
+        });
+
+        // For the checks of the round (Playwright): the formatter and the frames of a run
+        window.motion = { compact, money, frame, framesOf, newLaw, M, S, play, setScope };
+      })();
+    </script>
+  </body>
+</html>

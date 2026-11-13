@@ -91,3 +91,44 @@ Hệ quả khi ra Issue (chưa tạo, Owner 10/11: "chưa ra issue"):
 - Hiệu ứng cửa sổ, vị trí ba nút trên macOS và thanh tiêu đề Windows là cấu hình cửa sổ của Tauri 2 trong `tauri.conf.json` (PR gắn nhãn `build-exe`); không thêm dependency. Cửa sổ trong suốt trên macOS dùng API riêng, nên bản lên Mac App Store phải tắt hiệu ứng (`docs/design/nen-tang-mac-va-thuong-mai-hoa.md` §7). Windows 10 không có Mica: dùng nền đặc.
 - Chưa kiểm trên Safari / máy Mac thật (Owner 11/11: để sau); kiểm cùng bản thử Mac của T-413, kể cả `linear()` và truy vấn "Giảm độ trong suốt" trên WKWebView.
 - Các mockup đã duyệt G3 giữ bố cục và nội dung (Owner 11/11); chúng nhận vỏ mới qua token và bộ khung chung, không vẽ lại. Giao diện Sáng để sau v1.0.
+
+## Phụ lục 14/11/2026 — hệ chuyển động: bốn động tác, ba lò xo, "Mở từ chỗ bấm" (T-426 #1253)
+
+**Trạng thái: chờ G3** cùng mockup đợt g (`docs/design/mockups/chuyen-dong.html`; CSS ở mục 19 của `ui2.css`, hành vi ở mục 20 của `ui2.js`). Phụ lục này là bản chữ của mockup. Nó chốt phần mà điểm 6 của phụ lục 11/11/2026 để lại ("Bốn động tác (Hiện, Mở, Trượt, Đếm) và nơi dùng từng lò xo duyệt ở mockup đợt g"). Không thêm token, không thêm dependency. Mười điểm Owner quyết nằm ở mục `#ask` của mockup; các câu dưới đây viết theo phương án Claude đề xuất và sẽ sửa theo câu trả lời của Owner trước khi có hiệu lực. Bố cục và nội dung các màn đã duyệt G3 không đổi.
+
+1. **Luật chung.**
+   - Chuyển động chỉ đổi `transform` và `opacity`. Một ngoại lệ có tên: "Đếm" đổi chữ của con số (điểm 5).
+   - Rê chuột chỉ đổi màu, 120 ms. Nhấn: nút thu 4%, thẻ thu 1.5%, nhả tay thì về bằng lò xo nhanh. Đây là phản hồi của nút, không phải một động tác.
+   - Ra nhanh hơn vào: thứ được gọi ra tới trong 220–400 ms, thứ bị đóng đi trong 120 ms. Màn cũ không có chuyển động rời đi.
+   - Không chặn tay: đang chuyển động vẫn bấm được, và cú bấm mới làm chuyển động đang chạy dừng ngay ở đích.
+   - Mỗi thứ một động tác một lúc. Không vòng lặp, trừ chấm của viên "Lưu ý" và thanh của việc chạy nền (đợt b).
+   - Số không dùng lò xo.
+2. **Hiện** (đổi màn: thanh bên, ô lệnh, một ô hay một câu dẫn sang màn khác, bước kế của thiết lập ban đầu). Màn cũ biến mất ngay. Mỗi phần của màn mới trồi 8 px và rõ dần trong `--t-3` (400 ms), lò xo nhanh; các phần cách nhau 28 ms, tối đa 8 nhịp, nên màn nào cũng xong trong 0.6 giây. Tên màn và dòng dưới nó trồi cùng lúc (dòng dưới chậm 40 ms). Thanh trong một phần dài ra từ trái trong `--t-4`, lò xo êm, bắt đầu sau 100 ms. Một "phần" là một thẻ, một ô chỉ số, một bảng; dòng của bảng và thẻ KH của bảng Khách hàng không trồi riêng. Hiện chỉ chạy khi màn được mở, không chạy lại khi đổi góc nhìn hay kỳ.
+3. **Mở** (ý 07, "Mở từ chỗ bấm"). Thứ được bấm nở thành trang nó mở ra: thẻ KH → hồ sơ KH, dòng RM → trang RM, dòng KH của trang RM → hồ sơ KH.
+   - Lúc nở: khung đi từ ô của thẻ tới ô của trang trong `--t-3`, lò xo êm (không vượt đích); thẻ mờ đi trong `--t-1`; trang rõ dần trong `--t-2`, bắt đầu sau 80 ms; phần còn lại của màn cũ nhường chỗ trong `--t-1`.
+   - Lúc thu về: khung về ô của thẻ trong `--t-2`, `--ease-out`. Màn trước trở về đúng như lúc rời (cuộn tới đâu ở nguyên đó). Thẻ không còn ở đó thì trang chỉ mờ đi.
+   - Trang nở ra là một khối: các phần của nó không chạy Hiện, và màn quay về cũng không chạy lại Hiện.
+   - Chỗ bấm nằm trong một lớp nổi sẽ đóng lại (ô lệnh, "Lưu ý", gợi ý dưới ô tìm, danh sách của một ngày ở Forecast): dùng Hiện.
+   - Làm bằng `document.startViewTransition` của WebView. Không có API: lui về Hiện.
+4. **Trượt.**
+   - Thứ đang chọn trượt tới chỗ mới trong `--t-3`, lò xo nhanh: viên chọn của thanh bên, nút trượt của công tắc, mũi tên của hàng team.
+   - Lớp nổi đi một quãng ngắn ra từ nơi gọi nó: bảng nổi và menu 6 px, ô lệnh 10 px, hộp thoại macOS 36 px từ dưới thanh công cụ, hộp thoại Windows 11 mở ở giữa (94% → 100%). Vào: rõ trong `--t-2`, dịch trong `--t-3` bằng lò xo nhanh. Ra: `--t-1`, `--ease-in`.
+   - Thông báo nổi trồi lên từ 24 px dưới mép dưới: rõ trong `--t-2`, dịch trong `--t-4` bằng lò xo nảy; rời đi trong `--t-2`; tự đi sau 4.2 giây.
+   - Khối đổi theo công tắc (dải tuần ↔ lưới tháng, Bản tin ↔ Sổ số) đổi ngay.
+5. **Đếm.** Con số đang hiện chạy tới giá trị mới trong `--t-3`, `--ease-out`; mọi số của màn chạy cùng lúc. Mở một màn thì số có sẵn ngay, không đếm từ 0.
+   - Mỗi khung hình là một cách viết đúng ADR-0018: giá trị đang chạy được làm tròn về ba chữ số có nghĩa rồi viết bằng hàm dạng gọn của `packages/domain`, nên đơn vị luôn là đơn vị của con số đang hiện (1.38 tỷ → 1.03 tỷ → 761 tr → 310 tr). Khung đầu và khung cuối là giá trị thật, viết đủ.
+   - Số đếm chạy theo số nguyên, phần trăm theo một số lẻ. "—" ↔ một con số: đổi ngay. Số đổi tiếp khi đang chạy thì chạy tiếp từ con số đang hiện.
+   - Chạy ở các số lớn đứng riêng: số chủ đạo và các ô chỉ số của Tổng quan, số dự kiến và ba số của Forecast, các ô số đầu trang RM. Không chạy trong bảng, trong câu, trong Báo cáo (Bản tin, Sổ số, bản in, file Excel), trong hộp thoại và thông báo nổi, ở các số nhỏ trên nhãn và nút.
+   - Thanh đi kèm con số dài ra tới bề rộng mới trong `--t-4`, lò xo êm.
+6. **Ba lò xo.** Êm (`--spring-smooth`, không vượt đích): thứ lớn hoặc đi xa, tức Mở và các thanh. Nhanh (`--spring-snappy`, vượt 1.5%): Hiện, Trượt, nút và thẻ lúc nhả tay, icon của mục thanh bên đang chọn, mẫu màu của team. Nảy (`--spring-bouncy`, vượt 12.6%) chỉ ở ba nơi: thông báo nổi hiện ra; nhãn "Đã hủy {ngày}" lúc vừa hủy (`--t-4`); dấu ✓ của ô chọn vừa tick và của việc chạy nền vừa xong. Mờ / rõ, đổi màu, Đếm và "Mở" lúc thu về không dùng lò xo.
+7. **Giảm chuyển động.** App theo cài đặt của hệ điều hành (`prefers-reduced-motion`), không có công tắc riêng. Khi bật: màn mới hiện đủ ngay, "Mở" đổi màn ngay (bảng vẫn ở chỗ đã cuộn), viên chọn và nút trượt nhảy tới chỗ mới, lớp nổi hiện và ẩn ngay, số và thanh đổi thẳng, nhãn và thông báo hiện ngay ở đúng chỗ, chấm của viên "Lưu ý" đứng yên. Đổi màu khi rê chuột và viền tiêu điểm vẫn còn.
+8. **Bảng "động tác → nơi dùng"** của mọi màn đợt a–f, kể cả nơi không có chuyển động (dòng của bảng, kết quả lọc và sắp xếp, ô nhập, cuộn, bản in, file Excel): mục `#where` của mockup. Chỗ nào mockup đợt a–f chuyển động khác bảng đó thì theo bảng đó.
+
+Phương án đã cân nhắc (mỗi cái là "phương án khác" của một điểm `#ask`): cả màn trồi lên cùng lúc; chỉ thẻ KH dùng Mở; thu về trong 400 ms như lúc nở; app tự viết phép phóng khi không có View Transitions; lớp nổi chỉ mờ / rõ; "Đếm" kiểu lăn (số cũ lăn đi, số mới lăn vào, không có số trung gian); "Đếm" cả trên trang Bản tin; giữ lò xo nảy cho icon thanh bên và mẫu màu như mockup đợt a, b; dòng của bảng cũng chuyển động.
+
+Khả thi và hệ quả khi ra Issue (chưa tạo):
+
+- Lò xo `linear()`: Edge 113 / Safari 17.2 trở lên. View Transitions trong cùng một trang: Edge 111 / Safari 18 trở lên. WebView2 tự cập nhật theo Edge; bản macOS tối thiểu của app là macOS 26 (ADR-0019), có sẵn cả hai. Số phiên bản theo bảng hỗ trợ của Chrome for Developers và MDN, tra ngày 14/11/2026.
+- Trong React, đổi màn của "Mở" đặt trong `flushSync` của `react-dom` (đang dùng), để trình duyệt chụp đúng màn mới. "Đếm" dùng `requestAnimationFrame` và hàm dạng gọn của `packages/domain`. Không thêm dependency (G4).
+- Đã đo trên bản mockup (Edge chạy không cửa sổ, Home PC, 1440 × 900): các khung hình cách nhau 16.7 ms trong lúc từng động tác chạy; một khung 83 ms ở lần đầu dàn bảng Khách hàng.
+- Chưa kiểm: Safari / WKWebView trên máy Mac thật; app thật trong Tauri (Mica, vibrancy); dữ liệu lớn (884 thẻ KH, hồ sơ nhiều lịch và HĐ); máy yếu hơn; màn hình 120 Hz. Nếu "Mở" trên một màn nặng không giữ được khung hình ở nghiệm thu, màn đó lui về Hiện; luật không đổi.
