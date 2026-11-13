@@ -1,0 +1,986 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css mục 18, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
+  Mockup G3 đợt f (T-425 #1250), phần G: song ngữ Việt / Anh và tiền tệ (spec §11.5; luật §11.2, điểm Owner chọn §11.3,
+  thuật ngữ §11.6; ADR-0018; golden docs/golden/so-va-tien-te.md).
+  Trạng thái: CHỜ G3 (14 điểm ở #ask). Phần B của đợt f (hộp hủy HĐ): huy-hd.html.
+  Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
+  Số viết theo ADR-0018 và golden: "3,000,000 VNĐ", "1.38 tỷ" / "1.38 Bil", "$1,250.50", "$250K", "$1,250.50 AUD".
+  Bộ VND khớp đợt c, e: Tháng 11 MTD 1.38 tỷ = 1.43 tỷ − 50 tr, 33 phát hành, 1 hủy, 78 RF; Sao Mai 620 tr, Bình Minh
+  450 tr, Hừng Đông 310 tr. Bộ tiếng Anh (tiền có cent) chỉ để thấy cách viết: tên và số do Issue G-06 chốt.
+  Ô nhập tiền gõ thử được: hàm đọc trong script khớp golden mục 6 (I01–I40, X01–X34, M01–M07), hàm hiện số khớp
+  mục 2–5 (F, C, D, N); kiểm bằng script đọc thẳng file golden (window.gCheck).
+  #shell     Cửa sổ app bấm được. Bốn cảnh ở thanh dưới: Thiết lập ban đầu (wizard ba bước), Cài đặt (Ngôn ngữ /
+             Language, Dữ liệu có Tiền tệ và Thiết lập lại từ đầu), English · VNĐ, English · USD. Nút chính của Tổng
+             quan mở hộp "Lịch hẹn mới" có ô tiền gõ thử được
+  #wizard    Thiết lập ban đầu: ba bước, Tiếng Việt chỉ có VND; hai bố cục (#opt-wizard); file backup khác tiền tệ;
+             wizard của "Thiết lập lại từ đầu"
+  #settings  Cài đặt: mục Ngôn ngữ / Language; Tiền tệ chỉ xem và nút Thiết lập lại đặt ở đâu (#opt-place); hộp xác
+             nhận; nhập backup khác tiền tệ; Nạp lại giữ tiền tệ
+  #money     Ô nhập tiền: chữ mẫu, dòng đọc, gợi ý bấm để điền, câu lỗi; ô gõ thử
+  #eur       Câu hướng dẫn cách nhập của ô tiền EUR: câu chữ, vị trí, lúc hiện (#opt-eur)
+  #english   Màn tiếng Anh với VND và với USD; chỗ rộng dùng tên tháng; hộp có ô tiền
+  #rounda    Đổi số của đợt a (components.html, app-shell.html) theo luật mới
+  #states    Trạng thái trống và lỗi
+  #ask       14 điểm chờ Owner quyết ở G3
+  Vỏ app, bảng thành phần (đợt a), "Lưu ý" (đợt b), Tổng quan (đợt c): app-shell.html, components.html,
+  search-rm-team.html, tong-quan.html. Cài đặt → Dữ liệu đã duyệt: settings-data.html (10a–10c).
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ngôn ngữ và tiền tệ — Heritas L-CRM (Project-2C mockup, đợt f)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page: the screens inside the window ---- */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later > b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 520px; font-size: 13.5px; }
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+      .view-note { margin: 12px 2px 0; font-size: 12.5px; color: var(--text-2); }
+      .win.setup .tb-search { visibility: hidden; }
+      /* Tổng quan, a cut of it: enough to read the words and the numbers in each language and currency */
+      .ov { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); gap: 14px; }
+      .ov > .wide { grid-column: 1 / -1; }
+      .ov > .half { grid-column: span 2; }
+      .ov .tbl th, .ov .tbl td { padding-left: 8px; padding-right: 8px; }
+      .ov .stat .val { font-size: 30px; }
+      .ov .stat.lead-n .val { font-size: 44px; }
+      .ov .tmark { margin-right: 7px; }
+      /* Cài đặt: the list of round a (icons in coloured squares), one more item */
+      .set { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; max-width: 980px; }
+      .set-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; align-self: start; }
+      .set-i { display: flex; align-items: center; gap: 12px; padding: 8px 9px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); text-align: left; font-weight: 550; transition: background var(--t-1); }
+      .set-i:hover { background: var(--fill-1); }
+      .set-i.on { background: var(--fill-2); }
+      .set-i .tag { margin-left: auto; }
+      .sq { width: 30px; height: 30px; flex: none; border-radius: calc(7px * var(--r-k)); corner-shape: var(--r-curve); display: grid; place-items: center; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 82%, #fff), var(--c)); color: var(--bg-0); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 5px rgba(0, 0, 0, 0.25); }
+      [data-os='win'] .sq { border-radius: 6px; corner-shape: round; }
+      .sq .ic { width: 17px; height: 17px; stroke-width: 2; }
+      .set-pane { display: grid; gap: 14px; align-content: start; min-width: 0; }
+      .set-pane > h3 { margin: 2px 0 0; font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+      .set-pane .card > h4 { margin: 0 0 6px; font-size: 14px; font-weight: 650; }
+      .set-pane .card.risky { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent), var(--shadow-1); }
+      .arow { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--hairline); font-size: 13.5px; }
+      .arow:last-child { border-bottom: 0; padding-bottom: 0; }
+      .arow > div { flex: 1; min-width: 0; color: var(--text-2); }
+      .arow > div b { display: block; font-weight: 600; color: var(--text); }
+      .arow .big { font-size: 20px; font-weight: 650; color: var(--text); white-space: nowrap; }
+      .arow .ic { width: 15px; height: 15px; color: var(--text-2); }
+      .path { padding: 1px 6px; border-radius: 5px; background: var(--fill-2); font: 12px var(--font-code); color: var(--text); }
+      .set-pane .picks { max-width: 620px; }
+      /* Dialogs and the wizard: a real field inside the styled one */
+      .input input { flex: 1; width: 100%; min-width: 0; border: 0; outline: 0; background: none; font-variant-numeric: tabular-nums; }
+      .input input::placeholder { color: var(--text-3); }
+      .dlg ul.pts { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 13.5px; }
+      .dlg ul.pts li { margin-bottom: 4px; }
+      .money-out { display: grid; gap: 5px; }
+      .wiz .alert .acts, .dlg .alert .acts { grid-column: 2; display: flex; gap: 8px; margin-top: 8px; }
+      .wiz .filebox { display: grid; gap: 10px; }
+      .kvs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: 13px; color: var(--text-2); }
+      .kvs b { font-weight: 600; color: var(--text); }
+      .wiz-sum { margin-right: auto; display: flex; gap: 6px; align-items: center; }
+      @container (max-width: 1300px) {
+        .ov { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .ov > .half { grid-column: 1 / -1; }
+        .set { grid-template-columns: 210px minmax(0, 1fr); }
+        .wiz-col > h3 { font-size: 24px; }
+        .wiz-body { padding-top: 16px; }
+      }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .shot { position: relative; height: calc(var(--h, 900px) * var(--s, 0.8) + 44px); border-radius: 16px; overflow: hidden; background: var(--wall); }
+      .shot > .win { position: absolute; left: 22px; top: 22px; width: var(--w, 1440px); height: var(--h, 900px); transform: scale(var(--s, 0.8)); transform-origin: 0 0; }
+      .state-l { display: block; margin: 0 0 8px; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .stack-v { display: grid; gap: 18px; }
+      .opt-pic.blk { display: block; place-items: normal; padding: 16px; min-height: 0; } /* a block now honours justify-items: without this the picture shrinks to its content */
+      .opt-pic.mid { flex: 1; display: grid; justify-items: center; align-content: center; padding: 22px 16px; }
+      .opt-pic .dlg { box-shadow: var(--mat-pop-edge), var(--shadow-2); }
+      .rules { margin: 0; padding-left: 20px; color: var(--text-2); }
+      .rules li { margin-bottom: 7px; }
+      .rules b { color: var(--text); font-weight: 600; }
+      .law { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .law th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+      .law td { padding: 11px 12px 11px 0; border-top: 1px solid var(--hairline); vertical-align: top; line-height: 1.5; color: var(--text-2); }
+      .law td:first-child { font-weight: 650; color: var(--text); }
+      .law td b { color: var(--text); font-weight: 600; }
+      .law td.v { font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; }
+      .law td s { color: var(--text-3); }
+      .dlg-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; justify-items: center; }
+      /* A wizard outside a window: the same three parts in a frame */
+      .wizbox { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); background: var(--mat-glow), var(--bg-0); box-shadow: inset 0 0 0 1px var(--hairline); overflow: hidden; container-type: inline-size; }
+      .wizbox .wiz-body { padding: 22px 22px 18px; }
+      .wizbox .wiz-top { padding: 14px 22px 0; }
+      .wizbox .wiz-foot { padding: 12px 22px 16px; }
+      .wizbox .wiz-col > h3 { font-size: 22px; }
+      .wizbox .wiz-col > h3 small { font-size: 13.5px; }
+      .wizbox .lights { display: none; }
+      @container (max-width: 700px) { .wizbox .steps span:not(.on) b { display: none; } }
+      /* The lab: one money field to type in, in a language and a currency */
+      .lab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+      .lab-set { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+      .lab .tries { display: flex; flex-wrap: wrap; gap: 6px; }
+      .lab .tries button { height: 26px; padding: 0 9px; border-radius: 7px; background: var(--fill-2); font: 12.5px var(--font-code); color: var(--text); }
+      .lab .tries button:hover { background: var(--fill-3); }
+      .lab .field { max-width: 380px; }
+      .cases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+      .cases .field { min-width: 0; }
+      .cases .state-l { margin-bottom: 6px; }
+      .dock [data-size-note] { min-width: 96px; }
+      @media (max-width: 1320px) { .dock [data-size-note] { display: none; } }
+      @media (max-width: 1100px) { .gal, .pgrid, .duo, .dlg-pair, .lab, .cases { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6l-1.9-4.9L4 9.8l5.1-1.9zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.6 2.4 3.9 5.2 3.9 8.5s-1.3 6.1-3.9 8.5c-2.6-2.4-3.9-5.2-3.9-8.5S9.4 5.9 12 3.5z" /></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.5v.01" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+      <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt f · Ngôn ngữ và tiền tệ</b>
+      <span class="state">Chờ G3</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#wizard">Thiết lập ban đầu</a><a href="#settings">Cài đặt</a><a href="#money">Ô nhập tiền</a><a href="#eur">EUR</a><a href="#english">Tiếng Anh</a><a href="#rounda">Số đợt a</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh quyết</a><a href="huy-hd.html">← Hủy HĐ</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg><span data-t="search"></span><kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i on" data-go="overview" data-tools="find"><svg class="ic"><use href="#i-overview" /></svg><span></span></button>
+              <button class="nav-i" data-go="appointments" data-tools="find"><svg class="ic"><use href="#i-cal" /></svg><span></span></button>
+              <button class="nav-i" data-go="customers" data-tools="find"><svg class="ic"><use href="#i-people" /></svg><span></span></button>
+              <button class="nav-i" data-go="forecast" data-tools="find"><svg class="ic"><use href="#i-forecast" /></svg><span></span></button>
+              <button class="nav-i" data-go="reports" data-tools="find"><svg class="ic"><use href="#i-report" /></svg><span></span></button>
+              <div class="nav-h" data-t="manage"></div>
+              <button class="nav-i" data-go="team" data-tools="find"><svg class="ic"><use href="#i-team" /></svg><span></span></button>
+              <button class="nav-i" data-go="settings" data-tools="find"><svg class="ic"><use href="#i-gear" /></svg><span></span></button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i><span data-t="saved"></span></span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2></h2><span></span></div>
+              <button class="now-pill" aria-haspopup="dialog"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who" data-now-who></span><span class="sep muted">·</span><span class="left num" data-t="in25"></span></span></button>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden data-t="masking"></span></button>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Ô lệnh (⌘K)" title="Ô lệnh · ⌘K"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn data-appt><svg class="ic"><use href="#i-plus" /></svg><span></span></button>
+              </div>
+            </header>
+
+            <!-- "Lưu ý" / "Heads-up" (đợt b) -->
+            <div class="now-pop" role="dialog" aria-label="Lưu ý" data-now></div>
+
+            <div class="views">
+              <div class="view" data-view="overview"><div data-ov></div></div>
+              <div class="view" data-view="appointments"><div class="later" data-later="cal"></div></div>
+              <div class="view" data-view="customers"><div class="later" data-later="people"></div></div>
+              <div class="view" data-view="forecast"><div class="later" data-later="forecast"></div></div>
+              <div class="view" data-view="reports"><div class="later" data-later="report"></div></div>
+              <div class="view" data-view="team"><div class="later" data-later="team"></div></div>
+              <div class="view" data-view="settings"><div data-set></div></div>
+            </div>
+          </section>
+
+          <!-- ===== Thiết lập ban đầu: chiếm cả cửa sổ, chưa có thanh bên (ui2.css mục 18) ===== -->
+          <div class="wiz" data-wiz></div>
+
+          <!-- ===== Lớp tiêu điểm: một hộp (script đổi nội dung), ô lệnh, thông báo nổi ===== -->
+          <div class="scrim"></div>
+          <div class="dlg" role="dialog" aria-modal="true" data-dlg></div>
+          <div class="pal" role="dialog" aria-modal="true" aria-label="Ô lệnh">
+            <div class="pal-field"><svg class="ic"><use href="#i-search" /></svg><input type="text" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>
+            <div class="pal-list" role="listbox"></div>
+            <div class="pal-foot"><span><kbd>Esc</kbd></span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd></span></div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-t"><b>Heritas L-CRM</b> · đợt f</span>
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="num" data-size-note></span>
+        <span class="seg" data-set="scene" aria-label="Cảnh mẫu"><button class="on" data-v="wizard">Thiết lập ban đầu</button><button data-v="settings">Cài đặt</button><button data-v="en-vnd">English · VNĐ</button><button data-v="en-usd">English · USD</button></span>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Thiết lập ban đầu ================= -->
+      <section class="sec" id="wizard">
+        <span class="kicker">Phần G · §11.2 · ADR-0018 §7</span>
+        <h2>Lần mở đầu tiên: ngôn ngữ, tiền tệ, rồi dữ liệu.</h2>
+        <p class="lead">Thứ tự do anh chốt (11/11): ngôn ngữ → tiền tệ → nguồn dữ liệu. Chọn <b>Tiếng Việt</b> thì bước tiền tệ chỉ còn VNĐ; chọn <b>English</b> thì có đủ bảy tiền tệ. Tiền tệ chọn <b>một lần</b>. Thiết lập ban đầu không ghi gì cho tới bước cuối: thoát giữa chừng thì lần mở sau bắt đầu lại. Thử ở cửa sổ đầu trang (cảnh <b>Thiết lập ban đầu</b>): chọn English rồi EUR, hoặc chọn File backup ở bước 3. Video giới thiệu (bước trước ngôn ngữ) không thuộc phần G: làm khi giao diện đã xong, chỗ của nó là trước bước 1.</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Bước 1: tiêu đề và hai thẻ viết bằng cả hai ngôn ngữ, vì lúc này app chưa biết người dùng đọc tiếng gì</span><div data-spec="wiz" data-step="1"></div></div>
+            <div><span class="state-l">Bước 2 sau khi chọn Tiếng Việt: chỉ VNĐ chọn được, sáu tiền tệ kia nằm nguyên chỗ, mờ, kèm lý do</span><div data-spec="wiz" data-step="2"></div></div>
+            <div><span class="state-l">Bước 2 sau khi chọn English: bảy tiền tệ; mỗi thẻ ghi sẵn cách app viết số tiền (dạng đầy đủ · dạng gọn)</span><div data-spec="wiz" data-step="2" data-lang="en" data-cur="USD"></div></div>
+            <div><span class="state-l">Bước 3: ba nguồn dữ liệu; dòng chân nhắc lại hai lựa chọn đã có, nút cuối là "Bắt đầu"</span><div data-spec="wiz" data-step="3"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Chọn sẵn</b> (điểm 2, 4 ở #ask): bước 1 chọn sẵn theo ngôn ngữ của máy; bước 2 với Tiếng Việt chọn sẵn VNĐ, với English không chọn sẵn; bước 3 chọn sẵn "Dữ liệu mẫu".</li>
+          <li><b>Không có hộp hỏi lại</b> ở bước tiền tệ: câu "chọn một lần" đứng ngay dưới tiêu đề, và dòng chân của bước 3 nhắc lại tiền tệ trước khi bấm Bắt đầu.</li>
+          <li><b>Bản web</b> (<code>pnpm dev:web</code>, e2e) không qua thiết lập ban đầu: mở thẳng dữ liệu mẫu VNĐ, như ADR-0018 §7.</li>
+        </ul>
+
+        <h3 class="sub-h" id="opt-wizard">Hai bố cục của thiết lập ban đầu</h3>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk" data-os="mac"><div data-spec="wiz" data-step="2"></div></div><div class="opt-t"><b>A · Mỗi bước một màn <span class="tag rec">đề xuất</span></b><p>Ba bước, có số bước ở góc phải và nút Quay lại. Mỗi màn chỉ có một quyết định; bước tiền tệ có đủ chỗ cho câu "chọn một lần" và ví dụ cách viết số.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk" data-os="mac"><div data-spec="wizall"></div></div><div class="opt-t"><b>B · Một trang, ba khối</b><p>Cả ba lựa chọn trên một màn, một nút Bắt đầu. Ít lần bấm hơn, nhưng thẻ phải nhỏ lại, và lựa chọn không đổi được (tiền tệ) nằm lẫn giữa hai lựa chọn đổi được.</p></div></div>
+        </div>
+
+        <h3 class="sub-h">File backup khác tiền tệ (Q12)</h3>
+        <p class="sub-p">Một bộ dữ liệu chỉ có một tiền tệ và app không quy đổi, nên file khác tiền tệ đang chọn bị từ chối. Thông báo nêu cả hai tiền tệ và hai lối ra. File cũ chưa ghi tiền tệ được coi là VNĐ (Owner 12/11: "Migration ghi VND").</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Đang chọn VNĐ, file dùng USD</span><div data-spec="wiz" data-step="3" data-src="file" data-file="other"></div></div>
+            <div><span class="state-l">File cùng tiền tệ: tóm tắt file, rồi mới bấm Bắt đầu</span><div data-spec="wiz" data-step="3" data-src="file" data-file="good"></div></div>
+          </div>
+        </div>
+
+        <h3 class="sub-h">Khi tới từ "Thiết lập lại từ đầu" (Q13)</h3>
+        <p class="sub-p">Cùng ba bước. Khác ở một dải thông báo trên cùng và một lối quay về: dữ liệu đang dùng còn nguyên cho tới khi bấm Bắt đầu. Ngôn ngữ đang dùng được chọn sẵn.</p>
+        <div class="duo stack"><div data-spec="wiz" data-step="2" data-reset="1"></div></div>
+      </section>
+
+      <!-- ================= Cài đặt ================= -->
+      <section class="sec" id="settings">
+        <span class="kicker">Cài đặt · §11.2 · Q10, Q13, Q14</span>
+        <h2>Cài đặt: ngôn ngữ đổi lúc nào cũng được, tiền tệ thì chỉ để xem.</h2>
+        <p class="lead">Anh chốt 11/11: Cài đặt có mục mới <b>"Ngôn ngữ / Language"</b>, đổi bất kỳ lúc nào; Tiếng Việt chỉ chọn được khi tiền tệ là VNĐ; tiền tệ không đổi được, muốn đổi thì <b>Thiết lập lại từ đầu</b>. Mục mới là mục thứ tư của Cài đặt, có icon ô màu như ba mục đã duyệt ở đợt a; tên mục viết bằng cả hai ngôn ngữ ở cả hai giao diện, để người lỡ chọn nhầm ngôn ngữ vẫn tìm thấy. Thử ở cửa sổ đầu trang: cảnh <b>Cài đặt</b>.</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Dữ liệu VNĐ: chọn được cả hai ngôn ngữ; bấm một thẻ là app lưu nốt rồi tải lại giao diện bằng ngôn ngữ đó</span><div data-spec="pane" data-pane="lang"></div></div>
+            <div><span class="state-l">Dữ liệu USD (giao diện English): thẻ Tiếng Việt nằm nguyên chỗ, không bấm được, kèm lý do</span><div data-spec="pane" data-pane="lang" data-lang="en" data-cur="USD"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Đổi là áp dụng ngay</b> (điểm 6 ở #ask): không có nút "Lưu". App chờ ghi xong các thay đổi đang chờ rồi tải lại giao diện; dữ liệu không đổi (ADR-0018 §1).</li>
+          <li><b>Nhớ theo máy:</b> lựa chọn ngôn ngữ không nằm trong file backup (Q10). Nhập một file từ máy khác không đổi ngôn ngữ của máy này.</li>
+          <li>Lựa chọn English chỉ mở ở Issue dịch cuối cùng (spec §11.4); trước đó mục này chỉ có Tiếng Việt.</li>
+        </ul>
+
+        <h3 class="sub-h" id="opt-place">Tiền tệ và nút "Thiết lập lại từ đầu" đặt ở đâu</h3>
+        <p class="sub-p">ADR-0018 §7 để chỗ đặt cho mockup. Mục Dữ liệu dưới đây giữ các khối đã duyệt (<code>settings-data.html</code>), vẽ trong vỏ mới.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk" data-os="mac"><div data-spec="pane" data-pane="data" data-place="a"></div></div><div class="opt-t"><b>A · Trong mục Dữ liệu <span class="tag rec">đề xuất</span></b><p>Tiền tệ là thuộc tính của bộ dữ liệu và đi theo file backup, nên đứng cạnh "File dữ liệu". Nút Thiết lập lại thay toàn bộ dữ liệu, nên đứng trong vùng viền đỏ cùng "Nạp lại dữ liệu giả lập". Mục Ngôn ngữ chỉ có một dòng nhắc tiền tệ.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk" data-os="mac"><div data-spec="pane" data-pane="lang" data-place="b"></div></div><div class="opt-t"><b>B · Trong mục "Ngôn ngữ &amp; tiền tệ"</b><p>Hai thiết lập của lần mở đầu tiên nằm chung một mục, lý do Tiếng Việt bị mờ nằm ngay cạnh tiền tệ. Đổi lại, một nút xóa sạch dữ liệu nằm ngoài mục Dữ liệu, cạnh lựa chọn ngôn ngữ vô hại.</p></div></div>
+        </div>
+
+        <h3 class="sub-h">Hộp xác nhận, và nhập backup khác tiền tệ</h3>
+        <p class="sub-p">Hộp xác nhận bắt gõ chữ, như Nạp lại và Nhập backup đã duyệt (10a, 10c). Nó nói đủ bốn điều của Q13: sao lưu trước, dữ liệu cũ còn tới khi thiết lập xong, cài đặt AI không sang bộ dữ liệu mới, key AI ở lại máy.</p>
+        <div class="duo stack" data-pane="scrimmed">
+          <div class="dlg-pair">
+            <div><span class="state-l">Hộp xác nhận "Thiết lập lại từ đầu"</span><div data-spec="reset"></div></div>
+            <div><span class="state-l">Cài đặt → Dữ liệu → Nhập backup: file khác tiền tệ (thêm vào ba ca của 10b)</span><div data-spec="mismatch"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Nạp lại dữ liệu giả lập</b> (Q14) giữ tiền tệ và nạp bộ mẫu của tiền tệ đó; hộp 10c thêm đúng một câu: "Tiền tệ giữ là VNĐ."</li>
+          <li>Tiếng Anh: nút là <b>Start over</b>, chữ phải gõ là <b>START OVER</b> (thuật ngữ §11.6).</li>
+        </ul>
+      </section>
+
+      <!-- ================= Ô nhập tiền ================= -->
+      <section class="sec" id="money">
+        <span class="kicker">ADR-0018 §5 · Q6, Q8, Q11, Q17 · golden mục 6</span>
+        <h2>Ô nhập tiền: một luật dấu, và app chỉ ra cách viết đúng.</h2>
+        <p class="lead">Anh chốt: dấu <b>","</b> ngăn hàng nghìn, dấu <b>"."</b> cho phần lẻ, ô nhập chặt theo đúng luật đó; cách gõ sai bị từ chối kèm gợi ý, <b>bấm gợi ý thì mới điền</b> (Q11). Ô có chữ mẫu theo ngôn ngữ và tiền tệ, tên tiền tệ ở cuối ô, và dòng <b>→ đọc lại</b> như hiện nay. Gõ thử ở ô dưới đây; các nút bên phải điền sẵn những cách gõ hay gặp. Hàm đọc của ô này khớp từng dòng I01–I40, X01–X34 của golden.</p>
+        <div class="pcard lab" data-os="mac" data-lab>
+          <div>
+            <div class="lab-set">
+              <span class="seg" data-lab-set="lang" aria-label="Ngôn ngữ"><button class="on" data-v="vi">Tiếng Việt</button><button data-v="en">English</button></span>
+              <span class="seg" data-lab-set="cur" aria-label="Tiền tệ"><button class="on" data-v="VND">VNĐ</button><button data-v="USD">USD</button><button data-v="EUR">EUR</button><button data-v="AUD">AUD</button></span>
+            </div>
+            <div class="field" data-lab-field></div>
+          </div>
+          <div><span class="state-l">Gõ thử nhanh</span><div class="tries" data-lab-tries></div></div>
+        </div>
+
+        <h3 class="sub-h">Chín ca, mỗi ca một hình</h3>
+        <div class="duo stack">
+          <div class="cases">
+            <div><span class="state-l">Trống: chữ mẫu</span><div class="field" data-spec="money" data-label="Case size dự kiến"></div></div>
+            <div><span class="state-l">Gõ đúng: dòng đọc (I08)</span><div class="field" data-spec="money" data-label="Case size dự kiến" data-text="1.5 tỷ"></div></div>
+            <div><span class="state-l">Cách nói quen giữ nguyên (I17)</span><div class="field" data-spec="money" data-label="Case size dự kiến" data-text="1tr5"></div></div>
+            <div><span class="state-l">Dấu "," đặt sai chỗ: một gợi ý (X01)</span><div class="field" data-spec="money" data-label="FYP nộp" data-text="1,5 tỷ"></div></div>
+            <div><span class="state-l">Nhóm bằng dấu cách (Q8, X07)</span><div class="field" data-spec="money" data-label="FYP nộp" data-text="500 000 000"></div></div>
+            <div><span class="state-l">VNĐ không có số lẻ (X05)</span><div class="field" data-spec="money" data-label="FYP nộp" data-text="1.500"></div></div>
+            <div><span class="state-l">Đọc được theo hai cách: hai gợi ý (Q17, X26)</span><div class="field" data-spec="money" data-label="FYP phát hành" data-text="1.500 tr"></div></div>
+            <div><span class="state-l">Đơn vị của ngôn ngữ kia (Q6, X30)</span><div class="field" data-spec="money" data-label="FYP phát hành" data-text="500 Mil"></div></div>
+            <div><span class="state-l">Không có gợi ý: câu lỗi kèm ví dụ (X14)</span><div class="field" data-spec="money" data-label="FYP phát hành" data-text="1.5m"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Chữ mẫu</b> (ô trống): tiếng Việt <code>vd. 500 tr · 1.5 tỷ</code>; English với VNĐ <code>e.g. 500 Mil · 1.5 Bil</code>; tiền có cent <code>e.g. 1,250.50 · 250K</code>. Cuối ô ghi tiền tệ: VNĐ, USD, EUR…</li>
+          <li><b>Gợi ý</b> là viên có viền champagne ngay dưới câu lỗi: chữ đậm là cách viết sẽ được điền, chữ nhạt là số tiền nó ứng với. Bấm thì ô nhận đúng chữ đó và dòng đọc hiện lại; app không bao giờ tự điền.</li>
+          <li><b>Quá trần</b> (100 tỷ đồng; với tiền có cent là 100 Bil đơn vị chính): ô vẫn đọc được số, dòng dưới nói mức tối đa. Ví dụ ở ô gõ thử: <code>150 tỷ</code>.</li>
+          <li>Ba trường tiền của KYC (thu nhập năm, tổng tài sản, nợ phải trả) lưu chữ người dùng gõ; dòng đọc dùng cùng hàm này, không có câu lỗi (ADR-0018 §5).</li>
+        </ul>
+
+        <h3 class="sub-h">Câu lỗi của ô tiền</h3>
+        <p class="sub-p">Golden mục 6.2 để câu chữ cho mockup và i18n. Mỗi mã lỗi một câu; ca có gợi ý thì thêm dòng gợi ý. Cột English là bản dịch đề xuất cho Issue dịch.</p>
+        <div class="pcard"><table class="law">
+          <thead><tr><th>Ca</th><th>Tiếng Việt · VNĐ</th><th>English · VNĐ</th><th>English · tiền có cent</th></tr></thead>
+          <tbody data-spec="msgs"></tbody>
+        </table></div>
+      </section>
+
+      <!-- ================= EUR ================= -->
+      <section class="sec" id="eur">
+        <span class="kicker">Owner 12/11 · ADR-0018 §5 · golden I40</span>
+        <h2>Ô tiền EUR: nói trước cách app đọc hai dấu.</h2>
+        <p class="lead">Anh chốt 12/11: "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng." Người dùng euro ở Đức, Ý, Tây Ban Nha quen viết <code>1.500</code> cho một nghìn rưỡi; app đọc đó là <b>€1.50</b> và không báo lỗi (I40). Vì vậy câu hướng dẫn phải có mặt đúng lúc gõ. EUR chỉ đi với giao diện English, nên câu viết bằng tiếng Anh; dòng dưới là nghĩa tiếng Việt để anh duyệt.</p>
+        <div class="pcard">
+          <table class="law">
+            <thead><tr><th>Chỗ</th><th>Câu (English)</th><th>Nghĩa</th></tr></thead>
+            <tbody>
+              <tr><td>Dưới ô tiền</td><td class="v" style="white-space: normal">"," separates thousands, "." is the decimal point: 1,500.00</td><td>Dấu "," ngăn hàng nghìn, dấu "." là dấu thập phân: 1,500.00</td></tr>
+              <tr><td>Khi gõ kiểu 1.500</td><td class="v" style="white-space: normal">→ €1.50 · If you meant €1,500.00: <b>1,500</b></td><td>Dòng đọc ghi €1.50; ngay dưới: "Nếu ý là €1,500.00:" kèm viên "1,500" bấm được, như mọi gợi ý</td></tr>
+              <tr><td>Bước tiền tệ, khi chọn EUR</td><td class="v" style="white-space: normal">Amounts are written 1,500.00, not 1.500,00: "," separates thousands, "." is the decimal point.</td><td>Số tiền viết 1,500.00, không phải 1.500,00: dấu "," ngăn hàng nghìn, dấu "." là dấu thập phân.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="sub-h" id="opt-eur">Vị trí và lúc hiện</h3>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk" data-os="mac"><div class="cases" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div><span class="state-l">Ô chưa được chọn</span><div class="field" data-spec="money" data-label="Expected case size" data-lang="en" data-cur="EUR" data-tip="always"></div></div><div><span class="state-l">Đang gõ "1.500"</span><div class="field" data-spec="money" data-label="Expected case size" data-lang="en" data-cur="EUR" data-tip="always" data-text="1.500" data-focus="1"></div></div></div></div><div class="opt-t"><b>A · Luôn hiện dưới mọi ô tiền <span class="tag rec">đề xuất</span></b><p>Một dòng dưới mỗi ô tiền khi tiền tệ là EUR, thấy trước khi gõ. Gõ kiểu "1.500" thì dòng đọc thêm gợi ý "1,500". Bước tiền tệ của thiết lập ban đầu cũng nói một lần khi chọn EUR.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk" data-os="mac"><div class="cases" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div><span class="state-l">Ô chưa được chọn: không có câu</span><div class="field" data-spec="money" data-label="Expected case size" data-lang="en" data-cur="EUR" data-tip="focus"></div></div><div><span class="state-l">Đang gõ "1.500": câu hiện ra</span><div class="field" data-spec="money" data-label="Expected case size" data-lang="en" data-cur="EUR" data-tip="focus" data-text="1.500" data-focus="1"></div></div></div></div><div class="opt-t"><b>B · Chỉ hiện khi ô đang được gõ</b><p>Hộp thoại gọn hơn khi có nhiều ô tiền. Đổi lại, người dùng chỉ thấy câu sau khi đã bấm vào ô, và chiều cao hộp nhảy mỗi lần đổi ô.</p></div></div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Chỉ EUR có câu này (đúng lời anh). USD, GBP, AUD, CAD, SGD dùng cùng luật đọc nhưng người dùng các tiền đó vốn viết "1,500.00".</li>
+          <li>Thử ở ô gõ thử của mục trên: chọn English, EUR, gõ <code>1.500</code>.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Tiếng Anh ================= -->
+      <section class="sec" id="english">
+        <span class="kicker">§11.6 · golden mục 2–5, 7</span>
+        <h2>Cùng một màn, bằng tiếng Anh: với VNĐ, và với USD.</h2>
+        <p class="lead">VNĐ sang tiếng Anh chỉ đổi chữ đơn vị (tỷ → Bil, triệu → Mil) và vẫn ghi "VNĐ" sau số. Tiền có cent đặt ký hiệu trước số, dạng đầy đủ luôn hai số lẻ. Thuật ngữ theo bảng anh đã duyệt (§11.6): Doanh số là <b>Total FYP</b>, Chuyển RF là <b>Referrals</b>, Team &amp; nhân sự là <b>Team management</b>, Lưu ý là <b>Heads-up</b>. Màn dưới là một phần của Tổng quan đã duyệt (đợt c), đủ để thấy chữ và số; bảng "HĐ gần đây" chỉ để thấy dạng đầy đủ của số tiền, không phải khối mới.</p>
+        <div class="stack-v">
+          <div><span class="state-l">English · VNĐ: cùng số với đợt c (1.38 tỷ thành 1.38 Bil)</span><div class="shot" data-os="mac" data-clone="#win" data-scene="en-vnd" data-w="1280" style="--w: 1280px; --h: 720px"></div></div>
+          <div><span class="state-l">English · USD, Windows 11: bộ mẫu tiếng Anh (tên và số chỉ để minh họa cách viết)</span><div class="shot" data-os="win" data-clone="#win" data-scene="en-usd" data-w="1280" style="--w: 1280px; --h: 720px"></div></div>
+        </div>
+        <h3 class="sub-h">Hộp có ô tiền và ô ngày, bằng tiếng Anh</h3>
+        <div class="duo stack" data-pane="scrimmed">
+          <div class="dlg-pair">
+            <div><span class="state-l">English · USD</span><div data-spec="appt" data-lang="en" data-cur="USD" data-text="2,500"></div></div>
+            <div><span class="state-l">English · VNĐ: đơn vị của ô nhập theo ngôn ngữ giao diện (Q6)</span><div data-spec="appt" data-lang="en" data-cur="VND" data-text="30 Mil"></div></div>
+          </div>
+        </div>
+        <h3 class="sub-h">Ngày tiếng Anh: chỗ rộng dùng tên tháng</h3>
+        <p class="sub-p">Ô nhập và bảng giữ dd/mm/yyyy ở cả hai ngôn ngữ, không bao giờ mm/dd (anh chốt 12/11). Tên tháng chỉ hiện ở chỗ đủ rộng; ADR-0018 §6 để danh sách chỗ rộng cho mockup từng màn. Với vỏ app và các màn ở trang này:</p>
+        <div class="pcard"><table class="law">
+          <thead><tr><th>Chỗ</th><th>Tiếng Việt</th><th>English</th><th>Golden</th></tr></thead>
+          <tbody>
+            <tr><td>Dòng dưới tên màn (kỳ đang xem)</td><td class="v">Tháng 11/2026 · 01/11 – 10/11 (MTD)</td><td class="v">November 2026 · 1 – 10 Nov (MTD)</td><td>Y07, Y10 · rộng</td></tr>
+            <tr><td>Đầu bảng "Lưu ý"</td><td class="v">Thứ Ba 10/11/2026</td><td class="v">Tue 10 Nov 2026</td><td>Y02 · rộng</td></tr>
+            <tr><td>Dòng đọc dưới ô ngày</td><td class="v">Thứ Sáu 13/11/2026</td><td class="v">Fri 13 Nov 2026</td><td>Y02 · rộng</td></tr>
+            <tr><td>Viên kỳ trên thanh công cụ</td><td class="v">Tháng 11/2026</td><td class="v">Nov 2026</td><td>Y10 · hẹp</td></tr>
+            <tr><td>Ô ngày, ô của bảng, nhãn "Đã hủy {ngày}"</td><td class="v">05/11/2026</td><td class="v">05/11/2026</td><td>Y01 · như nhau</td></tr>
+            <tr><td>Tên thứ ở lịch</td><td class="v">T2 … CN</td><td class="v">Mon … Sun</td><td>Y12</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Số đếm, phần trăm, cỡ file viết như nhau ở hai ngôn ngữ: "949", "42.3%", "4.8 MB".</li>
+          <li>AUD, CAD, SGD: dạng đầy đủ kèm mã sau số ("$1,250.50 AUD"), dạng gọn không kèm ("$250K"); tiền tệ luôn xem được ở Cài đặt → Dữ liệu. Thử: thiết lập ban đầu, chọn English rồi AUD.</li>
+          <li>Tên KH vẫn che được ở giao diện English (nút con mắt, "Hide names").</li>
+        </ul>
+      </section>
+
+      <!-- ================= Đổi số đợt a ================= -->
+      <section class="sec" id="rounda">
+        <span class="kicker">ADR-0018 "Hệ quả" · §11.5</span>
+        <h2>Hai mockup đợt a viết lại số theo luật mới.</h2>
+        <p class="lead">Đợt a (<code>components.html</code>, <code>app-shell.html</code>) vẽ trước khi có luật dấu kiểu Excel. PR này chỉ đổi <b>cách viết</b>, không đổi giá trị và không đổi bố cục. Đợt b–e đã vẽ theo luật mới từ đầu.</p>
+        <div class="pcard"><table class="law">
+          <thead><tr><th>Chỗ</th><th>Trước</th><th>Sau</th><th>Luật</th></tr></thead>
+          <tbody>
+            <tr><td>Số chủ đạo, dòng Tổng của bảng (cả hai file)</td><td class="v"><s>1,38 tỷ · 1,46 tỷ</s></td><td class="v">1.38 tỷ · 1.46 tỷ</td><td>"." cho phần lẻ (C14)</td></tr>
+            <tr><td>Mức đổi, Tỷ lệ hủy, Tỷ lệ chốt (cả hai file)</td><td class="v"><s>12,4% · 6,7% · 72,3%</s></td><td class="v">12.4% · 6.7% · 72.3%</td><td>N04</td></tr>
+            <tr><td>Phần trăm tròn</td><td class="v"><s>75,0%</s></td><td class="v">75%</td><td>không ghi ".0" (N05)</td></tr>
+            <tr><td>Dòng đọc dưới ô tiền (<code>components.html#fields</code>)</td><td class="v"><s>500.000.000 ₫ (500 tr)</s></td><td class="v">500,000,000 VNĐ (500 tr)</td><td>F05; "VNĐ" thay "₫"</td></tr>
+            <tr><td>Chữ gõ trong ô tiền (<code>components.html#fields</code>)</td><td class="v"><s>500tr</s></td><td class="v">500 tr</td><td>chữ mẫu của mục Ô nhập tiền (cả hai đều đọc được, I06)</td></tr>
+            <tr><td>Lịch hẹn xem trước (<code>app-shell.html</code>)</td><td class="v"><s>HĐ nộp · 1,8 tỷ</s></td><td class="v">HĐ nộp · 1.8 tỷ</td><td>C14</td></tr>
+            <tr><td>Nhãn mức đổi, bảng token (<code>components.html</code>)</td><td class="v"><s>2,1 điểm · 3,5% · 4,5% · 8,5%</s></td><td class="v">2.1 điểm · 3.5% · 4.5% · 8.5%</td><td>N04</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Số của hình minh họa đợt a (1.38 tỷ = 1.46 tỷ − 80 tr, 32 HĐ, 5.9%) giữ nguyên: đó là hình của vỏ app và bảng thành phần, không phải số của Tổng quan. Số chính thức của tháng 11 là số của đợt c (1.38 tỷ = 1.43 tỷ − 50 tr).</li>
+          <li>Cùng PR: câu dưới bảng "màn nào có gì" của <code>app-shell.html</code> viết "Lưu ý" thay "Lúc này" (anh đổi tên ở G3 đợt b; mục sổ ghi chú nhãn [đợt f]).</li>
+        </ul>
+      </section>
+
+      <!-- ================= Trống và lỗi ================= -->
+      <section class="sec" id="states">
+        <span class="kicker">Trạng thái trống và lỗi</span>
+        <h2>Trống và lỗi của thiết lập ban đầu và Cài đặt.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Có, vẽ kèm"</b>; không vẽ trạng thái "đang tải". Lỗi của ô tiền nằm ở mục Ô nhập tiền; file backup khác tiền tệ nằm ở mục Thiết lập ban đầu và Cài đặt.</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Thiết lập ban đầu: file không phải backup của app, hoặc hỏng (câu của 10b)</span><div data-spec="wiz" data-step="3" data-src="file" data-file="broken"></div></div>
+            <div><span class="state-l">Bấm Bắt đầu nhưng không ghi được: ở lại bước 3, chưa có gì thay đổi</span><div data-spec="wiz" data-step="3" data-fail="1"></div></div>
+            <div><span class="state-l">Cài đặt → Ngôn ngữ: còn thay đổi chưa ghi được nên chưa tải lại</span><div data-spec="pane" data-pane="lang" data-fail="1"></div></div>
+            <div><span class="state-l">Trống: sau khi chọn "Trắng", Tổng quan chỉ đường tới việc đầu tiên</span><div data-spec="empty"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Thoát giữa chừng không phải lỗi: lần mở sau vào lại bước 1 (lần đầu), hoặc mở dữ liệu cũ (thiết lập lại).</li>
+          <li>Các màn khác khi dữ liệu trắng dùng trạng thái trống đã vẽ ở đợt b–e.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Chờ anh quyết · G3 đợt f · phần G</span>
+        <h2>Mười bốn điểm của song ngữ và tiền tệ.</h2>
+        <p class="lead">Mỗi điểm có một phương án đề xuất và một phương án khác; ba điểm có hình hai phương án. Không hỏi lại điều anh đã chốt ở ADR-0018, golden và Q1–Q17: hai ngôn ngữ, bảy tiền tệ, tiền tệ chọn một lần, Tiếng Việt chỉ đi với VNĐ, thứ tự ba bước, dấu kiểu Excel, ký hiệu tiền, dạng gọn, đơn vị theo ngôn ngữ, bấm gợi ý mới điền, "1.500 tr" đưa hai cách viết, EUR theo luật của USD, dd/mm/yyyy, bảng thuật ngữ §11.6. Chín điểm của hộp hủy HĐ: <a href="huy-hd.html#ask">huy-hd.html</a>.</p>
+        <ol class="asks">
+          <li><b>Bố cục của thiết lập ban đầu?</b>Hình: <a href="#opt-wizard">hai bố cục</a>.<em>Đề xuất: A · mỗi bước một màn. Phương án khác: B · một trang, ba khối.</em></li>
+          <li><b>Bước ngôn ngữ chọn sẵn gì?</b>Tiêu đề và hai thẻ viết bằng cả hai ngôn ngữ.<em>Đề xuất: A · chọn sẵn theo ngôn ngữ của máy (máy tiếng Việt thì Tiếng Việt, còn lại English). Phương án khác: B · không chọn sẵn, bắt buộc bấm một thẻ.</em></li>
+          <li><b>Bước tiền tệ như mục "Thiết lập ban đầu"?</b>Bảy thẻ có ví dụ cách viết số; với Tiếng Việt sáu thẻ kia mờ kèm lý do; câu "chọn một lần" dưới tiêu đề; không có hộp hỏi lại.<em>Đề xuất: duyệt. Phương án khác: thêm một hộp hỏi lại khi rời bước tiền tệ.</em></li>
+          <li><b>Bước dữ liệu chọn sẵn gì?</b>Ba nguồn: Trắng, Dữ liệu mẫu, File backup.<em>Đề xuất: A · chọn sẵn "Dữ liệu mẫu" (như app hiện nay tự nạp dữ liệu giả lập). Phương án khác: B · chọn sẵn "Trắng".</em></li>
+          <li><b>File backup khác tiền tệ, và thiết lập lại?</b>Thông báo nêu hai tiền tệ, hai nút "Chọn file khác" và "Quay lại bước Tiền tệ"; khi tới từ Thiết lập lại có dải nhắc dữ liệu cũ còn nguyên và nút "Quay về dữ liệu đang dùng".<em>Đề xuất: duyệt. Phương án khác: thiết lập lại không có nút quay về (muốn bỏ thì đóng app).</em></li>
+          <li><b>Mục "Ngôn ngữ / Language" của Cài đặt?</b>Mục thứ tư, đứng đầu danh sách, icon quả địa cầu ô màu; hai thẻ; bấm là đổi ngay và tải lại giao diện.<em>Đề xuất: duyệt. Phương án khác: có nút "Áp dụng" riêng, bấm rồi mới tải lại.</em></li>
+          <li><b>Tiền tệ chỉ xem và nút "Thiết lập lại từ đầu" đặt ở đâu?</b>Hình: <a href="#opt-place">hai chỗ đặt</a>.<em>Đề xuất: A · trong mục Dữ liệu. Phương án khác: B · trong mục "Ngôn ngữ &amp; tiền tệ".</em></li>
+          <li><b>Hộp xác nhận thiết lập lại, và nhập backup khác tiền tệ?</b>Gõ chữ THIẾT LẬP LẠI; bốn điều của Q13; hộp "Không nhập được file" thêm ca khác tiền tệ kèm nút mở thiết lập lại.<em>Đề xuất: duyệt. Phương án khác: hộp xác nhận chỉ có hai nút, không bắt gõ chữ.</em></li>
+          <li><b>Ô nhập tiền: chữ mẫu, tên tiền tệ cuối ô, viên gợi ý?</b>Chín ca ở mục "Ô nhập tiền"; gợi ý là viên bấm được, ghi cả số tiền nó ứng với.<em>Đề xuất: duyệt. Phương án khác: gợi ý là một dòng chữ có gạch chân, không ghi số tiền.</em></li>
+          <li><b>Câu lỗi của ô tiền?</b>Bảng câu chữ ở cuối mục "Ô nhập tiền" (tiếng Việt, và bản dịch đề xuất).<em>Đề xuất: duyệt. Phương án khác: anh sửa câu nào thì nói câu đó.</em></li>
+          <li><b>Câu hướng dẫn của ô tiền EUR: vị trí và lúc hiện?</b>Hình: <a href="#opt-eur">hai cách</a>; câu chữ ở bảng đầu mục "EUR".<em>Đề xuất: A · luôn hiện dưới mọi ô tiền, thêm gợi ý khi gõ kiểu "1.500", và nói một lần ở bước tiền tệ. Phương án khác: B · chỉ hiện khi ô đang được gõ.</em></li>
+          <li><b>Màn tiếng Anh và danh sách chỗ rộng?</b>Hai màn ở mục "Tiếng Anh"; bảng chỗ rộng dùng tên tháng (dòng dưới tên màn, đầu bảng Lưu ý, dòng đọc dưới ô ngày) và chỗ hẹp giữ số.<em>Đề xuất: duyệt. Phương án khác: English cũng chỉ viết ngày bằng số ở mọi chỗ.</em></li>
+          <li><b>Đổi số của đợt a?</b>Bảng ở mục "Số đợt a": chỉ đổi cách viết, giữ giá trị của hình minh họa.<em>Đề xuất: duyệt. Phương án khác: đổi luôn giá trị cho bằng số của đợt c (1.43 tỷ − 50 tr, 33 HĐ, 3%).</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>File hỏng; không ghi được khi bấm Bắt đầu; chưa đổi được ngôn ngữ; Tổng quan khi dữ liệu trắng.<em>Đề xuất: duyệt.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt f · T-425 #1250 · chờ G3 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+    <script>
+      (() => {
+        const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const ic = (n) => `<svg class="ic"><use href="#i-${n}" /></svg>`;
+        const p2 = (n) => String(n).padStart(2, '0');
+        const grp = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        /* ---------- Currencies (ADR-0018 §2, §4): a fixed table, no Intl ---------- */
+        // dec: decimals of the main unit; sym before the number; tail after it (full form only)
+        const CUR = {
+          VND: { dec: 0, sym: '', tail: ' VNĐ', chip: 'VNĐ', vi: 'Việt Nam Đồng', en: 'Vietnamese Dong' },
+          USD: { dec: 2, sym: '$', tail: '', chip: 'USD', en: 'US Dollar' },
+          EUR: { dec: 2, sym: '€', tail: '', chip: 'EUR', en: 'Euro' },
+          GBP: { dec: 2, sym: '£', tail: '', chip: 'GBP', en: 'Pound Sterling' },
+          AUD: { dec: 2, sym: '$', tail: ' AUD', chip: 'AUD', en: 'Australian Dollar' },
+          CAD: { dec: 2, sym: '$', tail: ' CAD', chip: 'CAD', en: 'Canadian Dollar' },
+          SGD: { dec: 2, sym: '$', tail: ' SGD', chip: 'SGD', en: 'Singapore Dollar' },
+        };
+        const minorOf = (cur) => (CUR[cur].dec ? 100 : 1);
+        const CAP = 100e9; // 100 Billions of the main unit, every currency
+        // Amounts are stored in the smallest unit: đồng, or cents
+
+        /* ---------- Showing a number (golden so-va-tien-te.md §2–§5) ---------- */
+        function full(v, cur) {
+          const c = CUR[cur], a = Math.abs(v);
+          return `${v < 0 ? '-' : ''}${c.sym}${c.dec ? `${grp(Math.floor(a / 100))}.${p2(a % 100)}` : grp(a)}${c.tail}`;
+        }
+        const TIERS = { vi: [[1e3, 'K'], [1e6, ' tr'], [1e9, ' tỷ']], en: [[1e3, 'K'], [1e6, ' Mil'], [1e9, ' Bil'], [1e12, 'T']] };
+        // Short form: two decimals at most, half away from zero, no trailing zero; a number that rounds to
+        // 1,000 of a tier moves up one tier; under 1,000 main units the full form. minus: "-" or "−".
+        function compact(v, cur, lang, minus = '-') {
+          const c = CUR[cur], unit = BigInt(minorOf(cur)), a = BigInt(Math.abs(v)), tiers = TIERS[lang];
+          if (a < 1000n * unit) return full(v, cur).replace(/^-/, minus);
+          let k = tiers.length - 1;
+          while (k > 0 && a < BigInt(tiers[k][0]) * unit) k--;
+          const q100 = (i) => { const d = BigInt(tiers[i][0]) * unit; return (a * 200n + d) / (2n * d); };
+          let q = q100(k);
+          if (q >= 100000n && k < tiers.length - 1) q = q100(++k);
+          const frac = (q % 100n).toString().padStart(2, '0').replace(/0+$/, '');
+          return `${v < 0 ? minus : ''}${c.sym}${grp(q / 100n)}${frac ? `.${frac}` : ''}${tiers[k][1]}`;
+        }
+        const delta = (v, cur, lang) => (v ? `${v > 0 ? '+' : ''}${compact(v, cur, lang, '−')}` : full(0, cur));
+        const count = (n) => grp(n);
+        function pct(x) {
+          const r = Math.round(Math.abs(x) * 10) * Math.sign(x), i = Math.trunc(Math.abs(r) / 10), f = Math.abs(r) % 10;
+          return `${r < 0 ? '-' : ''}${grp(i)}${f ? `.${f}` : ''}%`;
+        }
+
+        /* ---------- Reading a money field (ADR-0018 §5; golden §6) ---------- */
+        // One rule for the two marks: "," groups thousands, "." is the decimal mark. A way of typing the rule
+        // does not read is refused; when another reading gives a valid amount, that way of writing is offered
+        // (sugg), never applied. Returns { v, over } or { err, sugg, why }.
+        const UNITS = { vi: { nghìn: 1e3, nghin: 1e3, ngàn: 1e3, ngan: 1e3, k: 1e3, triệu: 1e6, trieu: 1e6, tr: 1e6, tỷ: 1e9, tỉ: 1e9, ty: 1e9, ti: 1e9 }, en: { k: 1e3, mil: 1e6, bil: 1e9 } };
+        const UNIT_NAME = { vi: { 1e3: 'K', 1e6: ' tr', 1e9: ' tỷ' }, en: { 1e3: 'K', 1e6: ' Mil', 1e9: ' Bil' } };
+        const STRICT = /^(?:[1-9]\d{0,2}(?:,\d{3})+|\d+)(?:\.\d+)?$/;
+        const reEsc = (s) => s.replace(/[$.*+?^()[\]{}|\\]/g, '\\$&');
+        function parse(raw, cur, lang) {
+          const c = CUR[cur];
+          let s = String(raw).trim().replace(/\s+/g, ' '), pre = '', post = '';
+          if (!s) return { err: 'empty' };
+          // the mark of the currency: VNĐ after the number; the others before it, or the ISO code on either side
+          if (cur === 'VND') {
+            const m = /\s?(vnđ|vnd|₫|đồng|đ)$/i.exec(s);
+            if (m) { post = m[0]; s = s.slice(0, m.index); }
+          } else {
+            let m = new RegExp(`^(?:${reEsc(c.sym)}|${cur})\\s?`, 'i').exec(s);
+            if (m) { pre = m[0]; s = s.slice(m[0].length); }
+            m = new RegExp(`\\s?${cur}$`, 'i').exec(s);
+            if (m) { post = m[0]; s = s.slice(0, m.index); }
+          }
+          if (/[$€£₫]/.test(s)) return { err: 'format' }; // the mark of another currency
+          if (s.startsWith('-')) return { err: 'negative' };
+          const ok = (t) => { const r = parse(t, cur, lang); return r.err ? [] : [t]; };
+          // "1tr5", "1 tỷ 2": the way it is said, Vietnamese only
+          const said = /^(\d+)\s*([a-zà-ỹ]+)\s*(\d+)$/i.exec(s);
+          const m = said ? [s, `${said[1]}.${said[3]}`, '', said[2]] : /^([\d.,\s]*\d)(\s*)([a-zà-ỹ]+)?$/i.exec(s);
+          if (!m) return { err: 'format' };
+          const num = m[1], gap = m[2], word = m[3] || '', u = word.toLowerCase();
+          let mult = 0;
+          if (word) {
+            mult = UNITS[lang][u];
+            if (said && lang !== 'vi') return { err: 'format' };
+            if (!mult) {
+              const other = UNITS[lang === 'vi' ? 'en' : 'vi'][u];
+              return other && !said ? { err: 'format', why: 'unit', sugg: ok(`${pre}${num}${UNIT_NAME[lang][other]}${post}`) } : { err: 'format' };
+            }
+          }
+          if (!STRICT.test(num)) {
+            // readings the app used to accept: groups by spaces or by dots, a comma before the decimals
+            let cand = '';
+            if (/^\d{1,3}(?: \d{3})+$/.test(num)) cand = num.replace(/ /g, ',');
+            else if (/^\d{1,3}(?:\.\d{3}){2,}$/.test(num)) cand = num.replace(/\./g, ',');
+            else if (/^\d{1,3}(?:\.\d{3})*,\d+$/.test(num)) cand = num.replace(/[.,]/g, (ch) => (ch === '.' ? ',' : '.'));
+            return { err: 'format', why: 'mark', sugg: cand ? ok(`${pre}${cand}${gap}${word}${post}`) : [] };
+          }
+          const [ip, fp = ''] = num.replace(/,/g, '').split('.');
+          const oneGroup = /^\d{1,3}\.\d{3}$/.test(num);
+          if (cur === 'VND' && !mult && num.includes('.')) return { err: 'fraction', sugg: oneGroup ? ok(`${pre}${num.replace('.', ',')}${post}`) : [] };
+          if (cur === 'VND' && mult && !said && fp.length === 3 && +ip !== 0) {
+            // "1.500 tr": today 1,500 tr, by the new rule 1.5 tr: both are offered, neither is taken
+            const short = fp.replace(/0+$/, '');
+            return { err: 'ambiguous', sugg: [`${pre}${num.split('.')[0]}${short ? `.${short}` : ''}${gap}${word}${post}`, `${pre}${num.replace('.', ',')}${gap}${word}${post}`] };
+          }
+          const scale = 10n ** BigInt(fp.length), minor = BigInt(ip + fp) * BigInt(mult || 1) * BigInt(minorOf(cur));
+          if (minor % scale) return { err: 'fraction', sugg: !mult && oneGroup ? ok(`${pre}${num.replace('.', ',')}${post}`) : [] };
+          const v = minor / scale;
+          if (v > BigInt(Number.MAX_SAFE_INTEGER)) return { err: 'too-large' };
+          return { v: Number(v), over: v > BigInt(CAP) * BigInt(minorOf(cur)) };
+        }
+
+        /* ---------- Words: the ones this page shows, in the two languages (terms of spec §11.6) ---------- */
+        const TXT = {
+          vi: {
+            nav: { overview: 'Tổng quan', appointments: 'Lịch hẹn', customers: 'Khách hàng', forecast: 'Forecast', reports: 'Báo cáo', team: 'Team & nhân sự', settings: 'Cài đặt' },
+            sub: { overview: 'Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ', appointments: 'Toàn bộ', customers: '884 KH đang mở · 65 đã đóng · Toàn bộ', forecast: 'Hôm nay Thứ Ba 10/11/2026 · Toàn bộ', reports: 'Tháng 11/2026 · Toàn bộ', team: '3 team · 3 TL · 27 RM · 3 người hỗ trợ', settings: 'Ngôn ngữ / Language · Dữ liệu · AI · Thùng rác' },
+            act: { overview: 'Lịch hẹn', appointments: 'Lịch hẹn', customers: 'Khách hàng', forecast: 'Xuất Excel', reports: 'Xuất Excel', team: 'Team', settings: '' },
+            manage: 'Quản lý', saved: 'Đã lưu 13:20', search: 'Tìm khách hàng, RM, lệnh', in25: 'còn 25 phút', masking: 'Đang che tên', palette: 'Tìm KH, RM, màn hay lệnh…',
+            later: 'Màn này đã duyệt ở các đợt trước. Trang này chỉ vẽ Tổng quan, Cài đặt và thiết lập ban đầu.',
+            today: 'Hôm nay', todayLong: 'Thứ Ba 10/11/2026', all: 'Toàn bộ', appts: '5 lịch', ecs: 'Case size dự kiến',
+            sales: 'Doanh số', issuedFyp: 'FYP phát hành', cancelledFyp: 'FYP hủy', policies: 'Tổng số HĐ', issued: 'phát hành', cancelled: 'hủy', close: 'Tỷ lệ chốt', closeEq: (i, r) => `${i} HĐ phát hành ÷ ${r} RF`, cancelRate: 'Tỷ lệ hủy',
+            byTeam: 'Theo team', team: 'Team', polIssued: 'HĐ phát hành', polCancelled: 'HĐ hủy', total: 'Tổng', recent: 'HĐ gần đây', recentNote: 'minh họa dạng đầy đủ của số tiền',
+            date: 'Ngày', customer: 'Khách hàng', status: 'Trạng thái', st: { iss: 'Đã phát hành', can: 'Đã hủy', sub: 'Đã nộp' },
+            ovNote: 'Một phần của Tổng quan đã duyệt (đợt c), đủ để thấy chữ và số ở ngôn ngữ và tiền tệ này. Nút Lịch hẹn mở hộp có ô tiền gõ thử được.',
+          },
+          en: {
+            nav: { overview: 'Overview', appointments: 'Appointments', customers: 'Customers', forecast: 'Forecast', reports: 'Reports', team: 'Team management', settings: 'Settings' },
+            sub: { overview: 'November 2026 · 1 – 10 Nov (MTD) · All', appointments: 'All', customers: '884 open customers · 65 closed · All', forecast: 'Today Tue 10 Nov 2026 · All', reports: 'November 2026 · All', team: '3 teams · 3 TL · 27 RM · 3 support staff', settings: 'Ngôn ngữ / Language · Data · AI · Trash' },
+            act: { overview: 'Appointment', appointments: 'Appointment', customers: 'Customer', forecast: 'Export to Excel', reports: 'Export to Excel', team: 'Team', settings: '' },
+            manage: 'Manage', saved: 'Saved 13:20', search: 'Find customers, RMs, commands', in25: 'in 25 min', masking: 'Names hidden', palette: 'Find a customer, an RM, a screen or a command…',
+            later: 'Approved in earlier rounds. This page draws Overview, Settings and Setup only.',
+            today: 'Today', todayLong: 'Tue 10 Nov 2026', all: 'All', appts: '5 appointments', ecs: 'Expected case size',
+            sales: 'Total FYP', issuedFyp: 'Issued FYP', cancelledFyp: 'Cancelled FYP', policies: 'Total policies', issued: 'issued', cancelled: 'cancelled', close: 'Close rate', closeEq: (i, r) => `${i} policies issued ÷ ${r} referrals`, cancelRate: 'Cancellation rate',
+            byTeam: 'By team', team: 'Team', polIssued: 'Policies issued', polCancelled: 'Policies cancelled', total: 'Total', recent: 'Recent policies', recentNote: 'shows amounts in full',
+            date: 'Date', customer: 'Customer', status: 'Status', st: { iss: 'Issued', can: 'Cancelled', sub: 'Submitted' },
+            ovNote: 'A part of the approved Overview (round c), enough to read the words and the numbers in this language and currency. The Appointment button opens a dialog with a money field you can type in.',
+          },
+        };
+        const NAV_ICON = { appointments: 'cal', customers: 'people', forecast: 'forecast', reports: 'report', team: 'team' };
+
+        /* ---------- Sample data: the VND set of rounds c and e; one English set for the six cent currencies ---------- */
+        // teams: name, colour, icon, [issued, cancelled, FYP issued, FYP cancelled] of 01/11 – 10/11; rf: "chuyển RF"
+        const DATA = {
+          VND: { rm: 'Hoàng Văn Tùng', teams: [['Sao Mai', 'accent', 'star', [15, 1, 670e6, 50e6]], ['Bình Minh', 'warn', 'sunrise', [11, 0, 450e6, 0]], ['Hừng Đông', null, 'team', [7, 0, 310e6, 0]]], rf: 78,
+            now: ['Trần Minh Huệ', 'T. M. H.', 30e6], recent: [['05/11/2026', 'Đỗ Quang Vinh', 'Đ. Q. V.', 'iss', '', 60e6], ['22/10/2026', 'Trần Văn Hạnh', 'T. V. H.', 'can', '09/11/2026', 50e6], ['06/11/2026', 'Đỗ Quang Vinh', 'Đ. Q. V.', 'sub', '', 40e6]] },
+          CENT: { rm: 'James Carter', teams: [['Northstar', 'accent', 'star', [15, 1, 8642050, 725000]], ['Harbour', 'warn', 'sunrise', [11, 0, 6130000, 0]], ['Summit', null, 'team', [7, 0, 4413025, 0]]], rf: 78,
+            now: ['Emily Clarke', 'E. C.', 250000], recent: [['05/11/2026', 'Emily Clarke', 'E. C.', 'iss', '', 840000], ['22/10/2026', 'Daniel Hughes', 'D. H.', 'can', '09/11/2026', 725000], ['06/11/2026', 'Sophie Turner', 'S. T.', 'sub', '', 512550]] },
+        };
+        const dataOf = (cur) => DATA[cur === 'VND' ? 'VND' : 'CENT'];
+        const kh = (name, short) => `<span class="kh" data-kh="${short}">${esc(name)}</span>`;
+        const tmark = (color, icon) => `<span class="tmark" style="--c: ${color ? `var(--${color})` : 'var(--text-2)'}">${ic(icon)}</span>`;
+
+        /* ---------- A money field: sample text, the currency at the end, what the app reads under it ---------- */
+        const MSG = {
+          vi: { empty: 'Chưa nhập số tiền.', negative: 'Số tiền không được âm.', format: () => 'Chưa đọc được số tiền. Gõ như 1,500,000 hoặc 1.5 tr.', fraction: () => 'Số tiền VNĐ không có số lẻ.', 'too-large': 'Số tiền quá lớn.', over: () => 'Tối đa 100 tỷ đồng.', mark: 'Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ.', unit: 'Giao diện tiếng Việt dùng đơn vị K, tr, tỷ.', ambiguous: (t) => `"${t}" đọc được theo hai cách.`, did: 'Có phải là', pick: 'Chọn một cách viết', hint: () => 'vd. 500 tr · 1.5 tỷ' },
+          en: { empty: 'Enter an amount.', negative: 'Amounts cannot be negative.', format: (cur) => (cur === 'VND' ? 'Could not read this amount. Type it like 1,500,000 or 1.5 Mil.' : 'Could not read this amount. Type it like 1,250.50 or 250K.'), fraction: (cur) => (cur === 'VND' ? 'VNĐ amounts have no decimals.' : 'Amounts stop at the cent: two decimals at most.'), 'too-large': 'This amount is too large.', over: (cur) => (cur === 'VND' ? 'The maximum is 100 Bil VNĐ.' : `The maximum is ${CUR[cur].sym}100 Bil.`), mark: 'Use "," for thousands and "." for decimals.', unit: 'The English interface uses K, Mil and Bil.', ambiguous: (t) => `"${t}" can be read two ways.`, did: 'Did you mean', pick: 'Pick one', hint: (cur) => (cur === 'VND' ? 'e.g. 500 Mil · 1.5 Bil' : 'e.g. 1,250.50 · 250K') },
+        };
+        const EUR_TIP = `<div class="eur-tip">${ic('info')}<span>"," separates thousands, "." is the decimal point: <b>1,500.00</b></span></div>`;
+        const chip = (t, cur, lang) => `<button class="sg" data-fill="${esc(t)}">${esc(t)} <small>= ${full(parse(t, cur, lang).v, cur)}</small></button>`;
+        // What stands under the field for what is typed
+        function moneyOut(text, cur, lang) {
+          const M = MSG[lang], r = parse(text, cur, lang);
+          if (r.err === 'empty') return '';
+          if (!r.err) {
+            const a = full(r.v, cur), b = compact(r.v, cur, lang);
+            // a euro user who types "1.500" may mean one thousand five hundred: say what was read, offer the other
+            const euro = cur === 'EUR' && /^\D*\d{1,3}\.\d{3}\D*$/.test(text.trim()) && !/[a-z]{2,}/i.test(text.replace(/eur/i, ''));
+            const alt = euro ? text.trim().replace('.', ',') : '';
+            return `<div class="read${r.over ? ' err' : ''}"><b>${a}</b>${a === b ? '' : ` (${b})`}${r.over ? ` · ${M.over(cur)}` : ''}</div>${alt && !parse(alt, cur, lang).err ? `<div class="sgs"><span>If you meant ${full(parse(alt, cur, lang).v, cur)}:</span>${chip(alt, cur, lang)}</div>` : ''}`;
+          }
+          const sugg = r.sugg || [];
+          const msg = r.err === 'ambiguous' ? M.ambiguous(text.trim()) : sugg.length && r.why ? M[r.why] : typeof M[r.err] === 'function' ? M[r.err](cur) : M[r.err];
+          return `<div class="read err">${esc(msg)}</div>${sugg.length ? `<div class="sgs"><span>${r.err === 'ambiguous' ? M.pick : M.did}:</span>${sugg.map((t) => chip(t, cur, lang)).join('')}</div>` : ''}`;
+        }
+        // o: label, text, live (a real field), focus (drawn focused), tip: 'always' | 'focus' (the EUR line)
+        function moneyField(cur, lang, o = {}) {
+          const text = o.text || '', r = parse(text, cur, lang), bad = text && (r.err || r.over);
+          const tip = cur === 'EUR' && (o.tip === 'always' || (o.tip === 'focus' && o.focus)) ? EUR_TIP : '';
+          return `<label>${esc(o.label)}${o.opt ? ` <span class="opt-n">${esc(o.opt)}</span>` : ''}</label><label class="input${bad ? ' error' : ''}${o.focus ? ' focus' : ''}"><input type="text" value="${esc(text)}" placeholder="${MSG[lang].hint(cur)}" data-money data-cur="${cur}" data-lang="${lang}" data-tip="${o.tip || ''}" aria-label="${esc(o.label)}" autocomplete="off" spellcheck="false" ${o.live ? '' : 'readonly tabindex="-1"'} /><span class="unit">${CUR[cur].chip}</span></label>${tip}<div class="money-out" data-money-out>${moneyOut(text, cur, lang)}</div>`;
+        }
+
+        /* ---------- Tổng quan (a cut), in a language and a currency ---------- */
+        function overviewHtml(S) {
+          const L = S.lang, t = TXT[L], d = dataOf(S.cur), sum = (k) => d.teams.reduce((a, x) => a + x[3][k], 0);
+          const iss = sum(0), can = sum(1), fi = sum(2), fc = sum(3), money = (v) => compact(v, S.cur, L);
+          if (S.empty) return emptyHtml(L);
+          const stat = (cls, lbl, val, eq) => `<section class="card stat ${cls}"><span class="lbl">${lbl}</span><div class="val num">${val}</div><p class="eq">${eq}</p></section>`;
+          const rows = d.teams.map(([name, color, icon, [i, c, f, g]]) => `<tr><td>${tmark(color, icon)}${esc(name)}</td><td>${money(f - g)}</td><td>${i}</td><td>${c}</td><td>${pct((c / i) * 100)}</td></tr>`).join('');
+          const st = (k, when) => `<span class="st ${k === 'iss' ? 's-iss' : k === 'can' ? 's-bad' : 's-sub'}">${t.st[k]}${when ? ` ${when}` : ''}</span>`;
+          return `<div class="ov">
+            ${stat('lead-n', t.sales, money(fi - fc), `${t.issuedFyp} ${money(fi)} − ${t.cancelledFyp} ${money(fc)}`)}
+            ${stat('', t.policies, count(iss - can), `${iss} ${t.issued} − ${can} ${t.cancelled}`)}
+            ${stat('', t.close, pct((iss / d.rf) * 100), t.closeEq(iss, d.rf))}
+            ${stat('', t.cancelRate, pct((can / iss) * 100), `${can} ${t.cancelled} ÷ ${iss} ${t.issued}`)}
+            <section class="card half"><div class="card-head"><h3>${t.byTeam}</h3></div><table class="tbl"><thead><tr><th>${t.team}</th><th>${t.sales}</th><th>${t.polIssued}</th><th>${t.polCancelled}</th><th>${t.cancelRate}</th></tr></thead><tbody>${rows}<tr class="total"><td>${t.total}</td><td>${money(fi - fc)}</td><td>${iss}</td><td>${can}</td><td>${pct((can / iss) * 100)}</td></tr></tbody></table></section>
+            <section class="card half"><div class="card-head"><h3>${t.recent}</h3><span class="meta">${t.recentNote}</span></div><table class="tbl"><thead><tr><th>${t.date}</th><th class="l">${t.customer}</th><th class="l">${t.status}</th><th>FYP</th></tr></thead><tbody>${d.recent.map(([day, name, short, k, when, v]) => `<tr><td class="num">${day}</td><td class="l">${kh(name, short)}</td><td class="l">${st(k, when)}</td><td class="num">${full(v, S.cur)}</td></tr>`).join('')}</tbody></table></section>
+            <p class="view-note wide">${t.ovNote}</p></div>`;
+        }
+        const emptyHtml = (L) => (L === 'vi'
+          ? `<section class="card flat"><div class="empty"><span class="mark">${ic('team')}</span><b>Chưa có dữ liệu</b><p>Bộ dữ liệu này đang trắng. Bắt đầu ở Team &amp; nhân sự: tạo team và RM đầu tiên, rồi thêm khách hàng và lịch hẹn. Số ở Tổng quan hiện lên từ buổi hẹn đầu tiên.</p><div class="acts"><button class="btn primary" data-jump="team">${ic('plus')}Tạo team đầu tiên</button><button class="btn quiet" data-jump="settings">Nạp dữ liệu mẫu ở Cài đặt</button></div></div></section>`
+          : `<section class="card flat"><div class="empty"><span class="mark">${ic('team')}</span><b>No data yet</b><p>This database is empty. Start in Team management: create your first team and RM, then add customers and appointments. Overview fills in from the first appointment.</p><div class="acts"><button class="btn primary" data-jump="team">${ic('plus')}Create the first team</button><button class="btn quiet" data-jump="settings">Load sample data in Settings</button></div></div></section>`);
+
+        /* ---------- Cài đặt ---------- */
+        // place: 'a' currency and "Thiết lập lại" in Dữ liệu (proposed) · 'b' in "Ngôn ngữ & tiền tệ"
+        const SET = {
+          vi: { lang: 'Ngôn ngữ / Language', langB: 'Ngôn ngữ & tiền tệ', data: 'Dữ liệu', ai: 'AI', trash: 'Thùng rác', vi: 'Giao diện tiếng Việt. Chỉ dùng được khi tiền tệ của dữ liệu là VNĐ.', en: 'English interface. Works with every currency.', now: 'đang dùng',
+            how: 'Bấm một thẻ là đổi ngay: app ghi xong các thay đổi đang chờ rồi tải lại giao diện. Dữ liệu không đổi. Lựa chọn này nhớ theo máy, không nằm trong file backup.',
+            off: (c) => `Tiếng Việt chỉ đi với VNĐ. Dữ liệu này dùng ${c}.`, curOf: 'Tiền tệ của dữ liệu', curSee: 'chỉ xem · chi tiết ở mục Dữ liệu', curHelp: 'Chọn một lần lúc thiết lập ban đầu, không đổi được, và app không quy đổi tỷ giá. Muốn dùng tiền tệ khác: Thiết lập lại từ đầu.', writes: 'Cách viết',
+            file: 'File dữ liệu', where: 'Vị trí', last: 'Lưu lần cuối', holds: 'Nội dung', holdsV: '3 team · 33 nhân sự · 949 KH', backup: 'Xuất / nhập backup', exp: 'Xuất backup', expD: 'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào', imp: 'Nhập backup', impD: (c) => `Thay toàn bộ dữ liệu hiện tại bằng dữ liệu trong file. File phải cùng tiền tệ ${c}. App tự backup trước.`, pick: 'Chọn file…',
+            danger: 'Thay toàn bộ dữ liệu', reload: 'Nạp lại dữ liệu giả lập', reloadD: (c) => `Xóa dữ liệu hiện tại, tạo lại bộ mẫu của tiền tệ ${c}. App tự backup trước.`, reloadB: 'Nạp lại…', reset: 'Thiết lập lại từ đầu', resetD: 'Bộ dữ liệu mới hoàn toàn; chọn lại ngôn ngữ và tiền tệ. App tự backup trước; dữ liệu đang dùng còn nguyên cho tới khi thiết lập xong.', resetB: 'Thiết lập lại…',
+            kept: (f) => `Giữ bố cục <code>${f}</code> đã duyệt.`, fail: ['Chưa đổi được ngôn ngữ', 'Còn thay đổi chưa ghi được vào file dữ liệu, nên app chưa tải lại giao diện. Thử lại khi chân thanh bên báo "Đã lưu".'] },
+          en: { lang: 'Ngôn ngữ / Language', langB: 'Language & currency', data: 'Data', ai: 'AI', trash: 'Trash', vi: 'Vietnamese interface. Available only when the data currency is VNĐ.', en: 'English interface. Works with every currency.', now: 'in use',
+            how: 'A click switches at once: the app finishes saving, then reloads the interface. Your data does not change. This choice is kept on this computer, not in the backup file.',
+            off: (c) => `Vietnamese is available only with VNĐ. This data uses ${c}.`, curOf: 'Currency of this data', curSee: 'view only · details under Data', curHelp: 'Chosen once at setup. It cannot be changed, and the app does not convert between currencies. To use another currency: Start over.', writes: 'Written as',
+            file: 'Data file', where: 'Location', last: 'Last saved', holds: 'Contents', holdsV: '3 teams · 33 staff · 949 customers', backup: 'Export / import backup', exp: 'Export backup', expD: 'Writes all data (including records in Trash) to', imp: 'Import backup', impD: (c) => `Replaces all current data with the data in the file. The file must use ${c}. The app backs up first.`, pick: 'Choose file…',
+            danger: 'Replace all data', reload: 'Reload sample data', reloadD: (c) => `Deletes the current data and creates the ${c} sample set again. The app backs up first.`, reloadB: 'Reload…', reset: 'Start over', resetD: 'A brand-new database; choose language and currency again. The app backs up first; your current data stays until setup is finished.', resetB: 'Start over…',
+            kept: (f) => `Keeps the approved layout of <code>${f}</code>.`, fail: ['Could not switch language', 'Some changes are not saved to the data file yet, so the interface was not reloaded. Try again when the sidebar says "Saved".'] },
+        };
+        const egOf = (cur, L) => (cur === 'VND' ? `${full(3000000, cur)} · ${compact(1900000000, cur, L)}` : `${full(125050, cur)} · ${compact(25000000, cur, L)}`);
+        const curName = (cur, L) => (cur === 'VND' ? (L === 'vi' ? CUR.VND.vi : CUR.VND.en) : CUR[cur].en);
+        function paneHtml(S, o = {}) {
+          const L = S.lang, t = SET[L], place = o.place || 'a', cur = S.cur, chipC = CUR[cur].chip, live = !!o.live;
+          const off = cur !== 'VND';
+          const curCard = `<section class="card flat"><h4>${t.curOf}</h4><div class="arow"><span class="big">${chipC}</span><div><b>${curName(cur, L)} ${ic('lock')}</b>${t.writes}: <span class="num">${egOf(cur, L)}</span></div></div><p class="help" style="margin: 8px 0 0">${t.curHelp}</p></section>`;
+          const resetRow = `<div class="arow"><div><b>${t.reset}</b>${t.resetD}</div><button class="btn danger sm" data-run-reset>${t.resetB}</button></div>`;
+          if (S.pane === 'data') {
+            return `<h3>${t.data}</h3>
+              <section class="card flat"><h4>${t.file}</h4><div class="kvs"><span>${t.where}</span><span><span class="path k-win">Project2C-data\\project2c.db</span><span class="path k-mac">~/Library/Application Support/com.heritas.lcrm/project2c.db</span></span><span>${t.last}</span><span class="num">10/11/2026 13:20:05 · 4.8 MB</span><span>${t.holds}</span><span class="num">${t.holdsV}</span></div></section>
+              ${place === 'a' ? curCard : ''}
+              <section class="card flat"><h4>${t.backup}</h4><div class="arow"><div><b>${t.exp}</b>${t.expD} <span class="path">exports\\</span></div><button class="btn sm">${t.exp}</button></div><div class="arow"><div><b>${t.imp}</b>${t.impD(chipC)}</div><button class="btn sm" data-run-import>${t.pick}</button></div></section>
+              <section class="card flat risky"><h4>${t.danger}</h4><div class="arow"><div><b>${t.reload}</b>${t.reloadD(chipC)}</div><button class="btn danger sm">${t.reloadB}</button></div>${place === 'a' ? resetRow : ''}</section>`;
+          }
+          if (S.pane === 'ai' || S.pane === 'trash') return `<h3>${t[S.pane]}</h3><div class="later" style="min-height: 220px">${ic(S.pane === 'ai' ? 'spark' : 'trash')}<p>${t.kept(S.pane === 'ai' ? 'ai.html' : 'trash.html')}</p></div>`;
+          const card = (k, name) => { const on = L === k, dead = k === 'vi' && off; return `<${live && !dead ? `button data-set-lang="${k}"` : 'div'} class="pick${on ? ' on' : ''}${dead ? ' off' : ''}"><b>${name}${on ? ` <small>${t.now}</small>` : ''}</b><span>${dead ? t.off(chipC) : t[k]}</span></${live && !dead ? 'button' : 'div'}>`; };
+          return `<h3>${place === 'b' ? t.langB : t.lang}</h3>
+            ${o.fail ? `<div class="alert">${ic('alert')}<b>${t.fail[0]}</b><span>${t.fail[1]}</span></div>` : ''}
+            <div class="picks">${card('vi', 'Tiếng Việt')}${card('en', 'English')}</div>
+            <p class="help" style="margin: 0; max-width: 620px">${t.how}</p>
+            ${place === 'b' ? `${curCard}<section class="card flat risky"><h4>${t.danger}</h4>${resetRow}</section>` : `<section class="card flat"><div class="arow"><div><b>${t.curOf}: ${chipC}</b>${t.curSee}</div>${ic('lock')}</div></section>`}`;
+        }
+        function settingsHtml(S, o = {}) {
+          const t = SET[S.lang], item = (k, c, icon, name) => `<button class="set-i${S.pane === k ? ' on' : ''}" data-pane-go="${k}"><span class="sq" style="--c: var(--${c})">${ic(icon)}</span>${name}${k === 'lang' ? '<span class="tag rec">mới</span>' : ''}</button>`;
+          return `<div class="set"><nav class="card flat set-nav" aria-label="${TXT[S.lang].nav.settings}">${item('lang', 'submitted', 'globe', o.place === 'b' ? t.langB : t.lang)}${item('data', 'info', 'db', t.data)}${item('ai', 'n2', 'spark', t.ai)}${item('trash', 'n4', 'trash', t.trash)}</nav><div class="set-pane">${paneHtml(S, o)}</div></div>`;
+        }
+
+        /* ---------- Thiết lập ban đầu ---------- */
+        // W: step 1–3, lang, cur ('' = not chosen yet), src: empty | demo | file, file: '' | other | good | broken, reset, fail
+        const WIZ = {
+          vi: { steps: ['Ngôn ngữ', 'Tiền tệ', 'Dữ liệu'], h2: 'Tiền tệ của dữ liệu', s2: 'Chọn một lần. Sau này không đổi được: muốn dùng tiền tệ khác thì Thiết lập lại từ đầu, với bộ dữ liệu mới hoàn toàn. App không quy đổi tỷ giá; tiền tệ chỉ quyết định cách hiện và cách nhập số.', off: 'Sáu tiền tệ còn lại chỉ đi với giao diện English. Muốn chọn: quay lại bước 1 và chọn English.',
+            h3: 'Bắt đầu với dữ liệu nào?', s3: 'Bước này đổi được về sau: Cài đặt → Dữ liệu có Nhập backup và Nạp lại dữ liệu giả lập.', src: { empty: ['Trắng', 'Chưa có team, RM, khách hàng nào. Dành cho dữ liệu thật.'], demo: ['Dữ liệu mẫu', '3 team, 27 RM, khoảng 12 tháng dữ liệu giả lập để xem thử mọi màn.'], file: ['File backup', (c) => `Mở tiếp dữ liệu đã xuất từ máy khác. File phải cùng tiền tệ ${c}.`] },
+            back: 'Quay lại', next: 'Tiếp tục', done: 'Bắt đầu', none: 'Chưa có gì được ghi cho tới khi bấm Bắt đầu.', pick: 'Chọn file…', again: 'Chọn file khác', toCur: 'Quay lại bước Tiền tệ',
+            other: (a, b) => [`File dùng tiền tệ ${a}, khác tiền tệ đang chọn (${b})`, `Một bộ dữ liệu chỉ có một tiền tệ và app không quy đổi tỷ giá. Chọn file khác, hoặc quay lại bước Tiền tệ để chọn ${a}${a !== 'VNĐ' ? ' (cần giao diện English)' : ''}.`],
+            broken: ['File hỏng hoặc không phải backup của app', 'Chỉ nhận file .p2cbackup do Heritas L-CRM xuất. Chưa có gì thay đổi.'], good: ['Xuất lúc', 'Tiền tệ', 'Trong file'], goodV: '3 team · 33 nhân sự · 949 KH',
+            reset: ['Đang thiết lập lại từ đầu', 'Dữ liệu đang dùng còn nguyên cho tới khi bấm Bắt đầu, và đã có bản sao lưu ở'], home: 'Quay về dữ liệu đang dùng', fail: ['Chưa tạo được bộ dữ liệu', 'Không ghi được vào thư mục dữ liệu (ổ đĩa đầy, hoặc thư mục chỉ đọc). Chưa có gì thay đổi; bấm Bắt đầu để thử lại.'] },
+          en: { steps: ['Language', 'Currency', 'Data'], h2: 'Currency of your data', s2: 'Choose once. It cannot be changed later: to use another currency you start over, with a brand-new database. The app does not convert between currencies; the currency only decides how amounts are shown and typed.', off: '',
+            h3: 'Which data do you want to start with?', s3: 'You can change this later: Settings → Data has Import backup and Reload sample data.', src: { empty: ['Start empty', 'No teams, RMs or customers yet. For your real data.'], demo: ['Sample data', '3 teams, 27 RMs and about 12 months of made-up data to explore every screen.'], file: ['From a backup file', (c) => `Continue with data exported from another computer. The file must use ${c}.`] },
+            back: 'Back', next: 'Continue', done: 'Get started', none: 'Nothing is written until you choose Get started.', pick: 'Choose file…', again: 'Choose another file', toCur: 'Back to Currency',
+            other: (a, b) => [`The file uses ${a}, not the currency you chose (${b})`, `A database has one currency and the app does not convert. Choose another file, or go back to Currency and choose ${a}.`],
+            broken: ['The file is damaged or is not a backup of this app', 'Only .p2cbackup files exported by Heritas L-CRM can be used. Nothing has changed.'], good: ['Exported', 'Currency', 'In the file'], goodV: '3 teams · 33 staff · 949 customers',
+            reset: ['Starting over', 'Your current data stays as it is until you choose Get started; a backup was saved to'], home: 'Back to my current data', fail: ['Could not create the database', 'The data folder could not be written (the disk is full, or the folder is read-only). Nothing has changed; choose Get started to try again.'] },
+        };
+        const BRAND = '<div class="brand" role="img" aria-label="Heritas L-CRM"><img class="b-tree b-out" src="img/heritas-tree.png" alt="" /><div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div></div>';
+        const CURS = ['VND', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'];
+        const curCards = (W, live) => CURS.map((c) => { const dead = W.lang === 'vi' && c !== 'VND'; return `<${live && !dead ? `button data-wiz-cur="${c}"` : 'div'} class="pick${W.cur === c ? ' on' : ''}${dead ? ' off' : ''}"><b>${CUR[c].chip} <small>${curName(c, W.lang)}</small></b><span class="eg">${egOf(c, W.lang)}</span></${live && !dead ? 'button' : 'div'}>`; }).join('');
+        const langCards = (W, live) => [['vi', 'Tiếng Việt', 'Giao diện tiếng Việt. Tiền tệ: VNĐ.'], ['en', 'English', 'English interface. Seven currencies: VNĐ, USD, EUR, GBP, AUD, CAD, SGD.']].map(([k, name, say]) => `<${live ? `button data-wiz-lang="${k}"` : 'div'} class="pick${W.lang === k ? ' on' : ''}"><b>${name}</b><span>${say}</span></${live ? 'button' : 'div'}>`).join('');
+        const srcCards = (W, live) => ['empty', 'demo', 'file'].map((k) => { const [name, say] = WIZ[W.lang].src[k]; return `<${live ? `button data-wiz-src="${k}"` : 'div'} class="pick${W.src === k ? ' on' : ''}"><b>${name}</b><span>${typeof say === 'function' ? say(CUR[W.cur || 'VND'].chip) : say}</span></${live ? 'button' : 'div'}>`; }).join('');
+        function fileBox(W) {
+          const t = WIZ[W.lang], chipC = CUR[W.cur].chip, otherC = W.cur === 'USD' ? 'VNĐ' : 'USD';
+          if (W.src !== 'file') return '';
+          if (!W.file) return `<div class="filebox"><div><button class="btn" data-wiz-file>${t.pick}</button></div></div>`;
+          if (W.file === 'good') return `<div class="filebox"><section class="card flat"><div class="kvs"><span>File</span><b class="num">project2c-20261109-1810.p2cbackup</b><span>${t.good[0]}</span><span class="num">09/11/2026 18:10</span><span>${t.good[1]}</span><span>${chipC}</span><span>${t.good[2]}</span><span class="num">${t.goodV}</span></div></section><div><button class="btn sm" data-wiz-file>${t.again}</button></div></div>`;
+          const [a, b] = W.file === 'broken' ? t.broken : t.other(otherC, chipC);
+          return `<div class="filebox"><div class="alert">${ic('alert')}<b>${a}</b><span>${b}</span><div class="acts"><button class="btn sm" data-wiz-file>${t.again}</button>${W.file === 'other' ? `<button class="btn sm" data-wiz-step="2">${t.toCur}</button>` : ''}</div></div></div>`;
+        }
+        function wizHtml(W, live) {
+          const t = WIZ[W.lang], step = W.step;
+          const steps = t.steps.map((s, k) => `<span class="${k + 1 === step ? 'on' : k + 1 < step ? 'done' : ''}"><i>${k + 1 < step ? '✓' : k + 1}</i><b>${s}</b></span>`).join('<hr />');
+          const body = step === 1
+            ? `<h3>Chọn ngôn ngữ<small>Choose your language · đổi được bất kỳ lúc nào ở Cài đặt · you can switch at any time in Settings</small></h3><div class="picks">${langCards(W, live)}</div>`
+            : step === 2
+              ? `<h3>${t.h2}<small>${t.s2}</small></h3><div class="picks four">${curCards(W, live)}</div>${W.lang === 'vi' ? `<p class="help" style="margin: 0">${t.off}</p>` : ''}${W.cur === 'EUR' ? `<div class="eur-tip">${ic('info')}<span>Amounts are written <b>1,500.00</b>, not 1.500,00: "," separates thousands, "." is the decimal point.</span></div>` : ''}`
+              : `<h3>${t.h3}<small>${t.s3}</small></h3><div class="picks three">${srcCards(W, live)}</div>${fileBox(W)}${W.fail ? `<div class="alert">${ic('alert')}<b>${t.fail[0]}</b><span>${t.fail[1]}</span></div>` : ''}`;
+          const can = step === 1 ? !!W.lang : step === 2 ? !!W.cur : W.src !== 'file' || W.file === 'good';
+          const sum = step === 3 ? `<span class="wiz-sum"><span class="chip">${W.lang === 'vi' ? 'Tiếng Việt' : 'English'}</span><span class="chip">${CUR[W.cur].chip}</span><span>${t.none}</span></span>` : '<span class="spacer"></span>';
+          return `<div class="wiz-top"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>${BRAND}<div class="steps">${steps}</div></div>
+            <div class="wiz-body"><div class="wiz-col">${W.reset ? `<div class="alert info">${ic('info')}<b>${t.reset[0]}</b><span>${t.reset[1]} <span class="path">backups\\project2c-20261110-133612.db</span>.</span><div class="acts"><button class="btn sm" data-wiz-home>${t.home}</button></div></div>` : ''}${body}</div></div>
+            <div class="wiz-foot">${sum}${step > 1 ? `<button class="btn" data-wiz-step="${step - 1}">${t.back}</button>` : ''}<button class="btn primary${can ? '' : ' is-off'}" data-wiz-step="${step + 1}">${step === 3 ? t.done : t.next}</button></div>`;
+        }
+        // Option B of the layout: the three choices on one page
+        const wizAllHtml = () => { const W = { lang: 'vi', cur: 'VND', src: 'demo' }; return `<div class="wiz-top">${BRAND}</div><div class="wiz-body"><div class="wiz-col" style="gap: 10px"><span class="state-l" style="margin: 0">1 · Ngôn ngữ · Language</span><div class="picks">${langCards(W)}</div><span class="state-l" style="margin: 6px 0 0">2 · Tiền tệ của dữ liệu · chọn một lần, không đổi được</span><div class="picks four">${curCards(W)}</div><span class="state-l" style="margin: 6px 0 0">3 · Dữ liệu</span><div class="picks three">${srcCards(W)}</div></div></div><div class="wiz-foot"><span class="spacer"></span><button class="btn primary">Bắt đầu</button></div>`; };
+
+        /* ---------- Dialogs ---------- */
+        const X = `<button class="x" data-close aria-label="Đóng">${ic('x')}</button>`;
+        function apptHtml(S, o = {}) {
+          const L = S.lang, d = dataOf(S.cur), vi = L === 'vi';
+          return `<div class="dlg-head"><div><h3>${vi ? 'Lịch hẹn mới' : 'New appointment'}</h3><div class="sub">${vi ? 'Trạng thái: Dự kiến' : 'Status: Scheduled'}</div></div>${X}</div>
+            <div class="dlg-body">
+              <div class="field"><label>${vi ? 'Khách hàng' : 'Customer'} <span class="req">*</span></label><div class="input">${kh(d.now[0], d.now[1])} <span class="st dot n1">N1</span><span class="caret">${ic('search')}</span></div></div>
+              <div class="fields-2"><div class="field"><label>${vi ? 'Ngày' : 'Date'} <span class="req">*</span> <span class="opt-n">dd/mm</span></label><div class="input">13/11</div><div class="read"><b>${vi ? 'Thứ Sáu 13/11/2026' : 'Fri 13 Nov 2026'}</b> · ${vi ? '3 ngày nữa' : 'in 3 days'}</div></div><div class="field"><label>${vi ? 'Giờ' : 'Time'} <span class="opt-n">${vi ? 'không bắt buộc' : 'optional'}</span></label><div class="input">15:00</div></div></div>
+              <div class="field">${moneyField(S.cur, L, { label: TXT[L].ecs, opt: vi ? 'để trống = chưa ước lượng' : 'leave empty if not estimated', text: o.text, live: o.live, focus: true, tip: 'always' })}</div>
+              <span class="help">${vi ? 'Các ô khác của hộp (RM, trigger, người phối hợp) giữ như đã duyệt ở đợt d.' : 'The other fields of this dialog (RM, trigger, coordinators) stay as approved in round d.'}</span>
+            </div>
+            <div class="dlg-foot"><span class="hint">${vi ? 'Esc để đóng' : 'Esc to close'}</span><span class="spacer"></span><button class="btn" data-close>${vi ? 'Hủy' : 'Cancel'}</button><button class="btn primary" data-close>${vi ? 'Tạo lịch hẹn' : 'Create appointment'}</button></div>`;
+        }
+        function resetHtml(S, o = {}) {
+          const vi = S.lang === 'vi', word = vi ? 'THIẾT LẬP LẠI' : 'START OVER', chipC = CUR[S.cur].chip;
+          return `<div class="dlg-head"><div><h3>${vi ? 'Thiết lập lại từ đầu?' : 'Start over?'}</h3><div class="sub">${vi ? `Dữ liệu đang dùng: 949 KH · ${chipC}` : `Current data: 949 customers · ${chipC}`}</div></div>${X}</div>
+            <div class="dlg-body">
+              <p>${vi ? 'App tạo một bộ dữ liệu mới hoàn toàn và mở lại thiết lập ban đầu, nơi chọn lại ngôn ngữ và tiền tệ.' : 'The app creates a brand-new database and opens Setup again, where you choose the language and the currency.'}</p>
+              <div class="alert info">${ic('info')}<b>${vi ? 'Sao lưu trước' : 'Backed up first'}</b><span>${vi ? 'App ghi xong các thay đổi đang chờ, rồi sao lưu dữ liệu đang dùng vào' : 'The app finishes saving, then backs up your current data to'} <span class="path">backups\\project2c-20261110-133612.db</span></span></div>
+              <ul class="pts">${(vi
+                ? ['Dữ liệu đang dùng còn nguyên cho tới khi thiết lập xong. Thoát giữa chừng thì lần mở sau vẫn là dữ liệu này.', 'Bộ dữ liệu mới không mang theo cài đặt AI (nhà cung cấp, model).', 'Key AI nằm trong kho key của máy nên không bị xóa; muốn xóa: Cài đặt → AI.']
+                : ['Your current data stays until setup is finished. If you quit halfway, the app opens this data next time.', 'The new database does not keep the AI settings (provider, model).', 'The API key lives in this computer\'s key store and is not deleted; remove it in Settings → AI.']).map((x) => `<li>${x}</li>`).join('')}</ul>
+              <div class="field"><label>${vi ? 'Gõ' : 'Type'} <b style="color: var(--text)">${word}</b> ${vi ? 'để xác nhận' : 'to confirm'}</label><label class="input${o.live ? '' : ' focus'}"><input type="text" value="${o.live ? '' : word}" data-word="${word}" aria-label="${word}" autocomplete="off" spellcheck="false" ${o.live ? '' : 'readonly tabindex="-1"'} /></label></div>
+            </div>
+            <div class="dlg-foot"><span class="spacer"></span><button class="btn" data-close>${vi ? 'Hủy' : 'Cancel'}</button><button class="btn danger${o.live ? ' is-off' : ''}" data-do-reset>${vi ? 'Sao lưu rồi thiết lập lại' : 'Back up and start over'}</button></div>`;
+        }
+        function mismatchHtml(S) {
+          const vi = S.lang === 'vi', mine = CUR[S.cur].chip, theirs = S.cur === 'USD' ? 'VNĐ' : 'USD';
+          return `<div class="dlg-head"><div><h3>${vi ? 'Không nhập được file' : 'This file cannot be imported'}</h3><div class="sub num">project2c-20261108-0915.p2cbackup</div></div>${X}</div>
+            <div class="dlg-body"><div class="alert">${ic('alert')}<b>${vi ? `File dùng tiền tệ ${theirs}, dữ liệu đang mở dùng ${mine}` : `The file uses ${theirs}; the open data uses ${mine}`}</b><span>${vi ? `Một bộ dữ liệu chỉ có một tiền tệ và app không quy đổi tỷ giá. Muốn dùng file này: Thiết lập lại từ đầu, chọn ${theirs} ở bước Tiền tệ, rồi chọn file này ở bước Dữ liệu. Dữ liệu hiện tại không bị đổi.` : `A database has one currency and the app does not convert. To use this file: Start over, choose ${theirs} at the Currency step, then choose this file at the Data step. Your current data has not changed.`}</span></div></div>
+            <div class="dlg-foot"><span class="spacer"></span><button class="btn" data-close>${vi ? 'Đóng' : 'Close'}</button><button class="btn" data-run-reset>${SET[S.lang].resetB}</button></div>`;
+        }
+
+        /* ---------- Specimens of the page ---------- */
+        const specState = (d) => ({ lang: d.lang || 'vi', cur: d.cur || 'VND', pane: d.pane || 'lang', view: 'overview' });
+        const wizState = (d) => ({ step: +d.step || 1, lang: d.lang || 'vi', cur: d.cur || (d.lang === 'en' ? '' : 'VND'), src: d.src || 'demo', file: d.file || '', reset: !!d.reset, fail: !!d.fail });
+        const ROWS = [['Trống', 'empty'], ['Số âm', 'negative'], ['Không đọc được, không có gợi ý', 'format'], ['Sai dấu, có gợi ý', 'mark'], ['Đơn vị của ngôn ngữ kia, có gợi ý', 'unit'], ['Có số lẻ không hợp lệ', 'fraction'], ['"1.500 tr": hai cách đọc (chỉ VNĐ)', 'ambiguous'], ['Quá trần phí', 'over'], ['Quá lớn để tính', 'too-large'], ['Dòng trước các gợi ý', 'did']];
+        const SPEC = {
+          wiz: (d) => `<div class="wizbox">${wizHtml(wizState(d))}</div>`,
+          wizall: () => `<div class="wizbox">${wizAllHtml()}</div>`,
+          pane: (d) => { const S = specState(d); return d.place ? `<div class="set-pane">${paneHtml(S, { place: d.place })}</div>` : settingsHtml(S, { fail: !!d.fail }); },
+          reset: (d) => `<div class="dlg" role="img" aria-label="Hộp xác nhận thiết lập lại">${resetHtml(specState(d))}</div>`,
+          mismatch: (d) => `<div class="dlg" role="img" aria-label="Hộp không nhập được file">${mismatchHtml(specState(d))}</div>`,
+          appt: (d) => `<div class="dlg" role="img" aria-label="Hộp Lịch hẹn mới">${apptHtml(specState(d), { text: d.text })}</div>`,
+          money: (d) => moneyField(d.cur || 'VND', d.lang || 'vi', { label: d.label, text: d.text, focus: !!d.focus, tip: d.tip }),
+          empty: () => emptyHtml('vi'),
+          msgs: () => ROWS.map(([name, k]) => { const say = (L, cur) => { const m = MSG[L][k]; return k === 'ambiguous' ? (cur === 'VND' ? esc(m(L === 'vi' ? '1.500 tr' : '1.500 Mil')) : '—') : esc(typeof m === 'function' ? m(cur) : k === 'did' ? `${m}: … · ${MSG[L].pick}: …` : m); }; return `<tr><td>${name}</td><td>${say('vi', 'VND')}</td><td>${say('en', 'VND')}</td><td>${say('en', 'USD')}</td></tr>`; }).join(''),
+        };
+        for (const el of $$('[data-spec]')) el.innerHTML = SPEC[el.dataset.spec](el.dataset);
+
+        /* ---------- The lab: one field to type in ---------- */
+        const TRIES = { vi: ['500tr', '1.5 tỷ', '1tr5', '3,000,000', '1,5 tỷ', '500.000.000', '500 000 000', '1.500', '1.500 tr', '500 Mil', '1.5m', '150 tỷ'], enVND: ['500 Mil', '1.9 Bil', '750k', '3,000,000 VNĐ', '500tr', '1.500 Mil', '500.000.000', '$500', '150 Bil'], cent: ['1,250.50', '250K', '1.2 Mil', '1250.5', '1.500', '1.505', '12,34', '1.234,56', '1.5 tr', '100.01 Bil'] };
+        const LAB = { lang: 'vi', cur: 'VND', text: '' };
+        function paintLab(keep) {
+          const lab = $('[data-lab]');
+          if (!lab) return;
+          if (LAB.lang === 'vi') LAB.cur = 'VND';
+          $$('[data-lab-set="cur"] button', lab).forEach((b) => { const off = LAB.lang === 'vi' && b.dataset.v !== 'VND'; b.disabled = off; b.style.opacity = off ? 0.4 : ''; b.classList.toggle('on', b.dataset.v === LAB.cur); });
+          $$('[data-lab-set="lang"] button', lab).forEach((b) => b.classList.toggle('on', b.dataset.v === LAB.lang));
+          if (!keep) $('[data-lab-field]', lab).innerHTML = moneyField(LAB.cur, LAB.lang, { label: LAB.lang === 'vi' ? 'Case size dự kiến' : 'Expected case size', text: LAB.text, live: true, tip: 'always' });
+          const list = LAB.lang === 'vi' ? TRIES.vi : LAB.cur === 'VND' ? TRIES.enVND : TRIES.cent;
+          $('[data-lab-tries]', lab).innerHTML = list.map((t) => `<button data-try="${esc(t)}">${esc(t)}</button>`).join('');
+          dispatchEvent(new Event('resize'));
+        }
+        paintLab();
+
+        /* ---------- The windows ---------- */
+        const STATE = new WeakMap();
+        const SCENES = {
+          wizard: () => ({ lang: 'vi', cur: 'VND', view: 'overview', pane: 'lang', setup: wizState({ step: 1 }) }),
+          settings: () => ({ lang: 'vi', cur: 'VND', view: 'settings', pane: 'lang' }),
+          'en-vnd': () => ({ lang: 'en', cur: 'VND', view: 'overview', pane: 'lang' }),
+          'en-usd': () => ({ lang: 'en', cur: 'USD', view: 'overview', pane: 'lang' }),
+        };
+        function paint(win) {
+          const S = STATE.get(win), L = S.lang, t = TXT[L], d = dataOf(S.cur);
+          win.classList.toggle('setup', !!S.setup);
+          $$('.nav-i', win).forEach((n) => { const k = n.dataset.go; $('span', n).textContent = t.nav[k]; n.dataset.sub = t.sub[k]; n.dataset.act = t.act[k]; });
+          $$('[data-t]', win).forEach((n) => { n.textContent = t[n.dataset.t]; });
+          $('[data-now-who]', win).innerHTML = kh(d.now[0], d.now[1]);
+          $('[data-now]', win).innerHTML = `<h4>${t.today} <small class="num">${t.todayLong} · ${t.all} · ${t.appts}</small></h4><div class="ag next"><span class="tm num">14:00</span><b>${kh(d.now[0], d.now[1])}</b><span class="st s-info">${t.in25}</span><small>${t.ecs} ${compact(d.now[2], S.cur, L)} · RM ${d.rm} · ${d.teams[0][0]}</small></div><hr /><div data-jobs><p class="help" style="margin: 0">${L === 'vi' ? 'Bốn lịch còn lại và việc chạy nền: như "Lưu ý" đã duyệt ở đợt b.' : 'The other four appointments and background jobs: as in the approved "Heads-up" of round b.'}</p></div>`;
+          $('.pal input', win).placeholder = t.palette;
+          $('.pal-list', win).innerHTML = `<div class="pal-g" data-max="7" data-idle="7">${Object.keys(t.nav).map((k) => `<button class="pal-o" data-find="${esc(t.nav[k])}" data-jump="${k}">${ic(NAV_ICON[k] || (k === 'settings' ? 'gear' : 'overview'))}<span class="t" data-hl>${esc(t.nav[k])}</span></button>`).join('')}</div>`;
+          $('[data-ov]', win).innerHTML = overviewHtml(S);
+          $('[data-set]', win).innerHTML = settingsHtml(S, { live: true });
+          $$('[data-later]', win).forEach((n) => { n.innerHTML = `${ic(n.dataset.later)}<b>${t.nav[n.closest('.view').dataset.view]}</b><p>${t.later}</p>`; });
+          if (S.setup) $('[data-wiz]', win).innerHTML = wizHtml(S.setup, true);
+          ui2.go(win, S.view, true);
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+        }
+        function openDlg(win, kind) {
+          const S = STATE.get(win), box = $('[data-dlg]', win);
+          S.dlg = kind;
+          box.innerHTML = kind === 'appt' ? apptHtml(S, { live: true }) : kind === 'reset' ? resetHtml(S, { live: true }) : mismatchHtml(S);
+          box.setAttribute('aria-label', $('h3', box).textContent);
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+          win.classList.add('modal');
+        }
+        function scene(win, name, holder = {}) {
+          const S = (SCENES[name] || SCENES.wizard)();
+          if (holder.step) S.setup = wizState(holder);
+          if (holder.pane) S.pane = holder.pane;
+          STATE.set(win, S);
+          win.classList.remove('modal');
+          paint(win);
+          if (holder.dlg) openDlg(win, holder.dlg);
+        }
+        for (const win of $$('.win')) scene(win, win.parentElement.dataset.scene || 'wizard', win.parentElement.dataset);
+
+        // A click fills the field: the only way a suggestion gets in
+        function fill(input, text) {
+          input.value = text;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.focus({ preventScroll: true });
+        }
+        document.addEventListener('input', (e) => {
+          const input = e.target.closest && e.target.closest('input[data-money]');
+          if (input) {
+            const { cur, lang, tip } = input.dataset, field = input.closest('.field'), r = parse(input.value, cur, lang);
+            $('[data-money-out]', field).innerHTML = moneyOut(input.value, cur, lang);
+            input.parentElement.classList.toggle('error', !!input.value.trim() && !!(r.err || r.over));
+            if (input.closest('[data-lab]')) LAB.text = input.value;
+            return;
+          }
+          const word = e.target.closest && e.target.closest('input[data-word]');
+          if (word) $('[data-do-reset]', word.closest('.dlg')).classList.toggle('is-off', word.value.trim().toUpperCase() !== word.dataset.word);
+        });
+        document.addEventListener('click', (e) => {
+          const sg = e.target.closest('.sg[data-fill]');
+          if (sg) { const input = $('input[data-money]', sg.closest('.field')); if (input && !input.readOnly) fill(input, sg.dataset.fill); return; }
+          const tryB = e.target.closest('[data-try]');
+          if (tryB) return fill($('[data-lab] input[data-money]'), tryB.dataset.try);
+          const labSet = e.target.closest('[data-lab-set] button');
+          if (labSet && !labSet.disabled) { LAB[labSet.parentElement.dataset.labSet] = labSet.dataset.v; LAB.text = ''; return paintLab(); }
+          const sc = e.target.closest('.seg[data-set="scene"] button');
+          if (sc) return scene($('#win'), sc.dataset.v);
+          const win = e.target.closest('.win');
+          if (!win) return;
+          const S = STATE.get(win), W = S.setup;
+          const nav = e.target.closest('.nav-i[data-go], [data-jump]');
+          if (nav) { S.view = nav.dataset.go || nav.dataset.jump; return; }
+          if (e.target.closest('[data-appt]')) return S.view === 'overview' || S.view === 'appointments' ? openDlg(win, 'appt') : ui2.toast(win, S.lang === 'vi' ? 'Trang này chỉ vẽ hộp Lịch hẹn mới' : 'This page draws the New appointment dialog only');
+          const pane = e.target.closest('[data-pane-go]');
+          if (pane) { S.pane = pane.dataset.paneGo; return paint(win); }
+          const setLang = e.target.closest('[data-set-lang]');
+          if (setLang && setLang.dataset.setLang !== S.lang) { S.lang = setLang.dataset.setLang; paint(win); return ui2.toast(win, S.lang === 'vi' ? 'Đã đổi sang Tiếng Việt <small>· giao diện đã tải lại, dữ liệu không đổi</small>' : 'Switched to English <small>· the interface was reloaded, your data did not change</small>'); }
+          if (e.target.closest('[data-run-import]')) return openDlg(win, 'mismatch');
+          if (e.target.closest('[data-run-reset]')) return openDlg(win, 'reset');
+          const go = e.target.closest('[data-do-reset]');
+          if (go && !go.classList.contains('is-off')) { win.classList.remove('modal'); S.setup = { ...wizState({ step: 1, lang: S.lang }), cur: S.lang === 'vi' ? 'VND' : '', reset: true, was: { lang: S.lang, cur: S.cur } }; return paint(win); }
+          if (!W) return;
+          // the wizard: nothing is written before "Bắt đầu"
+          const wl = e.target.closest('[data-wiz-lang]'), wc = e.target.closest('[data-wiz-cur]'), ws = e.target.closest('[data-wiz-src]'), step = e.target.closest('[data-wiz-step]');
+          if (wl) { W.lang = wl.dataset.wizLang; W.cur = W.lang === 'vi' ? 'VND' : W.cur === 'VND' ? '' : W.cur; }
+          else if (wc) W.cur = wc.dataset.wizCur;
+          else if (ws) { W.src = ws.dataset.wizSrc; W.file = ''; }
+          else if (e.target.closest('[data-wiz-file]')) W.file = W.file === 'other' ? 'good' : 'other'; // the mockup takes turns: a file in another currency, then a good one
+          else if (e.target.closest('[data-wiz-home]')) { S.setup = null; S.lang = W.was ? W.was.lang : S.lang; S.cur = W.was ? W.was.cur : S.cur; paint(win); return ui2.toast(win, S.lang === 'vi' ? 'Đã quay về dữ liệu đang dùng <small>· chưa có gì thay đổi</small>' : 'Back to your current data <small>· nothing has changed</small>'); }
+          else if (step && !step.classList.contains('is-off')) {
+            const n = +step.dataset.wizStep;
+            if (n <= 3) W.step = n;
+            else {
+              Object.assign(S, { lang: W.lang, cur: W.cur, empty: W.src === 'empty', setup: null, view: 'overview' });
+              paint(win);
+              return ui2.toast(win, S.lang === 'vi' ? `Đã thiết lập: Tiếng Việt · ${CUR[S.cur].chip} · ${WIZ.vi.src[W.src][0].toLowerCase()}` : `Setup finished: English · ${CUR[S.cur].chip} · ${WIZ.en.src[W.src][0].toLowerCase()}`);
+            }
+          } else return;
+          $('[data-wiz]', win).innerHTML = wizHtml(W, true);
+        });
+
+        // A whole window scaled to the width of the page
+        const shots = () => $$('.shot').forEach((el) => { if (el.clientWidth) el.style.setProperty('--s', Math.min(1, (el.clientWidth - 44) / (+el.dataset.w || 1440)).toFixed(4)); });
+        shots();
+        addEventListener('resize', shots);
+        dispatchEvent(new Event('resize'));
+        window.gCheck = { parse, full, compact, delta, pct, count, moneyOut };
+      })();
+    </script>
+  </body>
+</html>

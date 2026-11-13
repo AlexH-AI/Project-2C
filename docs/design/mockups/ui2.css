@@ -12,6 +12,8 @@
       strip, the month grid, the list of one day, a case size filled in place
    17 round e (T-424, approved at G3 13/11/2026): Báo cáo — the colours of paper (print, Excel), a page of "Bản tin", bars by
       team, a trend of six periods, an Excel sheet
+   18 round f (T-425, waiting for G3): a cancelled policy — the policies of a customer, what a change does to the
+      numbers; language and currency — the first-run wizard, a choice card, the way to write an amount
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
    Hand-formatted, short rules on one line (docs/ is not run through Prettier). */
@@ -1130,3 +1132,80 @@ button.dl-r:hover { background: var(--fill-1); }
 .xl-tabs { display: flex; gap: 2px; padding: 0 8px; background: #f1f3f5; border-top: 1px solid var(--paper-line); overflow-x: auto; }
 .xl-tabs button { flex: none; padding: 7px 14px; font-size: 12.5px; color: var(--paper-ink-2); border-bottom: 2px solid transparent; white-space: nowrap; }
 .xl-tabs button.on { background: var(--paper); color: #107c41; font-weight: 600; border-bottom-color: #107c41; }
+
+/* ============ 18. Round f (T-425): a cancelled policy; language and currency ============ */
+/* Built from the tokens of section 0; no new token. Waiting for the Owner at G3. Nothing above this line
+   changed. Rounded rectangles of this round take the rule of section 5: */
+.fx, .sg, .pick, .eur-tip { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+
+/* The policies of a customer (hồ sơ KH → Hợp đồng): one line each, as in the app today, newest
+   submission first. A cancelled policy keeps its line: the label says the day, the rest steps back. */
+.pols { display: flex; flex-direction: column; }
+.pol { display: flex; align-items: center; gap: 14px; min-height: 46px; padding: 8px 0; border-bottom: 1px solid var(--hairline); font-variant-numeric: tabular-nums; }
+.pol-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.pol:last-child { border-bottom: 0; padding-bottom: 0; }
+.pol .who { color: var(--text-2); }
+.pol .acts { flex: none; display: flex; gap: 2px; margin-right: -8px; }
+.pol.off .pol-main > span:not(.st) { color: var(--text-2); }
+.pol.off .fyp { text-decoration: line-through; text-decoration-color: var(--text-3); }
+/* What a change does to the numbers, said before it is saved: the "Ảnh hưởng chỉ số" of dialog 8d */
+.fx { display: grid; gap: 5px; padding: 11px 13px; --r: var(--r-field); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 13.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.fx > b { font-size: 12.5px; font-weight: 650; color: var(--heading); }
+.fx div b { font-weight: 650; color: var(--text); }
+.fx small { font-size: 12px; color: var(--text-2); }
+.fx table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fx th { padding: 2px 0 4px 12px; text-align: right; font-size: 11.5px; font-weight: 600; color: var(--text-2); }
+.fx td { padding: 4px 0 4px 12px; text-align: right; border-top: 1px solid var(--hairline); white-space: nowrap; }
+.fx th:first-child, .fx td:first-child { padding-left: 0; text-align: left; color: var(--text); }
+.fx td i { font-style: normal; color: var(--text-2); }
+.fx td b { font-weight: 650; color: var(--text); }
+
+/* The way to write an amount. The app refuses a way of typing it cannot read by the one rule (ADR-0018
+   §5) and offers the way to write it: a click on the offer fills the field, the app never does. */
+.sgs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.sg { height: 26px; padding: 0 10px; display: inline-flex; align-items: center; gap: 7px; --r: var(--r-control-sm); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); font-weight: 650; white-space: nowrap; transition: background var(--t-1), transform var(--t-1); }
+.sg:hover, .sg.is-hover { background: var(--accent-soft); }
+.sg:active { transform: scale(0.96); }
+.sg small { font-size: 12px; font-weight: 400; color: var(--text-2); }
+/* The line that tells a euro user how the app reads the two marks (Owner 12/11/2026) */
+.eur-tip { display: flex; align-items: baseline; gap: 8px; padding: 7px 10px; --r: var(--r-control-sm); background: color-mix(in srgb, var(--info) 11%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 34%, transparent); font-size: 12.5px; color: var(--text-2); }
+.eur-tip b { font-weight: 650; color: var(--text); }
+.eur-tip .ic { width: 13px; height: 13px; flex: none; align-self: center; color: var(--info); }
+
+/* The first-run wizard: language, currency, where the data comes from. It takes the whole window;
+   there is no sidebar yet. .win.setup shows it in place of the sidebar and the main area. */
+.wiz { grid-column: 1 / -1; grid-row: 2; display: none; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; background: var(--mat-glow), var(--bg-0); }
+.win.setup > .wiz { display: grid; }
+.win.setup > .sb, .win.setup > .main { display: none; }
+.wiz-top { display: flex; align-items: center; gap: 18px; padding: 16px 28px 0; }
+.wiz-top .lights { padding: 0 6px 0 0; }
+.wiz-top .brand { padding: 0; }
+.steps { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+.steps span { display: inline-flex; align-items: center; gap: 8px; }
+.steps i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; box-shadow: inset 0 0 0 1px var(--border-control); }
+.steps .on { font-weight: 650; color: var(--text); }
+.steps .on i { background: var(--accent-fill); color: var(--on-accent); box-shadow: none; }
+.steps .done i { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
+.steps hr { width: 26px; margin: 0; border: 0; border-top: 1px solid var(--border-strong); }
+.wiz-body { min-height: 0; overflow: hidden auto; display: grid; justify-items: center; align-content: start; padding: 30px 28px 20px; }
+.wiz-col { width: min(860px, 100%); display: grid; gap: 16px; }
+.wiz-col > h3 { margin: 0; font-size: 30px; line-height: 1.15; font-weight: 700; letter-spacing: -0.025em; }
+.wiz-col > h3 small { display: block; margin-top: 7px; font-size: 15px; line-height: 1.45; font-weight: 400; letter-spacing: 0; color: var(--text-2); }
+.wiz-foot { display: flex; align-items: center; gap: 10px; padding: 14px 28px 20px; border-top: 1px solid var(--hairline); font-size: 12.5px; color: var(--text-2); }
+/* A choice card: one of a few, each says what it means; the chosen one carries the accent ring and a
+   tick. One that cannot be chosen stays in place, flat, with the reason on it. */
+.picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.picks.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.picks.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pick { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 16px; --r: var(--r-card); background: var(--mat-card); box-shadow: var(--mat-card-edge), var(--shadow-1); text-align: left; transition: box-shadow var(--t-1), transform var(--t-3) var(--spring-snappy); }
+.pick:hover { box-shadow: inset 0 0 0 1px var(--border-control), var(--shadow-1); }
+.pick:active { transform: scale(0.985); }
+.pick > b { display: flex; align-items: baseline; gap: 8px; font-size: 16px; font-weight: 650; }
+.pick > b small { font-size: 12.5px; font-weight: 500; color: var(--text-2); }
+.pick > span { font-size: 12.5px; line-height: 1.45; color: var(--text-2); }
+.pick > .eg { font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
+.pick.on { box-shadow: inset 0 0 0 1.5px var(--accent), var(--shadow-1); }
+.pick.on::after { content: ''; position: absolute; right: 16px; top: 15px; width: 6px; height: 11px; border: solid var(--accent); border-width: 0 2px 2px 0; transform: rotate(42deg); }
+.pick.off { background: none; box-shadow: inset 0 0 0 1px var(--hairline); cursor: not-allowed; transform: none; }
+.pick.off > b, .pick.off > .eg { color: var(--text-2); }
+@container (max-width: 760px) { .picks.four, .picks.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
