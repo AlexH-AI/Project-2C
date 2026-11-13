@@ -6,6 +6,8 @@
    Round b (T-417): 9 pages off the sidebar, with a way back · 10 search shared by the palette and the
    fields · 11 command palette ⌘K / Ctrl K · 12 "Lưu ý" and jobs in the background · 13 a search field
    that lights what it finds · 14 pick one swatch or icon · 15 window.ui2 for the page's own script
+   Round c (T-422, approved at G3 13/11/2026): 16 popovers of the toolbar (view menu, period picker) · 17 "Đếm", a number that runs to
+   its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
 (() => {
@@ -537,4 +539,122 @@
 
   /* ---------- 15. For the page's own script ---------- */
   window.ui2 = { go, show, back, mask, toast, job, openPal, filter, findIn, fold };
+  /* ---------- 16. Popovers of the toolbar: the view menu and the period picker (round c, ý 08) ---------- */
+  // There is no "Lọc" button: a choice applies at once. A control with data-pop="scope" opens the
+  // .tl-pop with data-pop-for="scope" in the same window, under the control and inside the window; the
+  // window hears "ui2:pop" (detail: pop). A click outside, Esc, the palette or anything with
+  // data-pop-close closes it. What the popover holds and what a choice does is the page's own script.
+  function placeUnder(pop, trigger) {
+    const host = pop.offsetParent || pop.parentElement, h = host.getBoundingClientRect(), t = trigger.getBoundingClientRect();
+    const s = h.width / host.offsetWidth || 1;
+    const right = (t.right - h.left) / s;
+    pop.style.left = `${Math.max(12, Math.min(right - pop.offsetWidth, host.offsetWidth - pop.offsetWidth - 12))}px`;
+  }
+  function closePops(win) {
+    $$('.tl-pop.open', win).forEach((p) => p.classList.remove('open'));
+    $$('[data-pop][aria-expanded="true"]', win).forEach((t) => t.setAttribute('aria-expanded', 'false'));
+  }
+  document.addEventListener('click', (e) => {
+    const win = e.target.closest('.win');
+    if (!win) return;
+    const trigger = e.target.closest('[data-pop]');
+    if (trigger) {
+      const pop = $(`.tl-pop[data-pop-for="${trigger.dataset.pop}"]`, win);
+      const on = pop && !pop.classList.contains('open');
+      closePops(win);
+      if (on) {
+        win.classList.remove('now-on', 'pal-on');
+        win.dispatchEvent(new CustomEvent('ui2:pop', { detail: { pop: trigger.dataset.pop } }));
+        pop.classList.add('open');
+        trigger.setAttribute('aria-expanded', 'true');
+        placeUnder(pop, trigger);
+        thumbs();
+      }
+      return;
+    }
+    if (e.target.closest('.tl-pop')) { if (e.target.closest('[data-pop-close]')) closePops(win); return; }
+    closePops(win);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) $$('.win').forEach(closePops);
+  });
+
+  /* ---------- 17. "Đếm": a number runs to its new value (round c; the motion itself is approved in round g) ---------- */
+  // count(el, from, to, fmt): fmt(value) gives the text. With "Giảm chuyển động", or with nothing to
+  // run from, the new value is written at once. A timer writes the last value even if no frame is drawn
+  // (a hidden tab), so a number never stops half way.
+  function count(el, from, to, fmt, ms = 420) {
+    cancelAnimationFrame(el._raf);
+    clearTimeout(el._end);
+    if (reduce || from === undefined || from === null || from === to || !isFinite(from) || !isFinite(to)) { el.textContent = fmt(to); return; }
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / ms);
+      el.textContent = fmt(k < 1 ? from + (to - from) * (1 - (1 - k) ** 3) : to);
+      if (k < 1) el._raf = requestAnimationFrame(step);
+    };
+    el.textContent = fmt(from);
+    el._raf = requestAnimationFrame(step);
+    el._end = setTimeout(() => { cancelAnimationFrame(el._raf); el.textContent = fmt(to); }, ms + 120);
+  }
+
+  /* ---------- 18. The cumulative line: this period, what is expected, the period before (round c, ý 14) ---------- */
+  // cum(box, o) draws into a .cum box at its own size. o: xmax (the last x of the axis), cur / proj / was
+  // (series of [x, value]; proj and was may be missing), ticks ([x, label]), fmt (a value as text, for the
+  // grid), pin (HTML of the label at the end of proj), tip (x → HTML, or nothing, for the day under the
+  // pointer). cum(box) draws again from what the box was given, which is what happens when it changes size.
+  let cumId = 0;
+  const ro = 'ResizeObserver' in window ? new ResizeObserver((list) => { for (const x of list) if (x.target._cum && x.target._w !== x.target.clientWidth) cum(x.target); }) : null;
+  function niceStep(span) {
+    const raw = span / 2.6, p = 10 ** Math.floor(Math.log10(raw || 1));
+    return [5, 2.5, 2, 1].map((m) => m * p).find((s) => s <= raw) || p;
+  }
+  function cum(box, o) {
+    if (o) box._cum = o; else o = box._cum;
+    if (!o) return;
+    if (ro && !box._ro) { box._ro = true; ro.observe(box); }
+    const W = box.clientWidth, H = box.clientHeight;
+    box._w = W;
+    if (!W || !H) return;
+    const all = [...o.cur, ...(o.proj || []), ...(o.was || [])].map((p) => p[1]);
+    const hi = Math.max(1, ...all) * 1.14, lo = Math.min(0, ...all) * 1.14;
+    const padL = 6, padR = 10, top = 8, base = H - 22;
+    const x = (v) => padL + (o.xmax ? v / o.xmax : 0.5) * (W - padL - padR);
+    const y = (v) => base - ((v - lo) / (hi - lo)) * (base - top);
+    const f1 = (v) => v.toFixed(1);
+    const path = (s) => s.map((p, i) => `${i ? 'L' : 'M'}${f1(x(p[0]))} ${f1(y(p[1]))}`).join(' ');
+    const step = niceStep(hi - lo), id = `cum-a${++cumId}`;
+    let grid = '';
+    for (let v = Math.ceil(lo / step) * step; v <= hi / 1.14 + 1e-9; v += step) {
+      if (Math.abs(v) < 1e-9) continue;
+      grid += `<path class="g" d="M${padL} ${f1(y(v))} H${W - padR}" /><text x="${padL + 2}" y="${f1(y(v) - 4)}">${o.fmt ? o.fmt(v) : v}</text>`;
+    }
+    const last = o.cur[o.cur.length - 1], first = o.cur[0], end = o.proj && o.proj[o.proj.length - 1];
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color: var(--accent); stop-opacity: 0.26" /><stop offset="1" style="stop-color: var(--accent); stop-opacity: 0" /></linearGradient></defs>
+      ${grid}<path class="g0" d="M${padL} ${f1(y(0))} H${W - padR}" />
+      ${o.was && o.was.length > 1 ? `<path class="was" d="${path(o.was)}" />` : ''}
+      ${o.cur.length > 1 ? `<path d="${path(o.cur)} L${f1(x(last[0]))} ${f1(y(0))} L${f1(x(first[0]))} ${f1(y(0))} Z" fill="url(#${id})" /><path class="now" d="${path(o.cur)}" />` : ''}
+      ${o.proj && o.proj.length > 1 ? `<path class="proj" d="${path(o.proj)}" /><circle class="end" cx="${f1(x(end[0]))}" cy="${f1(y(end[1]))}" r="4" />` : ''}
+      ${last ? `<circle class="dot" cx="${f1(x(last[0]))}" cy="${f1(y(last[1]))}" r="4.5" />` : ''}
+      ${o.ticks.map(([t, l]) => `<text x="${f1(x(t))}" y="${H - 5}" text-anchor="middle">${l}</text>`).join('')}
+    </svg>${end && o.pin ? `<span class="cum-pin${o.was && o.was.length && y(o.was[o.was.length - 1][1]) < y(end[1]) - 4 ? ' below' : ''}" style="left: ${f1(Math.max(x(end[0]), 150))}px; top: ${f1(y(end[1]))}px">${o.pin}</span>` : ''}<i class="cum-scrub"></i><div class="cum-tip"></div>`;
+    box._x = { x, padL, padR, W };
+    if (box._on) return;
+    box._on = true;
+    box.addEventListener('pointermove', (e) => {
+      const c = box._cum, g = box._x, r = box.getBoundingClientRect();
+      if (!c || !c.tip || !g) return;
+      const s = r.width / box.offsetWidth || 1;
+      const at = Math.max(0, Math.min(c.xmax, Math.round((((e.clientX - r.left) / s - g.padL) / (g.W - g.padL - g.padR)) * c.xmax)));
+      const html = c.tip(at), tip = $('.cum-tip', box), line = $('.cum-scrub', box);
+      box.classList.toggle('scrubbing', !!html);
+      if (!html) return;
+      tip.innerHTML = html;
+      line.style.left = `${g.x(at)}px`;
+      tip.style.left = `${Math.max(0, Math.min(g.x(at) + 10, g.W - tip.offsetWidth))}px`;
+    });
+    box.addEventListener('pointerleave', () => box.classList.remove('scrubbing'));
+  }
+  Object.assign(window.ui2, { count, cum, closePops });
 })();

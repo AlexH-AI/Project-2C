@@ -321,6 +321,16 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **Golden B and the data model of a cancelled policy are approved at G2.** The ADR-0007 appendix is Accepted (G2), and rows G23–G41 are required tests of issue B1.
     - The approval covers all ten of Claude's model proposals, among them "bỏ hủy = xóa ngày hủy": uncancelling clears the cancellation date, and the policy is issued again with no trace.
     - Still no code issue until the OWNER says so.
+- 2026-11-13: the order of the work and `auto-issues` (recorded by T-422, #1238). In chat on the Home PC the OWNER asked, verbatim: "có đưa vào auto-issue làm 1 loạt được không". Claude answered that mockup rounds c–g cannot run as one batch (each round stops at G3, and the rounds use different models), while the code issues can (A1–A5, DS-2, G-01 … G-05), with DS-1 done by hand. The OWNER decided, verbatim: "Vậy làm theo thứ tự như luật, ra auto-issue sau khi đã làm xong".
+  - The order of spec §10 stays: step 2 (mockup rounds c–g and the missing "Issue dự kiến" tables) is finished first, and only then are the issues created.
+  - DS-1 is done by hand in a normal session, while `auto-issues` is not running; the batch of code issues then runs through `auto-issues`.
+- 2026-11-13: G3 mockup round c (T-422, #1238; `docs/design/mockups/tong-quan.html`: Tổng quan with no "Lọc" button, the lead number with its cumulative line, six tiles that carry their sums, "Điểm nhấn", past periods with actual numbers only) is **approved by the OWNER at G3**, and the rule table of "Điểm nhấn" (spec §8) is **approved at G2**. Claude asked the 11 G3 points and the 5 G2 points one by one in chat on the Home PC, each with a proposal and one other option; the OWNER picked the proposal on every point. The labels he chose are verbatim in the spec §8, "G3 đợt c". The choices that settle something open:
+  - "Điểm nhấn" sits next to the lead number ("A · Cạnh số chủ đạo"); the faint line draws the whole period before ("A · Vẽ cả kỳ trước"); a year draws what is expected only to the end of the running month ("Năm: tới hết tháng này").
+  - Six tiles ("A · Sáu ô"): Doanh số is the lead number, and HĐ phát hành is the first term of Tổng số HĐ. Numbers below zero are red ("Số âm màu đỏ").
+  - The view menu of Tổng quan is "Toàn bộ / team / RM". It replaces "Team = every team, one chart per team", approved at G3 on 03/10/2026.
+  - The team table gets two columns ("Thêm 2 cột": HĐ hủy, Tỷ lệ hủy).
+  - "Điểm nhấn" (G2): all six rules ("Cả sáu luật"), the cancellation rule speaks from one point ("Từ 1 điểm %"), at most four sentences ("A · Tối đa 4 câu"), the card stays with one line when no rule matches ("Giữ thẻ, một dòng"), and the table of seven rows is approved ("Duyệt G2").
+  - `tong-quan.html` replaces parts 1a–1e of `overview.html`. Still no code issue.
 
 ## Next decision
 
