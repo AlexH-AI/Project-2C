@@ -14,8 +14,9 @@
       team, a trend of six periods, an Excel sheet
    18 round f (T-425, approved at G3 13/11/2026): a cancelled policy — the policies of a customer, what a change does to the
       numbers; language and currency — the first-run wizard, a choice card, the way to write an amount
-   19 round g (T-426, waiting for G3): the four moves in their final form — "Mở" from where it was clicked (View
-      Transitions), a label that lands, tools to watch a move (.calm)
+   19 round g (T-426, approved at G3 14/11/2026): the four moves in their final form — "Mở" from where it was clicked
+      (View Transitions), the 8 steps of "Hiện", where the bouncy spring is used, a label that lands, tools to watch a
+      move (.calm)
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
    Hand-formatted, short rules on one line (docs/ is not run through Prettier). */
@@ -1213,7 +1214,8 @@ button.dl-r:hover { background: var(--fill-1); }
 @container (max-width: 760px) { .picks.four, .picks.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ============ 19. Round g (T-426): the four moves in their final form — "Mở", a label that lands, tools to watch a move ============ */
-/* Waiting for G3. Built from the motion tokens of block B6; no new token. Nothing above this line changed.
+/* Approved by the Owner at G3 on 14/11/2026. Built from the motion tokens of block B6; no new token. Nothing above
+   this line changed; three rules of sections 13, 4 and 14 are overridden below, by the Owner's answer to point 10.
 
    "Mở" (ý 07): the thing clicked grows into the page it opens; on the way back the page shrinks to the
    same thing. Same-document View Transitions: for the length of the move the script names the two ends
@@ -1240,6 +1242,14 @@ button.dl-r:hover { background: var(--fill-1); }
 :root.vt-open::view-transition-new(root), :root.vt-back::view-transition-new(root) { animation: vt-in var(--t-1) var(--ease-out) both; mix-blend-mode: normal; }
 /* One move at a time: a page that grew, and a list the way back returns to, do not also play "Hiện" */
 .view.still .rise, .view.still .hbar i, .view.still .cum svg { animation: none; }
+
+/* Two laws of round g change how parts of the approved rounds move (G3 point 10, "A · Sửa"); they
+   override sections 13, 4 and 14 for every mockup. "Hiện": at most 8 steps, so the last part of a
+   screen lands within 0.6 s. The bouncy spring is kept for three places (the toast, the label that
+   lands, a tick): the icon of the chosen sidebar item and a team swatch take the snappy one. */
+.view.on .rise { animation-delay: calc(min(var(--i, 0), 7) * 28ms); }
+.nav-i .ic { transition: color var(--t-2), transform var(--t-3) var(--spring-snappy); }
+.swatches button { transition: transform var(--t-3) var(--spring-snappy); }
 
 /* A label that lands (the "Đã hủy {ngày}" of a policy just cancelled): the bouncy spring, kept for
    what needs to be noticed. The label is there at once (--t-1), then settles. */

@@ -94,7 +94,7 @@ Hệ quả khi ra Issue (chưa tạo, Owner 10/11: "chưa ra issue"):
 
 ## Phụ lục 14/11/2026 — hệ chuyển động: bốn động tác, ba lò xo, "Mở từ chỗ bấm" (T-426 #1253)
 
-**Trạng thái: chờ G3** cùng mockup đợt g (`docs/design/mockups/chuyen-dong.html`; CSS ở mục 19 của `ui2.css`, hành vi ở mục 20 của `ui2.js`). Phụ lục này là bản chữ của mockup. Nó chốt phần mà điểm 6 của phụ lục 11/11/2026 để lại ("Bốn động tác (Hiện, Mở, Trượt, Đếm) và nơi dùng từng lò xo duyệt ở mockup đợt g"). Không thêm token, không thêm dependency. Mười điểm Owner quyết nằm ở mục `#ask` của mockup; các câu dưới đây viết theo phương án Claude đề xuất và sẽ sửa theo câu trả lời của Owner trước khi có hiệu lực. Bố cục và nội dung các màn đã duyệt G3 không đổi.
+**Trạng thái: Owner duyệt G3 ngày 14/11/2026** cùng mockup đợt g (`docs/design/mockups/chuyen-dong.html`; CSS ở mục 19 của `ui2.css`, hành vi ở mục 20 của `ui2.js`). Phụ lục này là bản chữ của mockup. Nó chốt phần mà điểm 6 của phụ lục 11/11/2026 để lại ("Bốn động tác (Hiện, Mở, Trượt, Đếm) và nơi dùng từng lò xo duyệt ở mockup đợt g"). Không thêm token, không thêm dependency. Owner trả lời từng điểm trong 10 điểm `#ask` của mockup và chọn phương án đề xuất ở cả 10; nguyên văn ở `docs/design/phase-6-phan-hoi-dung-thu.md` §8, gạch "G3 đợt g". Bố cục và nội dung các màn đã duyệt G3 không đổi; theo điểm 10, chỗ gọi "Đếm" của `tong-quan.html`, `forecast.html` và ba luật chuyển động ở `ui2.css` đã sửa cho khớp. Chưa gì vào app; code chỉ làm khi Owner bảo ra Issue.
 
 1. **Luật chung.**
    - Chuyển động chỉ đổi `transform` và `opacity`. Một ngoại lệ có tên: "Đếm" đổi chữ của con số (điểm 5).
@@ -124,7 +124,7 @@ Hệ quả khi ra Issue (chưa tạo, Owner 10/11: "chưa ra issue"):
 7. **Giảm chuyển động.** App theo cài đặt của hệ điều hành (`prefers-reduced-motion`), không có công tắc riêng. Khi bật: màn mới hiện đủ ngay, "Mở" đổi màn ngay (bảng vẫn ở chỗ đã cuộn), viên chọn và nút trượt nhảy tới chỗ mới, lớp nổi hiện và ẩn ngay, số và thanh đổi thẳng, nhãn và thông báo hiện ngay ở đúng chỗ, chấm của viên "Lưu ý" đứng yên. Đổi màu khi rê chuột và viền tiêu điểm vẫn còn.
 8. **Bảng "động tác → nơi dùng"** của mọi màn đợt a–f, kể cả nơi không có chuyển động (dòng của bảng, kết quả lọc và sắp xếp, ô nhập, cuộn, bản in, file Excel): mục `#where` của mockup. Chỗ nào mockup đợt a–f chuyển động khác bảng đó thì theo bảng đó.
 
-Phương án đã cân nhắc (mỗi cái là "phương án khác" của một điểm `#ask`): cả màn trồi lên cùng lúc; chỉ thẻ KH dùng Mở; thu về trong 400 ms như lúc nở; app tự viết phép phóng khi không có View Transitions; lớp nổi chỉ mờ / rõ; "Đếm" kiểu lăn (số cũ lăn đi, số mới lăn vào, không có số trung gian); "Đếm" cả trên trang Bản tin; giữ lò xo nảy cho icon thanh bên và mẫu màu như mockup đợt a, b; dòng của bảng cũng chuyển động.
+Phương án đã cân nhắc (mỗi cái là "phương án khác" của một điểm `#ask`, Owner không chọn): cả màn trồi lên cùng lúc; chỉ thẻ KH dùng Mở; thu về trong 400 ms như lúc nở; app tự viết phép phóng khi không có View Transitions; lớp nổi chỉ mờ / rõ; "Đếm" kiểu lăn (số cũ lăn đi, số mới lăn vào, không có số trung gian); "Đếm" cả trên trang Bản tin; giữ lò xo nảy cho icon thanh bên và mẫu màu như mockup đợt a, b; dòng của bảng cũng chuyển động.
 
 Khả thi và hệ quả khi ra Issue (chưa tạo):
 

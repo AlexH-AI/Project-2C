@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css mục 13 và 19, hành vi chung ở ui2.js mục 20, dữ liệu và vẽ màn ở <script> cuối file):
   Mockup G3 đợt g (T-426 #1253): hệ chuyển động. Ý 06 "Bốn động tác, ba lò xo", ý 07 "Mở từ chỗ bấm" (spec §8).
-  Trạng thái: CHỜ G3. Token chuyển động đã duyệt ở đợt a (ADR-0013 phụ lục 11/11/2026 điểm 6): trang này không thêm token.
+  Trạng thái: Owner duyệt G3 14/11/2026 (10 điểm ở #ask; điểm nào cũng chọn phương án đề xuất). Token chuyển động đã duyệt ở đợt a (ADR-0013 phụ lục 11/11/2026 điểm 6): trang này không thêm token.
   Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
   Số viết theo ADR-0018: "1.38 tỷ", "310 tr", "60,000,000 VNĐ", "42.3%"; ngày dd/mm/yyyy; chữ "RM".
   Số khớp các đợt đã duyệt (đo trong trang): Tổng quan tháng 11 MTD của tong-quan.html (Toàn bộ 1.38 tỷ, Sao Mai 620 tr,
@@ -20,7 +20,7 @@
   #where     Bảng "động tác → nơi dùng" của mọi màn đợt a–f, và nơi không có chuyển động
   #calm      Bản "Giảm chuyển động" của từng động tác
   #feasible  Khả thi và hiệu năng: WebView2, WKWebView, điều đã đo, điều chưa kiểm
-  #ask       Các điểm G3 cần Owner quyết
+  #ask       10 điểm G3 Owner đã quyết (14/11/2026)
   Vỏ app, bảng thành phần, token (đợt a): app-shell.html, components.html. Màn đầy đủ: search-rm-team.html (b),
   tong-quan.html (c), forecast.html (d), bao-cao.html (e), huy-hd.html và ngon-ngu-tien-te.html (f).
 -->
@@ -34,12 +34,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="ui2.css" />
     <style>
-      /* ---- Proposed in round g, waiting for G3: two changes to how approved parts move (points 1 and 8 of #ask).
-         They live here until the Owner answers; once approved they move to ui2.css section 19 so the mockups of
-         rounds a–f follow. Nothing else of the approved rounds is changed by this page. ---- */
-      .view.on .rise { animation-delay: calc(min(var(--i, 0), 7) * 28ms); } /* "Hiện": at most 8 steps, the last part lands within 0.6 s */
-      .nav-i .ic { transition: color var(--t-2), transform var(--t-3) var(--spring-snappy); } /* the bouncy spring is kept for three places */
-
       /* ---- Only this page: the screens inside the window (short forms of the approved screens, for watching motion) ---- */
       .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
       .later .ic { width: 30px; height: 30px; color: var(--text-3); }
@@ -174,7 +168,7 @@
       .bn .nav { flex-direction: row; gap: 4px; }
       .bn .nav-i { width: auto; padding: 0 12px; }
       .bn.b .nav-i .ic { transition: color var(--t-2), transform var(--t-3) var(--spring-bouncy); }
-      .bn.a .swatches button { transition: transform var(--t-3) var(--spring-snappy); }
+      .bn.b .swatches button { transition: transform var(--t-3) var(--spring-bouncy); }
       .bn .toast { position: static; }
       .bn .toast.pop { animation: toast-in var(--t-4) var(--spring-bouncy) both, land-in var(--t-2) var(--ease-out) both; }
       @keyframes toast-in { from { transform: translateY(24px) scale(0.96); } }
@@ -217,9 +211,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt g · Chuyển động</b>
-      <span class="state">Chờ G3</span>
+      <span class="state ok">Đã duyệt G3 · 14/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#rules">Luật chung</a><a href="#hien">Hiện</a><a href="#mo">Mở</a><a href="#truot">Trượt</a><a href="#dem">Đếm</a><a href="#springs">Ba lò xo</a><a href="#where">Nơi dùng</a><a href="#calm">Giảm chuyển động</a><a href="#feasible">Khả thi</a><a href="#ask">Cần anh quyết</a>
+        <a href="#rules">Luật chung</a><a href="#hien">Hiện</a><a href="#mo">Mở</a><a href="#truot">Trượt</a><a href="#dem">Đếm</a><a href="#springs">Ba lò xo</a><a href="#where">Nơi dùng</a><a href="#calm">Giảm chuyển động</a><a href="#feasible">Khả thi</a><a href="#ask">Anh đã quyết</a>
       </nav>
     </header>
 
@@ -395,7 +389,7 @@
             <h3>Luật của Hiện</h3>
             <ul class="rules">
               <li><b>Một "phần"</b> là một khối của màn: một thẻ, một ô chỉ số, một bảng. Dòng của bảng và thẻ KH trên bảng Khách hàng (884 thẻ) không phải là phần: cả bảng trồi lên một lần.</li>
-              <li><b>Tối đa 8 nhịp.</b> Phần thứ 9 trở đi tới cùng lúc với phần thứ 8, nên màn nào cũng xong trong 0.6 giây. (Tổng quan của đợt c có 11 phần: hôm nay phần cuối tới ở 680 ms, theo luật này là 596 ms.)</li>
+              <li><b>Tối đa 8 nhịp.</b> Phần thứ 9 trở đi tới cùng lúc với phần thứ 8, nên màn nào cũng xong trong 0.6 giây. (Tổng quan của đợt c có 11 phần: trước đợt g phần cuối tới ở 680 ms, nay là 596 ms.)</li>
               <li><b>Chỉ chạy khi màn được mở.</b> Đổi góc nhìn hay kỳ trong cùng một màn không chạy lại Hiện: số thì Đếm, khối vẽ lại thì đổi ngay.</li>
               <li><b>Thanh</b> (thanh theo team, đường băng) dài ra từ trái, bắt đầu sau 100 ms, mỗi thanh sau 40 ms.</li>
               <li><b>Ra:</b> không có. <b>Giảm chuyển động:</b> màn mới hiện đủ ngay.</li>
@@ -534,7 +528,7 @@
             <div class="cases" style="margin-top: 12px" data-dem-cases></div>
             <span class="frames-l">Từng khung hình, cách nhau 50 ms, của ca vừa bấm</span>
             <div class="frames" data-dem-frames></div>
-            <span class="frames-l">Cùng ca đó theo cách của mockup đợt c, d hôm nay (đơn vị lấy của giá trị đích)</span>
+            <span class="frames-l">Cùng ca đó theo cách của mockup đợt c, d trước đợt g (đơn vị lấy của giá trị đích)</span>
             <div class="frames" data-dem-old></div>
           </div>
           <div class="pcard">
@@ -552,7 +546,7 @@
           </div>
         </div>
         <h3 class="sub-h" id="opt-count">Khi số đi qua ranh giới tỷ ↔ tr</h3>
-        <p class="sub-p">Ca của sổ ghi chú (review PR #1240): đổi góc nhìn Toàn bộ → Team Hừng Đông, Doanh số từ <span class="num">1.38 tỷ</span> xuống <span class="num">310 tr</span>. Mockup đợt c giữ đơn vị của giá trị đích trong lúc chạy nên có khung hình hiện "1,231 tr", sai dạng gọn. Hai cách sửa:</p>
+        <p class="sub-p">Ca của sổ ghi chú (review PR #1240): đổi góc nhìn Toàn bộ → Team Hừng Đông, Doanh số từ <span class="num">1.38 tỷ</span> xuống <span class="num">310 tr</span>. Mockup đợt c giữ đơn vị của giá trị đích trong lúc chạy nên có khung hình hiện "1,231 tr", sai dạng gọn; <code>tong-quan.html</code> và <code>forecast.html</code> đã sửa theo cách A (câu trả lời điểm 6 và 10). Hai cách đã cân nhắc:</p>
         <div class="gal">
           <div class="opt rec"><div class="opt-pic flat blk"><div class="tile" data-dem="run" data-auto><span class="lbl">Doanh số</span><div class="val num"><span class="cnt"></span><small></small></div></div><div class="cases" style="margin-top: 10px" data-dem-cases="short"></div><span class="frames-l">Khung hình mỗi 50 ms · 1.38 tỷ → 310 tr</span><div class="frames" data-frames-a></div></div><div class="opt-t"><b>A · Số chạy, đơn vị theo số đang hiện <span class="tag rec">đề xuất</span></b><p>Giữ cảm giác "số đang đổi" anh đã thấy ở đợt c, d. Mỗi khung hình tự chọn đơn vị như một con số đứng yên, nên chữ "tỷ" đổi thành "tr" đúng lúc con số xuống dưới 1 tỷ.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div class="tile" data-dem="roll" data-auto><span class="lbl">Doanh số</span><div class="val num"><span class="roll-box"><span><span class="cnt"></span><small></small></span></span></div></div><div class="cases" style="margin-top: 10px" data-dem-cases="short"></div><span class="frames-l">Chỉ có hai con số · 1.38 tỷ → 310 tr</span><div class="frames" data-frames-b></div></div><div class="opt-t"><b>B · Lăn: số cũ lăn đi, số mới lăn vào</b><p>Không có con số trung gian nào, nên không có gì để viết sai; số tăng thì lăn lên, giảm thì lăn xuống (220 ms). Đúng luật transform / opacity, nhưng mất cảm giác con số "chạy tới" giá trị mới.</p></div></div>
@@ -603,10 +597,10 @@
           </div>
         </div>
         <h3 class="sub-h" id="opt-bounce">Lò xo nảy dùng ở đâu</h3>
-        <p class="sub-p">Anh đã chốt (10/11): lò xo nảy chỉ cho điều đáng mừng hay cần chú ý. Mockup đợt a, b hôm nay còn dùng nó ở hai nơi nữa: icon của mục thanh bên đang chọn và mẫu màu của team. Bấm các mục, mẫu màu, ô chọn và nút trong từng hình (nên xem ở tốc độ chậm).</p>
+        <p class="sub-p">Anh đã chốt (10/11): lò xo nảy chỉ cho điều đáng mừng hay cần chú ý. Trước đợt g, mockup đợt a, b còn dùng nó ở hai nơi nữa: icon của mục thanh bên đang chọn và mẫu màu của team; theo câu trả lời điểm 8 và 10, hai nơi đó đã chuyển sang lò xo nhanh (<code>ui2.css</code> mục 19). Bấm các mục, mẫu màu, ô chọn và nút trong từng hình (nên xem ở tốc độ chậm).</p>
         <div class="gal">
           <div class="opt rec"><div class="opt-pic flat mid"><div class="bn a" data-os="mac" data-bn></div></div><div class="opt-t"><b>A · Chỉ ba nơi <span class="tag rec">đề xuất</span></b><p>Nảy: thông báo nổi, nhãn "Đã hủy", dấu ✓. Icon thanh bên và mẫu màu chuyển sang lò xo nhanh: đó là thao tác chọn lặp lại hàng trăm lần một ngày, không phải điều cần chú ý.</p></div></div>
-          <div class="opt"><div class="opt-pic flat mid"><div class="bn b" data-os="mac" data-bn></div></div><div class="opt-t"><b>B · Giữ thêm hai nơi của đợt a, b</b><p>Icon của mục thanh bên vừa chọn và mẫu màu vừa chọn cũng nảy, như các mockup đợt a, b đang vẽ. Sinh động hơn, nhưng lò xo nảy xuất hiện ở mỗi lần đổi màn.</p></div></div>
+          <div class="opt"><div class="opt-pic flat mid"><div class="bn b" data-os="mac" data-bn></div></div><div class="opt-t"><b>B · Giữ thêm hai nơi của đợt a, b</b><p>Icon của mục thanh bên vừa chọn và mẫu màu vừa chọn cũng nảy, như các mockup đợt a, b đã vẽ trước đợt g. Sinh động hơn, nhưng lò xo nảy xuất hiện ở mỗi lần đổi màn.</p></div></div>
         </div>
       </section>
 
@@ -614,7 +608,7 @@
       <section class="sec" id="where">
         <span class="kicker">Động tác → nơi dùng · đợt a–f</span>
         <h2>Mỗi màn đã duyệt dùng động tác nào, và nơi không có chuyển động.</h2>
-        <p class="lead">Bảng này phủ mọi màn của đợt a–f. Các màn giữ bố cục cũ (Lịch hẹn, KYC, các hộp thoại 5a–8d) nhận đúng hai thứ qua bộ khung chung: <b>Hiện</b> khi vào màn, <b>Trượt</b> cho hộp thoại và bảng nổi. Chỗ nào mockup đợt a–f đang chuyển động khác bảng này thì theo bảng này (điểm 10 ở mục Cần anh quyết).</p>
+        <p class="lead">Bảng này phủ mọi màn của đợt a–f. Các màn giữ bố cục cũ (Lịch hẹn, KYC, các hộp thoại 5a–8d) nhận đúng hai thứ qua bộ khung chung: <b>Hiện</b> khi vào màn, <b>Trượt</b> cho hộp thoại và bảng nổi. Chỗ nào mockup đợt a–f đang chuyển động khác bảng này thì theo bảng này (điểm 9 và 10 ở mục Anh đã quyết).</p>
         <div class="pcard">
           <table class="law">
             <thead><tr><th>Nơi (đợt)</th><th>Việc xảy ra</th><th>Động tác</th></tr></thead>
@@ -735,22 +729,22 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Cần anh quyết · G3 đợt g</span>
+        <span class="kicker">Anh đã quyết · G3 · 14/11/2026</span>
         <h2>Mười điểm của hệ chuyển động.</h2>
-        <p class="lead">Mỗi điểm có phương án em đề xuất và một phương án khác; bốn điểm có hình ở mục riêng. Không hỏi lại điều anh đã chốt: token chuyển động (đợt a), chỉ đổi transform / opacity, "Giảm chuyển động" tắt hết, "Mở" dùng View Transitions của WebView, lò xo nảy chỉ cho điều đáng mừng hay cần chú ý, không thêm thư viện (10/11, 11/11), và bố cục các màn đã duyệt. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <p class="lead">Anh đã trả lời cả mười điểm ngày 14/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt g". Bốn điểm có hình hai phương án. Không hỏi lại điều anh đã chốt: token chuyển động (đợt a), chỉ đổi transform / opacity, "Giảm chuyển động" tắt hết, "Mở" dùng View Transitions của WebView, lò xo nảy chỉ cho điều đáng mừng hay cần chú ý, không thêm thư viện (10/11, 11/11), và bố cục các màn đã duyệt. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
         <ol class="asks">
-          <li><b>"Hiện": các phần tới thế nào?</b>Màn cũ biến mất ngay; mỗi phần trồi 8 px trong 400 ms, lò xo nhanh; dòng của bảng và thẻ KH không trồi riêng. Hình: <a href="#opt-stagger">lần lượt hay cùng lúc</a>.<em>Em đề xuất: <b>A · Lần lượt, cách nhau 28 ms, tối đa 8 nhịp</b>. Phương án khác: B · cả màn trồi lên cùng lúc.</em></li>
-          <li><b>"Mở" như mục Mở?</b>Dùng ở ba nơi (thẻ KH → hồ sơ, dòng RM → trang RM, dòng KH của trang RM → hồ sơ); nở 400 ms bằng lò xo êm; chỗ bấm nằm trong lớp nổi thì dùng Hiện; thẻ không còn thì trang chỉ mờ đi.<em>Em đề xuất: <b>duyệt</b>. Phương án khác: chỉ thẻ KH dùng Mở, dòng của bảng dùng Hiện.</em></li>
-          <li><b>"Mở": lúc thu về dài bao lâu?</b>Hình: <a href="#opt-back">hai chiều về</a>.<em>Em đề xuất: <b>A · 220 ms</b> (ra nhanh hơn vào). Phương án khác: B · 400 ms, bằng lúc nở.</em></li>
-          <li><b>Khi WebView không có View Transitions?</b>Bảng và nút thử: <a href="#opt-fallback">đường lui</a>.<em>Em đề xuất: <b>A · Lui về Hiện</b>. Phương án khác: B · app tự viết phép phóng.</em></li>
-          <li><b>"Trượt" như mục Trượt?</b>Viên chọn và nút trượt đi tới chỗ mới (400 ms, lò xo nhanh); lớp nổi đi 6–36 px ra từ nơi gọi, rời đi trong 120 ms; hộp thoại macOS rơi từ thanh công cụ, Windows 11 mở ở giữa.<em>Em đề xuất: <b>duyệt</b>. Phương án khác: lớp nổi chỉ mờ / rõ, không dịch chuyển.</em></li>
-          <li><b>"Đếm": số đi qua ranh giới tỷ ↔ tr thế nào?</b>Hình: <a href="#opt-count">hai cách</a>.<em>Em đề xuất: <b>A · Số chạy, đơn vị theo số đang hiện</b> (mỗi khung hình làm tròn ba chữ số có nghĩa, viết bằng hàm dạng gọn của ADR-0018). Phương án khác: B · lăn, số cũ lăn đi và số mới lăn vào.</em></li>
-          <li><b>"Đếm" chạy ở đâu?</b>Bảng: <a href="#dem">chạy ở đâu, không chạy ở đâu</a>.<em>Em đề xuất: <b>A · Số lớn đứng riêng</b> của Tổng quan, Forecast, trang RM; không chạy trong bảng, trong câu, trong Báo cáo. Phương án khác: B · thêm các số lớn của trang Bản tin (Báo cáo).</em></li>
-          <li><b>Ba lò xo, và nơi dùng lò xo nảy?</b>Êm cho Mở và thanh; nhanh cho Hiện, Trượt, nút; số không dùng lò xo. Hình: <a href="#opt-bounce">lò xo nảy dùng ở đâu</a>.<em>Em đề xuất: <b>A · Nảy chỉ ở ba nơi</b> (thông báo nổi, nhãn "Đã hủy", dấu ✓). Phương án khác: B · giữ thêm icon thanh bên và mẫu màu team như đợt a, b.</em></li>
-          <li><b>Bảng "động tác → nơi dùng" như mục Nơi dùng?</b>Kể cả nơi không có chuyển động: dòng của bảng, kết quả lọc và sắp xếp, ô nhập, cuộn, bản in.<em>Em đề xuất: <b>duyệt</b>. Phương án khác: dòng của bảng cũng chuyển động (dòng trượt tới chỗ mới khi sắp xếp, lọc).</em></li>
-          <li><b>Sửa các mockup đã duyệt cho khớp luật mới?</b>Hai dòng script ở <code>tong-quan.html</code> và <code>forecast.html</code> (số đang chạy theo điểm 6; mục sổ ghi chú của PR #1240), và hai luật ở <code>ui2.css</code> mục 19 để mockup đợt a–f theo (trần 8 nhịp của điểm 1; icon thanh bên và mẫu màu dùng lò xo nhanh của điểm 8). Không đổi hình, bố cục, nội dung.<em>Em đề xuất: <b>A · Sửa</b>. Phương án khác: B · để nguyên các mockup đó; code làm theo trang này.</em></li>
+          <li><b>"Hiện": các phần tới thế nào?</b>Màn cũ biến mất ngay; mỗi phần trồi 8 px trong 400 ms, lò xo nhanh; dòng của bảng và thẻ KH không trồi riêng. Hình: <a href="#opt-stagger">lần lượt hay cùng lúc</a>.<em>Anh trả lời 14/11: <b>"A · Lần lượt, 8 nhịp"</b> (phương án đề xuất; phương án bỏ: cả màn trồi lên cùng lúc).</em></li>
+          <li><b>"Mở" như mục Mở?</b>Dùng ở ba nơi (thẻ KH → hồ sơ, dòng RM → trang RM, dòng KH của trang RM → hồ sơ); nở 400 ms bằng lò xo êm; chỗ bấm nằm trong lớp nổi thì dùng Hiện; thẻ không còn thì trang chỉ mờ đi.<em>Anh trả lời 14/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: chỉ thẻ KH dùng Mở, dòng của bảng dùng Hiện).</em></li>
+          <li><b>"Mở": lúc thu về dài bao lâu?</b>Hình: <a href="#opt-back">hai chiều về</a>.<em>Anh trả lời 14/11: <b>"A · 220 ms"</b> (phương án đề xuất; phương án bỏ: 400 ms, bằng lúc nở).</em></li>
+          <li><b>Khi WebView không có View Transitions?</b>Bảng và nút thử: <a href="#opt-fallback">đường lui</a>.<em>Anh trả lời 14/11: <b>"A · Lui về Hiện"</b> (phương án đề xuất; phương án bỏ: app tự viết phép phóng).</em></li>
+          <li><b>"Trượt" như mục Trượt?</b>Viên chọn và nút trượt đi tới chỗ mới (400 ms, lò xo nhanh); lớp nổi đi 6–36 px ra từ nơi gọi, rời đi trong 120 ms; hộp thoại macOS rơi từ thanh công cụ, Windows 11 mở ở giữa.<em>Anh trả lời 14/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: lớp nổi chỉ mờ / rõ, không dịch chuyển).</em></li>
+          <li><b>"Đếm": số đi qua ranh giới tỷ ↔ tr thế nào?</b>Mỗi khung hình làm tròn ba chữ số có nghĩa, viết bằng hàm dạng gọn của ADR-0018. Hình: <a href="#opt-count">hai cách</a>.<em>Anh trả lời 14/11: <b>"A · Số chạy, đổi đơn vị"</b> (phương án đề xuất; phương án bỏ: lăn, số cũ lăn đi và số mới lăn vào).</em></li>
+          <li><b>"Đếm" chạy ở đâu?</b>Số lớn đứng riêng của Tổng quan, Forecast, trang RM; không chạy trong bảng, trong câu, trong Báo cáo. Bảng: <a href="#dem">chạy ở đâu, không chạy ở đâu</a>.<em>Anh trả lời 14/11: <b>"A · Số lớn đứng riêng"</b> (phương án đề xuất; phương án bỏ: thêm các số lớn của trang Bản tin).</em></li>
+          <li><b>Ba lò xo, và nơi dùng lò xo nảy?</b>Êm cho Mở và thanh; nhanh cho Hiện, Trượt, nút; số không dùng lò xo; nảy chỉ ở thông báo nổi, nhãn "Đã hủy", dấu ✓. Hình: <a href="#opt-bounce">lò xo nảy dùng ở đâu</a>.<em>Anh trả lời 14/11: <b>"A · Nảy ở ba nơi"</b> (phương án đề xuất; phương án bỏ: giữ thêm icon thanh bên và mẫu màu team như đợt a, b).</em></li>
+          <li><b>Bảng "động tác → nơi dùng" như mục Nơi dùng?</b>Kể cả nơi không có chuyển động: dòng của bảng, kết quả lọc và sắp xếp, ô nhập, cuộn, bản in.<em>Anh trả lời 14/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: dòng của bảng cũng chuyển động khi sắp xếp, lọc).</em></li>
+          <li><b>Sửa các mockup đã duyệt cho khớp luật mới?</b>Đã sửa trong PR của đợt g: chỗ gọi "Đếm" ở <code>tong-quan.html</code> và <code>forecast.html</code> (số đang chạy theo điểm 6; mục sổ ghi chú của PR #1240), và ba dòng ở <code>ui2.css</code> mục 19 để mockup đợt a–f theo (trần 8 nhịp của điểm 1; icon thanh bên và mẫu màu dùng lò xo nhanh của điểm 8). Không đổi hình, bố cục, nội dung.<em>Anh trả lời 14/11: <b>"A · Sửa"</b> (phương án đề xuất; phương án bỏ: để nguyên các mockup đó, code làm theo trang này).</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt g · T-426 #1253 · chờ G3 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt g · T-426 #1253 · Owner duyệt G3 14/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 

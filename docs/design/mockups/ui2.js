@@ -10,7 +10,7 @@
    its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
    Round d (T-423, approved at G3 13/11/2026): 19 a popover beside what opened it (ui2.placeBeside, "ui2:pop-at")
    Round e (T-424): nothing new here; in 19, a scrolling screen closes only the popovers 19 placed
-   Round g (T-426, waiting for G3): 20 "Mở" from where it was clicked (ui2.morph, data-grow / data-shrink), "Đếm" in
+   Round g (T-426, approved at G3 14/11/2026): 20 "Mở" from where it was clicked (ui2.morph, data-grow / data-shrink), "Đếm" in
    its final form (ui2.run, ui2.sig3), tools to watch a move (ui2.setPace, ui2.calm, ui2.noVT)
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
