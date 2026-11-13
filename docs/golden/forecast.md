@@ -1,8 +1,8 @@
 # Golden examples — Forecast (G2 Phase 6, phần D)
 
-Bảng đối chiếu cho Owner duyệt (T-423, #1242). **Trạng thái: chờ G2** (ô duyệt ở mục 5). Chưa có fixture: Issue code của phần D viết fixture khớp 1–1 (cùng mã `kh-…`, `fc-…`, `hd-…`, `F…`) và hàm tính. Sau khi Owner duyệt, bộ này là test bắt buộc của phần D; **không sửa để "cho xanh"**, muốn đổi phải qua Owner.
+Bảng đối chiếu, **Owner duyệt G2 13/11/2026** (T-423 #1242, PR #1243; mục 5). Chưa có fixture: Issue code của phần D viết fixture khớp 1–1 (cùng mã `kh-…`, `fc-…`, `hd-…`, `F…`) và hàm tính. Bộ này là test bắt buộc của phần D; **không sửa để "cho xanh"**, muốn đổi phải qua Owner.
 
-Nguồn: spec `docs/design/phase-6-phan-hoi-dung-thu.md` §6.1 (Owner chốt 10/11/2026), §6.2 (D-a … D-f, Owner chốt 11/11/2026), §8 gạch "Mục tiêu doanh số" (Owner 11/11/2026). Phần ghi **"đề xuất"** dưới đây là điều Claude đề xuất ở T-423, Owner duyệt ở G2 này.
+Nguồn: spec `docs/design/phase-6-phan-hoi-dung-thu.md` §6.1 (Owner chốt 10/11/2026), §6.2 (D-a … D-f, Owner chốt 11/11/2026), §8 gạch "Mục tiêu doanh số" (Owner 11/11/2026). Phần ghi **"đề xuất"** dưới đây là điều Claude đề xuất ở T-423; Owner duyệt mọi đề xuất ở G2 ngày 13/11/2026 (câu trả lời từng điểm ở mục 5).
 
 Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.md`; số viết theo ADR-0018 (`,` ngăn hàng nghìn, `.` cho phần lẻ: "1,420", "90.7%"); viết "RE" như các golden khác (Issue A5 đổi thành "RM" một lần). Trên giao diện, số hiện theo `docs/golden/so-va-tien-te.md` ("1.42 tỷ", "620 tr").
 
@@ -12,7 +12,7 @@ Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.m
 |---|---|
 | **Lịch trong Forecast** | Cuộc hẹn chưa xóa, của KH chưa xóa, trạng thái **Đã lên lịch**, ngày **từ hôm nay trở đi**, ngày không phải Chủ Nhật, của KH **hiện** ở N3 / N2 / N1 (§6.1, D-c). Lịch của hôm nay vẫn tính dù giờ hẹn đã qua, tới khi ghi kết quả (như nhóm "Dự kiến" của `lich-hen.md`) |
 | **Lịch mang số** của một KH (D-a) | Trong các lịch trong Forecast của KH đó **có case size dự kiến**: lịch có thời điểm nhập / sửa số **gần nhất**. Cùng thời điểm → lịch có ngày muộn hơn; cùng ngày → giờ muộn hơn (lịch không ghi giờ xếp trước); vẫn bằng → lịch tạo sau. Lịch thiếu case size không tham gia so |
-| **Số của một KH** | Case size dự kiến của lịch mang số; nằm ở **ngày của lịch mang số** và tính cho **RE ghi trên lịch đó**. Mỗi KH một số, chọn trên mọi lịch trong Forecast của KH (mọi RE, mọi ngày từ hôm nay): **đề xuất**, câu G2-1 |
+| **Số của một KH** | Case size dự kiến của lịch mang số; nằm ở **ngày của lịch mang số** và tính cho **RE ghi trên lịch đó**. Mỗi KH một số, chọn trên mọi lịch trong Forecast của KH (mọi RE, mọi ngày từ hôm nay): **đề xuất**; Owner chọn 13/11/2026, "A · Một KH một số" |
 | **Forecast của một khoảng** | Σ số của các KH có lịch mang số nằm trong khoảng. Cộng thẳng, không nhân hệ số theo nhóm (D-d). Tách N1 / N2 / N3 theo nhóm **hiện tại** của KH |
 | **Forecast tuần** | Khoảng từ hôm nay tới hết Thứ Bảy của tuần này. Hôm nay là Chủ Nhật → Thứ Hai tới Thứ Bảy của **tuần sau** (D-c) |
 | **Forecast tháng** | Khoảng từ hôm nay tới ngày cuối tháng, không tính Chủ Nhật |
@@ -146,7 +146,7 @@ Cột: **Dự kiến** = Forecast của khoảng (tr) · **N1 / N2 / N3** = ph�
 | F16 | 13/03 | Ngày 13/03 | Toàn bộ | 90 | 0 | 90 | 0 | 1 | 0 | 0 | Lịch của hôm nay tính theo ngày, không theo giờ |
 | F17 | 13/03, **điền `fc-08` = 300** lúc 13/03 10:00 | Tuần | Toàn bộ | 920 | 500 | 240 | 180 | 6 | 0 | 3 | Điền xong cộng ngay |
 | F18 | như F17 | Tháng | Toàn bộ | 1,720 | 790 | 710 | 220 | 11 | 1 | 5 | `fc-11` vẫn thiếu |
-| F19 | 13/03, **nhập 0 cho `fc-08`** | Tuần | Toàn bộ | 620 | 200 | 240 | 180 | 5 | 1 | 3 | Số 0 bị từ chối (luật phí hiện có: lớn hơn 0 hoặc để trống); `fc-08` vẫn là lịch thiếu (**đề xuất**, câu G2-4) |
+| F19 | 13/03, **nhập 0 cho `fc-08`** | Tuần | Toàn bộ | 620 | 200 | 240 | 180 | 5 | 1 | 3 | Số 0 bị từ chối (luật phí hiện có: lớn hơn 0 hoặc để trống); `fc-08` vẫn là lịch thiếu (**đề xuất**; Owner 13/11/2026: "A · Không nhận 0") |
 | F20 | 13/03, **sửa `fc-03` thành 180** lúc 13/03 11:00 | Tuần | Toàn bộ | 650 | 200 | 270 | 180 | 5 | 1 | 3 | Sửa số làm `fc-03` thành lịch mang số: 180 chuyển về 17/03, `fc-02` thành lịch khác |
 | F21 | 13/03, **`fc-20` đổi ngày sang Thứ Bảy 17/03** | Tuần | Toàn bộ | 870 | 450 | 240 | 180 | 6 | 1 | 3 | Buổi hẹn Chủ Nhật nhập ở Thứ Bảy thì tính (D-c) |
 | F22 | **Thứ Bảy 17/03** | Tuần 17/03 | Toàn bộ | 160 | 0 | 100 | 60 | 2 | 0 | 0 | Tuần chỉ còn một ngày; `fc-02` đã qua nên KH 52 lấy 100 của `fc-03` |
@@ -197,7 +197,7 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 - Mỗi KH tính một lần, theo số nhập (hay sửa) gần nhất (D-a). Không nhân hệ số (D-d). Không tính Chủ Nhật (D-c).
 - KPI tháng theo team, do người dùng nhập; KPI toàn bộ = tổng các team, không nhập riêng; chỉ theo tháng; không có KPI của RE.
 
-**Claude đề xuất, chờ Owner duyệt G2** (code ở phần D):
+**Claude đề xuất, Owner duyệt G2 ngày 13/11/2026** (code ở phần D):
 
 1. **Case size dự kiến của lịch:** dùng lại cột có sẵn `appointments.expected_case_size` (`Appointment.expectedCaseSize`). Hôm nay cột này chỉ ghi khi ghi kết quả cuộc gặp; từ phần D, nhập được ngay khi đặt lịch, dời lịch, sửa lịch và điền tại chỗ trong Forecast. Khi ghi kết quả, ô "Case size dự kiến" của hộp kết quả mở sẵn số của lịch. Luật phí giữ nguyên: số nguyên đồng, lớn hơn 0, tối đa 100 tỷ, hoặc để trống (= thiếu); **không nhận số 0** (F19).
 2. **Thời điểm nhập / sửa số:** cột mới `appointments.expected_case_size_at` (thời điểm ISO như `created_at`; trường `expectedCaseSizeAt: string | null`). Có khi và chỉ khi lịch có case size. Đổi khi và chỉ khi số đổi: từ trống sang có số, đổi số, hay xóa số (thời điểm thành trống); sửa ngày, giờ, ghi chú không làm đổi. Không dùng `updated_at`, vì cột đó đổi cả khi sửa giờ hẹn.
@@ -205,7 +205,7 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 4. **Điền sẵn ở hộp đặt lịch:** số có thời điểm nhập gần nhất trong mọi cuộc hẹn chưa xóa của KH (mọi trạng thái); KH chưa có số nào thì ô trống. Đây là gợi ý: lưu lịch thì số trong ô (giữ hay sửa) được ghi cho lịch mới với thời điểm là lúc lưu.
 5. **Dời lịch:** ô "Case size dự kiến" của hộp dời mở sẵn số của lịch đang dời. Giữ nguyên số → lịch mới mang **cả số lẫn thời điểm** của lịch cũ (dời lịch không phải một lần ước lượng mới; `fc-15` → `fc-16`, F12). Sửa số trong hộp dời → thời điểm là lúc dời. Lịch cũ (Dời lịch) giữ số của nó, không còn trong Forecast.
 6. **KPI tháng:** bảng mới `team_targets` (`team_id`, `month` dạng `yyyy-mm`, `amount` số nguyên đồng, `created_at`, `updated_at`), mỗi team mỗi tháng nhiều nhất một dòng; kiểu `TeamTarget { teamId, month, amount }`. `amount` lớn hơn 0, tối đa 1,000 tỷ. Không có dòng = chưa đặt KPI; để trống ô rồi lưu = xóa dòng (xóa hẳn: KPI là một con số đặt, không phải bản ghi nghiệp vụ, không qua Thùng rác). Không có bảng hay cột cho KPI tuần, KPI của RE, KPI toàn bộ.
-7. **KPI của từng tháng được giữ:** nhập KPI tháng 4 không làm đổi KPI tháng 3. Tháng mới chưa nhập thì "chưa đặt KPI"; ô nhập mở sẵn KPI của tháng liền trước làm gợi ý. Tháng đã qua vẫn có KPI của nó (câu G2-6).
+7. **KPI của từng tháng được giữ:** nhập KPI tháng 4 không làm đổi KPI tháng 3. Tháng mới chưa nhập thì "chưa đặt KPI"; ô nhập mở sẵn KPI của tháng liền trước làm gợi ý. Tháng đã qua vẫn có KPI của nó (Owner 13/11/2026: "A · Mỗi tháng một KPI"): luật 4 của "Điểm nhấn" chạy thêm ở kỳ Tháng đã qua, câu chỉ có số thực tế (spec §8).
 8. **KPI toàn bộ** = Σ `amount` của mọi team chưa xóa trong tháng đó, chỉ khi mọi team chưa xóa (kể cả team chưa có RE) đều có dòng; team đã xóa không tính và không chặn (F34).
 9. **Lệnh:** đặt lịch, dời lịch, sửa lịch nhận thêm case size; một lệnh đặt / đổi / xóa case size của một lịch Đã lên lịch (điền tại chỗ); một lệnh đặt / xóa KPI tháng của một team. Mọi lệnh ghi một transaction như các lệnh khác.
 10. **Nhập backup:** `expected_case_size_at` có khi và chỉ khi `expected_case_size` có, và là thời điểm đọc được; `team_targets`: `team_id` trỏ tới một team có trong file, `month` đúng dạng trong miền năm 1900–2100, `amount` trong khoảng cho phép, không trùng (team, tháng). File backup cũ đi qua migration như ở mục 3.
@@ -219,8 +219,20 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 - F17, F19, F20, F21 đi qua lệnh (điền, nhập 0, sửa số, đổi ngày) rồi so; F34, F35, F36, F40 là biến thể của dữ liệu KPI / HĐ.
 - Chuỗi `fc-15` → `fc-16` tạo bằng lệnh dời lịch với số giữ nguyên, để kiểm thời điểm được mang sang.
 
-## 5. Owner duyệt — chờ G2
+## 5. Owner duyệt — đã duyệt G2 13/11/2026 (PR #1243)
 
-- [ ] Dữ liệu kịch bản D đúng ý (mục 1)
-- [ ] Kết quả F01–F41 đúng (mục 2)
-- [ ] Mô hình dữ liệu case size dự kiến và KPI tháng (mục 4)
+Owner, trong chat với phiên T-423 ở Home PC, trả lời chín điểm G2. Claude hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; trong ngoặc kép là nhãn Owner chọn, điểm nào cũng là phương án đề xuất.
+
+1. KH có lịch ở hai tuần khác nhau: "A · Một KH một số" (lịch mang số chọn trên mọi lịch từ hôm nay của KH; phương án bỏ: tính riêng trong từng khoảng đang xem).
+2. Bảy cách hiểu của D-a, D-b, D-c (so theo thời điểm nhập / sửa số; cùng lúc thì lịch ngày muộn hơn; lịch thiếu số không tham gia so; số nằm ở ngày của lịch mang số, tính cho RE ghi trên lịch đó; "đã đạt" đặt cạnh dự kiến; hôm nay Chủ Nhật thì lấy tuần sau; lịch đặt vào Chủ Nhật không tính): "Duyệt cả bảy".
+3. Nhịp cần mỗi tuần: "A · Có, theo công thức" (phương án bỏ: không hiện nhịp).
+4. Case size dự kiến bằng 0: "A · Không nhận 0" (phương án bỏ: nhận 0 với nghĩa "không dự kiến doanh số").
+5. KPI toàn bộ khi một team chưa đặt KPI: "A · Chỉ khi đủ mọi team" (phương án bỏ: cộng các team đã có).
+6. KPI lưu theo từng tháng, tháng đã qua vẫn hiện: "A · Mỗi tháng một KPI" (phương án bỏ: một con số cho tháng đang chạy).
+7. Đã đạt vượt KPI và ba điều kiện biên của bảng luật "Điểm nhấn" (spec §8, "Luật chung"): "Duyệt".
+8. Dời lịch: "A · Mang cả thời điểm" (phương án bỏ: dời lịch là một lần nhập mới).
+9. Kịch bản D, kết quả F01–F41, mô hình dữ liệu: "Duyệt G2 cả ba".
+
+- [x] Dữ liệu kịch bản D đúng ý (mục 1)
+- [x] Kết quả F01–F41 đúng (mục 2)
+- [x] Mô hình dữ liệu case size dự kiến và KPI tháng (mục 4)

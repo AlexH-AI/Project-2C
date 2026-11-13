@@ -8,7 +8,7 @@
    that lights what it finds · 14 pick one swatch or icon · 15 window.ui2 for the page's own script
    Round c (T-422, approved at G3 13/11/2026): 16 popovers of the toolbar (view menu, period picker) · 17 "Đếm", a number that runs to
    its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
-   Round d (T-423, waiting for G3): 19 a popover beside what opened it (ui2.placeBeside, "ui2:pop-at")
+   Round d (T-423, approved at G3 13/11/2026): 19 a popover beside what opened it (ui2.placeBeside, "ui2:pop-at")
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
 (() => {

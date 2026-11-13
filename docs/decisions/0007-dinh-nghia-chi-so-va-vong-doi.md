@@ -1,6 +1,6 @@
 # ADR-0007: Định nghĩa chỉ số và vòng đời khách hàng / hợp đồng
 
-- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): Accepted (G2, 13/11/2026); phụ lục Forecast (Phase 6 phần D): Proposed, chờ G2 (T-423)
+- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): Accepted (G2, 13/11/2026); phụ lục Forecast (Phase 6 phần D): Accepted (G2, 13/11/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W3, W4, W5, W8), §2.3, §4.4, §7 (Q3–Q7)
 - **Commit / PR:** `20e9c5e` · G2: #28
@@ -120,11 +120,11 @@ Phụ lục này thêm trạng thái Đã hủy vào vòng đời HĐ (thân ghi
   - nhập backup: ràng buộc trên áp cho mọi HĐ, luật 10 (không sau hôm nay) thêm ngày hủy của HĐ chưa xóa.
 - **Duyệt G2:** Owner ngày 13/11/2026, PR #1236 (chat với phiên T-421 ở Home PC): "Duyệt G2 cả ba". Câu này duyệt dữ liệu kịch bản B, kết quả G23–G41 (cùng luật cột mới của G01–G22) và mô hình dữ liệu HĐ hủy.
 
-## Phụ lục — Forecast (Phase 6 phần D; chờ Owner duyệt G2, T-423 #1242)
+## Phụ lục — Forecast (Phase 6 phần D; Owner duyệt G2 13/11/2026, PR #1243)
 
 Nguồn: phản hồi dùng thử của Owner ngày 10/11/2026 (ý 4) và các câu trả lời 10 – 11/11/2026, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §1, §6, §8 (gạch "Mục tiêu doanh số"); golden D: `docs/golden/forecast.md` (F01–F41); mockup `docs/design/mockups/forecast.html`.
 
-Phụ lục này thêm một nhóm số mới, không đổi định nghĩa nào của thân ADR hay của phụ lục HĐ hủy. G01–G41 giữ nguyên số. **Trạng thái: Proposed.** Phần "Owner đã chốt" là quyết định có sẵn; phần "đề xuất" có hiệu lực khi Owner duyệt G2 (câu duyệt sẽ ghi ở cuối phụ lục).
+Phụ lục này thêm một nhóm số mới, không đổi định nghĩa nào của thân ADR hay của phụ lục HĐ hủy. G01–G41 giữ nguyên số. Phần "Owner đã chốt" là quyết định của 10 – 11/11/2026; phần "đề xuất" Owner duyệt G2 ngày 13/11/2026 (T-423 #1242; câu duyệt ở cuối phụ lục).
 
 - **Owner đã chốt:**
   - Forecast tuần: lịch hẹn từ hôm nay tới hết Thứ Bảy của tuần này. Forecast tháng: từ hôm nay tới hết tháng, chỉ Thứ Hai → Thứ Bảy (10/11, §6.1; D-c 11/11: "Em có thể bỏ CN").
@@ -132,7 +132,7 @@ Phụ lục này thêm một nhóm số mới, không đổi định nghĩa nào
   - Mỗi KH tính một lần, theo số nhập gần nhất: "Tính 1 lần, doanh số FC dựa trên số gần nhất nhập liệu vì có thể đó là điều chỉnh theo nhu cầu của KH" (D-a). Không nhân hệ số theo nhóm: "Không nhân" (D-d).
   - Forecast hiện dự kiến, đã đạt và KPI (D-b). KPI theo team, do người dùng nhập đầu tháng; KPI toàn bộ là "Tổng các team"; "Chỉ theo tháng"; RE không có KPI.
 
-- **Claude đề xuất, chờ G2** (định nghĩa đầy đủ và ví dụ ở golden D):
+- **Claude đề xuất, Owner duyệt G2 13/11/2026** (định nghĩa đầy đủ và ví dụ ở golden D):
 
 | Điều | Định nghĩa |
 |---|---|
@@ -144,11 +144,12 @@ Phụ lục này thêm một nhóm số mới, không đổi định nghĩa nào
 | KPI toàn bộ | Σ KPI các team chưa xóa, chỉ khi mọi team đều có KPI của tháng đó |
 | Nhịp cần mỗi tuần | (KPI − đã đạt) ÷ (số ngày Thứ Hai → Thứ Bảy từ hôm nay tới cuối tháng ÷ 6); không hiện khi đã đạt ≥ KPI hoặc còn dưới 6 ngày |
 
-- **Mô hình dữ liệu** (đề xuất; chi tiết ở golden D mục 4):
+- **Mô hình dữ liệu** (Claude đề xuất, Owner duyệt G2 13/11/2026; chi tiết ở golden D mục 4):
   - case size dự kiến dùng lại cột `appointments.expected_case_size` (`Appointment.expectedCaseSize`), nay nhập được từ lúc đặt lịch; luật phí giữ nguyên (lớn hơn 0, tối đa 100 tỷ, hoặc để trống);
   - cột mới `appointments.expected_case_size_at` (`expectedCaseSizeAt`): thời điểm nhập / sửa số, có khi và chỉ khi có số, chỉ đổi khi số đổi; lịch có sẵn lấy `updated_at`;
   - dời lịch giữ nguyên số thì lịch mới mang cả số lẫn thời điểm; sửa số khi dời thì thời điểm là lúc dời;
   - bảng mới `team_targets` (`team_id`, `month` dạng `yyyy-mm`, `amount`): mỗi team mỗi tháng nhiều nhất một dòng, `amount` lớn hơn 0 và tối đa 1,000 tỷ; không có dòng = chưa đặt KPI; không lưu KPI tuần, KPI của RE, KPI toàn bộ;
+  - KPI lưu theo từng tháng: tháng đã qua vẫn có KPI của nó, nên so được đã đạt với KPI ở kỳ Tháng đã qua (luật 4 của "Điểm nhấn", spec §8);
   - nhập backup: thời điểm nhập số đi cùng số; `team_targets` trỏ tới team có trong file, tháng đúng dạng, không trùng (team, tháng).
 
-- **Duyệt G2:** chờ Owner (PR của T-423).
+- **Duyệt G2:** Owner ngày 13/11/2026, PR #1243 (chat với phiên T-423 ở Home PC), trả lời chín điểm, điểm nào cũng chọn phương án đề xuất: "A · Một KH một số"; "Duyệt cả bảy" (bảy cách hiểu của D-a, D-b, D-c); "A · Có, theo công thức" (nhịp cần mỗi tuần); "A · Không nhận 0"; "A · Chỉ khi đủ mọi team" (KPI toàn bộ); "A · Mỗi tháng một KPI"; "Duyệt" (đã đạt vượt KPI, ba điều kiện biên của "Điểm nhấn"); "A · Mang cả thời điểm" (dời lịch); "Duyệt G2 cả ba". Câu cuối duyệt dữ liệu kịch bản D, kết quả F01–F41 và mô hình dữ liệu.

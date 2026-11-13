@@ -37,7 +37,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **Kỳ** (`Period`) — ngày / tuần (Thứ Hai → Chủ Nhật) / tháng / năm / tùy chọn. **MTD** = ngày 1 của tháng → ngày đang xem.
 - **Golden examples** — ví dụ có kết quả viết tay, Owner duyệt, là test bắt buộc: `docs/golden/chi-so.md` (chỉ số, gồm golden B của HĐ hủy), `docs/golden/kyc.md` (cổng KYC), `docs/golden/forecast.md` (Forecast, golden D).
 
-## Forecast (Phase 6 phần D; cách tính và mô hình dữ liệu chờ Owner duyệt G2, T-423)
+## Forecast (Phase 6 phần D; Owner duyệt G2 13/11/2026, T-423)
 
 - **Forecast** — doanh số dự kiến từ lịch hẹn tương lai: tổng **case size dự kiến** của các cuộc hẹn Đã lên lịch, ngày từ hôm nay, không phải Chủ Nhật, của KH đang ở N3 / N2 / N1. Cộng thẳng, không nhân hệ số; mỗi KH tính một lần. **Forecast tuần**: hôm nay → Thứ Bảy (hôm nay là Chủ Nhật thì lấy tuần sau); **Forecast tháng**: hôm nay → cuối tháng. Khác với **Kỳ** của chỉ số (tuần Thứ Hai → Chủ Nhật): Forecast không có Chủ Nhật và luôn là kỳ hiện tại. Định nghĩa và ví dụ: `docs/golden/forecast.md`, ADR-0007 phụ lục Forecast.
 - **Case size dự kiến** (`expectedCaseSize`) — số tiền người dùng ước lượng cho một cuộc hẹn (phí, lớn hơn 0, tối đa 100 tỷ, hoặc để trống); nhập khi đặt lịch, dời lịch, điền tại chỗ trong Forecast, hay khi ghi kết quả cuộc gặp. App không tự ước tính. Khác **Case size** của chỉ số (Σ FYP nộp của HĐ nộp trong kỳ).

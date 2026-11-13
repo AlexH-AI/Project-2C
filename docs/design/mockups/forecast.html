@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
   Mockup G3 đợt d (T-423 #1242): màn Forecast (ý 17, 18, 19, 20, 32; phần D) và các điểm G2 của golden D.
-  Trạng thái: CHỜ Owner duyệt G3 (13 điểm ở #ask) và G2 (9 điểm ở #ask; golden docs/golden/forecast.md).
+  Trạng thái: Owner duyệt G3 13/11/2026 (13 điểm ở #ask) và duyệt G2 cùng ngày (9 điểm ở #ask; golden docs/golden/forecast.md).
   Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
   Số viết theo ADR-0018: "1.38 tỷ", "555 tr", "40,000,000 VNĐ"; ngày dd/mm/yyyy; chữ "RM".
   Số khớp tong-quan.html (đợt c) và search-rm-team.html (đợt b): tuần này 555 tr = Sao Mai 240 + Bình Minh 185 +
@@ -19,7 +19,7 @@
   #rules     Cách tính (G2): một KH một số (#opt-range), bảng tóm tắt luật, mô hình dữ liệu
   #states    Trạng thái trống và lỗi
   #mask      Che tên KH
-  #ask       13 điểm G3 và 9 điểm G2 chờ Owner
+  #ask       13 điểm G3 và 9 điểm G2 Owner đã quyết (13/11/2026)
   Vỏ app, bảng thành phần (đợt a), ô lệnh, "Lưu ý", hộp team (đợt b), Tổng quan (đợt c): app-shell.html,
   components.html, search-rm-team.html, tong-quan.html.
 -->
@@ -179,9 +179,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt d · Forecast</b>
-      <span class="state">Chờ G3 và G2</span>
+      <span class="state ok">Đã duyệt G3 và G2 · 13/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#runway">Đường băng</a><a href="#days">Tuần và tháng</a><a href="#table">Team → RM</a><a href="#dialogs">Hộp thoại</a><a href="#views">Góc nhìn</a><a href="#kpi">KPI</a><a href="#rules">Cách tính</a><a href="#states">Trống / lỗi</a><a href="#ask">Cần anh quyết</a>
+        <a href="#runway">Đường băng</a><a href="#days">Tuần và tháng</a><a href="#table">Team → RM</a><a href="#dialogs">Hộp thoại</a><a href="#views">Góc nhìn</a><a href="#kpi">KPI</a><a href="#rules">Cách tính</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a>
       </nav>
     </header>
 
@@ -311,7 +311,7 @@
             </ul>
           </div>
           <div class="pcard">
-            <h3>Nhịp cần mỗi tuần <small>điểm G2-3 ở #ask</small></h3>
+            <h3>Nhịp cần mỗi tuần <small>điểm G2-3 ở #ask · <span class="tag rec">anh duyệt 13/11</span></small></h3>
             <ul class="bul">
               <li>Anh chốt 11/11: chỉ nhập KPI tháng, không có KPI tuần. Để tuần này vẫn có một mốc so, app tự tính: <b>nhịp cần mỗi tuần = (KPI − đã đạt) ÷ số tuần còn lại</b>.</li>
               <li><b>Số tuần còn lại</b> = số ngày Thứ Hai → Thứ Bảy từ hôm nay tới cuối tháng, chia 6. Hôm nay 10/11: 10 – 14 (5 ngày), 16 – 21 (6), 23 – 28 (6), 30/11 (1) = 18 ngày = 3 tuần. Toàn bộ: (3 tỷ − 1.38 tỷ) ÷ 3 = <b>540 tr</b> mỗi tuần; tuần này dự kiến 555 tr, tức đủ nhịp.</li>
@@ -336,13 +336,13 @@
         <h3 class="sub-h" id="opt-grid">Lưới tháng: bắt đầu từ tuần này, hay vẽ đủ cả tháng <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 4 ở #ask</small></h3>
         <p class="sub-p">Forecast chỉ nói về các ngày từ hôm nay. Cuối tháng, cách B sẽ có ba bốn hàng gạch chéo phía trên.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="grid" data-sc="t0"></div></div><div class="opt-t"><b>A · Từ tuần này <span class="tag rec">đề xuất</span></b><p>Hàng đầu là tuần đang chạy, các ngày đã qua của nó gạch chéo. Lưới ngắn, mọi ô đều là ô còn dùng được.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="grid" data-sc="t0"></div></div><div class="opt-t"><b>A · Từ tuần này <span class="tag rec">anh chọn 13/11</span></b><p>Hàng đầu là tuần đang chạy, các ngày đã qua của nó gạch chéo. Lưới ngắn, mọi ô đều là ô còn dùng được.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div data-spec="grid" data-sc="t0" data-full></div></div><div class="opt-t"><b>B · Đủ cả tháng</b><p>Thấy hôm nay nằm ở đâu trong tháng, giống một tờ lịch; các tuần đã qua chỉ là ô gạch chéo.</p></div></div>
         </div>
         <h3 class="sub-h" id="opt-day">Danh sách lịch của một ngày: bảng nổi, hay trang riêng <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 5 ở #ask</small></h3>
         <p class="sub-p">Cả hai cách đều có đủ: giờ, KH, nhóm, RM, team, case size; bấm một dòng mở hồ sơ KH. Cửa sổ đầu trang đang chạy cách A.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat pop"><div class="day-pop" data-spec="day" data-sc="all" data-day="11"></div></div><div class="opt-t"><b>A · Bảng nổi cạnh ô ngày <span class="tag rec">đề xuất</span></b><p>Màn Forecast vẫn ở phía sau; bấm ngày khác là bảng chuyển sang ngày đó. Hợp với việc lướt qua nhiều ngày.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat pop"><div class="day-pop" data-spec="day" data-sc="all" data-day="11"></div></div><div class="opt-t"><b>A · Bảng nổi cạnh ô ngày <span class="tag rec">anh chọn 13/11</span></b><p>Màn Forecast vẫn ở phía sau; bấm ngày khác là bảng chuyển sang ngày đó. Hợp với việc lướt qua nhiều ngày.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div data-spec="daypage" data-sc="all" data-day="11"></div></div><div class="opt-t"><b>B · Trang riêng của ngày</b><p>Cả màn nhường chỗ cho danh sách, có nút quay lại. Rộng rãi hơn khi một ngày có rất nhiều lịch, nhưng mỗi lần xem một ngày là rời khỏi lưới.</p></div></div>
         </div>
         <ul class="rules" style="margin-top: 18px">
@@ -461,7 +461,7 @@
         <h3 class="sub-h" id="opt-layout">Hai thứ tự của màn <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 1 ở #ask</small></h3>
         <p class="sub-p">Hai hình là cả cửa sổ 1440 × 900, thu nhỏ để thấy bố cục.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-mode="week"></div><div class="opt-t"><b>A · Số dự kiến và đường băng → ngày → bảng <span class="tag rec">đề xuất</span></b><p>Đi từ tổng tới chi tiết: tháng về đâu, tuần này có những lịch nào, rồi ai mang bao nhiêu.</p></div></div>
+          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-mode="week"></div><div class="opt-t"><b>A · Số dự kiến và đường băng → ngày → bảng <span class="tag rec">anh chọn 13/11</span></b><p>Đi từ tổng tới chi tiết: tháng về đâu, tuần này có những lịch nào, rồi ai mang bao nhiêu.</p></div></div>
           <div class="opt"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-variant="tbl-first" data-sc="all" data-mode="week"></div><div class="opt-t"><b>B · Bảng Team → RM lên trước ngày</b><p>Người quản lý thấy ngay team và RM; dải tuần / lưới tháng xuống dưới, phải cuộn mới tới.</p></div></div>
         </div>
       </section>
@@ -485,9 +485,9 @@
           <li><b>Vượt:</b> "còn thiếu" không bao giờ là số âm; khi về đích ≥ KPI, màn ghi "vượt …" màu xanh lá. Khi <b>đã đạt</b> ≥ KPI, dòng nhịp đổi thành "Đã đạt KPI tháng".</li>
         </ul>
         <h3 class="sub-h" id="past">KPI của tháng đã qua <small class="dim" style="font-size: 14px; font-weight: 400">· điểm G2-6 ở #ask</small></h3>
-        <p class="sub-p">Forecast không có tháng đã qua. Câu hỏi là ở <b>Tổng quan</b> (và Báo cáo của đợt e): xem lại Tháng 10/2026 thì có thấy tháng đó đạt bao nhiêu phần KPI không. Bảng luật "Điểm nhấn" (G2 13/11) đang ghi luật 4 không chạy ở kỳ đã qua và để câu này lại cho đợt d.</p>
+        <p class="sub-p">Forecast không có tháng đã qua. Câu hỏi là ở <b>Tổng quan</b> (và Báo cáo của đợt e): xem lại Tháng 10/2026 thì có thấy tháng đó đạt bao nhiêu phần KPI không. Bảng luật "Điểm nhấn" (G2 13/11) ghi luật 4 không chạy ở kỳ đã qua và để câu này lại cho đợt d; anh chọn A, nên luật 4 nay chạy thêm ở kỳ Tháng đã qua (spec §8).</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><section class="card spec-hl" style="padding: 18px 12px 12px"><div class="card-head" style="padding: 0 8px; margin-bottom: 8px"><h3>Điểm nhấn</h3><span class="meta">Tháng 10/2026 · kỳ đã qua</span></div><div class="hl"><span class="hl-i" style="--c: var(--ok)"><span class="gl"><svg class="ic"><use href="#i-target" /></svg></span><b class="num">Đã đạt 109% mục tiêu tháng</b><small class="num">3.27 tỷ / 3 tỷ · vượt 270 tr</small><svg class="ic"><use href="#i-chev" /></svg></span><span class="hl-i"><span class="gl"><svg class="ic"><use href="#i-star" /></svg></span><b class="num">Sao Mai dẫn đầu doanh số: 1.52 tỷ</b><small class="num">46.5% doanh số toàn bộ · Tỷ lệ chốt 39.3%</small><svg class="ic"><use href="#i-chev" /></svg></span></div></section></div><div class="opt-t"><b>A · Có: mỗi tháng giữ KPI của nó <span class="tag rec">đề xuất</span></b><p>KPI lưu theo từng tháng, nên tháng đã qua vẫn so được. Câu chỉ nói số thực tế (đã đạt, KPI, vượt hay thiếu), không có "dự kiến về đích": đúng lời anh "kỳ đã qua chỉ hiện chỉ số thực tế". Giả sử KPI tháng 10 là 3 tỷ.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><section class="card spec-hl" style="padding: 18px 12px 12px"><div class="card-head" style="padding: 0 8px; margin-bottom: 8px"><h3>Điểm nhấn</h3><span class="meta">Tháng 10/2026 · kỳ đã qua</span></div><div class="hl"><span class="hl-i" style="--c: var(--ok)"><span class="gl"><svg class="ic"><use href="#i-target" /></svg></span><b class="num">Đã đạt 109% mục tiêu tháng</b><small class="num">3.27 tỷ / 3 tỷ · vượt 270 tr</small><svg class="ic"><use href="#i-chev" /></svg></span><span class="hl-i"><span class="gl"><svg class="ic"><use href="#i-star" /></svg></span><b class="num">Sao Mai dẫn đầu doanh số: 1.52 tỷ</b><small class="num">46.5% doanh số toàn bộ · Tỷ lệ chốt 39.3%</small><svg class="ic"><use href="#i-chev" /></svg></span></div></section></div><div class="opt-t"><b>A · Có: mỗi tháng giữ KPI của nó <span class="tag rec">anh chọn 13/11</span></b><p>KPI lưu theo từng tháng, nên tháng đã qua vẫn so được. Câu chỉ nói số thực tế (đã đạt, KPI, vượt hay thiếu), không có "dự kiến về đích": đúng lời anh "kỳ đã qua chỉ hiện chỉ số thực tế". Giả sử KPI tháng 10 là 3 tỷ.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><section class="card spec-hl" style="padding: 18px 12px 12px"><div class="card-head" style="padding: 0 8px; margin-bottom: 8px"><h3>Điểm nhấn</h3><span class="meta">Tháng 10/2026 · kỳ đã qua</span></div><div class="hl"><span class="hl-i"><span class="gl"><svg class="ic"><use href="#i-star" /></svg></span><b class="num">Sao Mai dẫn đầu doanh số: 1.52 tỷ</b><small class="num">46.5% doanh số toàn bộ · Tỷ lệ chốt 39.3%</small><svg class="ic"><use href="#i-chev" /></svg></span><span class="hl-i" style="--c: var(--ok)"><span class="gl"><svg class="ic"><use href="#i-check" /></svg></span><b class="num">Tỷ lệ hủy 5.4%, giảm 3.2 điểm %</b><small class="num">4 hủy ÷ 74 phát hành · cả Tháng 09/2026 là 8.6%</small><svg class="ic"><use href="#i-chev" /></svg></span></div></section></div><div class="opt-t"><b>B · Không: KPI chỉ dùng cho tháng đang chạy</b><p>Giữ đúng bảng luật đang có (hình là Tổng quan Tháng 10 như đã duyệt ở đợt c). Mỗi team chỉ cần một con số KPI, đổi lúc nào thì áp dụng từ lúc đó; tháng đã qua không so với KPI.</p></div></div>
         </div>
       </section>
@@ -496,9 +496,9 @@
       <section class="sec" id="rules">
         <span class="kicker">G2 · golden D</span>
         <h2>Cách tính: các ví dụ đối chiếu ở golden D, 41 ca.</h2>
-        <p class="lead">Mọi con số của màn này tính theo <a href="../../golden/forecast.md"><code>docs/golden/forecast.md</code></a>: một kịch bản riêng (tháng 03/2029), 41 dòng kết quả tính tay <b>F01 – F41</b>, và mô hình dữ liệu. Sau khi anh duyệt G2, bộ đó là test bắt buộc của phần D. Dưới đây là phần tóm tắt và các chỗ em cần anh xác nhận, vì spec §6.2 ghi "cách hiểu của Claude, xác nhận ở mockup Forecast, rồi golden G2".</p>
+        <p class="lead">Mọi con số của màn này tính theo <a href="../../golden/forecast.md"><code>docs/golden/forecast.md</code></a>: một kịch bản riêng (tháng 03/2029), 41 dòng kết quả tính tay <b>F01 – F41</b>, và mô hình dữ liệu. Anh đã <b>duyệt G2 ngày 13/11/2026</b>, nên bộ đó là test bắt buộc của phần D. Dưới đây là phần tóm tắt; các chỗ spec §6.2 ghi "cách hiểu của Claude, xác nhận ở mockup Forecast, rồi golden G2" anh đã xác nhận cùng ngày.</p>
         <div class="pcard">
-          <h3>Tóm tắt luật <small>D-a … D-e đã chốt 11/11 · chữ đậm là điều cần anh xác nhận</small></h3>
+          <h3>Tóm tắt luật <small>D-a … D-e chốt 11/11 · chữ đậm là điều anh xác nhận 13/11/2026</small></h3>
           <table class="law">
             <tr><th>Điều</th><th>Luật</th><th>Ca golden</th></tr>
             <tr><td>Lịch nào thuộc Forecast</td><td>Đã lên lịch, ngày từ hôm nay, không phải Chủ Nhật, KH đang ở N3 / N2 / N1. Lịch của hôm nay vẫn tính dù giờ đã qua. Không tính: Đã gặp, Dời lịch, KH hủy, Không gặp được, lịch đã xóa, KH đã xóa, KH ở N4 hay đã đóng.</td><td>F01, F02, F06, F16</td></tr>
@@ -513,8 +513,8 @@
         <h3 class="sub-h" id="opt-range">Một KH có lịch tuần này và lịch tuần sau <small class="dim" style="font-size: 14px; font-weight: 400">· điểm G2-1 ở #ask</small></h3>
         <p class="sub-p">D-a anh đã chốt cho hai lịch trong cùng một khoảng. Còn một chỗ chưa ai nói tới: hai lịch nằm ở <b>hai tuần khác nhau</b>. Ví dụ của golden (KH 54): lịch Thứ Tư tuần này, 200 tr, nhập 01/03; lịch Thứ Ba tuần sau, 250 tr, nhập 08/03.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><table class="law"><tr><th></th><th class="n">Forecast tuần</th><th class="n">Forecast tháng</th></tr><tr><td>KH 54</td><td class="n">không tính tuần này</td><td class="n"><b>250 tr</b> ở tuần sau</td></tr><tr><td>Cả kịch bản</td><td class="n"><b>620 tr</b></td><td class="n"><b>1,420 tr</b> = 620 + 250 + 550</td></tr></table></div><div class="opt-t"><b>A · Một KH, một số, một ngày <span class="tag rec">đề xuất</span></b><p>Chọn lịch mang số trên <b>mọi lịch từ hôm nay</b> của KH. Lịch tuần này của KH 54 hiện mờ, ghi "theo lịch 20/03". Mọi tổng là phép cộng các ngày: tháng = tuần này + các tuần sau; ô của một ngày giống nhau ở dải tuần, lưới tháng và Tổng quan. Golden D đang viết theo cách này.</p></div></div>
-          <div class="opt"><div class="opt-pic flat blk"><table class="law"><tr><th></th><th class="n">Forecast tuần</th><th class="n">Forecast tháng</th></tr><tr><td>KH 54</td><td class="n"><b>200 tr</b> ở tuần này</td><td class="n"><b>250 tr</b> ở tuần sau</td></tr><tr><td>Cả kịch bản</td><td class="n"><b>820 tr</b></td><td class="n"><b>1,420 tr</b> ≠ 820 + 250 + 550</td></tr></table></div><div class="opt-t"><b>B · Tính riêng trong từng khoảng đang xem</b><p>Đúng chữ của spec §6.2 ("các lịch nằm trong khoảng"): Forecast tuần chỉ nhìn lịch tuần này nên vẫn tính 200 tr. Lịch tuần này nào cũng được tính, nhưng tuần và tháng không còn cộng khớp, và một ngày có thể mang hai con số khác nhau ở hai chế độ. Chọn B thì F01, F03 … F08, F15 của golden đổi.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><table class="law"><tr><th></th><th class="n">Forecast tuần</th><th class="n">Forecast tháng</th></tr><tr><td>KH 54</td><td class="n">không tính tuần này</td><td class="n"><b>250 tr</b> ở tuần sau</td></tr><tr><td>Cả kịch bản</td><td class="n"><b>620 tr</b></td><td class="n"><b>1,420 tr</b> = 620 + 250 + 550</td></tr></table></div><div class="opt-t"><b>A · Một KH, một số, một ngày <span class="tag rec">anh chọn 13/11</span></b><p>Chọn lịch mang số trên <b>mọi lịch từ hôm nay</b> của KH. Lịch tuần này của KH 54 hiện mờ, ghi "theo lịch 20/03". Mọi tổng là phép cộng các ngày: tháng = tuần này + các tuần sau; ô của một ngày giống nhau ở dải tuần, lưới tháng và Tổng quan. Golden D viết theo cách này.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><table class="law"><tr><th></th><th class="n">Forecast tuần</th><th class="n">Forecast tháng</th></tr><tr><td>KH 54</td><td class="n"><b>200 tr</b> ở tuần này</td><td class="n"><b>250 tr</b> ở tuần sau</td></tr><tr><td>Cả kịch bản</td><td class="n"><b>820 tr</b></td><td class="n"><b>1,420 tr</b> ≠ 820 + 250 + 550</td></tr></table></div><div class="opt-t"><b>B · Tính riêng trong từng khoảng đang xem</b><p>Đúng chữ của spec §6.2 ("các lịch nằm trong khoảng"): Forecast tuần chỉ nhìn lịch tuần này nên vẫn tính 200 tr. Lịch tuần này nào cũng được tính, nhưng tuần và tháng không còn cộng khớp, và một ngày có thể mang hai con số khác nhau ở hai chế độ. Nếu chọn B thì F01, F03 … F08, F15 của golden sẽ khác.</p></div></div>
         </div>
         <div class="pgrid" style="margin-top: 20px">
           <div class="pcard">
@@ -574,37 +574,37 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Cần anh quyết · G3 và G2</span>
+        <span class="kicker">Anh đã quyết · G3 và G2 · 13/11/2026</span>
         <h2>Mười ba điểm của đợt d, và chín điểm của golden D.</h2>
-        <p class="lead">Em hỏi từng điểm trong chat, mỗi điểm kèm phương án đề xuất và một phương án khác. Không hỏi lại điều anh đã chốt: D-a … D-f (11/11), nguồn số tiền (10/11), mục tiêu theo team và tổng các team, chỉ theo tháng (11/11), bỏ nút "Lọc", che tên KH, font hệ thống, chỉ Dark Mode. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026; số khớp Tổng quan (đợt c) và Team &amp; nhân sự (đợt b).</p>
+        <p class="lead">Anh đã trả lời cả mười ba điểm G3 và chín điểm G2 ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt d". Không hỏi lại điều anh đã chốt: D-a … D-f (11/11), nguồn số tiền (10/11), mục tiêu theo team và tổng các team, chỉ theo tháng (11/11), bỏ nút "Lọc", che tên KH, font hệ thống, chỉ Dark Mode. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026; số khớp Tổng quan (đợt c) và Team &amp; nhân sự (đợt b).</p>
         <ol class="asks">
-          <li><b>Bố cục màn Forecast?</b>Công tắc Tuần này / Tháng này; hàng đầu là số dự kiến cạnh đường băng tháng; rồi dải tuần hoặc lưới tháng; cuối là bảng Team → RM. Thanh công cụ chỉ có góc nhìn và nút Xuất Excel, không có bộ chọn kỳ. Hình: <a href="#opt-layout">hai thứ tự của màn</a>.<em>Đề xuất: A · số dự kiến và đường băng → ngày → bảng. Phương án khác: B · bảng lên trước ngày.</em></li>
-          <li><b>Đường băng tháng như mục "Đường băng"?</b>Ba số cạnh nhau theo thứ tự Đã đạt · Dự kiến · KPI tháng; thanh có đã đạt, tuần này tách N1 / N2 / N3, các tuần còn lại gạch chéo, vạch KPI; góc phải ghi về đích, % về đích, còn thiếu hay vượt.<em>Đề xuất: duyệt. Phương án khác: số lớn nhất là "về đích" thay cho phần dự kiến.</em></li>
-          <li><b>Dải tuần và lưới tháng đổi theo công tắc?</b>Tuần này: sáu cột có thẻ từng lịch. Tháng này: lưới mỗi ngày một ô.<em>Đề xuất: A · theo công tắc, mỗi lúc một kiểu. Phương án khác: B · hiện cả dải tuần lẫn lưới tháng trên cùng một màn (màn dài hơn).</em></li>
-          <li><b>Lưới tháng bắt đầu từ đâu; ngày đã qua và ngày ngoài tháng?</b>Ô gạch chéo, ghi "đã qua" hoặc "tháng 12", không bấm được. Hình: <a href="#opt-grid">hai cách vẽ lưới</a>.<em>Đề xuất: A · từ tuần này. Phương án khác: B · đủ cả tháng.</em></li>
-          <li><b>Danh sách lịch của một ngày mở ra thế nào?</b>Giờ, KH, nhóm, RM, team, case size; bấm một dòng mở hồ sơ KH, nút quay lại về Forecast. Hình: <a href="#opt-day">bảng nổi hay trang riêng</a>.<em>Đề xuất: A · bảng nổi cạnh ô ngày. Phương án khác: B · trang riêng của ngày.</em></li>
-          <li><b>Thẻ của KH có hai lịch?</b>Lịch không mang số vẽ mờ (không nền, chữ nhạt), ghi "theo lịch T7 14/11"; trong danh sách ngày ghi cả số của nó.<em>Đề xuất: A · vẫn hiện, vẽ mờ kèm ghi chú. Phương án khác: B · ẩn hẳn lịch không mang số.</em></li>
-          <li><b>Lịch thiếu case size: chỗ đặt nút và cách điền?</b>Nút gom ở thẻ số dự kiến; chấm cam ở ô ngày, số đếm cam cạnh tên team / RM; điền trong bảng nổi, Lưu là cộng ngay.<em>Đề xuất: A · nút gom + bảng nổi. Phương án khác: B · ô nhập ngay trên từng thẻ lịch của dải tuần.</em></li>
-          <li><b>Bảng Team → RM?</b>Cột: Tuần này, N1, N2, N3, Tháng này, Đã đạt, KPI tháng · về đích; bấm team mở RM; dòng RM không có KPI; góc nhìn RM đổi thành danh sách lịch của RM.<em>Đề xuất: duyệt. Phương án khác: bỏ ba cột N1 / N2 / N3 khỏi bảng (chỉ còn ở thẻ số dự kiến).</em></li>
-          <li><b>Ô "Case size dự kiến" ở hộp đặt lịch và hộp dời lịch?</b>Ngay dưới hàng Ngày – Giờ; điền sẵn số gần nhất của KH (hộp dời: số của lịch đang dời), sửa được, để trống được.<em>Đề xuất: A · dưới hàng Ngày – Giờ. Phương án khác: B · ô cuối cùng của hộp.</em></li>
-          <li><b>Nhập KPI tháng ở đâu?</b>Một ô trong hộp Tạo / Sửa team, ghi rõ tháng; bấm ô KPI trong bảng Forecast cũng mở hộp đó.<em>Đề xuất: A · ô trong hộp team. Phương án khác: B · thêm một hộp "KPI tháng 11/2026" liệt kê mọi team, nhập một lần cho cả tháng.</em></li>
-          <li><b>Các cảnh KPI ở mục "KPI"?</b>Chưa đặt KPI; toàn bộ thiếu một team; đã đạt vượt KPI; đã đạt âm.<em>Đề xuất: duyệt. Phương án khác: nêu cảnh cần đổi.</em></li>
-          <li><b>Hôm nay là Chủ Nhật?</b>Nhãn đổi thành "Tuần sau", dải tuần là Thứ Hai → Thứ Bảy kế tiếp.<em>Đề xuất: duyệt. Phương án khác: vẫn hiện tuần vừa qua (toàn ô gạch chéo).</em></li>
-          <li><b>Trạng thái trống và lỗi như mục trên?</b>Không có lịch nào tới cuối tháng; có lịch nhưng chưa có số; lỗi đọc dữ liệu cả màn; lỗi khi lưu một case size.<em>Đề xuất: duyệt.</em></li>
+          <li><b>Bố cục màn Forecast?</b>Công tắc Tuần này / Tháng này; hàng đầu là số dự kiến cạnh đường băng tháng; rồi dải tuần hoặc lưới tháng; cuối là bảng Team → RM. Thanh công cụ chỉ có góc nhìn và nút Xuất Excel, không có bộ chọn kỳ. Hình: <a href="#opt-layout">hai thứ tự của màn</a>.<em>Anh trả lời 13/11: <b>"A · Băng → ngày → bảng"</b> (phương án đề xuất; phương án bỏ: bảng Team → RM lên trước ngày).</em></li>
+          <li><b>Đường băng tháng như mục "Đường băng"?</b>Ba số cạnh nhau theo thứ tự Đã đạt · Dự kiến · KPI tháng; thanh có đã đạt, tuần này tách N1 / N2 / N3, các tuần còn lại gạch chéo, vạch KPI; góc phải ghi về đích, % về đích, còn thiếu hay vượt.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: số lớn nhất là "về đích").</em></li>
+          <li><b>Dải tuần và lưới tháng đổi theo công tắc?</b>Tuần này: sáu cột có thẻ từng lịch. Tháng này: lưới mỗi ngày một ô.<em>Anh trả lời 13/11: <b>"A · Theo công tắc"</b> (phương án bỏ: hiện cả dải tuần lẫn lưới tháng trên một màn).</em></li>
+          <li><b>Lưới tháng bắt đầu từ đâu; ngày đã qua và ngày ngoài tháng?</b>Ô gạch chéo, ghi "đã qua" hoặc "tháng 12", không bấm được. Hình: <a href="#opt-grid">hai cách vẽ lưới</a>.<em>Anh trả lời 13/11: <b>"A · Từ tuần này"</b> (phương án bỏ: vẽ đủ cả tháng).</em></li>
+          <li><b>Danh sách lịch của một ngày mở ra thế nào?</b>Giờ, KH, nhóm, RM, team, case size; bấm một dòng mở hồ sơ KH, nút quay lại về Forecast. Hình: <a href="#opt-day">bảng nổi hay trang riêng</a>.<em>Anh trả lời 13/11: <b>"A · Bảng nổi"</b> (phương án bỏ: trang riêng của ngày).</em></li>
+          <li><b>Thẻ của KH có hai lịch?</b>Lịch không mang số vẽ mờ (không nền, chữ nhạt), ghi "theo lịch T7 14/11"; trong danh sách ngày ghi cả số của nó.<em>Anh trả lời 13/11: <b>"A · Vẽ mờ + ghi chú"</b> (phương án bỏ: ẩn lịch không mang số).</em></li>
+          <li><b>Lịch thiếu case size: chỗ đặt nút và cách điền?</b>Nút gom ở thẻ số dự kiến; chấm cam ở ô ngày, số đếm cam cạnh tên team / RM; điền trong bảng nổi, Lưu là cộng ngay.<em>Anh trả lời 13/11: <b>"A · Nút gom + bảng nổi"</b> (phương án bỏ: ô nhập ngay trên thẻ lịch).</em></li>
+          <li><b>Bảng Team → RM?</b>Cột: Tuần này, N1, N2, N3, Tháng này, Đã đạt, KPI tháng · về đích; bấm team mở RM; dòng RM không có KPI; góc nhìn RM đổi thành danh sách lịch của RM.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: bỏ ba cột N1 / N2 / N3 khỏi bảng).</em></li>
+          <li><b>Ô "Case size dự kiến" ở hộp đặt lịch và hộp dời lịch?</b>Ngay dưới hàng Ngày – Giờ; điền sẵn số gần nhất của KH (hộp dời: số của lịch đang dời), sửa được, để trống được.<em>Anh trả lời 13/11: <b>"A · Dưới Ngày – Giờ"</b> (phương án bỏ: ô cuối cùng của hộp).</em></li>
+          <li><b>Nhập KPI tháng ở đâu?</b>Một ô trong hộp Tạo / Sửa team, ghi rõ tháng; bấm ô KPI trong bảng Forecast cũng mở hộp đó.<em>Anh trả lời 13/11: <b>"A · Ô trong hộp team"</b> (phương án bỏ: thêm một hộp "KPI tháng" liệt kê mọi team).</em></li>
+          <li><b>Các cảnh KPI ở mục "KPI"?</b>Chưa đặt KPI; toàn bộ thiếu một team; đã đạt vượt KPI; đã đạt âm.<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Hôm nay là Chủ Nhật?</b>Nhãn đổi thành "Tuần sau", dải tuần là Thứ Hai → Thứ Bảy kế tiếp.<em>Anh trả lời 13/11: <b>"Duyệt cả hai"</b> (hỏi chung với điểm 13; phương án bỏ: Chủ Nhật vẫn hiện tuần vừa qua).</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>Không có lịch nào tới cuối tháng; có lịch nhưng chưa có số; lỗi đọc dữ liệu cả màn; lỗi khi lưu một case size.<em>Anh trả lời 13/11: <b>"Duyệt cả hai"</b> (hỏi chung với điểm 12).</em></li>
         </ol>
         <h3 class="sub-h">G2 · Cách tính và mô hình dữ liệu (golden D)</h3>
         <ol class="asks">
-          <li><b>Một KH có lịch ở hai tuần: tính thế nào?</b>Hình và ví dụ ở <a href="#opt-range">mục Cách tính</a>.<em>Đề xuất: A · một KH, một số, một ngày (chọn trên mọi lịch từ hôm nay). Phương án khác: B · tính riêng trong từng khoảng đang xem.</em></li>
-          <li><b>Xác nhận các cách hiểu của §6.2?</b>So theo thời điểm nhập / sửa số; cùng lúc thì lịch ngày muộn hơn; lịch thiếu số không tham gia so; số nằm ở ngày của lịch mang số, tính cho RM ghi trên lịch đó; "đã đạt" đặt cạnh dự kiến; hôm nay Chủ Nhật thì lấy tuần sau; lịch đặt vào Chủ Nhật không tính.<em>Đề xuất: duyệt cả bảy. Phương án khác: nêu điều cần đổi.</em></li>
-          <li><b>Nhịp cần mỗi tuần?</b>(KPI − đã đạt) ÷ (số ngày Thứ Hai → Thứ Bảy còn lại ÷ 6); không hiện khi đã đạt KPI hoặc còn dưới 6 ngày.<em>Đề xuất: A · có, theo công thức này. Phương án khác: B · không hiện nhịp, chỉ có KPI tháng.</em></li>
-          <li><b>Case size dự kiến bằng 0?</b>Ô case size đang có trong app không nhận 0 (lớn hơn 0 hoặc để trống).<em>Đề xuất: A · giữ luật đó: không nhận 0, lịch chưa có số là "thiếu". Phương án khác: B · nhận 0 với nghĩa "buổi này không dự kiến doanh số", lịch đó không còn là "thiếu".</em></li>
-          <li><b>KPI toàn bộ khi một team chưa đặt KPI?</b><em>Đề xuất: A · chỉ hiện khi mọi team đã có KPI; thiếu thì nói rõ team nào. Phương án khác: B · cộng các team đã có và ghi "chưa gồm n team".</em></li>
-          <li><b>KPI lưu theo từng tháng, và tháng đã qua có hiện KPI không?</b>Hình ở <a href="#past">mục KPI của tháng đã qua</a>. Chọn A thì luật 4 của Điểm nhấn chạy thêm ở kỳ Tháng đã qua, câu chỉ có số thực tế.<em>Đề xuất: A · mỗi tháng một KPI, tháng đã qua vẫn hiện. Phương án khác: B · mỗi team một con số dùng cho tháng đang chạy, tháng đã qua không hiện.</em></li>
-          <li><b>Đã đạt vượt KPI, và ba điều kiện biên của Điểm nhấn?</b>"Còn thiếu" không âm, ghi "vượt …" màu xanh lá, hết nhịp; ba dòng thêm vào "Luật chung" như thẻ ở mục Cách tính.<em>Đề xuất: duyệt. Phương án khác: nêu dòng cần đổi.</em></li>
-          <li><b>Dời lịch có mang số và thời điểm nhập sang lịch mới không?</b><em>Đề xuất: A · có: giữ nguyên số thì mang cả thời điểm cũ. Phương án khác: B · dời lịch tính là một lần nhập mới.</em></li>
-          <li><b>Duyệt G2: kịch bản D, kết quả F01 – F41, mô hình dữ liệu?</b>Ba ô duyệt ở cuối <code>docs/golden/forecast.md</code>; mô hình dữ liệu gồm cột thời điểm nhập số, bảng KPI tháng, luật khi nhập backup.<em>Đề xuất: duyệt G2 cả ba (sau khi các điểm trên đã chốt).</em></li>
+          <li><b>Một KH có lịch ở hai tuần: tính thế nào?</b>Hình và ví dụ ở <a href="#opt-range">mục Cách tính</a>.<em>Anh trả lời 13/11: <b>"A · Một KH một số"</b> (phương án bỏ: tính riêng trong từng khoảng đang xem).</em></li>
+          <li><b>Xác nhận các cách hiểu của §6.2?</b>So theo thời điểm nhập / sửa số; cùng lúc thì lịch ngày muộn hơn; lịch thiếu số không tham gia so; số nằm ở ngày của lịch mang số, tính cho RM ghi trên lịch đó; "đã đạt" đặt cạnh dự kiến; hôm nay Chủ Nhật thì lấy tuần sau; lịch đặt vào Chủ Nhật không tính.<em>Anh trả lời 13/11: <b>"Duyệt cả bảy"</b>.</em></li>
+          <li><b>Nhịp cần mỗi tuần?</b>(KPI − đã đạt) ÷ (số ngày Thứ Hai → Thứ Bảy còn lại ÷ 6); không hiện khi đã đạt KPI hoặc còn dưới 6 ngày.<em>Anh trả lời 13/11: <b>"A · Có, theo công thức"</b> (phương án bỏ: không hiện nhịp).</em></li>
+          <li><b>Case size dự kiến bằng 0?</b>Ô case size đang có trong app không nhận 0 (lớn hơn 0 hoặc để trống).<em>Anh trả lời 13/11: <b>"A · Không nhận 0"</b> (phương án bỏ: nhận 0 với nghĩa "buổi này không dự kiến doanh số").</em></li>
+          <li><b>KPI toàn bộ khi một team chưa đặt KPI?</b><em>Anh trả lời 13/11: <b>"A · Chỉ khi đủ mọi team"</b> (phương án bỏ: cộng các team đã có).</em></li>
+          <li><b>KPI lưu theo từng tháng, và tháng đã qua có hiện KPI không?</b>Hình ở <a href="#past">mục KPI của tháng đã qua</a>. Chọn A thì luật 4 của Điểm nhấn chạy thêm ở kỳ Tháng đã qua, câu chỉ có số thực tế.<em>Anh trả lời 13/11: <b>"A · Mỗi tháng một KPI"</b> (tháng đã qua vẫn hiện KPI; phương án bỏ: một con số cho tháng đang chạy).</em></li>
+          <li><b>Đã đạt vượt KPI, và ba điều kiện biên của Điểm nhấn?</b>"Còn thiếu" không âm, ghi "vượt …" màu xanh lá, hết nhịp; ba dòng thêm vào "Luật chung" như thẻ ở mục Cách tính.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (cách hiện khi vượt KPI và ba dòng thêm vào "Luật chung" của bảng luật Điểm nhấn).</em></li>
+          <li><b>Dời lịch có mang số và thời điểm nhập sang lịch mới không?</b><em>Anh trả lời 13/11: <b>"A · Mang cả thời điểm"</b> (phương án bỏ: dời lịch tính là một lần nhập mới).</em></li>
+          <li><b>Duyệt G2: kịch bản D, kết quả F01 – F41, mô hình dữ liệu?</b>Ba ô duyệt ở cuối <code>docs/golden/forecast.md</code>; mô hình dữ liệu gồm cột thời điểm nhập số, bảng KPI tháng, luật khi nhập backup.<em>Anh trả lời 13/11: <b>"Duyệt G2 cả ba"</b>.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt d · T-423 #1242 · chờ Owner duyệt G3 và G2 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt d · T-423 #1242 · Owner duyệt G3 và G2 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 
