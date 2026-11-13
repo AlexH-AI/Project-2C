@@ -91,7 +91,7 @@ RE phụ trách ghi ở cột RE; "Nhóm" là nhóm hiện tại.
 | `fc-10` | KH 57 | Chi | Thứ Bảy 17/03 | ĐLL | 60 | 07/03 09:00 | |
 | `fc-11` | KH 57 | Chi | Thứ Hai 19/03 | ĐLL | — | — | Thiếu case size; không tham gia so với `fc-10` |
 | `fc-12` | KH 58 | Dũng | Thứ Năm 15/03 | ĐLL | 500 | 05/03 09:00 | KH ở N4 |
-| `fc-13` | KH 59 | Dũng | Thứ Hai 12/03 | Đã gặp | 400 | 12/03 17:00 | Số ghi ở kết quả cuộc gặp |
+| `fc-13` | KH 59 | Dũng | Thứ Ba 13/03, 08:30 | Đã gặp | 400 | 13/03 09:30 | Hôm nay, đã ghi kết quả, số ghi ở kết quả cuộc gặp: chỉ trạng thái loại nó (như `fc-30`) |
 | `fc-14` | KH 60 | Dũng | Thứ Hai 12/03 | ĐLL | 70 | 02/03 09:00 | Ngày đã qua (nhóm "Chưa ghi kết quả") |
 | `fc-15` | KH 61 | Dũng | Thứ Tư 14/03 | Dời lịch | 110 | 04/03 10:00 | Ngày 09/03 dời sang `fc-16` |
 | `fc-16` | KH 61 | Dũng | Thứ Tư 21/03 | ĐLL | 110 | 04/03 10:00 | Dời từ `fc-15`: mang cả số lẫn thời điểm (**đề xuất**) |
@@ -133,11 +133,11 @@ Cột: **Dự kiến** = Forecast của khoảng (tr) · **N1 / N2 / N3** = ph�
 | Mã | Hôm nay | Khoảng | Góc nhìn | Dự kiến | N1 | N2 | N3 | Mang số | Thiếu | Khác | Kiểm điều gì |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | F01 | 13/03 | Tuần 13/03 – 17/03 | Toàn bộ | 620 | 200 | 240 | 180 | 5 | 1 | 3 | Thứ Hai 12/03 đã qua không tính; KH 52, KH 53 tính một lần; KH 54 có số nằm ở tuần sau |
-| F02 | 13/03 | Tháng 13/03 – 31/03 | Toàn bộ | 1,420 | 490 | 710 | 220 | 10 | 2 | 5 | Không tính Chủ Nhật 18/03 (`fc-20`), lịch 02/04 (`fc-23`), N4, Tạm hoãn, Mất cơ hội (`fc-31`), Đã gặp, Dời lịch, KH hủy, Không gặp được (`fc-30`), lịch đã xóa, KH đã xóa |
+| F02 | 13/03 | Tháng 13/03 – 31/03 | Toàn bộ | 1,420 | 490 | 710 | 220 | 10 | 2 | 5 | Không tính Chủ Nhật 18/03 (`fc-20`), lịch 02/04 (`fc-23`), N4, Tạm hoãn, Mất cơ hội (`fc-31`), Đã gặp (`fc-13`), Dời lịch, KH hủy, Không gặp được (`fc-30`), lịch đã xóa, KH đã xóa |
 | F03 | 13/03 | Tuần | RE An | 350 | 200 | 150 | 0 | 2 | 0 | 1 | KH 52: 150 của `fc-02` (nhập 10/03), không phải 100 của lịch muộn hơn `fc-03` |
 | F04 | 13/03 | Tuần | RE Bình | 120 | 0 | 0 | 120 | 1 | 0 | 2 | KH 53: hai số nhập cùng lúc → `fc-05` (ngày muộn hơn) 120; `fc-06` của KH 54 hiện mờ |
 | F05 | 13/03 | Tuần | RE Chi | 150 | 0 | 90 | 60 | 2 | 1 | 0 | `fc-09` hôm nay vẫn tính; `fc-08` thiếu: đếm, không cộng |
-| F06 | 13/03 | Tuần | RE Dũng | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `fc-12` N4, `fc-13` Đã gặp, `fc-14` đã qua, `fc-15` Dời lịch, `fc-17` KH hủy, `fc-30` Không gặp được: không lịch nào tính |
+| F06 | 13/03 | Tuần | RE Dũng | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `fc-12` N4, `fc-13` Đã gặp (lịch của hôm nay, có số 400), `fc-14` đã qua, `fc-15` Dời lịch, `fc-17` KH hủy, `fc-30` Không gặp được: không lịch nào tính |
 | F07 | 13/03 | Tuần | Team A | 470 | 200 | 150 | 120 | 3 | 0 | 3 | F03 + F04 |
 | F08 | 13/03 | Tuần | Team B | 150 | 0 | 90 | 60 | 2 | 1 | 0 | F05 + F06; F07 + F08 = F01 |
 | F09 | 13/03 | Tháng | RE An | 570 | 200 | 370 | 0 | 3 | 0 | 1 | KH 66 (RE phụ trách là Chi): 220 của `fc-22` tính cho An, RE ghi trên lịch mang số |
@@ -147,7 +147,7 @@ Cột: **Dự kiến** = Forecast của khoảng (tr) · **N1 / N2 / N3** = ph�
 | F13 | 13/03 | Tháng | Team A | 940 | 200 | 620 | 120 | 5 | 0 | 3 | F09 + F10 |
 | F14 | 13/03 | Tháng | Team B | 480 | 290 | 90 | 100 | 5 | 2 | 2 | F11 + F12; F13 + F14 = F02 |
 | F15 | 13/03 | Ngày 14/03 | Toàn bộ | 200 | 200 | 0 | 0 | 1 | 0 | 1 | Danh sách của ngày: `fc-01` (200), `fc-06` (mờ, "tính theo số ở lịch 20/03"); `fc-15` Dời lịch không hiện |
-| F16 | 13/03 | Ngày 13/03 | Toàn bộ | 90 | 0 | 90 | 0 | 1 | 0 | 0 | Lịch của hôm nay tính theo ngày, không theo giờ; `fc-30` cùng ngày đã ghi Không gặp được: không tính |
+| F16 | 13/03 | Ngày 13/03 | Toàn bộ | 90 | 0 | 90 | 0 | 1 | 0 | 0 | Lịch của hôm nay tính theo ngày, không theo giờ; `fc-13` (Đã gặp) và `fc-30` (Không gặp được) cùng ngày đã ghi kết quả: không tính |
 | F17 | 13/03, **điền `fc-08` = 300** lúc 13/03 10:00 | Tuần | Toàn bộ | 920 | 500 | 240 | 180 | 6 | 0 | 3 | Điền xong cộng ngay |
 | F18 | như F17 | Tháng | Toàn bộ | 1,720 | 790 | 710 | 220 | 11 | 1 | 5 | `fc-11` vẫn thiếu |
 | F19 | 13/03, **nhập 0 cho `fc-08`** | Tuần | Toàn bộ | 620 | 200 | 240 | 180 | 5 | 1 | 3 | Số 0 bị từ chối (luật phí hiện có: lớn hơn 0 hoặc để trống); `fc-08` vẫn là lịch thiếu (**đề xuất**; Owner 13/11/2026: "A · Không nhận 0") |
@@ -238,6 +238,8 @@ Owner, trong chat với phiên T-423 ở Home PC, trả lời chín điểm G2. 
 9. Kịch bản D, kết quả F01–F41, mô hình dữ liệu: "Duyệt G2 cả ba".
 
 **Thêm sau G2 (13/11/2026, review PR #1243):** review phiên sạch thấy mục 1 không có lịch nào ở trạng thái Không gặp được, dù luật có loại trạng thái này. Thêm hai ca loại trừ: KH 73 + `fc-30` (Không gặp được; ngày là hôm nay 13/03, vì app chỉ cho ghi kết quả này từ hôm nay trở về trước) và KH 74 + `fc-31` (KH Mất cơ hội; review gợi ý, trước đó "đã đóng" chỉ có Tạm hoãn). **Không số nào của F01–F41 đổi**; chỉ cột "Kiểm điều gì" của F02, F06, F10, F16 thêm chữ. Owner bảo sửa theo review ngày 13/11/2026 ("sửa lỗi pr 1243") và xác nhận hai ca này khi bảo merge.
+
+**Sửa sau G2, lần hai (13/11/2026, review lại PR #1243):** `fc-13`, lịch Đã gặp duy nhất, có ngày 12/03, trước mọi "hôm nay" của bảng kết quả, nên luật "ngày từ hôm nay" đã loại nó và luật trạng thái Đã gặp không được kiểm. Đổi `fc-13` sang **hôm nay 13/03, 08:30**, số 400 nhập 13/03 09:30 (lúc ghi kết quả cuộc gặp): gặp xong trong ngày, lịch Đã gặp của hôm nay còn giữ số, chỉ trạng thái loại nó. **Không số nào của F01–F41 đổi**; chỉ cột "Kiểm điều gì" của F02, F06, F16 thêm chữ. Owner bảo sửa theo review ngày 13/11/2026 ("sửa lỗi pr 1243", lần hai) và xác nhận dòng sửa này khi bảo merge.
 
 - [x] Dữ liệu kịch bản D đúng ý (mục 1)
 - [x] Kết quả F01–F41 đúng (mục 2)
