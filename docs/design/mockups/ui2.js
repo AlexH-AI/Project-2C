@@ -9,6 +9,7 @@
    Round c (T-422, approved at G3 13/11/2026): 16 popovers of the toolbar (view menu, period picker) · 17 "Đếm", a number that runs to
    its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
    Round d (T-423, approved at G3 13/11/2026): 19 a popover beside what opened it (ui2.placeBeside, "ui2:pop-at")
+   Round e (T-424): nothing new here; in 19, a scrolling screen closes only the popovers 19 placed
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
 (() => {
@@ -695,9 +696,16 @@
     const win = e.target.closest('.win');
     for (const pop of $$('.tl-pop', win || document)) if (pop._by && !pop.classList.contains('open')) pop._by = null;
   });
+  // Only the popovers this section placed beside a control: the two of the toolbar (round c) stay open
   document.addEventListener('scroll', (e) => {
     const view = e.target.closest && e.target.closest('.view');
-    if (view === e.target) closePops(view.closest('.win'));
+    if (view !== e.target) return;
+    const win = view.closest('.win');
+    for (const pop of $$('.tl-pop.open', win)) {
+      if (!pop._by) continue;
+      pop.classList.remove('open');
+      $$(`[data-pop="${pop.dataset.popFor}"]`, win).forEach((t) => t.setAttribute('aria-expanded', 'false'));
+    }
   }, true);
   Object.assign(window.ui2, { placeBeside });
 })();

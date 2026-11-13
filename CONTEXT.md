@@ -45,6 +45,12 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **Đã đạt** — Doanh số (FYP phát hành − FYP hủy) từ ngày 1 của tháng tới hôm nay. **Về đích** — đã đạt + Forecast tháng.
 - **KPI tháng** (Owner gọi "chỉ tiêu (KPI)", "mục tiêu doanh số"; câu của Điểm nhấn viết "mục tiêu tháng") — mục tiêu Doanh số của một team cho một tháng, người dùng nhập. KPI của góc nhìn Toàn bộ = tổng KPI các team, chỉ khi mọi team chưa xóa có KPI của tháng đó (thiếu một team thì không có KPI toàn bộ); RE không có KPI; không có KPI tuần. **Nhịp cần mỗi tuần** — (KPI − đã đạt) ÷ số tuần còn lại của tháng, app tự tính. Chữ "KPI" trong chú thích code cũ chỉ các ô chỉ số của Tổng quan, không phải nghĩa này.
 
+## Báo cáo (Phase 6 phần E; Owner duyệt G3 13/11/2026, T-424)
+
+- **Bản tin** — mặt để đọc và gửi của màn Báo cáo: các trang có đầu thư cho một kỳ và một góc nhìn (tóm tắt, chi tiết từng RE và HĐ hủy, hoạt động, Xu hướng và định nghĩa); câu chữ viết từ số theo khuôn và theo bảng luật Điểm nhấn, không gọi AI. **Bản in** là chính các trang đó trên giấy sáng (A4 dọc); app không sinh file PDF.
+- **Sổ số** — mặt để tra của màn Báo cáo: bốn số của góc nhìn, rồi năm bảng **Kết quả**, **Chuyển đổi**, **Lịch hẹn**, **Khách hàng**, **HĐ hủy**; dòng xếp theo team (team mở ra RE) hoặc **theo mốc** (7 ngày của tuần, các tuần của tháng, 12 tháng của năm).
+- **Xu hướng** — 6 kỳ gần nhất cùng loại, kỳ đang xem đứng cuối; có ở kỳ Tuần / Tháng / Năm.
+
 ## KYC
 
 - **Ghi chú KYC** (`KycNote`) — văn bản RE ghi, chỉ thêm, không sửa/xóa (ADR-0008), trừ khi dọn sạch Thùng rác xóa hẳn KH đã xóa (spec Phase 6 TR-11, phụ lục ADR-0008).

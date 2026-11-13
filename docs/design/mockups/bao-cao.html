@@ -1,0 +1,1559 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
+  Mockup G3 đợt e (T-424 #1247): màn Báo cáo trong app và file Excel (ý 21, 22, 23, 35; phần E; sheet Forecast của D-f).
+  Trạng thái: Owner duyệt G3 13/11/2026 (16 điểm ở #ask; điểm nào cũng chọn phương án đề xuất). Thay reports.html (03/10/2026).
+  Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026, 13:35.
+  Số viết theo ADR-0018: "1.38 tỷ", "555 tr", "40,000,000 VNĐ"; ngày dd/mm/yyyy; chữ "RM", "Tỷ lệ".
+  Số lấy từ đúng bảng ngày của tong-quan.html (đợt c) và các lịch hẹn của forecast.html (đợt d): Tháng 11 MTD
+  Doanh số 1.38 tỷ = 1.43 tỷ phát hành − 50 tr hủy, 33 phát hành, 1 hủy, 78 RF; Tháng 10: 3.27 tỷ trên KPI 3 tỷ;
+  Forecast tuần này 555 tr, tới cuối tháng 1.32 tỷ. Màn, trang in và các sheet vẽ từ cùng một bảng số trong script.
+  #shell     Cửa sổ app bấm được: Báo cáo (công tắc Bản tin / Sổ số, viên góc nhìn, viên kỳ, nút Xem bản in, nút
+             Xuất Excel); các màn khác chỉ có vỏ. Thanh dưới: hệ điều hành, cỡ cửa sổ, ba cảnh mẫu
+  #brief     Ý 21: Bản tin bốn trang; khuôn của câu tóm tắt; nhận xét theo bảng luật Điểm nhấn (#opt-says)
+  #trend     Ý 35: trang Xu hướng, 6 kỳ gần nhất
+  #print     Bản in giấy sáng: bốn trang A4 dọc, cách in, bảng màu giấy và tương phản
+  #ledger    Ý 22: Sổ số năm bảng (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng, HĐ hủy), Theo team / Theo mốc;
+             17 cột cũ nằm ở đâu
+  #excel     Ý 23: file Excel của Báo cáo (bảy sheet; kỳ Tháng có cột KPI ở sheet Tóm tắt và Team – RM) và file của màn
+             Forecast; hai cách chia sheet (#opt-sheets);
+             công thức, nhóm gập, khổ in, tên file
+  #arrive    Từ Tổng quan tới Báo cáo: sáu ô chỉ số và các câu Điểm nhấn tới chỗ nào; KPI tháng trong Báo cáo (#opt-kpi)
+  #views     Team · Tuần, RM, kỳ đã qua, kỳ Năm, số âm, cửa sổ hẹp nhất; hai bố cục (#opt-layout)
+  #keep      Giữ gì, đổi gì so với Báo cáo đã duyệt 03/10/2026 (reports.html)
+  #states    Trạng thái trống và lỗi
+  #mask      Che tên KH
+  #feasible  Làm được bằng gì
+  #ask       16 điểm G3 Owner đã quyết (13/11/2026)
+  Vỏ app, bảng thành phần (đợt a), ô lệnh, "Lưu ý" (đợt b), Tổng quan (đợt c), Forecast (đợt d): app-shell.html,
+  components.html, search-rm-team.html, tong-quan.html, forecast.html.
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Báo cáo và Excel — Heritas L-CRM (Project-2C mockup, đợt e)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page: the screens inside the window ---- */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later > b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p b { font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 520px; font-size: 13.5px; }
+      /* The customer-name button of round a: an eye; once on it says so */
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+      .menu button .n .ic { width: 13px; height: 13px; margin-left: 6px; vertical-align: -2px; color: var(--accent); }
+      .menu .tmark { margin-right: -2px; }
+
+      /* Báo cáo: the switch, the pages of "Bản tin", the ledger */
+      .rp { display: grid; gap: 16px; }
+      .rp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 34px; }
+      .rp-bar .note { min-width: 0; font-size: 12.5px; color: var(--text-2); }
+      .rp-bar .right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+      .rp-bar .btn.on { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+      .rp-pages { display: grid; gap: 20px; }
+      .rp-pages.print { padding: 24px 0; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); }
+      .rp-pages .paper + .paper { margin-top: 0; }
+      .ok { color: var(--ok); }
+      .lg { padding: 16px 18px 14px; }
+      .lg-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
+      .lg-head .seg .count { margin-left: 6px; }
+      .lg-head .rows { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+      .trio.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .trio .sub .delta { margin-left: 6px; height: 20px; font-size: 11.5px; }
+      .lg-sum { padding: 16px 20px; }
+      .lg .tbl tr.team[data-team] { cursor: pointer; }
+      .lg .tbl .tmark, .paper .tbl .tmark { margin-right: 7px; }
+      .lg .tbl th.hi, .lg .tbl td.hi { background: var(--accent-soft); }
+      .lg .tbl th.hi { color: var(--accent); }
+      .lg .tbl tr.future td { color: var(--text-3); }
+      .tbl td.kc b { margin-left: 6px; font-weight: 650; }
+      .lg .tbl td .st { vertical-align: 1px; }
+      .lg-note { margin: 12px 2px 0; font-size: 12.5px; color: var(--text-2); }
+      .lg-note b { font-weight: 600; color: var(--text); }
+      .arrived { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: calc(8px * var(--r-k)); corner-shape: var(--r-curve); background: var(--accent-soft); font-size: 12.5px; color: var(--text); }
+      .arrived .ic { width: 14px; height: 14px; color: var(--accent); }
+      .view-note { margin: 12px 2px 0; font-size: 12.5px; color: var(--text-2); }
+      .tbl td.neg { color: var(--danger); }
+      @container (max-width: 1240px) {
+        /* The widest table (Kết quả of a month: ten columns of figures, a team unfolded) fits the card on both systems */
+        .lg .tbl { font-size: 12px; }
+        .lg .tbl th { font-size: 11.5px; }
+        .lg .tbl th, .lg .tbl td { padding-left: 4px; padding-right: 4px; }
+        .lg .tbl tr.rm td:first-child { padding-left: 22px; }
+        .lg .tbl .tw { width: 14px; margin-right: 4px; }
+        .lg { padding-left: 12px; padding-right: 12px; }
+        .lg-sum .trio .sub { white-space: normal; overflow: visible; } /* the change chip stays in sight: the line wraps instead of being cut */
+        .paper { padding: 30px 30px 20px; }
+        .paper .tbl th, .paper .tbl td { padding-left: 6px; padding-right: 6px; }
+        .p-kpi4 { gap: 16px; }
+        .p-kpi4 .v { font-size: 26px; }
+        .trio b { font-size: 22px; }
+        .rp-bar .note { display: none; }
+        .tbar { grid-template-columns: 104px minmax(0, 1fr) 62px; }
+      }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .shot { position: relative; height: calc(var(--h, 900px) * var(--s, 0.8) + 44px); border-radius: 16px; overflow: hidden; background: var(--wall); }
+      .shot > .win { position: absolute; left: 22px; top: 22px; width: var(--w, 1440px); height: var(--h, 900px); transform: scale(var(--s, 0.8)); transform-origin: 0 0; }
+      .frame-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13.5px; color: var(--text-2); }
+      .frame-bar b { color: var(--text); }
+      .state-l { display: block; margin: 0 0 8px; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .stack-v { display: grid; gap: 18px; }
+      .opt-pic.blk { display: block; padding: 16px; min-height: 0; }
+      .opt-pic.shot { padding: 0; border-radius: 0; }
+      .rules { margin: 0; padding-left: 20px; color: var(--text-2); }
+      .rules li { margin-bottom: 7px; }
+      .rules b { color: var(--text); font-weight: 600; }
+      .law { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .law th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+      .law td { padding: 11px 12px 11px 0; border-top: 1px solid var(--hairline); vertical-align: top; line-height: 1.5; color: var(--text-2); }
+      .law td:first-child { font-weight: 650; color: var(--text); }
+      .law td b { color: var(--text); font-weight: 600; }
+      .law td .btn { margin-top: 2px; }
+      .law .sw { display: inline-block; width: 14px; height: 14px; margin-right: 7px; border-radius: 3px; vertical-align: -2px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
+      .law td.n, .law th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      /* A4 pages side by side, scaled; the sheet keeps the size it prints at (794 × 1123 px at 96 dpi) */
+      .a4s { display: grid; grid-template-columns: repeat(2, 794px); gap: 28px; justify-content: center; zoom: 0.74; }
+      .a4s .paper { width: 794px; max-width: none; min-height: 1123px; margin: 0; display: flex; flex-direction: column; }
+      .a4s .paper .p-foot { margin-top: auto; }
+      .a4s.one { grid-template-columns: 794px; zoom: 0.62; }
+      .desk { padding: 26px 20px; border-radius: 22px; background: #2b3340; box-shadow: inset 0 0 0 1px var(--hairline); overflow: hidden; }
+      .xl-wrap { display: grid; gap: 10px; }
+      .tabs-pic { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f1f3f5; border-radius: 8px; font: 12.5px/1.3 'Segoe UI', system-ui, sans-serif; }
+      .tabs-pic span { padding: 6px 12px; background: #fff; color: #4a5568; border-bottom: 2px solid transparent; }
+      .tabs-pic span.on { color: #107c41; font-weight: 600; border-bottom-color: #107c41; }
+      .tabs-pic span.wide { box-shadow: inset 0 0 0 1px #c9a24a; }
+      .opt-pic .paper { zoom: 0.78; }
+      .dock [data-size-note] { min-width: 96px; }
+      @media (max-width: 1320px) { .dock [data-size-note] { display: none; } }
+      @media (max-width: 1180px) { .os .lg .tbl { font-size: 12.5px; } .os .lg .tbl th, .os .lg .tbl td { padding-left: 6px; padding-right: 6px; } }
+      @media (max-width: 1100px) { .gal, .pgrid, .duo { grid-template-columns: minmax(0, 1fr); } .a4s { grid-template-columns: 794px; } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V4h10v5M7 14h10v6H7z" /><rect x="4" y="9" width="16" height="8" rx="2" /></symbol>
+      <symbol id="i-page" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><path d="M12 12v.01" /></symbol>
+      <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M14.6 9.4c-.4-.9-1.3-1.4-2.6-1.4-1.5 0-2.6.8-2.6 2s1.1 1.7 2.6 2 2.6.8 2.6 2-1.1 2-2.6 2c-1.3 0-2.2-.5-2.6-1.4M12 6.5v11" /></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+      <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt e · Báo cáo và Excel</b>
+      <span class="state ok">Đã duyệt G3 · 13/11/2026</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#brief">Bản tin</a><a href="#trend">Xu hướng</a><a href="#print">Bản in</a><a href="#ledger">Sổ số</a><a href="#excel">File Excel</a><a href="#arrive">Từ Tổng quan</a><a href="#views">Góc nhìn</a><a href="#keep">Giữ / đổi</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i" data-go="overview" data-sub="Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ" data-tools="scope period find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</button>
+              <button class="nav-i" data-go="appointments" data-sub="Toàn bộ" data-tools="scope find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</button>
+              <button class="nav-i" data-go="customers" data-sub="884 KH đang mở · 65 đã đóng · Toàn bộ" data-tools="scope find" data-act="Khách hàng"><svg class="ic"><use href="#i-people" /></svg>Khách hàng</button>
+              <button class="nav-i" data-go="forecast" data-sub="Hôm nay Thứ Ba 10/11/2026 · Toàn bộ" data-tools="scope find" data-act="Xuất Excel" data-act-open="job" data-job="Đang xuất Excel Forecast|Đã xuất forecast_toan-bo_2026-11-10.xlsx"><svg class="ic"><use href="#i-forecast" /></svg>Forecast</button>
+              <button class="nav-i on" data-go="reports" data-sub="Tháng 11/2026 · Toàn bộ" data-tools="scope period find" data-act="Xuất Excel" data-act-open="job" data-job="Đang xuất Excel Báo cáo|Đã xuất bao-cao_2026-11_toan-bo_2026-11-10.xlsx"><svg class="ic"><use href="#i-report" /></svg>Báo cáo</button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team" data-sub="3 team · 3 TL · 27 RM · 3 người hỗ trợ" data-tools="find" data-act="Team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button>
+              <button class="nav-i" data-go="settings" data-sub="Dữ liệu · AI · Thùng rác" data-tools="find"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i>Đã lưu 13:20</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2>Báo cáo</h2><span></span></div>
+              <button class="now-pill" aria-haspopup="dialog" title="Lưu ý: lịch hẹn kế tiếp, việc hôm nay, việc chạy nền"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
+                <button class="cap" data-tool="scope" data-pop="scope" aria-haspopup="true" aria-expanded="false" title="Góc nhìn"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <span class="cap" data-tool="period"><button class="step" data-step="-1" aria-label="Kỳ trước">&#x2039;</button><button class="num" data-pop="period" data-period-name aria-haspopup="true" aria-expanded="false">Tháng 11/2026</button><button class="step" data-step="1" aria-label="Kỳ sau">&#x203A;</button></span>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Ô lệnh (⌘K)" title="Ô lệnh · ⌘K"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn data-run="act"><svg class="ic"><use href="#i-export" /></svg><span>Xuất Excel</span></button>
+              </div>
+            </header>
+
+            <!-- Góc nhìn và kỳ: hai bảng của thanh công cụ (đợt c); chọn là áp dụng ngay, không có nút "Lọc" -->
+            <div class="menu tl-pop" data-pop-for="scope" role="menu" aria-label="Góc nhìn"></div>
+            <div class="ppop tl-pop" data-pop-for="period" role="dialog" aria-label="Chọn kỳ">
+              <div class="seg" aria-label="Loại kỳ"><button data-kind="day">Ngày</button><button data-kind="week">Tuần</button><button class="on" data-kind="month">Tháng</button><button data-kind="year">Năm</button><button data-kind="custom">Tùy chọn</button></div>
+              <div data-pp></div>
+            </div>
+
+            <!-- "Lưu ý" (đợt b): hôm nay theo góc nhìn đang chọn -->
+            <div class="now-pop" role="dialog" aria-label="Lưu ý">
+              <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
+              <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
+              <div class="ag next"><span class="tm num">14:00</span><b><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></b><span class="st s-info">còn 25 phút</span><small>Case size dự kiến 30 tr · RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">15:00</span><b><span class="kh" data-kh="L. T. H.">Lê Thị Hồng</span></b><span class="st s-info">Dự kiến</span><small>RM Lê Minh Khang · Hừng Đông</small></div>
+              <div class="ag"><span class="tm num">16:30</span><b><span class="kh" data-kh="L. Q. H.">Lê Quốc Hùng</span></b><span class="st s-info">Dự kiến</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <hr />
+              <h4>Cần làm</h4>
+              <div class="todo"><button class="btn sm" data-jump="appointments"><span class="count">12</span>buổi chưa ghi kết quả</button><button class="btn sm" data-jump="forecast"><span class="count">2</span>lịch tuần này thiếu case size</button></div>
+              <hr />
+              <h4>Việc chạy nền</h4>
+              <div data-jobs><p class="help" style="margin: 0">Không có việc nào đang chạy. Xuất Excel, sao lưu, phân tích AI hiện tiến độ ở đây.</p></div>
+            </div>
+
+            <div class="views">
+              <div class="view" data-view="overview"><div class="later"><svg class="ic"><use href="#i-overview" /></svg><b>Tổng quan</b><p>Đã duyệt ở đợt c: xem <a class="c-accent" href="tong-quan.html">tong-quan.html</a>. Sáu ô chỉ số và các câu Điểm nhấn mở màn Báo cáo ở cùng kỳ và góc nhìn: mục <a class="c-accent" href="#arrive">Từ Tổng quan</a> của trang này.</p></div></div>
+              <div class="view" data-view="appointments"><div class="later"><svg class="ic"><use href="#i-cal" /></svg><b>Lịch hẹn</b><p>Giữ bố cục đã duyệt, chỉ thay vỏ: xem <a class="c-accent" href="app-shell.html#previews">app-shell.html · Xem trước</a>.</p></div></div>
+              <div class="view" data-view="customers"><div class="later"><svg class="ic"><use href="#i-people" /></svg><b>Khách hàng</b><p>Đã duyệt ở đợt b: xem <a class="c-accent" href="search-rm-team.html">search-rm-team.html</a>.</p></div></div>
+              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Đã duyệt ở đợt d: xem <a class="c-accent" href="forecast.html">forecast.html</a>. File Excel của nút Xuất Excel ở màn này: mục <a class="c-accent" href="#excel">File Excel</a>; bấm nút Xuất Excel phía trên để thấy tên file.</p></div></div>
+
+              <!-- ===== Báo cáo (đợt e): vẽ bằng script cuối file theo góc nhìn, kỳ và chế độ Bản tin / Sổ số ===== -->
+              <div class="view on" data-view="reports"><div class="rp" data-rp></div></div>
+
+              <div class="view" data-view="team"><div class="later"><svg class="ic"><use href="#i-team" /></svg><b>Team &amp; nhân sự</b><p>Đã duyệt ở đợt b: xem <a class="c-accent" href="search-rm-team.html#team">search-rm-team.html · Team</a>; ô "KPI tháng" của hộp team: <a class="c-accent" href="forecast.html#dialogs">forecast.html · Hộp thoại</a>.</p></div></div>
+              <div class="view" data-view="settings"><div class="later"><svg class="ic"><use href="#i-gear" /></svg><b>Cài đặt</b><p>Ba mục có icon đã duyệt ở đợt a: xem <a class="c-accent" href="app-shell.html#sidebar">app-shell.html</a>.</p></div></div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm: ô lệnh, thông báo nổi ===== -->
+          <div class="scrim"></div>
+          <div class="pal" role="dialog" aria-modal="true" aria-label="Ô lệnh">
+            <div class="pal-field"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm KH, RM, màn hay lệnh…" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>
+            <div class="pal-list" role="listbox"></div>
+            <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd>chọn</span><span><kbd>Enter</kbd>mở</span><span><kbd>Esc</kbd>đóng</span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd>mở ở mọi màn</span></div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-t"><b>Heritas L-CRM</b> · đợt e</span>
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="num" data-size-note></span>
+        <span class="seg" data-set="scene" aria-label="Cảnh mẫu"><button class="on" data-v="all|m:2026-11|brief">Bản tin · Tháng 11</button><button data-v="all|m:2026-11|ledger">Sổ số · Toàn bộ</button><button data-v="all|m:2026-10|brief">Tháng 10 · kỳ đã qua</button></span>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Bản tin ================= -->
+      <section class="sec" id="brief">
+        <span class="kicker">Ý 21 · phần E</span>
+        <h2>Bản tin: một tập trang gửi đi được ngay, đọc trong mười giây.</h2>
+        <p class="lead">Anh viết 10/11: bảng của mục Báo cáo "quá sơ sài, không chuyên nghiệp, đẳng cấp", và sau bảng ý tưởng: "cách trình bày đã ổn, tốt hơn nhưng cần <b>chi tiết hơn</b> và có thể <b>lọc chọn báo cáo các kỳ</b>". Màn Báo cáo mới có hai mặt, đổi bằng một công tắc: <b>Bản tin</b> để đọc và gửi, <b>Sổ số</b> để tra. Bản tin là bốn trang có đầu thư; trang đầu mở bằng một câu viết từ số, rồi bốn số chính kèm phép tính, doanh số theo team và phần nhận xét. Thử ở cửa sổ đầu trang: đổi kỳ ở viên <b>Tháng 11/2026</b> (có ‹ ›), đổi góc nhìn ở viên <b>Toàn bộ</b>; không có nút "Lọc".</p>
+        <div class="duo stack" data-only="mac">
+          <div data-spec="page" data-n="1"></div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Bốn trang</h3>
+            <table class="law">
+              <tr><th>Trang</th><th>Nội dung</th></tr>
+              <tr><td>1 · Tóm tắt</td><td>Đầu thư (logo, tên báo cáo, kỳ, góc nhìn, giờ lập). Câu tóm tắt và đoạn dẫn. Bốn số: <b>Doanh số, Tổng số HĐ, Tỷ lệ chốt, Tỷ lệ hủy</b>, mỗi số kèm phép tính và mức đổi so với kỳ trước. Dòng KPI tháng (kỳ Tháng). Doanh số theo team, phần hủy vẽ gạch chéo. Nhận xét. Bảng kết quả theo team.</td></tr>
+              <tr><td>2 · Chi tiết</td><td>Kết quả của từng RM, xếp dưới team của mình. Danh sách HĐ hủy trong kỳ (trang ghi 5 HĐ gần nhất; đủ danh sách ở Sổ số và file Excel).</td></tr>
+              <tr><td>3 · Hoạt động</td><td>Lịch hẹn trong kỳ theo bốn nhóm; từ buổi gặp tới hợp đồng (Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành); khách hàng theo nhóm cuối kỳ.</td></tr>
+              <tr><td>4 · Xu hướng</td><td>6 kỳ gần nhất (mục <a href="#trend">Xu hướng</a>) và định nghĩa các chỉ số, để người nhận không phải hỏi lại.</td></tr>
+            </table>
+          </div>
+          <div class="pcard">
+            <h3>Câu tóm tắt viết từ số <small>khuôn cố định, không gọi AI · điểm 3 ở #ask</small></h3>
+            <table class="law">
+              <tr><th>Khi</th><th>Câu</th></tr>
+              <tr><td>Có kỳ để so</td><td>"Doanh số <b>1.38 tỷ</b>, <b>tăng 50 tr</b> so với 01/10 – 10/10." Giảm thì ghi "giảm"; bằng nhau ghi "bằng". Mức đổi viết bằng tiền, như ô Doanh số của Tổng quan.</td></tr>
+              <tr><td>Không so được</td><td>"Doanh số 1.38 tỷ." (kỳ Tùy chọn, hoặc không có dữ liệu của kỳ trước)</td></tr>
+              <tr><td>Doanh số âm</td><td>"Doanh số <b>-40 tr</b>: FYP hủy lớn hơn FYP phát hành." (chữ đỏ)</td></tr>
+              <tr><td>Chưa có gì</td><td>"Kỳ này chưa có hợp đồng phát hành." · kỳ chưa bắt đầu: "Kỳ chưa bắt đầu."</td></tr>
+              <tr><td>Đoạn dẫn</td><td>Tối đa bốn câu ngắn, theo thứ tự: số hợp đồng sau khi trừ hủy; team dẫn đầu (góc nhìn một team: thứ hạng của team; góc nhìn RM: không có); Tỷ lệ hủy và mức đổi; Tỷ lệ chốt. Câu nào không có số thì bỏ.</td></tr>
+            </table>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-says">Nhận xét của Bản tin: lấy câu nào <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 4 ở #ask</small></h3>
+        <p class="sub-p">Anh chốt 11/11: nhận xét viết <b>theo luật, không gọi AI</b>, và bảng luật "Điểm nhấn" đã qua G2 ngày 13/11. Em không thêm luật mới: Bản tin dùng lại đúng các câu đó, bỏ mũi tên vì trang giấy không bấm được. Còn một lựa chọn: lấy đủ các câu như Tổng quan, hay chỉ các câu nói về kết quả.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 22px 26px"><h4>Nhận xét</h4><div data-spec="says"></div></div></div><div class="opt-t"><b>A · Như Tổng quan <span class="tag rec">anh chọn 13/11</span></b><p>Cùng kỳ, cùng góc nhìn thì Tổng quan và Bản tin nói cùng những câu, tối đa bốn, theo thứ tự ưu tiên của bảng luật. Câu "còn buổi hẹn chưa ghi kết quả" cho người đọc biết số của kỳ chưa đủ.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div class="paper" style="padding: 22px 26px"><h4>Nhận xét</h4><div data-spec="says" data-only="1,4,6,7"></div></div></div><div class="opt-t"><b>B · Chỉ các câu về kết quả</b><p>Giữ luật 1, 7 (Tỷ lệ hủy), 4 (mục tiêu tháng), 6 (team dẫn đầu); bỏ ba câu nhắc việc (chưa ghi kết quả, thiếu case size, Forecast tuần). Bản gửi cấp trên gọn hơn, nhưng khác với câu đang hiện ở Tổng quan.</p></div></div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>So với kỳ trước</b> theo đúng luật đã duyệt 03/10 (<code>phase-4-chi-so.md</code> §4.2): kỳ đang chạy so với <b>cùng số ngày</b> của kỳ trước (kỳ Năm: cùng ngày tháng), kỳ đã xong so với <b>cả kỳ liền trước</b>. Bản tin ghi rõ khoảng đem so.</li>
+          <li><b>Giờ lập</b> là lúc mở Bản tin; file Excel và bản in ghi giờ xuất / in.</li>
+          <li>Góc nhìn <b>một team</b>: thanh "Doanh số theo team" đổi thành theo RM, bảng trang 1 thành các mốc của kỳ, trang 2 là RM của team. Góc nhìn <b>một RM</b>: trang 1 theo mốc, trang 2 gộp HĐ hủy và hoạt động, nên Bản tin còn ba trang. Hình ở mục <a href="#views">Góc nhìn</a>.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Xu hướng ================= -->
+      <section class="sec" id="trend">
+        <span class="kicker">Ý 35 · anh chốt 11/11: "Thêm vào Báo cáo"</span>
+        <h2>Trang Xu hướng: kỳ này đứng ở đâu trong sáu kỳ gần nhất.</h2>
+        <p class="lead">Trang cuối của Bản tin đặt kỳ đang xem cạnh năm kỳ liền trước cùng loại: sáu cột Doanh số, rồi một bảng sáu dòng với các chỉ số chính. Cột đậm là kỳ đang xem. Kỳ đang chạy ghi rõ "tới hôm nay", để không ai so nhầm mười ngày với cả tháng.</p>
+        <div class="duo stack" data-only="mac">
+          <div class="stack-v">
+            <div><span class="state-l">Kỳ Tháng đang chạy: Tháng 06 → Tháng 11/2026 (tháng 11 mới tới 10/11); cột "KPI tháng · đạt" chỉ có ở kỳ Tháng</span><div data-spec="page" data-n="4"></div></div>
+            <div><span class="state-l">Kỳ Tuần, góc nhìn Team Sao Mai: sáu tuần tới tuần 09/11 – 15/11</span><div data-spec="trendOnly" data-sc="t0" data-period="w:2026-11-9"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Có ở kỳ Tuần, Tháng, Năm.</b> Kỳ Ngày và kỳ Tùy chọn không có trang này (điểm 5 ở #ask): sáu ngày liền nhau ít nói lên xu hướng, kỳ Tùy chọn không có "kỳ liền trước". Khi đó trang cuối chỉ còn phần định nghĩa.</li>
+          <li>Kỳ nằm ngoài dữ liệu thì bỏ: bản mẫu chỉ có số từ 01/2025, nên kỳ Năm ở đây có hai cột.</li>
+          <li>Số của từng kỳ là số của <b>cả kỳ đó</b> (kỳ đang chạy: tới hôm nay), tính theo golden B: mỗi HĐ hủy nằm ở kỳ của ngày hủy, nên số của kỳ đã qua không tự đổi.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Bản in ================= -->
+      <section class="sec" id="print">
+        <span class="kicker">Anh chốt 11/11: "In giấy sáng"</span>
+        <h2>Bản in: cùng bốn trang đó trên giấy trắng, màu của logo.</h2>
+        <p class="lead">App chỉ có giao diện tối, nhưng tờ giấy thì sáng. Nút <b>Xem bản in</b> trên màn Bản tin đổi bốn trang sang đúng hình sẽ in: nền trắng, chữ navy, vạch và nhấn màu champagne đậm, logo không cần viền. Nút <b>In…</b> mở hộp in của hệ điều hành; từ hộp đó chọn máy in hoặc "Lưu thành PDF". Bốn tờ dưới đây là khổ A4 dọc, thu nhỏ.</p>
+        <div class="desk"><div class="a4s" data-spec="a4" data-sc="all" data-period="m:2026-11"></div></div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Cách in <small>điểm 6 ở #ask</small></h3>
+            <ul class="bul">
+              <li><b>Xem bản in</b> là một công tắc ngay trên màn: bật thì các trang đổi sang giấy sáng, tắt thì về lại. Không mở cửa sổ mới.</li>
+              <li><b>In…</b> gọi hộp in của Windows 11 / macOS. App <b>không tự sinh file PDF</b>: ADR-0011 ghi "Không làm PDF ở v1", và hộp in của cả hai hệ điều hành đều có sẵn "Lưu thành PDF". Vì vậy không thêm thư viện nào (không qua G4).</li>
+              <li>Khổ <b>A4 dọc</b>, lề 12 mm, mỗi trang của Bản tin là một tờ; chân trang ghi "Trang n / 4". Bảng dài hơn một tờ (góc nhìn có rất nhiều RM) tự sang tờ mới, lặp lại dòng tiêu đề.</li>
+              <li>Bản in luôn ghi <b>tên KH đầy đủ</b>, kể cả khi màn đang che tên (đã duyệt ở đợt a).</li>
+              <li>Chưa kiểm: lệnh in của cửa sổ app trên máy thật (WebView2 của Windows, WKWebView của macOS). Việc này làm ở Issue code; nếu một nền tảng không in được từ cửa sổ app thì em báo lại trước khi làm tiếp.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Bảng màu của giấy <small>dùng chung cho bản in và file Excel · điểm 12 ở #ask</small></h3>
+            <table class="law">
+              <tr><th>Màu</th><th>Dùng cho</th><th class="n">Tương phản</th></tr>
+              <tr><td><i class="sw" style="background: #16243a"></i>Navy #16243A</td><td>Tiêu đề, tên báo cáo; nền dòng tiêu đề của bảng Excel</td><td class="n">15.6 : 1 trên trắng</td></tr>
+              <tr><td><i class="sw" style="background: #e9cf9a"></i>Champagne #E9CF9A</td><td>Chữ trên nền navy; vạch dưới số lớn</td><td class="n">10.3 : 1 trên navy</td></tr>
+              <tr><td><i class="sw" style="background: #7a5a12"></i>Champagne đậm #7A5A12</td><td>Chữ và vạch nhấn trên giấy trắng (champagne của app chỉ đạt 2 : 1 trên trắng)</td><td class="n">6.4 : 1 trên trắng</td></tr>
+              <tr><td><i class="sw" style="background: #f6ecd2"></i>Champagne nhạt #F6ECD2</td><td>Thanh dữ liệu, nền dòng team</td><td class="n">chữ mực 13.3 : 1</td></tr>
+              <tr><td><i class="sw" style="background: #1b2433"></i>Mực #1B2433 · #4A5568 · #5F6876</td><td>Chữ thường, chữ phụ, chú thích</td><td class="n">15.6 · 7.5 · 5.6 : 1</td></tr>
+              <tr><td><i class="sw" style="background: #a12a22"></i>Đỏ #A12A22</td><td>Số âm, phần hủy</td><td class="n">7.3 : 1 trên trắng</td></tr>
+              <tr><td><i class="sw" style="background: #dfe3e8"></i>Kẻ #DFE3E8</td><td>Đường kẻ bảng</td><td class="n">không phải chữ</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Sổ số ================= -->
+      <section class="sec" id="ledger">
+        <span class="kicker">Ý 22 · phần B, E</span>
+        <h2>Sổ số: năm bảng, mỗi bảng trả lời một câu hỏi, vừa một màn.</h2>
+        <p class="lead">Hiện trạng anh thấy ở bản dùng thử: hai bảng 17 cột, phải cuộn ngang, tiêu đề gãy ba bốn dòng. Thêm năm cột của phần B (HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Tỷ lệ hủy) thì thành 22 cột. Sổ số chia các cột đó theo câu hỏi: <b>Kết quả</b> (bán được gì), <b>Chuyển đổi</b> (từ buổi gặp tới hợp đồng), <b>Lịch hẹn</b>, <b>Khách hàng</b>, và danh sách <b>HĐ hủy</b>. Số canh phải, tiêu đề một dòng, dòng Tổng có kẻ trên; bấm một team để mở các RM. Trên cùng là bốn số của góc nhìn đang chọn.</p>
+        <div class="duo stack" data-only="mac">
+          <div class="stack-v">
+            <div><span class="state-l">Kết quả · Toàn bộ · Tháng 11/2026 (MTD), team Sao Mai đang mở</span><div data-spec="ledger" data-tab="result" data-open="0"></div></div>
+            <div><span class="state-l">Chuyển đổi</span><div data-spec="table" data-tab="conv"></div></div>
+            <div><span class="state-l">Lịch hẹn</span><div data-spec="table" data-tab="appt"></div></div>
+            <div><span class="state-l">Khách hàng: ảnh chụp cuối kỳ (kỳ đang chạy: cuối ngày hôm nay)</span><div data-spec="table" data-tab="kh"></div></div>
+            <div><span class="state-l">HĐ hủy · Toàn bộ · Tháng 10/2026: mỗi dòng một hợp đồng có ngày hủy trong kỳ</span><div data-spec="table" data-tab="cut" data-period="m:2026-10"></div></div>
+            <div><span class="state-l">Theo mốc · Kết quả · Tháng 11/2026: mỗi dòng một tuần của tháng, cắt theo biên tháng; mốc chưa tới ghi "—"</span><div data-spec="table" data-tab="result" data-rows="mark"></div></div>
+          </div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>17 cột cũ và 5 cột mới nằm ở đâu</h3>
+            <table class="law">
+              <tr><th>Bảng</th><th>Cột</th></tr>
+              <tr><td>Kết quả</td><td>HĐ phát hành · <b>HĐ hủy</b> · <b>Tổng số HĐ</b> · <b>FYP phát hành</b> · <b>FYP hủy</b> · Doanh số · <b>Tỷ lệ hủy</b> · Tỷ lệ chốt; kỳ Tháng thêm "KPI tháng · đạt" ở dòng team và dòng Tổng (điểm 9)</td></tr>
+              <tr><td>Chuyển đổi</td><td>Đã gặp · Chuyển RF · HĐ nộp · Case size · HĐ phát hành · Tỷ lệ chốt</td></tr>
+              <tr><td>Lịch hẹn</td><td>Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến · Tổng lịch</td></tr>
+              <tr><td>Khách hàng</td><td>N4 · N3 · N2 · N1 · KH đang mở · Tạm hoãn · Mất cơ hội (cuối kỳ)</td></tr>
+              <tr><td>HĐ hủy</td><td>Ngày hủy · Số HĐ · Khách hàng · RM · Team · Ngày phát hành · FYP hủy</td></tr>
+            </table>
+            <p class="foot-note" style="margin-top: 12px">Chữ đậm là cột mới của phần B. "Đã gặp", "HĐ phát hành" và "Tỷ lệ chốt" có mặt ở hai bảng vì thuộc cả hai câu hỏi; không có cột nào của bảng cũ bị bỏ.</p>
+          </div>
+          <div class="pcard">
+            <h3>Dòng của bảng <small>điểm 7 ở #ask</small></h3>
+            <ul class="bul">
+              <li><b>Theo team</b> (mặc định): góc nhìn Toàn bộ là các team, bấm một team để mở RM; góc nhìn một team là RM của team. Team và RM xếp theo tên, như bảng So sánh team của Tổng quan.</li>
+              <li><b>Theo mốc</b> (anh yêu cầu 03/10, giữ nguyên luật): kỳ Tuần là 7 ngày, kỳ Tháng là từng tuần Thứ Hai → Chủ Nhật cắt theo biên tháng, kỳ Năm là 12 tháng. Mốc sau hôm nay: lịch hẹn vẫn đếm, chỉ số kết quả và khách hàng ghi "—". Góc nhìn một RM chỉ có cách này.</li>
+              <li><b>Dòng Tổng</b> cộng các dòng; hai tỷ lệ của dòng Tổng tính lại từ tổng (Σ hủy ÷ Σ phát hành, Σ phát hành ÷ Σ RF), không lấy trung bình. Team = Σ RM, Toàn bộ = Σ team.</li>
+              <li><b>Bốn số trên cùng</b> thay bảng "Tổng hợp" một dòng của bản 03/10, và có mức đổi so với kỳ trước như Bản tin. Các bảng bên dưới không có cột so sánh.</li>
+              <li>Số âm màu đỏ (đã duyệt ở đợt c); ô không có gì ghi "—" hoặc 0 màu nhạt.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= File Excel ================= -->
+      <section class="sec" id="excel">
+        <span class="kicker">Ý 23 · D-f · anh chốt 11/11: "Dùng màu logo"</span>
+        <h2>File Excel: tờ đầu là bản in của Bản tin, phía sau là sổ còn tính tiếp được.</h2>
+        <p class="lead">Nút <b>Xuất Excel</b> của màn Báo cáo ghi một file bảy sheet. Sheet <b>Tóm tắt</b> giống trang 1 của Bản tin, in vừa một tờ A4. Hai sheet sổ (<b>Team – RM</b>, <b>Theo mốc</b>) mang đủ mọi cột, chia nhóm cột có tên; team gập mở RM bằng nút nhóm của chính Excel; dòng team và dòng Tổng là <b>công thức</b>, nên người nhận sửa một số thì tổng vẫn đúng. Rồi tới <b>HĐ hủy</b>, <b>Xu hướng</b>, <b>Forecast</b> (D-f) và <b>Định nghĩa</b>. Bấm các tab sheet ở dưới; bấm một ô có công thức để xem công thức trên thanh.</p>
+        <div class="xl-wrap">
+          <span class="state-l">File của màn Báo cáo · Toàn bộ · Tháng 11/2026 (MTD)</span>
+          <div class="xl" data-xl="report" data-sc="all" data-period="m:2026-11"></div>
+        </div>
+        <div class="xl-wrap" style="margin-top: 26px">
+          <span class="state-l">File của nút Xuất Excel ở màn Forecast (D-f) · Toàn bộ · hôm nay 10/11/2026</span>
+          <div class="xl" data-xl="forecast" data-sc="all"></div>
+        </div>
+        <h3 class="sub-h" id="opt-sheets">Chia sheet thế nào <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 11 ở #ask</small></h3>
+        <p class="sub-p">Cả hai cách đều có đủ số. Khác nhau ở chỗ người nhận làm gì với file: lọc, sắp xếp, dựng pivot (cần mọi cột của một RM trên một dòng), hay chỉ mở xem từng bảng.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span class="wide">Team – RM</span><span class="wide">Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>A · Bảy sheet, hai sheet sổ rộng <span class="tag rec">anh chọn 13/11</span></b><p>Mỗi RM một dòng với đủ 23 cột số, chia bốn nhóm cột có dải tên (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng); ở kỳ Tháng, sheet Team – RM thêm hai cột KPI ở cuối nhóm Kết quả, thành 25 cột (anh chốt 13/11, xem điểm 9). Cột tên và dòng tiêu đề đứng yên khi cuộn. Hợp với lọc, sắp xếp, pivot. Hai file mẫu phía trên vẽ theo cách này.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span>Kết quả</span><span>Chuyển đổi</span><span>Lịch hẹn</span><span>Khách hàng</span><span>Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>B · Mỗi bảng của Sổ số một sheet</b><p>Mười sheet hẹp, giống hệt các bảng trên màn, sheet nào cũng in vừa một tờ A4 ngang. Dễ nhận ra, nhưng muốn xem Doanh số cạnh số lịch hẹn của một RM thì phải ghép hai sheet.</p></div></div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Luật của file <small>điểm 13, 14 ở #ask</small></h3>
+            <ul class="bul">
+              <li><b>Số là số thật</b>, không phải chữ: tiền ghi đủ đồng với định dạng <code>#,##0</code> (tiêu đề cột ghi "(VNĐ)"), tỷ lệ là phân số định dạng <code>0.0%</code>; chỗ màn ghi "—" là ô trống. Dấu ngăn khi xem do Excel của máy mở file quyết định (ADR-0018 §4).</li>
+              <li><b>Công thức:</b> Tổng số HĐ = phát hành − hủy; Doanh số = FYP phát hành − FYP hủy; hai tỷ lệ là phép chia có <code>IFERROR</code>; dòng team = <code>SUM</code> các RM của team; dòng Tổng = tổng các dòng team; ở kỳ Tháng, Đạt KPI = Doanh số ÷ KPI tháng (KPI của team là số nhập, KPI của dòng Tổng là tổng các team). File mở ra đã có sẵn kết quả, không cần tính lại.</li>
+              <li><b>Nhóm gập:</b> RM là dòng nhóm dưới team (nút +/− của Excel ở mép trái), file mở ra với mọi team đang mở. Thanh dữ liệu champagne ở cột Doanh số.</li>
+              <li><b>Khổ in:</b> Tóm tắt A4 dọc, vừa một tờ; các sheet khác A4 ngang, vừa chiều ngang tờ giấy, lặp dòng tiêu đề; đầu trang ghi tên báo cáo, chân trang ghi số trang.</li>
+              <li><b>Sheet Forecast</b> chỉ có khi kỳ của Báo cáo đang chạy (anh chốt 11/11: kỳ đã qua không tính Forecast). Nút Xuất Excel của màn Forecast ghi một file riêng: Forecast, danh sách lịch hẹn, định nghĩa.</li>
+              <li><b>Tên file</b> giữ luật đang có: <code>bao-cao_&lt;kỳ&gt;_&lt;góc nhìn&gt;_&lt;ngày xuất&gt;.xlsx</code>; thêm <code>forecast_&lt;góc nhìn&gt;_&lt;ngày xuất&gt;.xlsx</code>. Tên ngắn ở thông báo của các mockup trước chỉ là chữ minh họa.</li>
+              <li><b>Tên KH đầy đủ</b> ở sheet HĐ hủy và sheet Lịch hẹn, kể cả khi màn đang che tên. <b>Ngôn ngữ</b> của file theo ngôn ngữ app lúc xuất (ADR-0018).</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Màu và kiểu chữ trong file <small>điểm 12 ở #ask</small></h3>
+            <ul class="bul">
+              <li>Nền trắng. <b>Đầu sheet:</b> logo (ảnh, như trên giấy), tên báo cáo chữ navy đậm, dòng kỳ · góc nhìn · giờ lập, một vạch champagne đậm bên dưới.</li>
+              <li><b>Dòng tiêu đề bảng:</b> nền navy, chữ champagne. <b>Dòng team:</b> nền champagne rất nhạt, chữ đậm. <b>Dòng Tổng:</b> kẻ trên, kẻ đôi dưới, kiểu sổ kế toán.</li>
+              <li><b>Số âm</b> chữ đỏ. Không tô màu theo ngưỡng (chưa có ngưỡng nào anh duyệt cho Tỷ lệ hủy).</li>
+              <li>Font của file là Calibri 11 (mặc định của Excel, máy nào cũng có); số canh phải, tên canh trái.</li>
+              <li>Mã màu: bảng ở mục <a href="#print">Bản in</a>, dùng chung cho giấy in và file Excel.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Từ Tổng quan ================= -->
+      <section class="sec" id="arrive">
+        <span class="kicker">Nối với đợt c · ghi chú review L161</span>
+        <h2>Từ Tổng quan tới Báo cáo: mỗi ô, mỗi câu tới đúng một chỗ.</h2>
+        <p class="lead">Ở đợt c anh duyệt: bấm một ô chỉ số hay một câu Điểm nhấn là mở "Báo cáo, cùng kỳ và góc nhìn". Lúc đó màn Báo cáo chưa vẽ. Bảng dưới nói rõ từng đường tới đâu; bấm <b>Thử</b> để cửa sổ đầu trang mở đúng chỗ đó (cột tới nơi được tô nền champagne nhạt).</p>
+        <div class="pcard">
+          <table class="law">
+            <tr><th>Bấm ở Tổng quan</th><th>Tới</th><th></th></tr>
+            <tr><td>Ô Tổng số HĐ, ô Tỷ lệ hủy</td><td>Sổ số · bảng <b>Kết quả</b>, cột đó được tô</td><td><button class="btn sm" data-arrive="result:cancel">Thử</button></td></tr>
+            <tr><td>Ô Tỷ lệ chốt, Chuyển RF, HĐ nộp, Case size</td><td>Sổ số · bảng <b>Chuyển đổi</b>, cột đó được tô</td><td><button class="btn sm" data-arrive="conv:rf">Thử</button></td></tr>
+            <tr><td>Câu "Tỷ lệ hủy … tăng / giảm" (luật 1, 7)</td><td>Sổ số · danh sách <b>HĐ hủy</b> của kỳ</td><td><button class="btn sm" data-arrive="cut:">Thử</button></td></tr>
+            <tr><td>Câu "… dẫn đầu doanh số" / thứ hạng của team (luật 6)</td><td>Sổ số · bảng <b>Kết quả</b> theo team, cột Doanh số được tô (góc nhìn một team: về Toàn bộ để thấy các team)</td><td><button class="btn sm" data-arrive="result:sales">Thử</button></td></tr>
+            <tr><td>Câu "Đã đạt … mục tiêu tháng" của <b>kỳ Tháng đã qua</b> (luật 4)</td><td><b>Bản tin</b> của tháng đó, dòng KPI tháng ở trang 1 (anh chọn 13/11, xem dưới)</td><td><button class="btn sm" data-arrive="goal:">Thử</button></td></tr>
+          </table>
+        </div>
+        <h3 class="sub-h" id="opt-kpi">KPI tháng trong Báo cáo, và nơi tới của luật 4 ở tháng đã qua <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 9 ở #ask</small></h3>
+        <p class="sub-p">Ở đợt d anh chọn "Mỗi tháng một KPI": tháng đã qua vẫn giữ KPI của nó, và câu luật 4 chạy thêm ở kỳ Tháng đã qua. Nơi tới "Báo cáo" của câu đó ở đợt d là do em tự đặt (phiên review ghi lại); muốn nó có nghĩa thì Báo cáo của một kỳ Tháng phải cho thấy KPI. Anh chọn A ngày 13/11.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goal" data-period="m:2026-10"></div><div data-spec="goalTable" data-period="m:2026-10" style="margin-top: 14px"></div></div></div><div class="opt-t"><b>A · Báo cáo của kỳ Tháng có KPI <span class="tag rec">anh chọn 13/11</span></b><p>Bản tin trang 1 có một dòng "KPI tháng": đã đạt bao nhiêu phần, vượt hay thiếu. Bảng Kết quả và trang Xu hướng thêm cột "KPI tháng · đạt" ở dòng team. Trong file Excel, bảng team của sheet Tóm tắt và sheet Team – RM thêm hai cột "KPI tháng (VNĐ)" và "Đạt KPI" ở dòng team và dòng Tổng; sheet Xu hướng có hai cột đó theo từng tháng. Chỉ ở kỳ Tháng; RM không có KPI. Câu luật 4 của tháng đã qua mở Bản tin của tháng đó.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goalTable" data-period="m:2026-10" data-nokpi></div></div></div><div class="opt-t"><b>B · Báo cáo không nói về KPI</b><p>KPI chỉ có ở Forecast và ở câu Điểm nhấn. Báo cáo chỉ ghi số thực tế như hôm nay. Khi đó câu luật 4 của tháng đã qua không có nơi tới: bỏ mũi tên, câu chỉ để đọc.</p></div></div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Kỳ Tháng <b>đang chạy</b>: dòng KPI của Báo cáo chỉ ghi phần đã đạt (vd. "đã đạt 46%"). Số "dự kiến về đích" thuộc Forecast; nó vẫn có trong câu Điểm nhấn ở phần Nhận xét và trong sheet Forecast của file.</li>
+          <li>KPI toàn bộ chỉ có khi mọi team đã đặt KPI của tháng đó (đã duyệt G2 ở đợt d). Tháng chưa đặt KPI: không có dòng KPI, cột ghi "—".</li>
+          <li><b>Ba chỗ của bảng luật Điểm nhấn đã sửa chữ theo ghi chú review</b> (anh duyệt 13/11 cùng điểm 9; không đổi luật): ghi rõ "Owner 13/11 đợt d thay phần mục tiêu" cạnh hai câu của đợt c nói "kỳ đã qua không có câu về mục tiêu"; ghi rõ điều kiện biên (c) (câu "Đã đạt / Đã vượt mục tiêu tháng: …") chỉ dành cho kỳ Tháng đang chạy; kỳ Tháng đã qua mà đã đạt đúng bằng KPI thì dòng phụ không ghi "vượt" hay "thiếu".</li>
+        </ul>
+      </section>
+
+      <!-- ================= Góc nhìn và kỳ ================= -->
+      <section class="sec" id="views">
+        <span class="kicker">Góc nhìn và kỳ · ý 08</span>
+        <h2>Cùng một màn cho Toàn bộ, một team, một RM, và mọi loại kỳ.</h2>
+        <p class="lead">Thanh công cụ của Báo cáo có viên góc nhìn và viên kỳ đã duyệt ở đợt a và đợt c: năm loại kỳ (Ngày, Tuần, Tháng, Năm, Tùy chọn), kỳ đang chạy và mọi kỳ trước, có ‹ › để lùi tới từng kỳ. Chọn là nội dung đổi ngay. Nút chính là <b>Xuất Excel</b>: xuất đúng kỳ và góc nhìn đang xem.</p>
+        <h3 class="sub-h">Team · Tuần: Team Sao Mai, tuần 09/11 – 15/11</h3>
+        <p class="sub-p">Thanh của trang 1 là các RM có doanh số; bảng trang 1 là bảy ngày của tuần; ngày chưa tới ghi "—".</p>
+        <div class="frame-bar"><b>Bản tin · Team Sao Mai · tuần này</b><span class="seg" data-os-for="#pv-team"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="shot" id="pv-team" data-os="mac" data-clone="#win" data-sc="t0" data-period="w:2026-11-9" data-mode="brief"></div>
+
+        <h3 class="sub-h">RM: Hoàng Văn Tùng, Tháng 11/2026</h3>
+        <p class="sub-p">Sổ số của một RM chỉ có cách xếp theo mốc. Tuần 09/11 – 15/11 có 1 HĐ hủy và chưa có HĐ phát hành nào: Tổng số HĐ -1, Doanh số -50 tr, Tỷ lệ hủy "—" (đúng ví dụ đã duyệt ở đợt c).</p>
+        <div class="shot" data-os="mac" data-clone="#win" data-sc="r0" data-period="m:2026-11" data-mode="ledger"></div>
+
+        <h3 class="sub-h">Kỳ đã qua: Tháng 10/2026</h3>
+        <p class="sub-p">So với cả Tháng 09/2026. Không có câu nào về Forecast; dòng KPI ghi kết quả của tháng: 3.27 tỷ trên 3 tỷ.</p>
+        <div class="shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-10" data-mode="brief"></div>
+
+        <h3 class="sub-h">Kỳ Năm: Năm 2026, bảng Theo mốc</h3>
+        <p class="sub-p">Mười hai tháng; tháng 12 chưa tới. Kỳ Năm so với cùng ngày tháng của năm trước.</p>
+        <div class="shot" data-os="win" data-clone="#win" data-sc="all" data-period="y:2026" data-mode="ledger" data-rows="mark"></div>
+
+        <h3 class="sub-h">Số âm và tỷ lệ trên 100%: Team Hừng Đông, tuần 26/10 – 01/11/2026</h3>
+        <p class="sub-p">1 HĐ phát hành, 2 HĐ hủy: Tổng số HĐ -1, Doanh số -40 tr, Tỷ lệ hủy 200% (ví dụ của golden B đã vẽ ở đợt c). Câu tóm tắt đổi sang khuôn "Doanh số âm".</p>
+        <div class="duo stack" data-only="mac"><div data-spec="page" data-n="1" data-sc="t2" data-period="w:2026-10-26"></div></div>
+
+        <h3 class="sub-h">Cửa sổ hẹp nhất 1100 × 700, trên cả hai hệ điều hành</h3>
+        <p class="sub-p">Trang Bản tin co lề; bảng của Sổ số co chữ và khoảng cách cột; không có gì tràn ngang. Bảng rộng nhất là Kết quả của một kỳ Tháng (mười cột số) khi một team đang mở: hình macOS dưới đây vẽ đúng cảnh đó, vì thanh bên của macOS rộng hơn của Windows 11 8 px.</p>
+        <span class="state-l">Windows 11 · Sổ số · Tháng 11/2026</span>
+        <div class="shot" style="--w: 1100px; --h: 700px" data-w="1100" data-os="win" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="ledger"></div>
+        <span class="state-l" style="margin-top: 18px">macOS · Sổ số · Tháng 10/2026, team Sao Mai đang mở</span>
+        <div class="shot" style="--w: 1100px; --h: 700px" data-w="1100" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-10" data-mode="ledger" data-open="0"></div>
+
+        <h3 class="sub-h" id="opt-layout">Hai bố cục của màn <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 1 ở #ask</small></h3>
+        <p class="sub-p">Hai hình là cả cửa sổ 1440 × 900, thu nhỏ để thấy bố cục.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="brief"></div><div class="opt-t"><b>A · Công tắc Bản tin / Sổ số <span class="tag rec">anh chọn 13/11</span></b><p>Mở Báo cáo là thấy Bản tin: câu tóm tắt và bốn số. Cần tra thì bấm sang Sổ số. Mỗi mặt một việc, không mặt nào phải cuộn qua mặt kia.</p></div></div>
+          <div class="opt"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="ledger"></div><div class="opt-t"><b>B · Chỉ có Sổ số trên màn</b><p>Màn Báo cáo là các bảng (như hình); Bản tin chỉ hiện khi bấm "Xem bản in". Gần bản đang có hơn, nhưng phần "đọc trong mười giây" bị giấu sau một nút.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Giữ / đổi ================= -->
+      <section class="sec" id="keep">
+        <span class="kicker">So với bản đã duyệt 03/10/2026</span>
+        <h2>Giữ gì, đổi gì so với Báo cáo đang có.</h2>
+        <p class="lead">Màn Báo cáo hiện tại làm theo <a href="reports.html">reports.html</a> (G3 #254, duyệt 03/10/2026). Các luật tính giữ nguyên; đổi cách bày. Anh duyệt ngày 13/11/2026 (điểm 15 ở #ask): mockup này thay <code>reports.html</code>.</p>
+        <div class="pcard">
+          <table class="law">
+            <tr><th>Điều đã duyệt 03/10</th><th>Ở đợt e</th></tr>
+            <tr><td>Kỳ: Ngày / Tuần / Tháng / Năm / Tùy chọn</td><td><b>Giữ.</b> Chọn bằng viên kỳ của đợt c.</td></tr>
+            <tr><td>Góc nhìn Toàn bộ / Team (có ô chọn team) / RM</td><td><b>Giữ nghĩa, đổi hình:</b> một viên góc nhìn mở menu Toàn bộ / team / RM (đợt a, c).</td></tr>
+            <tr><td>Nút "Lọc"</td><td><b>Bỏ</b> (anh chốt 11/11).</td></tr>
+            <tr><td>Bảng Tổng hợp một dòng, luôn hiện</td><td><b>Đổi:</b> bốn số trên cùng của Sổ số, và trang 1 của Bản tin.</td></tr>
+            <tr><td>Bảng Theo team, Theo RM (hai bảng)</td><td><b>Gộp:</b> một bảng, team mở ra RM.</td></tr>
+            <tr><td>Bảng Theo mốc và luật mốc (M01 – M04)</td><td><b>Giữ.</b> Là cách xếp dòng thứ hai của Sổ số.</td></tr>
+            <tr><td>Ba nhóm cột Lịch hẹn · Kết quả · KH cuối kỳ trên một bảng 17 cột</td><td><b>Đổi:</b> năm bảng theo câu hỏi; thêm năm cột của phần B và danh sách HĐ hủy.</td></tr>
+            <tr><td>Bảng trùng với Tổng hợp thì ẩn; file Excel bỏ sheet đó</td><td><b>Hết cần:</b> không còn bảng trùng. File luôn đủ sheet; góc nhìn một RM thì sheet "Team – RM" có một dòng.</td></tr>
+            <tr><td>"Không có cột so sánh kỳ trước trong báo cáo"</td><td><b>Giữ cho các bảng.</b> Mức đổi so với kỳ trước chỉ có ở bốn số chính (Bản tin, đầu Sổ số).</td></tr>
+            <tr><td>File Excel: mỗi bảng một sheet; dòng 1 ghi tên bảng · kỳ · góc nhìn · ngày xuất</td><td><b>Đổi:</b> bảy sheet như mục File Excel; đầu sheet có logo và vạch champagne.</td></tr>
+            <tr><td>Tên file, nơi lưu (<code>exports\</code>), câu lỗi khi không xuất được</td><td><b>Giữ.</b></td></tr>
+            <tr><td>Dòng Tổng: cộng các dòng; tỷ lệ tính lại từ tổng</td><td><b>Giữ.</b></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Trống và lỗi ================= -->
+      <section class="sec" id="states">
+        <span class="kicker">Trạng thái trống và lỗi</span>
+        <h2>Trống và lỗi của Báo cáo, theo khuôn của bảng thành phần.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Có, vẽ kèm"</b>; không vẽ trạng thái "đang tải". Khuôn chung đã duyệt ở <a href="components.html#empty">components.html</a>. Thử trong cửa sổ đầu trang: bấm › ở viên kỳ để sang Tháng 12/2026 (kỳ chưa bắt đầu), hoặc chọn RM <b>Nguyễn Văn Hùng</b> (RM mới, chưa có số).</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Kỳ chưa bắt đầu (Tháng 12/2026): Bản tin chỉ có đầu thư và một lời giải thích; lịch hẹn đã đặt vẫn đếm ở Sổ số</span><div data-spec="page" data-n="1" data-period="m:2026-12"></div></div>
+            <div><span class="state-l">Kỳ chưa có số liệu (RM mới): số là 0 và "—", không phải lỗi</span><div data-spec="ledger" data-tab="result" data-sc="r1"></div></div>
+            <div><span class="state-l">Kỳ không có HĐ hủy: bảng HĐ hủy</span><div data-spec="table" data-tab="cut" data-sc="t1" data-period="m:2026-11"></div></div>
+            <div><span class="state-l">Lỗi đọc dữ liệu: cả màn</span>
+              <section class="card flat"><div class="empty fail"><span class="mark"><svg class="ic"><use href="#i-alert" /></svg></span><b>Không đọc được dữ liệu để lập báo cáo</b><p>Dữ liệu đã lưu không bị ảnh hưởng. Bấm Thử lại; nếu lỗi lặp lại, gửi chi tiết kỹ thuật dưới đây cho người hỗ trợ.</p><div class="acts"><button class="btn"><svg class="ic"><use href="#i-refresh" /></svg>Thử lại</button></div><div class="fail-detail">DB_READ_FAILED: database is locked (policies)<br />at ReportsScreen · bản 1.0.0</div></div></section>
+            </div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Lỗi khi xuất Excel</b> hiện ở viên "Lưu ý" (đợt b): việc "Đang xuất Excel Báo cáo" đổi thành "Không xuất được báo cáo" kèm nút thử lại và lý do đang có trong app (không lập được file; không ghi được vào thư mục <code>exports</code>). Màn Báo cáo không đổi.</li>
+          <li>Xuất khi kỳ chưa bắt đầu vẫn được: file có đầu sheet và các bảng trống, như màn.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Che tên KH ================= -->
+      <section class="sec" id="mask">
+        <span class="kicker">Ý 36 · đã duyệt ở đợt a</span>
+        <h2>Che tên KH: chỉ danh sách HĐ hủy có tên khách hàng.</h2>
+        <p class="lead">Báo cáo là số của team và RM; tên KH chỉ xuất hiện ở danh sách <b>HĐ hủy</b> (bảng của Sổ số và trang 2 của Bản tin). Mọi chỗ đó đánh dấu <code>.kh</code>; tên RM, TL, team không che. Bản in và file Excel luôn ghi tên đầy đủ (đã duyệt ở đợt a), nên khi bật "Xem bản in" lúc đang che tên, trang giấy vẫn hiện tên thật. Hình dưới là Sổ số · HĐ hủy của Tháng 10/2026 khi đang che tên.</p>
+        <div class="shot" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-10" data-mode="ledger" data-tab="cut" data-masked></div>
+      </section>
+
+      <!-- ================= Làm được bằng gì ================= -->
+      <section class="sec" id="feasible">
+        <span class="kicker">Làm được bằng gì</span>
+        <h2>Không thêm thư viện nào.</h2>
+        <div class="pcard">
+          <table class="law">
+            <tr><th>Phần</th><th>Cách làm</th></tr>
+            <tr><td>Bản tin, Sổ số</td><td>HTML và CSS như mọi màn; thanh và cột là khối CSS, không cần thư viện chart. Câu tóm tắt và nhận xét là chuỗi i18n có tham số, viết từ số của kỳ (bản tiếng Anh ở lượt dịch của phần G).</td></tr>
+            <tr><td>Bản in giấy sáng</td><td>Một bộ token màu cho giấy (CSS <code>@media print</code> và lớp xem trước); lệnh in của cửa sổ app. Chưa kiểm trên máy thật ở cả hai nền tảng.</td></tr>
+            <tr><td>File Excel</td><td>ExcelJS đang dùng (ADR-0011) làm được: đóng băng dòng / cột, nhóm gập dòng, định dạng số, công thức kèm kết quả tính sẵn, thanh dữ liệu (định dạng có điều kiện), ảnh logo, khổ in A4, lặp dòng tiêu đề, đầu / chân trang. Không vẽ được biểu đồ gốc của Excel, nên sheet Xu hướng là bảng có thanh dữ liệu. Em đọc theo tài liệu của ExcelJS, chưa chạy thử: Issue code kiểm từng tính năng trên file thật, cái nào không làm được thì báo anh.</td></tr>
+            <tr><td>Dữ liệu</td><td>Không có bảng hay cột mới: mọi số của Báo cáo tính từ dữ liệu của phần B (HĐ hủy) và phần D (KPI tháng, case size dự kiến) đã qua G2.</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Anh đã quyết · G3 · 13/11/2026</span>
+        <h2>Mười sáu điểm của đợt e.</h2>
+        <p class="lead">Anh đã trả lời cả mười sáu điểm ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt e". Không hỏi lại điều anh đã chốt: bỏ nút "Lọc", màu logo cho file Excel, in giấy sáng, trang Xu hướng có trong Báo cáo, nhận xét viết theo luật và bảng luật Điểm nhấn, có xuất Excel cho Forecast, định nghĩa chỉ số của golden B và golden D, che tên KH, font hệ thống, chỉ Dark Mode. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <ol class="asks">
+          <li><b>Bố cục màn Báo cáo?</b>Công tắc Bản tin / Sổ số, mở ra là Bản tin; thanh công cụ có góc nhìn, kỳ và nút Xuất Excel. Hình: <a href="#opt-layout">hai bố cục của màn</a>.<em>Anh trả lời 13/11: <b>"A · Công tắc"</b> (phương án đề xuất: công tắc Bản tin / Sổ số, mở ra là Bản tin; phương án bỏ: chỉ có Sổ số trên màn).</em></li>
+          <li><b>Bản tin bốn trang như mục "Bản tin"?</b>Tóm tắt; chi tiết từng RM và HĐ hủy; hoạt động (lịch hẹn, từ buổi gặp tới hợp đồng, KH theo nhóm); Xu hướng và định nghĩa. Góc nhìn một RM còn ba trang.<em>Anh trả lời 13/11: <b>"Duyệt bốn trang"</b> (phương án bỏ: ba trang, không có trang hoạt động).</em></li>
+          <li><b>Câu tóm tắt và đoạn dẫn viết từ số theo khuôn?</b>Bảng khuôn ở mục <a href="#brief">Bản tin</a>: mức đổi viết bằng tiền; khuôn riêng cho Doanh số âm, kỳ chưa có HĐ, kỳ chưa bắt đầu; đoạn dẫn tối đa bốn câu.<em>Anh trả lời 13/11: <b>"Duyệt khuôn"</b> (phương án bỏ: không có câu tóm tắt).</em></li>
+          <li><b>Nhận xét của Bản tin lấy câu nào?</b>Hình: <a href="#opt-says">hai cách</a>.<em>Anh trả lời 13/11: <b>"A · Như Tổng quan"</b> (đúng các câu Điểm nhấn của kỳ, tối đa bốn; phương án bỏ: chỉ các câu về kết quả).</em></li>
+          <li><b>Trang Xu hướng?</b>6 kỳ gần nhất cùng loại, có ở kỳ Tuần / Tháng / Năm; kỳ Ngày và Tùy chọn không có. Hình ở mục <a href="#trend">Xu hướng</a>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (có ở kỳ Tuần / Tháng / Năm; phương án bỏ: thêm cả kỳ Ngày).</em></li>
+          <li><b>Bản in?</b>Công tắc "Xem bản in" đổi các trang sang giấy sáng; nút "In…" mở hộp in của hệ điều hành, lưu PDF từ hộp đó; A4 dọc; app không tự sinh PDF. Hình ở mục <a href="#print">Bản in</a>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (có "Xem bản in" và "In…", app không tự sinh PDF; phương án bỏ: v1.0 chưa có nút In).</em></li>
+          <li><b>Sổ số năm bảng?</b>Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng, HĐ hủy; cột từng bảng như mục <a href="#ledger">Sổ số</a>; xếp dòng Theo team hoặc Theo mốc; bốn số trên cùng có so với kỳ trước.<em>Anh trả lời 13/11: <b>"Duyệt năm bảng"</b> (phương án bỏ: gộp Chuyển đổi vào Lịch hẹn).</em></li>
+          <li><b>Từ Tổng quan tới đâu?</b>Bảng ở mục <a href="#arrive">Từ Tổng quan</a>: ô chỉ số tới bảng có cột đó (cột được tô), câu về Tỷ lệ hủy tới danh sách HĐ hủy, câu team dẫn đầu tới bảng Kết quả theo team.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: mọi đường đều mở Bản tin).</em></li>
+          <li><b>KPI tháng trong Báo cáo, và nơi tới của câu mục tiêu ở tháng đã qua?</b>Hình: <a href="#opt-kpi">hai cách</a>. Kèm ba chỗ sửa chữ của bảng luật Điểm nhấn theo ghi chú review (không đổi luật).<em>Anh trả lời 13/11: <b>"A · Báo cáo có KPI"</b> (Báo cáo của kỳ Tháng có KPI; câu mục tiêu của tháng đã qua mở Bản tin của tháng đó; ba chỗ sửa chữ của bảng luật đã làm, và câu đó đã vẽ vào cảnh Tháng 10 của tong-quan.html; phương án bỏ: Báo cáo không nói về KPI). Sau phiên review (PR #1248) em hỏi lại một chỗ hai câu nói khác nhau, cột KPI trong file Excel; anh trả lời 13/11: <b>"1 · Có cột KPI"</b> (ở kỳ Tháng, bảng team của sheet Tóm tắt và sheet Team – RM có hai cột "KPI tháng (VNĐ)" và "Đạt KPI" (Doanh số ÷ KPI, là công thức) ở dòng team và dòng Tổng, dòng RM để trống; sheet Xu hướng có hai cột đó theo từng tháng; sheet Theo mốc không có; phương án bỏ: sheet sổ không có KPI, như hình ban đầu).</em></li>
+          <li><b>Kỳ và góc nhìn của Báo cáo?</b>Năm loại kỳ như đang có; menu góc nhìn Toàn bộ / team / RM; đổi là áp dụng ngay; Xuất Excel theo đúng kỳ và góc nhìn đang xem.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: chỉ kỳ Tuần / Tháng / Năm).</em></li>
+          <li><b>File Excel chia sheet thế nào?</b>Hình: <a href="#opt-sheets">hai cách</a>.<em>Anh trả lời 13/11: <b>"A · Bảy sheet"</b> (phương án bỏ: mỗi bảng của Sổ số một sheet). Sheet sổ có 23 cột số; ở kỳ Tháng sheet Team – RM có 25, thêm hai cột KPI (điểm 9).</em></li>
+          <li><b>Bảng màu của giấy và kiểu của file Excel?</b>Bảng màu ở mục <a href="#print">Bản in</a>; đầu sheet có logo và vạch champagne, dòng tiêu đề nền navy chữ champagne, dòng Tổng kẻ đôi, số âm đỏ, không tô theo ngưỡng.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: dòng tiêu đề nền champagne nhạt chữ navy).</em></li>
+          <li><b>Sheet Forecast và file của màn Forecast?</b>File Báo cáo có sheet Forecast khi kỳ đang chạy; nút Xuất Excel của màn Forecast ghi file riêng (Forecast, Lịch hẹn, Định nghĩa). Hình ở mục <a href="#excel">File Excel</a>.<em>Anh trả lời 13/11: <b>"Duyệt cả hai"</b> (sheet Forecast trong file Báo cáo của kỳ đang chạy, và file riêng của màn Forecast; phương án bỏ: chỉ có file riêng).</em></li>
+          <li><b>Luật của file?</b>Số thật có định dạng; công thức cho dòng team, dòng Tổng và các cột tính; nhóm gập Team ▸ RM; khổ in; tên file theo luật đang có; tên KH đầy đủ; ngôn ngữ theo app.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (file có công thức; phương án bỏ: mọi ô là giá trị).</em></li>
+          <li><b>Giữ / đổi so với bản 03/10?</b>Bảng ở mục <a href="#keep">Giữ / đổi</a>; duyệt thì mockup này thay <code>reports.html</code>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (mockup này thay reports.html).</em></li>
+          <li><b>Trạng thái trống và lỗi?</b>Kỳ chưa bắt đầu; kỳ chưa có số liệu; không có HĐ hủy; lỗi đọc dữ liệu cả màn; lỗi xuất Excel ở "Lưu ý".<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt e · T-424 #1247 · Owner duyệt G3 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode trong app, giấy in sáng · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+    <script>
+      /* Round e: the mock data of Báo cáo and the screen, the printed pages and the Excel sheets drawn from it.
+         Behaviour shared with other rounds is in ui2.js (window.ui2). Today in the mock: Tuesday 10/11/2026.
+         Money in triệu. The calendar, the people, the table of days, the format and the rules of "Điểm nhấn"
+         are those of tong-quan.html (round c), copied so every number here is the number there; the
+         appointments of Forecast are those of forecast.html (round d). */
+      (() => {
+        const $ = (s, el = document) => el.querySelector(s);
+        const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+        const ui2 = window.ui2;
+        const byName = new Intl.Collator('vi', { numeric: true }).compare;
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const ic = (n, cls = 'ic') => `<svg class="${cls}"><use href="#i-${n}" /></svg>`;
+        const sum = (a, f = (x) => x) => a.reduce((t, x) => t + f(x), 0);
+
+        /* ---------- Calendar: a day is a whole number, a period is { kind, a, b } ---------- */
+        const day = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / 864e5);
+        const parts = (n) => { const t = new Date(n * 864e5); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate(), w: t.getUTCDay() }; };
+        const TODAY = day(2026, 11, 10), FROM = day(2025, 1, 1), TO = day(2026, 12, 31), N = TO - FROM + 1;
+        const p2 = (n) => String(n).padStart(2, '0');
+        const dm = (n) => { const t = parts(n); return `${p2(t.d)}/${p2(t.m)}`; };
+        const dmy = (n) => `${dm(n)}/${parts(n).y}`;
+        const WD = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const WD2 = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const dayOf = (n) => ({ kind: 'day', a: n, b: n });
+        const weekOf = (n) => { const a = n - ((parts(n).w + 6) % 7); return { kind: 'week', a, b: a + 6 }; };
+        const monthOf = (y, m) => ({ kind: 'month', a: day(y, m, 1), b: day(y, m + 1, 1) - 1 });
+        const yearOf = (y) => ({ kind: 'year', a: day(y, 1, 1), b: day(y, 12, 31) });
+        const ofKind = (kind, n) => (kind === 'day' ? dayOf(n) : kind === 'week' ? weekOf(n) : kind === 'month' ? monthOf(parts(n).y, parts(n).m) : yearOf(parts(n).y));
+        const shift = (p, dir) => (p.kind === 'day' ? dayOf(p.a + dir) : p.kind === 'week' ? weekOf(p.a + 7 * dir) : p.kind === 'month' ? monthOf(parts(p.a).y, parts(p.a).m + dir) : yearOf(parts(p.a).y + dir));
+        const inData = (p) => p.a >= FROM && p.b <= TO;
+        const same = (p, q) => p.kind === q.kind && p.a === q.a;
+        const keyOf = (p) => { const t = parts(p.a); return p.kind === 'year' ? `y:${t.y}` : p.kind === 'month' ? `m:${t.y}-${t.m}` : `${p.kind[0]}:${t.y}-${t.m}-${t.d}`; };
+        const parseP = (s) => { const [k, v] = s.split(':'), [y, m = 1, d = 1] = v.split('-').map(Number); return k === 'y' ? yearOf(y) : k === 'm' ? monthOf(y, m) : ofKind(k === 'w' ? 'week' : 'day', day(y, m, d)); };
+        const statusOf = (p) => (p.b < TODAY ? 'past' : p.a > TODAY ? 'future' : 'running');
+        // The name of a period (golden so-va-tien-te.md Y06–Y11)
+        const nameOf = (p) => {
+          const a = parts(p.a), b = parts(p.b);
+          if (p.kind === 'day') return dmy(p.a);
+          if (p.kind === 'week') return `${a.y === b.y ? dm(p.a) : dmy(p.a)} – ${dmy(p.b)}`;
+          return p.kind === 'month' ? `Tháng ${p2(a.m)}/${a.y}` : `Năm ${a.y}`;
+        };
+        const longName = (p) => (p.kind === 'week' ? `Tuần ${nameOf(p)}` : p.kind === 'day' ? `${WD[parts(p.a).w]} ${nameOf(p)}` : nameOf(p));
+        const span = (a, b, year) => (a === b ? dm(a) : `${dm(a)} – ${dm(b)}`) + (year ? `/${parts(b).y}` : '');
+        // What a period is measured against (phase-4-chi-so.md §4.2, C01–C11): a period that is over, against
+        // the whole period before; a running one, against the same number of days of the period before
+        // (a year: the same dates of the year before).
+        function windows(p) {
+          const st = statusOf(p), prev = shift(p, -1);
+          if (st === 'future') return { st, prev, cur: null, cmp: null };
+          const cur = [p.a, Math.min(p.b, TODAY)];
+          let cmp;
+          if (st === 'past') cmp = [prev.a, prev.b];
+          else if (p.kind === 'year') { const t = parts(TODAY); cmp = [prev.a, day(t.y - 1, t.m, t.m === 2 && t.d === 29 ? 28 : t.d)]; }
+          else cmp = [prev.a, Math.min(prev.b, prev.a + (cur[1] - cur[0]))];
+          return { st, prev, cur, cmp: prev.a >= FROM ? cmp : null };
+        }
+
+        /* ---------- People (the same teams and RMs as round b) ---------- */
+        // name, TL, colour (token), icon, target of the month (ý 32: by team, the whole = the sum)
+        const TEAMS = [
+          ['Sao Mai', 'Nguyễn Thu Hà', 'accent', 'star', 1100],
+          ['Bình Minh', 'Vũ Đức Thành', 'warn', 'sunrise', 950],
+          ['Hừng Đông', 'Lâm Ngọc Diệp', null, null, 950],
+        ].map(([name, tl, color, icon, target], i) => ({ i, name, tl, color, icon, target }));
+        // name, team, open customers, "chuyển RF" in 01/11 – 10/11
+        const RMS = [
+          ['Hoàng Văn Tùng', 0, 16, 8], ['Nguyễn Văn Hùng', 0, 0, 0], ['Đỗ Khánh Linh', 0, 34, 7], ['Lý Quang Vinh', 0, 31, 5], ['Trịnh Gia Bảo', 0, 29, 2],
+          ['Đặng Văn Phúc', 0, 33, 3], ['Lê Ngọc Hương', 0, 28, 1], ['Phan Minh Châu', 0, 30, 2], ['Kiều Anh Thư', 0, 27, 1], ['Tô Hữu Nghĩa', 0, 26, 0],
+          ['Mai Phương', 1, 38, 8], ['Châu Bảo Ngọc', 1, 41, 7], ['Phạm Thu Hà', 1, 36, 2], ['Bùi Ngọc Trâm', 1, 44, 1], ['Đỗ Văn Hiếu', 1, 29, 2],
+          ['Quách Gia Hân', 1, 40, 3], ['Tạ Minh Khoa', 1, 33, 1], ['Lâm Bảo Anh', 1, 47, 2], ['Hà Quốc Việt', 1, 35, 1],
+          ['Hoàng Nam', 2, 39, 10], ['Lê Minh Khang', 2, 44, 3], ['Trần Quốc Thắng', 2, 37, 2], ['Huỳnh Kim Hùng', 2, 31, 1], ['Võ Thị Lan', 2, 35, 2],
+          ['Đinh Gia Huy', 2, 42, 2], ['Hồ Thanh Vy', 2, 30, 1], ['Trương Đức Long', 2, 29, 1],
+        ].map(([name, team, open, rf], i) => ({ i, name, team, open, rf }));
+        const teamRms = (t) => RMS.filter((r) => r.team === t).map((r) => r.i);
+        const TEAMS_BY_NAME = [...TEAMS].sort((a, b) => byName(a.name, b.name));
+        const look = (t) => ({ c: t.color ? `var(--${t.color})` : 'var(--text-2)', i: t.icon || 'team' });
+        const tmark = (t) => `<span class="tmark" style="--c: ${look(t).c}">${ic(look(t).i)}</span>`;
+        // A view: 'all', 't<team>' or 'r<RM>'
+        const scopeOf = (sc) => (sc === 'all' ? { type: 'all', rms: RMS.map((r) => r.i) } : sc[0] === 't' ? { type: 'team', t: +sc.slice(1), rms: teamRms(+sc.slice(1)) } : { type: 'rm', r: +sc.slice(1), rms: [+sc.slice(1)] });
+        const scopeName = (sc) => { const s = scopeOf(sc); return s.type === 'all' ? 'Toàn bộ' : s.type === 'team' ? `Team ${TEAMS[s.t].name}` : `RM ${RMS[s.r].name}`; };
+        const capName = (sc) => { const s = scopeOf(sc); return s.type === 'rm' ? RMS[s.r].name : scopeName(sc); };
+
+        /* ---------- The table of days ---------- */
+        // met · missed (rescheduled, cancelled, no show) · unrecorded (past, still "Đã lên lịch") · planned ·
+        // rf · submitted, case size · issued, FYP issued · cancelled, FYP cancelled ·
+        // forecast (expected case size of the day), appointments that carry it, appointments without one
+        const F = ['met', 'miss', 'unrec', 'plan', 'rf', 'sub', 'cs', 'iss', 'fi', 'can', 'fc', 'fct', 'fn', 'fmiss'];
+        const FX = Object.fromEntries(F.map((f, k) => [f, k]));
+        const RAW = RMS.map(() => F.map(() => new Int32Array(N)));
+        const put = (rm, n, f, v) => { if (n >= FROM && n <= TO) RAW[rm][FX[f]][n - FROM] += v; };
+        const wipe = (rms, a, b, fields) => { for (const r of rms) for (const f of fields) RAW[r][FX[f]].fill(0, a - FROM, b - FROM + 1); };
+        const hash = (a, b, c) => { let h = (Math.imul(a, 374761393) + Math.imul(b, 668265263) + Math.imul(c, 2246822519)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+        const FYP = [20, 30, 30, 40, 40, 50, 60, 80];
+        const STAR = new Set([0, 2, 3, 10, 11, 19]); // the RMs who carry most of the sales, as on the Team screen of round b
+        const NOV1 = day(2026, 11, 1), NOV = (d) => day(2026, 11, d);
+        RMS.forEach((r, i) => {
+          if (!r.open) return; // a new RM: nothing yet
+          for (let n = FROM; n <= TO; n++) {
+            if (parts(n).w === 0) continue; // nothing on a Sunday (D-c)
+            const h = (c) => hash(i + 1, n, c);
+            if (n < TODAY) { const a = h(1); put(i, n, 'met', a < 0.35 ? 0 : a < 0.8 ? 1 : 2); if (h(2) < 0.18) put(i, n, 'miss', 1); }
+            if (n > TODAY) { const far = n - TODAY; if (h(3) < (far <= 14 ? 0.62 : far <= 30 ? 0.4 : 0.15)) put(i, n, 'plan', h(4) < 0.25 ? 2 : 1); continue; }
+            if (h(6) < (STAR.has(i) ? 0.45 : 0.03)) { put(i, n, 'sub', 1); put(i, n, 'cs', FYP[Math.floor(h(7) * 8)]); }
+            if (n >= NOV1) continue; // 01/11 – 10/11 is written by hand below
+            if (h(5) < 0.36) put(i, n, 'rf', 1);
+            if (h(8) < (STAR.has(i) ? 0.38 : 0.02)) {
+              const fyp = FYP[Math.floor(h(9) * 8)], gone = n + 3 + Math.floor(h(11) * 18);
+              put(i, n, 'iss', 1); put(i, n, 'fi', fyp);
+              if (h(10) < 0.06 && gone < NOV1 && parts(gone).w !== 0) { put(i, gone, 'can', 1); put(i, gone, 'fc', fyp); } // about 5% are cancelled within 21 days (§4.4)
+            }
+          }
+        });
+        // The ten days November is compared with have no cancellation: "tăng 3 điểm %" reads plainly
+        wipe(RMS.map((r) => r.i), day(2026, 10, 1), day(2026, 10, 10), ['can', 'fc']);
+        // A week with more cancelled than issued (golden B, G28: above 100%, below zero): Hừng Đông, 26/10 – 01/11
+        wipe(teamRms(2), day(2026, 10, 26), day(2026, 11, 1), ['iss', 'fi', 'can', 'fc']);
+        put(19, day(2026, 10, 28), 'iss', 1); put(19, day(2026, 10, 28), 'fi', 40);
+        put(21, day(2026, 10, 27), 'can', 1); put(21, day(2026, 10, 27), 'fc', 50);
+        put(23, day(2026, 10, 30), 'can', 1); put(23, day(2026, 10, 30), 'fc', 30);
+        // 01/11 – 10/11, as on the Team screen of round b: 33 issued (1,430 tr), 1 cancelled (50 tr), 78 RF.
+        // RM → [day, FYP issued]. Net by day: 150 · 140 · 180 · 170 · 190 · 130 · (Sunday) · 220 · 200 = 1,380.
+        const ISSUED = {
+          0: [[2, 50], [3, 40], [4, 50], [5, 60], [6, 40], [7, 30]],
+          2: [[2, 40], [4, 50], [5, 30], [6, 50], [9, 50], [10, 40]],
+          3: [[3, 50], [7, 40], [9, 50]],
+          10: [[2, 60], [3, 20], [4, 40], [6, 30], [9, 60], [10, 40]],
+          11: [[4, 40], [5, 30], [7, 30], [9, 60], [10, 40]],
+          19: [[3, 30], [5, 50], [6, 20], [6, 50], [7, 30], [9, 50], [10, 80]],
+        };
+        for (const [rm, list] of Object.entries(ISSUED)) for (const [d, fyp] of list) { put(+rm, NOV(d), 'iss', 1); put(+rm, NOV(d), 'fi', fyp); }
+        put(0, NOV(9), 'can', 1); put(0, NOV(9), 'fc', 50); // RM Hoàng Văn Tùng: a policy issued in October, cancelled on Monday 09/11
+        const WORK = [2, 3, 4, 5, 6, 7, 9]; // not today: only one of today's five appointments has been met so far
+        RMS.forEach((r, i) => { for (let k = 0; k < r.rf; k++) put(i, NOV(WORK[(k * 3 + i) % 7]), 'rf', 1); });
+        // 12 past appointments with no outcome yet, the number "Lưu ý" shows: Sao Mai 5 · Hừng Đông 4 · Bình Minh 3
+        for (const [rm, d] of [[2, 3], [2, 6], [4, 5], [5, 7], [8, 9], [12, 4], [14, 6], [17, 9], [20, 3], [21, 5], [23, 7], [25, 9]]) put(rm, NOV(d), 'unrec', 1);
+        // Today, the five appointments of "Lưu ý": one met, four still to come; two of them carry no case size
+        put(0, TODAY, 'met', 1); put(0, TODAY, 'plan', 2); put(2, TODAY, 'plan', 1); put(20, TODAY, 'plan', 1);
+        put(0, TODAY, 'fmiss', 1); put(20, TODAY, 'fmiss', 1);
+        // Forecast from today to 30/11 (Monday → Saturday): RM → [day, expected case size]. This week 555 tr
+        // (Sao Mai 240 · Bình Minh 185 · Hừng Đông 130, as in round b), to the end of the month 1,320 tr.
+        const FORECAST = {
+          0: [[10, 30], [11, 50], [12, 40], [14, 40], [16, 40], [18, 30], [20, 40], [24, 40], [27, 30], [30, 20]],
+          2: [[10, 20], [13, 30], [17, 30], [19, 20], [25, 30], [28, 30]],
+          3: [[12, 30], [18, 20], [23, 20], [26, 20]],
+          10: [[11, 40], [12, 20], [13, 30], [14, 30], [16, 30], [19, 30], [21, 20], [24, 30], [30, 30]],
+          11: [[12, 25], [14, 40], [17, 25], [20, 20], [25, 30], [30, 20]],
+          19: [[11, 30], [12, 20], [13, 40], [14, 40], [16, 30], [17, 20], [21, 30], [23, 30], [26, 20], [30, 30]],
+        };
+        for (const [rm, list] of Object.entries(FORECAST)) for (const [d, amount] of list) {
+          put(+rm, NOV(d), 'fct', amount); put(+rm, NOV(d), 'fn', 1);
+          const plan = RAW[+rm][FX.plan], at = NOV(d) - FROM;
+          if (!plan[at]) plan[at] = 1;
+        }
+        // A "chuyển RF" is a meeting that took place: a day never has more of them than meetings
+        for (const rows of RAW) for (let k = 0; k < N; k++) if (rows[FX.met][k] < rows[FX.rf][k]) rows[FX.met][k] = rows[FX.rf][k];
+        // Running totals, so any range of days is two look-ups
+        const PRE = RAW.map((rows) => rows.map((row) => { const pre = new Int32Array(N + 1); for (let k = 0; k < N; k++) pre[k + 1] = pre[k] + row[k]; return pre; }));
+        const rate = (a, b) => (b ? (a / b) * 100 : null);
+        function range(rms, a, b) {
+          const o = {};
+          a = Math.max(a, FROM); b = Math.min(b, TO);
+          F.forEach((f, k) => { let t = 0; if (a <= b) for (const r of rms) t += PRE[r][k][b - FROM + 1] - PRE[r][k][a - FROM]; o[f] = t; });
+          o.total = o.iss - o.can; // Tổng số HĐ
+          o.sales = o.fi - o.fc; // Doanh số
+          o.close = rate(o.iss, o.rf); // Tỷ lệ chốt: does not take cancelled policies off
+          o.cancel = rate(o.can, o.iss); // Tỷ lệ hủy
+          return o;
+        }
+        // Customers by stage at the end of a day. Today: the book of round b (884 open: N4 361 · N3 219 · N2 134 · N1 170),
+        // shared out among the RMs by their open customers; the days before are a little smaller.
+        const BOOK = [361, 219, 134, 170], OPEN_ALL = sum(BOOK), GROW = [0.25, 0.2, 0.3, 0.35];
+        const KH = RMS.map((r) => {
+          const raw = BOOK.map((s) => (r.open * s) / OPEN_ALL), base = raw.map(Math.floor);
+          raw.map((v, k) => [v - base[k], k]).sort((x, y) => y[0] - x[0]).slice(0, r.open - sum(base)).forEach(([, k]) => base[k]++);
+          return base;
+        });
+        for (let guard = 0; guard < 400; guard++) { // settle the rounding so the four stages add up to the book
+          const off = BOOK.map((want, k) => want - sum(KH, (x) => x[k])), up = off.findIndex((v) => v > 0), down = off.findIndex((v) => v < 0);
+          if (up < 0 || down < 0) break;
+          const from = KH.reduce((best, x, i) => (x[down] > KH[best][down] ? i : best), 0);
+          KH[from][down]--; KH[from][up]++;
+        }
+        const snap = (rms, n) => [0, 1, 2, 3].map((k) => sum(rms, (r) => {
+          const now = KH[r][k];
+          if (!now || n >= TODAY) return now;
+          return Math.max(0, Math.round(now * (1 - (GROW[k] * (TODAY - n)) / 365)) + Math.floor(hash(r + 1, n, 20 + k) * 3) - 1);
+        }));
+
+        /* ---------- Format (ADR-0018: "," groups thousands, "." the decimals) ---------- */
+        const grp = (s) => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const trim = (v, d) => { const s = v.toFixed(d); return grp(s.includes('.') ? s.replace(/\.?0+$/, '') : s); };
+        const cnt = (n) => (n < 0 ? '-' : '') + grp(Math.abs(Math.round(n)));
+        // Compact money from triệu: "1.38 tỷ", "620 tr", "-50 tr"; zero is the full form "0 VNĐ" (golden C01)
+        const moneyUnit = (tr) => (!Math.round(tr) ? 'VNĐ' : Math.abs(tr) >= 1000 ? 'tỷ' : 'tr');
+        const moneyNum = (tr, u) => (u === 'VNĐ' ? '0' : (tr < 0 ? '-' : '') + (u === 'tỷ' ? trim(Math.abs(tr) / 1000, 2) : grp(Math.round(Math.abs(tr)))));
+        const money = (tr) => { const u = moneyUnit(tr); return `${moneyNum(tr, u)} ${u}`; };
+        const pct = (v) => (v === null ? '—' : `${trim(Math.max(0, v), 1)}%`);
+        const r1 = (v) => Math.round(v * 10) / 10;
+        // The change against the period before: ▲ ▼ = with the size of it; "good" says which way is green
+        const chip = (diff, text, good = true, why = '') => (diff === null
+          ? `<span class="delta none" title="${esc(why)}">không so</span>`
+          : `<span class="delta ${!diff ? '' : (diff > 0) === good ? 'up' : 'bad'}">${diff > 0 ? '▲' : diff < 0 ? '▼' : '='}${diff ? ` ${text}` : ''}</span>`);
+        const dCount = (now, was, why, good = true) => (was === null ? chip(null, '', true, why) : chip(now - was, cnt(Math.abs(now - was)), good));
+        const dMoney = (now, was, why) => (was === null ? chip(null, '', true, why) : chip(now - was, money(Math.abs(now - was))));
+        const dRate = (now, was, good, why) => (now === null || was === null ? chip(null, '', true, why) : chip(r1(now - was), `${trim(Math.abs(r1(now - was)), 1)} điểm %`, good));
+
+        /* ---------- One view of one period: everything the screen shows ---------- */
+        function ctx(sc, p) {
+          const s = scopeOf(sc), w = windows(p);
+          const c = { sc, s, p, w, rms: s.rms, cur: w.cur ? range(s.rms, ...w.cur) : null, was: w.cmp ? range(s.rms, ...w.cmp) : null, whole: range(s.rms, p.a, p.b) };
+          c.why = !w.cur ? 'Kỳ chưa bắt đầu' : !w.cmp ? 'Bản mẫu không có dữ liệu trước năm 2025' : '';
+          return c;
+        }
+        const KIND = { day: 'Ngày', week: 'Tuần', month: 'Tháng', year: 'Năm' };
+        const flagOf = (c) => (c.w.st === 'future' ? 'chưa bắt đầu' : c.w.st === 'past' ? 'kỳ đã qua' : c.p.kind === 'month' ? 'MTD' : c.p.kind === 'day' ? 'hôm nay' : 'tới hôm nay');
+        const cmpSpan = (c) => span(c.w.cmp[0], c.w.cmp[1], c.p.kind === 'year');
+        const cmpText = (c) => {
+          if (!c.w.cur) return 'kỳ chưa bắt đầu, không so';
+          if (!c.w.cmp) return 'không so với kỳ trước';
+          if (c.w.st === 'past') return `so với cả ${longName(c.w.prev)}`;
+          if (c.p.kind === 'day') return `so với hôm qua ${dm(c.w.cmp[0])}`;
+          return `so với ${cmpSpan(c)}, ${c.p.kind === 'year' ? 'cùng ngày tháng của năm trước' : `cùng số ngày của ${KIND[c.p.kind].toLowerCase()} trước`}`;
+        };
+        const subLine = (c) => {
+          const { p, w } = c, who = scopeName(c.sc);
+          if (w.st !== 'running') return `${longName(p)} · ${flagOf(c)} · ${who}`;
+          if (p.kind === 'day') return `${longName(p)} · hôm nay · ${who}`;
+          if (p.kind === 'month') return `${nameOf(p)} · ${span(...w.cur)} (MTD) · ${who}`;
+          return `${longName(p)} · tới hôm nay ${dm(TODAY)} · ${who}`;
+        };
+
+        /* ---------- "Điểm nhấn": the rules (the table of spec §8; the order is the priority) ---------- */
+        const HL_MAX = 4, CANCEL_STEP = 1;
+        function highlights(c) {
+          const { p, w, cur, was, s, rms, whole } = c, out = [];
+          if (!cur) return out;
+          const running = w.st === 'running', where = `${longName(p)} · ${scopeName(c.sc)}`;
+          // 1 and 7 · Tỷ lệ hủy against the period before
+          if (cur.can > 0 && !cur.iss) {
+            out.push({ o: 1, c: 'danger', i: 'alert', b: `${cnt(cur.can)} HĐ hủy, kỳ này chưa có HĐ phát hành`, s: `Tỷ lệ hủy không tính được ("—") · Doanh số ${money(cur.sales)}`, go: 'reports', a: `Báo cáo, danh sách HĐ hủy · ${where}` });
+          } else if (was && cur.cancel !== null && was.cancel !== null) {
+            const d = r1(cur.cancel - was.cancel), base = `${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành · ${w.st === 'past' ? `cả ${longName(w.prev)}` : cmpSpan(c)} là ${pct(was.cancel)}`;
+            if (d >= CANCEL_STEP) out.push({ o: 1, c: 'danger', i: 'alert', b: `Tỷ lệ hủy ${pct(cur.cancel)}, tăng ${trim(d, 1)} điểm %`, s: base, go: 'reports', a: `Báo cáo, danh sách HĐ hủy · ${where}` });
+            if (d <= -CANCEL_STEP) out.push({ o: 7, c: 'ok', i: 'check', b: `Tỷ lệ hủy ${pct(cur.cancel)}, giảm ${trim(-d, 1)} điểm %`, s: base, go: 'reports', a: `Báo cáo, danh sách HĐ hủy · ${where}` });
+          }
+          // 2 · past appointments with no outcome recorded, in the period on screen
+          if (whole.unrec > 0) {
+            const by = (list, name, top) => list.map((x) => [name(x), range(x.rms, p.a, p.b).unrec]).filter((x) => x[1]).sort((x, y) => y[1] - x[1]).slice(0, top).map((x) => `${x[0]} ${x[1]}`).join(' · ');
+            const sub = s.type === 'all' ? by(TEAMS.map((t) => ({ t, rms: teamRms(t.i) })), (x) => x.t.name, 3) : s.type === 'team' ? by(rms.map((r) => ({ r, rms: [r] })), (x) => RMS[x.r].name, 3) : 'Ghi kết quả để chỉ số của kỳ đủ';
+            out.push({ o: 2, c: 'warn', i: 'clock', b: `${cnt(whole.unrec)} buổi hẹn đã qua chưa ghi kết quả`, s: sub, go: 'appointments', a: `Lịch hẹn, lọc "Chưa ghi kết quả" · ${where}` });
+          }
+          if (running) {
+            const sat = weekOf(TODAY).a + 5, week = range(rms, TODAY, sat);
+            // 3 · appointments of this week that carry no expected case size
+            if (week.fmiss > 0) out.push({ o: 3, c: 'warn', i: 'coin', b: `${cnt(week.fmiss)} lịch hẹn tuần này thiếu case size`, s: 'Chưa tính vào Forecast · điền case size dự kiến để tính', go: 'forecast', a: `Forecast, danh sách lịch thiếu case size · ${scopeName(c.sc)}` });
+            // 4 · the target of the month (by team; the whole is the sum of the teams; never for one RM)
+            // (round e: the target is the one of that month, goalOf; "Đã vượt" only above the target, "Đã đạt mục
+            // tiêu tháng" when equal; nothing is said of a gap of zero — review notes of PR #1243 and #1245)
+            const goal = goalOf(s, p);
+            if (goal) {
+              const land = cur.sales + range(rms, TODAY, p.b).fct, to = `Forecast, đường băng tháng · ${scopeName(c.sc)}`;
+              if (cur.sales >= goal) out.push({ o: 4, c: 'ok', i: 'target', b: `${cur.sales > goal ? 'Đã vượt' : 'Đã đạt'} mục tiêu tháng: ${money(cur.sales)} / ${money(goal)}`, s: `Dự kiến về đích ${money(land)}`, go: 'forecast', a: to });
+              else out.push({ o: 4, c: 'accent', i: 'target', b: `Đã đạt ${pct(rate(cur.sales, goal))} mục tiêu tháng`, s: `${money(cur.sales)} / ${money(goal)} · dự kiến về đích ${money(land)}${land === goal ? '' : `, ${land > goal ? 'vượt' : 'còn thiếu'} ${money(Math.abs(goal - land))}`}`, go: 'forecast', a: to });
+            }
+            // 5 · Forecast of this week (today → Saturday)
+            if (week.fct > 0) out.push({ o: 5, c: 'info', i: 'forecast', b: `Tuần này dự kiến ${money(week.fct)}`, s: `${cnt(week.fn)} lịch có case size, từ hôm nay tới Thứ Bảy ${dm(sat)}`, go: 'forecast', a: `Forecast, Tuần này · ${scopeName(c.sc)}` });
+          }
+          // 4 · a month that is over (Owner 13/11/2026, round d): what was done against the target of that month,
+          // as a result; no "dự kiến về đích". It opens the report of that month (round e, point 9 of #ask).
+          if (w.st === 'past' && goalOf(s, p)) {
+            const goal = goalOf(s, p), gap = cur.sales - goal;
+            out.push({ o: 4, c: gap >= 0 ? 'ok' : 'accent', i: 'target', b: `Đã đạt ${pct(rate(cur.sales, goal))} mục tiêu tháng`, s: `${money(cur.sales)} / ${money(goal)}${gap ? ` · ${gap > 0 ? 'vượt' : 'thiếu'} ${money(Math.abs(gap))}` : ''}`, go: 'reports', a: `Báo cáo, Bản tin · ${where}` });
+          }
+          // 6 · the team in front, or the rank of the team on screen
+          if (s.type !== 'rm' && TEAMS.length > 1) {
+            const all = range(RMS.map((r) => r.i), ...w.cur), teams = TEAMS.map((t) => ({ t, d: range(teamRms(t.i), ...w.cur) })).sort((x, y) => y.d.sales - x.d.sales);
+            const share = (v) => (all.sales > 0 && v > 0 ? `${pct(rate(v, all.sales))} doanh số toàn bộ` : '');
+            const to = `Báo cáo, bảng theo team · ${longName(p)}`;
+            if (s.type === 'all' && teams[0].d.sales > 0) {
+              const top = teams.filter((x) => x.d.sales === teams[0].d.sales);
+              out.push({ o: 6, c: 'accent', i: 'star', b: `${top.map((x) => x.t.name).join(' và ')} ${top.length > 1 ? 'cùng ' : ''}dẫn đầu doanh số: ${money(teams[0].d.sales)}`, s: [share(teams[0].d.sales), top.length === 1 ? `Tỷ lệ chốt ${pct(teams[0].d.close)}` : ''].filter(Boolean).join(' · '), go: 'reports', a: to });
+            }
+            if (s.type === 'team' && teams.some((x) => x.d.sales !== 0)) {
+              const mine = teams.find((x) => x.t.i === s.t).d.sales;
+              out.push({ o: 6, c: 'accent', i: 'star', b: `${TEAMS[s.t].name} đứng thứ ${1 + teams.filter((x) => x.d.sales > mine).length} / ${TEAMS.length} về doanh số`, s: [money(mine), share(mine)].filter(Boolean).join(' · '), go: 'reports', a: to });
+            }
+          }
+          return out.sort((x, y) => x.o - y.o);
+        }
+
+        /* ---------- Round e: what the report adds to the table of days ---------- */
+        const NOW = '13:35'; // the hour the report is drawn up
+        const byRm = (list) => [...list].sort((x, y) => byName(RMS[x].name, RMS[y].name));
+        const ALL = RMS.map((r) => r.i);
+        // The target of a month, by team (golden D: one for each month, kept once the month is over).
+        // The mock: set for every month of 2026 up to November; December is not set yet, 2025 had none.
+        const kpiOf = (t, p) => { const a = parts(p.a); return p.kind === 'month' && a.y === 2026 && a.m <= 11 ? (a.m >= 7 ? TEAMS[t].target : [1000, 900, 900][t]) : null; };
+        const goalOf = (s, p) => (p.kind !== 'month' || s.type === 'rm' ? null : s.type === 'team' ? kpiOf(s.t, p) : TEAMS.every((t) => kpiOf(t.i, p)) ? sum(TEAMS, (t) => kpiOf(t.i, p)) : null);
+        // Customers that are closed (65 today, as on the sidebar: Tạm hoãn 27 · Mất cơ hội 38), shared out
+        // by the open customers of each RM; a little fewer on the days before
+        const shareOut = (total) => {
+          const all = sum(RMS, (r) => r.open), raw = RMS.map((r) => (r.open * total) / all), base = raw.map(Math.floor);
+          raw.map((v, i) => [v - base[i], i]).sort((x, y) => y[0] - x[0]).slice(0, total - sum(base)).forEach(([, i]) => base[i]++);
+          return base;
+        };
+        const HOLD = shareOut(27), LOST = shareOut(38);
+        const closedAt = (rms, n) => [HOLD, LOST].map((list) => sum(rms, (r) => (n >= TODAY ? list[r] : Math.max(0, Math.round(list[r] * (1 - (0.3 * (TODAY - n)) / 365))))));
+        // Everything a row of the ledger shows: the days a → b, and the customers at the end of them.
+        // A row that has not begun (a mark after today) has appointments only.
+        function figures(rms, a, b) {
+          const d = range(rms, a, b);
+          d.appts = d.met + d.miss + d.unrec + d.plan;
+          d.begun = a <= TODAY;
+          if (d.begun) { const at = Math.min(b, TODAY), k = snap(rms, at), shut = closedAt(rms, at); Object.assign(d, { n4: k[0], n3: k[1], n2: k[2], n1: k[3], open: sum(k), hold: shut[0], lost: shut[1] }); }
+          return d;
+        }
+        // The cancelled policies behind the counts of the table: one record for each, with a made-up
+        // customer, number and day of issue (3 to 20 days before; never a Sunday)
+        const FAM = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ'], MID = ['Văn', 'Thị', 'Minh', 'Ngọc', 'Quốc', 'Thu', 'Đức', 'Thanh'];
+        const GIV = ['An', 'Bình', 'Châu', 'Dung', 'Giang', 'Hạnh', 'Khoa', 'Linh', 'Mai', 'Nam', 'Oanh', 'Phong', 'Quân', 'Sơn', 'Thảo', 'Uyên', 'Vân', 'Xuân', 'Yên', 'Đạt'];
+        const CUTS = [];
+        RMS.forEach((r, i) => {
+          const can = RAW[i][FX.can], fc = RAW[i][FX.fc];
+          for (let k = 0; k < N; k++) for (let j = 0; j < can[k]; j++) {
+            const n = FROM + k, h = Math.floor(hash(i + 1, n, 41 + j) * 1e6);
+            let iss = i === 0 && n === NOV(9) ? day(2026, 10, 22) : n - 3 - Math.floor(hash(i + 1, n, 31 + j) * 18);
+            if (parts(iss).w === 0) iss--;
+            CUTS.push({ rm: i, n, iss, fyp: Math.round(fc[k] / can[k]), name: `${FAM[h % 10]} ${MID[(h >> 4) % 8]} ${GIV[(h >> 8) % 20]}`, no: `${String(parts(iss).y).slice(2)}${p2(parts(iss).m)}-${String(1000 + (h % 9000))}` });
+          }
+        });
+        const cutsOf = (rms, a, b) => { const X = new Set(rms); return CUTS.filter((x) => X.has(x.rm) && x.n >= a && x.n <= b).sort((x, y) => y.n - x.n || byName(x.name, y.name)); };
+        // The marks of a period (phase-4-chi-so.md §4.4): the 7 days of a week, the weeks of a month cut at
+        // its edges, the 12 months of a year
+        function marksOf(p) {
+          if (p.kind === 'day') return [{ a: p.a, b: p.a, l: `${WD[parts(p.a).w]} ${dm(p.a)}` }];
+          if (p.kind === 'week') return Array.from({ length: 7 }, (_, k) => ({ a: p.a + k, b: p.a + k, l: `${WD[parts(p.a + k).w]} ${dm(p.a + k)}` }));
+          if (p.kind === 'year') return Array.from({ length: 12 }, (_, k) => { const m = monthOf(parts(p.a).y, k + 1); return { a: m.a, b: m.b, l: `Tháng ${p2(k + 1)}` }; });
+          const out = [];
+          for (let w = weekOf(p.a); w.a <= p.b; w = shift(w, 1)) { const a = Math.max(w.a, p.a), b = Math.min(w.b, p.b); out.push({ a, b, l: span(a, b) }); }
+          return out;
+        }
+        // Six periods of the same kind, the one on screen last (ý 35); none for a day or a custom range
+        const trendOf = (p) => { const out = []; if (p.kind === 'day') return out; for (let q = p; out.length < 6 && q.a >= FROM; q = shift(q, -1)) out.unshift(q); return out; };
+        const shortName = (p) => (p.kind === 'year' ? String(parts(p.a).y) : p.kind === 'month' ? `${p2(parts(p.a).m)}/${parts(p.a).y}` : `${dm(p.a)} – ${dm(p.b)}`);
+
+        /* ---------- Forecast, for its sheet (round d; golden D): the appointments from today to 30/11 by day of November ---------- */
+        const APPTS = [
+          [0, 10, '14:00', 'Trần Minh Huệ', 'n1', 30], [0, 10, '16:30', 'Lê Quốc Hùng', 'n3', null], [0, 11, '09:00', 'Đỗ Quang Vinh', 'n1', 50],
+          [0, 11, '10:30', 'Phạm Ngọc Lan', 'n2', 30, '03 09:10'], [0, 12, '16:00', 'Võ Thanh Bình', 'n2', 40], [0, 14, '09:00', 'Phạm Ngọc Lan', 'n2', 40, '09 16:20'],
+          [0, 16, '10:00', 'Lý Hoài Hùng', 'n1', 40], [0, 18, '09:30', 'Ngô Minh Tâm', 'n3', 30], [0, 19, '10:00', 'Nguyễn Văn Hùng', 'n2', null], [0, 20, '10:00', 'Bùi Ngọc Hà', 'n3', 40],
+          [0, 24, '14:00', 'Hà Minh Trí', 'n2', 40], [0, 27, '09:00', 'Đinh Thị Ngân', 'n3', 30], [0, 30, '15:00', 'Phan Thanh Quang', 'n3', 20],
+          [2, 10, '10:30', 'Trần Thị Mai Lan', 'n2', 20], [2, 13, '15:00', 'Trịnh Minh Anh', 'n1', 30], [2, 17, '09:00', 'Phạm Gia Long', 'n2', 30], [2, 19, '14:00', 'Đinh Công Hậu', 'n3', 20], [2, 25, '10:00', 'Vương Thị Thu', 'n2', 30], [2, 28, '09:30', 'Tăng Bảo Khánh', 'n1', 30],
+          [3, 12, '14:00', 'Đoàn Minh Đức', 'n3', 30], [3, 17, '09:30', 'Nguyễn Hùng Cường', 'n2', null], [3, 18, '10:00', 'Mạc Thị Yến', 'n2', 20], [3, 23, '15:00', 'Cao Thanh Sơn', 'n3', 20], [3, 26, '09:00', 'Lương Ngọc Ánh', 'n1', 20],
+          [10, 11, '09:30', 'Tôn Nữ Diệu Linh', 'n1', 40], [10, 12, '10:00', 'Giang Văn Khoa', 'n2', 20], [10, 13, '14:00', 'Thái Bảo Châu', 'n3', 30], [10, 14, '09:00', 'Khúc Minh Nhật', 'n1', 30], [10, 16, '15:00', 'La Thị Kim', 'n2', 30],
+          [10, 19, '09:00', 'Từ Gia Hưng', 'n3', 30], [10, 21, '10:00', 'Viên Thu Trang', 'n2', 20], [10, 24, '14:30', 'Ông Đức Tài', 'n1', 30], [10, 30, '09:00', 'Ninh Hải Yến', 'n3', 30],
+          [11, 12, '15:30', 'Hà Tuệ Mẫn', 'n1', 25], [11, 14, '10:30', 'Âu Minh Quân', 'n2', 40], [11, 17, '14:00', 'Phùng Thị Nga', 'n3', 25], [11, 20, '09:00', 'Diệp Văn Lâm', 'n2', 20], [11, 25, '15:00', 'Quan Mỹ Hạnh', 'n1', 30], [11, 30, '10:30', 'Lục Thanh Tùng', 'n3', 20],
+          [19, 11, '15:00', 'Chu Thị Bích', 'n2', 30], [19, 12, '09:00', 'Kim Đức Anh', 'n3', 20], [19, 13, '14:00', 'Nguyễn Văn Hữu', 'n1', 40], [19, 14, '10:00', 'Thân Ngọc Mai', 'n1', 40], [19, 16, '09:30', 'Yên Quốc Bảo', 'n2', 30],
+          [19, 17, '15:00', 'Bế Thị Hoa', 'n3', 20], [19, 21, '09:00', 'Sầm Văn Đạt', 'n2', 30], [19, 23, '10:30', 'Nông Thu Hiền', 'n1', 30], [19, 26, '14:00', 'Ma Thế Vinh', 'n3', 20], [19, 30, '09:30', 'Lò Thị Xuân', 'n2', 30],
+          [20, 10, '15:00', 'Lê Thị Hồng', 'n1', null],
+        ];
+        // D-a: one number for each customer, the one entered last; entered at the same time → the later day
+        const FC = (() => {
+          const list = APPTS.map(([rm, d, time, name, st, amt, at]) => ({ rm, d, time, name, st, amt, at: at || '01 09:00' })), carry = new Map();
+          for (const a of list) if (a.amt !== null) { const c = carry.get(a.name); if (!c || a.at > c.at || (a.at === c.at && a.d > c.d)) carry.set(a.name, a); }
+          for (const a of list) { a.by = carry.get(a.name); a.kind = a.amt === null ? 'miss' : a.by === a ? 'carry' : 'other'; }
+          return list;
+        })();
+        const fcPart = (rms, a, b) => {
+          const X = new Set(rms), o = { sum: 0, n1: 0, n2: 0, n3: 0, carry: 0, miss: 0 };
+          for (const x of FC) if (x.d >= a && x.d <= b && X.has(x.rm)) { if (x.kind === 'carry') { o.sum += x.amt; o[x.st] += x.amt; o.carry++; } else if (x.kind === 'miss') o.miss++; }
+          return o;
+        };
+
+        /* ---------- Format, on top of round c: money in full đồng for a sheet, a short customer name ---------- */
+        const vnd = (tr) => (tr < 0 ? '-' : '') + grp(Math.round(Math.abs(tr) * 1e6));
+        const pct1 = (v) => (v === null ? '' : `${Math.max(0, v).toFixed(1)}%`);
+        const short = (name) => name.split(' ').map((w) => `${w[0]}.`).join(' ');
+        const kh = (name) => `<span class="kh" data-kh="${short(name)}">${esc(name)}</span>`;
+        const whenOf = (c) => {
+          const { p, w } = c;
+          if (p.kind === 'day') return `${WD[parts(p.a).w]} ${dmy(p.a)}`;
+          if (!w.cur) return `${span(p.a, p.b, true)} · chưa bắt đầu`;
+          return w.st === 'running' ? `${span(w.cur[0], w.cur[1], true)} (${p.kind === 'month' ? 'MTD' : 'tới hôm nay'})` : span(p.a, p.b, true);
+        };
+        const whoOf = (c) => { const s = c.s; return s.type === 'all' ? `Toàn bộ · ${TEAMS.length} team, ${RMS.length} RM` : s.type === 'team' ? `Team ${TEAMS[s.t].name} · ${s.rms.length} RM · TL ${TEAMS[s.t].tl}` : `RM ${RMS[s.r].name} · Team ${TEAMS[RMS[s.r].team].name}`; };
+        const cmpName = (c) => (c.w.st === 'past' ? longName(c.w.prev) : c.p.kind === 'day' ? `hôm qua ${dm(c.w.cmp[0])}` : cmpSpan(c));
+
+        /* ---------- Tables: the columns of the five tables of the ledger, one cell, one table ---------- */
+        const HEAD = { iss: 'HĐ phát hành', can: 'HĐ hủy', total: 'Tổng số HĐ', fi: 'FYP phát hành', fc: 'FYP hủy', sales: 'Doanh số', cancel: 'Tỷ lệ hủy', close: 'Tỷ lệ chốt', met: 'Đã gặp', rf: 'Chuyển RF', sub: 'HĐ nộp', cs: 'Case size', miss: 'Dời – hủy – không đến', unrec: 'Chưa ghi kết quả', plan: 'Dự kiến', appts: 'Tổng lịch', n4: 'N4', n3: 'N3', n2: 'N2', n1: 'N1', open: 'KH đang mở', hold: 'Tạm hoãn', lost: 'Mất cơ hội' };
+        const TABS = { result: ['iss', 'can', 'total', 'fi', 'fc', 'sales', 'cancel', 'close'], conv: ['met', 'rf', 'sub', 'cs', 'iss', 'close'], appt: ['met', 'miss', 'unrec', 'plan', 'appts'], kh: ['n4', 'n3', 'n2', 'n1', 'open', 'hold', 'lost'] };
+        const TAB_NAME = { result: 'Kết quả', conv: 'Chuyển đổi', appt: 'Lịch hẹn', kh: 'Khách hàng', cut: 'HĐ hủy' };
+        const PAGE_KEYS = ['iss', 'can', 'total', 'sales', 'cancel', 'close']; // a page is narrower than the screen: FYP phát hành and FYP hủy stay in the ledger
+        const KIND_OF = { fi: 'm', fc: 'm', sales: 'm', cs: 'm', cancel: 'p', close: 'p' };
+        const dash = '<td class="zero">—</td>';
+        function cell(k, d, o = {}) {
+          const hi = o.hi === k ? ' hi' : '';
+          if (!d.begun && k !== 'plan' && k !== 'appts') return `<td class="zero${hi}">—</td>`;
+          const v = d[k], kind = KIND_OF[k];
+          if (kind === 'p') return `<td class="${v === null ? 'zero' : ''}${hi}">${pct(v)}</td>`;
+          const text = kind === 'm' ? money(v) : cnt(v);
+          if (v < 0) return `<td class="neg${hi}">${text}</td>`;
+          if (k === 'sales' && o.bar) return `<td class="bar${hi}" style="--w: ${o.bar.toFixed(3)}"><span>${text}</span></td>`;
+          return `<td class="${v ? '' : 'zero'}${hi}">${text}</td>`;
+        }
+        // o: first (heading of the names), keys, rows [{ name, mark, lead, d, cls, attr, kpi, bar }], total, goal
+        // (show "KPI tháng · đạt"), hi (the column a tile of Tổng quan opened), bars (a data bar on Doanh số)
+        function tableHtml(o) {
+          const top = Math.max(1, ...o.rows.filter((r) => r.bar !== false).map((r) => r.d.sales));
+          const kc = (r) => (!o.goal ? '' : r.kpi && r.d.begun ? `<td class="kc">${money(r.kpi)}<b class="${r.d.sales >= r.kpi ? 'ok' : ''}">${pct(rate(r.d.sales, r.kpi))}</b></td>` : dash);
+          const row = (r) => `<tr class="${r.cls || ''}" ${r.attr || ''}><td>${r.lead || ''}${r.mark || ''}${esc(r.name)}</td>${o.keys.map((k) => cell(k, r.d, { hi: o.hi, bar: o.bars && r.bar !== false && r.d.sales > 0 ? r.d.sales / top : 0 })).join('')}${kc(r)}</tr>`;
+          return `<table class="tbl"><thead><tr><th>${o.first}</th>${o.keys.map((k) => `<th class="${o.hi === k ? 'hi' : ''}">${HEAD[k]}</th>`).join('')}${o.goal ? '<th>KPI tháng · đạt</th>' : ''}</tr></thead><tbody>${o.rows.map(row).join('')}${o.total ? row({ ...o.total, cls: 'total', bar: false }) : ''}</tbody></table>`;
+        }
+        // The rows of a view. mode: 'fold' teams that open to their RMs (ledger) · 'flat' teams only (page 1) ·
+        // 'full' every RM under its team (page 2) · 'mark' the marks of the period
+        function rowsOf(c, mode, open = new Set()) {
+          const { s, p } = c, rm = (r, more = {}) => ({ name: RMS[r].name, d: figures([r], p.a, p.b), ...more });
+          if (mode === 'mark' || s.type === 'rm') return marksOf(p).map((m) => ({ name: m.l, d: figures(s.rms, m.a, m.b), cls: m.a > TODAY ? 'future' : '' }));
+          if (s.type === 'team') return byRm(s.rms).map((r) => rm(r));
+          const out = [];
+          for (const t of TEAMS_BY_NAME) {
+            const on = mode === 'full' || (mode === 'fold' && open.has(t.i));
+            out.push({ name: t.name, mark: tmark(t), lead: mode === 'fold' ? `<span class="tw">${ic('chev')}</span>` : '', d: figures(teamRms(t.i), p.a, p.b), kpi: kpiOf(t.i, p), cls: mode === 'flat' ? '' : `team ${on ? 'open' : ''}`, attr: mode === 'fold' ? `data-team="${t.i}"` : '' });
+            if (mode !== 'flat') for (const r of byRm(teamRms(t.i))) out.push(rm(r, { cls: 'rm', bar: false, attr: mode === 'fold' ? `data-team="${t.i}"${on ? '' : ' hidden'}` : '' }));
+          }
+          return out;
+        }
+        const totalOf = (c) => ({ name: 'Tổng', d: figures(c.rms, c.p.a, c.p.b), kpi: goalOf(c.s, c.p) });
+        const firstOf = (c, mode) => (mode === 'mark' || c.s.type === 'rm' ? { day: 'Ngày', week: 'Ngày', month: 'Tuần', year: 'Tháng' }[c.p.kind] : c.s.type === 'team' ? 'RM' : mode === 'flat' ? 'Team' : 'Team / RM');
+        const hasGoal = (c, mode) => c.p.kind === 'month' && c.s.type !== 'rm' && mode !== 'mark';
+        function cutTable(list, limit = 0, live = false) {
+          const rows = (limit ? list.slice(0, limit) : list).map((x) => { const r = RMS[x.rm], t = TEAMS[r.team]; return `<tr><td class="num">${dmy(x.n)}</td><td class="l num">HĐ ${x.no}</td><td class="l">${kh(x.name)}</td><td class="l">${esc(r.name)}</td><td class="l">${tmark(t)}${esc(t.name)}</td><td class="num">${dmy(x.iss)}</td><td class="num">${live ? `${vnd(x.fyp)} VNĐ` : money(x.fyp)}</td></tr>`; }).join('');
+          return `<table class="tbl"><thead><tr><th>Ngày hủy</th><th class="l">Số HĐ</th><th class="l">Khách hàng</th><th class="l">RM</th><th class="l">Team</th><th>Ngày phát hành</th><th>FYP hủy</th></tr></thead><tbody>${rows}${live && list.length ? `<tr class="total"><td>Tổng</td><td class="l">${cnt(list.length)} HĐ</td><td></td><td></td><td></td><td></td><td class="num">${vnd(sum(list, (x) => x.fyp))} VNĐ</td></tr>` : ''}</tbody></table>`;
+        }
+
+        /* ---------- "Bản tin": the pages, written from the numbers of the period (no AI) ---------- */
+        const BRAND = '<div class="brand" role="img" aria-label="Heritas L-CRM"><img class="b-tree b-out" src="img/heritas-tree.png" alt="" /><div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div></div>';
+        // The sentence a report opens with: a fixed form for each case (point 3 of #ask)
+        function headline(c) {
+          const { cur, was } = c;
+          if (!cur) return { t: 'Kỳ chưa bắt đầu.' };
+          if (cur.sales < 0) return { t: `Doanh số ${money(cur.sales)}: FYP hủy lớn hơn FYP phát hành.`, neg: true };
+          if (!cur.iss && !cur.can) return { t: 'Kỳ này chưa có hợp đồng phát hành.' };
+          if (!was) return { t: `Doanh số ${money(cur.sales)}.` };
+          const d = cur.sales - was.sales;
+          return { t: `Doanh số ${money(cur.sales)}, ${d ? `${d > 0 ? 'tăng' : 'giảm'} ${money(Math.abs(d))} so với` : 'bằng'} ${cmpName(c)}.` };
+        }
+        function leadText(c) {
+          const { cur, was, s, w, p } = c, out = [];
+          if (!cur) return `${longName(p)} bắt đầu từ ${dmy(p.a)}. Doanh số và các chỉ số kết quả chưa có; lịch hẹn đã đặt trong kỳ vẫn đếm ở Sổ số.`;
+          if (cur.total < 0) out.push(`Tổng số HĐ ${cnt(cur.total)}: ${cnt(cur.iss)} phát hành, ${cnt(cur.can)} hủy.`);
+          else if (cur.can) out.push(`${cnt(cur.total)} hợp đồng sau khi trừ ${cnt(cur.can)} hợp đồng hủy.`);
+          else if (cur.iss) out.push(`${cnt(cur.iss)} hợp đồng phát hành, không có hợp đồng hủy.`);
+          if (s.type !== 'rm') {
+            const teams = TEAMS.map((t) => ({ t, v: range(teamRms(t.i), ...w.cur).sales })).sort((x, y) => y.v - x.v);
+            if (s.type === 'all' && teams[0].v > 0) { const top = teams.filter((x) => x.v === teams[0].v); out.push(`${top.map((x) => x.t.name).join(' và ')} ${top.length > 1 ? 'cùng ' : ''}dẫn đầu với ${money(teams[0].v)}.`); }
+            if (s.type === 'team' && teams.some((x) => x.v !== 0)) out.push(`Đứng thứ ${1 + teams.filter((x) => x.v > cur.sales).length} / ${TEAMS.length} về doanh số.`);
+          }
+          if (cur.cancel !== null) { const d = was && was.cancel !== null ? r1(cur.cancel - was.cancel) : 0; out.push(`Tỷ lệ hủy ${pct(cur.cancel)}${d ? `, ${d > 0 ? 'tăng' : 'giảm'} ${trim(Math.abs(d), 1)} điểm %` : ''}.`); }
+          else if (cur.can) out.push('Tỷ lệ hủy không tính được ("—"): kỳ không có HĐ phát hành.');
+          if (cur.close !== null) out.push(`Tỷ lệ chốt ${pct(cur.close)}.`);
+          return out.join(' ');
+        }
+        function kpi4(c) {
+          const { cur, was, why } = c, w0 = (f) => (was ? was[f] : null), u = moneyUnit(cur.sales), none = '<span class="v">—</span>';
+          return `<div class="p-kpi4">
+            <div><span class="lbl">Doanh số</span><span class="v ${cur.sales < 0 ? 'neg' : ''}">${moneyNum(cur.sales, u)}<small>${u}</small></span><span class="f">${money(cur.fi)} phát hành − ${money(cur.fc)} hủy</span>${dMoney(cur.sales, w0('sales'), why)}</div>
+            <div><span class="lbl">Tổng số HĐ</span><span class="v ${cur.total < 0 ? 'neg' : ''}">${cnt(cur.total)}</span><span class="f">${cnt(cur.iss)} phát hành − ${cnt(cur.can)} hủy</span>${dCount(cur.total, w0('total'), why)}</div>
+            <div><span class="lbl">Tỷ lệ chốt</span>${cur.close === null ? none : `<span class="v">${trim(cur.close, 1)}<small>%</small></span>`}<span class="f">${cnt(cur.iss)} HĐ ÷ ${cnt(cur.rf)} RF</span>${dRate(cur.close, w0('close'), true, was ? 'Một trong hai kỳ không có chuyển RF' : why)}</div>
+            <div><span class="lbl">Tỷ lệ hủy</span>${cur.cancel === null ? none : `<span class="v">${trim(cur.cancel, 1)}<small>%</small></span>`}<span class="f">${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành</span>${dRate(cur.cancel, w0('cancel'), false, was ? 'Một trong hai kỳ không có HĐ phát hành' : why)}</div>
+          </div>`;
+        }
+        // The target of the month on the report (point 9 of #ask): what was done against it; no forecast here
+        function goalLine(c) {
+          const goal = goalOf(c.s, c.p), cur = c.cur;
+          if (!goal || !cur) return '';
+          const gap = cur.sales - goal, past = c.w.st === 'past';
+          const tail = gap > 0 ? `<b class="ok">vượt ${money(gap)}</b>` : gap < 0 ? `${past ? 'thiếu' : 'còn'} <b>${money(-gap)}</b>` : '<b class="ok">đúng KPI</b>';
+          return `<div class="p-goal" data-goal><span>KPI tháng <b>${money(goal)}</b></span><span class="hbar" role="img" aria-label="Đã đạt ${pct(rate(cur.sales, goal))} KPI tháng"><i style="--w: ${Math.max(0, Math.min(1, cur.sales / goal)).toFixed(3)}${gap >= 0 ? '; --c: var(--ok)' : ''}"></i></span><span>đã đạt <b class="${gap >= 0 ? 'ok' : ''}">${pct(rate(cur.sales, goal))}</b> · ${tail}</span></div>`;
+        }
+        // Doanh số of each part of the view: what was kept (solid) and what was cancelled (hatched)
+        function barsHtml(c) {
+          const { s, p } = c;
+          let rows = rowsOf(c, 'flat').filter((r) => r.d.begun), title = 'Doanh số theo team', more = '';
+          if (s.type === 'team') {
+            const all = rows.filter((r) => r.d.fi || r.d.fc).sort((x, y) => y.d.sales - x.d.sales);
+            title = 'Doanh số theo RM'; more = rows.length > all.slice(0, 6).length ? `<p class="p-none" style="font-size: 12px">${rows.length - Math.min(all.length, 6)} RM khác: ${all.length > 6 ? 'xem trang 2' : 'chưa có HĐ trong kỳ'}</p>` : ''; rows = all.slice(0, 6);
+          }
+          if (s.type === 'rm') title = `Doanh số theo ${{ day: 'ngày', week: 'ngày', month: 'tuần', year: 'tháng' }[p.kind]}`;
+          const top = Math.max(1, ...rows.map((r) => Math.max(r.d.fi, r.d.fc)));
+          const bars = rows.map((r) => { const keep = Math.max(r.d.sales, 0), cut = r.d.sales < 0 ? r.d.fc : Math.min(r.d.fc, r.d.fi); return `<div class="tbar"><b>${r.mark || ''}${esc(r.name)}</b><div class="stack">${keep ? `<i style="--f: ${keep}"></i>` : ''}${cut ? `<i class="cut" style="--f: ${cut}"></i>` : ''}<i class="rest" style="--f: ${Math.max(top - keep - cut, 0) || 0.001}"></i></div><span class="v ${r.d.sales < 0 ? 'neg' : ''}">${money(r.d.sales)}</span></div>`; }).join('');
+          return `<h4>${title}</h4>${bars || '<p class="p-none">Chưa có HĐ nào trong kỳ.</p>'}${more}<div class="p-keys"><span><i></i>Doanh số</span><span><i class="cut"></i>FYP hủy (đã trừ)</span></div>`;
+        }
+        // "Nhận xét": the sentences of "Điểm nhấn" for this period and view, read on a page (point 4 of #ask)
+        const saysHtml = (c, only) => {
+          const list = highlights(c).filter((h) => !only || only.includes(h.o)).slice(0, HL_MAX);
+          return list.length ? `<ul class="p-says">${list.map((h) => `<li style="--c: var(--${h.c})"><b>${esc(h.b)}</b>${esc(h.s)}</li>`).join('')}</ul>` : `<p class="p-none">${c.cur ? 'Kỳ này không có điểm nào cần lưu ý.' : 'Kỳ chưa bắt đầu.'}</p>`;
+        };
+        function trendHtml(c) {
+          const list = trendOf(c.p);
+          if (c.p.kind === 'day' || list.length < 2) return '';
+          const data = list.map((q) => { const w = windows(q); return { q, st: w.st, d: w.cur ? figures(c.rms, w.cur[0], w.cur[1]) : figures(c.rms, q.a, q.b) }; });
+          const top = Math.max(1, ...data.map((x) => x.d.sales)), goal = c.p.kind === 'month' && c.s.type !== 'rm';
+          const cols = data.map((x) => `<span class="${same(x.q, c.p) ? 'on' : ''} ${x.d.sales < 0 ? 'neg' : ''}"><b class="${x.d.sales < 0 ? 'neg' : ''}">${x.d.begun ? money(x.d.sales) : '—'}</b><i style="--h: ${(Math.max(x.d.sales, 0) / top).toFixed(4)}"></i><small>${shortName(x.q)}${x.st === 'running' ? `<br />tới ${dm(TODAY)}` : ''}</small></span>`).join('');
+          const rows = data.map((x) => ({ name: `${longName(x.q)}${x.st === 'running' ? ' · tới hôm nay' : ''}`, d: x.d, kpi: goalOf(c.s, x.q), bar: false }));
+          return `<h5>Xu hướng ${data.length} kỳ gần nhất <small>Doanh số của từng ${KIND[c.p.kind].toLowerCase()} · ${esc(scopeName(c.sc))}</small></h5>
+            <div class="trend" style="--n: ${data.length}" role="img" aria-label="Doanh số của ${data.length} kỳ gần nhất">${cols}</div>
+            ${tableHtml({ first: KIND[c.p.kind], keys: PAGE_KEYS, rows, goal })}`;
+        }
+        const DEFS = [
+          ['Tổng số HĐ', 'HĐ phát hành − HĐ hủy trong kỳ. Có thể âm trong một kỳ ngắn.'],
+          ['Doanh số', 'FYP phát hành − FYP hủy. HĐ hủy tính vào kỳ của ngày hủy, nên số của kỳ đã qua không đổi về sau.'],
+          ['Tỷ lệ hủy', 'HĐ hủy ÷ HĐ phát hành trong kỳ. "—" khi kỳ không có HĐ phát hành; có thể vượt 100%.'],
+          ['Tỷ lệ chốt', 'HĐ phát hành ÷ Chuyển RF trong kỳ, chưa trừ HĐ hủy. "—" khi kỳ không có RF.'],
+          ['Chuyển RF', 'Buổi hẹn Đã gặp đưa KH từ N4 / N3 lên N2 / N1; tính vào ngày gặp.'],
+          ['Case size', 'Tổng FYP nộp của các HĐ nộp trong kỳ.'],
+          ['KPI tháng', 'Mục tiêu Doanh số của một team cho một tháng; của Toàn bộ là tổng các team.'],
+          ['Kỳ so sánh', 'Kỳ đang chạy so với cùng số ngày của kỳ trước (kỳ Năm: cùng ngày tháng); kỳ đã xong so với cả kỳ liền trước.'],
+        ];
+        const defsHtml = () => `<h5>Định nghĩa chỉ số</h5><dl class="defs">${DEFS.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+        const CUT_ON_PAGE = 5;
+        // The pages of one report: 4 for the whole and for a team, 3 for one RM (its page 2 carries both parts)
+        function pagesOf(c) {
+          const { p, s, cur } = c, h = headline(c), mode = s.type === 'all' ? 'flat' : 'mark';
+          const run = `<div class="p-run"><span><b>Heritas L-CRM</b> · Báo cáo kết quả kinh doanh · ${longName(p)}</span><span>${whenOf(c)} · ${esc(scopeName(c.sc))}</span></div>`;
+          const one = `<div class="p-head">${BRAND}<div class="p-meta"><b>BÁO CÁO KẾT QUẢ KINH DOANH</b><strong>${longName(p)}</strong>${whenOf(c)}<br />${esc(whoOf(c))}<br />Lập lúc ${NOW} ngày ${dmy(TODAY)}</div></div>
+            <h3 class="${h.neg ? 'neg' : ''}">${h.t}</h3><p class="p-lead">${leadText(c)}</p>`
+            + (cur ? `${kpi4(c)}${goalLine(c)}<div class="p-two"><div>${barsHtml(c)}</div><div><h4>Nhận xét</h4>${saysHtml(c)}</div></div>
+            <h5>${s.type === 'all' ? 'Kết quả theo team' : 'Kết quả theo mốc'}<small>${s.type === 'all' ? `${whenOf(c)}` : `mỗi dòng một ${{ day: 'ngày', week: 'ngày', month: 'tuần', year: 'tháng' }[p.kind]} của kỳ`}</small></h5>${tableHtml({ first: firstOf(c, mode), keys: PAGE_KEYS, rows: rowsOf(c, mode), total: totalOf(c), goal: hasGoal(c, mode), bars: true })}` : '');
+          if (!cur) return [one];
+          const cuts = cutsOf(c.rms, ...c.w.cur);
+          const cutPart = `<h5>HĐ hủy trong kỳ <small>${cuts.length ? `${cnt(cuts.length)} HĐ · FYP hủy ${money(sum(cuts, (x) => x.fyp))}${cuts.length > CUT_ON_PAGE ? ` · trang này ghi ${CUT_ON_PAGE} HĐ gần nhất, đủ danh sách ở Sổ số và file Excel` : ''}` : 'không có'}</small></h5>${cuts.length ? cutTable(cuts, CUT_ON_PAGE) : '<p class="p-none">Không có hợp đồng nào hủy trong kỳ này.</p>'}`;
+          const rows = rowsOf(c, 'flat'), total = totalOf(c), first = firstOf(c, 'flat');
+          const act = `<h5>Lịch hẹn trong kỳ <small>bốn nhóm; "Dự kiến" là lịch chưa tới ngày</small></h5>${tableHtml({ first, keys: TABS.appt, rows, total })}
+            <h5>Từ buổi gặp tới hợp đồng <small>mỗi cột đếm việc xảy ra trong kỳ</small></h5>${tableHtml({ first, keys: TABS.conv, rows, total })}
+            <h5>Khách hàng theo nhóm <small>cuối kỳ: ${dmy(Math.min(p.b, TODAY))}</small></h5>${tableHtml({ first, keys: TABS.kh, rows, total })}`;
+          const last = `${trendHtml(c)}${defsHtml()}`;
+          if (s.type === 'rm') return [one, `${run}${cutPart}${act}`, `${run}${last}`];
+          const two = `<h5>Kết quả theo RM <small>${s.type === 'all' ? 'xếp theo tên trong từng team' : `${s.rms.length} RM của team`}</small></h5>${tableHtml({ first: firstOf(c, 'full'), keys: PAGE_KEYS, rows: rowsOf(c, 'full'), total, goal: hasGoal(c, 'full') })}`;
+          return [one, `${run}${two}${cutPart}`, `${run}${act}`, `${run}${last}`];
+        }
+        const paperHtml = (inner, n, total, cls = '') => `<article class="paper ${cls}">${inner}<div class="p-foot"><span>Heritas L-CRM · tài liệu nội bộ</span><span>Lập lúc ${NOW} ngày ${dmy(TODAY)}</span><span>Trang ${n} / ${total}</span></div></article>`;
+        const briefHtml = (c, cls = '') => { const pages = pagesOf(c); return pages.map((x, k) => paperHtml(x, k + 1, pages.length, cls)).join(''); };
+
+        /* ---------- "Sổ số": four numbers of the view, then one of five tables ---------- */
+        function sumStrip(c) {
+          const { cur, was, why } = c, w0 = (f) => (was ? was[f] : null);
+          if (!cur) return `<section class="card flat"><div class="empty sm"><span class="mark">${ic('cal')}</span><b>Kỳ chưa bắt đầu</b><p>${longName(c.p)} bắt đầu từ ${dmy(c.p.a)}. Chỉ số kết quả chưa có; lịch hẹn đã đặt trong kỳ vẫn đếm ở bảng Lịch hẹn.</p><div class="acts"><button class="btn sm" data-p="today">Về kỳ đang chạy</button></div></div></section>`;
+          const v = (text, unit = '', neg = false) => `<b class="num ${neg ? 'neg' : ''}">${text}${unit ? `<small>${unit}</small>` : ''}</b>`, u = moneyUnit(cur.sales);
+          return `<section class="card lg-sum"><div class="trio four">
+            <div><span class="lbl">Doanh số</span>${v(moneyNum(cur.sales, u), u, cur.sales < 0)}<span class="sub num">${money(cur.fi)} − ${money(cur.fc)} hủy${dMoney(cur.sales, w0('sales'), why)}</span></div>
+            <div><span class="lbl">Tổng số HĐ</span>${v(cnt(cur.total), '', cur.total < 0)}<span class="sub num">${cnt(cur.iss)} phát hành − ${cnt(cur.can)} hủy${dCount(cur.total, w0('total'), why)}</span></div>
+            <div><span class="lbl">Tỷ lệ chốt</span>${cur.close === null ? v('—') : v(trim(cur.close, 1), '%')}<span class="sub num">${cnt(cur.iss)} HĐ ÷ ${cnt(cur.rf)} RF${dRate(cur.close, w0('close'), true, was ? 'Một trong hai kỳ không có chuyển RF' : why)}</span></div>
+            <div><span class="lbl">Tỷ lệ hủy</span>${cur.cancel === null ? v('—') : v(trim(cur.cancel, 1), '%')}<span class="sub num">${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành${dRate(cur.cancel, w0('cancel'), false, was ? 'Một trong hai kỳ không có HĐ phát hành' : why)}</span></div>
+          </div></section>`;
+        }
+        // One table of the ledger. S: tab, rows ('team' | 'mark'), open (teams unfolded), hi (column to light)
+        function ledgerTable(c, S, live = true) {
+          const { s, p, w } = c, tab = S.tab, cuts = w.cur ? cutsOf(c.rms, ...w.cur) : [];
+          const mode = S.rows === 'mark' || s.type === 'rm' ? 'mark' : 'fold';
+          const tabs = Object.keys(TAB_NAME).map((k) => `<button class="${k === tab ? 'on' : ''}" data-tab="${k}" ${live ? '' : 'tabindex="-1"'}>${TAB_NAME[k]}${k === 'cut' && cuts.length ? `<span class="count">${cuts.length}</span>` : ''}</button>`).join('');
+          const pick = tab === 'cut' ? '' : s.type === 'rm' ? '<span class="rows">Theo mốc · góc nhìn một RM</span>' : `<span class="rows">Dòng<span class="seg sm" aria-label="Cách xếp dòng"><button class="${mode === 'fold' ? 'on' : ''}" data-rows="team" ${live ? '' : 'tabindex="-1"'}>Theo team</button><button class="${mode === 'mark' ? 'on' : ''}" data-rows="mark" ${live ? '' : 'tabindex="-1"'}>Theo mốc</button></span></span>`;
+          let body, note;
+          if (tab === 'cut') {
+            body = cuts.length ? cutTable(cuts, 0, true) : `<div class="empty sm"><span class="mark">${ic('check')}</span><b>Không có hợp đồng nào hủy trong kỳ</b><p>Danh sách ghi mọi HĐ có ngày hủy trong ${longName(p)}, theo góc nhìn ${esc(scopeName(c.sc))}.</p></div>`;
+            note = 'HĐ hủy tính vào kỳ của <b>ngày hủy</b>; FYP hủy bằng FYP phát hành của HĐ đó. Bấm một dòng để mở hồ sơ KH (bố cục đã duyệt, không vẽ lại ở đây).';
+          } else {
+            body = tableHtml({ first: firstOf(c, mode), keys: TABS[tab], rows: rowsOf(c, mode, S.open), total: totalOf(c), goal: tab === 'result' && hasGoal(c, mode), hi: S.hi, bars: tab === 'result' });
+            note = { result: 'Tổng số HĐ = HĐ phát hành − HĐ hủy · Doanh số = FYP phát hành − FYP hủy · Tỷ lệ hủy = HĐ hủy ÷ HĐ phát hành · Tỷ lệ chốt = HĐ phát hành ÷ Chuyển RF.', conv: 'Mỗi cột đếm việc xảy ra trong kỳ: buổi đã gặp, buổi gặp chuyển RF, HĐ nộp (Case size là tổng FYP nộp), HĐ phát hành. Tỷ lệ chốt = HĐ phát hành ÷ Chuyển RF.', appt: 'Bốn nhóm của màn Lịch hẹn. "Chưa ghi kết quả" là lịch đã qua ngày mà còn Đã lên lịch; "Dự kiến" là lịch chưa tới ngày.', kh: `Ảnh chụp cuối ${mode === 'mark' ? 'mỗi mốc' : 'kỳ'}${mode === 'mark' ? '' : `: cuối ngày ${dmy(Math.min(p.b, TODAY))}`}. KH đang mở = N4 + N3 + N2 + N1; Tạm hoãn và Mất cơ hội là KH đã đóng.` }[tab]
+              + (mode === 'mark' ? ' Mốc sau hôm nay: lịch hẹn vẫn đếm, các cột khác ghi "—".' : s.type === 'all' ? ' Bấm một team để xem RM.' : '');
+          }
+          return `<section class="card lg"><div class="lg-head"><span class="seg" aria-label="Bảng của Sổ số">${tabs}</span>${pick}</div>${body}<p class="lg-note">${note}</p></section>`;
+        }
+
+        /* ---------- The Excel file: a grid of cells drawn the way Excel shows it. Numbers are numbers (money in
+           full đồng, a rate as a fraction shown as %); a cell with a formula says so on the formula bar ---------- */
+        const colName = (k) => { let s = ''; for (k++; k > 0; k = Math.floor((k - 1) / 26)) s = String.fromCharCode(65 + ((k - 1) % 26)) + s; return s; };
+        const slug = (text) => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const iso = (n) => { const t = parts(n); return `${t.y}-${p2(t.m)}-${p2(t.d)}`; };
+        const stampOf = (p) => (p.kind === 'day' ? iso(p.a) : p.kind === 'month' ? iso(p.a).slice(0, 7) : p.kind === 'year' ? String(parts(p.a).y) : `${iso(p.a)}-den-${iso(p.b)}`);
+        const reportFile = (c) => `bao-cao_${stampOf(c.p)}_${slug(scopeName(c.sc))}_${iso(TODAY)}.xlsx`;
+        const fcFile = (c) => `forecast_${slug(scopeName(c.sc))}_${iso(TODAY)}.xlsx`;
+        // sheet: { name, widths, rows: [{ cls, ol, cells }], outline, pick (the cell on the formula bar at first) }
+        // cell: text, or { v, cls, span, fx (formula), w (data bar, 0 → 1) }
+        function sheetHtml(sh) {
+          const ol = sh.outline;
+          const head = `<tr>${ol ? '<th></th>' : ''}<th></th>${sh.widths.map((w, k) => `<th style="width: ${w}px">${colName(k)}</th>`).join('')}</tr>`;
+          const rows = sh.rows.map((r, y) => {
+            let x = 0;
+            const tds = r.cells.map((c0) => {
+              const c = typeof c0 === 'object' && c0 !== null ? c0 : { v: c0 }, ref = `${colName(x)}${y + 1}`;
+              x += c.span || 1;
+              return `<td class="${c.cls || ''}${c.w !== undefined ? ' db' : ''}${sh.pick === ref ? ' pick' : ''}" ${c.span ? `colspan="${c.span}"` : ''} data-ref="${ref}" ${c.fx ? `data-fx="${esc(c.fx)}"` : ''} ${c.w !== undefined ? `style="--w: ${c.w.toFixed(3)}"` : ''}>${c.w !== undefined ? `<span>${c.v}</span>` : (c.v ?? '')}</td>`;
+            }).join('');
+            return `<tr class="${r.cls || ''}">${ol ? `<td class="ol">${r.ol || ''}</td>` : ''}<td class="rh">${y + 1}</td>${tds}</tr>`;
+          }).join('');
+          return `<table class="xl-sheet" style="width: ${sum(sh.widths) + 34 + (ol ? 22 : 0)}px">${head}${rows}</table>`;
+        }
+        const XL_KEYS = [...TABS.result, 'rf', 'sub', 'cs', ...TABS.appt, ...TABS.kh]; // B … X of the two ledger sheets
+        const XL_BANDS = [['Kết quả', 8], ['Chuyển đổi', 3], ['Lịch hẹn', 5], ['Khách hàng cuối kỳ', 7]];
+        const colOf = (k) => colName(1 + XL_KEYS.indexOf(k));
+        const xlHead = (k) => (KIND_OF[k] === 'm' ? `${HEAD[k]} (VNĐ)` : HEAD[k]);
+        const xlVal = (k, d) => (!d.begun && k !== 'plan' && k !== 'appts' ? '' : KIND_OF[k] === 'p' ? pct1(d[k]) : KIND_OF[k] === 'm' ? vnd(d[k]) : cnt(d[k]));
+        // The formula of a computed column on row y; nothing for a column that is typed
+        const fxOf = (k, y, col = colOf) => ({ total: `=${col('iss')}${y}-${col('can')}${y}`, sales: `=${col('fi')}${y}-${col('fc')}${y}`, cancel: `=IFERROR(${col('can')}${y}/${col('iss')}${y},"")`, close: col('rf') ? `=IFERROR(${col('iss')}${y}/${col('rf')}${y},"")` : '', appts: `=SUM(${col('met')}${y}:${col('plan')}${y})`, open: `=SUM(${col('n4')}${y}:${col('n1')}${y})` })[k] || '';
+        const titleRow = (c, what, n) => ({ cls: 'rule', cells: [{ v: `Heritas L-CRM · ${what} · ${longName(c.p)} · ${whenOf(c)} · ${esc(scopeName(c.sc))} · lập ${dmy(TODAY)} ${NOW}`, cls: 'sub', span: n }] });
+        const blankRow = (n) => ({ cells: [{ v: '', cls: 'x0', span: n }] });
+        const negCls = (v) => (v < 0 ? ' neg' : '');
+
+        // The two cells of a monthly target on a sheet (G3 round e, point 9; the Owner on 13/11/2026: "1 · Có cột KPI"):
+        // the amount, and Doanh số ÷ KPI as a formula. g: the target of the row, nothing for an RM or a month with none
+        const KPI_HEAD = { kpi: 'KPI tháng (VNĐ)', kpiPct: 'Đạt KPI' };
+        const kpiCells = (g, d, y, sales, at, fx = '') => [{ v: g ? vnd(g) : '', fx: g ? fx : '' }, { v: g && d.begun ? pct1(rate(d.sales, g)) : '', fx: g ? `=IFERROR(${sales}${y}/${at}${y},"")` : '' }];
+        // Sheet 1 · "Tóm tắt": page 1 of "Bản tin", on one A4 sheet
+        function sumSheet(c) {
+          const { p, s, cur, was } = c, rows = [], mode = s.type === 'all' ? 'flat' : 'mark';
+          // The table by team of a month carries the target of each team, as page 1 of "Bản tin" does
+          const kpi = hasGoal(c, mode), n = kpi ? 11 : 9, widths = [150, 96, 80, 96, 132, 116, 132, 86, 86, ...(kpi ? [132, 78] : [])], pad = kpi ? [{ v: '', cls: 'x0', span: 2 }] : [];
+          const logo = '<img src="img/heritas-tree.png" alt="" style="height: 20px; vertical-align: -5px; margin-right: 6px" /><img src="img/heritas-wordmark.png" alt="Heritas" style="height: 13px" />';
+          rows.push({ cells: [{ v: logo, cls: 'x0 l', span: 2 }, { v: 'BÁO CÁO KẾT QUẢ KINH DOANH', cls: 'title', span: n - 2 }] });
+          rows.push({ cells: [{ v: '', cls: 'x0', span: 2 }, { v: `${longName(p)} · ${whenOf(c)}`, cls: 'sub', span: n - 2 }] });
+          rows.push({ cls: 'rule', cells: [{ v: '', cls: 'x0', span: 2 }, { v: `${esc(whoOf(c))} · lập ${dmy(TODAY)} ${NOW}`, cls: 'sub', span: n - 2 }] });
+          rows.push(blankRow(n));
+          if (!cur) { rows.push({ cells: [{ v: `Kỳ chưa bắt đầu: ${longName(p)} bắt đầu từ ${dmy(p.a)}. Chỉ số kết quả chưa có.`, cls: 'note', span: n }] }); return { name: 'Tóm tắt', widths, rows, pick: 'C1' }; }
+          const data = rowsOf(c, mode), first = 12, last = first + data.length - 1, tot = last + 1;
+          const dTxt = (now, old, f) => (old === null || old === undefined ? 'không so với kỳ trước' : `${now > old ? '▲' : now < old ? '▼' : '='} ${now === old ? '' : f(Math.abs(now - old))} so với ${cmpName(c)}`.replace('  ', ' '));
+          const dPts = (now, old) => (now === null || old === null || old === undefined ? 'không so' : `${r1(now - old) > 0 ? '▲' : r1(now - old) < 0 ? '▼' : '='} ${r1(now - old) ? `${trim(Math.abs(r1(now - old)), 1)} điểm %` : ''}`);
+          rows.push({ cells: [{ v: 'Doanh số (VNĐ)', cls: 'kl', span: 3 }, { v: 'Tổng số HĐ', cls: 'kl', span: 2 }, { v: 'Tỷ lệ chốt', cls: 'kl', span: 2 }, { v: 'Tỷ lệ hủy', cls: 'kl', span: 2 }, ...pad] });
+          rows.push({ cls: 'kvr', cells: [{ v: vnd(cur.sales), cls: `kv${negCls(cur.sales)}`, span: 3, fx: `=G${tot}` }, { v: cnt(cur.total), cls: `kv${negCls(cur.total)}`, span: 2, fx: `=D${tot}` }, { v: pct1(cur.close) || '—', cls: 'kv', span: 2, fx: cur.close === null ? '' : `=I${tot}` }, { v: pct1(cur.cancel) || '—', cls: 'kv', span: 2, fx: cur.cancel === null ? '' : `=H${tot}` }, ...pad] });
+          rows.push({ cells: [{ v: `${vnd(cur.fi)} phát hành − ${vnd(cur.fc)} hủy`, cls: 'kl', span: 3 }, { v: `${cnt(cur.iss)} phát hành − ${cnt(cur.can)} hủy`, cls: 'kl', span: 2 }, { v: `${cnt(cur.iss)} HĐ ÷ ${cnt(cur.rf)} RF`, cls: 'kl', span: 2 }, { v: `${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành`, cls: 'kl', span: 2 }, ...pad] });
+          rows.push({ cells: [{ v: dTxt(cur.sales, was && was.sales, vnd), cls: 'kl', span: 3 }, { v: dTxt(cur.total, was && was.total, cnt), cls: 'kl', span: 2 }, { v: dPts(cur.close, was && was.close), cls: 'kl', span: 2 }, { v: dPts(cur.cancel, was && was.cancel), cls: 'kl', span: 2 }, ...pad] });
+          const goal = goalOf(s, p);
+          rows.push(goal ? { cells: [{ v: `KPI tháng ${vnd(goal)} VNĐ · đã đạt ${pct(rate(cur.sales, goal))}${cur.sales === goal ? '' : ` · ${cur.sales > goal ? 'vượt' : c.w.st === 'past' ? 'thiếu' : 'còn'} ${vnd(Math.abs(goal - cur.sales))} VNĐ`}`, cls: 'note', span: n }] } : blankRow(n));
+          rows.push(blankRow(n));
+          rows.push({ cells: [{ v: firstOf(c, mode), cls: 'hd l' }, ...TABS.result.map((k) => ({ v: xlHead(k), cls: 'hd' })), ...(kpi ? [{ v: KPI_HEAD.kpi, cls: 'hd' }, { v: KPI_HEAD.kpiPct, cls: 'hd' }] : [])] });
+          const col = (k) => ({ iss: 'B', can: 'C', total: 'D', fi: 'E', fc: 'F', sales: 'G', cancel: 'H', close: '' })[k];
+          const top = Math.max(1, ...data.map((r) => r.d.sales));
+          data.forEach((r, k) => { const y = first + k; rows.push({ cells: [{ v: esc(r.name), cls: 'l' }, ...TABS.result.map((key) => ({ v: xlVal(key, r.d), cls: negCls(r.d[key]), fx: r.d.begun ? fxOf(key, y, col) : '', ...(key === 'sales' && r.d.sales > 0 ? { w: r.d.sales / top } : {}) })), ...(kpi ? kpiCells(r.kpi, r.d, y, 'G', 'J') : [])] }); });
+          const t = totalOf(c).d;
+          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...TABS.result.map((key) => ({ v: xlVal(key, t), cls: negCls(t[key]), fx: fxOf(key, tot, col) || (KIND_OF[key] === 'p' ? '' : `=SUM(${col(key)}${first}:${col(key)}${last})`) })), ...(kpi ? kpiCells(goal, t, tot, 'G', 'J', `=SUM(J${first}:J${last})`) : [])] });
+          rows.push(blankRow(n));
+          rows.push({ cells: [{ v: 'NHẬN XÉT', cls: 'kl', span: n }] });
+          for (const h of highlights(c).slice(0, HL_MAX)) rows.push({ cells: [{ v: `<b>${esc(h.b)}</b> · ${esc(h.s)}`, cls: 'note', span: n }] });
+          return { name: 'Tóm tắt', widths, rows, pick: `G${tot}`, pickFx: `=E${tot}-F${tot}` };
+        }
+        // Sheets 2 and 3 · the two ledgers: every column, in four named groups; teams fold to their RMs.
+        // 23 columns of figures; the ledger by team of a month has 25: the target of the team and how much
+        // of it was done close the group "Kết quả" (team rows and the total; an RM has no target)
+        function ledgerSheet(c, byMark) {
+          const { s, p } = c, rows = [], mode = byMark || s.type === 'rm' ? 'mark' : 'full', name = byMark ? 'Theo mốc' : 'Team – RM';
+          const kpi = hasGoal(c, mode), keys = kpi ? [...TABS.result, 'kpi', 'kpiPct', ...XL_KEYS.slice(TABS.result.length)] : XL_KEYS, n = 1 + keys.length;
+          const col = (k) => colName(1 + keys.indexOf(k));
+          rows.push(titleRow(c, byMark ? 'Sổ theo mốc' : 'Sổ theo team và RM', n));
+          rows.push({ cells: [{ v: '', cls: 'x0' }, ...XL_BANDS.map(([l, k], i) => ({ v: l, cls: 'band', span: k + (kpi && !i ? 2 : 0) }))] });
+          rows.push({ cells: [{ v: firstOf(c, mode), cls: 'hd l' }, ...keys.map((k) => ({ v: KPI_HEAD[k] || xlHead(k), cls: 'hd' }))] });
+          const data = rowsOf(c, mode), start = 4, at = [];
+          // The data bar of Doanh số: a team against the largest team, an RM (or a mark) against the largest of its kind
+          const isTeam = (r) => (r.cls || '').includes('team'), topOf = (team) => Math.max(1, ...data.filter((r) => isTeam(r) === team).map((r) => r.d.sales));
+          // One row of figures. g: the target of the row; gFx: the formula of its amount (the total adds the teams)
+          const line = (r, y, sumOf, g = r.kpi, gFx = '') => {
+            const two = kpi ? kpiCells(g, r.d, y, col('sales'), col('kpi'), gFx) : [];
+            return keys.map((k) => (k === 'kpi' ? two[0] : k === 'kpiPct' ? two[1] : { v: xlVal(k, r.d), cls: negCls(r.d[k]), fx: !r.d.begun ? '' : fxOf(k, y, col) || (sumOf && KIND_OF[k] !== 'p' ? sumOf(k) : ''), ...(k === 'sales' && r.d.sales > 0 && r.bar !== null ? { w: r.d.sales / topOf(isTeam(r)) } : {}) }));
+          };
+          data.forEach((r, k) => {
+            const y = start + k;
+            if (isTeam(r)) {
+              const kids = data.slice(k + 1).findIndex(isTeam), size = kids < 0 ? data.length - k - 1 : kids;
+              at.push(y);
+              rows.push({ cls: 'grp', ol: '−', cells: [{ v: esc(r.name), cls: 'l' }, ...line(r, y, (key) => `=SUM(${col(key)}${y + 1}:${col(key)}${y + size})`)] });
+            } else rows.push({ cls: r.cls === 'rm' ? 'sub2' : '', cells: [{ v: esc(r.name), cls: 'l' }, ...line(r, y)] });
+          });
+          const end = start + data.length - 1, tot = end + 1, t = totalOf(c).d;
+          // The total of a ledger by team adds the team rows; by mark it adds the marks, except the customers, who are those of the last day
+          const sumFx = (k) => (TABS.kh.includes(k) && mode === 'mark' ? '' : at.length ? `=${at.map((y) => `${col(k)}${y}`).join('+')}` : `=SUM(${col(k)}${start}:${col(k)}${end})`);
+          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...line({ d: t, bar: null }, tot, sumFx, goalOf(s, p), at.length ? sumFx('kpi') : '')] });
+          return { name, widths: [190, 96, 70, 86, 132, 116, 132, 78, 82, ...(kpi ? [132, 78] : []), 86, 72, 124, 70, 152, 124, 70, 78, 56, 56, 56, 56, 96, 82, 92], rows, outline: at.length > 0, pick: `G${at[0] || tot}`, pickFx: `=E${at[0] || tot}-F${at[0] || tot}` };
+        }
+        function cutSheet(c) {
+          const list = c.w.cur ? cutsOf(c.rms, ...c.w.cur) : [], n = 8, rows = [titleRow(c, 'HĐ hủy trong kỳ', n)];
+          rows.push({ cells: ['Ngày hủy', 'Số HĐ', 'Khách hàng', 'RM', 'Team', 'Ngày phát hành', 'FYP hủy (VNĐ)', 'Số ngày từ phát hành'].map((v, k) => ({ v, cls: `hd${k > 0 && k < 5 ? ' l' : ''}` })) });
+          list.forEach((x, k) => { const y = 3 + k; rows.push({ cells: [dmy(x.n), { v: `HĐ ${x.no}`, cls: 'l' }, { v: esc(x.name), cls: 'l' }, { v: esc(RMS[x.rm].name), cls: 'l' }, { v: esc(TEAMS[RMS[x.rm].team].name), cls: 'l' }, dmy(x.iss), vnd(x.fyp), { v: cnt(x.n - x.iss), fx: `=A${y}-F${y}` }] }); });
+          if (list.length) rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, { v: `${cnt(list.length)} HĐ`, cls: 'l', fx: `=COUNTA(B3:B${2 + list.length})` }, '', '', '', '', { v: vnd(sum(list, (x) => x.fyp)), fx: `=SUM(G3:G${2 + list.length})` }, ''] });
+          else rows.push({ cells: [{ v: 'Không có hợp đồng nào hủy trong kỳ này.', cls: 'note', span: n }] });
+          return { name: 'HĐ hủy', widths: [96, 110, 170, 160, 110, 116, 132, 150], rows, pick: list.length ? `G${3 + list.length}` : 'A1', pickFx: list.length ? `=SUM(G3:G${2 + list.length})` : '' };
+        }
+        function trendSheet(c) {
+          const list = trendOf(c.p), n = 13, rows = [titleRow(c, `Xu hướng ${list.length} kỳ gần nhất`, n)];
+          rows.push({ cells: ['Kỳ', 'Từ ngày', 'Đến ngày', ...['iss', 'can', 'total', 'fi', 'fc', 'sales', 'cancel', 'close'].map(xlHead), 'KPI tháng (VNĐ)', 'Đạt KPI'].map((v, k) => ({ v, cls: `hd${k ? '' : ' l'}` })) });
+          const col = (k) => ({ iss: 'D', can: 'E', total: 'F', fi: 'G', fc: 'H', sales: 'I' })[k];
+          const data = list.map((q) => { const w = windows(q); return { q, w, d: w.cur ? figures(c.rms, w.cur[0], w.cur[1]) : figures(c.rms, q.a, q.b) }; }), top = Math.max(1, ...data.map((x) => x.d.sales));
+          data.forEach((x, k) => {
+            const y = 3 + k, goal = goalOf(c.s, x.q);
+            rows.push({ cells: [{ v: `${longName(x.q)}${x.w.st === 'running' ? ' (tới hôm nay)' : ''}`, cls: 'l' }, dmy(x.q.a), dmy(x.w.cur ? x.w.cur[1] : x.q.b), ...TABS.result.map((key) => ({ v: xlVal(key, x.d), cls: negCls(x.d[key]), fx: x.d.begun ? fxOf(key, y, col) : '', ...(key === 'sales' && x.d.sales > 0 ? { w: x.d.sales / top } : {}) })), goal ? vnd(goal) : '', { v: goal && x.d.begun ? pct1(rate(x.d.sales, goal)) : '', fx: goal ? `=IFERROR(I${y}/L${y},"")` : '' }] });
+          });
+          return { name: 'Xu hướng', widths: [210, 92, 92, 96, 70, 86, 132, 116, 132, 78, 82, 132, 78], rows, pick: `I${2 + data.length}`, pickFx: `=G${2 + data.length}-H${2 + data.length}` };
+        }
+        // The sheet "Forecast" (D-f): what the Forecast screen shows, team by team and RM by RM
+        function forecastSheet(c) {
+          const { s } = c, n = 12, rows = [], sat = weekOf(TODAY).a + 5, end = monthOf(2026, 11).b;
+          rows.push({ cls: 'rule', cells: [{ v: `Heritas L-CRM · Forecast · hôm nay ${WD[parts(TODAY).w]} ${dmy(TODAY)} · ${esc(scopeName(c.sc))} · lịch Đã lên lịch của KH đang ở N3, N2, N1 · chỉ Thứ Hai → Thứ Bảy · mỗi KH tính một lần · lập ${dmy(TODAY)} ${NOW}`, cls: 'sub', span: n }] });
+          rows.push({ cells: [{ v: '', cls: 'x0' }, { v: `Tuần này ${span(TODAY, sat)}`, cls: 'band', span: 4 }, { v: `Tháng 11 · ${span(TODAY, end)}`, cls: 'band', span: 5 }, { v: 'Số lịch tới cuối tháng', cls: 'band', span: 2 }] });
+          rows.push({ cells: [s.type === 'all' ? 'Team / RM' : 'RM', 'N1 (VNĐ)', 'N2 (VNĐ)', 'N3 (VNĐ)', 'Tổng tuần (VNĐ)', 'Dự kiến tới cuối tháng (VNĐ)', 'Đã đạt (VNĐ)', 'Về đích (VNĐ)', 'KPI tháng (VNĐ)', '% về đích', 'Có case size', 'Thiếu case size'].map((v, k) => ({ v, cls: `hd${k ? '' : ' l'}` })) });
+          const nov = monthOf(2026, 11), of = (rms, kpi) => { const w = fcPart(rms, 10, 14), m = fcPart(rms, 10, 30), got = range(rms, nov.a, TODAY).sales; return { w, m, got, land: got + m.sum, kpi }; };
+          const cells = (d, y, sumOf) => {
+            const f = (k, v) => ({ v, fx: sumOf ? sumOf(k) : '' });
+            return [f('B', vnd(d.w.n1)), f('C', vnd(d.w.n2)), f('D', vnd(d.w.n3)), { v: vnd(d.w.sum), fx: `=SUM(B${y}:D${y})` }, f('F', vnd(d.m.sum)), { ...f('G', vnd(d.got)), cls: negCls(d.got) }, { v: vnd(d.land), fx: `=F${y}+G${y}`, cls: negCls(d.land) }, d.kpi ? vnd(d.kpi) : '', { v: d.kpi ? pct1(rate(d.land, d.kpi)) : '', fx: d.kpi ? `=IFERROR(H${y}/I${y},"")` : '' }, f('K', cnt(d.m.carry)), { ...f('L', cnt(d.m.miss)), cls: d.m.miss ? 'red' : '' }];
+          };
+          const at = [];
+          let y = 4;
+          const rmLine = (r, cls) => { rows.push({ cls, cells: [{ v: esc(RMS[r].name), cls: 'l' }, ...cells(of([r], null), y)] }); y++; };
+          if (s.type === 'all') for (const t of TEAMS_BY_NAME) { const list = byRm(teamRms(t.i)), y0 = y; at.push(y0); rows.push({ cls: 'grp', ol: '−', cells: [{ v: esc(t.name), cls: 'l' }, ...cells(of(teamRms(t.i), kpiOf(t.i, nov)), y0, (k) => `=SUM(${k}${y0 + 1}:${k}${y0 + list.length})`)] }); y++; list.forEach((r) => rmLine(r, 'sub2')); }
+          else byRm(s.rms).forEach((r) => rmLine(r, ''));
+          const tot = y, all = of(s.rms, goalOf(s, nov));
+          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...cells(all, tot, (k) => (at.length ? `=${at.map((v) => `${k}${v}`).join('+')}` : `=SUM(${k}4:${k}${tot - 1})`))] });
+          return { name: 'Forecast', widths: [190, 112, 112, 112, 124, 176, 124, 124, 124, 82, 96, 104], rows, outline: at.length > 0, pick: `H${tot}`, pickFx: `=F${tot}+G${tot}` };
+        }
+        function apptSheet(c) {
+          const X = new Set(c.rms), list = FC.filter((a) => X.has(a.rm)).sort((x, y) => x.d - y.d || x.time.localeCompare(y.time)), n = 9;
+          const rows = [{ cls: 'rule', cells: [{ v: `Heritas L-CRM · Lịch hẹn thuộc Forecast · ${dmy(TODAY)} – ${dmy(NOV(30))} · ${esc(scopeName(c.sc))} · ${cnt(list.length)} lịch`, cls: 'sub', span: n }] }];
+          rows.push({ cells: ['Ngày', 'Thứ', 'Giờ', 'Khách hàng', 'Nhóm', 'RM', 'Team', 'Case size dự kiến (VNĐ)', 'Trong Forecast'].map((v, k) => ({ v, cls: `hd${k === 0 || k === 7 ? '' : ' l'}` })) });
+          for (const a of list) rows.push({ cells: [dmy(NOV(a.d)), { v: WD[parts(NOV(a.d)).w], cls: 'l' }, { v: a.time, cls: 'l' }, { v: esc(a.name), cls: 'l' }, { v: a.st.toUpperCase(), cls: 'l' }, { v: esc(RMS[a.rm].name), cls: 'l' }, { v: esc(TEAMS[RMS[a.rm].team].name), cls: 'l' }, a.amt === null ? '' : vnd(a.amt), { v: a.kind === 'carry' ? 'Tính ở ngày này' : a.kind === 'other' ? `Không cộng: KH tính theo lịch ${dm(NOV(a.by.d))}` : 'Chưa tính: thiếu case size', cls: `l${a.kind === 'miss' ? ' red' : ''}` }] });
+          return { name: 'Lịch hẹn', widths: [96, 84, 60, 170, 60, 160, 110, 170, 250], rows, pick: 'H3' };
+        }
+        function defSheet(forecastOnly) {
+          const list = forecastOnly ? [] : DEFS.map(([k, v]) => [k, v]);
+          list.push(['Forecast', 'Tổng case size dự kiến của các lịch Đã lên lịch, ngày từ hôm nay, không phải Chủ Nhật, của KH đang ở N3 / N2 / N1. Cộng thẳng, không nhân hệ số; mỗi KH tính một lần, theo số nhập gần nhất.'], ['Đã đạt', 'Doanh số từ ngày 1 của tháng tới hôm nay.'], ['Về đích', 'Đã đạt + Forecast tới cuối tháng.']);
+          if (forecastOnly) list.push(['KPI tháng', 'Mục tiêu Doanh số của một team cho một tháng; của Toàn bộ là tổng các team. RM không có KPI.']);
+          return { name: 'Định nghĩa', widths: [170, 720], rows: [{ cells: [{ v: 'Chỉ số', cls: 'hd l' }, { v: 'Định nghĩa', cls: 'hd l' }] }, ...list.map(([k, v]) => ({ cells: [{ v: `<b>${k}</b>`, cls: 'wrap' }, { v, cls: 'wrap' }] }))], pick: 'A1' };
+        }
+        function sheetsOf(file, c) {
+          if (file === 'forecast') return [forecastSheet(c), apptSheet(c), defSheet(true)];
+          const out = [sumSheet(c), ledgerSheet(c, false), ledgerSheet(c, true), cutSheet(c)];
+          if (c.p.kind !== 'day' && trendOf(c.p).length > 1) out.push(trendSheet(c));
+          if (c.w.st === 'running') out.push(forecastSheet(c)); // a period that is over has no forecast (Owner 11/11)
+          return [...out, defSheet(false)];
+        }
+        function xlHtml(file, c, active) {
+          const sheets = sheetsOf(file, c), on = sheets.find((x) => x.name === active) || sheets[0];
+          return `<div class="xl-top"><b>Excel</b><span>${file === 'forecast' ? fcFile(c) : reportFile(c)}</span><span>${sheets.length} sheet · bấm tab ở dưới</span></div>
+            <div class="xl-fx"><span data-xl-ref>${on.pick || 'A1'}</span><i>fx</i><span data-xl-fx>${esc(on.pickFx || '')}</span></div>
+            <div class="xl-body">${sheetHtml(on)}</div>
+            <div class="xl-tabs">${sheets.map((x) => `<button class="${x === on ? 'on' : ''}" data-sheet="${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div>`;
+        }
+
+        /* ---------- The window: state, toolbar, popovers ---------- */
+        const STATE = new Map();
+        const newState = (d = {}) => ({ sc: d.sc || 'all', p: parseP(d.period || 'm:2026-11'), mode: d.mode || 'brief', tab: d.tab || 'result', rows: d.rows || 'team', open: new Set(d.open !== undefined ? [+d.open] : []), hi: d.hi || '', light: false, note: '', menu: null, pick: 'month', at: TODAY });
+        // Paper always carries the full name of a customer (round a): the mask of the screen does not reach a printed page
+        const fixLight = (win) => $$('.paper.light .kh', win).forEach((n) => { if (n.dataset.full !== undefined) n.textContent = n.dataset.full; });
+        function render(win) {
+          const S = STATE.get(win), c = ctx(S.sc, S.p), box = $('[data-rp]', win), brief = S.mode === 'brief', pages = brief ? pagesOf(c) : [];
+          if (!$('.rp-body', box)) box.innerHTML = `<div class="rp-bar"><span class="seg" aria-label="Cách xem báo cáo"><button data-mode="brief">Bản tin</button><button data-mode="ledger">Sổ số</button></span><span class="note"></span><span class="right"><button class="btn sm" data-light aria-pressed="false">${ic('page')}Xem bản in</button><button class="btn sm" data-run="print">${ic('print')}In…</button></span></div><div class="rp-body"></div>`;
+          $$('.rp-bar [data-mode]', box).forEach((b) => b.classList.toggle('on', b.dataset.mode === S.mode));
+          $('.rp-bar .note', box).textContent = brief ? `${pages.length} trang · câu chữ viết từ số của kỳ, theo luật` : 'Bốn số của góc nhìn, rồi năm bảng';
+          $('.rp-bar .right', box).hidden = !brief;
+          const light = $('[data-light]', box);
+          light.classList.toggle('on', S.light);
+          light.setAttribute('aria-pressed', String(S.light));
+          $('.rp-body', box).innerHTML = (S.note ? `<div class="arrived" style="margin-bottom: 16px">${ic('chev')}<span>${esc(S.note)}</span></div>` : '')
+            + (brief ? `<div class="rp-pages ${S.light ? 'print' : ''}">${pages.map((x, k) => paperHtml(x, k + 1, pages.length, S.light ? 'light' : '')).join('')}</div>` : `<div class="rp">${sumStrip(c)}${ledgerTable(c, S)}</div>`);
+          // The toolbar: the line under the name of the screen, the two pickers, the file the main button writes
+          const who = scopeName(S.sc), item = (name) => $(`.nav-i[data-go="${name}"]`, win);
+          $$('.nav-i[data-go]', win).forEach((n) => { n.dataset.scope = capName(S.sc); });
+          item('overview').dataset.sub = subLine(c);
+          item('appointments').dataset.sub = who;
+          item('forecast').dataset.sub = `Hôm nay Thứ Ba ${dmy(TODAY)} · ${who}`;
+          item('forecast').dataset.job = `Đang xuất Excel Forecast|Đã xuất ${fcFile(c)}`;
+          item('reports').dataset.sub = subLine(c);
+          item('reports').dataset.job = `Đang xuất Excel Báo cáo|Đã xuất ${reportFile(c)}`;
+          const on = $('.nav-i.on', win);
+          if (on) $('.tl-title span', win).textContent = on.dataset.sub || '';
+          $('[data-tool="scope"] span', win).textContent = capName(S.sc);
+          $('[data-period-name]', win).textContent = nameOf(S.p);
+          $$('[data-step]', win).forEach((b) => { b.disabled = !inData(shift(S.p, +b.dataset.step)); });
+          if (win.classList.contains('masked')) { ui2.mask(win, true); fixLight(win); }
+        }
+        // The main button of the toolbar: "Xuất Excel" carries the export mark, a "new" button the plus
+        const fixAct = (win) => { const b = $('[data-act-btn]', win); if (b) $('use', b).setAttribute('href', $('span', b).textContent === 'Xuất Excel' ? '#i-export' : '#i-plus'); };
+        // The view menu and the period picker of round c, unchanged
+        function scopeMenu(win) {
+          const S = STATE.get(win), tick = ic('check');
+          const row = (sc, label, n, cls = '', close = true) => `<button class="${cls} ${S.sc === sc ? 'on' : ''}" data-sc="${sc}" ${close ? 'data-pop-close' : ''} role="menuitemradio" aria-checked="${S.sc === sc}">${label}${n || S.sc === sc ? `<span class="n">${n || ''}${S.sc === sc ? tick : ''}</span>` : ''}</button>`;
+          $('.tl-pop[data-pop-for="scope"]', win).innerHTML = `<div class="h">Góc nhìn</div>${row('all', 'Toàn bộ', `${RMS.length} RM`)}<hr />`
+            + TEAMS_BY_NAME.map((t) => {
+              const openT = S.menu === t.i, list = teamRms(t.i).sort((x, y) => byName(RMS[x].name, RMS[y].name));
+              return row(`t${t.i}`, `<span class="tw">${ic('chev')}</span>${tmark(t)}Team ${esc(t.name)}`, `${list.length} RM`, openT ? 'open' : '', false) + (openT ? list.map((r) => row(`r${r}`, esc(RMS[r].name), '', 'sub')).join('') : '');
+            }).join('');
+        }
+        function periodBody(win) {
+          const S = STATE.get(win), kind = S.pick, at = parts(S.at), box = $('[data-pp]', win);
+          const btn = (p, label) => `<button data-p="${keyOf(p)}" data-pop-close class="${same(p, S.p) ? 'on' : ''} ${statusOf(p) === 'running' ? 'now' : ''}" ${inData(p) ? '' : 'disabled'}>${label}</button>`;
+          const head = (label, step) => `<div class="py"><button data-pp-nav="-${step}" aria-label="Lùi">&#x2039;</button><span class="num">${label}</span><button data-pp-nav="${step}" aria-label="Tới">&#x203A;</button></div>`;
+          let html;
+          if (kind === 'month') html = head(at.y, 'y') + `<div class="plist">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => btn(monthOf(at.y, m), `Tháng ${m}`)).join('')}</div>`;
+          else if (kind === 'year') html = `<div class="plist" style="margin-top: 12px">${[2025, 2026, 2027].map((y) => btn(yearOf(y), y)).join('')}</div>`;
+          else if (kind === 'week') {
+            const m = monthOf(at.y, at.m), list = [];
+            for (let w = weekOf(m.a); w.a <= m.b; w = shift(w, 1)) list.push(w);
+            html = head(`Tháng ${p2(at.m)}/${at.y}`, 'm') + `<div class="plist two">${list.map((w) => btn(w, `${dm(w.a)} – ${dm(w.b)}`)).join('')}</div>`;
+          } else if (kind === 'day') {
+            const m = monthOf(at.y, at.m), pad = (parts(m.a).w + 6) % 7;
+            html = head(`Tháng ${p2(at.m)}/${at.y}`, 'm') + `<div class="plist seven">${['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => `<span class="wd">${d}</span>`).join('')}${'<span></span>'.repeat(pad)}${Array.from({ length: m.b - m.a + 1 }, (_, k) => btn(dayOf(m.a + k), k + 1)).join('')}</div>`;
+          } else html = '<div class="fields-2" style="margin-top: 12px"><div class="field"><span class="label">Từ ngày</span><span class="input locked">dd/mm/yyyy</span></div><div class="field"><span class="label">Đến ngày</span><span class="input locked">dd/mm/yyyy</span></div></div><p class="pnote">Kỳ Tùy chọn tối đa 3 tháng, không so với kỳ trước và không có phần dự kiến. Bản mẫu này không chạy kỳ Tùy chọn.</p>';
+          box.innerHTML = html + '<div class="pfoot"><span>Chọn là số cập nhật ngay</span><button class="btn quiet sm" data-p="today" data-pop-close>Hôm nay</button></div>';
+          $$('.ppop.tl-pop [data-kind]', win).forEach((b) => b.classList.toggle('on', b.dataset.kind === kind));
+        }
+        const setPeriod = (win, p) => { const S = STATE.get(win); if (!inData(p)) return; S.p = p; S.note = ''; S.hi = ''; render(win); };
+
+        /* ---------- The palette of round b, with the little this page needs ---------- */
+        const SCREENS = [['overview', 'Tổng quan', 'overview'], ['appointments', 'Lịch hẹn', 'cal'], ['customers', 'Khách hàng', 'people'], ['forecast', 'Forecast', 'forecast'], ['reports', 'Báo cáo', 'report'], ['team', 'Team & nhân sự', 'team'], ['settings', 'Cài đặt', 'gear']];
+        const palHtml = () => `<div class="pal-g" data-max="4" data-idle="7"><div class="pal-grp">Đi tới</div>${SCREENS.map(([v, t, i]) => `<button class="pal-o" data-find="${esc(t)}" data-jump="${v}">${ic(i)}<span class="t" data-hl>${esc(t)}</span><span class="kind">Màn</span></button>`).join('')}</div>`
+          + `<div class="pal-g" data-max="4" data-idle="3"><div class="pal-grp">Lệnh</div><button class="pal-o" data-find="Xuất Excel Báo cáo xuat excel bao cao" data-run="export">${ic('export')}<span class="t" data-hl>Xuất Excel Báo cáo</span><span class="kind">Lệnh</span></button><button class="pal-o" data-find="In Bản tin in ban tin print" data-run="print">${ic('print')}<span class="t" data-hl>In Bản tin</span><span class="kind">Lệnh</span></button><button class="pal-o" data-find="Che / hiện tên khách hàng che ten an ten" data-run="mask">${ic('eye')}<span class="t" data-hl>Che / hiện tên khách hàng</span><span class="kind">Lệnh</span></button></div>`
+          + `<div class="pal-none" hidden><div class="empty sm"><span class="mark">${ic('search')}</span><b>Không có gì khớp "<span data-q></span>"</b><p>Gõ tên không cần dấu. Ô lệnh đầy đủ đã duyệt ở đợt b.</p></div></div>`;
+
+        /* ---------- Start: every window on the page (the one on the stage and its copies) ---------- */
+        for (const win of $$('.win')) {
+          STATE.set(win, newState(win.parentElement.dataset));
+          const list = $('.pal-list', win);
+          if (list) { list.innerHTML = palHtml(); ui2.filter(list, ''); }
+          render(win);
+          scopeMenu(win);
+          win.addEventListener('ui2:pop', (e) => {
+            const S = STATE.get(win);
+            if (e.detail.pop === 'scope') { const s = scopeOf(S.sc); S.menu = s.type === 'team' ? s.t : s.type === 'rm' ? RMS[s.r].team : null; scopeMenu(win); }
+            if (e.detail.pop === 'period') { S.pick = S.p.kind; S.at = statusOf(S.p) === 'running' ? TODAY : S.p.a; periodBody(win); }
+          });
+          win.addEventListener('ui2:run', (e) => {
+            const run = e.detail.run, S = STATE.get(win), c = ctx(S.sc, S.p);
+            if (run === 'mask') { ui2.mask(win, !win.classList.contains('masked')); fixLight(win); }
+            else if (run === 'export') ui2.job(win, 'Đang xuất Excel Báo cáo', `Đã xuất ${reportFile(c)}`);
+            else if (run === 'print') ui2.toast(win, `Mở hộp in của hệ điều hành: ${pagesOf(c).length} trang A4 dọc <small>· chọn máy in, hoặc "Lưu thành PDF"</small>`);
+            else if (run === 'act' && !$('[data-act-btn]', win).dataset.open) ui2.toast(win, 'Hộp tạo mới đã duyệt ở đợt a và b <small>· không vẽ lại ở đợt e</small>');
+          });
+          fixAct(win);
+        }
+        // What Tổng quan opens (the table of #arrive): where it lands, and the line that says so
+        const ARRIVE = {
+          'result:cancel': { mode: 'ledger', tab: 'result', rows: 'team', hi: 'cancel', note: 'Mở từ Tổng quan, ô Tỷ lệ hủy: bảng Kết quả, cùng kỳ và góc nhìn' },
+          'conv:rf': { mode: 'ledger', tab: 'conv', rows: 'team', hi: 'rf', note: 'Mở từ Tổng quan, ô Chuyển RF: bảng Chuyển đổi, cùng kỳ và góc nhìn' },
+          'cut:': { mode: 'ledger', tab: 'cut', hi: '', period: 'm:2026-10', note: 'Mở từ Tổng quan, câu "Tỷ lệ hủy 5.4%, giảm 3.2 điểm %": danh sách HĐ hủy của Tháng 10/2026' },
+          'result:sales': { mode: 'ledger', tab: 'result', rows: 'team', hi: 'sales', note: 'Mở từ Tổng quan, câu "Sao Mai dẫn đầu doanh số": bảng Kết quả theo team' },
+          'goal:': { mode: 'brief', hi: '', period: 'm:2026-10', note: 'Mở từ Tổng quan, câu "Đã đạt 109% mục tiêu tháng": Bản tin của Tháng 10/2026, dòng KPI tháng' },
+        };
+        document.addEventListener('click', (e) => {
+          // The three scenes of the dock, and the "Thử" buttons of #arrive, set the window of the stage
+          const scene = e.target.closest('.seg[data-set="scene"] button'), arrive = e.target.closest('[data-arrive]');
+          if (scene || arrive) {
+            const win = $('#win'), S = STATE.get(win);
+            if (scene) { const [sc, p, mode] = scene.dataset.v.split('|'); Object.assign(S, { sc, p: parseP(p), mode, tab: 'result', rows: 'team', hi: '', note: '', light: false }); }
+            else { const a = ARRIVE[arrive.dataset.arrive]; Object.assign(S, { sc: 'all', p: parseP(a.period || 'm:2026-11'), light: false, rows: 'team', ...a }); }
+            ui2.go(win, 'reports'); render(win); scopeMenu(win); fixAct(win); dispatchEvent(new Event('resize'));
+            if (arrive) { $('#shell').scrollIntoView({ behavior: 'smooth' }); const goal = $('[data-goal]', win); if (goal) goal.style.boxShadow = 'inset 0 0 0 1.5px var(--accent)'; }
+            return;
+          }
+          // A sheet of an Excel picture: its tabs, and the cell on the formula bar
+          const xl = e.target.closest('.xl');
+          if (xl) {
+            const tab = e.target.closest('.xl-tabs [data-sheet]'), td = e.target.closest('.xl-sheet td[data-ref]');
+            if (tab) { xl.dataset.sheet = tab.dataset.sheet; drawXl(xl); }
+            else if (td) { $$('td.pick', xl).forEach((x) => x.classList.remove('pick')); td.classList.add('pick'); $('[data-xl-ref]', xl).textContent = td.dataset.ref; $('[data-xl-fx]', xl).textContent = td.dataset.fx || td.textContent.trim(); }
+            return;
+          }
+          const win = e.target.closest('.win'), S = win && STATE.get(win);
+          if (!S) return;
+          fixAct(win);
+          fixLight(win);
+          const pick = e.target.closest('.tl-pop [data-sc]');
+          if (pick) {
+            const s = scopeOf(pick.dataset.sc);
+            S.menu = s.type === 'team' ? (S.sc === pick.dataset.sc && S.menu === s.t ? null : s.t) : S.menu;
+            S.sc = pick.dataset.sc; S.note = ''; S.hi = '';
+            render(win); scopeMenu(win);
+            return;
+          }
+          const step = e.target.closest('[data-step]');
+          if (step) return setPeriod(win, shift(S.p, +step.dataset.step));
+          const kind = e.target.closest('.ppop.tl-pop [data-kind]');
+          if (kind) {
+            S.pick = kind.dataset.kind;
+            if (S.pick !== 'custom') { const anchor = statusOf(S.p) === 'running' ? TODAY : S.p.a; S.at = anchor; setPeriod(win, ofKind(S.pick, anchor)); }
+            return periodBody(win);
+          }
+          const nav = e.target.closest('[data-pp-nav]');
+          if (nav) {
+            const dir = nav.dataset.ppNav[0] === '-' ? -1 : 1, t = parts(S.at);
+            const next = nav.dataset.ppNav.endsWith('y') ? day(t.y + dir, t.m, 1) : day(t.y, t.m + dir, 1);
+            if (next >= FROM && next <= TO) S.at = next;
+            return periodBody(win);
+          }
+          const p = e.target.closest('[data-p]');
+          if (p) return setPeriod(win, p.dataset.p === 'today' ? ofKind(S.p.kind, TODAY) : parseP(p.dataset.p));
+          const mode = e.target.closest('.rp-bar [data-mode]');
+          if (mode) { S.mode = mode.dataset.mode; S.note = ''; S.hi = ''; render(win); $('.view.on', win).scrollTop = 0; return; }
+          if (e.target.closest('[data-light]')) { S.light = !S.light; render(win); return; }
+          const tab = e.target.closest('.lg [data-tab]');
+          if (tab) { S.tab = tab.dataset.tab; S.hi = ''; S.note = ''; render(win); return; }
+          const rows = e.target.closest('.lg [data-rows]');
+          if (rows) { S.rows = rows.dataset.rows; render(win); return; }
+          const team = e.target.closest('.lg tr.team[data-team]');
+          if (team) { const t = +team.dataset.team; if (team.classList.contains('open')) S.open.add(t); else S.open.delete(t); }
+        });
+
+        /* ---------- The specimens of the page: the same blocks, outside a window ---------- */
+        const SPEC = {
+          page: (c, d) => { const pages = pagesOf(c), n = Math.min(+d.n || 1, pages.length); return paperHtml(pages[n - 1], n, pages.length); },
+          trendOnly: (c) => `<article class="paper"><div class="p-run"><span><b>Heritas L-CRM</b> · Báo cáo kết quả kinh doanh · ${longName(c.p)}</span><span>${whenOf(c)} · ${esc(scopeName(c.sc))}</span></div>${trendHtml(c)}</article>`,
+          a4: (c) => briefHtml(c, 'light'),
+          says: (c, d) => saysHtml(c, d.only ? d.only.split(',').map(Number) : null),
+          ledger: (c, d) => `<div class="rp">${sumStrip(c)}${ledgerTable(c, newState(d), false)}</div>`,
+          table: (c, d) => ledgerTable(c, newState(d), false),
+          goal: (c) => goalLine(c),
+          goalTable: (c, d) => tableHtml({ first: 'Team', keys: PAGE_KEYS, rows: rowsOf(c, 'flat'), total: totalOf(c), goal: !('nokpi' in d), bars: true }),
+        };
+        for (const el of $$('[data-spec]')) el.innerHTML = SPEC[el.dataset.spec](ctx(el.dataset.sc || 'all', parseP(el.dataset.period || 'm:2026-11')), el.dataset);
+        function drawXl(el) { el.innerHTML = xlHtml(el.dataset.xl, ctx(el.dataset.sc || 'all', parseP(el.dataset.period || 'm:2026-11')), el.dataset.sheet); }
+        $$('[data-xl]').forEach(drawXl);
+        // A whole window scaled to the width of the page
+        const shots = () => $$('.shot').forEach((el) => { if (el.clientWidth) el.style.setProperty('--s', Math.min(1, (el.clientWidth - 44) / (+el.dataset.w || 1440)).toFixed(4)); });
+        shots();
+        addEventListener('resize', shots);
+        // Windows were filled after ui2.js measured them: let it place the sidebar pills and the thumbs again
+        dispatchEvent(new Event('resize'));
+        // For the checks of this round (the numbers of the page against the table of days)
+        window.rpCheck = { ctx, parseP, range, fcPart, cutsOf, pagesOf, sheetsOf, goalOf, scopeOf, ALL, TODAY, weekOf, NOV };
+      })();
+    </script>
+  </body>
+</html>
