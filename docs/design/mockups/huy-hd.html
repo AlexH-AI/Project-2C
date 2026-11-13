@@ -1,0 +1,689 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css mục 18, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
+  Mockup G3 đợt f (T-425 #1250), phần B: nút "Hủy HĐ", hộp hủy, nhãn "Đã hủy {ngày}", bỏ hủy và sửa ngày hủy trong
+  hộp Sửa, số HĐ trên thẻ KH (ý 28; spec §4.2, §4.4; golden chi-so.md mục 4.4; phụ lục "HĐ hủy" của ADR-0007).
+  Trạng thái: Owner duyệt G3 13/11/2026 (9 điểm ở #ask; điểm nào cũng chọn phương án đề xuất). Phần G của đợt f:
+  ngon-ngu-tien-te.html.
+  Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
+  Số viết theo ADR-0018: "60 tr", "1.38 tỷ", "60,000,000 VNĐ", "16.7%"; ngày dd/mm/yyyy; chữ "RM".
+  Số khớp bảng ngày của tong-quan.html / bao-cao.html (đợt c, e): RM Hoàng Văn Tùng (Sao Mai), tháng 11 MTD: 6 HĐ phát
+  hành 270 tr, 1 HĐ hủy 50 tr (KH Trần Văn Hạnh, phát hành 22/10/2026, hủy 09/11/2026), Doanh số 220 tr; Sao Mai 620 tr;
+  Toàn bộ 1.38 tỷ = 1.43 tỷ − 50 tr, Tỷ lệ hủy 3% (1 ÷ 33). HĐ đem hủy: KH Đỗ Quang Vinh, phát hành 05/11/2026, 60 tr.
+  #shell     Cửa sổ app bấm được: hồ sơ KH → khối Hợp đồng; bấm "Hủy HĐ" mở hộp hủy (gõ ngày thử được), bấm "Sửa" của
+             HĐ đã hủy mở hộp Sửa (sửa ngày hủy, Bỏ hủy); màn Khách hàng có ba thẻ KH để thấy số HĐ đổi. Thanh dưới:
+             hệ điều hành, cỡ cửa sổ, bốn cảnh mẫu
+  #cancel    Hộp hủy: ngày hủy, FYP hủy không nhập riêng, báo trước; hủy khác tháng phát hành; tên hai nút (#opt-buttons)
+  #effect    Báo trước ảnh hưởng chỉ số: hai cách (#opt-effect), bảng số trước / sau
+  #row       Dòng HĐ trong hồ sơ KH: nút theo trạng thái, nhãn "Đã hủy {ngày}"; hai cách vẽ dòng đã hủy (#opt-row)
+  #edit      Hộp Sửa của HĐ đã hủy: sửa ngày hủy, bỏ hủy; hai cách bỏ hủy (#opt-undo); ba luật của golden 4.4
+  #count     Thẻ KH và số HĐ: không đếm HĐ hủy; KH mà mọi HĐ đều đã hủy
+  #states    Trạng thái trống và lỗi
+  #mask      Che tên KH; cửa sổ hẹp nhất
+  #ask       9 điểm G3 Owner đã quyết (13/11/2026)
+  Vỏ app, bảng thành phần (đợt a), thẻ KH và hồ sơ KH (đợt b), bảng ngày (đợt c, e): app-shell.html, components.html,
+  search-rm-team.html, tong-quan.html, bao-cao.html. Hộp HĐ đã duyệt 8a–8d: policy-forms.html.
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hủy HĐ — Heritas L-CRM (Project-2C mockup, đợt f)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page: the screens inside the window ---- */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later > b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p b { font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 520px; font-size: 13.5px; }
+      .later.kept { min-height: 0; height: auto; padding: 18px 16px; grid-auto-flow: column; justify-content: start; gap: 12px; text-align: left; }
+      .later.kept .ic { width: 20px; height: 20px; }
+      /* The customer-name button of round a: an eye; once on it says so */
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+      .view-note { margin: 12px 2px 0; font-size: 12.5px; color: var(--text-2); }
+      /* The customer profile: the layout is the approved customer.html; only "Hợp đồng" is drawn in full */
+      .pf { display: flex; flex-direction: column; gap: 14px; align-items: stretch; max-width: 1180px; }
+      .pf > .btn { align-self: flex-start; margin-left: -10px; }
+      .pf-head { display: flex; align-items: center; gap: 14px; }
+      .pf-head h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; }
+      .pf-head .meta { font-size: 13px; color: var(--text-2); }
+      .pf-cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+      .pf-col { display: grid; gap: 14px; }
+      .pol-empty { display: flex; align-items: center; gap: 12px; color: var(--text-2); font-size: 13.5px; }
+      .pol-empty .btn { margin-left: auto; flex: none; }
+      /* Customer cards of round b (the board of the Khách hàng screen), a few of them */
+      .kboard { display: grid; grid-template-columns: repeat(3, minmax(0, 260px)); gap: 12px; }
+      .kcard { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); background: var(--mat-card), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-1); text-align: left; }
+      [data-os='win'] .kcard { border-radius: 4px; }
+      .kcard b { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; white-space: nowrap; }
+      .kcard .chip { color: var(--issued); }
+      .kcard > span { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+      .kcard .why { display: block; margin-top: 3px; font-size: 11.5px; color: var(--text-2); white-space: normal; }
+      /* Dialogs: a real field inside the styled one; a field with a button beside it */
+      .dlg .input input { flex: 1; width: 100%; min-width: 0; border: 0; outline: 0; background: none; font-variant-numeric: tabular-nums; }
+      .with-btn { display: flex; align-items: center; gap: 8px; }
+      .with-btn .input { flex: 1; }
+      .dlg .sub .st { margin-right: 4px; }
+      .dlg .help { margin: 0; }
+      @container (max-width: 1240px) { .pf-cols { grid-template-columns: minmax(0, 1fr); } }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .shot { position: relative; height: calc(var(--h, 900px) * var(--s, 0.8) + 44px); border-radius: 16px; overflow: hidden; background: var(--wall); }
+      .shot > .win { position: absolute; left: 22px; top: 22px; width: var(--w, 1440px); height: var(--h, 900px); transform: scale(var(--s, 0.8)); transform-origin: 0 0; }
+      .state-l { display: block; margin: 0 0 8px; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .stack-v { display: grid; gap: 18px; }
+      .opt-pic.blk { display: block; place-items: normal; padding: 16px; min-height: 0; } /* a block now honours justify-items: without this the picture shrinks to its content */
+      .opt-pic.mid { flex: 1; display: grid; justify-items: center; align-content: center; padding: 22px 16px; }
+      .opt-pic .dlg { box-shadow: var(--mat-pop-edge), var(--shadow-2); }
+      .rules { margin: 0; padding-left: 20px; color: var(--text-2); }
+      .rules li { margin-bottom: 7px; }
+      .rules b { color: var(--text); font-weight: 600; }
+      .law { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .law th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+      .law td { padding: 11px 12px 11px 0; border-top: 1px solid var(--hairline); vertical-align: top; line-height: 1.5; color: var(--text-2); }
+      .law td:first-child { font-weight: 650; color: var(--text); white-space: nowrap; }
+      .law td b { color: var(--text); font-weight: 600; }
+      .law td.n, .law th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .dlg-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; justify-items: center; }
+      .dock [data-size-note] { min-width: 96px; }
+      @media (max-width: 1320px) { .dock [data-size-note] { display: none; } }
+      @media (max-width: 1100px) { .gal, .pgrid, .duo, .dlg-pair { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt f · Hủy HĐ</b>
+      <span class="state ok">Đã duyệt G3 · 13/11/2026</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#cancel">Hộp hủy</a><a href="#effect">Báo trước</a><a href="#row">Dòng HĐ</a><a href="#edit">Sửa · bỏ hủy</a><a href="#count">Thẻ KH</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a><a href="ngon-ngu-tien-te.html">Phần G →</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i" data-go="overview" data-sub="Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ" data-tools="find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</button>
+              <button class="nav-i" data-go="appointments" data-sub="Toàn bộ" data-tools="find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</button>
+              <button class="nav-i on" data-go="customers" data-sub="884 KH đang mở · 65 đã đóng · Toàn bộ" data-tools="find" data-act="Khách hàng"><svg class="ic"><use href="#i-people" /></svg>Khách hàng</button>
+              <button class="nav-i" data-go="forecast" data-sub="Hôm nay Thứ Ba 10/11/2026 · Toàn bộ" data-tools="find" data-act="Xuất Excel"><svg class="ic"><use href="#i-forecast" /></svg>Forecast</button>
+              <button class="nav-i" data-go="reports" data-sub="Tháng 11/2026 · Toàn bộ" data-tools="find" data-act="Xuất Excel"><svg class="ic"><use href="#i-report" /></svg>Báo cáo</button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team" data-sub="3 team · 3 TL · 27 RM · 3 người hỗ trợ" data-tools="find" data-act="Team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button>
+              <button class="nav-i" data-go="settings" data-sub="Dữ liệu · AI · Thùng rác" data-tools="find"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i>Đã lưu 13:20</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2>Khách hàng</h2><span></span></div>
+              <button class="now-pill" aria-haspopup="dialog" title="Lưu ý: lịch hẹn kế tiếp, việc hôm nay, việc chạy nền"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Ô lệnh (⌘K)" title="Ô lệnh · ⌘K"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn><svg class="ic"><use href="#i-plus" /></svg><span>Khách hàng</span></button>
+              </div>
+            </header>
+
+            <!-- "Lưu ý" (đợt b) -->
+            <div class="now-pop" role="dialog" aria-label="Lưu ý">
+              <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
+              <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
+              <div class="ag next"><span class="tm num">14:00</span><b><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></b><span class="st s-info">còn 25 phút</span><small>Case size dự kiến 30 tr · RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">15:00</span><b><span class="kh" data-kh="L. T. H.">Lê Thị Hồng</span></b><span class="st s-info">Dự kiến</span><small>RM Lê Minh Khang · Hừng Đông</small></div>
+              <div class="ag"><span class="tm num">16:30</span><b><span class="kh" data-kh="L. Q. H.">Lê Quốc Hùng</span></b><span class="st s-info">Dự kiến</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <hr />
+              <h4>Việc chạy nền</h4>
+              <div data-jobs><p class="help" style="margin: 0">Không có việc nào đang chạy. Xuất Excel, sao lưu, phân tích AI hiện tiến độ ở đây.</p></div>
+            </div>
+
+            <div class="views">
+              <div class="view" data-view="overview"><div class="later"><svg class="ic"><use href="#i-overview" /></svg><b>Tổng quan</b><p>Đã duyệt ở đợt c: xem <a class="c-accent" href="tong-quan.html">tong-quan.html</a>. Sau khi hủy HĐ ở trang này, ô Doanh số, Tổng số HĐ và Tỷ lệ hủy của Tổng quan tính lại ngay (bảng số ở mục <a class="c-accent" href="#effect">Báo trước</a>).</p></div></div>
+              <div class="view" data-view="appointments"><div class="later"><svg class="ic"><use href="#i-cal" /></svg><b>Lịch hẹn</b><p>Giữ bố cục đã duyệt, chỉ thay vỏ: xem <a class="c-accent" href="app-shell.html#previews">app-shell.html · Xem trước</a>.</p></div></div>
+
+              <!-- ===== Khách hàng: ba thẻ KH của đợt b, để thấy số HĐ đổi theo ===== -->
+              <div class="view" data-view="customers"><div data-board></div></div>
+
+              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Đã duyệt ở đợt d: xem <a class="c-accent" href="forecast.html">forecast.html</a>. Hủy HĐ không đổi Forecast: Forecast chỉ cộng case size của lịch hẹn sắp tới.</p></div></div>
+              <div class="view" data-view="reports"><div class="later"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Đã duyệt ở đợt e: xem <a class="c-accent" href="bao-cao.html">bao-cao.html</a>. HĐ vừa hủy vào danh sách "HĐ hủy trong kỳ" của kỳ chứa ngày hủy.</p></div></div>
+              <div class="view" data-view="team"><div class="later"><svg class="ic"><use href="#i-team" /></svg><b>Team &amp; nhân sự</b><p>Đã duyệt ở đợt b: xem <a class="c-accent" href="search-rm-team.html#team">search-rm-team.html · Team</a>.</p></div></div>
+              <div class="view" data-view="settings"><div class="later"><svg class="ic"><use href="#i-gear" /></svg><b>Cài đặt</b><p>Mục Ngôn ngữ, Tiền tệ, Thiết lập lại từ đầu: <a class="c-accent" href="ngon-ngu-tien-te.html">ngon-ngu-tien-te.html</a> (phần G của đợt f).</p></div></div>
+
+              <!-- ===== Hồ sơ KH: giữ bố cục customer.html; khối Hợp đồng vẽ đủ ===== -->
+              <div class="view" data-view="profile" data-nav="customers" data-title="Hồ sơ khách hàng" data-sub="RM Hoàng Văn Tùng · Sao Mai" data-tools="find" data-act="Lịch hẹn"><div class="pf" data-profile></div></div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm: hộp hủy / hộp Sửa (một hộp, script đổi nội dung), ô lệnh, thông báo nổi ===== -->
+          <div class="scrim"></div>
+          <div class="dlg" role="dialog" aria-modal="true" aria-label="Hủy HĐ" data-dlg></div>
+          <div class="pal" role="dialog" aria-modal="true" aria-label="Ô lệnh">
+            <div class="pal-field"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm KH, RM, màn hay lệnh…" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>
+            <div class="pal-list" role="listbox">
+              <div class="pal-g" data-max="7" data-idle="7"><div class="pal-grp">Đi tới</div>
+                <button class="pal-o" data-find="Tổng quan" data-jump="overview"><svg class="ic"><use href="#i-overview" /></svg><span class="t" data-hl>Tổng quan</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Lịch hẹn" data-jump="appointments"><svg class="ic"><use href="#i-cal" /></svg><span class="t" data-hl>Lịch hẹn</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Khách hàng" data-jump="customers"><svg class="ic"><use href="#i-people" /></svg><span class="t" data-hl>Khách hàng</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Forecast" data-jump="forecast"><svg class="ic"><use href="#i-forecast" /></svg><span class="t" data-hl>Forecast</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Báo cáo" data-jump="reports"><svg class="ic"><use href="#i-report" /></svg><span class="t" data-hl>Báo cáo</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Team &amp; nhân sự" data-jump="team"><svg class="ic"><use href="#i-team" /></svg><span class="t" data-hl>Team &amp; nhân sự</span><span class="kind">Màn</span></button>
+                <button class="pal-o" data-find="Cài đặt" data-jump="settings"><svg class="ic"><use href="#i-gear" /></svg><span class="t" data-hl>Cài đặt</span><span class="kind">Màn</span></button>
+              </div>
+              <div class="pal-none" hidden>Không có gì khớp "<span data-q></span>". Ô lệnh đầy đủ (KH, RM, lệnh): đợt b.</div>
+            </div>
+            <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd>chọn</span><span><kbd>Enter</kbd>mở</span><span><kbd>Esc</kbd>đóng</span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd>mở ở mọi màn</span></div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-t"><b>Heritas L-CRM</b> · đợt f</span>
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="num" data-size-note></span>
+        <span class="seg" data-set="scene" aria-label="Cảnh mẫu"><button class="on" data-v="before">Hồ sơ KH</button><button data-v="cancel">Hộp hủy</button><button data-v="after">Đã hủy</button><button data-v="edit">Hộp Sửa · bỏ hủy</button></span>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Hộp hủy ================= -->
+      <section class="sec" id="cancel">
+        <span class="kicker">Ý 28 · phần B · §4.2, §4.4</span>
+        <h2>Hủy một HĐ: một ngày, và biết trước số nào đổi.</h2>
+        <p class="lead">Anh đã chốt (10/11, G2 13/11): chỉ HĐ <b>Đã phát hành</b> mới hủy được; HĐ hủy tính vào kỳ chứa <b>ngày hủy</b>; <b>FYP hủy bằng FYP phát hành</b>, không nhập riêng. Vì vậy hộp hủy chỉ hỏi đúng một điều là ngày hủy, rồi nói trước chỉ số nào sẽ đổi. Thử ở cửa sổ đầu trang: bấm <b>Hủy HĐ</b> trên dòng HĐ đã phát hành của KH Đỗ Quang Vinh, gõ một ngày khác (vd. <code>4/11</code>, <code>12/11</code>, <code>5/11</code>), rồi bấm nút đỏ.</p>
+        <div class="duo" data-pane="scrimmed center">
+          <div data-spec="cancel" data-kh="vinh"></div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Ngày hủy</b> gõ như mọi ô ngày của app (<code>dd/mm</code> hoặc <code>dd/mm/yyyy</code>), có dòng đọc lại bên dưới. Luật: không trước ngày phát hành, không sau hôm nay (golden mục 4.4 điểm 2, 3); hủy đúng ngày phát hành được (G39). Mở hộp là ô đã có sẵn <b>hôm nay</b> (điểm 2 ở #ask).</li>
+          <li><b>FYP hủy</b> là ô khóa (viền đứt như mọi ô không sửa được): nhìn thấy số sẽ bị trừ, nhưng không gõ được.</li>
+          <li><b>Hủy là sửa lại được</b> (bỏ hủy trong hộp Sửa), nên hộp không bắt gõ chữ xác nhận như Nạp lại hay Nhập backup. Nút chính màu đỏ vì nó làm doanh số giảm.</li>
+          <li>Lưu xong: hộp đóng, dòng HĐ đổi nhãn, thông báo nổi nhắc lại số vừa đổi và chỗ bỏ hủy. Tổng quan, Báo cáo, trang RM tính lại ngay.</li>
+        </ul>
+
+        <h3 class="sub-h">Hủy ở tháng khác tháng phát hành</h3>
+        <p class="sub-p">HĐ của KH Trần Văn Hạnh phát hành 22/10/2026, hủy 09/11/2026 (đúng HĐ hủy duy nhất của tháng 11 ở Tổng quan và Báo cáo). Hộp nói rõ số của tháng 10 không đổi (§4.1: "Số của kỳ đã qua không đổi khi có HĐ hủy về sau").</p>
+        <div class="duo" data-pane="scrimmed center">
+          <div data-spec="cancel" data-kh="hanh" data-date="9/11" data-undo-first="1"></div>
+        </div>
+
+        <h3 class="sub-h" id="opt-buttons">Tên hai nút của hộp</h3>
+        <p class="sub-p">Các hộp khác của app có cặp "Hủy" (đóng hộp, không làm gì) và nút chính. Ở hộp này cặp đó thành "Hủy" cạnh "Hủy HĐ", dễ bấm nhầm. Em đề xuất nút đóng tên là <b>Đóng</b>.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat mid" data-os="mac"><div data-spec="cancel" data-kh="vinh" data-btn="a" data-short="1"></div></div><div class="opt-t"><b>A · "Đóng" và "Hủy HĐ" <span class="tag rec">đề xuất</span></b><p>Nút phụ "Đóng" không trùng chữ với việc đang làm. Nút chính "Hủy HĐ" màu đỏ, đúng tên nút đã bấm ở hồ sơ KH.</p></div></div>
+          <div class="opt"><div class="opt-pic flat mid" data-os="mac"><div data-spec="cancel" data-kh="vinh" data-btn="b" data-short="1"></div></div><div class="opt-t"><b>B · "Không hủy" và "Hủy HĐ"</b><p>Hai nút là hai câu trả lời đối nhau. Dài hơn, và "Không hủy" khác kiểu tên nút đóng của mọi hộp khác.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Báo trước ================= -->
+      <section class="sec" id="effect">
+        <span class="kicker">§4.4 · "báo trước ảnh hưởng chỉ số"</span>
+        <h2>Báo trước: nói bằng câu, hay bằng bảng số trước và sau.</h2>
+        <p class="lead">Spec ghi ví dụ "Doanh số tháng 11 của RM X giảm 200 tr". Hộp Sửa HĐ đã duyệt (8d) cũng có khối <b>Ảnh hưởng chỉ số</b> với đúng khuôn câu đó, mỗi chỉ số theo tháng một dòng. Hai cách dưới đây khác nhau ở mức chi tiết; số ở cả hai lấy từ bảng ngày của Tổng quan và Báo cáo.</p>
+        <div class="gal" id="opt-effect">
+          <div class="opt rec"><div class="opt-pic flat mid" data-os="mac"><div data-spec="cancel" data-kh="vinh" data-fx="a" data-short="1"></div></div><div class="opt-t"><b>A · Hai câu, theo khuôn của 8d <span class="tag rec">đề xuất</span></b><p>Một câu cho tiền ("Doanh số tháng 11/2026 của RM … giảm 60 tr"), một câu cho số HĐ ("tháng 11/2026: +1 HĐ hủy"), và một dòng nhỏ nói điều không đổi. Cùng khuôn với hộp Sửa HĐ, ngắn, đọc một lần là hiểu.</p></div></div>
+          <div class="opt"><div class="opt-pic flat mid" data-os="mac"><div data-spec="cancel" data-kh="vinh" data-fx="b" data-short="1"></div></div><div class="opt-t"><b>B · Bảng trước → sau</b><p>Ba dòng RM, team, Toàn bộ; ba cột Doanh số, Tổng số HĐ, Tỷ lệ hủy của tháng chứa ngày hủy. Thấy ngay Tỷ lệ hủy mới, nhưng hộp cao hơn và app phải tính chín số trước khi lưu.</p></div></div>
+        </div>
+        <h3 class="sub-h">Số trước và sau khi hủy HĐ 60 tr, ngày hủy 10/11/2026</h3>
+        <div class="pcard"><table class="law">
+          <thead><tr><th>Tháng 11/2026 (01/11 – 10/11)</th><th class="n">HĐ phát hành</th><th class="n">HĐ hủy</th><th class="n">Tổng số HĐ</th><th class="n">FYP phát hành</th><th class="n">FYP hủy</th><th class="n">Doanh số</th><th class="n">Tỷ lệ hủy</th></tr></thead>
+          <tbody data-spec="table"></tbody>
+        </table></div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Dòng "trước" khớp đợt c, e: Toàn bộ <b>1.38 tỷ</b> = 1.43 tỷ − 50 tr, 33 phát hành, 1 hủy, Tỷ lệ hủy 3%; Sao Mai 620 tr; RM Hoàng Văn Tùng 220 tr.</li>
+          <li>HĐ phát hành và FYP phát hành <b>không đổi</b> khi hủy (HĐ vẫn là HĐ đã phát hành ngày 05/11). Tỷ lệ chốt cũng không đổi: nó không trừ HĐ hủy (§4.3).</li>
+          <li>Điểm nhấn của Tổng quan đọc lại số mới: câu về Tỷ lệ hủy (luật 1) so 6.1% với kỳ trước.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Dòng HĐ ================= -->
+      <section class="sec" id="row">
+        <span class="kicker">Hồ sơ KH → Hợp đồng</span>
+        <h2>Mỗi HĐ một dòng, nút theo trạng thái.</h2>
+        <p class="lead">Khối Hợp đồng giữ cách bày đang có trong app: mỗi HĐ một dòng (nhãn trạng thái, ngày nộp và FYP nộp, ngày phát hành và FYP phát hành, RM), HĐ nộp gần nhất ở trên. Thêm đúng hai thứ: nút <b>Hủy HĐ</b> trên HĐ Đã phát hành, và nhãn <b>Đã hủy {ngày}</b>. HĐ Đã nộp không có nút Hủy HĐ (chưa phát hành thì chưa có gì để hủy; muốn bỏ thì Xóa HĐ trong hộp Sửa, như hiện nay).</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Trước khi hủy: 2 HĐ, một Đã nộp, một Đã phát hành</span><div data-spec="card" data-kh="vinh"></div></div>
+            <div><span class="state-l">Sau khi hủy HĐ thứ hai ngày 10/11/2026: đầu khối đếm "1 HĐ · 1 đã hủy"; dòng đã hủy chỉ còn nút Sửa</span><div data-spec="card" data-kh="vinh" data-state="after"></div></div>
+          </div>
+        </div>
+        <table class="law" style="margin-top: 22px">
+          <thead><tr><th>Trạng thái</th><th>Nhãn</th><th>Nút trên dòng</th><th>Trong hộp Sửa</th></tr></thead>
+          <tbody>
+            <tr><td>Đã nộp</td><td><span class="st s-sub">Đã nộp</span></td><td>Phát hành · Sửa</td><td>Như 8d: ngày nộp, FYP nộp; Xóa HĐ…</td></tr>
+            <tr><td>Đã phát hành</td><td><span class="st s-iss">Đã phát hành</span></td><td><b>Hủy HĐ</b> · Sửa</td><td>Như 8d: thêm ngày phát hành, FYP phát hành; Xóa HĐ…</td></tr>
+            <tr><td>Đã hủy</td><td><span class="st s-bad">Đã hủy 10/11/2026</span></td><td>Sửa</td><td>Thêm ô <b>Ngày hủy</b> và nút <b>Bỏ hủy</b> (mục <a href="#edit">Sửa · bỏ hủy</a>)</td></tr>
+          </tbody>
+        </table>
+        <h3 class="sub-h" id="opt-row">Dòng của HĐ đã hủy</h3>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk" data-os="mac"><div data-spec="card" data-kh="vinh" data-state="after" data-row="a"></div></div><div class="opt-t"><b>A · Nhãn đỏ, dòng lùi lại <span class="tag rec">đề xuất</span></b><p>Nhãn "Đã hủy 10/11/2026" màu đỏ (cùng màu với số hủy ở Tổng quan); chữ của dòng nhạt đi một bậc, FYP phát hành gạch ngang vì số đó đã bị trừ. Nhìn lướt là thấy HĐ nào còn tính.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk" data-os="mac"><div data-spec="card" data-kh="vinh" data-state="after" data-row="b"></div></div><div class="opt-t"><b>B · Nhãn xám, dòng như thường</b><p>Nhãn "Đã hủy 10/11/2026" màu xám, chữ và số giữ nguyên. Êm hơn, nhưng dòng đã hủy dễ lẫn với dòng còn hiệu lực.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Hộp Sửa ================= -->
+      <section class="sec" id="edit">
+        <span class="kicker">§4.2 · golden mục 4.4 điểm 4, 5</span>
+        <h2>Bỏ hủy và sửa ngày hủy: trong hộp Sửa.</h2>
+        <p class="lead">Anh đã chốt: bỏ hủy và sửa ngày hủy nằm trong hộp Sửa của HĐ; <b>bỏ hủy = xóa ngày hủy</b>, HĐ trở lại Đã phát hành, app không giữ dấu vết lần hủy. Hộp Sửa đã duyệt (8d) giữ nguyên bốn ô; HĐ đã hủy có thêm một hàng <b>Ngày hủy</b>. Thử ở cửa sổ đầu trang: cảnh <b>Hộp Sửa · bỏ hủy</b> trên thanh dưới.</p>
+        <div class="duo stack" data-pane="scrimmed">
+          <div class="dlg-pair">
+            <div><span class="state-l">Sửa ngày hủy sang tháng khác: mỗi tháng một câu, rồi một dòng số HĐ (khuôn "dời tháng" của 8d)</span><div data-spec="edit" data-kh="hanh" data-date="30/10"></div></div>
+            <div><span class="state-l">Đã bấm Bỏ hủy: ô ngày trống, khối báo trước nói số tăng lại; chỉ có hiệu lực khi bấm Lưu</span><div data-spec="edit" data-kh="hanh" data-un="1"></div></div>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-undo">Bỏ hủy bằng cách nào</h3>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat mid" data-os="mac"><div data-spec="edit" data-kh="hanh" data-short="1"></div></div><div class="opt-t"><b>A · Nút "Bỏ hủy" cạnh ô Ngày hủy, có hiệu lực khi Lưu <span class="tag rec">đề xuất</span></b><p>Bấm là ô ngày trống đi và khối báo trước hiện số tăng lại; đổi ý thì bấm "Hoàn lại". Chỉ khi bấm Lưu mới ghi, như mọi thay đổi khác của hộp Sửa.</p></div></div>
+          <div class="opt"><div class="opt-pic flat mid" data-os="mac"><div data-spec="edit" data-kh="hanh" data-undo="b" data-short="1"></div><div data-spec="confirm" data-kh="hanh" style="margin-top: 14px"></div></div><div class="opt-t"><b>B · Nút "Bỏ hủy…" ở chân hộp, làm ngay sau một hộp hỏi lại</b><p>Nút đứng cạnh "Xóa HĐ…"; bấm thì hiện hộp nhỏ hỏi lại, đồng ý là bỏ hủy ngay và đóng hộp Sửa. Thêm một hộp, và các ô khác đang sửa dở sẽ không được lưu.</p></div></div>
+        </div>
+        <h3 class="sub-h">Ba luật của hộp Sửa khi HĐ đã hủy (golden mục 4.4 điểm 5)</h3>
+        <div class="duo stack" data-pane="scrimmed">
+          <div class="dlg-pair">
+            <div><span class="state-l">Xóa ngày phát hành, hoặc dời ngày phát hành ra sau ngày hủy: bị từ chối, nói cách làm</span><div data-spec="edit" data-kh="hanh" data-fail="issued"></div></div>
+            <div><span class="state-l">Sửa FYP phát hành: FYP hủy đổi theo (cùng một số), nên cả tháng phát hành lẫn tháng hủy đều đổi</span><div data-spec="edit" data-kh="hanh" data-fyp="45"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Thẻ KH ================= -->
+      <section class="sec" id="count">
+        <span class="kicker">§4.2 · golden mục 4.4 điểm 10</span>
+        <h2>Số HĐ của KH không đếm HĐ đã hủy.</h2>
+        <p class="lead">Nhãn "Đã có HĐ" và số HĐ đếm HĐ chưa xóa, chưa hủy, gồm cả HĐ mới nộp. KH mà mọi HĐ đều đã hủy thì mất nhãn, và không còn khớp ô lọc "Đã có HĐ" của màn Khách hàng. Hủy <b>không đổi nhóm</b> của KH. Thẻ KH là thẻ đã duyệt ở đợt b; sau khi hủy ở cửa sổ đầu trang, bấm nút quay lại để thấy thẻ đổi.</p>
+        <div class="duo">
+          <div class="stack-v">
+            <div><span class="state-l">Trước khi hủy</span><div data-spec="board" data-kh="vinh"></div></div>
+            <div><span class="state-l">Sau khi hủy HĐ của KH Đỗ Quang Vinh</span><div data-spec="board" data-kh="vinh" data-state="after"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Đỗ Quang Vinh:</b> 2 HĐ → 1 HĐ (còn HĐ Đã nộp 06/11/2026). <b>Trần Văn Hạnh:</b> HĐ duy nhất đã hủy 09/11/2026 nên không có nhãn; KH vẫn ở nhóm N1.</li>
+          <li>Cùng luật ở mọi chỗ ghi số HĐ của KH: cột "Số HĐ" ở danh sách KH của trang RM (đợt b), dòng đầu khối Hợp đồng ("1 HĐ · 1 đã hủy"), ô lọc "Đã có HĐ".</li>
+          <li>Số "HĐ phát hành" của các kỳ không dùng luật này: HĐ đã hủy vẫn là một HĐ phát hành của kỳ nó phát hành (§4.3).</li>
+        </ul>
+      </section>
+
+      <!-- ================= Trống và lỗi ================= -->
+      <section class="sec" id="states">
+        <span class="kicker">Trạng thái trống và lỗi</span>
+        <h2>Trống và lỗi, theo khuôn của bảng thành phần.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Có, vẽ kèm"</b>; không vẽ trạng thái "đang tải". Câu lỗi của ô ngày dùng lại câu đang có trong app; chỉ câu "trước ngày phát hành" là mới (cùng khuôn với câu "trước ngày nộp" của hộp Phát hành).</p>
+        <div class="duo stack" data-pane="scrimmed">
+          <div class="dlg-pair">
+            <div><span class="state-l">Ngày hủy trước ngày phát hành</span><div data-spec="cancel" data-kh="vinh" data-date="4/11"></div></div>
+            <div><span class="state-l">Ngày hủy sau hôm nay</span><div data-spec="cancel" data-kh="vinh" data-date="12/11"></div></div>
+            <div><span class="state-l">Không phải một ngày</span><div data-spec="cancel" data-kh="vinh" data-date="31/2"></div></div>
+            <div><span class="state-l">Bấm Hủy HĐ nhưng không ghi được: hộp ở lại, giữ ngày vừa gõ</span><div data-spec="cancel" data-kh="vinh" data-fail="save"></div></div>
+          </div>
+        </div>
+        <div class="duo stack" style="margin-top: 20px">
+          <div class="stack-v">
+            <div><span class="state-l">Trống: KH chưa có HĐ (câu đang có trong app, giữ nguyên)</span><div data-spec="card" data-kh="none"></div></div>
+            <div><span class="state-l">KH mà mọi HĐ đều đã hủy: không phải trạng thái trống, dòng HĐ đã hủy vẫn ở đó; đầu khối ghi "0 HĐ · 1 đã hủy"</span><div data-spec="card" data-kh="hanh"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>Ô ngày sai thì nút "Hủy HĐ" mờ, khối báo trước ẩn: chưa có ngày hợp lệ thì chưa nói được số nào đổi.</li>
+          <li>Lỗi ghi là thông báo trong hộp (khuôn "Lưu ý ở lại trong hộp" của bảng thành phần), không phải thông báo nổi: người dùng còn việc phải làm trong hộp.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Che tên KH, cửa sổ hẹp ================= -->
+      <section class="sec" id="mask">
+        <span class="kicker">Ý 36 · đã duyệt ở đợt a</span>
+        <h2>Che tên KH, và cửa sổ hẹp nhất.</h2>
+        <p class="lead">Tên KH ở đầu hồ sơ, ở dòng phụ của hộp hủy và hộp Sửa, trên thẻ KH đều đánh dấu <code>.kh</code>; tên RM và team không che. Hình trái: cửa sổ Windows 11 ở cỡ hẹp nhất 1100 × 700, hộp hủy đang mở, đang che tên. Hình phải: macOS sau khi hủy.</p>
+        <div class="pgrid">
+          <div class="shot" data-os="win" data-clone="#win" data-scene="cancel" data-dialog data-masked data-w="1100" style="--w: 1100px; --h: 700px"></div>
+          <div class="shot" data-os="mac" data-clone="#win" data-scene="after" data-w="1100" style="--w: 1100px; --h: 700px"></div>
+        </div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Anh đã quyết · G3 · 13/11/2026 · phần B</span>
+        <h2>Chín điểm của hộp hủy HĐ.</h2>
+        <p class="lead">Anh đã trả lời cả chín điểm ngày 13/11/2026 (em hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; điểm nào anh cũng chọn phương án đề xuất); câu trả lời ghi dưới từng điểm, và ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt f". Bốn điểm có hình hai phương án. Không hỏi lại điều anh đã chốt: chỉ HĐ đã phát hành mới hủy được, HĐ hủy tính vào kỳ của ngày hủy, FYP hủy bằng FYP phát hành, bỏ hủy = xóa ngày hủy và không giữ dấu vết, bỏ hủy và sửa ngày hủy nằm trong hộp Sửa, số HĐ của KH không đếm HĐ hủy (10/11; G2 13/11). Mười bốn điểm của phần G: <a href="ngon-ngu-tien-te.html#ask">ngon-ngu-tien-te.html</a>. Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <ol class="asks">
+          <li><b>Hộp hủy như mục "Hộp hủy"?</b>Một ô Ngày hủy có dòng đọc lại; FYP hủy là ô khóa; khối báo trước; không bắt gõ chữ xác nhận vì bỏ hủy được; lưu xong có thông báo nổi nhắc chỗ bỏ hủy.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: bỏ ô FYP hủy).</em></li>
+          <li><b>Ngày hủy mở sẵn giá trị gì?</b><em>Anh trả lời 13/11: <b>"A · Hôm nay"</b> (phương án đề xuất; phương án bỏ: để trống, bắt buộc gõ).</em></li>
+          <li><b>Báo trước ảnh hưởng chỉ số nói gì?</b>Hình: <a href="#opt-effect">hai cách báo trước</a>.<em>Anh trả lời 13/11: <b>"A · Hai câu như 8d"</b> (phương án đề xuất; phương án bỏ: bảng trước → sau cho RM, team, Toàn bộ).</em></li>
+          <li><b>Tên hai nút của hộp hủy?</b>Hình: <a href="#opt-buttons">tên hai nút</a>.<em>Anh trả lời 13/11: <b>"A · Đóng + Hủy HĐ"</b> (phương án đề xuất; phương án bỏ: "Không hủy" và "Hủy HĐ").</em></li>
+          <li><b>Dòng của HĐ đã hủy trong hồ sơ KH?</b>Hình: <a href="#opt-row">hai cách vẽ dòng</a>. Đầu khối ghi "1 HĐ · 1 đã hủy".<em>Anh trả lời 13/11: <b>"A · Nhãn đỏ, dòng lùi"</b> (phương án đề xuất; phương án bỏ: nhãn xám, dòng như thường).</em></li>
+          <li><b>Bỏ hủy bằng cách nào?</b>Hình: <a href="#opt-undo">hai cách bỏ hủy</a>.<em>Anh trả lời 13/11: <b>"A · Nút cạnh ô ngày"</b> (phương án đề xuất; phương án bỏ: nút "Bỏ hủy…" ở chân hộp, làm ngay sau một hộp hỏi lại).</em></li>
+          <li><b>Hộp Sửa của HĐ đã hủy như mục "Sửa · bỏ hủy"?</b>Thêm hàng Ngày hủy; sửa ngày hủy sang tháng khác thì mỗi tháng một câu và một dòng số HĐ; ba luật của golden mục 4.4 (không xóa ngày phát hành, không dời ngày phát hành ra sau ngày hủy, FYP hủy đổi theo FYP phát hành).<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: ô Ngày hủy chỉ để xem).</em></li>
+          <li><b>Thẻ KH và số HĐ như mục "Thẻ KH"?</b>Nhãn số HĐ không đếm HĐ hủy; KH mà mọi HĐ đều đã hủy không có nhãn và không khớp ô lọc "Đã có HĐ".<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án đề xuất; phương án bỏ: nhãn xám "HĐ đã hủy" cho KH mà mọi HĐ đều đã hủy).</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>Ba lỗi của ô ngày; lỗi ghi ở lại trong hộp; KH chưa có HĐ; KH mà mọi HĐ đều đã hủy.<em>Anh trả lời 13/11: <b>"Duyệt"</b>.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt f · T-425 #1250 · Owner duyệt G3 13/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+    <script>
+      (() => {
+        const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const ic = (n) => `<svg class="ic"><use href="#i-${n}" /></svg>`;
+        const p2 = (n) => String(n).padStart(2, '0');
+
+        /* ---------- Days and numbers (ADR-0018: "," groups thousands, "." is the decimal mark) ---------- */
+        const day = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / 864e5);
+        const parts = (n) => { const t = new Date(n * 864e5); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate(), w: t.getUTCDay() }; };
+        const WD = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const dmy = (n) => { const p = parts(n); return `${p2(p.d)}/${p2(p.m)}/${p.y}`; };
+        const long = (n) => `${WD[parts(n).w]} ${dmy(n)}`;
+        const mon = (n) => { const p = parts(n); return `${p2(p.m)}/${p.y}`; };
+        const sameMonth = (a, b) => mon(a) === mon(b);
+        const grp = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const trim = (v, d = 2) => String(+v.toFixed(d));
+        const money = (tr) => (Math.abs(tr) >= 1000 ? `${trim(tr / 1000)} tỷ` : `${trim(tr)} tr`); // amounts are in million đồng
+        const full = (tr) => grp(Math.round(tr * 1e6));
+        const pct = (a, b) => (b ? `${trim((a / b) * 100, 1)}%` : '—');
+        const TODAY = day(2026, 11, 10);
+
+        /* ---------- Data: the same RM, team and month as the table of days of rounds c and e ---------- */
+        const RM = 'Hoàng Văn Tùng', TEAM = 'Sao Mai';
+        // Tháng 11/2026, 01/11 – 10/11: [HĐ phát hành, HĐ hủy, FYP phát hành, FYP hủy]. The one cancelled policy
+        // of the month is Trần Văn Hạnh's (issued 22/10/2026, cancelled 09/11/2026, 50 tr).
+        const NOV = { rm: [6, 1, 270, 50], team: [15, 1, 670, 50], all: [33, 1, 1430, 50] };
+        const WHO = { rm: `RM ${RM}`, team: `Team ${TEAM}`, all: 'Toàn bộ' };
+        const KHS = {
+          vinh: { name: 'Đỗ Quang Vinh', short: 'Đ. Q. V.', code: 'K-2M8D', st: 'n1', born: 'Nam · 1976', cs: 50, next: 'Thứ Tư 11/11 09:00', pols: [
+            { id: 'a', sub: day(2026, 11, 6), sfyp: 40, iss: null, ifyp: null, can: null },
+            { id: 'b', sub: day(2026, 10, 29), sfyp: 60, iss: day(2026, 11, 5), ifyp: 60, can: null },
+          ] },
+          hanh: { name: 'Trần Văn Hạnh', short: 'T. V. H.', code: 'K-5T9V', st: 'n1', born: 'Nam · 1982', cs: null, next: '', pols: [
+            { id: 'c', sub: day(2026, 10, 15), sfyp: 50, iss: day(2026, 10, 22), ifyp: 50, can: day(2026, 11, 9) },
+          ] },
+          none: { name: 'Trần Minh Huệ', short: 'T. M. H.', code: 'K-7B3Q', st: 'n1', born: 'Nữ · 1985', cs: 30, next: 'hôm nay 14:00', pols: [] },
+        };
+        const kh = (k) => `<span class="kh" data-kh="${k.short}">${esc(k.name)}</span>`;
+        const stage = (st) => `<span class="st dot ${st}">${st.toUpperCase()}</span>`;
+        const TMARK = `<span class="tmark" style="--c: var(--accent)">${ic('star')}</span>`;
+
+        /* ---------- State of one window or one specimen ---------- */
+        // d: the data attributes of what holds it (kh, state, row, fx, btn, undo, …)
+        function newState(d = {}) {
+          const key = d.kh || 'vinh', S = { key, k: KHS[key], pols: KHS[key].pols.map((p) => ({ ...p })), row: d.row || 'a', fx: d.fx || 'a', btn: d.btn || 'a', undo: d.undo || 'a', dlg: null };
+          if (d.state === 'after') S.pols.find((p) => p.id === 'b').can = TODAY;
+          return S;
+        }
+        const statusOf = (p) => (p.can !== null ? 'can' : p.iss !== null ? 'iss' : 'sub');
+        const alive = (S) => S.pols.filter((p) => p.can === null).length;
+        const badge = (p, S) => ({ sub: '<span class="st s-sub">Đã nộp</span>', iss: '<span class="st s-iss">Đã phát hành</span>', can: `<span class="st ${S.row === 'b' ? 's-miss' : 's-bad'}">Đã hủy ${dmy(p.can)}</span>` })[statusOf(p)];
+
+        /* ---------- Hồ sơ KH → Hợp đồng ---------- */
+        function cardHtml(S) {
+          const n = alive(S), gone = S.pols.length - n;
+          const meta = [`${n} HĐ`, gone ? `${gone} đã hủy` : '', S.k.cs ? `case size dự kiến ${money(S.k.cs)}` : ''].filter(Boolean).join(' · ');
+          const row = (p) => {
+            const st = statusOf(p);
+            return `<div class="pol${st === 'can' && S.row !== 'b' ? ' off' : ''}" role="listitem"><div class="pol-main">${badge(p, S)}<span>Nộp ${dmy(p.sub)} · ${money(p.sfyp)}</span>${p.iss !== null ? `<span>Phát hành ${dmy(p.iss)} · <span class="fyp">${money(p.ifyp)}</span></span>` : ''}<span class="who">${RM}</span></div><span class="acts">${st === 'sub' ? `<button class="btn quiet sm" data-pol-issue="${p.id}">Phát hành</button>` : ''}${st === 'iss' ? `<button class="btn quiet sm" data-pol-cancel="${p.id}">Hủy HĐ</button>` : ''}<button class="btn quiet sm" data-pol-edit="${p.id}">Sửa</button></span></div>`;
+          };
+          const body = S.pols.length
+            ? `<div class="pols" role="list" aria-label="Hợp đồng">${S.pols.map(row).join('')}</div>`
+            : `<div class="pol-empty"><span>Chưa có HĐ. Khi KH đóng phí, ghi HĐ submitted (FYP, ngày nộp) → sau đó issued (ngày phát hành).</span><button class="btn sm">${ic('plus')}Hợp đồng</button></div>`;
+          return `<section class="card" data-pols><div class="card-head"><h3>Hợp đồng</h3><span class="meta num">${meta}</span>${S.pols.length ? `<span class="actions"><button class="btn sm">${ic('plus')}Hợp đồng</button></span>` : ''}</div>${body}</section>`;
+        }
+        function profileHtml(S) {
+          const k = S.k;
+          return `<button class="btn quiet sm" data-back>${ic('back')}<span>Khách hàng</span></button>
+            <section class="card"><div class="pf-head"><span class="av">${esc(k.name.split(' ')[0][0] + k.name.split(' ').pop()[0])}</span><div><h3>${kh(k)} ${stage(k.st)}</h3><span class="meta num">${k.code} · ${k.born} · RM ${RM} · ${TMARK} ${TEAM}${k.next ? ` · lịch kế tiếp ${k.next}` : ''}</span></div></div></section>
+            <div class="pf-cols"><div class="pf-col"><div class="later kept">${ic('doc')}<p><b>KYC Intelligence · Hồ sơ KYC</b><br />Giữ bố cục đã duyệt (<code>customer.html</code>, <code>ai.html</code>), chỉ thay vỏ.</p></div>${cardHtml(S)}</div><div class="pf-col"><div class="later kept">${ic('clock')}<p><b>Dòng thời gian · Các lần hẹn</b><br />Giữ bố cục đã duyệt. Hủy HĐ không tạo lần chuyển nhóm nào, nên không thêm dòng ở đây.</p></div></div></div>
+            <p class="view-note">Hồ sơ KH giữ bố cục đã duyệt (<code>customer.html</code>), chỉ thay vỏ. Trang này vẽ đủ khối Hợp đồng: bấm <b>Hủy HĐ</b> hoặc <b>Sửa</b>.</p>`;
+        }
+
+        /* ---------- Thẻ KH (đợt b): the number of policies does not count a cancelled one ---------- */
+        function boardHtml(S, live) {
+          const vinh = S.key === 'vinh' ? alive(S) : 2, hanhCan = S.key === 'hanh' ? S.pols.every((p) => p.can !== null) : true;
+          // In a window only the card of Đỗ Quang Vinh opens a profile: it is the one this page draws
+          const card = (key, n, who, why) => { const k = KHS[key], open = live && key === 'vinh'; return `<${open ? 'button data-view-go="profile"' : 'div'} class="kcard"><b>${kh(k)}${n ? `<span class="chip">${n} HĐ</span>` : ''}</b><span><span>RM ${RM}</span><span class="num">${who}</span></span>${why ? `<span class="why">${why}</span>` : ''}</${open ? 'button' : 'div'}>`; };
+          return `<div class="kboard">${card('vinh', vinh, 'hẹn 11/11 09:00', vinh === 2 ? '1 Đã nộp · 1 Đã phát hành' : '1 Đã nộp · 1 đã hủy 10/11/2026')}${card('hanh', hanhCan ? 0 : 1, 'gặp 03/11', hanhCan ? 'HĐ duy nhất đã hủy 09/11/2026: không có nhãn' : '1 Đã phát hành')}${card('none', 0, 'hẹn 10/11 14:00', 'chưa có HĐ')}</div>`;
+        }
+
+        /* ---------- The cancellation date: read the way every date field of the app is ---------- */
+        function readDate(text, floor, floorWord) {
+          const t = text.trim();
+          if (!t) return { err: 'Nhập ngày.' };
+          const m = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(t);
+          if (!m) return { err: 'Gõ dd/mm hoặc dd/mm/yyyy.' };
+          const y = m[3] ? +m[3] : 2026, n = day(y, +m[2], +m[1]), p = parts(n);
+          if (p.d !== +m[1] || p.m !== +m[2]) return { err: 'Ngày này không tồn tại.' };
+          if (y < 1900 || y > 2100) return { err: 'Năm phải từ 1900 đến 2100.' };
+          if (n > TODAY) return { err: 'Ngày này sau hôm nay. Ngày của năm trước: gõ đủ dd/mm/yyyy.' };
+          if (n < floor) return { err: `${dmy(n)} trước ${floorWord} ${dmy(floor)}.` };
+          return { n };
+        }
+        const readLine = (r, p) => (r.err ? `<div class="read err">${r.err}</div>` : `<div class="read"><b>${long(r.n)}</b> · ${r.n === TODAY ? 'hôm nay · ' : ''}${r.n === p.iss ? 'cùng ngày phát hành' : `${r.n - p.iss} ngày sau khi phát hành`}</div>`);
+
+        /* ---------- "Ảnh hưởng chỉ số": the sentences of dialog 8d, one per month and number ---------- */
+        const line = (label, n, dir, amount) => `<div>${label} tháng ${mon(n)} của RM ${RM} ${dir} <b>${money(amount)}</b></div>`;
+        function fxCancel(S, p, n) {
+          if (S.fx === 'b' && sameMonth(n, TODAY)) {
+            const tr = (k) => { const [i, c, fi, fc] = NOV[k]; return `<tr><td>${WHO[k]}</td><td><i>${money(fi - fc)} →</i> <b>${money(fi - fc - p.ifyp)}</b></td><td><i>${i - c} →</i> <b>${i - c - 1}</b></td><td><i>${pct(c, i)} →</i> <b>${pct(c + 1, i)}</b></td></tr>`; };
+            return `<b>Ảnh hưởng chỉ số · tháng ${mon(n)}</b><table><thead><tr><th></th><th>Doanh số</th><th>Tổng số HĐ</th><th>Tỷ lệ hủy</th></tr></thead><tbody>${tr('rm')}${tr('team')}${tr('all')}</tbody></table>`;
+          }
+          return `<b>Ảnh hưởng chỉ số</b>${line('Doanh số', n, 'giảm', p.ifyp)}<div>tháng ${mon(n)}: <b>+1</b> HĐ hủy</div><small>${sameMonth(n, p.iss) ? `HĐ phát hành và FYP phát hành của ngày ${dmy(p.iss)} giữ nguyên.` : `HĐ phát hành tháng ${mon(p.iss)} vẫn tính phát hành vào tháng ${mon(p.iss)}: số của tháng đó không đổi.`}</small>`;
+        }
+        // The hộp Sửa of a cancelled policy: the day moved, the cancellation taken back, the issued FYP changed
+        function fxEdit(p, d) {
+          const out = [];
+          if (d.un) out.push(line('Doanh số', p.can, 'tăng', p.ifyp), `<div>tháng ${mon(p.can)}: <b>−1</b> HĐ hủy</div>`, '<small>HĐ trở lại Đã phát hành. App không giữ dấu vết lần hủy này.</small>');
+          else if (d.n !== undefined && d.n !== p.can) {
+            if (sameMonth(d.n, p.can)) out.push(`<div>HĐ hủy chuyển từ ngày ${dmy(p.can)} sang ngày <b>${dmy(d.n)}</b></div>`, `<small>Số của tháng ${mon(p.can)} không đổi; số theo ngày và theo tuần đổi theo.</small>`);
+            else out.push(line('Doanh số', p.can, 'tăng', p.ifyp), line('Doanh số', d.n, 'giảm', p.ifyp), `<div>tháng ${mon(p.can)}: <b>−1</b> HĐ hủy · tháng ${mon(d.n)}: <b>+1</b> HĐ hủy</div>`);
+          }
+          if (d.fyp !== undefined && d.fyp !== p.ifyp) {
+            const diff = Math.abs(d.fyp - p.ifyp), down = d.fyp < p.ifyp;
+            out.push(line('FYP phát hành', p.iss, down ? 'giảm' : 'tăng', diff), line('FYP hủy', p.can, down ? 'giảm' : 'tăng', diff), `<small>Doanh số tháng ${mon(p.iss)} ${down ? 'giảm' : 'tăng'} ${money(diff)}, tháng ${mon(p.can)} ${down ? 'tăng' : 'giảm'} ${money(diff)}: FYP hủy luôn bằng FYP phát hành.</small>`);
+          }
+          return out.length ? `<b>Ảnh hưởng chỉ số</b>${out.join('')}` : '';
+        }
+
+        /* ---------- Hộp hủy ---------- */
+        // o: text (what is typed), live (a real field), short (the picture of an option: no help line), fail
+        function cancelHtml(S, p, o = {}) {
+          const text = o.text !== undefined ? o.text : `${parts(TODAY).d}/${parts(TODAY).m}`, r = readDate(text, p.iss, 'ngày phát hành');
+          const close = S.btn === 'b' ? 'Không hủy' : 'Đóng';
+          return `<div class="dlg-head"><div><h3>Hủy HĐ</h3><div class="sub">${kh(S.k)} · phát hành ${dmy(p.iss)} · FYP phát hành ${money(p.ifyp)}</div></div><button class="x" data-close aria-label="Đóng">${ic('x')}</button></div>
+            <div class="dlg-body">
+              ${o.fail === 'save' ? `<div class="alert">${ic('alert')}<b>Chưa hủy được HĐ</b><span>Chưa ghi được thay đổi; dữ liệu không bị đổi. Bấm Hủy HĐ để thử lại.</span></div>` : ''}
+              <div class="fields-2">
+                <div class="field"><label>Ngày hủy <span class="req">*</span> <span class="opt-n">dd/mm</span></label><label class="input${r.err ? ' error' : ' focus'}"><input type="text" value="${esc(text)}" data-cancel-date aria-label="Ngày hủy" autocomplete="off" spellcheck="false" ${o.live ? '' : 'readonly tabindex="-1"'} /></label><div data-read>${readLine(r, p)}</div></div>
+                <div class="field"><label>FYP hủy <span class="opt-n">bằng FYP phát hành</span></label><div class="input locked">${full(p.ifyp)}<span class="unit">VNĐ</span></div><div class="read"><b>${money(p.ifyp)}</b> · không nhập riêng</div></div>
+              </div>
+              <div class="fx" data-fx ${r.err ? 'hidden' : ''}>${r.err ? '' : fxCancel(S, p, r.n)}</div>
+              ${o.short ? '' : '<span class="help">Bỏ hủy hoặc sửa ngày hủy về sau: nút Sửa trên dòng của HĐ này.</span>'}
+            </div>
+            <div class="dlg-foot"><span class="hint">Esc để đóng</span><span class="spacer"></span><button class="btn" data-close>${close}</button><button class="btn danger${r.err ? ' is-off' : ''}" data-do="cancel">Hủy HĐ</button></div>`;
+        }
+
+        /* ---------- Hộp Sửa của HĐ đã hủy: 8d, plus the row "Ngày hủy" ---------- */
+        // o: text (the cancellation date as typed), un (Bỏ hủy pressed), fyp (issued FYP changed), fail, live, short
+        function editHtml(S, p, o = {}) {
+          const text = o.text !== undefined ? o.text : dmy(p.can), r = o.un ? {} : readDate(text, p.iss, 'ngày phát hành');
+          const fx = fxEdit(p, { un: o.un, n: r.n, fyp: o.fyp }), fyp = o.fyp !== undefined ? o.fyp : p.ifyp, bad = o.fail === 'issued';
+          const canRow = S.undo === 'b'
+            ? `<div class="field"><label>Ngày hủy</label><label class="input"><input type="text" value="${esc(text)}" readonly tabindex="-1" aria-label="Ngày hủy" /></label>${readLine(r, p)}</div>`
+            : `<div class="field"><label>Ngày hủy <span class="opt-n">${o.un ? 'đã bỏ hủy, chưa lưu' : 'sửa được'}</span></label><div class="with-btn">${o.un ? '<div class="input locked">chưa hủy</div>' : `<label class="input${r.err ? ' error' : ''}"><input type="text" value="${esc(text)}" data-edit-date aria-label="Ngày hủy" autocomplete="off" spellcheck="false" ${o.live ? '' : 'readonly tabindex="-1"'} /></label>`}<button class="btn${o.un ? ' quiet' : ''}" data-do="un">${o.un ? `Hoàn lại ${dmy(p.can)}` : 'Bỏ hủy'}</button></div><div data-read>${o.un ? '<div class="read">HĐ trở lại <b>Đã phát hành</b> khi lưu</div>' : readLine(r, p)}</div></div>`;
+          return `<div class="dlg-head"><div><h3>Sửa HĐ · ${kh(S.k)}</h3><div class="sub"><span class="st s-bad">Đã hủy ${dmy(p.can)}</span></div></div><button class="x" data-close aria-label="Đóng">${ic('x')}</button></div>
+            <div class="dlg-body">
+              ${bad ? `<div class="alert">${ic('alert')}<b>Chưa lưu được — 1 ô cần sửa</b><span>HĐ đã hủy phải có ngày phát hành, và ngày đó không sau ngày hủy.</span></div>` : ''}
+              ${o.short ? '' : `<div class="fields-2"><div class="field"><label>Ngày nộp</label><div class="input">${dmy(p.sub)}</div></div><div class="field"><label>FYP nộp</label><div class="input">${full(p.sfyp)}<span class="unit">VNĐ</span></div><div class="read"><b>${money(p.sfyp)}</b></div></div></div>`}
+              <div class="fields-2"><div class="field"><label>Ngày phát hành</label><div class="input${bad ? ' error' : ''}">${bad ? '12/11/2026' : dmy(p.iss)}</div>${bad ? `<div class="read err">12/11/2026 sau ngày hủy ${dmy(p.can)}. Bỏ hủy trước, hoặc sửa ngày hủy.</div>` : ''}</div><div class="field"><label>FYP phát hành${fyp !== p.ifyp ? ' <span class="opt-n">sửa tay</span>' : ''}</label><div class="input${fyp !== p.ifyp ? ' focus' : ''}">${full(fyp)}<span class="unit">VNĐ</span></div><div class="read"><b>${money(fyp)}</b> · FYP hủy bằng số này</div></div></div>
+              ${canRow}
+              <div class="fx" data-fx ${fx ? '' : 'hidden'}>${fx}</div>
+            </div>
+            <div class="dlg-foot"><button class="btn">Xóa HĐ…</button>${S.undo === 'b' ? '<button class="btn" data-do="un-now">Bỏ hủy…</button>' : ''}<span class="spacer"></span><button class="btn" data-close>Hủy</button><button class="btn primary${r.err ? ' is-off' : ''}" data-do="save">Lưu</button></div>`;
+        }
+        const confirmHtml = (S, p) => `<div class="dlg-head"><div><h3>Bỏ hủy HĐ này?</h3><div class="sub">${kh(S.k)} · đã hủy ${dmy(p.can)}</div></div></div><div class="dlg-body"><p>HĐ trở lại Đã phát hành. Doanh số tháng ${mon(p.can)} của RM ${RM} tăng ${money(p.ifyp)}. App không giữ dấu vết lần hủy này.</p></div><div class="dlg-foot"><span class="spacer"></span><button class="btn">Không</button><button class="btn primary">Bỏ hủy</button></div>`;
+
+        /* ---------- Specimens of the page ---------- */
+        const target = (S) => S.pols.find((p) => (S.key === 'hanh' ? true : p.id === 'b'));
+        const SPEC = {
+          card: (S) => cardHtml(S),
+          board: (S) => boardHtml(S, false),
+          cancel: (S, d) => { const p = { ...target(S) }; if (d.undoFirst) p.can = null; return `<div class="dlg" role="img" aria-label="Hộp Hủy HĐ">${cancelHtml(S, p, { text: d.date, short: d.short, fail: d.fail })}</div>`; },
+          edit: (S, d) => `<div class="dlg" role="img" aria-label="Hộp Sửa HĐ đã hủy">${editHtml(S, target(S), { text: d.date, un: !!d.un, fyp: d.fyp ? +d.fyp : undefined, fail: d.fail, short: d.short })}</div>`,
+          confirm: (S) => `<div class="dlg sm" role="img" aria-label="Hộp hỏi lại">${confirmHtml(S, target(S))}</div>`,
+          table: () => {
+            const row = (k, after) => { const [i, c0, fi, f0] = NOV[k], c = c0 + (after ? 1 : 0), fc = f0 + (after ? 60 : 0); return `<tr><td>${WHO[k]} · ${after ? 'sau' : 'trước'}</td><td class="n">${i}</td><td class="n">${c}</td><td class="n">${i - c}</td><td class="n">${money(fi)}</td><td class="n">${money(fc)}</td><td class="n">${after ? `<b>${money(fi - fc)}</b>` : money(fi - fc)}</td><td class="n">${after ? `<b>${pct(c, i)}</b>` : pct(c, i)}</td></tr>`; };
+            return ['rm', 'team', 'all'].map((k) => row(k, false) + row(k, true)).join('');
+          },
+        };
+        for (const el of $$('[data-spec]')) el.innerHTML = SPEC[el.dataset.spec](newState(el.dataset), el.dataset);
+
+        /* ---------- The windows: the one of the stage and its copies ---------- */
+        const STATE = new WeakMap();
+        function paint(win) {
+          const S = STATE.get(win);
+          $('[data-profile]', win).innerHTML = profileHtml(S);
+          $('[data-board]', win).innerHTML = `${boardHtml(S, true)}<p class="view-note">Trích ba thẻ KH của RM Hoàng Văn Tùng, nhóm N1 (thẻ KH đã duyệt ở đợt b: <a class="c-accent" href="search-rm-team.html#customers">search-rm-team.html</a>). Bấm thẻ Đỗ Quang Vinh để mở hồ sơ.</p>`;
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+        }
+        function openDlg(win, kind, id, o = {}) {
+          const S = STATE.get(win), p = S.pols.find((x) => x.id === id), box = $('[data-dlg]', win);
+          S.dlg = { kind, id, un: !!o.un };
+          box.setAttribute('aria-label', kind === 'cancel' ? 'Hủy HĐ' : 'Sửa HĐ');
+          box.innerHTML = kind === 'cancel' ? cancelHtml(S, p, { live: true }) : editHtml(S, p, { live: true, un: S.dlg.un });
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+          win.classList.add('modal');
+          const input = $('input', box);
+          if (input && o.focus !== false) { input.focus({ preventScroll: true }); input.select(); }
+        }
+        function scene(win, name) {
+          STATE.set(win, newState({ kh: 'vinh', state: name === 'after' || name === 'edit' ? 'after' : '' }));
+          win.classList.remove('modal');
+          ui2.show(win, 'profile', null, true, true);
+          win._back = [];
+          paint(win);
+          if (name === 'cancel') openDlg(win, 'cancel', 'b', { focus: false });
+          if (name === 'edit') openDlg(win, 'edit', 'b', { un: true, focus: false });
+        }
+        for (const win of $$('.win')) scene(win, win.parentElement.dataset.scene || 'before');
+
+        document.addEventListener('click', (e) => {
+          const win = e.target.closest('.win');
+          if (!win) return;
+          const S = STATE.get(win), box = $('[data-dlg]', win);
+          const cancel = e.target.closest('[data-pol-cancel]');
+          if (cancel) return openDlg(win, 'cancel', cancel.dataset.polCancel);
+          const edit = e.target.closest('[data-pol-edit]');
+          if (edit) {
+            const p = S.pols.find((x) => x.id === edit.dataset.polEdit);
+            return p.can !== null ? openDlg(win, 'edit', p.id) : ui2.toast(win, 'Hộp Sửa của HĐ chưa hủy giữ như 8d đã duyệt <small>· policy-forms.html</small>');
+          }
+          if (e.target.closest('[data-pol-issue]')) return ui2.toast(win, 'Hộp Phát hành giữ như 8b đã duyệt <small>· policy-forms.html</small>');
+          const act = e.target.closest('[data-do]');
+          if (!act || !S.dlg || act.classList.contains('is-off')) return;
+          const p = S.pols.find((x) => x.id === S.dlg.id), input = $('input[data-cancel-date], input[data-edit-date]', box);
+          if (act.dataset.do === 'un') {
+            // "Bỏ hủy" empties the day; "Hoàn lại" puts back what was typed. Nothing is written before "Lưu".
+            if (!S.dlg.un && input) S.dlg.text = input.value;
+            S.dlg.un = !S.dlg.un;
+            box.innerHTML = editHtml(S, p, { live: true, un: S.dlg.un, text: S.dlg.text });
+            if (win.classList.contains('masked')) ui2.mask(win, true);
+            return;
+          }
+          if (act.dataset.do === 'cancel') {
+            const r = readDate(input.value, p.iss, 'ngày phát hành');
+            if (r.err) return;
+            p.can = r.n;
+            win.classList.remove('modal');
+            paint(win);
+            return ui2.toast(win, `Đã hủy HĐ · Doanh số tháng ${mon(r.n)} của RM ${RM} giảm ${money(p.ifyp)} <small>· bỏ hủy ở nút Sửa</small>`);
+          }
+          if (act.dataset.do === 'save') {
+            const was = p.can;
+            if (S.dlg.un) p.can = null;
+            else { const r = readDate(input.value, p.iss, 'ngày phát hành'); if (r.err) return; p.can = r.n; }
+            win.classList.remove('modal');
+            paint(win);
+            return ui2.toast(win, p.can === null ? `Đã bỏ hủy · HĐ trở lại Đã phát hành <small>· Doanh số tháng ${mon(was)} tăng ${money(p.ifyp)}</small>` : p.can === was ? 'Không có thay đổi nào' : `Đã sửa ngày hủy thành ${dmy(p.can)}`);
+          }
+        });
+        // Typing a day: the line under the field, the block of numbers and the button follow at once
+        document.addEventListener('input', (e) => {
+          const input = e.target.closest && e.target.closest('input[data-cancel-date], input[data-edit-date]'), win = input && input.closest('.win');
+          if (!win) return;
+          const S = STATE.get(win), box = $('[data-dlg]', win), p = S.pols.find((x) => x.id === S.dlg.id), r = readDate(input.value, p.iss, 'ngày phát hành');
+          const cancel = 'cancelDate' in input.dataset, fx = r.err ? '' : cancel ? fxCancel(S, p, r.n) : fxEdit(p, { n: r.n });
+          $('[data-read]', box).innerHTML = readLine(r, p);
+          input.parentElement.classList.toggle('error', !!r.err);
+          input.parentElement.classList.toggle('focus', !r.err && cancel);
+          $('[data-fx]', box).innerHTML = fx;
+          $('[data-fx]', box).hidden = !fx;
+          $(`[data-do="${cancel ? 'cancel' : 'save'}"]`, box).classList.toggle('is-off', !!r.err);
+        });
+        // Scenes of the dock
+        document.addEventListener('click', (e) => {
+          const b = e.target.closest('.seg[data-set="scene"] button');
+          if (b) scene($('#win'), b.dataset.v);
+        });
+
+        // A whole window scaled to the width of the page
+        const shots = () => $$('.shot').forEach((el) => { if (el.clientWidth) el.style.setProperty('--s', Math.min(1, (el.clientWidth - 44) / (+el.dataset.w || 1440)).toFixed(4)); });
+        shots();
+        addEventListener('resize', shots);
+        // Windows were filled after ui2.js measured them: let it place the sidebar pills and the thumbs again
+        dispatchEvent(new Event('resize'));
+        window.hdCheck = { NOV, KHS, readDate, fxCancel, newState, money, pct, TODAY, dmy };
+      })();
+    </script>
+  </body>
+</html>
