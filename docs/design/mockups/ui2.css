@@ -8,6 +8,8 @@
       finds, meeting rhythm over 8 weeks, team colour and icon
    15 round c (T-422, approved at G3 13/11/2026): popovers of the toolbar, the lead number with its sum, the cumulative
       line with what is expected, a tile that carries its sum, "Điểm nhấn"
+   16 round d (T-423, approved at G3 13/11/2026): Forecast — three numbers side by side, the runway of the month, the week
+      strip, the month grid, the list of one day, a case size filled in place
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
    Hand-formatted, short rules on one line (docs/ is not run through Prettier). */
@@ -856,3 +858,126 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .hl-i > .ic { grid-row: 1 / 3; grid-column: 3; width: 14px; height: 14px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy), color var(--t-1); }
 .hl-i:hover > .ic { transform: translateX(2px); color: var(--accent); }
 @media (prefers-reduced-transparency: reduce) { .cum-tip { backdrop-filter: none; } }
+
+/* ============ 16. Round d (T-423): Forecast — the runway of the month, the week strip, the month grid, the list of a day ============ */
+/* Built only from the tokens of section 0; approved by the Owner at G3 on 13/11/2026. Nothing above this line changed.
+   Rounded rectangles of this round take the rule of section 5: */
+.run-bar, .wk-h, .ap, .mc, .day-pop, .dl-r, .fill-r { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+
+/* Hatching says "not counted here": a day that is over, a day outside the month, and on the runway
+   the weeks that are still to come */
+.hatch { background-image: repeating-linear-gradient(135deg, var(--fill-3) 0 1.5px, transparent 1.5px 7px); }
+
+/* Three numbers side by side (D-b): what is done, what is expected, the target. A label, the number,
+   one line that says what it counts. */
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.trio > div { min-width: 0; padding: 0 16px; border-left: 1px solid var(--hairline); }
+.trio > div:first-child { padding-left: 0; border-left: 0; }
+.trio .lbl { display: block; font-size: 12.5px; font-weight: 550; color: var(--text-2); white-space: nowrap; }
+.trio b { display: block; margin-top: 2px; font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -0.025em; white-space: nowrap; }
+.trio b small { margin-left: 4px; font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--text-2); }
+.trio b.neg { color: var(--danger); }
+.trio b.none { font-size: 17px; line-height: 30px; font-weight: 550; letter-spacing: 0; color: var(--text-2); }
+.trio .sub { display: block; margin-top: 2px; font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* The runway of the month (ý 17, 32): done + expected this week by stage + the weeks left, against
+   the target. Segments share the width by their amount (--f); the mark of the target stands at --x. */
+.run { position: relative; padding-top: 24px; }
+.run-bar { display: flex; height: 24px; --r: 7px; overflow: hidden; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); }
+.run-bar i { flex: var(--f, 0) 0 0; min-width: 0; background-color: var(--c, var(--accent)); }
+.run-bar i + i { box-shadow: inset 2px 0 0 var(--bg-0); }
+.run-bar i.rest { background-color: color-mix(in srgb, var(--accent) 24%, transparent); }
+.run-bar i.gap { background: none; box-shadow: none; }
+.run-kpi { position: absolute; top: 6px; bottom: -5px; left: var(--x); width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text); }
+.run-kpi span { position: absolute; top: -6px; right: 7px; font-size: 11.5px; font-weight: 650; line-height: 1.2; white-space: nowrap; color: var(--text); }
+.run-kpi.lead span { right: auto; left: 7px; }
+.run-keys { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 12.5px; color: var(--text-2); }
+.run-keys span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.run-keys i { width: 10px; height: 10px; flex: none; border-radius: 3px; background-color: var(--c, var(--accent)); }
+.run-keys i.rest { background-color: color-mix(in srgb, var(--accent) 24%, transparent); }
+.run-keys b { font-weight: 650; color: var(--text); }
+.run-pace { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 12.5px; color: var(--text-2); }
+.run-pace b { font-weight: 650; color: var(--text); }
+
+/* The week, Monday → Saturday (ý 18; no Sunday, D-c): one column a day. The head of a column is a
+   button that opens the list of that day; under it one card for each appointment. */
+.wk { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.wk-d { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.wk-h { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; padding: 8px 10px; --r: 10px; background-color: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); text-align: left; transition: background-color var(--t-1); }
+[data-os='win'] .wk-h { --r: 4px; }
+button.wk-h:hover { background-color: var(--fill-2); }
+.wk-h span { font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.wk-h span b { font-weight: 650; color: var(--text); }
+.wk-h .sum { font-size: 17px; line-height: 1.25; font-weight: 650; color: var(--text); }
+.wk-d.today .wk-h { box-shadow: inset 0 0 0 1.5px var(--date-today); }
+.wk-d.off .wk-h .sum { font-size: 12.5px; line-height: 21px; font-weight: 500; color: var(--text-2); }
+/* An appointment: the stage is the stripe and the label; the customer, then the hour and the amount */
+.ap { --c: var(--n4); display: grid; gap: 1px; width: 100%; min-width: 0; padding: 7px 9px 7px 12px; --r: 8px; background: color-mix(in srgb, var(--c) 9%, var(--fill-1)); box-shadow: inset 3px 0 0 var(--c); text-align: left; font-size: 12.5px; transition: background var(--t-1), transform var(--t-3) var(--spring-snappy); }
+.ap.n1 { --c: var(--n1); } .ap.n2 { --c: var(--n2); } .ap.n3 { --c: var(--n3); }
+[data-os='win'] .ap { --r: 4px; }
+button.ap:hover { background: color-mix(in srgb, var(--c) 16%, var(--fill-1)); }
+button.ap:active { transform: scale(0.98); }
+.ap b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap span { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The customer is already counted on another appointment (D-a): no fill, quieter text, a note */
+.ap.dup { background: none; box-shadow: inset 0 0 0 1px var(--hairline), inset 3px 0 0 color-mix(in srgb, var(--c) 50%, transparent); }
+.ap.dup b { font-weight: 500; color: var(--text-2); }
+/* No case size yet (D-e): listed, not added */
+.ap.miss { background: color-mix(in srgb, var(--warn) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 40%, transparent), inset 3px 0 0 var(--c); }
+.ap.miss span { color: var(--warn); }
+
+/* The month, week by week (ý 19): Monday → Saturday and the total of the week. The amount of a day
+   also shows as the depth of its cell (--heat, 0 → 0.34). */
+.mgrid { display: grid; grid-template-columns: 96px repeat(6, minmax(0, 1fr)) 76px; gap: 6px; }
+.mgrid .h { padding: 0 2px 2px; font-size: 12px; font-weight: 600; color: var(--text-3); text-align: center; }
+.mgrid .wkl { align-self: center; font-size: 12px; line-height: 1.35; color: var(--text-2); white-space: nowrap; }
+.mgrid .wkl b { display: block; font-weight: 600; color: var(--text); }
+.mgrid .tot { align-self: center; text-align: right; font-weight: 650; white-space: nowrap; }
+.mgrid .tot.zero { font-weight: 400; color: var(--text-3); }
+.mc { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 0; min-height: 56px; padding: 6px 9px; --r: 9px; overflow: hidden; background-color: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); text-align: left; transition: box-shadow var(--t-1); }
+[data-os='win'] .mc { --r: 4px; }
+.mc::before { content: ''; position: absolute; inset: 0; background: var(--accent); opacity: var(--heat, 0); pointer-events: none; }
+.mc > * { position: relative; }
+/* The small text of a day with appointments is --text: on the deeper cells (--heat above about 0.24)
+   --text-2 falls under 4.5:1. Days with no appointment and days outside the range keep --text-2. */
+.mc .dn { position: absolute; top: 5px; right: 8px; font-size: 11px; color: var(--text); }
+.mc b { font-size: 14px; font-weight: 650; white-space: nowrap; }
+.mc small { font-size: 11.5px; color: var(--text); white-space: nowrap; }
+.mc .need { position: absolute; top: 8px; left: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+button.mc:hover { box-shadow: inset 0 0 0 1px var(--border-control); }
+.mc.today { box-shadow: inset 0 0 0 1.5px var(--date-today); }
+.mc.off { color: var(--text-2); }
+.mc.off::before { display: none; }
+.mc.off small, .mc.off .dn, .mc.none .dn { color: var(--text-2); }
+.mc.none b { font-weight: 400; color: var(--text-3); }
+
+/* The appointments of one day, and the appointments with no case size: a popover beside what opened
+   it (ui2.js section 19), or the same rows on a page of their own. A row opens the customer. */
+.day-pop { width: 432px; max-width: calc(100% - 24px); padding: 14px 12px 10px; --r: var(--r-pop); background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); font: 14px/1.45 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--text); text-align: left; }
+.day-pop h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0 4px; font-size: 15px; font-weight: 650; }
+.day-pop h4 small { font-size: 12px; font-weight: 400; color: var(--text-2); }
+.dl { display: grid; gap: 2px; margin-top: 8px; }
+.dl-r { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto 14px; align-items: center; gap: 0 10px; width: 100%; padding: 7px 8px; --r: calc(var(--r-pop) - 8px); /* concentric with the popover: 8 px in */ text-align: left; transition: background var(--t-1); }
+[data-os='win'] .dl-r { --r: 4px; }
+button.dl-r:hover { background: var(--fill-1); }
+.dl-r .tm { grid-row: 1 / 3; font-weight: 650; }
+.dl-r .who { grid-column: 2; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-r .who .st { margin-left: 6px; vertical-align: 1px; }
+.dl-r small { grid-column: 2; min-width: 0; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-r .v { grid-row: 1 / 3; grid-column: 3; text-align: right; font-weight: 650; white-space: nowrap; }
+.dl-r .v small { display: block; font-weight: 400; }
+.dl-r > .ic { grid-row: 1 / 3; grid-column: 4; width: 14px; height: 14px; color: var(--text-3); }
+.dl-r.dup .who, .dl-r.dup .v { font-weight: 500; color: var(--text-2); }
+.dl-note { margin: 8px 4px 0; font-size: 12px; color: var(--text-2); }
+/* A case size filled in place (D-e): who and when, the amount, Lưu */
+.fill-r { display: grid; grid-template-columns: minmax(0, 1fr) 172px auto; align-items: center; gap: 4px 8px; padding: 7px 8px; --r: calc(var(--r-pop) - 8px); }
+.fill-r .who { min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fill-r .who .st { margin-left: 6px; vertical-align: 1px; }
+.fill-r .who small { display: block; font-size: 12px; font-weight: 400; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; }
+.fill-r .input { min-height: 32px; padding: 3px 9px; }
+.fill-r .input input { flex: 1; width: 100%; min-width: 0; border: 0; outline: 0; background: none; text-align: right; font-variant-numeric: tabular-nums; }
+.fill-r .input input::placeholder { color: var(--text-3); }
+.fill-r .input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+[data-os='win'] .fill-r .input:focus-within { border-color: var(--hairline); border-bottom-color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); }
+.fill-r .read { grid-column: 1 / -1; }
+@media (prefers-reduced-transparency: reduce) { .day-pop { backdrop-filter: none; } }
