@@ -43,7 +43,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **Case size dự kiến** (`expectedCaseSize`) — số tiền người dùng ước lượng cho một cuộc hẹn (phí, lớn hơn 0, tối đa 100 tỷ, hoặc để trống); nhập khi đặt lịch, dời lịch, điền tại chỗ trong Forecast, hay khi ghi kết quả cuộc gặp. App không tự ước tính. Khác **Case size** của chỉ số (Σ FYP nộp của HĐ nộp trong kỳ).
 - **Lịch mang số** — trong các lịch thuộc Forecast của một KH, lịch có case size dự kiến được nhập (hay sửa) gần nhất; số của KH nằm ở ngày của lịch này và tính cho RE ghi trên lịch. **Lịch thiếu case size** — lịch thuộc Forecast chưa có số: đếm và liệt kê, không cộng.
 - **Đã đạt** — Doanh số (FYP phát hành − FYP hủy) từ ngày 1 của tháng tới hôm nay. **Về đích** — đã đạt + Forecast tháng.
-- **KPI tháng** (Owner gọi "chỉ tiêu (KPI)", "mục tiêu doanh số"; câu của Điểm nhấn viết "mục tiêu tháng") — mục tiêu Doanh số của một team cho một tháng, người dùng nhập. KPI của góc nhìn Toàn bộ = tổng KPI các team; RE không có KPI; không có KPI tuần. **Nhịp cần mỗi tuần** — (KPI − đã đạt) ÷ số tuần còn lại của tháng, app tự tính. Chữ "KPI" trong chú thích code cũ chỉ các ô chỉ số của Tổng quan, không phải nghĩa này.
+- **KPI tháng** (Owner gọi "chỉ tiêu (KPI)", "mục tiêu doanh số"; câu của Điểm nhấn viết "mục tiêu tháng") — mục tiêu Doanh số của một team cho một tháng, người dùng nhập. KPI của góc nhìn Toàn bộ = tổng KPI các team, chỉ khi mọi team chưa xóa có KPI của tháng đó (thiếu một team thì không có KPI toàn bộ); RE không có KPI; không có KPI tuần. **Nhịp cần mỗi tuần** — (KPI − đã đạt) ÷ số tuần còn lại của tháng, app tự tính. Chữ "KPI" trong chú thích code cũ chỉ các ô chỉ số của Tổng quan, không phải nghĩa này.
 
 ## KYC
 

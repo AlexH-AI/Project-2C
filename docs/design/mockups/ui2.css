@@ -938,15 +938,17 @@ button.ap:active { transform: scale(0.98); }
 [data-os='win'] .mc { --r: 4px; }
 .mc::before { content: ''; position: absolute; inset: 0; background: var(--accent); opacity: var(--heat, 0); pointer-events: none; }
 .mc > * { position: relative; }
-.mc .dn { position: absolute; top: 5px; right: 8px; font-size: 11px; color: var(--text-2); }
+/* The small text of a day with appointments is --text: on the deeper cells (--heat above about 0.24)
+   --text-2 falls under 4.5:1. Days with no appointment and days outside the range keep --text-2. */
+.mc .dn { position: absolute; top: 5px; right: 8px; font-size: 11px; color: var(--text); }
 .mc b { font-size: 14px; font-weight: 650; white-space: nowrap; }
-.mc small { font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+.mc small { font-size: 11.5px; color: var(--text); white-space: nowrap; }
 .mc .need { position: absolute; top: 8px; left: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
 button.mc:hover { box-shadow: inset 0 0 0 1px var(--border-control); }
 .mc.today { box-shadow: inset 0 0 0 1.5px var(--date-today); }
 .mc.off { color: var(--text-2); }
 .mc.off::before { display: none; }
-.mc.off small { color: var(--text-2); }
+.mc.off small, .mc.off .dn, .mc.none .dn { color: var(--text-2); }
 .mc.none b { font-weight: 400; color: var(--text-3); }
 
 /* The appointments of one day, and the appointments with no case size: a popover beside what opened
