@@ -321,6 +321,10 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **Golden B and the data model of a cancelled policy are approved at G2.** The ADR-0007 appendix is Accepted (G2), and rows G23–G41 are required tests of issue B1.
     - The approval covers all ten of Claude's model proposals, among them "bỏ hủy = xóa ngày hủy": uncancelling clears the cancellation date, and the policy is issued again with no trace.
     - Still no code issue until the OWNER says so.
+- 2026-11-13: the order of the work and `auto-issues` (recorded by T-422, #1238). In chat on the Home PC the OWNER asked, verbatim: "có đưa vào auto-issue làm 1 loạt được không". Claude answered that mockup rounds c–g cannot run as one batch (each round stops at G3, and the rounds use different models), while the code issues can (A1–A5, DS-2, G-01 … G-05), with DS-1 done by hand. The OWNER decided, verbatim: "Vậy làm theo thứ tự như luật, ra auto-issue sau khi đã làm xong".
+  - The order of spec §10 stays: step 2 (mockup rounds c–g and the missing "Issue dự kiến" tables) is finished first, and only then are the issues created.
+  - DS-1 is done by hand in a normal session, while `auto-issues` is not running; the batch of code issues then runs through `auto-issues`.
+- 2026-11-13: G3 mockup round c (T-422, #1238; `docs/design/mockups/tong-quan.html`: Tổng quan with no "Lọc" button, the lead number with its cumulative line, six tiles that carry their sums, "Điểm nhấn", past periods with actual numbers only) is drawn and **waits for the OWNER at G3**. The rule table of "Điểm nhấn" (spec §8: seven rows, at most four sentences) **waits for the OWNER at G2**. Still no code issue.
 
 ## Next decision
 

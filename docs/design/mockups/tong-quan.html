@@ -1,0 +1,1177 @@
+<!doctype html>
+<!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
+  Mockup G3 đợt c (T-422 #1238): màn Tổng quan (ý 08, 14, 15, 16 + phần B) và bộ luật "Điểm nhấn" (G2).
+  Trạng thái: chờ Owner duyệt G3, và G2 cho bảng luật "Điểm nhấn" (bảng ở #highlights, bản gốc ở spec §8).
+  Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật. Hôm nay trong bản mẫu: Thứ Ba 10/11/2026.
+  Số viết theo ADR-0018: "1.38 tỷ", "42.3%", "0 VNĐ"; ngày dd/mm/yyyy; "Tỷ lệ"; chữ "RM".
+  #shell      Cửa sổ app bấm được: Tổng quan (đổi góc nhìn ở viên góc nhìn, đổi kỳ ở viên kỳ, không có nút "Lọc";
+              số chủ đạo + đường lũy kế, Điểm nhấn, sáu ô chỉ số, Lịch hẹn, KH theo nhóm, So sánh team);
+              các màn khác chỉ có vỏ. Thanh dưới: hệ điều hành, cỡ cửa sổ, ba cảnh mẫu
+  #hero       Ý 14: số chủ đạo, phép tính, ba nét của đường lũy kế; mỗi loại kỳ vẽ gì
+  #tiles      Ý 15: sáu ô chỉ số có phép tính; số âm, "—", trên 100%
+  #highlights Ý 16: "Điểm nhấn" và bảng luật (G2)
+  #views      Ý 08: góc nhìn và kỳ, không nút "Lọc"; Team · Tuần; kỳ đã qua; kỳ chưa bắt đầu; cửa sổ hẹp nhất
+  #blocks     Các khối đã duyệt 03/10/2026 trong bố cục mới: giữ gì, đổi gì; bảng khối ↔ chỉ số
+  #states     Trạng thái trống và lỗi
+  #mask       Che tên KH
+  #ask        Các điểm Owner cần quyết ở G3, và G2 của bộ luật
+  Vỏ app và bảng thành phần (đợt a), ô lệnh và "Lưu ý" (đợt b): app-shell.html, components.html, search-rm-team.html.
+  Mockup này thay overview.html phần 1a–1e khi qua G3 (màn Lịch hẹn 4 nhóm ở phần 2 của overview.html giữ nguyên).
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tổng quan — Heritas L-CRM (Project-2C mockup, đợt c)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter chỉ đứng thay SF Pro khi xem hình macOS trên máy Windows; app thật dùng font của máy, không tải font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="ui2.css" />
+    <style>
+      /* ---- Only this page: the screens inside the window ---- */
+      .later { height: 100%; min-height: 380px; display: grid; place-content: center; justify-items: center; gap: 8px; border-radius: calc(var(--r-card) * var(--r-k)); corner-shape: var(--r-curve); border: 1.5px dashed var(--border-strong); text-align: center; color: var(--text-2); }
+      .later .ic { width: 30px; height: 30px; color: var(--text-3); }
+      .later > b { font-size: 18px; font-weight: 650; color: var(--text); }
+      .later p b { font-weight: 650; color: var(--text); }
+      .later p { margin: 0; max-width: 520px; font-size: 13.5px; }
+      .later .arrive { margin-top: 8px; padding: 8px 14px; border-radius: calc(var(--r-control) * var(--r-k)); corner-shape: var(--r-curve); background: var(--accent-soft); color: var(--text); }
+      /* The customer-name button of round a: an eye; once on it says so */
+      [data-mask] .i-shut, [data-mask].is-on .i-open { display: none; }
+      [data-mask].is-on .i-shut { display: block; }
+      .btn.icon[data-mask].is-on { width: auto; padding: 0 12px 0 10px; }
+      .menu button .n .ic { width: 13px; height: 13px; margin-left: 6px; vertical-align: -2px; color: var(--accent); }
+      .menu .tmark { margin-right: -2px; }
+
+      /* Tổng quan: the lead number and "Điểm nhấn", six tiles, appointments and customers by stage, teams */
+      .ov { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+      .ov > * { grid-column: 1 / -1; }
+      .ov > .ov-hero { grid-column: span 8; }
+      .ov > .ov-hl { grid-column: span 4; }
+      .ov-hero { padding: 20px 22px 12px; }
+      .ov-hl { padding: 18px 12px 12px; }
+      .ov-hl .card-head { padding: 0 8px; margin-bottom: 8px; }
+      .ov-hl .empty.sm { padding: 6px 8px; }
+      .hero-top { display: flex; align-items: flex-start; gap: 16px; }
+      .hero-top > div:first-child { min-width: 0; }
+      .hero-top .cum-key { margin-left: auto; flex: none; flex-direction: column; padding-top: 2px; }
+      .ov-hero .cum { height: 210px; margin-top: 10px; }
+      .hero-none { margin: 22px 0 10px; }
+      .ov-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+      .ov > .ov-appt { grid-column: span 4; }
+      .ov > .ov-kh { grid-column: span 8; }
+      .appt-v { display: flex; align-items: baseline; gap: 6px; font-size: 34px; line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; }
+      .appt-v small { font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--text-2); }
+      .appt-f { display: block; margin: 2px 0 12px; font-size: 12.5px; color: var(--text-3); }
+      .gbar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; background: var(--fill-2); }
+      .gbar i { flex: var(--w) 0 0; min-width: 3px; background: var(--c); }
+      .gkeys { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 13px; }
+      .gkeys li { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+      .gkeys i { width: 8px; height: 8px; flex: none; border-radius: 2px; background: var(--c); }
+      .gkeys b { margin-left: auto; font-weight: 600; color: var(--text); }
+      .g-met { --c: var(--ok); } .g-miss { --c: var(--appt-missed); } .g-unrec { --c: var(--appt-unrecorded); } .g-plan { --c: var(--info); }
+      .stiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+      .stile { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 12px; border-radius: calc(10px * var(--r-k)); corner-shape: var(--r-curve); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); transition: background var(--t-1), opacity var(--t-1); }
+      [data-os='win'] .stile { border-radius: 4px; }
+      button.stile:hover { background: var(--fill-2); }
+      .stile b { font-size: 18px; font-weight: 650; }
+      .stile[aria-pressed='false'] { background: none; box-shadow: none; outline: 1.5px dashed var(--border-strong); outline-offset: -1.5px; }
+      .stile[aria-pressed='false'] b { color: var(--text-3); font-weight: 500; }
+      .cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: end; gap: 3px; height: 150px; margin-top: 14px; border-bottom: 1px solid var(--border-strong); }
+      .cols .col { display: flex; flex-direction: column-reverse; height: calc(var(--h) * 100%); min-height: 2px; border-radius: 3px 3px 0 0; overflow: hidden; }
+      .cols .col i { flex: var(--n) 0 0; background: var(--c); }
+      .cols .col.none { height: 100%; border: 1px dashed var(--hairline); border-bottom: 0; }
+      .cols-x { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; margin-top: 5px; font-size: 11px; color: var(--text-3); text-align: center; white-space: nowrap; }
+      .cols-x span { overflow: visible; }
+      .cols-note { margin: 10px 0 0; font-size: 12px; color: var(--text-3); }
+      .ov-cmp .tbl th { white-space: normal; vertical-align: bottom; }
+      .ov-cmp tr.team[data-team] { cursor: pointer; }
+      .ov-cmp .tmark { margin-right: 7px; }
+      .view-note { margin: 14px 2px 0; font-size: 12.5px; color: var(--text-2); }
+      @container (max-width: 1240px) {
+        .ov > .ov-hero, .ov > .ov-hl { grid-column: 1 / -1; }
+        .ov-hl .hl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
+        .ov-hero .cum { height: 170px; }
+        .ov-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .ov > .ov-appt { grid-column: span 5; }
+        .ov > .ov-kh { grid-column: span 7; }
+        .ov-cmp .tbl { font-size: 12.5px; }
+        .ov-cmp .tbl th, .ov-cmp .tbl td { padding-left: 7px; padding-right: 7px; }
+      }
+
+      /* ---- Only this page: the presentation around the window ---- */
+      .crop.mid > .win { left: 50%; margin-left: -600px; }
+      /* A whole window, scaled to the width of the page (--s is set by the script) */
+      .shot { position: relative; height: calc(var(--h, 900px) * var(--s, 0.8) + 44px); border-radius: 16px; overflow: hidden; background: var(--wall); }
+      .shot > .win { position: absolute; left: 22px; top: 22px; width: var(--w, 1440px); height: var(--h, 900px); transform: scale(var(--s, 0.8)); transform-origin: 0 0; }
+      .frame-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13.5px; color: var(--text-2); }
+      .frame-bar b { color: var(--text); }
+      .state-l { display: block; margin: 0 0 8px; font: 600 12px/1.3 var(--font-page); color: var(--text-2); }
+      .stack-v { display: grid; gap: 18px; }
+      .nums { display: grid; grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr)); gap: 16px; }
+      /* Options the Owner chooses between: the same blocks, drawn the other way */
+      .opt-pic.blk { display: block; padding: 16px; min-height: 0; }
+      .opt-pic.blk .ov-kpis { gap: 10px; }
+      .opt-pic.blk .ov-kpis.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .opt-pic.blk .ov-kpis.k4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .opt-pic.blk .kpi { padding: 12px 12px 10px; }
+      .opt-pic.blk .kpi .val { font-size: 26px; }
+      .opt-pic.blk .ov-hero .cum { height: 170px; }
+      .opt-pic.shot { padding: 0; border-radius: 0; }
+      .win.hl-top .ov > .ov-hl { order: -1; grid-column: 1 / -1; }
+      .win.hl-top .ov > .ov-hero { grid-column: 1 / -1; }
+      .win.hl-top .ov-hl .hl { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px 12px; }
+      .spec-hl { max-width: 440px; }
+      .tb-spec { display: grid; gap: 14px; justify-items: end; }
+      .tb-spec .bar-row { display: flex; align-items: center; gap: 8px; }
+      .tb-spec .pops { display: flex; align-items: flex-start; gap: 14px; }
+      .rules { margin: 0; padding-left: 20px; color: var(--text-2); }
+      .rules li { margin-bottom: 7px; }
+      .rules b { color: var(--text); font-weight: 600; }
+      /* The table of rules: what the Owner approves at G2 */
+      .law { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .law th { padding: 0 12px 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+      .law td { padding: 12px 12px 12px 0; border-top: 1px solid var(--hairline); vertical-align: top; line-height: 1.5; color: var(--text-2); }
+      .law td:first-child { width: 28px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+      .law td b { color: var(--text); font-weight: 600; }
+      .law .say { display: block; color: var(--text); }
+      .law .say + .say { margin-top: 6px; }
+      .law .say small { display: block; font-size: 12.5px; color: var(--text-2); }
+      .dock [data-size-note] { min-width: 96px; }
+      @media (max-width: 1320px) { .dock [data-size-note] { display: none; } }
+      @media (max-width: 1100px) { .gal, .pgrid, .duo, .nums { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.5v.01" /></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><path d="M12 12v.01" /></symbol>
+      <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M14.6 9.4c-.4-.9-1.3-1.4-2.6-1.4-1.5 0-2.6.8-2.6 2s1.1 1.7 2.6 2 2.6.8 2.6 2-1.1 2-2.6 2c-1.3 0-2.2-.5-2.6-1.4M12 6.5v11" /></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+      <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" /></symbol>
+      <symbol id="i-min" viewBox="0 0 10 10"><path d="M0 5h10" /></symbol>
+      <symbol id="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" /></symbol>
+      <symbol id="i-close" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" /></symbol>
+    </svg>
+
+    <header class="pagebar">
+      <a class="back" href="index.html">← Mockup G3</a>
+      <b>Đợt c · Tổng quan</b>
+      <span class="state">Chờ G3 · luật Điểm nhấn chờ G2</span>
+      <nav aria-label="Mục trong trang">
+        <a href="#hero">Số chủ đạo</a><a href="#tiles">Ô chỉ số</a><a href="#highlights">Điểm nhấn</a><a href="#views">Kỳ và góc nhìn</a><a href="#blocks">Khối đã duyệt</a><a href="#states">Trống / lỗi</a><a href="#ask">Cần anh quyết</a>
+      </nav>
+    </header>
+
+    <!-- ================= Cửa sổ app ================= -->
+    <div class="stage" id="shell" data-os="mac">
+      <div class="wall"></div>
+      <div class="slot">
+        <div class="win" id="win">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i><svg class="ic"><use href="#i-min" /></svg></i><i><svg class="ic"><use href="#i-max" /></svg></i><i><svg class="ic"><use href="#i-close" /></svg></i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" aria-label="Điều hướng chính">
+              <button class="nav-i on" data-go="overview" data-sub="Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ" data-tools="scope period find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan</button>
+              <button class="nav-i" data-go="appointments" data-sub="Toàn bộ" data-tools="scope find" data-act="Lịch hẹn"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn</button>
+              <button class="nav-i" data-go="customers" data-sub="884 KH đang mở · 65 đã đóng · Toàn bộ" data-tools="scope find" data-act="Khách hàng"><svg class="ic"><use href="#i-people" /></svg>Khách hàng</button>
+              <button class="nav-i" data-go="forecast" data-sub="Tuần này 10/11 – 14/11 · Toàn bộ" data-tools="scope find" data-act="Xuất Excel" data-act-open="job" data-job="Đang xuất Excel Forecast|Đã xuất Forecast_2026-11-10.xlsx"><svg class="ic"><use href="#i-forecast" /></svg>Forecast</button>
+              <button class="nav-i" data-go="reports" data-sub="Tháng 11/2026 · Toàn bộ" data-tools="scope period find" data-act="Xuất Excel" data-act-open="job" data-job="Đang xuất Excel Báo cáo|Đã xuất Bao-cao_2026-11.xlsx"><svg class="ic"><use href="#i-report" /></svg>Báo cáo</button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team" data-sub="3 team · 3 TL · 27 RM · 3 người hỗ trợ" data-tools="find" data-act="Team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button>
+              <button class="nav-i" data-go="settings" data-sub="Dữ liệu · AI · Thùng rác" data-tools="find"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt</button>
+            </nav>
+            <div class="sb-foot">
+              <span class="num"><i class="dot"></i>Đã lưu 13:20</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar">
+              <div class="tl-title"><h2>Tổng quan</h2><span></span></div>
+              <button class="now-pill" aria-haspopup="dialog" title="Lưu ý: lịch hẹn kế tiếp, việc hôm nay, việc chạy nền"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button>
+              <div class="tl-right">
+                <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
+                <button class="cap" data-tool="scope" data-pop="scope" aria-haspopup="true" aria-expanded="false" title="Góc nhìn"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <span class="cap" data-tool="period"><button class="step" data-step="-1" aria-label="Kỳ trước">&#x2039;</button><button class="num" data-pop="period" data-period-name aria-haspopup="true" aria-expanded="false">Tháng 11/2026</button><button class="step" data-step="1" aria-label="Kỳ sau">&#x203A;</button></span>
+                <button class="btn icon tl-find" data-tool="find" aria-label="Ô lệnh (⌘K)" title="Ô lệnh · ⌘K"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn primary" data-act-btn data-run="act"><svg class="ic"><use href="#i-plus" /></svg><span>Lịch hẹn</span></button>
+              </div>
+            </header>
+
+            <!-- Góc nhìn và kỳ: hai bảng của thanh công cụ; chọn là áp dụng ngay, không có nút "Lọc" -->
+            <div class="menu tl-pop" data-pop-for="scope" role="menu" aria-label="Góc nhìn"></div>
+            <div class="ppop tl-pop" data-pop-for="period" role="dialog" aria-label="Chọn kỳ">
+              <div class="seg" aria-label="Loại kỳ"><button data-kind="day">Ngày</button><button data-kind="week">Tuần</button><button class="on" data-kind="month">Tháng</button><button data-kind="year">Năm</button><button data-kind="custom">Tùy chọn</button></div>
+              <div data-pp></div>
+            </div>
+
+            <!-- "Lưu ý" (đợt b): hôm nay theo góc nhìn đang chọn -->
+            <div class="now-pop" role="dialog" aria-label="Lưu ý">
+              <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
+              <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
+              <div class="ag next"><span class="tm num">14:00</span><b><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></b><span class="st s-info">còn 25 phút</span><small>Case size dự kiến 30 tr · RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <div class="ag"><span class="tm num">15:00</span><b><span class="kh" data-kh="L. T. H.">Lê Thị Hồng</span></b><span class="st s-info">Dự kiến</span><small>RM Lê Minh Khang · Hừng Đông</small></div>
+              <div class="ag"><span class="tm num">16:30</span><b><span class="kh" data-kh="L. Q. H.">Lê Quốc Hùng</span></b><span class="st s-info">Dự kiến</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
+              <hr />
+              <h4>Cần làm</h4>
+              <div class="todo"><button class="btn sm" data-jump="appointments"><span class="count">12</span>buổi chưa ghi kết quả</button><button class="btn sm" data-jump="forecast"><span class="count">2</span>lịch tuần này thiếu case size</button></div>
+              <hr />
+              <h4>Việc chạy nền</h4>
+              <div data-jobs><p class="help" style="margin: 0">Không có việc nào đang chạy. Xuất Excel, sao lưu, phân tích AI hiện tiến độ ở đây.</p></div>
+            </div>
+
+            <div class="views">
+              <!-- ===== Tổng quan (đợt c): vẽ bằng script cuối file theo góc nhìn và kỳ đang chọn ===== -->
+              <div class="view" data-view="overview"><div class="ov" data-ov></div></div>
+
+              <div class="view" data-view="appointments"><div class="later"><svg class="ic"><use href="#i-cal" /></svg><b>Lịch hẹn</b><p>Giữ bố cục đã duyệt, chỉ thay vỏ: xem <a class="c-accent" href="app-shell.html#previews">app-shell.html · Xem trước</a>.</p><p class="arrive" data-arrive-out hidden></p></div></div>
+              <div class="view" data-view="customers"><div class="later"><svg class="ic"><use href="#i-people" /></svg><b>Khách hàng</b><p>Đã duyệt ở đợt b: xem <a class="c-accent" href="search-rm-team.html">search-rm-team.html</a>.</p></div></div>
+              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Vẽ ở <b>đợt d</b>, cùng golden D. Phần dự kiến trên đường lũy kế của Tổng quan lấy số từ màn này.</p><p class="arrive" data-arrive-out hidden></p></div></div>
+              <div class="view" data-view="reports"><div class="later"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Vẽ ở <b>đợt e</b>. Bấm một ô chỉ số của Tổng quan sẽ mở Báo cáo ở đúng kỳ và góc nhìn đang xem.</p><p class="arrive" data-arrive-out hidden></p></div></div>
+              <div class="view" data-view="team"><div class="later"><svg class="ic"><use href="#i-team" /></svg><b>Team &amp; nhân sự</b><p>Đã duyệt ở đợt b: xem <a class="c-accent" href="search-rm-team.html#team">search-rm-team.html · Team</a>.</p></div></div>
+              <div class="view" data-view="settings"><div class="later"><svg class="ic"><use href="#i-gear" /></svg><b>Cài đặt</b><p>Ba mục có icon đã duyệt ở đợt a: xem <a class="c-accent" href="app-shell.html#sidebar">app-shell.html</a>.</p></div></div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm: ô lệnh (đợt b), thông báo nổi ===== -->
+          <div class="scrim"></div>
+          <div class="pal" role="dialog" aria-modal="true" aria-label="Ô lệnh">
+            <div class="pal-field"><svg class="ic"><use href="#i-search" /></svg><input type="text" placeholder="Tìm KH, RM, màn hay lệnh…" aria-label="Ô lệnh" autocomplete="off" spellcheck="false" /><kbd>Esc</kbd></div>
+            <div class="pal-list" role="listbox"></div>
+            <div class="pal-foot"><span><kbd>↑</kbd><kbd>↓</kbd>chọn</span><span><kbd>Enter</kbd>mở</span><span><kbd>Esc</kbd>đóng</span><span class="spacer"></span><span><kbd class="k-mac">⌘ K</kbd><kbd class="k-win">Ctrl K</kbd>mở ở mọi màn</span></div>
+          </div>
+          <div class="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check" /></svg><span></span></div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <span class="dock-t"><b>Heritas L-CRM</b> · đợt c</span>
+        <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+        <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
+        <span class="num" data-size-note></span>
+        <span class="seg" data-set="scene" aria-label="Cảnh mẫu"><button class="on" data-v="all|m:2026-11">Toàn bộ · Tháng 11 (MTD)</button><button data-v="t0|w:2026-11-9">Team Sao Mai · Tuần này</button><button data-v="all|m:2026-10">Tháng 10 · kỳ đã qua</button></span>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- ================= Số chủ đạo ================= -->
+      <section class="sec" id="hero">
+        <span class="kicker">Ý 14 · phần B, D</span>
+        <h2>Một số chủ đạo: Doanh số, kèm phép tính và đường đi của nó trong kỳ.</h2>
+        <p class="lead">Mở app là trả lời được hai câu: <b>kỳ này tới đâu rồi</b> và <b>có hơn kỳ trước không</b>. Doanh số là con số lớn nhất màn, ngay dưới là phép tính của phần B: <b>FYP phát hành − FYP hủy</b>. Dưới nữa là đường lũy kế từng ngày, có ba nét. Rê chuột lên đường để đọc số của một ngày. Thử ở cửa sổ đầu trang: bấm viên <b>Toàn bộ</b> để đổi góc nhìn, bấm ‹ › hay tên kỳ để đổi kỳ; số chạy tới giá trị mới, không có nút "Lọc".</p>
+        <div class="duo stack">
+          <div data-spec="hero" data-sc="all" data-period="m:2026-11"></div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Ba nét của đường lũy kế</h3>
+            <ul class="bul">
+              <li><b>Nét liền, màu champagne: kỳ đang xem.</b> Doanh số cộng dồn từng ngày, tới hôm nay. Ngày có HĐ hủy thì đường đi xuống: ở tháng 11 mẫu, ngày 09/11 phát hành 270 tr và hủy 50 tr.</li>
+              <li><b>Nét đứt: phần dự kiến tới cuối kỳ.</b> Bằng doanh số đã đạt cộng case size dự kiến của các lịch hẹn Đã lên lịch từ hôm nay (Forecast, phần D): mỗi KH tính một lần theo số nhập gần nhất, không nhân hệ số, lịch thiếu case size không cộng, không tính Chủ Nhật. <span class="tag gate">cách tính chốt ở golden D (đợt d)</span></li>
+              <li><b>Nét mờ: kỳ trước.</b> Vẽ cả kỳ liền trước để thấy kỳ trước về đâu. Con số so sánh cạnh Doanh số thì theo luật đã duyệt 03/10: kỳ đang chạy so với <b>cùng số ngày</b> của kỳ trước, kỳ đã qua so với <b>cả</b> kỳ liền trước.</li>
+              <li><b>Chấm đặc</b> là hôm nay, <b>chấm rỗng</b> là điểm dự kiến cuối kỳ, có nhãn ghi số.</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Mỗi loại kỳ vẽ gì <small>điểm 2, 3 ở #ask</small></h3>
+            <table class="tok plain">
+              <tr><th>Kỳ</th><th>Đường lũy kế</th><th>Nét mờ</th><th>Phần dự kiến</th></tr>
+              <tr><td>Tuần</td><td>7 ngày, Thứ Hai → Chủ Nhật</td><td>tuần trước</td><td>tới hết Thứ Bảy (Forecast tuần)</td></tr>
+              <tr><td>Tháng</td><td>từng ngày của tháng</td><td>tháng trước</td><td>tới cuối tháng (Forecast tháng)</td></tr>
+              <tr><td>Năm</td><td>từng ngày của năm, mốc theo tháng</td><td>năm trước</td><td>chỉ tới hết tháng đang chạy: Forecast không nhìn xa hơn</td></tr>
+              <tr><td>Ngày</td><td>không vẽ (chỉ có một điểm)</td><td>không</td><td>không</td></tr>
+              <tr><td>Tùy chọn</td><td>từng ngày của khoảng</td><td>không: kỳ Tùy chọn không so (C09)</td><td>không</td></tr>
+            </table>
+            <p class="foot-note" style="margin-top: 12px">Kỳ đã qua và kỳ chưa bắt đầu không có phần dự kiến ở mọi loại kỳ: xem mục <a href="#views">Kỳ và góc nhìn</a>.</p>
+          </div>
+        </div>
+        <h3 class="sub-h" id="opt-ghost">Hai cách vẽ nét mờ <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 2 ở #ask</small></h3>
+        <p class="sub-p">Con số so sánh ("▲ … so với 01/10 – 10/10") giống nhau ở cả hai cách; chỉ khác độ dài của nét mờ.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="hero" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Vẽ cả kỳ trước <span class="tag rec">đề xuất</span></b><p>Thấy tháng trước về đích ở đâu, và phần dự kiến của tháng này đang hướng tới mức nào so với nó.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div data-spec="hero" data-sc="all" data-period="m:2026-11" data-cut></div></div><div class="opt-t"><b>B · Chỉ vẽ tới cùng số ngày</b><p>Nét mờ dừng ở ngày 10, đúng khoảng mà con số so sánh đang dùng; nửa sau của biểu đồ chỉ còn phần dự kiến.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Ô chỉ số ================= -->
+      <section class="sec" id="tiles">
+        <span class="kicker">Ý 15 · phần B</span>
+        <h2>Sáu ô chỉ số, mỗi ô ghi rõ phép tính của nó.</h2>
+        <p class="lead">Chỉ số mới của phần B dễ hiểu sai, nên phép tính nằm ngay dưới số: <b>Tổng số HĐ</b> = phát hành − hủy, <b>Tỷ lệ hủy</b> = hủy ÷ phát hành, <b>Tỷ lệ chốt</b> = HĐ phát hành ÷ RF (không trừ hủy). Viên nhỏ cuối ô là chênh lệch so với kỳ trước; riêng Tỷ lệ hủy thì <b>tăng là đỏ</b>. Bấm một ô để mở Báo cáo ở đúng kỳ và góc nhìn đang xem.</p>
+        <div class="duo stack">
+          <div data-spec="kpis" data-sc="all" data-period="m:2026-11"></div>
+        </div>
+        <h3 class="sub-h">Số âm, "—" và trên 100%</h3>
+        <p class="sub-p">Golden B đã duyệt: HĐ hủy tính vào kỳ chứa ngày hủy, nên một kỳ ngắn có thể ra Tổng số HĐ và Doanh số âm, Tỷ lệ hủy trên 100%, hoặc "—" khi kỳ không có HĐ phát hành. Hai ví dụ dưới lấy từ dữ liệu của cửa sổ đầu trang (chọn đúng góc nhìn và kỳ đó sẽ thấy).</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Team Hừng Đông · Tuần 26/10 – 01/11/2026 (kỳ đã qua): 1 phát hành, 2 hủy</span><div data-spec="nums" data-sc="t2" data-period="w:2026-10-26"></div></div>
+            <div><span class="state-l">RM Hoàng Văn Tùng · Tuần 09/11 – 15/11/2026 (đang chạy): 0 phát hành, 1 hủy</span><div data-spec="nums" data-sc="r0" data-period="w:2026-11-9"></div></div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li><b>Số âm</b> viết theo ADR-0018: dấu "-" đứng đầu ("-50 tr", "-1"), và đổi sang màu đỏ để không lẫn với số dương.</li>
+          <li><b>Tỷ lệ hủy "—"</b> khi kỳ không có HĐ phát hành; ô vẫn ghi phép tính ("1 hủy ÷ 0 phát hành") để thấy vì sao. Viên so sánh ghi "không so".</li>
+          <li><b>Chênh lệch</b> giữ cách viết đã duyệt 03/10: ▲ ▼ = kèm số tuyệt đối; hai tỷ lệ so theo <b>điểm %</b>. Số 0 của tiền viết "0 VNĐ" (golden số C01).</li>
+          <li>Ba ô không có phép tính riêng (Chuyển RF, HĐ nộp, Case size) ghi một dòng nói số đó đếm gì.</li>
+        </ul>
+        <h3 class="sub-h" id="opt-tiles">Sáu ô hay tám ô <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 4 ở #ask</small></h3>
+        <p class="sub-p">Bản đã duyệt 03/10 có ô HĐ phát hành riêng. Phần B thêm HĐ hủy. Hai số này đã nằm trong phép tính của ô Tổng số HĐ, nên em đề xuất không lặp lại.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="kpis" data-cols="3" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Sáu ô <span class="tag rec">đề xuất</span></b><p>HĐ phát hành và HĐ hủy là hai vế của ô Tổng số HĐ. Một hàng ở cửa sổ rộng, hai hàng ở cửa sổ hẹp.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div data-spec="kpis" data-cols="4" data-eight data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>B · Tám ô</b><p>Thêm ô HĐ phát hành và ô HĐ hủy, mỗi ô có so sánh riêng. Hai hàng ở mọi cỡ cửa sổ; số 33 và số 1 hiện hai lần.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Điểm nhấn ================= -->
+      <section class="sec" id="highlights">
+        <span class="kicker">Ý 16 · nội dung là G2</span>
+        <h2>"Điểm nhấn": app viết vài câu từ số của kỳ, theo luật cố định.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Làm, theo luật"</b>. App không gọi AI; mỗi câu sinh ra từ một luật có điều kiện và ngưỡng rõ, nên luôn đúng với số đang hiện trên màn. Mỗi câu là một nút: bấm là tới đúng nơi nói về nó. Bộ luật dưới đây là <b>nội dung anh duyệt G2</b>: bốn luật của bản thử, và hai luật em đề xuất thêm (về đích so với mục tiêu tháng; lịch hẹn thiếu case size).</p>
+        <div class="duo">
+          <div class="spec-hl" data-spec="hl" data-sc="all" data-period="m:2026-11"></div>
+        </div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Bảng luật <small>thứ tự trong bảng là thứ tự ưu tiên · bản gốc ở spec §8 · <span class="tag gate">G2</span></small></h3>
+          <table class="law">
+            <tr><th>#</th><th>Luật</th><th>Hiện khi</th><th>Ngưỡng</th><th>Câu mẫu (dòng chính, dòng phụ)</th><th>Bấm tới</th><th>Kỳ đã qua</th></tr>
+            <tr><td>1</td><td><b>Tỷ lệ hủy tăng</b><br />màu đỏ</td><td>Tỷ lệ hủy của kỳ cao hơn kỳ trước; cả hai kỳ có HĐ phát hành. Kỳ trước theo luật so sánh đã duyệt (cùng số ngày, hoặc cả kỳ liền trước).<br />Biến thể: kỳ có HĐ hủy mà không có HĐ phát hành.</td><td>tăng từ <b>1 điểm %</b></td><td><span class="say">Tỷ lệ hủy 3%, tăng 3 điểm %<small>1 hủy ÷ 33 phát hành · 01/10 – 10/10 là 0%</small></span><span class="say">1 HĐ hủy, kỳ này chưa có HĐ phát hành<small>Tỷ lệ hủy không tính được ("—") · Doanh số -50 tr</small></span></td><td>Báo cáo, danh sách HĐ hủy, cùng kỳ và góc nhìn</td><td>có</td></tr>
+            <tr><td>2</td><td><b>Buổi hẹn đã qua chưa ghi kết quả</b><br />màu cam</td><td>Trong kỳ đang xem có lịch Đã lên lịch mà ngày đã qua. Đúng con số "Chưa ghi kết quả" của ô Lịch hẹn.</td><td>từ <b>1</b> buổi</td><td><span class="say">12 buổi hẹn đã qua chưa ghi kết quả<small>Sao Mai 5 · Hừng Đông 4 · Bình Minh 3</small></span><span class="say"><small>Góc nhìn team: ba RM có nhiều buổi nhất. Góc nhìn RM: "Ghi kết quả để chỉ số của kỳ đủ".</small></span></td><td>Lịch hẹn, lọc "Chưa ghi kết quả", cùng kỳ và góc nhìn</td><td>có</td></tr>
+            <tr><td>3</td><td><b>Lịch hẹn thiếu case size</b><br />màu cam · <span class="tag rec">đề xuất thêm</span></td><td>Kỳ đang chạy. Từ hôm nay tới hết Thứ Bảy tuần này có lịch Đã lên lịch của KH N3 / N2 / N1 chưa có case size dự kiến. Đúng con số của "Lưu ý".</td><td>từ <b>1</b> lịch</td><td><span class="say">2 lịch hẹn tuần này thiếu case size<small>Chưa tính vào Forecast · điền case size dự kiến để tính</small></span></td><td>Forecast, danh sách lịch thiếu case size</td><td>không</td></tr>
+            <tr><td>4</td><td><b>Về đích so với mục tiêu tháng</b><br />màu champagne · <span class="tag rec">đề xuất thêm</span></td><td>Kỳ Tháng đang chạy. Góc nhìn Toàn bộ khi mọi team đã có mục tiêu (mục tiêu toàn bộ = tổng các team), hoặc góc nhìn một team đã có mục tiêu. Không có ở góc nhìn RM.</td><td>không</td><td><span class="say">Đã đạt 46% mục tiêu tháng<small>1.38 tỷ / 3 tỷ · dự kiến về đích 2.7 tỷ, còn thiếu 300 tr</small></span><span class="say">Đã đạt 56.4% mục tiêu tháng<small>620 tr / 1.1 tỷ · dự kiến về đích 1.23 tỷ, vượt 130 tr</small></span><span class="say">Đã vượt mục tiêu tháng: 1.15 tỷ / 1.1 tỷ<small>Dự kiến về đích 1.4 tỷ</small></span></td><td>Forecast, đường băng tháng</td><td>không</td></tr>
+            <tr><td>5</td><td><b>Forecast tuần này</b><br />màu xanh dương</td><td>Kỳ đang chạy. Forecast tuần (hôm nay → Thứ Bảy) lớn hơn 0.</td><td>lớn hơn <b>0</b></td><td><span class="say">Tuần này dự kiến 555 tr<small>17 lịch có case size, từ hôm nay tới Thứ Bảy 14/11</small></span></td><td>Forecast, Tuần này</td><td>không</td></tr>
+            <tr><td>6</td><td><b>Team dẫn đầu, hoặc thứ hạng của team</b><br />màu champagne</td><td>Toàn bộ: có từ 2 team và team đầu có doanh số lớn hơn 0; đồng hạng thì nêu cả hai. Một team: thứ hạng của team đó. Không có ở góc nhìn RM.</td><td>không</td><td><span class="say">Sao Mai dẫn đầu doanh số: 620 tr<small>44.9% doanh số toàn bộ · Tỷ lệ chốt 51.7%</small></span><span class="say">Sao Mai đứng thứ 1 / 3 về doanh số<small>620 tr · 44.9% doanh số toàn bộ</small></span></td><td>Báo cáo, bảng theo team, cùng kỳ</td><td>có</td></tr>
+            <tr><td>7</td><td><b>Tỷ lệ hủy giảm</b><br />màu xanh lá</td><td>Như luật 1, theo chiều giảm.</td><td>giảm từ <b>1 điểm %</b></td><td><span class="say">Tỷ lệ hủy 5.4%, giảm 3.2 điểm %<small>4 hủy ÷ 74 phát hành · cả Tháng 09/2026 là 8.6%</small></span></td><td>như luật 1</td><td>có</td></tr>
+          </table>
+          <ul class="rules" style="margin-top: 16px">
+            <li><b>Số câu tối đa: 4.</b> Lấy theo thứ tự ưu tiên của bảng: việc cần xử lý trước (hủy tăng, chưa ghi kết quả, thiếu case size), rồi tiến độ (mục tiêu, Forecast tuần), cuối cùng là thứ hạng và tin tốt.</li>
+            <li><b>Không luật nào khớp:</b> thẻ vẫn ở chỗ cũ, ghi một dòng "Kỳ này không có điểm nào cần lưu ý", để bố cục không nhảy.</li>
+            <li><b>Kỳ đã qua:</b> chỉ các luật về số thực tế (1, 2, 6, 7). Luật 3, 4, 5 nói về tương lai nên không hiện, đúng lời anh 11/11.</li>
+            <li><b>Kỳ chưa bắt đầu:</b> không có câu nào. <b>Kỳ Tùy chọn:</b> không so kỳ trước nên luật 1 và 7 không chạy (trừ biến thể "có hủy, 0 phát hành").</li>
+            <li>Số trong câu luôn là số đang hiện trên màn (cùng kỳ, cùng góc nhìn), viết theo ADR-0018. Câu không chứa tên KH, nên không cần che.</li>
+          </ul>
+        </div>
+        <h3 class="sub-h">Cùng bộ luật, ở góc nhìn và kỳ khác</h3>
+        <p class="sub-p">Ba thẻ dưới do cùng đoạn mã của cửa sổ đầu trang vẽ ra, từ cùng dữ liệu.</p>
+        <div class="gal three">
+          <div class="opt"><div class="opt-pic flat" style="display: block; padding: 16px"><div data-spec="hl" data-sc="t1" data-period="m:2026-11"></div></div><div class="opt-t"><b>Team Bình Minh · Tháng 11/2026 (MTD)</b><p>Góc nhìn team: thứ hạng thay cho "dẫn đầu"; team không có HĐ hủy nên không có câu về tỷ lệ hủy.</p></div></div>
+          <div class="opt"><div class="opt-pic flat" style="display: block; padding: 16px"><div data-spec="hl" data-sc="all" data-period="m:2026-10"></div></div><div class="opt-t"><b>Toàn bộ · Tháng 10/2026, kỳ đã qua</b><p>Chỉ còn câu về số thực tế; không câu nào về Forecast.</p></div></div>
+          <div class="opt"><div class="opt-pic flat" style="display: block; padding: 16px"><div data-spec="hl" data-sc="r1" data-period="m:2026-11"></div></div><div class="opt-t"><b>RM mới, chưa có số liệu</b><p>Không luật nào khớp: một dòng, không để trống thẻ.</p></div></div>
+        </div>
+        <h3 class="sub-h" id="opt-max">Tối đa bốn câu, hay hiện mọi luật khớp <small class="dim" style="font-size: 14px; font-weight: 400">· điểm G2-3 ở #ask</small></h3>
+        <p class="sub-p">Toàn bộ · Tháng 11/2026 có sáu luật khớp. Bốn câu thì vừa chiều cao của số chủ đạo; sáu câu thì thẻ dài hơn và đẩy các ô chỉ số xuống.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic flat blk"><div data-spec="hl" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>A · Tối đa 4 câu <span class="tag rec">đề xuất</span></b><p>Lấy bốn câu đầu theo thứ tự ưu tiên. Câu về Forecast tuần và team dẫn đầu nhường chỗ; hai số đó vẫn thấy ở Forecast và ở bảng So sánh team.</p></div></div>
+          <div class="opt"><div class="opt-pic flat blk"><div data-spec="hl" data-max="7" data-sc="all" data-period="m:2026-11"></div></div><div class="opt-t"><b>B · Hiện mọi luật khớp</b><p>Không bỏ sót câu nào, nhưng thẻ dài và câu quan trọng nhất kém nổi hơn.</p></div></div>
+        </div>
+        <h3 class="sub-h" id="opt-place">Hai chỗ đặt Điểm nhấn <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 1 ở #ask</small></h3>
+        <p class="sub-p">Hai hình là cả cửa sổ 1440 × 900, thu nhỏ để thấy bố cục.</p>
+        <div class="gal">
+          <div class="opt rec"><div class="opt-pic shot" data-os="mac" data-clone="#win"></div><div class="opt-t"><b>A · Cạnh số chủ đạo <span class="tag rec">đề xuất</span></b><p>Số chủ đạo và các câu nhận xét về nó nằm cùng một tầm mắt; sáu ô chỉ số ngay hàng dưới.</p></div></div>
+          <div class="opt"><div class="opt-pic shot" data-os="mac" data-clone="#win" data-variant="hl-top"></div><div class="opt-t"><b>B · Một dải ngang trên cùng</b><p>Câu nhận xét là thứ đọc đầu tiên; số chủ đạo rộng hết hàng nhưng bị đẩy xuống, sáu ô chỉ số xuống gần mép dưới cửa sổ.</p></div></div>
+        </div>
+      </section>
+
+      <!-- ================= Kỳ và góc nhìn ================= -->
+      <section class="sec" id="views">
+        <span class="kicker">Ý 08 · thay điều đã duyệt G3 03/10</span>
+        <h2>Đổi góc nhìn hay kỳ là số đổi ngay. Không còn nút "Lọc".</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Bỏ nút Lọc"</b>. Dòng "Đang xem" và dòng nhắc "bấm Lọc để cập nhật" của bản cũ cũng bỏ theo: kỳ và góc nhìn đang xem nằm ở dòng dưới tên màn và ngay trên hai viên của thanh công cụ. Khi đổi, số chạy tới giá trị mới (động tác "Đếm", chỉ minh họa ở đây; hệ chuyển động duyệt ở đợt g). Máy bật "Giảm chuyển động" thì số đổi thẳng.</p>
+        <div class="duo">
+          <div class="tb-spec">
+            <div class="bar-row">
+              <button class="btn icon" aria-label="Che tên khách hàng"><svg class="ic"><use href="#i-eye" /></svg></button>
+              <button class="cap is-hover"><span>Team Sao Mai</span><svg class="ic"><use href="#i-down" /></svg></button>
+              <span class="cap"><button class="step" aria-label="Kỳ trước">&#x2039;</button><button class="num">09/11 – 15/11/2026</button><button class="step" aria-label="Kỳ sau">&#x203A;</button></span>
+              <button class="btn primary"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button>
+            </div>
+            <div class="pops">
+              <div class="menu" role="menu" aria-label="Góc nhìn">
+                <div class="h">Góc nhìn</div>
+                <button>Toàn bộ<span class="n">27 RM</span></button>
+                <hr />
+                <button><span class="tw"><svg class="ic"><use href="#i-chev" /></svg></span>Team Bình Minh<span class="n">9 RM</span></button>
+                <button><span class="tw"><svg class="ic"><use href="#i-chev" /></svg></span>Team Hừng Đông<span class="n">8 RM</span></button>
+                <button class="on open"><span class="tw"><svg class="ic"><use href="#i-chev" /></svg></span>Team Sao Mai<span class="n">10 RM<svg class="ic"><use href="#i-check" /></svg></span></button>
+                <button class="sub">Đặng Văn Phúc</button>
+                <button class="sub">Đỗ Khánh Linh</button>
+                <button class="sub is-hover">Hoàng Văn Tùng</button>
+                <button class="sub">… 7 RM khác</button>
+              </div>
+              <div class="ppop" role="dialog" aria-label="Chọn kỳ">
+                <div class="seg"><button>Ngày</button><button class="on">Tuần</button><button>Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+                <div class="py"><button aria-label="Tháng trước">&#x2039;</button><span class="num">Tháng 11/2026</span><button aria-label="Tháng sau">&#x203A;</button></div>
+                <div class="plist two">
+                  <button>26/10 – 01/11</button><button>02/11 – 08/11</button><button class="on now">09/11 – 15/11</button><button>16/11 – 22/11</button><button>23/11 – 29/11</button><button>30/11 – 06/12</button>
+                </div>
+                <div class="pfoot"><span>Chọn là số cập nhật ngay</span><button class="btn quiet sm">Hôm nay</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pgrid" style="margin-top: 20px">
+          <div class="pcard">
+            <h3>Menu góc nhìn của Tổng quan <small>điểm 6 ở #ask</small></h3>
+            <ul class="bul">
+              <li><b>Toàn bộ</b>, <b>một team</b>, hoặc <b>một RM</b>, chọn trong cùng một menu. Bấm tên team là xem cả team đó, đồng thời mở danh sách RM của team để chọn tiếp.</li>
+              <li>Team xếp theo tên, RM xếp theo tên như ô chọn RM hiện có. Team có màu và icon thì hiện kèm (đợt b).</li>
+              <li><b>Khác bản đã duyệt 03/10:</b> trước đây "Team" nghĩa là mọi team cộng lại, mỗi team một chart, không chọn được một team. Trong vỏ mới, viên góc nhìn dùng chung cho mọi màn nên Tổng quan cũng xem được riêng từng team; so các team với nhau đã có bảng So sánh team.</li>
+              <li>Góc nhìn đang chọn đi theo sang Lịch hẹn, Khách hàng, Forecast, Báo cáo (đã duyệt ở đợt a).</li>
+            </ul>
+          </div>
+          <div class="pcard">
+            <h3>Bộ chọn kỳ <small>điểm 7 ở #ask</small></h3>
+            <ul class="bul">
+              <li>Năm loại kỳ như màn hiện có: Ngày, Tuần (Thứ Hai → Chủ Nhật), Tháng, Năm, Tùy chọn (tối đa 3 tháng). ‹ › lùi / tới một kỳ; bấm tên kỳ mở bảng chọn.</li>
+              <li><b>Đổi loại kỳ</b> giữ ngày đang xem: đang ở Tháng 11 (có hôm nay) bấm "Tuần" là ra tuần này.</li>
+              <li>Nút <b>Hôm nay</b> trong bảng chọn đưa về kỳ đang chạy của loại kỳ đang chọn. Kỳ chứa hôm nay có viền xanh nhạt.</li>
+              <li>Tháng chưa hết ghi <b>MTD</b>; kỳ đã qua ghi "kỳ đã qua"; kỳ chưa tới ghi "chưa bắt đầu". ‹ › tắt ở biên miền năm 1900–2100 như đã duyệt (bản mẫu chỉ có dữ liệu 2025–2026).</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="sub-h">Team · Tuần: Team Sao Mai, tuần 09/11 – 15/11/2026</h3>
+        <p class="sub-p">Hôm nay là Thứ Ba nên kỳ mới có hai ngày; so với hai ngày đầu của tuần trước. Phần dự kiến chạy tới Thứ Bảy 14/11. Bảng cuối màn đổi thành các RM của team.</p>
+        <div class="frame-bar"><b>Team Sao Mai · Tuần này</b><span class="seg" data-os-for="#pv-week"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="shot" id="pv-week" data-os="mac" data-clone="#win" data-sc="t0" data-period="w:2026-11-9"></div>
+
+        <h3 class="sub-h" id="past">Kỳ đã qua: Toàn bộ, Tháng 10/2026</h3>
+        <p class="sub-p">Anh chốt 11/11: <b>"Kỳ đã qua thì chỉ hiện các chỉ số thực tế đã đạt về doanh số, số HĐ, tỉ lệ hủy, tỉ lệ chốt... không tính forecast vì forecast là cho tương lai"</b>. Vì vậy: đường lũy kế không có nét đứt và không có nhãn dự kiến; Điểm nhấn không có câu nào về Forecast, mục tiêu hay case size; mọi ô so với <b>cả</b> Tháng 09/2026; ô Lịch hẹn không còn nhóm Dự kiến có số; ảnh chụp KH theo nhóm lấy ở ngày cuối kỳ 31/10.</p>
+        <div class="frame-bar"><b>Toàn bộ · Tháng 10/2026</b><span class="seg" data-os-for="#pv-past"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></div>
+        <div class="shot" id="pv-past" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-10"></div>
+
+        <h3 class="sub-h">Cửa sổ hẹp nhất 1100 × 700, trên Windows 11</h3>
+        <p class="sub-p">Số chủ đạo chiếm cả hàng, Điểm nhấn xuống dưới thành hai cột, sáu ô xếp ba cột. Không có gì tràn ngang; bảng So sánh team cho tiêu đề cột xuống dòng.</p>
+        <div class="shot" style="--w: 1100px; --h: 700px" data-w="1100" data-os="win" data-clone="#win"></div>
+      </section>
+
+      <!-- ================= Khối đã duyệt ================= -->
+      <section class="sec" id="blocks">
+        <span class="kicker">overview.html · duyệt G3 03/10/2026</span>
+        <h2>Các khối đã duyệt, trong bố cục mới: giữ gì, đổi gì.</h2>
+        <p class="lead">Em không tự bỏ khối nào anh đã duyệt. Ba khối giữ nguyên nội dung và luật, chỉ thay vỏ; hai chỗ đổi vì anh đã chốt (bỏ nút "Lọc") hoặc vì phần B thêm chỉ số. Thử trong cửa sổ đầu trang: bấm một ô N4–N1 để ẩn / hiện nhóm trên chart; bấm một team trong bảng để xem RM.</p>
+        <div class="duo">
+          <div class="stack-v">
+            <div data-spec="appt" data-sc="all" data-period="m:2026-11"></div>
+            <div data-spec="kh" data-sc="all" data-period="m:2026-11"></div>
+          </div>
+        </div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Giữ, gộp, đổi <small>điểm 4, 9 ở #ask</small></h3>
+          <table class="tok plain">
+            <tr><th>Khối đã duyệt 03/10</th><th>Trong bố cục mới</th><th>Ghi chú</th></tr>
+            <tr><td>Thanh lọc + nút "Lọc" + dòng "Đang xem"</td><td><b>Bỏ</b> (anh chốt 11/11)</td><td>Thay bằng viên góc nhìn và viên kỳ trên thanh công cụ; dòng dưới tên màn ghi kỳ, khoảng ngày, góc nhìn.</td></tr>
+            <tr><td>Ô Lịch hẹn (Đã gặp / Tổng, bốn nhóm)</td><td><b>Giữ</b></td><td>Vẫn đếm cả kỳ, kể cả ngày sau hôm nay; màu bốn nhóm như đã duyệt; không so kỳ trước.</td></tr>
+            <tr><td>6 ô KPI (Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỷ lệ chốt)</td><td><b>Đổi</b> theo phần B</td><td>Doanh số lên làm số chủ đạo. HĐ phát hành thành vế đầu của ô Tổng số HĐ ("33 phát hành − 1 hủy"). Thêm ô Tỷ lệ hủy. Vẫn sáu ô, vẫn so kỳ trước theo luật C01–C11.</td></tr>
+            <tr><td>KH theo nhóm: 4 ô N4–N1 + chart cột chồng</td><td><b>Giữ</b></td><td>Ảnh chụp cuối ngày mốc; bấm ô để ẩn / hiện nhóm; N1 sát trục; cột sau hôm nay để trống.</td></tr>
+            <tr><td>Góc nhìn Team: mỗi team một chart</td><td><b>Đổi</b> theo menu góc nhìn mới</td><td>Chọn một team thì có một chart của team đó (mục "Menu góc nhìn" ở trên).</td></tr>
+            <tr><td>Bảng So sánh team, bấm team → RM</td><td><b>Giữ</b>, thêm hai cột</td><td>Thêm HĐ hủy và Tỷ lệ hủy; Doanh số theo nghĩa mới (có thể âm). Góc nhìn một team: bảng liệt kê RM của team. Góc nhìn RM: ẩn bảng, như đã duyệt.</td></tr>
+            <tr><td>Bảng khối ↔ chỉ số ↔ định nghĩa</td><td><b>Cập nhật</b></td><td>Bảng dưới đây.</td></tr>
+          </table>
+        </div>
+        <h3 class="sub-h">So sánh team</h3>
+        <div class="duo stack" data-only="mac">
+          <div data-spec="cmp" data-sc="all" data-period="m:2026-11"></div>
+        </div>
+        <div class="pcard" style="margin-top: 20px">
+          <h3>Khối ↔ chỉ số ↔ định nghĩa <small>golden <code>chi-so.md</code> (đầu file và mục 4), <code>phase-4-chi-so.md</code></small></h3>
+          <table class="tok plain">
+            <tr><th>Khối</th><th>Chỉ số · định nghĩa nguồn</th><th>Kỳ chưa hết</th><th>Rỗng / không tính được</th></tr>
+            <tr><td>Số chủ đạo</td><td>Doanh số = FYP phát hành − FYP hủy (golden B). Đường lũy kế: cộng dồn theo ngày. Phần dự kiến: Forecast (§6, golden D ở đợt d).</td><td>tới hôm nay; so cùng số ngày của kỳ trước</td><td>Không có gì: "0 VNĐ". Kỳ chưa bắt đầu: "—", không vẽ đường.</td></tr>
+            <tr><td>Điểm nhấn</td><td>Bảy dòng luật ở mục Điểm nhấn (G2).</td><td>đủ bảy luật</td><td>Không luật nào khớp: một dòng. Kỳ chưa bắt đầu: không câu.</td></tr>
+            <tr><td>Tổng số HĐ</td><td>HĐ phát hành − HĐ hủy; HĐ hủy tính vào kỳ chứa ngày hủy.</td><td>tới hôm nay</td><td>Có thể âm.</td></tr>
+            <tr><td>Tỷ lệ hủy</td><td>HĐ hủy ÷ HĐ phát hành, cùng kỳ; dòng Tổng = Σ hủy ÷ Σ phát hành.</td><td>tới hôm nay; so theo điểm %, tăng là đỏ</td><td>0 phát hành → "—", không so. Có thể vượt 100%.</td></tr>
+            <tr><td>Tỷ lệ chốt</td><td>HĐ phát hành ÷ chuyển RF, cùng kỳ, không trừ HĐ hủy.</td><td>tới hôm nay; so theo điểm %</td><td>0 RF → "—", không so. Có thể vượt 100%.</td></tr>
+            <tr><td>Chuyển RF · HĐ nộp · Case size</td><td>ADR-0007, không đổi.</td><td>tới hôm nay</td><td>Tiền bằng 0: "0 VNĐ".</td></tr>
+            <tr><td>Lịch hẹn</td><td>Đã gặp / Tổng + Dời – hủy – không đến, Chưa ghi kết quả, Dự kiến (<code>phase-4-chi-so.md</code> §1).</td><td>cả kỳ, kể cả ngày sau hôm nay</td><td>Không lịch: "0 / 0", thanh ghi "chưa có lịch".</td></tr>
+            <tr><td>KH theo nhóm</td><td>Ảnh chụp cuối ngày mốc (§2): mốc = ngày cuối kỳ, kỳ chưa hết → hôm nay.</td><td>mốc = hôm nay</td><td>Kỳ chưa bắt đầu: "—", mọi cột trống.</td></tr>
+            <tr><td>So sánh team</td><td>Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, HĐ hủy, Doanh số, Tỷ lệ chốt, Tỷ lệ hủy; dòng Tổng cộng số đếm và tiền, hai tỷ lệ tính từ tổng.</td><td>tới hôm nay; không so kỳ trước</td><td>Tỷ lệ của dòng không tính được: "—".</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= Trống và lỗi ================= -->
+      <section class="sec" id="states">
+        <span class="kicker">Trạng thái trống và lỗi</span>
+        <h2>Trống và lỗi của Tổng quan, theo khuôn của bảng thành phần.</h2>
+        <p class="lead">Anh chốt 11/11: <b>"Có, vẽ kèm"</b>; không vẽ trạng thái "đang tải". Khuôn chung đã duyệt ở <a href="components.html#empty">components.html</a>; ở đây là câu chữ của từng chỗ. Hai chỗ thử được trong cửa sổ đầu trang: chọn RM <b>Nguyễn Văn Hùng</b> (RM mới của Sao Mai), hoặc bấm › sang <b>Tháng 12/2026</b>.</p>
+        <div class="duo stack">
+          <div class="stack-v">
+            <div><span class="state-l">Kỳ chưa có số liệu: RM mới, Tháng 11/2026. Số 0 vẫn hiện là số; tỷ lệ không tính được ghi "—"</span><div data-spec="nums" data-sc="r1" data-period="m:2026-11"></div></div>
+            <div><span class="state-l">Kỳ chưa bắt đầu: Tháng 12/2026. Lịch hẹn đã đặt vẫn đếm; chỉ số kết quả ghi "—"</span><div data-spec="hero" data-sc="all" data-period="m:2026-12"></div></div>
+            <div><span class="state-l">Team chưa có RM: cả màn nhường chỗ cho một lời giải thích</span>
+              <section class="card flat"><div class="empty"><span class="mark"><svg class="ic"><use href="#i-team" /></svg></span><b>Team Ban Mai chưa có RM</b><p>Chỉ số của một team cộng từ các RM của team. Thêm RM vào team ở Team &amp; nhân sự, hoặc chọn góc nhìn khác.</p><div class="acts"><button class="btn"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự</button><button class="btn quiet">Xem Toàn bộ</button></div></div></section>
+            </div>
+            <div><span class="state-l">Lỗi đọc dữ liệu: cả màn</span>
+              <section class="card flat"><div class="empty fail"><span class="mark"><svg class="ic"><use href="#i-alert" /></svg></span><b>Không đọc được dữ liệu để tính Tổng quan</b><p>Dữ liệu đã lưu không bị ảnh hưởng. Bấm Thử lại; nếu lỗi lặp lại, gửi chi tiết kỹ thuật dưới đây cho người hỗ trợ.</p><div class="acts"><button class="btn"><svg class="ic"><use href="#i-refresh" /></svg>Thử lại</button></div><div class="fail-detail">DB_READ_FAILED: database is locked (policies)<br />at OverviewScreen · bản 1.0.0</div></div></section>
+            </div>
+            <div><span class="state-l">Lỗi trong một thẻ: các khối khác vẫn dùng được</span>
+              <section class="card flat"><div class="card-head"><h3>Khách hàng theo nhóm</h3><span class="meta">ảnh chụp cuối ngày 10/11/2026 (hôm nay)</span></div><div class="empty sm fail"><span class="mark"><svg class="ic"><use href="#i-alert" /></svg></span><b>Không vẽ được diễn biến KH theo nhóm</b><p>Số chủ đạo, sáu ô chỉ số và bảng So sánh team vẫn đúng.</p><div class="acts"><button class="btn sm">Thử lại</button></div></div></section>
+            </div>
+          </div>
+        </div>
+        <ul class="rules" style="margin-top: 18px">
+          <li>"Chưa có số liệu" không phải lỗi: số 0 hiện là số ("0", "0 VNĐ"), chỉ tỷ lệ không tính được mới là "—". Điểm nhấn ghi một dòng thay vì để trống.</li>
+          <li>Kỳ chưa bắt đầu: ‹ › và nút Hôm nay luôn đưa về được kỳ đang chạy.</li>
+          <li>Lỗi khi xuất Excel hay sao lưu nằm ở viên "Lưu ý" (đợt b), không nằm trong màn.</li>
+        </ul>
+      </section>
+
+      <!-- ================= Che tên KH ================= -->
+      <section class="sec" id="mask">
+        <span class="kicker">Ý 36 · đã duyệt ở đợt a</span>
+        <h2>Che tên KH: Tổng quan chỉ có một chỗ hiện tên.</h2>
+        <p class="lead">Các khối của Tổng quan là số theo team và RM; tên RM, TL, team không che. Chỗ duy nhất có tên KH là viên <b>"Lưu ý"</b> và bảng hôm nay của nó (đợt b), đã đánh dấu <code>.kh</code>. Câu của Điểm nhấn không chứa tên KH. Dưới đây là thanh công cụ khi đang che tên; bấm nút con mắt ở cửa sổ đầu trang để thử.</p>
+        <div class="crop mid" data-os="mac" data-clone="#win" data-masked></div>
+      </section>
+
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <span class="kicker">Cần anh quyết ở G3 · và G2 cho bộ luật</span>
+        <h2>Mười một điểm của đợt c, và bảng luật Điểm nhấn.</h2>
+        <p class="lead">Em sẽ hỏi anh từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; câu trả lời ghi nguyên văn vào spec <code>phase-6-phan-hoi-dung-thu.md</code> §8. Không hỏi lại các điều anh đã chốt (font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", thanh tiêu đề Windows kiểu A, che tên KH, Forecast D-a … D-f, mục tiêu theo tháng ở cấp team và tổng các team). Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026; số của tháng 11 khớp với màn Team &amp; nhân sự của đợt b.</p>
+        <ol class="asks">
+          <li><b>Bố cục màn Tổng quan?</b>Hàng đầu: số chủ đạo (rộng) cạnh Điểm nhấn. Rồi sáu ô chỉ số; ô Lịch hẹn cạnh KH theo nhóm; cuối là bảng So sánh team. Cửa sổ hẹp: Điểm nhấn xuống dưới số chủ đạo, sáu ô thành ba cột.<em>Đề xuất: duyệt như hình. Phương án khác: Điểm nhấn lên trên cùng, thành một dải ngang.</em></li>
+          <li><b>Đường lũy kế: ba nét như mục "Số chủ đạo"?</b>Nét liền là kỳ đang xem, nét đứt là phần dự kiến, nét mờ là <b>cả</b> kỳ trước. Con số so sánh vẫn theo luật cùng số ngày đã duyệt.<em>Đề xuất: nét mờ vẽ cả kỳ trước. Phương án khác: nét mờ chỉ vẽ tới cùng số ngày.</em></li>
+          <li><b>Phần dự kiến ở từng loại kỳ?</b>Tuần: tới hết Thứ Bảy. Tháng: tới cuối tháng. Năm: chỉ tới hết tháng đang chạy, vì Forecast chỉ định nghĩa cho tuần và tháng. Ngày và Tùy chọn: không có.<em>Đề xuất: như bảng "Mỗi loại kỳ vẽ gì". Phương án khác: kỳ Năm không vẽ phần dự kiến.</em></li>
+          <li><b>Sáu ô chỉ số: bộ ô và phép tính?</b>Tổng số HĐ, Tỷ lệ hủy, Tỷ lệ chốt, Chuyển RF, HĐ nộp, Case size. Doanh số lên làm số chủ đạo; HĐ phát hành nằm trong phép tính của Tổng số HĐ, không còn ô riêng.<em>Đề xuất: sáu ô như hình. Phương án khác: giữ thêm ô HĐ phát hành và thêm ô HĐ hủy (tám ô, hai hàng).</em></li>
+          <li><b>Số âm màu đỏ; bấm ô mở Báo cáo?</b>Doanh số và Tổng số HĐ âm viết "-50 tr", "-1", màu đỏ. Bấm ô nào cũng mở Báo cáo ở đúng kỳ và góc nhìn (đích đến vẽ ở đợt e).<em>Đề xuất: duyệt. Phương án khác: số âm giữ màu thường, chỉ có dấu "-".</em></li>
+          <li><b>Menu góc nhìn của Tổng quan?</b>Toàn bộ, một team, hoặc một RM trong cùng một menu. Thay cách cũ "Team = mọi team, mỗi team một chart" đã duyệt 03/10.<em>Đề xuất: như mục "Menu góc nhìn". Phương án khác: thêm mục "Mọi team" giữ bố cục mỗi team một chart.</em></li>
+          <li><b>Bộ chọn kỳ và động tác "Đếm"?</b>Năm loại kỳ như hiện có; đổi loại kỳ giữ ngày đang xem; nút Hôm nay trong bảng chọn. Số chạy tới giá trị mới khi đổi (chỉ minh họa; duyệt ở đợt g).<em>Đề xuất: duyệt. Phương án khác: nút Hôm nay nằm thẳng trên thanh công cụ, cạnh viên kỳ.</em></li>
+          <li><b>Kỳ đã qua như mục "Kỳ đã qua"?</b>Không nét đứt, không câu Điểm nhấn về Forecast, mục tiêu, case size; so với cả kỳ liền trước; nhãn "kỳ đã qua".<em>Đề xuất: duyệt.</em></li>
+          <li><b>Các khối đã duyệt 03/10: giữ ô Lịch hẹn, KH theo nhóm, So sánh team?</b>Bảng So sánh team thêm hai cột HĐ hủy và Tỷ lệ hủy (chín cột số); Tổng số HĐ, FYP phát hành, FYP hủy theo team để ở Báo cáo.<em>Đề xuất: như bảng "Giữ, gộp, đổi". Phương án khác: bảng có đủ năm cột mới của phần B (mười hai cột số, phải cuộn ngang ở cửa sổ hẹp).</em></li>
+          <li><b>Điểm nhấn: chỗ đặt và hình thức?</b>Một thẻ cạnh số chủ đạo; mỗi câu có icon màu, một dòng chính đậm, một dòng phụ, mũi tên; bấm là tới nơi liên quan. Nội dung luật hỏi riêng (G2).<em>Đề xuất: duyệt.</em></li>
+          <li><b>Trạng thái trống và lỗi như mục trên?</b>Kỳ chưa có số liệu, kỳ chưa bắt đầu, team chưa có RM, lỗi đọc dữ liệu cả màn, lỗi trong một thẻ.<em>Đề xuất: duyệt.</em></li>
+        </ol>
+        <h3 class="sub-h">G2 · Bộ luật "Điểm nhấn"</h3>
+        <ol class="asks">
+          <li><b>Sáu luật: bốn của bản thử và hai luật thêm?</b>Tỷ lệ hủy tăng / giảm; buổi hẹn chưa ghi kết quả; Forecast tuần này; team dẫn đầu hoặc thứ hạng; thêm: về đích so với mục tiêu tháng, lịch hẹn thiếu case size.<em>Đề xuất: nhận cả sáu. Phương án khác: chỉ bốn luật của bản thử.</em></li>
+          <li><b>Ngưỡng của luật Tỷ lệ hủy?</b>Chỉ nói khi chênh từ 1 điểm % trở lên so với kỳ trước; nhỏ hơn thì im.<em>Đề xuất: 1 điểm %. Phương án khác: hễ có chênh là nói.</em></li>
+          <li><b>Thứ tự ưu tiên và số câu tối đa?</b>Hủy tăng → chưa ghi kết quả → thiếu case size → mục tiêu tháng → Forecast tuần → team → hủy giảm; tối đa 4 câu.<em>Đề xuất: như bảng, tối đa 4. Phương án khác: tối đa 6, hiện mọi luật khớp.</em></li>
+          <li><b>Khi không luật nào khớp?</b>Thẻ giữ chỗ, ghi "Kỳ này không có điểm nào cần lưu ý".<em>Đề xuất: giữ thẻ. Phương án khác: ẩn cả thẻ, số chủ đạo rộng hết hàng.</em></li>
+          <li><b>Câu mẫu, nơi tới, và luật nào chạy ở kỳ đã qua, ở góc nhìn RM?</b>Như bảy dòng của bảng luật.<em>Đề xuất: duyệt bảng.</em></li>
+        </ol>
+        <p class="foot-note">Mockup G3 đợt c · T-422 #1238 · chờ Owner duyệt · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+      </section>
+    </div>
+
+    <script src="ui2.js"></script>
+    <script>
+      /* Round c: the mock data of Tổng quan and the screen drawn from it. Behaviour shared with other rounds
+         is in ui2.js (window.ui2). Today in the mock: Tuesday 10/11/2026. Money in triệu.
+         Every number comes from one table of days (one row a day for each RM), so a week is always part
+         of its month, a team is the sum of its RMs and "Toàn bộ" the sum of the teams. 01/11 – 10/11/2026
+         is written by hand to match the Team screen of round b; the days before come from a fixed
+         pseudo-random rule (the same numbers on every load). */
+      (() => {
+        const $ = (s, el = document) => el.querySelector(s);
+        const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+        const ui2 = window.ui2;
+        const byName = new Intl.Collator('vi', { numeric: true }).compare;
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const ic = (n, cls = 'ic') => `<svg class="${cls}"><use href="#i-${n}" /></svg>`;
+        const sum = (a, f = (x) => x) => a.reduce((t, x) => t + f(x), 0);
+
+        /* ---------- Calendar: a day is a whole number, a period is { kind, a, b } ---------- */
+        const day = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / 864e5);
+        const parts = (n) => { const t = new Date(n * 864e5); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate(), w: t.getUTCDay() }; };
+        const TODAY = day(2026, 11, 10), FROM = day(2025, 1, 1), TO = day(2026, 12, 31), N = TO - FROM + 1;
+        const p2 = (n) => String(n).padStart(2, '0');
+        const dm = (n) => { const t = parts(n); return `${p2(t.d)}/${p2(t.m)}`; };
+        const dmy = (n) => `${dm(n)}/${parts(n).y}`;
+        const WD = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const WD2 = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const dayOf = (n) => ({ kind: 'day', a: n, b: n });
+        const weekOf = (n) => { const a = n - ((parts(n).w + 6) % 7); return { kind: 'week', a, b: a + 6 }; };
+        const monthOf = (y, m) => ({ kind: 'month', a: day(y, m, 1), b: day(y, m + 1, 1) - 1 });
+        const yearOf = (y) => ({ kind: 'year', a: day(y, 1, 1), b: day(y, 12, 31) });
+        const ofKind = (kind, n) => (kind === 'day' ? dayOf(n) : kind === 'week' ? weekOf(n) : kind === 'month' ? monthOf(parts(n).y, parts(n).m) : yearOf(parts(n).y));
+        const shift = (p, dir) => (p.kind === 'day' ? dayOf(p.a + dir) : p.kind === 'week' ? weekOf(p.a + 7 * dir) : p.kind === 'month' ? monthOf(parts(p.a).y, parts(p.a).m + dir) : yearOf(parts(p.a).y + dir));
+        const inData = (p) => p.a >= FROM && p.b <= TO;
+        const same = (p, q) => p.kind === q.kind && p.a === q.a;
+        const keyOf = (p) => { const t = parts(p.a); return p.kind === 'year' ? `y:${t.y}` : p.kind === 'month' ? `m:${t.y}-${t.m}` : `${p.kind[0]}:${t.y}-${t.m}-${t.d}`; };
+        const parseP = (s) => { const [k, v] = s.split(':'), [y, m = 1, d = 1] = v.split('-').map(Number); return k === 'y' ? yearOf(y) : k === 'm' ? monthOf(y, m) : ofKind(k === 'w' ? 'week' : 'day', day(y, m, d)); };
+        const statusOf = (p) => (p.b < TODAY ? 'past' : p.a > TODAY ? 'future' : 'running');
+        // The name of a period (golden so-va-tien-te.md Y06–Y11)
+        const nameOf = (p) => {
+          const a = parts(p.a), b = parts(p.b);
+          if (p.kind === 'day') return dmy(p.a);
+          if (p.kind === 'week') return `${a.y === b.y ? dm(p.a) : dmy(p.a)} – ${dmy(p.b)}`;
+          return p.kind === 'month' ? `Tháng ${p2(a.m)}/${a.y}` : `Năm ${a.y}`;
+        };
+        const longName = (p) => (p.kind === 'week' ? `Tuần ${nameOf(p)}` : p.kind === 'day' ? `${WD[parts(p.a).w]} ${nameOf(p)}` : nameOf(p));
+        const span = (a, b, year) => (a === b ? dm(a) : `${dm(a)} – ${dm(b)}`) + (year ? `/${parts(b).y}` : '');
+        // What a period is measured against (phase-4-chi-so.md §4.2, C01–C11): a period that is over, against
+        // the whole period before; a running one, against the same number of days of the period before
+        // (a year: the same dates of the year before).
+        function windows(p) {
+          const st = statusOf(p), prev = shift(p, -1);
+          if (st === 'future') return { st, prev, cur: null, cmp: null };
+          const cur = [p.a, Math.min(p.b, TODAY)];
+          let cmp;
+          if (st === 'past') cmp = [prev.a, prev.b];
+          else if (p.kind === 'year') { const t = parts(TODAY); cmp = [prev.a, day(t.y - 1, t.m, t.m === 2 && t.d === 29 ? 28 : t.d)]; }
+          else cmp = [prev.a, Math.min(prev.b, prev.a + (cur[1] - cur[0]))];
+          return { st, prev, cur, cmp: prev.a >= FROM ? cmp : null };
+        }
+
+        /* ---------- People (the same teams and RMs as round b) ---------- */
+        // name, TL, colour (token), icon, target of the month (ý 32: by team, the whole = the sum)
+        const TEAMS = [
+          ['Sao Mai', 'Nguyễn Thu Hà', 'accent', 'star', 1100],
+          ['Bình Minh', 'Vũ Đức Thành', 'warn', 'sunrise', 950],
+          ['Hừng Đông', 'Lâm Ngọc Diệp', null, null, 950],
+        ].map(([name, tl, color, icon, target], i) => ({ i, name, tl, color, icon, target }));
+        // name, team, open customers, "chuyển RF" in 01/11 – 10/11
+        const RMS = [
+          ['Hoàng Văn Tùng', 0, 16, 8], ['Nguyễn Văn Hùng', 0, 0, 0], ['Đỗ Khánh Linh', 0, 34, 7], ['Lý Quang Vinh', 0, 31, 5], ['Trịnh Gia Bảo', 0, 29, 2],
+          ['Đặng Văn Phúc', 0, 33, 3], ['Lê Ngọc Hương', 0, 28, 1], ['Phan Minh Châu', 0, 30, 2], ['Kiều Anh Thư', 0, 27, 1], ['Tô Hữu Nghĩa', 0, 26, 0],
+          ['Mai Phương', 1, 38, 8], ['Châu Bảo Ngọc', 1, 41, 7], ['Phạm Thu Hà', 1, 36, 2], ['Bùi Ngọc Trâm', 1, 44, 1], ['Đỗ Văn Hiếu', 1, 29, 2],
+          ['Quách Gia Hân', 1, 40, 3], ['Tạ Minh Khoa', 1, 33, 1], ['Lâm Bảo Anh', 1, 47, 2], ['Hà Quốc Việt', 1, 35, 1],
+          ['Hoàng Nam', 2, 39, 10], ['Lê Minh Khang', 2, 44, 3], ['Trần Quốc Thắng', 2, 37, 2], ['Huỳnh Kim Hùng', 2, 31, 1], ['Võ Thị Lan', 2, 35, 2],
+          ['Đinh Gia Huy', 2, 42, 2], ['Hồ Thanh Vy', 2, 30, 1], ['Trương Đức Long', 2, 29, 1],
+        ].map(([name, team, open, rf], i) => ({ i, name, team, open, rf }));
+        const teamRms = (t) => RMS.filter((r) => r.team === t).map((r) => r.i);
+        const TEAMS_BY_NAME = [...TEAMS].sort((a, b) => byName(a.name, b.name));
+        const look = (t) => ({ c: t.color ? `var(--${t.color})` : 'var(--text-2)', i: t.icon || 'team' });
+        const tmark = (t) => `<span class="tmark" style="--c: ${look(t).c}">${ic(look(t).i)}</span>`;
+        // A view: 'all', 't<team>' or 'r<RM>'
+        const scopeOf = (sc) => (sc === 'all' ? { type: 'all', rms: RMS.map((r) => r.i) } : sc[0] === 't' ? { type: 'team', t: +sc.slice(1), rms: teamRms(+sc.slice(1)) } : { type: 'rm', r: +sc.slice(1), rms: [+sc.slice(1)] });
+        const scopeName = (sc) => { const s = scopeOf(sc); return s.type === 'all' ? 'Toàn bộ' : s.type === 'team' ? `Team ${TEAMS[s.t].name}` : `RM ${RMS[s.r].name}`; };
+        const capName = (sc) => { const s = scopeOf(sc); return s.type === 'rm' ? RMS[s.r].name : scopeName(sc); };
+
+        /* ---------- The table of days ---------- */
+        // met · missed (rescheduled, cancelled, no show) · unrecorded (past, still "Đã lên lịch") · planned ·
+        // rf · submitted, case size · issued, FYP issued · cancelled, FYP cancelled ·
+        // forecast (expected case size of the day), appointments that carry it, appointments without one
+        const F = ['met', 'miss', 'unrec', 'plan', 'rf', 'sub', 'cs', 'iss', 'fi', 'can', 'fc', 'fct', 'fn', 'fmiss'];
+        const FX = Object.fromEntries(F.map((f, k) => [f, k]));
+        const RAW = RMS.map(() => F.map(() => new Int32Array(N)));
+        const put = (rm, n, f, v) => { if (n >= FROM && n <= TO) RAW[rm][FX[f]][n - FROM] += v; };
+        const wipe = (rms, a, b, fields) => { for (const r of rms) for (const f of fields) RAW[r][FX[f]].fill(0, a - FROM, b - FROM + 1); };
+        const hash = (a, b, c) => { let h = (Math.imul(a, 374761393) + Math.imul(b, 668265263) + Math.imul(c, 2246822519)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+        const FYP = [20, 30, 30, 40, 40, 50, 60, 80];
+        const STAR = new Set([0, 2, 3, 10, 11, 19]); // the RMs who carry most of the sales, as on the Team screen of round b
+        const NOV1 = day(2026, 11, 1), NOV = (d) => day(2026, 11, d);
+        RMS.forEach((r, i) => {
+          if (!r.open) return; // a new RM: nothing yet
+          for (let n = FROM; n <= TO; n++) {
+            if (parts(n).w === 0) continue; // nothing on a Sunday (D-c)
+            const h = (c) => hash(i + 1, n, c);
+            if (n < TODAY) { const a = h(1); put(i, n, 'met', a < 0.35 ? 0 : a < 0.8 ? 1 : 2); if (h(2) < 0.18) put(i, n, 'miss', 1); }
+            if (n > TODAY) { const far = n - TODAY; if (h(3) < (far <= 14 ? 0.62 : far <= 30 ? 0.4 : 0.15)) put(i, n, 'plan', h(4) < 0.25 ? 2 : 1); continue; }
+            if (h(6) < (STAR.has(i) ? 0.45 : 0.03)) { put(i, n, 'sub', 1); put(i, n, 'cs', FYP[Math.floor(h(7) * 8)]); }
+            if (n >= NOV1) continue; // 01/11 – 10/11 is written by hand below
+            if (h(5) < 0.36) put(i, n, 'rf', 1);
+            if (h(8) < (STAR.has(i) ? 0.38 : 0.02)) {
+              const fyp = FYP[Math.floor(h(9) * 8)], gone = n + 3 + Math.floor(h(11) * 18);
+              put(i, n, 'iss', 1); put(i, n, 'fi', fyp);
+              if (h(10) < 0.06 && gone < NOV1 && parts(gone).w !== 0) { put(i, gone, 'can', 1); put(i, gone, 'fc', fyp); } // about 5% are cancelled within 21 days (§4.4)
+            }
+          }
+        });
+        // The ten days November is compared with have no cancellation: "tăng 3 điểm %" reads plainly
+        wipe(RMS.map((r) => r.i), day(2026, 10, 1), day(2026, 10, 10), ['can', 'fc']);
+        // A week with more cancelled than issued (golden B, G28: above 100%, below zero): Hừng Đông, 26/10 – 01/11
+        wipe(teamRms(2), day(2026, 10, 26), day(2026, 11, 1), ['iss', 'fi', 'can', 'fc']);
+        put(19, day(2026, 10, 28), 'iss', 1); put(19, day(2026, 10, 28), 'fi', 40);
+        put(21, day(2026, 10, 27), 'can', 1); put(21, day(2026, 10, 27), 'fc', 50);
+        put(23, day(2026, 10, 30), 'can', 1); put(23, day(2026, 10, 30), 'fc', 30);
+        // 01/11 – 10/11, as on the Team screen of round b: 33 issued (1,430 tr), 1 cancelled (50 tr), 78 RF.
+        // RM → [day, FYP issued]. Net by day: 150 · 140 · 180 · 170 · 190 · 130 · (Sunday) · 220 · 200 = 1,380.
+        const ISSUED = {
+          0: [[2, 50], [3, 40], [4, 50], [5, 60], [6, 40], [7, 30]],
+          2: [[2, 40], [4, 50], [5, 30], [6, 50], [9, 50], [10, 40]],
+          3: [[3, 50], [7, 40], [9, 50]],
+          10: [[2, 60], [3, 20], [4, 40], [6, 30], [9, 60], [10, 40]],
+          11: [[4, 40], [5, 30], [7, 30], [9, 60], [10, 40]],
+          19: [[3, 30], [5, 50], [6, 20], [6, 50], [7, 30], [9, 50], [10, 80]],
+        };
+        for (const [rm, list] of Object.entries(ISSUED)) for (const [d, fyp] of list) { put(+rm, NOV(d), 'iss', 1); put(+rm, NOV(d), 'fi', fyp); }
+        put(0, NOV(9), 'can', 1); put(0, NOV(9), 'fc', 50); // RM Hoàng Văn Tùng: a policy issued in October, cancelled on Monday 09/11
+        const WORK = [2, 3, 4, 5, 6, 7, 9]; // not today: only one of today's five appointments has been met so far
+        RMS.forEach((r, i) => { for (let k = 0; k < r.rf; k++) put(i, NOV(WORK[(k * 3 + i) % 7]), 'rf', 1); });
+        // 12 past appointments with no outcome yet, the number "Lưu ý" shows: Sao Mai 5 · Hừng Đông 4 · Bình Minh 3
+        for (const [rm, d] of [[2, 3], [2, 6], [4, 5], [5, 7], [8, 9], [12, 4], [14, 6], [17, 9], [20, 3], [21, 5], [23, 7], [25, 9]]) put(rm, NOV(d), 'unrec', 1);
+        // Today, the five appointments of "Lưu ý": one met, four still to come; two of them carry no case size
+        put(0, TODAY, 'met', 1); put(0, TODAY, 'plan', 2); put(2, TODAY, 'plan', 1); put(20, TODAY, 'plan', 1);
+        put(0, TODAY, 'fmiss', 1); put(20, TODAY, 'fmiss', 1);
+        // Forecast from today to 30/11 (Monday → Saturday): RM → [day, expected case size]. This week 555 tr
+        // (Sao Mai 240 · Bình Minh 185 · Hừng Đông 130, as in round b), to the end of the month 1,320 tr.
+        const FORECAST = {
+          0: [[10, 30], [11, 50], [12, 40], [14, 40], [16, 40], [18, 30], [20, 40], [24, 40], [27, 30], [30, 20]],
+          2: [[10, 20], [13, 30], [17, 30], [19, 20], [25, 30], [28, 30]],
+          3: [[12, 30], [18, 20], [23, 20], [26, 20]],
+          10: [[11, 40], [12, 20], [13, 30], [14, 30], [16, 30], [19, 30], [21, 20], [24, 30], [30, 30]],
+          11: [[12, 25], [14, 40], [17, 25], [20, 20], [25, 30], [30, 20]],
+          19: [[11, 30], [12, 20], [13, 40], [14, 40], [16, 30], [17, 20], [21, 30], [23, 30], [26, 20], [30, 30]],
+        };
+        for (const [rm, list] of Object.entries(FORECAST)) for (const [d, amount] of list) {
+          put(+rm, NOV(d), 'fct', amount); put(+rm, NOV(d), 'fn', 1);
+          const plan = RAW[+rm][FX.plan], at = NOV(d) - FROM;
+          if (!plan[at]) plan[at] = 1;
+        }
+        // A "chuyển RF" is a meeting that took place: a day never has more of them than meetings
+        for (const rows of RAW) for (let k = 0; k < N; k++) if (rows[FX.met][k] < rows[FX.rf][k]) rows[FX.met][k] = rows[FX.rf][k];
+        // Running totals, so any range of days is two look-ups
+        const PRE = RAW.map((rows) => rows.map((row) => { const pre = new Int32Array(N + 1); for (let k = 0; k < N; k++) pre[k + 1] = pre[k] + row[k]; return pre; }));
+        const rate = (a, b) => (b ? (a / b) * 100 : null);
+        function range(rms, a, b) {
+          const o = {};
+          a = Math.max(a, FROM); b = Math.min(b, TO);
+          F.forEach((f, k) => { let t = 0; if (a <= b) for (const r of rms) t += PRE[r][k][b - FROM + 1] - PRE[r][k][a - FROM]; o[f] = t; });
+          o.total = o.iss - o.can; // Tổng số HĐ
+          o.sales = o.fi - o.fc; // Doanh số
+          o.close = rate(o.iss, o.rf); // Tỷ lệ chốt: does not take cancelled policies off
+          o.cancel = rate(o.can, o.iss); // Tỷ lệ hủy
+          return o;
+        }
+        // Customers by stage at the end of a day. Today: the book of round b (884 open: N4 361 · N3 219 · N2 134 · N1 170),
+        // shared out among the RMs by their open customers; the days before are a little smaller.
+        const BOOK = [361, 219, 134, 170], OPEN_ALL = sum(BOOK), GROW = [0.25, 0.2, 0.3, 0.35];
+        const KH = RMS.map((r) => {
+          const raw = BOOK.map((s) => (r.open * s) / OPEN_ALL), base = raw.map(Math.floor);
+          raw.map((v, k) => [v - base[k], k]).sort((x, y) => y[0] - x[0]).slice(0, r.open - sum(base)).forEach(([, k]) => base[k]++);
+          return base;
+        });
+        for (let guard = 0; guard < 400; guard++) { // settle the rounding so the four stages add up to the book
+          const off = BOOK.map((want, k) => want - sum(KH, (x) => x[k])), up = off.findIndex((v) => v > 0), down = off.findIndex((v) => v < 0);
+          if (up < 0 || down < 0) break;
+          const from = KH.reduce((best, x, i) => (x[down] > KH[best][down] ? i : best), 0);
+          KH[from][down]--; KH[from][up]++;
+        }
+        const snap = (rms, n) => [0, 1, 2, 3].map((k) => sum(rms, (r) => {
+          const now = KH[r][k];
+          if (!now || n >= TODAY) return now;
+          return Math.max(0, Math.round(now * (1 - (GROW[k] * (TODAY - n)) / 365)) + Math.floor(hash(r + 1, n, 20 + k) * 3) - 1);
+        }));
+
+        /* ---------- Format (ADR-0018: "," groups thousands, "." the decimals) ---------- */
+        const grp = (s) => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const trim = (v, d) => { const s = v.toFixed(d); return grp(s.includes('.') ? s.replace(/\.?0+$/, '') : s); };
+        const cnt = (n) => (n < 0 ? '-' : '') + grp(Math.abs(Math.round(n)));
+        // Compact money from triệu: "1.38 tỷ", "620 tr", "-50 tr"; zero is the full form "0 VNĐ" (golden C01)
+        const moneyUnit = (tr) => (!Math.round(tr) ? 'VNĐ' : Math.abs(tr) >= 1000 ? 'tỷ' : 'tr');
+        const moneyNum = (tr, u) => (u === 'VNĐ' ? '0' : (tr < 0 ? '-' : '') + (u === 'tỷ' ? trim(Math.abs(tr) / 1000, 2) : grp(Math.round(Math.abs(tr)))));
+        const money = (tr) => { const u = moneyUnit(tr); return `${moneyNum(tr, u)} ${u}`; };
+        const pct = (v) => (v === null ? '—' : `${trim(Math.max(0, v), 1)}%`);
+        const r1 = (v) => Math.round(v * 10) / 10;
+        // The change against the period before: ▲ ▼ = with the size of it; "good" says which way is green
+        const chip = (diff, text, good = true, why = '') => (diff === null
+          ? `<span class="delta none" title="${esc(why)}">không so</span>`
+          : `<span class="delta ${!diff ? '' : (diff > 0) === good ? 'up' : 'bad'}">${diff > 0 ? '▲' : diff < 0 ? '▼' : '='}${diff ? ` ${text}` : ''}</span>`);
+        const dCount = (now, was, why, good = true) => (was === null ? chip(null, '', true, why) : chip(now - was, cnt(Math.abs(now - was)), good));
+        const dMoney = (now, was, why) => (was === null ? chip(null, '', true, why) : chip(now - was, money(Math.abs(now - was))));
+        const dRate = (now, was, good, why) => (now === null || was === null ? chip(null, '', true, why) : chip(r1(now - was), `${trim(Math.abs(r1(now - was)), 1)} điểm %`, good));
+
+        /* ---------- One view of one period: everything the screen shows ---------- */
+        function ctx(sc, p) {
+          const s = scopeOf(sc), w = windows(p);
+          const c = { sc, s, p, w, rms: s.rms, cur: w.cur ? range(s.rms, ...w.cur) : null, was: w.cmp ? range(s.rms, ...w.cmp) : null, whole: range(s.rms, p.a, p.b) };
+          c.why = !w.cur ? 'Kỳ chưa bắt đầu' : !w.cmp ? 'Bản mẫu không có dữ liệu trước năm 2025' : '';
+          return c;
+        }
+        const KIND = { day: 'Ngày', week: 'Tuần', month: 'Tháng', year: 'Năm' };
+        const flagOf = (c) => (c.w.st === 'future' ? 'chưa bắt đầu' : c.w.st === 'past' ? 'kỳ đã qua' : c.p.kind === 'month' ? 'MTD' : c.p.kind === 'day' ? 'hôm nay' : 'tới hôm nay');
+        const cmpSpan = (c) => span(c.w.cmp[0], c.w.cmp[1], c.p.kind === 'year');
+        const cmpText = (c) => {
+          if (!c.w.cur) return 'kỳ chưa bắt đầu, không so';
+          if (!c.w.cmp) return 'không so với kỳ trước';
+          if (c.w.st === 'past') return `so với cả ${longName(c.w.prev)}`;
+          if (c.p.kind === 'day') return `so với hôm qua ${dm(c.w.cmp[0])}`;
+          return `so với ${cmpSpan(c)}, ${c.p.kind === 'year' ? 'cùng ngày tháng của năm trước' : `cùng số ngày của ${KIND[c.p.kind].toLowerCase()} trước`}`;
+        };
+        const subLine = (c) => {
+          const { p, w } = c, who = scopeName(c.sc);
+          if (w.st !== 'running') return `${longName(p)} · ${flagOf(c)} · ${who}`;
+          if (p.kind === 'day') return `${longName(p)} · hôm nay · ${who}`;
+          if (p.kind === 'month') return `${nameOf(p)} · ${span(...w.cur)} (MTD) · ${who}`;
+          return `${longName(p)} · tới hôm nay ${dm(TODAY)} · ${who}`;
+        };
+
+        /* ---------- "Điểm nhấn": the rules (the table of spec §8; the order is the priority) ---------- */
+        const HL_MAX = 4, CANCEL_STEP = 1;
+        function highlights(c) {
+          const { p, w, cur, was, s, rms, whole } = c, out = [];
+          if (!cur) return out;
+          const running = w.st === 'running', where = `${longName(p)} · ${scopeName(c.sc)}`;
+          // 1 and 7 · Tỷ lệ hủy against the period before
+          if (cur.can > 0 && !cur.iss) {
+            out.push({ o: 1, c: 'danger', i: 'alert', b: `${cnt(cur.can)} HĐ hủy, kỳ này chưa có HĐ phát hành`, s: `Tỷ lệ hủy không tính được ("—") · Doanh số ${money(cur.sales)}`, go: 'reports', a: `Báo cáo, danh sách HĐ hủy · ${where}` });
+          } else if (was && cur.cancel !== null && was.cancel !== null) {
+            const d = r1(cur.cancel - was.cancel), base = `${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành · ${w.st === 'past' ? `cả ${longName(w.prev)}` : cmpSpan(c)} là ${pct(was.cancel)}`;
+            if (d >= CANCEL_STEP) out.push({ o: 1, c: 'danger', i: 'alert', b: `Tỷ lệ hủy ${pct(cur.cancel)}, tăng ${trim(d, 1)} điểm %`, s: base, go: 'reports', a: `Báo cáo, danh sách HĐ hủy · ${where}` });
+            if (d <= -CANCEL_STEP) out.push({ o: 7, c: 'ok', i: 'check', b: `Tỷ lệ hủy ${pct(cur.cancel)}, giảm ${trim(-d, 1)} điểm %`, s: base, go: 'reports', a: `Báo cáo, danh sách HĐ hủy · ${where}` });
+          }
+          // 2 · past appointments with no outcome recorded, in the period on screen
+          if (whole.unrec > 0) {
+            const by = (list, name, top) => list.map((x) => [name(x), range(x.rms, p.a, p.b).unrec]).filter((x) => x[1]).sort((x, y) => y[1] - x[1]).slice(0, top).map((x) => `${x[0]} ${x[1]}`).join(' · ');
+            const sub = s.type === 'all' ? by(TEAMS.map((t) => ({ t, rms: teamRms(t.i) })), (x) => x.t.name, 3) : s.type === 'team' ? by(rms.map((r) => ({ r, rms: [r] })), (x) => RMS[x.r].name, 3) : 'Ghi kết quả để chỉ số của kỳ đủ';
+            out.push({ o: 2, c: 'warn', i: 'clock', b: `${cnt(whole.unrec)} buổi hẹn đã qua chưa ghi kết quả`, s: sub, go: 'appointments', a: `Lịch hẹn, lọc "Chưa ghi kết quả" · ${where}` });
+          }
+          if (running) {
+            const sat = weekOf(TODAY).a + 5, week = range(rms, TODAY, sat);
+            // 3 · appointments of this week that carry no expected case size
+            if (week.fmiss > 0) out.push({ o: 3, c: 'warn', i: 'coin', b: `${cnt(week.fmiss)} lịch hẹn tuần này thiếu case size`, s: 'Chưa tính vào Forecast · điền case size dự kiến để tính', go: 'forecast', a: `Forecast, danh sách lịch thiếu case size · ${scopeName(c.sc)}` });
+            // 4 · the target of the month (by team; the whole is the sum of the teams; never for one RM)
+            const goal = s.type === 'all' ? (TEAMS.every((t) => t.target) ? sum(TEAMS, (t) => t.target) : 0) : s.type === 'team' ? TEAMS[s.t].target : 0;
+            if (p.kind === 'month' && goal > 0) {
+              const land = cur.sales + range(rms, TODAY, p.b).fct, to = `Forecast, đường băng tháng · ${scopeName(c.sc)}`;
+              if (cur.sales >= goal) out.push({ o: 4, c: 'ok', i: 'target', b: `Đã vượt mục tiêu tháng: ${money(cur.sales)} / ${money(goal)}`, s: `Dự kiến về đích ${money(land)}`, go: 'forecast', a: to });
+              else out.push({ o: 4, c: 'accent', i: 'target', b: `Đã đạt ${pct(rate(cur.sales, goal))} mục tiêu tháng`, s: `${money(cur.sales)} / ${money(goal)} · dự kiến về đích ${money(land)}, ${land >= goal ? 'vượt' : 'còn thiếu'} ${money(Math.abs(goal - land))}`, go: 'forecast', a: to });
+            }
+            // 5 · Forecast of this week (today → Saturday)
+            if (week.fct > 0) out.push({ o: 5, c: 'info', i: 'forecast', b: `Tuần này dự kiến ${money(week.fct)}`, s: `${cnt(week.fn)} lịch có case size, từ hôm nay tới Thứ Bảy ${dm(sat)}`, go: 'forecast', a: `Forecast, Tuần này · ${scopeName(c.sc)}` });
+          }
+          // 6 · the team in front, or the rank of the team on screen
+          if (s.type !== 'rm' && TEAMS.length > 1) {
+            const all = range(RMS.map((r) => r.i), ...w.cur), teams = TEAMS.map((t) => ({ t, d: range(teamRms(t.i), ...w.cur) })).sort((x, y) => y.d.sales - x.d.sales);
+            const share = (v) => (all.sales > 0 && v > 0 ? `${pct(rate(v, all.sales))} doanh số toàn bộ` : '');
+            const to = `Báo cáo, bảng theo team · ${longName(p)}`;
+            if (s.type === 'all' && teams[0].d.sales > 0) {
+              const top = teams.filter((x) => x.d.sales === teams[0].d.sales);
+              out.push({ o: 6, c: 'accent', i: 'star', b: `${top.map((x) => x.t.name).join(' và ')} ${top.length > 1 ? 'cùng ' : ''}dẫn đầu doanh số: ${money(teams[0].d.sales)}`, s: [share(teams[0].d.sales), top.length === 1 ? `Tỷ lệ chốt ${pct(teams[0].d.close)}` : ''].filter(Boolean).join(' · '), go: 'reports', a: to });
+            }
+            if (s.type === 'team' && teams.some((x) => x.d.sales !== 0)) {
+              const mine = teams.find((x) => x.t.i === s.t).d.sales;
+              out.push({ o: 6, c: 'accent', i: 'star', b: `${TEAMS[s.t].name} đứng thứ ${1 + teams.filter((x) => x.d.sales > mine).length} / ${TEAMS.length} về doanh số`, s: [money(mine), share(mine)].filter(Boolean).join(' · '), go: 'reports', a: to });
+            }
+          }
+          return out.sort((x, y) => x.o - y.o);
+        }
+
+        /* ---------- The blocks of the screen ---------- */
+        const roll = (k, v, f, text) => `<span class="roll" data-k="${k}" data-v="${v}" data-f="${f}">${text}</span>`;
+        const LEGEND = { week: ['Tuần này', 'Tuần trước'], month: ['Tháng này', 'Tháng trước'], year: ['Năm nay', 'Năm trước'] };
+        function chartOf(c, cut) {
+          const { p, w, rms } = c;
+          if (!w.cur || p.kind === 'day') return null;
+          const series = (a, b) => { const out = []; for (let n = a; n <= b; n++) out.push([n - a, range(rms, a, n).sales]); return out; };
+          const cur = series(...w.cur), was = w.prev.a >= FROM ? series(w.prev.a, cut && w.cmp ? w.cmp[1] : w.prev.b) : null;
+          const len = Math.max(p.b - p.a, was ? was.length - 1 : 0);
+          // What is expected: from today's number, the expected case size of each day to come is added. To the
+          // Saturday of this week for a week, to the end of the running month for a month and for a year.
+          let proj = null, pin = '';
+          if (w.st === 'running') {
+            const end = p.kind === 'week' ? p.a + 5 : monthOf(parts(TODAY).y, parts(TODAY).m).b, got = cur[cur.length - 1][1];
+            if (end > TODAY && range(rms, TODAY, end).fct > 0) {
+              proj = [[TODAY - p.a, got]];
+              for (let n = TODAY + 1; n <= end; n++) proj.push([n - p.a, got + range(rms, TODAY, n).fct]);
+              const word = p.kind === 'week' ? `hết Thứ Bảy ${dm(end)}` : p.kind === 'month' ? 'cuối tháng' : `hết tháng ${p2(parts(end).m)}`;
+              pin = `Dự kiến ${word} <b class="num">${money(proj[proj.length - 1][1])}</b>`;
+            }
+          }
+          const ticks = p.kind === 'week' ? [0, 1, 2, 3, 4, 5, 6].map((x) => [x, WD2[(x + 1) % 7]])
+            : p.kind === 'month' ? [1, 5, 10, 15, 20, 25, 30].filter((d) => d <= p.b - p.a + 1).map((d) => [d - 1, p2(d)])
+            : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => [day(parts(p.a).y, m, 15) - p.a, `T${m}`]);
+          const names = w.st === 'running' ? LEGEND[p.kind] : [nameOf(p), nameOf(w.prev)];
+          const at = (list, x) => { const hit = list && list.find((q) => q[0] === x); return hit ? hit[1] : null; };
+          const tip = (x) => {
+            const n = p.a + x;
+            if (n > Math.max(p.b, was ? p.a + was.length - 1 : 0)) return '';
+            let html = `<b>${WD2[parts(Math.min(n, p.b)).w]} ${dm(Math.min(n, p.b))}</b>`;
+            const now = at(cur, x), exp = at(proj, x), old = at(was, x);
+            if (now !== null) html += `<br />${names[0]}: <b>${money(now)}</b>`;
+            else if (exp !== null) html += `<br />Dự kiến: <b>${money(exp)}</b>`;
+            if (old !== null) html += `<br />${names[1]} (${dm(w.prev.a + x)}): ${money(old)}`;
+            return html;
+          };
+          return { o: { xmax: len, cur, proj, was, ticks, pin, tip, fmt: money }, names, proj: !!proj };
+        }
+        function heroCard(c, rise = '', cut = false) {
+          const { p, w, cur, was } = c, head = `<span class="lbl">Doanh số · ${esc(scopeName(c.sc))} · ${longName(p)}<span class="chip">${flagOf(c)}</span></span>`;
+          if (!cur) {
+            return `<section class="card stat hero ov-hero ${rise}" style="--i: 0">${head}<div class="val num muted">—</div>
+              <div class="empty sm hero-none"><span class="mark">${ic('cal')}</span><b>Kỳ chưa bắt đầu</b><p>${longName(p)} bắt đầu từ ${dmy(p.a)}. Doanh số và các chỉ số kết quả chưa có; lịch hẹn đã đặt trong kỳ vẫn đếm ở ô Lịch hẹn.</p><div class="acts"><button class="btn sm" data-p="today">Về kỳ đang chạy</button></div></div></section>`;
+          }
+          const ch = chartOf(c, cut), u = moneyUnit(cur.sales);
+          const key = ch ? `<div class="cum-key"><span><i></i>${ch.names[0]}</span>${ch.proj ? '<span><i class="k-proj"></i>Dự kiến (Forecast)</span>' : ''}${ch.o.was ? `<span><i class="k-was"></i>${ch.names[1]}</span>` : ''}</div>` : '';
+          return `<section class="card stat hero ov-hero ${cur.sales < 0 ? 'neg' : ''} ${rise}" style="--i: 0">
+            <div class="hero-top"><div>${head}
+              <div class="val num">${roll('sales', cur.sales, 'money', moneyNum(cur.sales, u))}<small>${u}</small></div>
+              <p class="eq num">FYP phát hành <b>${money(cur.fi)}</b> − FYP hủy <b>${money(cur.fc)}</b></p>
+              <p class="cmp num">${dMoney(cur.sales, was ? was.sales : null, c.why)}<span>${cmpText(c)}</span></p>
+            </div>${key}</div>
+            ${ch ? `<div class="cum" role="img" aria-label="Doanh số cộng dồn theo ngày: ${ch.names[0]}${ch.proj ? ', phần dự kiến' : ''}${ch.o.was ? `, ${ch.names[1]}` : ''}"></div>` : '<p class="view-note">Kỳ Ngày chỉ có một điểm nên không vẽ đường lũy kế.</p>'}
+          </section>`;
+        }
+        const hlItem = (h) => `<button class="hl-i" style="--c: var(--${h.c})" data-jump="${h.go}" data-arrive="${esc(h.a)}"><span class="gl">${ic(h.i)}</span><b class="num">${esc(h.b)}</b><small class="num">${esc(h.s)}</small>${ic('chev')}</button>`;
+        function hlCard(c, rise = '', max = HL_MAX) {
+          const list = highlights(c).slice(0, max);
+          const none = c.cur
+            ? `<div class="empty sm"><span class="mark">${ic('check')}</span><b>Kỳ này không có điểm nào cần lưu ý</b><p>Các câu ở đây do app viết từ số của kỳ, theo luật cố định.</p></div>`
+            : `<div class="empty sm"><span class="mark">${ic('cal')}</span><b>Kỳ chưa bắt đầu</b><p>Điểm nhấn viết từ số đã có của kỳ.</p></div>`;
+          return `<section class="card ov-hl ${rise}" style="--i: 1"><div class="card-head"><h3>Điểm nhấn</h3><span class="meta">app viết từ số của kỳ, theo luật</span></div>${list.length ? `<div class="hl">${list.map(hlItem).join('')}</div>` : none}</section>`;
+        }
+        function tiles(c, rise = '', eight = false) {
+          const { cur, was, why } = c, dash = '<span class="muted">—</span>';
+          const to = `Báo cáo · ${longName(c.p)} · ${scopeName(c.sc)}`;
+          const tile = (k, label, val, unit, eq, delta, neg) => `<button class="card stat kpi ${neg ? 'neg' : ''} ${rise}" style="--i: ${2 + k}" data-jump="reports" data-arrive="${esc(`${to} · mở từ ô ${label}`)}"><span class="lbl">${label}</span><span class="val num">${val}${unit ? `<small>${unit}</small>` : ''}</span><span class="eq num">${eq}</span>${delta}${ic('chev', 'ic go')}</button>`;
+          if (!cur) return [...(eight ? ['HĐ phát hành', 'HĐ hủy'] : []), 'Tổng số HĐ', 'Tỷ lệ hủy', 'Tỷ lệ chốt', 'Chuyển RF', 'HĐ nộp', 'Case size'].map((l, k) => tile(k, l, dash, '', 'kỳ chưa bắt đầu', chip(null, '', true, why))).join('');
+          const u = moneyUnit(cur.cs), w0 = (f) => (was ? was[f] : null);
+          return [
+            ...(eight ? [tile(0, 'HĐ phát hành', cnt(cur.iss), '', 'HĐ có ngày phát hành trong kỳ', dCount(cur.iss, w0('iss'), why)), tile(0, 'HĐ hủy', cnt(cur.can), '', 'HĐ có ngày hủy trong kỳ', dCount(cur.can, w0('can'), why, false))] : []),
+            tile(0, 'Tổng số HĐ', roll('total', cur.total, 'count', cnt(cur.total)), '', `${cnt(cur.iss)} phát hành − ${cnt(cur.can)} hủy`, dCount(cur.total, w0('total'), why), cur.total < 0),
+            tile(1, 'Tỷ lệ hủy', cur.cancel === null ? dash : roll('cancel', r1(cur.cancel), 'pct', trim(cur.cancel, 1)), cur.cancel === null ? '' : '%', `${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành`, dRate(cur.cancel, w0('cancel'), false, was ? 'Một trong hai kỳ không có HĐ phát hành' : why)),
+            tile(2, 'Tỷ lệ chốt', cur.close === null ? dash : roll('close', r1(cur.close), 'pct', trim(cur.close, 1)), cur.close === null ? '' : '%', `${cnt(cur.iss)} HĐ ÷ ${cnt(cur.rf)} RF`, dRate(cur.close, w0('close'), true, was ? 'Một trong hai kỳ không có chuyển RF' : why)),
+            tile(3, 'Chuyển RF', roll('rf', cur.rf, 'count', cnt(cur.rf)), '', `từ ${cnt(cur.met)} buổi đã gặp`, dCount(cur.rf, w0('rf'), why)),
+            tile(4, 'HĐ nộp', roll('sub', cur.sub, 'count', cnt(cur.sub)), '', 'HĐ có ngày nộp trong kỳ', dCount(cur.sub, w0('sub'), why)),
+            tile(5, 'Case size', roll('cs', cur.cs, 'money', moneyNum(cur.cs, u)), u, `FYP nộp của ${cnt(cur.sub)} HĐ`, dMoney(cur.cs, w0('cs'), why)),
+          ].join('');
+        }
+        const SPAN_WORD = { day: 'trong ngày', week: 'cả tuần', month: 'cả tháng', year: 'cả năm' };
+        function apptCard(c, rise = '') {
+          const a = c.whole, all = a.met + a.miss + a.unrec + a.plan;
+          const groups = [['g-met', 'Đã gặp', a.met], ['g-miss', 'Dời – hủy – không đến', a.miss], ['g-unrec', 'Chưa ghi kết quả', a.unrec], ['g-plan', 'Dự kiến', a.plan]];
+          return `<section class="card ov-appt ${rise}" style="--i: 8"><div class="card-head"><h3>Lịch hẹn</h3><span class="meta">${SPAN_WORD[c.p.kind]}</span></div>
+            <div class="appt-v num">${roll('met', a.met, 'count', cnt(a.met))}<small>/ ${cnt(all)}</small></div><span class="appt-f">đã gặp / tổng lịch</span>
+            <div class="gbar" role="img" aria-label="${groups.map((g) => `${g[1]} ${g[2]}`).join(', ')}">${all ? groups.filter((g) => g[2]).map((g) => `<i class="${g[0]}" style="--w: ${g[2]}"></i>`).join('') : ''}</div>
+            ${all ? '' : '<span class="appt-f" style="margin: 6px 0 0">chưa có lịch</span>'}
+            <ul class="gkeys num">${groups.map((g) => `<li><i class="${g[0]}"></i>${g[1]}<b>${cnt(g[2])}</b></li>`).join('')}</ul></section>`;
+        }
+        const STAGES = ['n4', 'n3', 'n2', 'n1'];
+        function khCard(c, hide = new Set(), rise = '', live = false) {
+          const { p, w, rms } = c, mark = w.cur ? Math.min(p.b, TODAY) : null;
+          const now = mark === null ? null : snap(rms, mark);
+          // One column per mark of the period (phase-4-chi-so.md §2.8); a mark after today stays empty
+          const marks = p.kind === 'year' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => { const e = monthOf(parts(p.a).y, m); return [`T${m}`, e.a > TODAY ? null : Math.min(e.b, TODAY)]; })
+            : Array.from({ length: p.b - p.a + 1 }, (_, k) => [p.kind === 'week' ? WD2[(k + 1) % 7] : p.kind === 'month' ? ([1, 5, 10, 15, 20, 25, 30].includes(k + 1) ? p2(k + 1) : '') : dm(p.a), p.a + k > TODAY ? null : p.a + k]);
+          const cols = marks.map(([, n]) => (n === null ? null : snap(rms, n)));
+          const top = Math.max(1, ...cols.filter(Boolean).map((v) => sum(v.filter((_, k) => !hide.has(k)))));
+          const tag = live ? 'button' : 'span';
+          return `<section class="card ov-kh ${rise}" style="--i: 9"><div class="card-head"><h3>Khách hàng theo nhóm</h3><span class="meta num">${mark === null ? 'kỳ chưa bắt đầu' : `ảnh chụp cuối ngày ${dmy(mark)}${mark === TODAY ? ' (hôm nay)' : ''}`}</span></div>
+            <div class="stiles num">${STAGES.map((st, k) => `<${tag} class="stile" ${live ? `data-stage="${k}" aria-pressed="${!hide.has(k)}" title="Bấm để ẩn / hiện nhóm ${st.toUpperCase()} trên chart"` : ''}><span class="st dot ${st}">${st.toUpperCase()}</span><b>${now ? cnt(now[k]) : '—'}</b></${tag}>`).join('')}</div>
+            <div class="cols" role="img" aria-label="Diễn biến khách hàng theo nhóm, mỗi cột là ảnh chụp cuối một mốc của kỳ">${cols.map((v, x) => (v
+              ? `<span class="col" style="--h: ${(sum(v.filter((_, k) => !hide.has(k))) / top).toFixed(4)}" title="${marks[x][1] === null ? '' : dm(marks[x][1])} · ${v.map((n, k) => `${STAGES[k].toUpperCase()} ${n}`).join(' · ')}">${[3, 2, 1, 0].filter((k) => !hide.has(k)).map((k) => `<i class="${STAGES[k]}" style="--n: ${v[k]}"></i>`).join('')}</span>`
+              : '<span class="col none"></span>')).join('')}</div>
+            <div class="cols-x num">${marks.map(([l]) => `<span>${l}</span>`).join('')}</div>
+            ${mark === null ? '<p class="cols-note">Kỳ chưa bắt đầu: chưa có ảnh chụp nào.</p>' : ''}</section>`;
+        }
+        function cmpCard(c, open = new Set(), rise = '') {
+          const { p, w, s } = c;
+          if (s.type === 'rm') return '';
+          const cells = (d, bar) => {
+            if (!d) return '<td class="zero">—</td>'.repeat(9);
+            const z = (v, text) => `<td${v ? '' : ' class="zero"'}>${text}</td>`;
+            return z(d.met, cnt(d.met)) + z(d.rf, cnt(d.rf)) + z(d.sub, cnt(d.sub)) + z(d.cs, money(d.cs)) + z(d.iss, cnt(d.iss)) + z(d.can, cnt(d.can))
+              + (d.sales < 0 ? `<td class="neg">${money(d.sales)}</td>` : bar ? `<td class="bar" style="--w: ${bar.toFixed(3)}"><span>${money(d.sales)}</span></td>` : z(d.sales, money(d.sales)))
+              + `<td>${pct(d.close)}</td><td>${pct(d.cancel)}</td>`;
+          };
+          const of = (rms) => (w.cur ? range(rms, ...w.cur) : null);
+          const rmRow = (r, cls, attr = '') => `<tr class="${cls}" ${attr}><td>${esc(RMS[r].name)}</td>${cells(of([r]))}</tr>`;
+          const byRm = (list) => [...list].sort((x, y) => byName(RMS[x].name, RMS[y].name));
+          let rows, title, hint;
+          if (s.type === 'all') {
+            const data = TEAMS_BY_NAME.map((t) => ({ t, d: of(teamRms(t.i)) })), top = Math.max(1, ...data.map((x) => (x.d ? x.d.sales : 0)));
+            rows = data.map(({ t, d }) => `<tr class="team ${open.has(t.i) ? 'open' : ''}" data-team="${t.i}"><td><span class="tw">${ic('chev')}</span>${tmark(t)}${esc(t.name)}</td>${cells(d, d && d.sales > 0 ? d.sales / top : 0)}</tr>`
+              + byRm(teamRms(t.i)).map((r) => rmRow(r, 'rm', `data-team="${t.i}"${open.has(t.i) ? '' : ' hidden'}`)).join('')).join('');
+            title = 'So sánh team'; hint = 'bấm một team để xem RM';
+          } else {
+            rows = byRm(s.rms).map((r) => rmRow(r, '')).join('');
+            title = `RM của team ${esc(TEAMS[s.t].name)}`; hint = `${s.rms.length} RM · TL ${esc(TEAMS[s.t].tl)}`;
+          }
+          return `<section class="card ov-cmp ${rise}" style="--i: 10"><div class="card-head"><h3>${title}</h3><span class="meta num">${w.cur ? `${span(...w.cur)}${flagOf(c) === 'MTD' ? ' (MTD)' : ''}` : 'kỳ chưa bắt đầu'}</span><span class="actions meta">${hint}</span></div>
+            <table class="tbl"><thead><tr><th>${s.type === 'all' ? 'Team' : 'RM'}</th><th>Đã gặp</th><th>Chuyển RF</th><th>HĐ nộp</th><th>Case size</th><th>HĐ phát hành</th><th>HĐ hủy</th><th>Doanh số</th><th>Tỷ lệ chốt</th><th>Tỷ lệ hủy</th></tr></thead>
+            <tbody>${rows}<tr class="total"><td>Tổng</td>${cells(of(s.rms))}</tr></tbody></table></section>`;
+        }
+
+        /* ---------- The window: state, toolbar, popovers ---------- */
+        const STATE = new Map();
+        const FMT = {
+          count: () => (v) => cnt(v),
+          pct: () => (v) => trim(Math.max(0, v), 1),
+          money: (to) => { const u = moneyUnit(to); return (v) => moneyNum(v, u); },
+        };
+        function draw(root, c, cut) {
+          const box = $('.cum', root), ch = box && chartOf(c, cut);
+          if (ch) ui2.cum(box, ch.o);
+        }
+        function render(win) {
+          const S = STATE.get(win), c = ctx(S.sc, S.p), rise = S.fresh ? 'rise' : '';
+          S.fresh = false;
+          $('[data-ov]', win).innerHTML = heroCard(c, rise) + hlCard(c, rise) + `<div class="ov-kpis">${tiles(c, rise)}</div>` + apptCard(c, rise) + khCard(c, S.hide, rise, true) + cmpCard(c, S.open, rise);
+          draw(win, c);
+          for (const el of $$('.roll', win)) { const k = el.dataset.k, to = +el.dataset.v; ui2.count(el, S.seen[k], to, FMT[el.dataset.f](to)); S.seen[k] = to; }
+          // The toolbar: the line under the name of the screen, the two pickers, what the other screens are told
+          const sub = subLine(c), who = scopeName(S.sc);
+          const item = (name) => $(`.nav-i[data-go="${name}"]`, win);
+          $$('.nav-i[data-go]', win).forEach((n) => { n.dataset.scope = capName(S.sc); });
+          item('overview').dataset.sub = sub;
+          item('appointments').dataset.sub = who;
+          item('forecast').dataset.sub = `Tuần này 10/11 – 14/11 · ${who}`;
+          item('reports').dataset.sub = `${longName(S.p)} · ${who}`;
+          const on = $('.nav-i.on', win);
+          if (on) $('.tl-title span', win).textContent = on.dataset.sub || '';
+          $('[data-tool="scope"] span', win).textContent = capName(S.sc);
+          $('[data-period-name]', win).textContent = nameOf(S.p);
+          $$('[data-step]', win).forEach((b) => { b.disabled = !inData(shift(S.p, +b.dataset.step)); });
+          if (win.classList.contains('masked')) ui2.mask(win, true);
+        }
+        function scopeMenu(win) {
+          const S = STATE.get(win), tick = ic('check');
+          const row = (sc, label, n, cls = '', close = true) => `<button class="${cls} ${S.sc === sc ? 'on' : ''}" data-sc="${sc}" ${close ? 'data-pop-close' : ''} role="menuitemradio" aria-checked="${S.sc === sc}">${label}${n || S.sc === sc ? `<span class="n">${n || ''}${S.sc === sc ? tick : ''}</span>` : ''}</button>`;
+          $('.tl-pop[data-pop-for="scope"]', win).innerHTML = `<div class="h">Góc nhìn</div>${row('all', 'Toàn bộ', `${RMS.length} RM`)}<hr />`
+            + TEAMS_BY_NAME.map((t) => {
+              const openT = S.menu === t.i, list = teamRms(t.i).sort((x, y) => byName(RMS[x].name, RMS[y].name));
+              return row(`t${t.i}`, `<span class="tw">${ic('chev')}</span>${tmark(t)}Team ${esc(t.name)}`, `${list.length} RM`, openT ? 'open' : '', false) + (openT ? list.map((r) => row(`r${r}`, esc(RMS[r].name), '', 'sub')).join('') : '');
+            }).join('');
+        }
+        function periodBody(win) {
+          const S = STATE.get(win), kind = S.pick, at = parts(S.at), box = $('[data-pp]', win);
+          const btn = (p, label) => `<button data-p="${keyOf(p)}" data-pop-close class="${same(p, S.p) ? 'on' : ''} ${statusOf(p) === 'running' ? 'now' : ''}" ${inData(p) ? '' : 'disabled'}>${label}</button>`;
+          const head = (label, step) => `<div class="py"><button data-pp-nav="-${step}" aria-label="Lùi">&#x2039;</button><span class="num">${label}</span><button data-pp-nav="${step}" aria-label="Tới">&#x203A;</button></div>`;
+          let html;
+          if (kind === 'month') html = head(at.y, 'y') + `<div class="plist">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => btn(monthOf(at.y, m), `Tháng ${m}`)).join('')}</div>`;
+          else if (kind === 'year') html = `<div class="plist" style="margin-top: 12px">${[2025, 2026, 2027].map((y) => btn(yearOf(y), y)).join('')}</div>`;
+          else if (kind === 'week') {
+            const m = monthOf(at.y, at.m), list = [];
+            for (let w = weekOf(m.a); w.a <= m.b; w = shift(w, 1)) list.push(w);
+            html = head(`Tháng ${p2(at.m)}/${at.y}`, 'm') + `<div class="plist two">${list.map((w) => btn(w, `${dm(w.a)} – ${dm(w.b)}`)).join('')}</div>`;
+          } else if (kind === 'day') {
+            const m = monthOf(at.y, at.m), pad = (parts(m.a).w + 6) % 7;
+            html = head(`Tháng ${p2(at.m)}/${at.y}`, 'm') + `<div class="plist seven">${['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => `<span class="wd">${d}</span>`).join('')}${'<span></span>'.repeat(pad)}${Array.from({ length: m.b - m.a + 1 }, (_, k) => btn(dayOf(m.a + k), k + 1)).join('')}</div>`;
+          } else html = '<div class="fields-2" style="margin-top: 12px"><div class="field"><span class="label">Từ ngày</span><span class="input locked">dd/mm/yyyy</span></div><div class="field"><span class="label">Đến ngày</span><span class="input locked">dd/mm/yyyy</span></div></div><p class="pnote">Kỳ Tùy chọn tối đa 3 tháng, không so với kỳ trước và không có phần dự kiến. Bản mẫu này không chạy kỳ Tùy chọn.</p>';
+          box.innerHTML = html + '<div class="pfoot"><span>Chọn là số cập nhật ngay</span><button class="btn quiet sm" data-p="today" data-pop-close>Hôm nay</button></div>';
+          $$('.ppop.tl-pop [data-kind]', win).forEach((b) => b.classList.toggle('on', b.dataset.kind === kind));
+        }
+        const setPeriod = (win, p) => { const S = STATE.get(win); if (!inData(p)) return; S.p = p; render(win); };
+
+        /* ---------- The palette of round b, with the little this page needs ---------- */
+        const SCREENS = [['overview', 'Tổng quan'], ['appointments', 'Lịch hẹn'], ['customers', 'Khách hàng'], ['forecast', 'Forecast'], ['reports', 'Báo cáo'], ['team', 'Team & nhân sự'], ['settings', 'Cài đặt']];
+        const NAV_ICON = { overview: 'overview', appointments: 'cal', customers: 'people', forecast: 'forecast', reports: 'report', team: 'team', settings: 'gear' };
+        const CUS = [['Nguyễn Văn Hùng', 'n2', 0, 'K-4H2N'], ['Trần Minh Huệ', 'n1', 0, 'K-7B3Q'], ['Đỗ Quang Vinh', 'n1', 0, 'K-2M8D'], ['Phạm Ngọc Lan', 'n2', 0, 'K-5R1K'], ['Lê Quốc Hùng', 'n3', 0, 'K-6S9A'], ['Trần Thị Mai Lan', 'n2', 2, 'K-3M6T'], ['Lê Thị Hồng', 'n1', 20, 'K-5H8N'], ['Hà Tuệ Mẫn', 'n1', 11, 'K-2Q7J']];
+        const CMDS = [['Lịch hẹn mới…', 'lich hen moi dat lich', 'act', 'plus'], ['Khách hàng mới…', 'khach hang moi them kh', 'b', 'plus'], ['Team mới…', 'team moi tao team', 'b', 'plus'], ['Xuất Excel Báo cáo tháng 11/2026', 'xuat excel bao cao', 'export', 'export'], ['Sao lưu ngay', 'sao luu backup', 'backup', 'db'], ['Che / hiện tên khách hàng', 'che ten an ten hien ten', 'mask', 'eye']];
+        const short = (name) => name.split(' ').map((w) => `${w[0]}.`).join(' ');
+        const palHtml = () => `<div class="pal-g" data-max="8"><div class="pal-grp">Khách hàng</div>${[...CUS].sort((a, b) => byName(a[0], b[0])).map(([name, st, rm, code]) => `<button class="pal-o" data-find="${esc(name)} ${code}" data-run="b"><span class="st dot ${st}">${st.toUpperCase()}</span><span class="t"><b><span class="kh" data-kh="${short(name)}" data-hl>${esc(name)}</span></b> <small>– RM ${esc(RMS[rm].name)} – ${esc(TEAMS[RMS[rm].team].name)}</small></span><span class="code num" data-hl>${code}</span><span class="kind">Hồ sơ</span></button>`).join('')}</div>`
+          + `<div class="pal-g" data-max="4"><div class="pal-grp">RM</div>${[...RMS].sort((a, b) => byName(a.name, b.name)).map((r) => `<button class="pal-o" data-find="${esc(r.name)}" data-run="b"><span class="av">${r.name.split(' ')[0][0]}${r.name.split(' ').pop()[0]}</span><span class="t">RM <b data-hl>${esc(r.name)}</b> <small>– ${tmark(TEAMS[r.team])} ${esc(TEAMS[r.team].name)}</small></span><span class="kind">Trang RM</span></button>`).join('')}</div>`
+          + `<div class="pal-g" data-max="4" data-idle="7"><div class="pal-grp">Đi tới</div>${SCREENS.map(([v, t]) => `<button class="pal-o" data-find="${esc(t)}" data-jump="${v}">${ic(NAV_ICON[v])}<span class="t" data-hl>${esc(t)}</span><span class="kind">Màn</span></button>`).join('')}</div>`
+          + `<div class="pal-g" data-max="4" data-idle="3"><div class="pal-grp">Lệnh</div>${CMDS.map(([t, words, run, i]) => `<button class="pal-o" data-find="${esc(t)} ${words}" data-run="${run}">${ic(i)}<span class="t" data-hl>${esc(t)}</span><span class="kind">Lệnh</span></button>`).join('')}</div>`
+          + `<div class="pal-none" hidden><div class="empty sm"><span class="mark">${ic('search')}</span><b>Không có gì khớp "<span data-q></span>"</b><p>Gõ tên không cần dấu, hoặc mã KH như K-4H2N. Tìm trong mọi KH, không theo góc nhìn.</p></div></div>`;
+
+        /* ---------- Start: every window on the page (the one on the stage and its copies) ---------- */
+        for (const win of $$('.win')) {
+          const from = win.parentElement.dataset;
+          STATE.set(win, { sc: from.sc || 'all', p: parseP(from.period || 'm:2026-11'), hide: new Set(), open: new Set(), seen: {}, fresh: true, menu: null, pick: 'month', at: TODAY });
+          const list = $('.pal-list', win);
+          if (list) { list.innerHTML = palHtml(); ui2.filter(list, ''); }
+          render(win);
+          scopeMenu(win);
+          win.addEventListener('ui2:pop', (e) => {
+            const S = STATE.get(win);
+            if (e.detail.pop === 'scope') { const s = scopeOf(S.sc); S.menu = s.type === 'team' ? s.t : s.type === 'rm' ? RMS[s.r].team : null; scopeMenu(win); }
+            if (e.detail.pop === 'period') { S.pick = S.p.kind; S.at = statusOf(S.p) === 'running' ? TODAY : S.p.a; periodBody(win); }
+          });
+          win.addEventListener('ui2:run', (e) => {
+            const run = e.detail.run;
+            if (run === 'mask') ui2.mask(win, !win.classList.contains('masked'));
+            else if (run === 'export') ui2.job(win, 'Đang xuất Excel Báo cáo', 'Đã xuất Bao-cao_2026-11.xlsx');
+            else if (run === 'backup') ui2.job(win, 'Đang sao lưu', 'Đã sao lưu lúc 13:36');
+            else if (run === 'act') { const act = $('[data-act-btn]', win); if (!act.dataset.open) ui2.toast(win, 'Hộp tạo mới đã duyệt ở đợt a và b <small>· không vẽ lại ở đợt c</small>'); }
+            else ui2.toast(win, 'Hồ sơ KH, trang RM và hộp Team: đã duyệt ở đợt b <small>· search-rm-team.html</small>');
+          });
+        }
+        document.addEventListener('click', (e) => {
+          // The three scenes of the dock set the window of the stage
+          const scene = e.target.closest('.seg[data-set="scene"] button');
+          if (scene) { const win = $('#win'), S = STATE.get(win), [sc, p] = scene.dataset.v.split('|'); S.sc = sc; S.p = parseP(p); ui2.go(win, 'overview'); render(win); return; }
+          const win = e.target.closest('.win'), S = win && STATE.get(win);
+          if (!S) return;
+          const pick = e.target.closest('.tl-pop [data-sc]');
+          if (pick) {
+            const s = scopeOf(pick.dataset.sc);
+            S.menu = s.type === 'team' ? (S.sc === pick.dataset.sc && S.menu === s.t ? null : s.t) : S.menu;
+            S.sc = pick.dataset.sc;
+            render(win); scopeMenu(win);
+            return;
+          }
+          const step = e.target.closest('[data-step]');
+          if (step) return setPeriod(win, shift(S.p, +step.dataset.step));
+          const kind = e.target.closest('.ppop.tl-pop [data-kind]');
+          if (kind) {
+            S.pick = kind.dataset.kind;
+            if (S.pick !== 'custom') { const anchor = statusOf(S.p) === 'running' ? TODAY : S.p.a; S.at = anchor; setPeriod(win, ofKind(S.pick, anchor)); }
+            return periodBody(win);
+          }
+          const nav = e.target.closest('[data-pp-nav]');
+          if (nav) {
+            const dir = nav.dataset.ppNav[0] === '-' ? -1 : 1, t = parts(S.at);
+            const next = nav.dataset.ppNav.endsWith('y') ? day(t.y + dir, t.m, 1) : day(t.y, t.m + dir, 1);
+            if (next >= FROM && next <= TO) S.at = next;
+            return periodBody(win);
+          }
+          const p = e.target.closest('[data-p]');
+          if (p) return setPeriod(win, p.dataset.p === 'today' ? ofKind(S.p.kind, TODAY) : parseP(p.dataset.p));
+          const stage = e.target.closest('.stile[data-stage]');
+          if (stage) {
+            const k = +stage.dataset.stage;
+            if (S.hide.has(k)) S.hide.delete(k); else if (S.hide.size < 3) S.hide.add(k);
+            $('.ov-kh', win).outerHTML = khCard(ctx(S.sc, S.p), S.hide, '', true);
+            return;
+          }
+          const team = e.target.closest('.ov-cmp tr.team[data-team]');
+          if (team) { const t = +team.dataset.team; if (team.classList.contains('open')) S.open.add(t); else S.open.delete(t); return; }
+          // A tile or a sentence of "Điểm nhấn" says where it lands; the screens behind are drawn in rounds d and e
+          const arrive = e.target.closest('[data-arrive]');
+          if (arrive) { const out = $(`.view[data-view="${arrive.dataset.jump}"] [data-arrive-out]`, win); if (out) { out.hidden = false; out.textContent = `Mở từ Tổng quan: ${arrive.dataset.arrive}`; } }
+        });
+
+        /* ---------- The specimens of the page: the same blocks, outside a window ---------- */
+        const SPEC = {
+          hero: (c, d) => heroCard(c, '', 'cut' in d),
+          hl: (c, d) => hlCard(c, '', +d.max || HL_MAX),
+          kpis: (c, d) => `<div class="ov-kpis ${d.cols ? `k${d.cols}` : ''}">${tiles(c, '', 'eight' in d)}</div>`,
+          appt: (c) => apptCard(c),
+          kh: (c) => khCard(c),
+          cmp: (c) => cmpCard(c, new Set([2])),
+          nums: (c) => {
+            const d = c.cur, u = moneyUnit(d.sales), all = tiles(c).split('</button>').slice(0, 3).map((t) => `${t}</button>`).join('');
+            return `<div class="nums"><section class="card stat lead-n ${d.sales < 0 ? 'neg' : ''}"><span class="lbl">Doanh số</span><div class="val num">${moneyNum(d.sales, u)}<small>${u}</small></div><p class="eq num">FYP phát hành <b>${money(d.fi)}</b> − FYP hủy <b>${money(d.fc)}</b></p><p class="cmp num">${dMoney(d.sales, c.was ? c.was.sales : null, c.why)}<span>${cmpText(c)}</span></p></section>${all}</div>`;
+          },
+        };
+        for (const el of $$('[data-spec]')) {
+          const c = ctx(el.dataset.sc || 'all', parseP(el.dataset.period || 'm:2026-11'));
+          el.innerHTML = SPEC[el.dataset.spec](c, el.dataset);
+          draw(el, c, 'cut' in el.dataset);
+        }
+        // A whole window scaled to the width of the page
+        const shots = () => $$('.shot').forEach((el) => { if (el.clientWidth) el.style.setProperty('--s', Math.min(1, (el.clientWidth - 44) / (+el.dataset.w || 1440)).toFixed(4)); });
+        shots();
+        addEventListener('resize', shots);
+        // Windows were filled after ui2.js measured them: let it place the sidebar pills and the thumbs again
+        dispatchEvent(new Event('resize'));
+      })();
+    </script>
+  </body>
+</html>

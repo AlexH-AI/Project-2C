@@ -6,6 +6,8 @@
    12 customer-name mask · 13 motion, reduced motion, reduced transparency
    14 round b (T-417, approved at G3 12/11/2026): command palette, "Lưu ý", search field that lights what it
       finds, meeting rhythm over 8 weeks, team colour and icon
+   15 round c (T-422, waits for G3): popovers of the toolbar, the lead number with its sum, the cumulative
+      line with what is expected, a tile that carries its sum, "Điểm nhấn"
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
    Hand-formatted, short rules on one line (docs/ is not run through Prettier). */
@@ -765,3 +767,92 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .icon-pick button.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .icon-pick .ic { width: 18px; height: 18px; }
 @media (prefers-reduced-transparency: reduce) { .pal, .now-pop { backdrop-filter: none; } }
+
+/* ============ 15. Round c (T-422): the lead number, the cumulative line, a number with its sum, "Điểm nhấn" ============ */
+/* Built only from the tokens of section 0; waits for the Owner at G3. Nothing above this line changes.
+   Rounded rectangles of this round take the rule of section 5: */
+.hl-i, .cum-pin, .cum-tip { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+
+/* The popovers of the toolbar (ý 08: no "Lọc" button). The view picker opens a .menu, the name of the
+   period opens the .ppop of ADR-0013 §4; a choice applies at once. Both sit in .main like "Lưu ý":
+   <div class="menu tl-pop" data-pop-for="scope">, opened by a control with data-pop="scope". */
+.main > .tl-pop { position: absolute; z-index: 25; left: 0; top: 60px; max-height: calc(100% - 76px); overflow: hidden auto; opacity: 0; pointer-events: none; transform: translateY(-6px) scale(0.98); transform-origin: top right; transition: opacity var(--t-1) var(--ease-in), transform var(--t-1) var(--ease-in); font: 14px/1.45 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--text); text-align: left; }
+.main > .tl-pop.open { opacity: 1; pointer-events: auto; transform: none; transition: opacity var(--t-2) var(--ease-out), transform var(--t-3) var(--spring-snappy); }
+.menu.tl-pop { min-width: 268px; }
+.menu button[disabled], .ppop .plist button[disabled], .ppop .py button[disabled], .cap .step[disabled] { opacity: 0.4; cursor: not-allowed; }
+.menu button .tw { margin-right: 0; }
+.menu button.open .tw .ic { transform: rotate(90deg); }
+/* The lists of the period picker that are not twelve months: weeks in two columns, days in seven */
+.ppop .plist.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ppop .plist.seven { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.ppop .plist.seven button { height: 32px; }
+.ppop .plist .wd { display: grid; place-items: center; height: 22px; font-size: 11.5px; color: var(--text-3); }
+.ppop .pfoot { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--hairline); font-size: 12px; color: var(--text-2); }
+.ppop .pfoot .btn { margin-left: auto; }
+.ppop .pnote { margin: 10px 2px 0; font-size: 12.5px; color: var(--text-2); }
+
+/* The lead number of a screen (ý 14): larger than every other number, with the sum it comes from */
+.stat.hero .val { margin-top: 4px; font-size: 64px; line-height: 1.05; font-weight: 650; letter-spacing: -0.035em; color: var(--accent); }
+.stat.hero .val small { font-size: 24px; }
+.stat.hero .eq { margin-top: 8px; font-size: 14px; color: var(--text-2); }
+.stat .eq b { font-weight: 600; color: var(--text); }
+.stat .lbl .chip { margin-left: 6px; vertical-align: 1px; }
+/* A number below zero (Doanh số and Tổng số HĐ can be): the colour says it as well as the sign */
+.stat.neg .val, .stat.hero.neg .val, .tbl td.neg { color: var(--danger); }
+.stat.hero .val.muted { color: var(--text-3); }
+/* What it is compared with: the change, then the window it is measured against */
+.cmp { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 10px 0 0; font-size: 12.5px; color: var(--text-2); }
+.delta.none { --c: var(--text-2); font-weight: 550; }
+@container (max-width: 1240px) { .stat.hero .val { font-size: 54px; } }
+
+/* A number with its sum, as a tile that opens the report (ý 15): label, number, the sum, the change */
+.kpi { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px 16px 14px; text-align: left; cursor: pointer; transition: transform var(--t-3) var(--spring-snappy); }
+.kpi:active { transform: scale(0.985); }
+.kpi .val { margin-top: 0; font-size: 30px; }
+.kpi .eq { margin: 0; min-height: 36px; white-space: normal; }
+.kpi .delta { margin-top: auto; }
+.kpi .go { position: absolute; right: 12px; top: 14px; width: 14px; height: 14px; color: var(--text-3); opacity: 0; transition: opacity var(--t-1), transform var(--t-3) var(--spring-snappy); }
+.kpi:hover .go, .kpi:focus-visible .go { opacity: 1; transform: translateX(2px); color: var(--accent); }
+
+/* The cumulative line (ý 14): this period (solid), what is expected to the end of it (dotted, from
+   Forecast), the period before (faint). The script draws the SVG at the size of the box and draws it
+   again when the box changes size; a pointer over the box reads one day. */
+.cum { position: relative; min-height: 120px; }
+.cum svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; animation: rise var(--t-3) var(--ease-out) both; }
+.cum .g { fill: none; stroke: var(--hairline); stroke-width: 1; }
+.cum .g0 { fill: none; stroke: var(--border-strong); stroke-width: 1; }
+.cum .was { fill: none; stroke: var(--text-2); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.6; } /* faint, but 3:1 on a card (WCAG 1.4.11) */
+.cum .now { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.cum .proj { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 1 6; stroke-linecap: round; }
+.cum .dot { fill: var(--accent); stroke: var(--bg-0); stroke-width: 2; }
+.cum .end { fill: var(--bg-0); stroke: var(--accent); stroke-width: 2; }
+.cum text { font-size: 11px; fill: var(--text-3); font-variant-numeric: tabular-nums; }
+.cum-pin { position: absolute; z-index: 1; padding: 3px 9px; --r: 8px; background: var(--mat-pop); box-shadow: var(--mat-pop-edge); font-size: 12px; color: var(--text-2); white-space: nowrap; pointer-events: none; transform: translate(-100%, calc(-100% - 10px)); }
+.cum-pin.below { transform: translate(-100%, 10px); }
+.cum-pin b { font-weight: 650; color: var(--text); }
+.cum-scrub { position: absolute; top: 6px; bottom: 22px; width: 1px; background: var(--border-control); opacity: 0; pointer-events: none; }
+.cum-tip { position: absolute; z-index: 2; top: 4px; min-width: 150px; padding: 7px 10px; --r: 8px; background: var(--mat-pop); backdrop-filter: var(--blur-pop); box-shadow: var(--mat-pop-edge), var(--shadow-2); font-size: 12px; line-height: 1.5; color: var(--text-2); white-space: nowrap; opacity: 0; pointer-events: none; }
+.cum-tip b { font-weight: 650; color: var(--text); }
+.cum.scrubbing .cum-scrub, .cum.scrubbing .cum-tip { opacity: 1; }
+.cum.scrubbing .cum-pin { opacity: 0; }
+/* The key of the three lines: a sample of each stroke next to its name */
+.cum-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-2); }
+.cum-key span { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.cum-key i { width: 18px; height: 0; flex: none; border-top: 2.5px solid var(--accent); border-radius: 2px; }
+.cum-key i.k-proj { border-top: 2px dotted var(--accent); }
+.cum-key i.k-was { border-top: 1.5px solid var(--text-2); opacity: 0.6; }
+
+/* "Điểm nhấn" (ý 16): sentences the app writes from the numbers by fixed rules, no AI. Each one is a
+   button that opens the place it talks about: a mark, the sentence, the line under it, an arrow. */
+.hl { display: grid; gap: 2px; }
+.hl-i { --c: var(--accent); display: grid; grid-template-columns: 32px minmax(0, 1fr) 14px; align-items: center; gap: 1px 12px; width: 100%; padding: 9px 8px; --r: calc(var(--r-card) - 8px); /* concentric with the card: 8 px in */ text-align: left; transition: background var(--t-1), transform var(--t-3) var(--spring-snappy); }
+[data-os='win'] .hl-i { --r: 4px; }
+.hl-i:hover { background: var(--fill-1); }
+.hl-i:active { transform: scale(0.985); }
+.hl-i .gl { grid-row: 1 / 3; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); }
+.hl-i .gl .ic { width: 16px; height: 16px; }
+.hl-i b { grid-column: 2; align-self: end; font-size: 14px; font-weight: 650; line-height: 1.35; }
+.hl-i small { grid-column: 2; align-self: start; font-size: 12.5px; line-height: 1.4; color: var(--text-2); }
+.hl-i > .ic { grid-row: 1 / 3; grid-column: 3; width: 14px; height: 14px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy), color var(--t-1); }
+.hl-i:hover > .ic { transform: translateX(2px); color: var(--accent); }
+@media (prefers-reduced-transparency: reduce) { .cum-tip { backdrop-filter: none; } }
