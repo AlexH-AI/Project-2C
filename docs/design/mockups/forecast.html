@@ -902,7 +902,7 @@
           $$('[data-mode]', box).forEach((b) => b.classList.toggle('on', b.dataset.mode === S.mode));
           $('.fc-bar .note', box).textContent = S.mode === 'week' ? `Hôm nay Thứ Ba ${dm(c.today)} → Thứ Bảy ${dm(c.wb)}/2026 · Thứ Hai đã qua không tính` : `Hôm nay ${dm(c.today)} → ${dm(LAST)}/2026 · chỉ Thứ Hai → Thứ Bảy, bỏ Chủ Nhật 15, 22, 29`;
           $('.fc-body', box).innerHTML = bodyOf(c, S, rise);
-          for (const el of $$('.roll', box)) { const k = el.dataset.k, to = +el.dataset.v, u = moneyUnit(to); ui2.count(el, S.seen[k], to, (v) => moneyNum(v, u)); S.seen[k] = to; }
+          for (const el of $$('.roll', box)) { const k = el.dataset.k, to = +el.dataset.v; ui2.run(el, S.seen[k], to, (v, exact) => { const x = exact ? v : ui2.sig3(v), u = moneyUnit(x), s = el.nextElementSibling; el.textContent = moneyNum(x, u); if (s && s.tagName === 'SMALL') s.textContent = u; }); S.seen[k] = to; } // round g (T-426, G3 14/11/2026): the unit is the unit of the running value
           const who = scopeName(S.sc), item = $('.nav-i[data-go="forecast"]', win);
           $$('.nav-i[data-go]', win).forEach((n) => { n.dataset.scope = capName(S.sc); });
           item.dataset.sub = `Hôm nay Thứ Ba ${dm(TODAY)}/2026 · ${who}`;

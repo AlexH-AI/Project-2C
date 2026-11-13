@@ -1019,10 +1019,12 @@
 
         /* ---------- The window: state, toolbar, popovers ---------- */
         const STATE = new Map();
+        // Round g (T-426, G3 14/11/2026): a running amount is rounded to three significant digits and takes the unit of
+        // what is on screen, so every frame is a compact form of ADR-0018 ("1.03 tỷ", then "761 tr"; never "1,231 tr")
         const FMT = {
-          count: () => (v) => cnt(v),
-          pct: () => (v) => trim(Math.max(0, v), 1),
-          money: (to) => { const u = moneyUnit(to); return (v) => moneyNum(v, u); },
+          count: (el) => (v) => { el.textContent = cnt(v); },
+          pct: (el) => (v) => { el.textContent = trim(Math.max(0, v), 1); },
+          money: (el) => (v, exact) => { const x = exact ? v : ui2.sig3(v), u = moneyUnit(x), s = el.nextElementSibling; el.textContent = moneyNum(x, u); if (s && s.tagName === 'SMALL') s.textContent = u; },
         };
         function draw(root, c, cut) {
           const box = $('.cum', root), ch = box && chartOf(c, cut);
@@ -1033,7 +1035,7 @@
           S.fresh = false;
           $('[data-ov]', win).innerHTML = heroCard(c, rise) + hlCard(c, rise) + `<div class="ov-kpis">${tiles(c, rise)}</div>` + apptCard(c, rise) + khCard(c, S.hide, rise, true) + cmpCard(c, S.open, rise);
           draw(win, c);
-          for (const el of $$('.roll', win)) { const k = el.dataset.k, to = +el.dataset.v; ui2.count(el, S.seen[k], to, FMT[el.dataset.f](to)); S.seen[k] = to; }
+          for (const el of $$('.roll', win)) { const k = el.dataset.k, to = +el.dataset.v; ui2.run(el, S.seen[k], to, FMT[el.dataset.f](el)); S.seen[k] = to; }
           // The toolbar: the line under the name of the screen, the two pickers, what the other screens are told
           const sub = subLine(c), who = scopeName(S.sc);
           const item = (name) => $(`.nav-i[data-go="${name}"]`, win);

@@ -10,6 +10,8 @@
    its new value · 18 the cumulative line (ui2.count, ui2.cum, ui2.closePops)
    Round d (T-423, approved at G3 13/11/2026): 19 a popover beside what opened it (ui2.placeBeside, "ui2:pop-at")
    Round e (T-424): nothing new here; in 19, a scrolling screen closes only the popovers 19 placed
+   Round g (T-426, approved at G3 14/11/2026): 20 "Mở" from where it was clicked (ui2.morph, data-grow / data-shrink), "Đếm" in
+   its final form (ui2.run, ui2.sig3), tools to watch a move (ui2.setPace, ui2.calm, ui2.noVT)
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
 (() => {
@@ -708,4 +710,122 @@
     }
   }, true);
   Object.assign(window.ui2, { placeBeside });
+
+  /* ---------- 20. Round g: "Mở" from where it was clicked, a number that runs, tools to watch a move ---------- */
+  // calm(el): nothing moves — the system asks for less motion, or an ancestor carries .calm (a mockup
+  // tool: "Giảm chuyển động" tried on one part of the page).
+  const calm = (el) => reduce || !!(el && el.closest && el.closest('.calm'));
+  // The pace of the page (a mockup tool, not app behaviour): 1 is real time, 5 plays every transition,
+  // animation and running number five times slower, so one move can be watched part by part.
+  let pace = 1;
+  const tune = () => { if (document.getAnimations) for (const a of document.getAnimations()) a.playbackRate = 1 / pace; };
+  function setPace(n) { pace = n > 0 ? n : 1; tune(); }
+  for (const ev of ['transitionrun', 'animationstart']) document.addEventListener(ev, () => { if (pace !== 1) tune(); }, true);
+  document.addEventListener('click', () => { if (pace !== 1) requestAnimationFrame(() => { tune(); requestAnimationFrame(tune); }); }, true);
+
+  // "Mở" (ý 07). morph(from, swap, to, o): `from` grows into what to() returns once swap() has changed
+  // the screen; with o.back it is the shorter way out. swap(moving) is told whether anything moves:
+  // without the API (or with ui2.noVT, which stands for a web view that lacks it), or when nothing may
+  // move, swap(false) runs alone and the screen changes the plain way ("Hiện"). A new move ends the one
+  // still running. o.cls adds a class to <html> for the length of the move. Resolves when the move ends.
+  let vt = null;
+  function morph(from, swap, to, o = {}) {
+    if (vt) { try { vt.skipTransition(); } catch { /* already over */ } }
+    if (!from || !document.startViewTransition || window.ui2.noVT || calm(from)) { swap(false); return Promise.resolve(false); }
+    const root = document.documentElement, cls = [o.back ? 'vt-back' : 'vt-open', ...(o.cls ? [o.cls] : [])];
+    let end = null;
+    root.classList.remove('vt-open', 'vt-back', ...(root._vtCls || []));
+    root.classList.add(...cls);
+    root._vtCls = cls;
+    from.style.viewTransitionName = 'open';
+    const t = (vt = document.startViewTransition(() => {
+      from.style.viewTransitionName = '';
+      swap(true);
+      end = to ? to() : null;
+      if (end) end.style.viewTransitionName = 'open';
+    }));
+    t.ready.then(() => { if (pace !== 1) tune(); }).catch(() => {});
+    return t.finished.catch(() => {}).then(() => {
+      if (end) end.style.viewTransitionName = '';
+      if (vt === t) { vt = null; root.classList.remove(...cls); }
+      return true;
+    });
+  }
+  // In a window: anything with data-grow="<view>" opens that page of section 9 by growing into it. The
+  // window remembers where it came from: the screen, how far it was scrolled, and the thing clicked by
+  // its data-key. [data-shrink] in the page goes back there: the list is where it was left and the page
+  // shrinks to the same thing; its <span> names the place. If the thing is gone (filtered away, moved to
+  // another group) the page just leaves. The window hears "ui2:back" (detail: view) once the screen it
+  // returns to is on, so the page can put its own toolbar state back. A click on the sidebar forgets
+  // the way back. .still keeps "Hiện" from playing on a screen that arrived by this move.
+  function grow(win, name, from) {
+    const cur = $('.view.on', win), view = $(`.view[data-view="${name}"]`, win);
+    if (!cur || !view || cur === view) return Promise.resolve(false);
+    (win._grown = win._grown || []).push({ name: cur.dataset.view, top: cur.scrollTop, key: from.dataset.key, title: titleOf(win), from: cur._from });
+    const label = titleOf(win);
+    closeFloats(win);
+    closePops(win);
+    return morph(from, (moving) => {
+      view.classList.toggle('still', moving);
+      show(win, name, from, moving, true);
+      $$('[data-shrink] span', view).forEach((s) => { s.textContent = label; });
+    }, () => view);
+  }
+  function shrink(win) {
+    const prev = (win._grown || []).pop(), cur = $('.view.on', win);
+    if (!prev) return Promise.resolve(go(win, ((cur || {}).dataset || {}).nav || 'overview'));
+    const list = $(`.view[data-view="${prev.name}"]`, win);
+    return morph(cur, (moving) => {
+      list.classList.toggle('still', moving);
+      if ($(`.nav-i[data-go="${prev.name}"]`, win)) go(win, prev.name, moving);
+      else {
+        show(win, prev.name, prev.from, moving, true);
+        const before = (win._grown || []).at(-1);
+        if (before) $$('[data-shrink] span', list).forEach((s) => { s.textContent = before.title; });
+      }
+      list.scrollTop = prev.top;
+      win.dispatchEvent(new CustomEvent('ui2:back', { detail: { view: prev.name } }));
+    }, () => (prev.key ? $(`[data-key="${CSS.escape(prev.key)}"]`, list) : null), { back: true });
+  }
+  document.addEventListener('click', (e) => {
+    const win = e.target.closest('.win');
+    if (!win) return;
+    // The plain ways to change the screen forget the way back, and let "Hiện" play again
+    if (e.target.closest('.nav-i[data-go], [data-jump], [data-view-go], [data-back]')) { win._grown = []; $$('.view.still', win).forEach((v) => v.classList.remove('still')); }
+  }, true);
+  document.addEventListener('click', (e) => {
+    const win = e.target.closest('.win');
+    if (!win) return;
+    const g = e.target.closest('[data-grow]');
+    if (g) return void grow(win, g.dataset.grow, g);
+    if (e.target.closest('[data-shrink]')) shrink(win);
+  });
+
+  // "Đếm" in its final form. run(el, from, to, write, ms): write(value, exact) puts one frame on screen;
+  // the frames follow --ease-out over --t-3 (a number never passes its target). The first and the last
+  // frame carry the exact values (exact = true), the ones in between a running value. With nothing to
+  // run from, or when nothing may move, only the last call is made. el._now is the value on screen:
+  // pass it as `from` and a number that is changed again while it runs goes on from where it is.
+  // sig3 rounds a running value to three significant digits, so a frame reads like a number at rest
+  // ("987 tr", not "987.65 tr"); the page formats every frame with the app's own formatter, so the
+  // unit is always the unit of the value on screen.
+  function run(el, from, to, write, ms = 400) {
+    cancelAnimationFrame(el._raf);
+    clearTimeout(el._end);
+    const put = (v, exact) => { el._now = v; write(v, exact); };
+    if (calm(el) || from === undefined || from === null || from === to || !isFinite(from) || !isFinite(to)) return put(to, true);
+    const dur = ms * pace, t0 = performance.now();
+    const done = () => { cancelAnimationFrame(el._raf); clearTimeout(el._end); put(to, true); };
+    const step = (t) => {
+      const k = Math.max(0, Math.min(1, (t - t0) / dur)); // a frame may carry a time stamp from before the run began
+      if (k >= 1) return done();
+      put(from + (to - from) * (1 - (1 - k) ** 3), false);
+      el._raf = requestAnimationFrame(step);
+    };
+    put(from, true);
+    el._raf = requestAnimationFrame(step);
+    el._end = setTimeout(done, dur + 120); // a hidden tab draws no frame: the number still arrives
+  }
+  const sig3 = (v) => Number(v.toPrecision(3));
+  Object.assign(window.ui2, { calm, setPace, morph, grow, shrink, run, sig3, noVT: false });
 })();
