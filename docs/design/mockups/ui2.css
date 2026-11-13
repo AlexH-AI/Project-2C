@@ -10,6 +10,8 @@
       line with what is expected, a tile that carries its sum, "Điểm nhấn"
    16 round d (T-423, approved at G3 13/11/2026): Forecast — three numbers side by side, the runway of the month, the week
       strip, the month grid, the list of one day, a case size filled in place
+   17 round e (T-424, waiting for G3): Báo cáo — the colours of paper (print, Excel), a page of "Bản tin", bars by
+      team, a trend of six periods, an Excel sheet
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
    Hand-formatted, short rules on one line (docs/ is not run through Prettier). */
@@ -981,3 +983,150 @@ button.dl-r:hover { background: var(--fill-1); }
 [data-os='win'] .fill-r .input:focus-within { border-color: var(--hairline); border-bottom-color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); }
 .fill-r .read { grid-column: 1 / -1; }
 @media (prefers-reduced-transparency: reduce) { .day-pop { backdrop-filter: none; } }
+
+/* ============ 17. Round e (T-424): Báo cáo — the pages of "Bản tin", the paper they print on, a trend of six periods, an Excel sheet ============ */
+/* Built from the tokens of section 0 and one new block, the colours of paper; waiting for the Owner at G3.
+   Nothing above this line changed. Rounded rectangles of this round take the rule of section 5: */
+.paper, .p-goal, .tbar .stack, .trend i, .xl { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
+
+/* Paper: what the report prints on, and the Excel file. Light, in the navy and the champagne of the
+   logo (Owner 11/11/2026: "In giấy sáng", "Dùng màu logo"). The app itself stays dark. Proposed: the
+   list, with the contrast of each pair, is in the round e appendix of ADR-0011. Champagne as text on
+   white is the darker --paper-gold-ink (the --accent of the app is 2:1 on white). */
+:root {
+  --paper: #ffffff; --paper-well: #f4f5f7; --paper-line: #dfe3e8;
+  --paper-ink: #1b2433; --paper-ink-2: #4a5568; --paper-ink-3: #5f6876;
+  --paper-navy: #16243a; --paper-gold: #e9cf9a; --paper-gold-soft: #f6ecd2; --paper-gold-ink: #7a5a12;
+  --paper-red: #a12a22; --paper-red-soft: #fde8e6; --paper-green: #1c6b45;
+}
+
+/* One page of "Bản tin" (ý 21). On screen it is a dark sheet; with .light it is the sheet as it
+   prints: the same markup, the tokens of section 0 set again to the colours of paper, so a table, a
+   label or a change chip inside it needs no second style. */
+.paper { position: relative; width: 100%; max-width: 860px; margin: 0 auto; padding: 38px 48px 22px; --r: 6px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045)), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-2); color: var(--text); font-variant-numeric: tabular-nums; text-align: left; }
+.paper + .paper { margin-top: 20px; }
+.paper.light { color-scheme: light; --r: 2px;
+  --text: var(--paper-ink); --text-2: var(--paper-ink-2); --text-3: var(--paper-ink-3); --heading: var(--paper-navy);
+  --bg-0: var(--paper); --hairline: var(--paper-line); --fill-1: var(--paper-well); --fill-2: #e9ecf0; --fill-3: #d5dae1; --border-strong: #c3cad4;
+  --accent: var(--paper-gold-ink); --accent-soft: var(--paper-gold-soft);
+  --ok: var(--paper-green); --danger: var(--paper-red); --warn: #8a5300; --info: #1d5bb8;
+  --n4: #55627a; --n3: #1d5bb8; --n2: #6a45c9; --n1: var(--paper-green); --on-hold: #8a5300; --lost: var(--paper-red);
+  background: var(--paper); box-shadow: 0 0 0 1px var(--paper-line), var(--shadow-2); }
+.paper .brand { padding: 0; }
+.paper.light .b-out { filter: none; } /* the navy of the logo needs no outline on white */
+/* The letterhead of the first page; the running head of the pages after it; the foot of every page */
+.p-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--accent); }
+.p-meta { text-align: right; font-size: 12.5px; line-height: 1.5; color: var(--text-2); }
+.p-meta b { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; color: var(--accent); }
+.p-meta strong { display: block; margin: 2px 0; font-size: 20px; line-height: 1.2; font-weight: 650; letter-spacing: -0.015em; color: var(--text); }
+.paper.light .p-meta strong, .paper.light h3, .paper.light h5 { color: var(--paper-navy); }
+.p-run { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--text-3); font-size: 12.5px; color: var(--text-2); }
+.p-run b { font-weight: 650; color: var(--text); }
+.p-foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 22px; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 11.5px; color: var(--text-3); }
+/* The sentence the page opens with, written from the numbers; the paragraph under it */
+.paper h3 { margin: 24px 0 8px; max-width: 700px; font-size: 27px; line-height: 1.2; font-weight: 650; letter-spacing: -0.024em; text-wrap: balance; }
+.paper.light h3.neg, .paper h3.neg { color: var(--danger); }
+.p-lead { margin: 0; max-width: 700px; font-size: 15px; line-height: 1.5; color: var(--text-2); }
+.paper h4 { margin: 0 0 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.paper h5 { margin: 24px 0 8px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 16px; font-weight: 650; letter-spacing: -0.012em; }
+.paper .p-run + h5 { margin-top: 20px; }
+.paper h5 small { font-size: 12.5px; font-weight: 400; letter-spacing: 0; color: var(--text-3); }
+.p-none { margin: 0; font-size: 13.5px; color: var(--text-2); }
+/* Four numbers under a rule: label, number, the sum it comes from, the change */
+.p-kpi4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin: 22px 0 4px; }
+.p-kpi4 > div { min-width: 0; padding-top: 10px; border-top: 1px solid var(--text-3); }
+.p-kpi4 .lbl { display: block; font-size: 12.5px; font-weight: 550; color: var(--text-2); }
+.p-kpi4 .v { display: block; margin: 2px 0; font-size: 32px; line-height: 1.15; font-weight: 600; letter-spacing: -0.03em; white-space: nowrap; }
+.p-kpi4 .v small { margin-left: 3px; font-size: 15px; font-weight: 500; letter-spacing: 0; color: var(--text-2); }
+.p-kpi4 .v.neg { color: var(--danger); }
+.p-kpi4 .f { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-2); }
+/* The target of the month on the report: done against the target, one thin bar */
+.p-goal { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; margin-top: 16px; padding: 10px 14px; --r: 6px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 13px; color: var(--text-2); }
+.p-goal b { font-weight: 650; color: var(--text); }
+.p-goal .hbar { height: 8px; border-radius: 4px; }
+.p-goal .ok { color: var(--ok); }
+.p-two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 34px; margin-top: 22px; }
+/* One bar a row: the name, what was kept (solid) and what was cancelled (hatched, already taken off), the amount */
+.tbar { display: grid; grid-template-columns: 132px minmax(0, 1fr) 68px; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; }
+.tbar .tmark { margin-right: 6px; }
+.tbar > b { min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbar .stack { display: flex; height: 14px; --r: 3px; overflow: hidden; background: var(--fill-1); }
+.tbar .stack i { flex: var(--f, 0) 0 0; min-width: 0; background: var(--c, var(--accent)); }
+.tbar .stack i.cut { background: repeating-linear-gradient(135deg, var(--danger) 0 3px, transparent 3px 6px); }
+.tbar .stack i.rest { background: none; }
+.tbar .v { text-align: right; font-weight: 650; white-space: nowrap; }
+.tbar .v.neg { color: var(--danger); }
+.p-keys { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 4px; font-size: 12px; color: var(--text-2); }
+.p-keys span { display: inline-flex; align-items: center; gap: 6px; }
+.p-keys i { width: 10px; height: 10px; border-radius: 2px; background: var(--c, var(--accent)); }
+.p-keys i.cut { background: repeating-linear-gradient(135deg, var(--danger) 0 3px, transparent 3px 6px); }
+/* The sentences of "Điểm nhấn" on a page: read, not pressed (the same rules, the same words) */
+.p-says { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; }
+.p-says li { --c: var(--accent); position: relative; padding-left: 16px; font-size: 13px; line-height: 1.4; color: var(--text-2); }
+.p-says li::before { content: ''; position: absolute; left: 0; top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.p-says li b { display: block; font-weight: 650; color: var(--text); }
+/* Tables on a page: tighter than on a screen; the total between a rule and a double rule */
+.paper .tbl { font-size: 12.5px; }
+.paper .tbl th { padding: 5px 8px; font-size: 11.5px; border-bottom-color: var(--text-3); }
+.paper .tbl td { padding: 3px 8px; line-height: 1.3; }
+.paper .tbl tr.rm td:first-child { padding-left: 22px; }
+.paper .tbl tr.total td { border-top: 1px solid var(--text-3); border-bottom: 3px double var(--text-3); }
+.paper .tbl tbody tr:hover td { background: none; }
+.defs { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 5px 14px; margin: 0; font-size: 12.5px; line-height: 1.45; }
+.defs dt { font-weight: 650; }
+.defs dd { margin: 0; color: var(--text-2); }
+
+/* Six periods side by side (ý 35): one column each, as tall as its Doanh số; the period on screen is
+   the solid one, a running period says so under its name */
+.trend { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: 14px; align-items: end; height: 148px; margin: 6px 0 40px; border-bottom: 1px solid var(--text-3); }
+.trend > span { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.trend b { margin-bottom: 4px; font-size: 12.5px; font-weight: 650; white-space: nowrap; }
+.trend b.neg { color: var(--danger); }
+.trend i { width: min(100%, 72px); height: calc(var(--h, 0) * 100%); min-height: 2px; --r: 4px; background: color-mix(in srgb, var(--accent) 38%, transparent); }
+.trend .on i { background: var(--accent); }
+.trend .neg i { background: var(--danger); }
+.trend small { position: absolute; top: calc(100% + 6px); left: 0; right: 0; text-align: center; font-size: 11.5px; line-height: 1.25; color: var(--text-2); white-space: nowrap; }
+.trend .on small { font-weight: 650; color: var(--text); }
+
+/* An Excel file as it opens (ý 23): not app UI, a picture of what the export writes. Light, in the
+   colours of paper; the letters and numbers around the cells are Excel's own. */
+.xl { --r: 12px; overflow: hidden; background: var(--paper); color: var(--paper-ink); box-shadow: var(--shadow-3); font: 12.5px/1.35 'Segoe UI', Calibri, system-ui, sans-serif; font-variant-numeric: tabular-nums; text-align: left; }
+.xl-top { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: #107c41; color: #fff; font-size: 12.5px; }
+.xl-top b { font-weight: 600; }
+.xl-top span:last-child { margin-left: auto; opacity: 0.9; }
+.xl-fx { display: flex; gap: 10px; padding: 5px 14px; border-bottom: 1px solid var(--paper-line); background: #f6f7f9; color: var(--paper-ink-2); font: 12.5px/1.5 var(--font-code); white-space: nowrap; overflow: hidden; }
+.xl-fx span:first-child { flex: none; width: 46px; color: var(--paper-ink); }
+.xl-fx i { flex: none; font-style: italic; color: var(--paper-ink-3); }
+.xl-body { overflow: auto; max-height: 560px; background: var(--paper); }
+.xl-sheet { border-collapse: collapse; table-layout: fixed; }
+.xl-sheet td, .xl-sheet th { height: 24px; padding: 2px 8px; border: 1px solid var(--paper-line); text-align: right; white-space: nowrap; overflow: hidden; }
+.xl-sheet th, .xl-sheet td.rh { background: #f1f3f5; color: var(--paper-ink-3); font-size: 11.5px; font-weight: 400; text-align: center; }
+.xl-sheet td.rh { width: 34px; padding: 2px 4px; }
+.xl-sheet td.ol { width: 22px; padding: 0; background: #f1f3f5; color: var(--paper-ink-3); font-size: 12px; text-align: center; }
+.xl-sheet .l { text-align: left; }
+.xl-sheet .c { text-align: center; }
+.xl-sheet td.x0 { border-color: var(--paper); } /* no grid: the letterhead and the blocks of numbers */
+.xl-sheet td.title { border-color: var(--paper); font-size: 17px; font-weight: 700; letter-spacing: 0.02em; color: var(--paper-navy); text-align: left; }
+.xl-sheet td.sub { border-color: var(--paper); color: var(--paper-ink-2); text-align: left; }
+.xl-sheet tr.rule td:not(.rh):not(.ol) { border-color: var(--paper); border-bottom: 2px solid var(--paper-gold-ink); }
+.xl-sheet td.kl { border-color: var(--paper); font-size: 11.5px; color: var(--paper-ink-3); text-align: left; vertical-align: bottom; }
+.xl-sheet td.kv { border-color: var(--paper); border-bottom: 2px solid var(--paper-gold); font-size: 20px; font-weight: 600; color: var(--paper-navy); text-align: left; }
+.xl-sheet tr.kvr td { height: 34px; }
+.xl-sheet td.band { background: var(--paper-navy); border-color: var(--paper-navy); color: var(--paper-gold); font-weight: 600; text-align: center; }
+.xl-sheet td.band + td.band { border-left-color: var(--paper-gold); }
+.xl-sheet td.hd { background: var(--paper-navy); border-color: var(--paper-navy); color: var(--paper-gold); font-weight: 600; }
+.xl-sheet tr.grp td:not(.rh):not(.ol) { background: #faf6ec; font-weight: 600; }
+.xl-sheet tr.sub2 td.l { padding-left: 22px; color: var(--paper-ink-2); }
+.xl-sheet tr.tot td:not(.rh):not(.ol) { font-weight: 700; border-top: 1.5px solid var(--paper-ink); border-bottom: 3px double var(--paper-ink); }
+.xl-sheet td.db { position: relative; }
+.xl-sheet td.db::before { content: ''; position: absolute; left: 3px; top: 3px; bottom: 3px; width: calc((100% - 6px) * var(--w, 0)); background: linear-gradient(90deg, #ecd9a8, var(--paper-gold-soft)); }
+.xl-sheet td.db span { position: relative; }
+.xl-sheet td.red { background: var(--paper-red-soft); color: var(--paper-red); }
+.xl-sheet td.neg { color: var(--paper-red); }
+.xl-sheet td.note { border-color: var(--paper); color: var(--paper-ink-2); text-align: left; white-space: normal; height: auto; padding: 4px 8px; }
+.xl-sheet td.wrap { text-align: left; white-space: normal; height: auto; padding: 5px 8px; vertical-align: top; }
+.xl-sheet td.pick { box-shadow: inset 0 0 0 2px #107c41; }
+.xl-sheet td[data-fx] { cursor: cell; }
+.xl-tabs { display: flex; gap: 2px; padding: 0 8px; background: #f1f3f5; border-top: 1px solid var(--paper-line); overflow-x: auto; }
+.xl-tabs button { flex: none; padding: 7px 14px; font-size: 12.5px; color: var(--paper-ink-2); border-bottom: 2px solid transparent; white-space: nowrap; }
+.xl-tabs button.on { background: var(--paper); color: #107c41; font-weight: 600; border-bottom-color: #107c41; }
