@@ -46,10 +46,10 @@ Mockup `docs/design/mockups/bao-cao.html` (đợt e của vòng UI/UX mới; ph�
 
 - **Điểm 1, cấu trúc file** ("mỗi sheet 1 bảng"): đổi thành bảy sheet.
   - **Tóm tắt:** trang 1 của Bản tin (đầu sheet có logo, bốn số chính, bảng theo team, nhận xét theo bảng luật Điểm nhấn); in vừa một tờ A4 dọc.
-  - **Team – RM** và **Theo mốc:** hai sheet sổ, mỗi dòng đủ 23 cột trong bốn nhóm cột có tên (Kết quả 8, Chuyển đổi 3, Lịch hẹn 5, Khách hàng cuối kỳ 7); RM là dòng nhóm gập dưới team; dòng tiêu đề và cột tên đứng yên khi cuộn.
+  - **Team – RM** và **Theo mốc:** hai sheet sổ, mỗi dòng đủ 23 cột số trong bốn nhóm cột có tên (Kết quả 8, Chuyển đổi 3, Lịch hẹn 5, Khách hàng cuối kỳ 7); ở kỳ Tháng sheet Team – RM có 25 cột, thêm "KPI tháng (VNĐ)" và "Đạt KPI" ở cuối nhóm Kết quả; RM là dòng nhóm gập dưới team; dòng tiêu đề và cột tên đứng yên khi cuộn.
   - **HĐ hủy:** mỗi dòng một HĐ có ngày hủy trong kỳ. **Xu hướng:** 6 kỳ gần nhất cùng loại (không có ở kỳ Ngày, Tùy chọn). **Forecast:** chỉ khi kỳ của báo cáo đang chạy. **Định nghĩa.**
   - Nút Xuất Excel của màn Forecast (spec §6.2, D-f) ghi một file riêng: Forecast, Lịch hẹn, Định nghĩa.
-  - Phương án bị bỏ: mỗi bảng của Sổ số một sheet (mười sheet hẹp). Các sheet Tóm tắt, Team – RM, Xu hướng của kỳ Tháng có cột / dòng "KPI tháng" (Owner: "A · Báo cáo có KPI").
+  - Phương án bị bỏ: mỗi bảng của Sổ số một sheet (mười sheet hẹp). **KPI tháng trong file** (Owner: "A · Báo cáo có KPI"; sau phiên review của PR #1248, cùng ngày: "1 · Có cột KPI"): ở kỳ Tháng, bảng team của sheet Tóm tắt và sheet Team – RM có hai cột "KPI tháng (VNĐ)" và "Đạt KPI" (Doanh số ÷ KPI, là công thức) ở dòng team và dòng Tổng, dòng RM để trống; sheet Xu hướng có hai cột đó theo từng tháng; sheet Theo mốc không có. Sheet Tóm tắt giữ thêm một dòng chữ "KPI tháng … · đã đạt …" như trang 1 của Bản tin. KPI của dòng team là số nhập; KPI của dòng Tổng là tổng các team, chỉ khi mọi team có KPI của tháng đó.
 - **Luật của file:**
   - Số là số thật có `numFmt` (tiền đủ đồng `#,##0`, tiêu đề cột ghi "(VNĐ)"; tỷ lệ `0.0%`); chỗ màn ghi "—" là ô trống. `numFmt` theo tiền tệ và ngôn ngữ theo app lúc xuất: ADR-0018 §4, §10.
   - Công thức kèm kết quả tính sẵn: Tổng số HĐ, Doanh số, hai tỷ lệ (`IFERROR`), dòng team (`SUM` các RM), dòng Tổng (tổng các dòng team). Ở sheet Theo mốc, các cột Khách hàng của dòng Tổng là ảnh chụp cuối kỳ, không phải tổng các mốc.

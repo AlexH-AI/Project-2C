@@ -14,7 +14,8 @@
   #print     Bản in giấy sáng: bốn trang A4 dọc, cách in, bảng màu giấy và tương phản
   #ledger    Ý 22: Sổ số năm bảng (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng, HĐ hủy), Theo team / Theo mốc;
              17 cột cũ nằm ở đâu
-  #excel     Ý 23: file Excel của Báo cáo (bảy sheet) và file của màn Forecast; hai cách chia sheet (#opt-sheets);
+  #excel     Ý 23: file Excel của Báo cáo (bảy sheet; kỳ Tháng có cột KPI ở sheet Tóm tắt và Team – RM) và file của màn
+             Forecast; hai cách chia sheet (#opt-sheets);
              công thức, nhóm gập, khổ in, tên file
   #arrive    Từ Tổng quan tới Báo cáo: sáu ô chỉ số và các câu Điểm nhấn tới chỗ nào; KPI tháng trong Báo cáo (#opt-kpi)
   #views     Team · Tuần, RM, kỳ đã qua, kỳ Năm, số âm, cửa sổ hẹp nhất; hai bố cục (#opt-layout)
@@ -80,9 +81,14 @@
       .view-note { margin: 12px 2px 0; font-size: 12.5px; color: var(--text-2); }
       .tbl td.neg { color: var(--danger); }
       @container (max-width: 1240px) {
-        .lg .tbl { font-size: 12.5px; }
-        .lg .tbl th, .lg .tbl td { padding-left: 5px; padding-right: 5px; }
-        .lg { padding-left: 14px; padding-right: 14px; }
+        /* The widest table (Kết quả of a month: ten columns of figures, a team unfolded) fits the card on both systems */
+        .lg .tbl { font-size: 12px; }
+        .lg .tbl th { font-size: 11.5px; }
+        .lg .tbl th, .lg .tbl td { padding-left: 4px; padding-right: 4px; }
+        .lg .tbl tr.rm td:first-child { padding-left: 22px; }
+        .lg .tbl .tw { width: 14px; margin-right: 4px; }
+        .lg { padding-left: 12px; padding-right: 12px; }
+        .lg-sum .trio .sub { white-space: normal; overflow: visible; } /* the change chip stays in sight: the line wraps instead of being cut */
         .paper { padding: 30px 30px 20px; }
         .paper .tbl th, .paper .tbl td { padding-left: 6px; padding-right: 6px; }
         .p-kpi4 { gap: 16px; }
@@ -429,7 +435,7 @@
         <h3 class="sub-h" id="opt-sheets">Chia sheet thế nào <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 11 ở #ask</small></h3>
         <p class="sub-p">Cả hai cách đều có đủ số. Khác nhau ở chỗ người nhận làm gì với file: lọc, sắp xếp, dựng pivot (cần mọi cột của một RM trên một dòng), hay chỉ mở xem từng bảng.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span class="wide">Team – RM</span><span class="wide">Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>A · Bảy sheet, hai sheet sổ rộng <span class="tag rec">anh chọn 13/11</span></b><p>Mỗi RM một dòng với đủ 23 cột, chia bốn nhóm cột có dải tên (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng); cột tên và dòng tiêu đề đứng yên khi cuộn. Hợp với lọc, sắp xếp, pivot. Hai file mẫu phía trên vẽ theo cách này.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span class="wide">Team – RM</span><span class="wide">Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>A · Bảy sheet, hai sheet sổ rộng <span class="tag rec">anh chọn 13/11</span></b><p>Mỗi RM một dòng với đủ 23 cột số, chia bốn nhóm cột có dải tên (Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng); ở kỳ Tháng, sheet Team – RM thêm hai cột KPI ở cuối nhóm Kết quả, thành 25 cột (anh chốt 13/11, xem điểm 9). Cột tên và dòng tiêu đề đứng yên khi cuộn. Hợp với lọc, sắp xếp, pivot. Hai file mẫu phía trên vẽ theo cách này.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div class="tabs-pic"><span class="on">Tóm tắt</span><span>Kết quả</span><span>Chuyển đổi</span><span>Lịch hẹn</span><span>Khách hàng</span><span>Theo mốc</span><span>HĐ hủy</span><span>Xu hướng</span><span>Forecast</span><span>Định nghĩa</span></div></div><div class="opt-t"><b>B · Mỗi bảng của Sổ số một sheet</b><p>Mười sheet hẹp, giống hệt các bảng trên màn, sheet nào cũng in vừa một tờ A4 ngang. Dễ nhận ra, nhưng muốn xem Doanh số cạnh số lịch hẹn của một RM thì phải ghép hai sheet.</p></div></div>
         </div>
         <div class="pgrid" style="margin-top: 20px">
@@ -437,7 +443,7 @@
             <h3>Luật của file <small>điểm 13, 14 ở #ask</small></h3>
             <ul class="bul">
               <li><b>Số là số thật</b>, không phải chữ: tiền ghi đủ đồng với định dạng <code>#,##0</code> (tiêu đề cột ghi "(VNĐ)"), tỷ lệ là phân số định dạng <code>0.0%</code>; chỗ màn ghi "—" là ô trống. Dấu ngăn khi xem do Excel của máy mở file quyết định (ADR-0018 §4).</li>
-              <li><b>Công thức:</b> Tổng số HĐ = phát hành − hủy; Doanh số = FYP phát hành − FYP hủy; hai tỷ lệ là phép chia có <code>IFERROR</code>; dòng team = <code>SUM</code> các RM của team; dòng Tổng = tổng các dòng team. File mở ra đã có sẵn kết quả, không cần tính lại.</li>
+              <li><b>Công thức:</b> Tổng số HĐ = phát hành − hủy; Doanh số = FYP phát hành − FYP hủy; hai tỷ lệ là phép chia có <code>IFERROR</code>; dòng team = <code>SUM</code> các RM của team; dòng Tổng = tổng các dòng team; ở kỳ Tháng, Đạt KPI = Doanh số ÷ KPI tháng (KPI của team là số nhập, KPI của dòng Tổng là tổng các team). File mở ra đã có sẵn kết quả, không cần tính lại.</li>
               <li><b>Nhóm gập:</b> RM là dòng nhóm dưới team (nút +/− của Excel ở mép trái), file mở ra với mọi team đang mở. Thanh dữ liệu champagne ở cột Doanh số.</li>
               <li><b>Khổ in:</b> Tóm tắt A4 dọc, vừa một tờ; các sheet khác A4 ngang, vừa chiều ngang tờ giấy, lặp dòng tiêu đề; đầu trang ghi tên báo cáo, chân trang ghi số trang.</li>
               <li><b>Sheet Forecast</b> chỉ có khi kỳ của Báo cáo đang chạy (anh chốt 11/11: kỳ đã qua không tính Forecast). Nút Xuất Excel của màn Forecast ghi một file riêng: Forecast, danh sách lịch hẹn, định nghĩa.</li>
@@ -476,7 +482,7 @@
         <h3 class="sub-h" id="opt-kpi">KPI tháng trong Báo cáo, và nơi tới của luật 4 ở tháng đã qua <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 9 ở #ask</small></h3>
         <p class="sub-p">Ở đợt d anh chọn "Mỗi tháng một KPI": tháng đã qua vẫn giữ KPI của nó, và câu luật 4 chạy thêm ở kỳ Tháng đã qua. Nơi tới "Báo cáo" của câu đó ở đợt d là do em tự đặt (phiên review ghi lại); muốn nó có nghĩa thì Báo cáo của một kỳ Tháng phải cho thấy KPI. Anh chọn A ngày 13/11.</p>
         <div class="gal">
-          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goal" data-period="m:2026-10"></div><div data-spec="goalTable" data-period="m:2026-10" style="margin-top: 14px"></div></div></div><div class="opt-t"><b>A · Báo cáo của kỳ Tháng có KPI <span class="tag rec">anh chọn 13/11</span></b><p>Bản tin trang 1 có một dòng "KPI tháng": đã đạt bao nhiêu phần, vượt hay thiếu. Bảng Kết quả, trang Xu hướng và hai sheet Excel thêm cột "KPI tháng · đạt" ở dòng team. Chỉ ở kỳ Tháng; RM không có KPI. Câu luật 4 của tháng đã qua mở Bản tin của tháng đó.</p></div></div>
+          <div class="opt rec"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goal" data-period="m:2026-10"></div><div data-spec="goalTable" data-period="m:2026-10" style="margin-top: 14px"></div></div></div><div class="opt-t"><b>A · Báo cáo của kỳ Tháng có KPI <span class="tag rec">anh chọn 13/11</span></b><p>Bản tin trang 1 có một dòng "KPI tháng": đã đạt bao nhiêu phần, vượt hay thiếu. Bảng Kết quả và trang Xu hướng thêm cột "KPI tháng · đạt" ở dòng team. Trong file Excel, bảng team của sheet Tóm tắt và sheet Team – RM thêm hai cột "KPI tháng (VNĐ)" và "Đạt KPI" ở dòng team và dòng Tổng; sheet Xu hướng có hai cột đó theo từng tháng. Chỉ ở kỳ Tháng; RM không có KPI. Câu luật 4 của tháng đã qua mở Bản tin của tháng đó.</p></div></div>
           <div class="opt"><div class="opt-pic flat blk"><div class="paper" style="padding: 20px 26px 22px"><div data-spec="goalTable" data-period="m:2026-10" data-nokpi></div></div></div><div class="opt-t"><b>B · Báo cáo không nói về KPI</b><p>KPI chỉ có ở Forecast và ở câu Điểm nhấn. Báo cáo chỉ ghi số thực tế như hôm nay. Khi đó câu luật 4 của tháng đã qua không có nơi tới: bỏ mũi tên, câu chỉ để đọc.</p></div></div>
         </div>
         <ul class="rules" style="margin-top: 18px">
@@ -512,9 +518,12 @@
         <p class="sub-p">1 HĐ phát hành, 2 HĐ hủy: Tổng số HĐ -1, Doanh số -40 tr, Tỷ lệ hủy 200% (ví dụ của golden B đã vẽ ở đợt c). Câu tóm tắt đổi sang khuôn "Doanh số âm".</p>
         <div class="duo stack" data-only="mac"><div data-spec="page" data-n="1" data-sc="t2" data-period="w:2026-10-26"></div></div>
 
-        <h3 class="sub-h">Cửa sổ hẹp nhất 1100 × 700, trên Windows 11</h3>
-        <p class="sub-p">Trang Bản tin co lề; bảng của Sổ số co chữ và khoảng cách cột; không có gì tràn ngang.</p>
+        <h3 class="sub-h">Cửa sổ hẹp nhất 1100 × 700, trên cả hai hệ điều hành</h3>
+        <p class="sub-p">Trang Bản tin co lề; bảng của Sổ số co chữ và khoảng cách cột; không có gì tràn ngang. Bảng rộng nhất là Kết quả của một kỳ Tháng (mười cột số) khi một team đang mở: hình macOS dưới đây vẽ đúng cảnh đó, vì thanh bên của macOS rộng hơn của Windows 11 8 px.</p>
+        <span class="state-l">Windows 11 · Sổ số · Tháng 11/2026</span>
         <div class="shot" style="--w: 1100px; --h: 700px" data-w="1100" data-os="win" data-clone="#win" data-sc="all" data-period="m:2026-11" data-mode="ledger"></div>
+        <span class="state-l" style="margin-top: 18px">macOS · Sổ số · Tháng 10/2026, team Sao Mai đang mở</span>
+        <div class="shot" style="--w: 1100px; --h: 700px" data-w="1100" data-os="mac" data-clone="#win" data-sc="all" data-period="m:2026-10" data-mode="ledger" data-open="0"></div>
 
         <h3 class="sub-h" id="opt-layout">Hai bố cục của màn <small class="dim" style="font-size: 14px; font-weight: 400">· điểm 1 ở #ask</small></h3>
         <p class="sub-p">Hai hình là cả cửa sổ 1440 × 900, thu nhỏ để thấy bố cục.</p>
@@ -606,9 +615,9 @@
           <li><b>Bản in?</b>Công tắc "Xem bản in" đổi các trang sang giấy sáng; nút "In…" mở hộp in của hệ điều hành, lưu PDF từ hộp đó; A4 dọc; app không tự sinh PDF. Hình ở mục <a href="#print">Bản in</a>.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (có "Xem bản in" và "In…", app không tự sinh PDF; phương án bỏ: v1.0 chưa có nút In).</em></li>
           <li><b>Sổ số năm bảng?</b>Kết quả, Chuyển đổi, Lịch hẹn, Khách hàng, HĐ hủy; cột từng bảng như mục <a href="#ledger">Sổ số</a>; xếp dòng Theo team hoặc Theo mốc; bốn số trên cùng có so với kỳ trước.<em>Anh trả lời 13/11: <b>"Duyệt năm bảng"</b> (phương án bỏ: gộp Chuyển đổi vào Lịch hẹn).</em></li>
           <li><b>Từ Tổng quan tới đâu?</b>Bảng ở mục <a href="#arrive">Từ Tổng quan</a>: ô chỉ số tới bảng có cột đó (cột được tô), câu về Tỷ lệ hủy tới danh sách HĐ hủy, câu team dẫn đầu tới bảng Kết quả theo team.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: mọi đường đều mở Bản tin).</em></li>
-          <li><b>KPI tháng trong Báo cáo, và nơi tới của câu mục tiêu ở tháng đã qua?</b>Hình: <a href="#opt-kpi">hai cách</a>. Kèm ba chỗ sửa chữ của bảng luật Điểm nhấn theo ghi chú review (không đổi luật).<em>Anh trả lời 13/11: <b>"A · Báo cáo có KPI"</b> (Báo cáo của kỳ Tháng có KPI; câu mục tiêu của tháng đã qua mở Bản tin của tháng đó; ba chỗ sửa chữ của bảng luật đã làm, và câu đó đã vẽ vào cảnh Tháng 10 của tong-quan.html; phương án bỏ: Báo cáo không nói về KPI).</em></li>
+          <li><b>KPI tháng trong Báo cáo, và nơi tới của câu mục tiêu ở tháng đã qua?</b>Hình: <a href="#opt-kpi">hai cách</a>. Kèm ba chỗ sửa chữ của bảng luật Điểm nhấn theo ghi chú review (không đổi luật).<em>Anh trả lời 13/11: <b>"A · Báo cáo có KPI"</b> (Báo cáo của kỳ Tháng có KPI; câu mục tiêu của tháng đã qua mở Bản tin của tháng đó; ba chỗ sửa chữ của bảng luật đã làm, và câu đó đã vẽ vào cảnh Tháng 10 của tong-quan.html; phương án bỏ: Báo cáo không nói về KPI). Sau phiên review (PR #1248) em hỏi lại một chỗ hai câu nói khác nhau, cột KPI trong file Excel; anh trả lời 13/11: <b>"1 · Có cột KPI"</b> (ở kỳ Tháng, bảng team của sheet Tóm tắt và sheet Team – RM có hai cột "KPI tháng (VNĐ)" và "Đạt KPI" (Doanh số ÷ KPI, là công thức) ở dòng team và dòng Tổng, dòng RM để trống; sheet Xu hướng có hai cột đó theo từng tháng; sheet Theo mốc không có; phương án bỏ: sheet sổ không có KPI, như hình ban đầu).</em></li>
           <li><b>Kỳ và góc nhìn của Báo cáo?</b>Năm loại kỳ như đang có; menu góc nhìn Toàn bộ / team / RM; đổi là áp dụng ngay; Xuất Excel theo đúng kỳ và góc nhìn đang xem.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: chỉ kỳ Tuần / Tháng / Năm).</em></li>
-          <li><b>File Excel chia sheet thế nào?</b>Hình: <a href="#opt-sheets">hai cách</a>.<em>Anh trả lời 13/11: <b>"A · Bảy sheet"</b> (phương án bỏ: mỗi bảng của Sổ số một sheet).</em></li>
+          <li><b>File Excel chia sheet thế nào?</b>Hình: <a href="#opt-sheets">hai cách</a>.<em>Anh trả lời 13/11: <b>"A · Bảy sheet"</b> (phương án bỏ: mỗi bảng của Sổ số một sheet). Sheet sổ có 23 cột số; ở kỳ Tháng sheet Team – RM có 25, thêm hai cột KPI (điểm 9).</em></li>
           <li><b>Bảng màu của giấy và kiểu của file Excel?</b>Bảng màu ở mục <a href="#print">Bản in</a>; đầu sheet có logo và vạch champagne, dòng tiêu đề nền navy chữ champagne, dòng Tổng kẻ đôi, số âm đỏ, không tô theo ngưỡng.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (phương án bỏ: dòng tiêu đề nền champagne nhạt chữ navy).</em></li>
           <li><b>Sheet Forecast và file của màn Forecast?</b>File Báo cáo có sheet Forecast khi kỳ đang chạy; nút Xuất Excel của màn Forecast ghi file riêng (Forecast, Lịch hẹn, Định nghĩa). Hình ở mục <a href="#excel">File Excel</a>.<em>Anh trả lời 13/11: <b>"Duyệt cả hai"</b> (sheet Forecast trong file Báo cáo của kỳ đang chạy, và file riêng của màn Forecast; phương án bỏ: chỉ có file riêng).</em></li>
           <li><b>Luật của file?</b>Số thật có định dạng; công thức cho dòng team, dòng Tổng và các cột tính; nhóm gập Team ▸ RM; khổ in; tên file theo luật đang có; tên KH đầy đủ; ngôn ngữ theo app.<em>Anh trả lời 13/11: <b>"Duyệt"</b> (file có công thức; phương án bỏ: mọi ô là giá trị).</em></li>
@@ -1229,59 +1238,73 @@
         const blankRow = (n) => ({ cells: [{ v: '', cls: 'x0', span: n }] });
         const negCls = (v) => (v < 0 ? ' neg' : '');
 
+        // The two cells of a monthly target on a sheet (G3 round e, point 9; the Owner on 13/11/2026: "1 · Có cột KPI"):
+        // the amount, and Doanh số ÷ KPI as a formula. g: the target of the row, nothing for an RM or a month with none
+        const KPI_HEAD = { kpi: 'KPI tháng (VNĐ)', kpiPct: 'Đạt KPI' };
+        const kpiCells = (g, d, y, sales, at, fx = '') => [{ v: g ? vnd(g) : '', fx: g ? fx : '' }, { v: g && d.begun ? pct1(rate(d.sales, g)) : '', fx: g ? `=IFERROR(${sales}${y}/${at}${y},"")` : '' }];
         // Sheet 1 · "Tóm tắt": page 1 of "Bản tin", on one A4 sheet
         function sumSheet(c) {
-          const { p, s, cur, was } = c, n = 9, rows = [], mode = s.type === 'all' ? 'flat' : 'mark';
+          const { p, s, cur, was } = c, rows = [], mode = s.type === 'all' ? 'flat' : 'mark';
+          // The table by team of a month carries the target of each team, as page 1 of "Bản tin" does
+          const kpi = hasGoal(c, mode), n = kpi ? 11 : 9, widths = [150, 96, 80, 96, 132, 116, 132, 86, 86, ...(kpi ? [132, 78] : [])], pad = kpi ? [{ v: '', cls: 'x0', span: 2 }] : [];
           const logo = '<img src="img/heritas-tree.png" alt="" style="height: 20px; vertical-align: -5px; margin-right: 6px" /><img src="img/heritas-wordmark.png" alt="Heritas" style="height: 13px" />';
-          rows.push({ cells: [{ v: logo, cls: 'x0 l', span: 2 }, { v: 'BÁO CÁO KẾT QUẢ KINH DOANH', cls: 'title', span: 7 }] });
-          rows.push({ cells: [{ v: '', cls: 'x0', span: 2 }, { v: `${longName(p)} · ${whenOf(c)}`, cls: 'sub', span: 7 }] });
-          rows.push({ cls: 'rule', cells: [{ v: '', cls: 'x0', span: 2 }, { v: `${esc(whoOf(c))} · lập ${dmy(TODAY)} ${NOW}`, cls: 'sub', span: 7 }] });
+          rows.push({ cells: [{ v: logo, cls: 'x0 l', span: 2 }, { v: 'BÁO CÁO KẾT QUẢ KINH DOANH', cls: 'title', span: n - 2 }] });
+          rows.push({ cells: [{ v: '', cls: 'x0', span: 2 }, { v: `${longName(p)} · ${whenOf(c)}`, cls: 'sub', span: n - 2 }] });
+          rows.push({ cls: 'rule', cells: [{ v: '', cls: 'x0', span: 2 }, { v: `${esc(whoOf(c))} · lập ${dmy(TODAY)} ${NOW}`, cls: 'sub', span: n - 2 }] });
           rows.push(blankRow(n));
-          if (!cur) { rows.push({ cells: [{ v: `Kỳ chưa bắt đầu: ${longName(p)} bắt đầu từ ${dmy(p.a)}. Chỉ số kết quả chưa có.`, cls: 'note', span: n }] }); return { name: 'Tóm tắt', widths: [150, 96, 80, 96, 132, 116, 132, 86, 86], rows, pick: 'C1' }; }
+          if (!cur) { rows.push({ cells: [{ v: `Kỳ chưa bắt đầu: ${longName(p)} bắt đầu từ ${dmy(p.a)}. Chỉ số kết quả chưa có.`, cls: 'note', span: n }] }); return { name: 'Tóm tắt', widths, rows, pick: 'C1' }; }
           const data = rowsOf(c, mode), first = 12, last = first + data.length - 1, tot = last + 1;
           const dTxt = (now, old, f) => (old === null || old === undefined ? 'không so với kỳ trước' : `${now > old ? '▲' : now < old ? '▼' : '='} ${now === old ? '' : f(Math.abs(now - old))} so với ${cmpName(c)}`.replace('  ', ' '));
           const dPts = (now, old) => (now === null || old === null || old === undefined ? 'không so' : `${r1(now - old) > 0 ? '▲' : r1(now - old) < 0 ? '▼' : '='} ${r1(now - old) ? `${trim(Math.abs(r1(now - old)), 1)} điểm %` : ''}`);
-          rows.push({ cells: [{ v: 'Doanh số (VNĐ)', cls: 'kl', span: 3 }, { v: 'Tổng số HĐ', cls: 'kl', span: 2 }, { v: 'Tỷ lệ chốt', cls: 'kl', span: 2 }, { v: 'Tỷ lệ hủy', cls: 'kl', span: 2 }] });
-          rows.push({ cls: 'kvr', cells: [{ v: vnd(cur.sales), cls: `kv${negCls(cur.sales)}`, span: 3, fx: `=G${tot}` }, { v: cnt(cur.total), cls: `kv${negCls(cur.total)}`, span: 2, fx: `=D${tot}` }, { v: pct1(cur.close) || '—', cls: 'kv', span: 2, fx: `=I${tot}` }, { v: pct1(cur.cancel) || '—', cls: 'kv', span: 2, fx: `=H${tot}` }] });
-          rows.push({ cells: [{ v: `${vnd(cur.fi)} phát hành − ${vnd(cur.fc)} hủy`, cls: 'kl', span: 3 }, { v: `${cnt(cur.iss)} phát hành − ${cnt(cur.can)} hủy`, cls: 'kl', span: 2 }, { v: `${cnt(cur.iss)} HĐ ÷ ${cnt(cur.rf)} RF`, cls: 'kl', span: 2 }, { v: `${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành`, cls: 'kl', span: 2 }] });
-          rows.push({ cells: [{ v: dTxt(cur.sales, was && was.sales, vnd), cls: 'kl', span: 3 }, { v: dTxt(cur.total, was && was.total, cnt), cls: 'kl', span: 2 }, { v: dPts(cur.close, was && was.close), cls: 'kl', span: 2 }, { v: dPts(cur.cancel, was && was.cancel), cls: 'kl', span: 2 }] });
+          rows.push({ cells: [{ v: 'Doanh số (VNĐ)', cls: 'kl', span: 3 }, { v: 'Tổng số HĐ', cls: 'kl', span: 2 }, { v: 'Tỷ lệ chốt', cls: 'kl', span: 2 }, { v: 'Tỷ lệ hủy', cls: 'kl', span: 2 }, ...pad] });
+          rows.push({ cls: 'kvr', cells: [{ v: vnd(cur.sales), cls: `kv${negCls(cur.sales)}`, span: 3, fx: `=G${tot}` }, { v: cnt(cur.total), cls: `kv${negCls(cur.total)}`, span: 2, fx: `=D${tot}` }, { v: pct1(cur.close) || '—', cls: 'kv', span: 2, fx: cur.close === null ? '' : `=I${tot}` }, { v: pct1(cur.cancel) || '—', cls: 'kv', span: 2, fx: cur.cancel === null ? '' : `=H${tot}` }, ...pad] });
+          rows.push({ cells: [{ v: `${vnd(cur.fi)} phát hành − ${vnd(cur.fc)} hủy`, cls: 'kl', span: 3 }, { v: `${cnt(cur.iss)} phát hành − ${cnt(cur.can)} hủy`, cls: 'kl', span: 2 }, { v: `${cnt(cur.iss)} HĐ ÷ ${cnt(cur.rf)} RF`, cls: 'kl', span: 2 }, { v: `${cnt(cur.can)} hủy ÷ ${cnt(cur.iss)} phát hành`, cls: 'kl', span: 2 }, ...pad] });
+          rows.push({ cells: [{ v: dTxt(cur.sales, was && was.sales, vnd), cls: 'kl', span: 3 }, { v: dTxt(cur.total, was && was.total, cnt), cls: 'kl', span: 2 }, { v: dPts(cur.close, was && was.close), cls: 'kl', span: 2 }, { v: dPts(cur.cancel, was && was.cancel), cls: 'kl', span: 2 }, ...pad] });
           const goal = goalOf(s, p);
           rows.push(goal ? { cells: [{ v: `KPI tháng ${vnd(goal)} VNĐ · đã đạt ${pct(rate(cur.sales, goal))}${cur.sales === goal ? '' : ` · ${cur.sales > goal ? 'vượt' : c.w.st === 'past' ? 'thiếu' : 'còn'} ${vnd(Math.abs(goal - cur.sales))} VNĐ`}`, cls: 'note', span: n }] } : blankRow(n));
           rows.push(blankRow(n));
-          rows.push({ cells: [{ v: firstOf(c, mode), cls: 'hd l' }, ...['iss', 'can', 'total', 'fi', 'fc', 'sales', 'cancel', 'close'].map((k) => ({ v: xlHead(k), cls: 'hd' }))] });
+          rows.push({ cells: [{ v: firstOf(c, mode), cls: 'hd l' }, ...TABS.result.map((k) => ({ v: xlHead(k), cls: 'hd' })), ...(kpi ? [{ v: KPI_HEAD.kpi, cls: 'hd' }, { v: KPI_HEAD.kpiPct, cls: 'hd' }] : [])] });
           const col = (k) => ({ iss: 'B', can: 'C', total: 'D', fi: 'E', fc: 'F', sales: 'G', cancel: 'H', close: '' })[k];
           const top = Math.max(1, ...data.map((r) => r.d.sales));
-          data.forEach((r, k) => { const y = first + k; rows.push({ cells: [{ v: esc(r.name), cls: 'l' }, ...TABS.result.map((key) => ({ v: xlVal(key, r.d), cls: negCls(r.d[key]), fx: r.d.begun ? fxOf(key, y, col) : '', ...(key === 'sales' && r.d.sales > 0 ? { w: r.d.sales / top } : {}) }))] }); });
+          data.forEach((r, k) => { const y = first + k; rows.push({ cells: [{ v: esc(r.name), cls: 'l' }, ...TABS.result.map((key) => ({ v: xlVal(key, r.d), cls: negCls(r.d[key]), fx: r.d.begun ? fxOf(key, y, col) : '', ...(key === 'sales' && r.d.sales > 0 ? { w: r.d.sales / top } : {}) })), ...(kpi ? kpiCells(r.kpi, r.d, y, 'G', 'J') : [])] }); });
           const t = totalOf(c).d;
-          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...TABS.result.map((key) => ({ v: xlVal(key, t), cls: negCls(t[key]), fx: fxOf(key, tot, col) || (KIND_OF[key] === 'p' ? '' : `=SUM(${col(key)}${first}:${col(key)}${last})`) }))] });
+          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...TABS.result.map((key) => ({ v: xlVal(key, t), cls: negCls(t[key]), fx: fxOf(key, tot, col) || (KIND_OF[key] === 'p' ? '' : `=SUM(${col(key)}${first}:${col(key)}${last})`) })), ...(kpi ? kpiCells(goal, t, tot, 'G', 'J', `=SUM(J${first}:J${last})`) : [])] });
           rows.push(blankRow(n));
           rows.push({ cells: [{ v: 'NHẬN XÉT', cls: 'kl', span: n }] });
           for (const h of highlights(c).slice(0, HL_MAX)) rows.push({ cells: [{ v: `<b>${esc(h.b)}</b> · ${esc(h.s)}`, cls: 'note', span: n }] });
-          return { name: 'Tóm tắt', widths: [150, 96, 80, 96, 132, 116, 132, 86, 86], rows, pick: `G${tot}`, pickFx: `=E${tot}-F${tot}` };
+          return { name: 'Tóm tắt', widths, rows, pick: `G${tot}`, pickFx: `=E${tot}-F${tot}` };
         }
-        // Sheets 2 and 3 · the two ledgers: every column, in four named groups; teams fold to their RMs
+        // Sheets 2 and 3 · the two ledgers: every column, in four named groups; teams fold to their RMs.
+        // 23 columns of figures; the ledger by team of a month has 25: the target of the team and how much
+        // of it was done close the group "Kết quả" (team rows and the total; an RM has no target)
         function ledgerSheet(c, byMark) {
-          const { s } = c, n = 1 + XL_KEYS.length, rows = [], mode = byMark || s.type === 'rm' ? 'mark' : 'full', name = byMark ? 'Theo mốc' : 'Team – RM';
+          const { s, p } = c, rows = [], mode = byMark || s.type === 'rm' ? 'mark' : 'full', name = byMark ? 'Theo mốc' : 'Team – RM';
+          const kpi = hasGoal(c, mode), keys = kpi ? [...TABS.result, 'kpi', 'kpiPct', ...XL_KEYS.slice(TABS.result.length)] : XL_KEYS, n = 1 + keys.length;
+          const col = (k) => colName(1 + keys.indexOf(k));
           rows.push(titleRow(c, byMark ? 'Sổ theo mốc' : 'Sổ theo team và RM', n));
-          rows.push({ cells: [{ v: '', cls: 'x0' }, ...XL_BANDS.map(([l, k]) => ({ v: l, cls: 'band', span: k }))] });
-          rows.push({ cells: [{ v: firstOf(c, mode), cls: 'hd l' }, ...XL_KEYS.map((k) => ({ v: xlHead(k), cls: 'hd' }))] });
+          rows.push({ cells: [{ v: '', cls: 'x0' }, ...XL_BANDS.map(([l, k], i) => ({ v: l, cls: 'band', span: k + (kpi && !i ? 2 : 0) }))] });
+          rows.push({ cells: [{ v: firstOf(c, mode), cls: 'hd l' }, ...keys.map((k) => ({ v: KPI_HEAD[k] || xlHead(k), cls: 'hd' }))] });
           const data = rowsOf(c, mode), start = 4, at = [];
           // The data bar of Doanh số: a team against the largest team, an RM (or a mark) against the largest of its kind
           const isTeam = (r) => (r.cls || '').includes('team'), topOf = (team) => Math.max(1, ...data.filter((r) => isTeam(r) === team).map((r) => r.d.sales));
-          const line = (r, y, sumOf) => XL_KEYS.map((k) => ({ v: xlVal(k, r.d), cls: negCls(r.d[k]), fx: !r.d.begun ? '' : fxOf(k, y) || (sumOf && KIND_OF[k] !== 'p' ? sumOf(k) : ''), ...(k === 'sales' && r.d.sales > 0 ? { w: r.d.sales / topOf(isTeam(r)) } : {}) }));
+          // One row of figures. g: the target of the row; gFx: the formula of its amount (the total adds the teams)
+          const line = (r, y, sumOf, g = r.kpi, gFx = '') => {
+            const two = kpi ? kpiCells(g, r.d, y, col('sales'), col('kpi'), gFx) : [];
+            return keys.map((k) => (k === 'kpi' ? two[0] : k === 'kpiPct' ? two[1] : { v: xlVal(k, r.d), cls: negCls(r.d[k]), fx: !r.d.begun ? '' : fxOf(k, y, col) || (sumOf && KIND_OF[k] !== 'p' ? sumOf(k) : ''), ...(k === 'sales' && r.d.sales > 0 && r.bar !== null ? { w: r.d.sales / topOf(isTeam(r)) } : {}) }));
+          };
           data.forEach((r, k) => {
-            const y = start + k, team = (r.cls || '').includes('team');
-            if (team) {
-              const kids = data.slice(k + 1).findIndex((x) => (x.cls || '').includes('team')), size = kids < 0 ? data.length - k - 1 : kids;
+            const y = start + k;
+            if (isTeam(r)) {
+              const kids = data.slice(k + 1).findIndex(isTeam), size = kids < 0 ? data.length - k - 1 : kids;
               at.push(y);
-              rows.push({ cls: 'grp', ol: '−', cells: [{ v: esc(r.name), cls: 'l' }, ...line(r, y, (key) => `=SUM(${colOf(key)}${y + 1}:${colOf(key)}${y + size})`)] });
+              rows.push({ cls: 'grp', ol: '−', cells: [{ v: esc(r.name), cls: 'l' }, ...line(r, y, (key) => `=SUM(${col(key)}${y + 1}:${col(key)}${y + size})`)] });
             } else rows.push({ cls: r.cls === 'rm' ? 'sub2' : '', cells: [{ v: esc(r.name), cls: 'l' }, ...line(r, y)] });
           });
           const end = start + data.length - 1, tot = end + 1, t = totalOf(c).d;
           // The total of a ledger by team adds the team rows; by mark it adds the marks, except the customers, who are those of the last day
-          const sumFx = (k) => (TABS.kh.includes(k) && mode === 'mark' ? '' : at.length ? `=${at.map((y) => `${colOf(k)}${y}`).join('+')}` : `=SUM(${colOf(k)}${start}:${colOf(k)}${end})`);
-          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...XL_KEYS.map((k) => ({ v: xlVal(k, t), cls: negCls(t[k]), fx: fxOf(k, tot) || (KIND_OF[k] === 'p' ? '' : sumFx(k)) }))] });
-          return { name, widths: [190, 96, 70, 86, 132, 116, 132, 78, 82, 86, 72, 124, 70, 152, 124, 70, 78, 56, 56, 56, 56, 96, 82, 92], rows, outline: at.length > 0, pick: `G${at[0] || tot}`, pickFx: `=E${at[0] || tot}-F${at[0] || tot}` };
+          const sumFx = (k) => (TABS.kh.includes(k) && mode === 'mark' ? '' : at.length ? `=${at.map((y) => `${col(k)}${y}`).join('+')}` : `=SUM(${col(k)}${start}:${col(k)}${end})`);
+          rows.push({ cls: 'tot', cells: [{ v: 'Tổng', cls: 'l' }, ...line({ d: t, bar: null }, tot, sumFx, goalOf(s, p), at.length ? sumFx('kpi') : '')] });
+          return { name, widths: [190, 96, 70, 86, 132, 116, 132, 78, 82, ...(kpi ? [132, 78] : []), 86, 72, 124, 70, 152, 124, 70, 78, 56, 56, 56, 56, 96, 82, 92], rows, outline: at.length > 0, pick: `G${at[0] || tot}`, pickFx: `=E${at[0] || tot}-F${at[0] || tot}` };
         }
         function cutSheet(c) {
           const list = c.w.cur ? cutsOf(c.rms, ...c.w.cur) : [], n = 8, rows = [titleRow(c, 'HĐ hủy trong kỳ', n)];
