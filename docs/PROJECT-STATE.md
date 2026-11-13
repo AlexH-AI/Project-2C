@@ -339,6 +339,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Rescheduling carries the number and the time it was entered ("A · Mang cả thời điểm").
   - Three edge conditions of the "Điểm nhấn" rule table, noted by the review of PR #1240, are approved ("Duyệt") and written into the spec §8, "Luật chung".
   - Data model (G2): the existing `appointments.expected_case_size` is used from booking on; a new column holds when the number was entered; a new table holds the monthly target of each team. Code waits for the Issues of part D. Still no code issue.
+- 2026-11-13: G3 mockup round e (T-424, #1247; `docs/design/mockups/bao-cao.html`: the Báo cáo screen and the Excel file). The OWNER asked for it in chat on the Home PC: "làm mockup đợt e (Báo cáo + Excel)". The mockup is drawn and **waits for the OWNER at G3** (16 points in its `#ask`); nothing of it is decided yet. Proposed: a switch between "Bản tin" (four pages with a letterhead, also shown as they print on light paper) and "Sổ số" (five tables instead of the 17-column one); an Excel file of seven sheets in the colours of the logo, and a file of its own for the Forecast screen (D-f); the round e appendix of ADR-0011 (also waiting). Still no code issue.
 
 ## Next decision
 
