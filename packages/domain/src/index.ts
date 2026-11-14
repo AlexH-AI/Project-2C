@@ -132,6 +132,7 @@ export {
   formatVndDelta,
   MAX_FEE_VND,
   maxFee,
+  parseMoney,
   parseVnd,
 } from './money';
 export {
@@ -142,7 +143,16 @@ export {
   formatPercent,
   formatPercentage,
 } from './number';
-export type { Currency, CurrencyCode, Money, Vnd, VndParseError, VndParseResult } from './money';
+export type {
+  Currency,
+  CurrencyCode,
+  Money,
+  MoneyParseError,
+  MoneyParseResult,
+  Vnd,
+  VndParseError,
+  VndParseResult,
+} from './money';
 export {
   APPOINTMENT_STATUSES,
   CLOSED_STAGES,

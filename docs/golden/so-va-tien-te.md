@@ -5,6 +5,8 @@
 > **Sửa sau review PR #1222** (12/11/2026, Owner chọn "Sửa hết trên PR này"): X19 đổi ca, thêm I38, I39, luật `ambiguous` thêm điều kiện phần nguyên khác `0` (§6.2). Owner duyệt lại G2 các dòng này cùng ngày (chọn "Duyệt").
 >
 > **Sửa sau review `831ec95`** (12/11/2026): thêm I40, EUR "1.500" → €1.50, một quy chuẩn cho mọi tiền có cent như USD. Owner: "Đưa về 1 quy chuẩn như cách viết với USD. Khi người dùng sử dụng Euro thì khi nhập sẽ có báo cách nhập cho đúng." Câu hướng dẫn của ô tiền EUR chốt ở mockup và i18n, không ở golden. Owner duyệt lại G2 dòng I40 cùng ngày (chọn "Duyệt").
+>
+> **Thêm sau khi Owner duyệt G2 ngày 14/11/2026** (khi ra Issue đợt 1, chat ở Home PC; G-02b, T-439 #1273): dòng I41 và X35, theo hai nhãn Owner chọn: "Chỉ khi cách đọc cũ khác (Recommended)", luật `ambiguous` của §6.2 chỉ áp khi phần nguyên có 1–3 chữ số, không có `,` và không bắt đầu bằng 0; "Số đầy đủ (Recommended)", ba chữ số sau `.` không tận cùng bằng 0 thì gợi ý thứ nhất là số đầy đủ, không đơn vị (ADR-0018 §5).
 
 Nguồn luật: ADR-0018 §3–§6. Sau khi Owner duyệt, bộ này thành fixture `packages/domain/src/golden/` (Issue G-02 của spec §11.7, khớp 1–1 theo mã dòng) và là test bắt buộc của hàm định dạng / đọc trong `packages/domain`. **Không sửa để "cho xanh"**: muốn đổi phải qua Owner.
 
@@ -200,6 +202,7 @@ Cột **Ngôn ngữ**: "vi" / "en" là chỉ ngôn ngữ đó; "cả hai" là đ
 | I38 | `1.500` | USD | en | `150` | $1.50 | tiền có cent: `.` luôn là phần lẻ, kết quả tròn cent; khác X05 của VND (Owner 12/11, sau review) |
 | I39 | `0.500 tr` | VND | vi | `500000` | 500,000 VNĐ | phần nguyên `0`: không nhập nhằng, hôm nay cũng đọc là 0.5 tr (Owner 12/11, sau review) |
 | I40 | `1.500` | EUR | en | `150` | €1.50 | một quy chuẩn như USD (I38), dù kiểu châu Âu viết "1.500" cho 1500; ô nhập EUR có câu hướng dẫn cách nhập (Owner 12/11, sau review `831ec95`) |
+| I41 | `1,234.567 tr` | VND | vi | `1234567000` | 1,234,567,000 VNĐ | phần nguyên có `,`: cách đọc hôm nay không ra số nào, nên không nhập nhằng (Owner 14/11, G2) |
 
 ### 6.2 Cách gõ bị từ chối
 
@@ -249,6 +252,7 @@ Mỗi cách gõ bị từ chối hiện một trong hai thứ dưới ô:
 | X32 | `1tr5` | VND | en | `format` | — | cách nói "1tr5" chỉ có ở tiếng Việt (Q6, Q7) |
 | X33 | `1.5 tr` | USD | en | `format` | `1.5 Mil` | (Q6) |
 | X34 | `A$100` | AUD | en | `format` | — | AUD nhận "$" hay mã "AUD", không nhận "A$" (Q1) |
+| X35 | `1.234 tr` | VND | vi | `ambiguous` | `1,234,000` · `1,234 tr` | không bỏ được số 0 cuối: gợi ý thứ nhất là số đầy đủ, không đơn vị (Owner 14/11, G2) |
 
 ### 6.3 Trần phí (100 Billions)
 
