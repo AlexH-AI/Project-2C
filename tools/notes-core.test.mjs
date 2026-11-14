@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   allowedPatterns,
   formatRelated,
+  hintFor,
+  labelledNotes,
   openNotes,
   relatedNotes,
   targetPatterns,
@@ -151,6 +153,23 @@ describe('openNotes', () => {
     ]);
   });
 
+  it('expands braces with a space after the comma (CLR6-F6)', () => {
+    expect(pathsOf('- `packages/{ai, db}/src/index.ts`.')).toEqual([
+      ['packages/ai/src/index.ts', 'packages/db/src/index.ts'],
+    ]);
+  });
+
+  it('keeps a name found in exactly three places, drops one found in four (CLR6-F6)', () => {
+    const files = ['a/q.ts', 'b/q.ts', 'c/q.ts', 'a/r.ts', 'b/r.ts', 'c/r.ts', 'd/r.ts'];
+    const notes = openNotes(ledger('- `q.ts` lặp.', '- `r.ts` lặp.'), files);
+    expect(notes.map((note) => note.paths)).toEqual([['a/q.ts', 'b/q.ts', 'c/q.ts'], []]);
+  });
+
+  it('reads on past a lower heading inside OPEN, up to the next section (CLR6-F6)', () => {
+    const markdown = ledger('### Nhóm A', '', '- `tools/merge-pr.mjs`: comment.');
+    expect(openNotes(markdown, FILES).map((note) => note.paths)).toEqual([['tools/merge-pr.mjs']]);
+  });
+
   it('takes no code span that is not a path', () => {
     expect(
       pathsOf(
@@ -227,6 +246,22 @@ describe('allowedPatterns', () => {
 
   it('is empty for a body without the field', () => {
     expect(allowedPatterns('### Mục tiêu\n\n- `packages/db/src/database.ts`', FILES)).toEqual([]);
+  });
+
+  it('reads the field under its own heading, not where another field names it (CLR6-F6)', () => {
+    const body = [
+      '### Mục tiêu',
+      '',
+      'Như ô ### File / thư mục được phép sửa của `tools/y.mjs`, xem ô File / thư mục được phép sửa.',
+      '',
+      '### File / thư mục được phép sửa',
+      '',
+      '- `packages/db/src/database.ts`',
+    ].join('\n');
+    expect(allowedPatterns(body, FILES)).toEqual([
+      'packages/db/src/database.ts',
+      'packages/db/src/database.test.ts',
+    ]);
   });
 });
 
@@ -321,6 +356,10 @@ describe('relatedNotes', () => {
     expect(lines(area)).toEqual([12]);
   });
 
+  it('puts a note naming a folder that holds a target folder in area (CLR6-F6)', () => {
+    expect(lines(relatedNotes(NOTES, ['packages/db/src/']).area)).toEqual([15]);
+  });
+
   it('reads every other character of a glob as itself', () => {
     const notes = [{ line: 1, text: 'g', paths: ['e2e/a-spec.ts'] }];
     expect(relatedNotes(notes, ['e2e/*.spec.ts']).area).toEqual([]);
@@ -382,6 +421,95 @@ describe('formatRelated', () => {
     expect(formatRelated({ exact: [], area: [] }, head, hint)).toBe(
       `${head}\n\nKhông có ghi chú OPEN nào nêu các file này.`,
     );
+  });
+
+  it('ends without the hint when only area notes name the files', () => {
+    const text = formatRelated(
+      { exact: [], area: [{ line: 81, text: 'e2e', paths: ['e2e/perf/'] }] },
+      head,
+      hint,
+    );
+    expect(text.split('\n').at(-1)).toBe('- L81 `e2e/perf/`');
+    expect(text).not.toContain(hint);
+  });
+
+  describe('with the notes labelled for the Issue (T-428)', () => {
+    const own = (line, rest, paths = []) => ({ line, text: `**[T-9 #77]** ${rest}`, paths });
+    const exactOwn = own(20, '`a/app-data.ts`: sửa.', ['a/app-data.ts']);
+
+    it('lists the labelled notes no file of the Issue names, each once', () => {
+      const text = formatRelated(
+        {
+          exact: [exactOwn],
+          area: [
+            own(30, '`e2e/perf/`: đo.', ['e2e/perf/']),
+            { line: 81, text: 'e2e', paths: ['e2e/x'] },
+          ],
+          labelled: [
+            exactOwn,
+            own(30, '`e2e/perf/`: đo.', ['e2e/perf/']),
+            own(40, 'chữ của spec.'),
+          ],
+        },
+        head,
+        hint,
+      );
+      const lines = text.split('\n');
+      expect(lines.filter((line) => line.startsWith('- L20 '))).toHaveLength(1);
+      expect(lines).toContain('Trong vùng (1): đọc khi sửa gần đó, không bắt buộc trả lời.');
+      expect(lines).toContain('Mang nhãn của Issue #77, không trùng file (2): sửa trong task.');
+      expect(lines).toContain('- L30: **[T-9 #77]** `e2e/perf/`: đo.');
+      expect(lines).toContain('- L40: **[T-9 #77]** chữ của spec.');
+      expect(lines.at(-1)).toBe(hint);
+    });
+
+    it('prints them, and the hint, when no note names the files', () => {
+      const text = formatRelated({ exact: [], area: [], labelled: [own(40, 'chữ.')] }, head, hint);
+      expect(text).toBe(
+        `${head}\n\nMang nhãn của Issue #77, không trùng file (1): sửa trong task.\n` +
+          `- L40: **[T-9 #77]** chữ.\n\n${hint}`,
+      );
+    });
+  });
+});
+
+describe('labelledNotes', () => {
+  it('finds the notes that open with the label of the Issue, whatever files they name', () => {
+    const notes = openNotes(
+      ledger(
+        '- **[T-9 #77]** `tools/merge-pr.mjs:12`: comment.',
+        '- **[T-9 #770]** `tools/merge-pr.mjs`: Issue khác.',
+        '- **[DS-1b]** như mục **[T-9 #77]** ở trên, chưa sửa.',
+        '- Nhóm ghi chú của review PR #76:',
+        '  - **[T-9 #77]** chữ của spec, không file nào.',
+      ),
+      FILES,
+    );
+    expect(labelledNotes(notes, 77).map((note) => note.line)).toEqual([5, 9]);
+    expect(labelledNotes(notes, '77').map((note) => note.line)).toEqual([5, 9]);
+    expect(labelledNotes(notes, 7)).toEqual([]);
+  });
+});
+
+describe('hintFor', () => {
+  it('names the label of the Issue for an Issue, with no command left to run', () => {
+    const text = hintFor('issue', 77);
+    expect(text).toContain('[T-… #77]');
+    expect(text).toContain('Mang nhãn của Issue');
+    expect(text).not.toContain('<issue>');
+    expect(text).not.toMatch(/\brg\b/);
+  });
+
+  it('names the work label while an Issue is written, not an Issue number', () => {
+    const text = hintFor('files');
+    expect(text).toContain('[<tên việc>]');
+    expect(text).not.toContain('<issue>');
+    expect(text).not.toMatch(/\[T-… #/);
+  });
+
+  it('tells a PR how to answer each note, and review how to check it', () => {
+    expect(hintFor('diff')).toMatch(/^Thân PR, mục "Ghi chú OPEN liên quan"/);
+    expect(hintFor('pr')).toMatch(/^review-pr \(Spec\)/);
   });
 });
 

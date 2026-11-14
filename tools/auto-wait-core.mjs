@@ -124,11 +124,16 @@ function readBranch(branch) {
   }
 }
 
-/** The newest `pull_request` run of the PR's branch (made at or after `since`, if given), or null. */
+// The workflow whose runs are CI's. macos.yml makes a pull_request run too, for every push and
+// label of every PR (its job skipped without build-mac): never CI's verdict (T-428).
+const CI_WORKFLOW = '.github/workflows/ci.yml';
+
+/** The newest `pull_request` run of CI on the PR's branch (made at or after `since`), or null. */
 function newestRunOfPr(pr, all, since) {
   return all
     .filter(
       (run) =>
+        run.path === CI_WORKFLOW &&
         run.event === 'pull_request' &&
         run.head_branch === pr.headRefName &&
         (since === null || Date.parse(run.created_at) >= Date.parse(since)),
@@ -152,7 +157,8 @@ function newestRunOfPr(pr, all, since) {
  * red check of it on the head yet: waiting for one could last until the timeout (T-373). Without
  * `since`, the checks read stay all of the head's, and that run is the newest `pull_request` run of
  * the PR's branch, not any run of the head: a `push` run that failed there says nothing of the PR
- * (T-378). A docs-only PR has no CI at all (ci.yml `paths`), so it is done at once; `files()` gives
+ * (T-378). Either way only a run of CI counts, never one of macos.yml (T-428). A docs-only PR has
+ * no CI at all (ci.yml `paths`), so it is done at once; `files()` gives
  * the PR's files to tell, and is called only while CI has no check.
  */
 export function ciState(

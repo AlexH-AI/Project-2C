@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator } from './fixtures';
 import {
   addKycNote,
@@ -283,6 +283,12 @@ test('the tab shows the icon of the app, built from its one source', async ({ pa
     new URL('../apps/desktop/src-tauri/icons/32x32.png', import.meta.url),
   );
   expect((await (await request.get(href)).body()).equals(icon)).toBe(true);
-  const dist = await readdir(new URL('../apps/desktop/dist/', import.meta.url));
-  expect(dist.filter((name) => name.startsWith('favicon'))).toEqual([]);
+  // The server sends no other icon: the old public/favicon.svg is gone (T-300). Asked of the server,
+  // not of a build on disk that may be another one (CLR6-F13); an unknown path gets the page.
+  for (const name of ['/favicon.svg', '/favicon.ico', '/favicon.png']) {
+    const response = await request.get(name);
+    expect(response.ok() && /^image\//.test(response.headers()['content-type'] ?? ''), name).toBe(
+      false,
+    );
+  }
 });

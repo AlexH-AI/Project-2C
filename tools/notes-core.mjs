@@ -252,14 +252,51 @@ function shorten(text) {
 const pathList = (paths) => paths.map((path) => `\`${path}\``).join(', ');
 
 /**
- * What `notes-for` prints: the exact notes with their opening words, the area notes by line,
- * then `hint` (what to do with the exact ones).
- * @param {{ exact: object[], area: object[] }} related from `relatedNotes`
+ * The OPEN notes labelled for the Issue, `**[T-<n> #<issue>]**` at their start, whatever files they
+ * name (ADR-0001 appendix M14): the task fixes every one of them (T-428). A label in the body of
+ * another note does not count.
+ * @param {{ line: number, text: string, paths: string[] }[]} notes from `openNotes`
+ * @param {number | string} issue
+ */
+export function labelledNotes(notes, issue) {
+  const label = new RegExp(`^\\*\\*\\[T-\\d+ #${Number(issue)}\\]\\*\\*`);
+  return notes.filter((note) => label.test(note.text));
+}
+
+// What to do with the notes, by what the files come from. Each OPEN note carries one target label,
+// the work that fixes it (ADR-0001 appendix M14, T-419).
+const HINTS = {
+  issue:
+    'Gộp vào task mọi mục mang nhãn đích của task, [T-… #<issue>]: các mục "Trùng file" mang nhãn đó và nhóm "Mang nhãn của Issue" (tính vào ước lượng). Mục mang nhãn việc khác: để lại → <nhãn>. Mục vượt cỡ hay cần cổng: đổi nhãn sang việc khác cùng loại. Trước khi mở PR chạy lại với --diff.',
+  files:
+    'Viết Issue: ô "Ghi chú OPEN liên quan" chép các mục "Trùng file" và mọi mục mang nhãn của việc này, [<tên việc>] (tên đích ở spec §12; cả mục không trùng file: rg -n "\\[<tên việc>\\]" docs/state/review-notes.md), tính vào ước lượng. Mục mang nhãn việc khác: để lại → <nhãn>. Tạo Issue xong, PR sổ đổi nhãn của việc thành nhãn của Issue.',
+  diff: 'Thân PR, mục "Ghi chú OPEN liên quan": mỗi mục "Trùng file" một dòng — đã sửa (mục mang nhãn của task), hoặc để lại → <nhãn> + lý do (mục mang nhãn việc khác; mục của task vượt cỡ / cần cổng thì nêu nhãn đích mới cùng loại). Mục đã sửa chuyển sang RESOLVED ở PR sổ sau review.',
+  pr: 'review-pr (Spec): mục "Trùng file" không có dòng trong "Ghi chú OPEN liên quan" của thân PR → chặn; ghi "đã sửa" mà diff không sửa → chặn; mục mang nhãn của Issue để lại mà không nêu nhãn đích mới → chặn.',
+};
+
+/**
+ * The hint `notes-for` ends with: `issue` (an Issue's files, its number given), `files` (while an
+ * Issue is written: its notes still carry the work label, T-428), `diff` (a branch), `pr` (review).
+ * @param {'issue' | 'files' | 'diff' | 'pr'} mode
+ * @param {number | string} [issue]
+ */
+export function hintFor(mode, issue) {
+  return mode === 'issue' ? HINTS.issue.replaceAll('<issue>', String(issue)) : HINTS[mode];
+}
+
+/**
+ * What `notes-for` prints: the exact notes with their opening words, the area notes by line, the
+ * notes labelled for the Issue that are in neither (`labelledNotes`), then `hint` (what to do with
+ * the exact and labelled ones). A labelled note shows once: with the exact ones, or in its group.
+ * @param {{ exact: object[], area: object[], labelled?: object[] }} related from `relatedNotes`
  * @param {string} head the first line: the ledger, its commit, what the files come from
  * @param {string} hint
  */
-export function formatRelated({ exact, area }, head, hint) {
-  if (!exact.length && !area.length) {
+export function formatRelated({ exact, area: near, labelled = [] }, head, hint) {
+  const isExact = (note) => exact.some((e) => e.line === note.line);
+  const own = labelled.filter((note) => !isExact(note));
+  const area = near.filter((note) => !labelled.some((l) => l.line === note.line));
+  if (!exact.length && !area.length && !own.length) {
     return `${head}\n\nKhông có ghi chú OPEN nào nêu các file này.`;
   }
   const lines = [head];
@@ -277,6 +314,14 @@ export function formatRelated({ exact, area }, head, hint) {
       ...area.map((note) => `- L${note.line} ${pathList(note.paths)}`),
     );
   }
-  if (exact.length) lines.push('', hint);
+  if (own.length) {
+    const issue = /#(\d+)\]/.exec(own[0].text)[1];
+    lines.push(
+      '',
+      `Mang nhãn của Issue #${issue}, không trùng file (${own.length}): sửa trong task.`,
+      ...own.map((note) => `- L${note.line}: ${shorten(note.text)}`),
+    );
+  }
+  if (exact.length || own.length) lines.push('', hint);
   return lines.join('\n');
 }

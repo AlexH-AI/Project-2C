@@ -156,6 +156,20 @@ describe('latestReview', () => {
     }
   });
 
+  it('reads a SHA of up to 40 hex characters, none longer (CLR6-F6)', () => {
+    const full = 'b37132d'.padEnd(40, 'a');
+    expect(latestReview([comment(`REVIEW: PASS\nPR #5, head \`${full}\`.`)]).sha).toBe(full);
+    expect(latestReview([comment(`REVIEW: PASS\nPR #5, head \`${full}a\`.`)]).sha).toBeNull();
+  });
+
+  it('takes only a comment that opens with REVIEW:, from a member too (CLR6-F6)', () => {
+    const review = latestReview([
+      comment('REVIEW: PASS\nPR #5, head `aaaaaaa`, mức `low`.', 'MEMBER'),
+      comment('Anh xem: REVIEW: CHANGES ở trên là của head cũ `bbbbbbb`.'),
+    ]);
+    expect(review).toEqual({ verdict: 'PASS', sha: 'aaaaaaa', level: 'low' });
+  });
+
   it('reads a level written as risk:<level>', () => {
     const review = latestReview([
       comment('REVIEW: PASS\nPR #5, head `b37132d`, mức `risk:med` (nâng từ low).'),

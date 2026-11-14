@@ -8,7 +8,7 @@ import { brokenLinks, imageSizes } from './links';
 const MAX_IMAGE = 150 * 1024;
 const MAX_TOTAL = 4 * 1024 * 1024;
 
-test('every relative link and image of docs/user-guide exists', () => {
+test('every relative link, anchor and image of docs/user-guide exists, in the case written', () => {
   expect(brokenLinks(), 'links to nothing, as file: link').toEqual([]);
 });
 

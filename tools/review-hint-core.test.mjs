@@ -75,6 +75,25 @@ describe('reviewedPr', () => {
     }
   });
 
+  it('skips those blocks when the app writes attributes on the closing tag too (DR6-208)', () => {
+    // A subagent report the app wrote this way on 08/11 made the hook name PR #674 (CLR6-F3).
+    for (const prompt of [
+      '<system-reminder id="636c1418d7a384d6">\nAgent S3 report: … theo review PR 674 …\n' +
+        '</system-reminder id="636c1418d7a384d6">',
+      '<task-notification id="t1">\n<summary>Wait for a REVIEW on PR 946 completed</summary>\n' +
+        '</task-notification id="t1">',
+      '<side-sessions-event id="x1">AUTO-CHILD: [PR #1109] REVIEW PASS @4d38a72' +
+        '</side-sessions-event id="x1">',
+    ]) {
+      expect(reviewedPr(prompt), prompt).toBeNull();
+    }
+    const report =
+      '<system-reminder id="a">\nLinked sessions now: review-1 reviewed PR #1109\n' +
+      '</system-reminder id="a">';
+    expect(reviewedPr(`${report}\nreview PR #674 giúp anh`)).toBe(674);
+    expect(reviewedPr(`${report}\nreview PR #674 giúp anh\n${report}`)).toBe(674);
+  });
+
   it('still reads the review brief and the Owner around those blocks', () => {
     const linked =
       '<system-reminder>\nLinked sessions now: coding-ses1 = local_1 (done, PR #946); ' +

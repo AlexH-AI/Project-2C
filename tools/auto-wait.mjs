@@ -59,7 +59,7 @@ const runsOf = (sha) =>
     'api',
     `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`,
     '--jq',
-    '[.workflow_runs[] | {id, name, event, head_branch, status, conclusion, created_at}]',
+    '[.workflow_runs[] | {id, name, path, event, head_branch, status, conclusion, created_at}]',
   ]);
 
 /**

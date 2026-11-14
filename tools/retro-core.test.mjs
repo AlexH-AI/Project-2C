@@ -126,6 +126,23 @@ describe('sessionStats', () => {
     expect(sessionStats([read('b', true)])).toBeNull();
   });
 
+  it('counts the probes before the first edit only (CLR6-F6)', () => {
+    const line = { sessionId: 's', timestamp: '2026-10-03T00:00:00Z' };
+    const call = (id, name) => ({
+      ...line,
+      type: 'assistant',
+      message: { id, content: [{ type: 'tool_use', id, name, input: { file_path: 'a' } }] },
+    });
+    const stats = sessionStats([
+      call('a', 'Read'),
+      call('b', 'Edit'),
+      call('c', 'Read'),
+      call('d', 'Read'),
+      call('e', 'Write'),
+    ]);
+    expect(stats.probesBeforeEdit).toBe(1);
+  });
+
   it('returns null for a transcript without any session line', () => {
     expect(sessionStats(parseTranscript('{"type":"summary"}\n'))).toBeNull();
   });

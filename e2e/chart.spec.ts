@@ -1,6 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import type { Response } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { trackConsoleErrors } from './support';
 
@@ -117,11 +116,17 @@ test('switching screens 10 times keeps one chart and logs no errors', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('the chart bundle stays within 250 KB gzip', () => {
-  const assets = join(import.meta.dirname, '../apps/desktop/dist/assets');
-  const chunks = readdirSync(assets).filter((file) => /^chart-.*\.js$/.test(file));
+test('the chart bundle stays within 250 KB gzip', async ({ page }) => {
+  // The chunk the server sends, not a build on disk that may be another one (CLR6-F13).
+  const chunks: Response[] = [];
+  page.on('response', (response) => {
+    if (/^\/assets\/chart-[\w-]+\.js$/.test(new URL(response.url()).pathname))
+      chunks.push(response);
+  });
+  await page.goto('/#/overview');
+  await expect(page.getByRole('img', { name: CHART, exact: true }).locator('svg')).toHaveCount(1);
 
   expect(chunks).toHaveLength(1);
-  const size = gzipSync(readFileSync(join(assets, chunks[0]!))).length;
+  const size = gzipSync(await chunks[0]!.body()).length;
   expect(size).toBeLessThanOrEqual(250 * 1024);
 });

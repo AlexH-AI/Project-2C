@@ -215,6 +215,7 @@ describe('ciState', () => {
   const run = (id, created_at, overrides = {}) => ({
     id,
     name: 'CI',
+    path: '.github/workflows/ci.yml',
     event: 'pull_request',
     head_branch: BRANCH,
     status: 'completed',
@@ -258,6 +259,28 @@ describe('ciState', () => {
           done: true,
           code: EXIT.done,
           text: 'CI green @abc1234: 2 pass',
+        });
+      }
+    });
+
+    it('does not take a run of another workflow for the run of CI (macos.yml, T-428)', () => {
+      // macos.yml makes a pull_request run for every push and label of every PR, its job skipped
+      // without build-mac: newer than CI's run, or made in the same second and listed first.
+      const failed = run(2, '2026-11-02T10:57:10Z', { conclusion: 'failure' });
+      const mac = (created_at) =>
+        run(3, created_at, {
+          name: 'macOS',
+          path: '.github/workflows/macos.yml',
+          conclusion: 'skipped',
+        });
+      for (const runs of [
+        () => [failed, mac('2026-11-02T10:57:11Z')],
+        () => [mac(failed.created_at), failed],
+      ]) {
+        expect(ciState(pr({ statusCheckRollup: greenOf(2).slice(0, 1) }), { not, runs })).toEqual({
+          done: true,
+          code: EXIT.bad,
+          text: 'CI red @abc1234: run 2 failed, no red check of it yet',
         });
       }
     });
@@ -320,6 +343,26 @@ describe('ciState', () => {
           text: waitingFor,
         });
       }
+    });
+
+    it('does not take a run of another workflow made since then for the run of CI (T-428)', () => {
+      // A label added after the mark makes a macos.yml run, its job skipped without build-mac.
+      const mac = run(3, '2026-11-02T10:58:00Z', {
+        name: 'macOS',
+        path: '.github/workflows/macos.yml',
+        conclusion: 'skipped',
+      });
+      const reopened = pr({ statusCheckRollup: oldChecks });
+      expect(ciState(reopened, { since, runs: () => [old, mac] })).toEqual({
+        done: false,
+        text: waitingFor,
+      });
+      const both = pr({ statusCheckRollup: [...oldChecks, ...freshChecks] });
+      expect(ciState(both, { since, runs: () => [old, fresh, mac] })).toEqual({
+        done: true,
+        code: EXIT.done,
+        text: 'CI green @abc1234: 2 pass',
+      });
     });
 
     it('does not call CI green on a run of the PR that was cancelled', () => {

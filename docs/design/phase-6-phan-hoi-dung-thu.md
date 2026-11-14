@@ -1111,16 +1111,16 @@ Nhãn của một mục là `[T-… #…]` (Issue đang mở sẽ sửa mục) h
 
 ### 12.2 Issue dọn sổ dự kiến (chưa tạo)
 
-Mục sổ không thuộc việc dự kiến nào ở §12.1 gom theo loại thành bốn Issue. Số mục tính @`2f972e4` theo bảng ghép của Issue #1227.
+Mục sổ không thuộc việc dự kiến nào ở §12.1 gom theo loại thành bốn Issue. Số mục tính @`2f972e4` theo bảng ghép của Issue #1227; riêng DS-1 tính lại @`b798560` (đoạn dưới bảng).
 
 | Issue | Nội dung | Mục | Rủi ro | Bị chặn bởi | Chỗ trong thứ tự (§10 bước 3) |
 |---|---|---|---|---|---|
-| DS-1 (nay DS-1a, DS-1b: đoạn dưới bảng) | Công cụ, CI, test, tài liệu review: hook gợi ý review, `tools/`, cấu hình ESLint / Vitest, hàm e2e chung, ca hợp đồng capability, workflow, `docs/reviews/**`, khối script của kế hoạch deep review | 14 | med (công cụ pipeline, CI) | DS-0 (#1227) | đầu tiên, trước A1. Đụng công cụ pipeline: K49 mở cho DS-1 ngày 12/11/2026 (ADR-0001 M14); chỉ làm khi `auto-issues` không chạy |
+| DS-1 (nay DS-1a, DS-1b: đoạn dưới bảng) | Công cụ, CI, test, tài liệu review: hook gợi ý review, `tools/`, cấu hình ESLint / Vitest, hàm e2e chung, ca hợp đồng capability, workflow, `docs/reviews/**`, khối script của kế hoạch deep review | 17 | med (công cụ pipeline, CI) | DS-0 (#1227) | đầu tiên, trước A1. Đụng công cụ pipeline: K49 mở cho DS-1 ngày 12/11/2026 (ADR-0001 M14); chỉ làm khi `auto-issues` không chạy |
 | DS-2 | Dữ liệu, đồng hồ: `packages/db`, `packages/domain`, hôm nay của app (`apps/desktop/src/data/today.ts`); phần lớn là test và chú thích | 10 | low | A4 | sau A1–A7 (A4 đổi tên `re_id` trong cùng file) |
 | DS-3 | Hộp thoại và màn Lịch hẹn: 6c / 6f, hộp đặt / dời lịch, người phối hợp, báo lỗi trong hộp, e2e kết quả cuộc gặp | 12 | low | G-03 | sau vỏ app và B1–B3, trước C1 / C2 (G-03 đổi cùng hộp thoại) |
 | DS-4 | KH, KYC, Thùng rác: tên truy cập, dòng thời gian KYC, câu lỗi chuyển nhóm, khung AI | 4 | low | A4 | sau E, trước G-06 … G-16 (chuỗi đổi xong trước các lượt dịch) |
 
-DS-1 (14 mục) và DS-3 (12 mục) có thể phải tách đôi theo trần cỡ khi viết Issue. **DS-1 tách đôi (T-427; Owner duyệt 14/11/2026, §10.1):** DS-1a làm tay ở phiên thường, 5 mục chạm rào "không tự sửa" của `auto-issues` (`tools/review-hint-core.mjs`, `tools/pr-core.mjs`, `tools/auto-wait-core.mjs`, `tools/notes-core.mjs`, `tools/notes-for.mjs`; L43, L44, L126, L143, L144 @`b798560`); DS-1b (12 mục còn lại: cấu hình ESLint / Vitest, e2e, ca hợp đồng capability, `docs/reviews/**`, kế hoạch deep review, `docs/agents/issue-tracker.md`) chạy được trong `auto-issues`. Mỗi Issue dọn sổ là Issue sửa ghi chú của sổ: có mục "Ngân sách" và "Quét cùng mẫu" (skill `review-pr` §3.A).
+DS-1 (17 mục @`b798560`: 5 của DS-1a, 12 của DS-1b; bảng ghép của #1227 đếm 14 @`2f972e4`) và DS-3 (12 mục) có thể phải tách đôi theo trần cỡ khi viết Issue. **DS-1 tách đôi (T-427; Owner duyệt 14/11/2026, §10.1):** DS-1a làm tay ở phiên thường, 5 mục chạm rào "không tự sửa" của `auto-issues` (`tools/review-hint-core.mjs`, `tools/pr-core.mjs`, `tools/auto-wait-core.mjs`, `tools/notes-core.mjs`, `tools/notes-for.mjs`; L43, L44, L126, L143, L144 @`b798560`); DS-1b (12 mục còn lại: cấu hình ESLint / Vitest, e2e, ca hợp đồng capability, `docs/reviews/**`, kế hoạch deep review, `docs/agents/issue-tracker.md`) chạy được trong `auto-issues`. Mỗi Issue dọn sổ là Issue sửa ghi chú của sổ: có mục "Ngân sách" và "Quét cùng mẫu" (skill `review-pr` §3.A).
 
 ### 12.3 Lưu ý khi viết Issue, theo bảng ghép
 

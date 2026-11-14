@@ -214,7 +214,14 @@ describe('isDocsOnly', () => {
   });
 
   it('does not treat a docs-like name outside docs/ as docs', () => {
-    expect(isDocsOnly(['apps/docs/x.ts', 'README.mdx'])).toBe(false);
+    // One path a call: with two, a rule broken for one of them still gives false (CLR6-F6).
+    for (const path of [
+      'apps/docs/x.ts',
+      'apps/desktop/src/docs/x.ts',
+      'README.mdx',
+      'docsite/x.ts',
+    ])
+      expect(isDocsOnly([path]), path).toBe(false);
   });
 
   // A docs-only PR merges without CI, so pnpm verify must skip what CI skips, or main turns red
@@ -474,6 +481,14 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), docsOnly)).toEqual([]);
   });
 
+  it('counts a commit main got with no file listed as code (CLR6-F6)', () => {
+    // GitHub gives no files for a merge commit or an empty one: nothing says it is docs only.
+    const mainSince = [{ sha: '4444444dddd', files: [] }];
+    expect(mergeBlockers(pr(), ctx({ mainSince }))).toEqual([
+      'main got code since feed000, the main CI tested on head abc1234 (4444444): gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
+    ]);
+  });
+
   it('goes by the main CI tested, not the time it ran: a re-run keeps its old merge (DR6-57)', () => {
     // Pushed at 10:00, main got code at 10:05, CI re-run at 10:30 on the merge made at 10:00.
     const rollup = [{ ...green[0], startedAt: '2026-10-06T10:30:00Z' }];
@@ -645,8 +660,24 @@ describe('needsExe', () => {
       'package.json.bak',
       'apps/desktop/vitest.config.ts',
       '.github/workflows/ci.yml',
+      'docs/Cargo.toml.md',
+      'MyCargo.toml',
+      'tauri.conf.json.bak',
     ])
       expect(needsExe(path), path).toBe(false);
+  });
+
+  // Today every Cargo file and tauri.conf.json sits in src-tauri/, which the first rule takes: these
+  // keep the label for a crate or a Tauri config anywhere else (CLR6-F6).
+  it('is true for Cargo files and the Tauri config outside src-tauri/ too', () => {
+    for (const path of [
+      'Cargo.toml',
+      'Cargo.lock',
+      'crates/x/Cargo.toml',
+      'tauri.conf.json',
+      'x/tauri.conf.json',
+    ])
+      expect(needsExe(path), path).toBe(true);
   });
 });
 
@@ -794,6 +825,13 @@ describe('cleanupPlan', () => {
 
   it('leaves a main checkout on another branch alone', () => {
     const plan = cleanupPlan(state({ worktrees: [wt(MAIN, 'task/T-9-z')], remoteHead: null }));
+    expect(describeSteps(plan)).toEqual([`${MAIN}: git branch -D task/T-1-x`]);
+  });
+
+  it('does not fast-forward a main checkout on main with uncommitted changes (CLR6-F6)', () => {
+    const plan = cleanupPlan(
+      state({ worktrees: [wt(MAIN, 'main')], dirty: new Set([MAIN]), remoteHead: null }),
+    );
     expect(describeSteps(plan)).toEqual([`${MAIN}: git branch -D task/T-1-x`]);
   });
 

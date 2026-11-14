@@ -509,6 +509,12 @@ describe('openCodeAdapter', () => {
     expect(error.serverMessage.startsWith('<html>***x')).toBe(true);
   });
 
+  it('cuts the server message by code point, not by UTF-16 unit, as Rust (CLR6-F6)', async () => {
+    const body = JSON.stringify({ error: '😀'.repeat(250) });
+    const error = await fails(http(502, body)).catch((e) => e);
+    expect(error.serverMessage).toBe('😀'.repeat(200));
+  });
+
   it('masks the key and the session in URL and JSON escapes too, as Rust (DR6-55)', async () => {
     const message = async (text, key = KEY) => {
       const body = JSON.stringify({ error: { message: text } });
@@ -584,6 +590,13 @@ describe('openCodeAdapter', () => {
     }
     const long = JSON.stringify({ choices: [{ message: { content: 'é'.repeat(1_100_000) } }] });
     await expect(fails(http(200, long))).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
+  });
+
+  it('refuses a reply over 2 MB even when what it reads is whole JSON, as Rust (CLR6-F6)', async () => {
+    // Spaces after the JSON: the first 2 MB + 1 bytes still parse, so only the size refuses it.
+    const json = JSON.stringify({ choices: [{ message: { content: '{"a":1}' } }] });
+    const padded = json + ' '.repeat(2 * MB + 10 - json.length);
+    await expect(fails(http(200, padded))).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
   });
 
   it('takes a reply of exactly 2 MB, as Rust', async () => {

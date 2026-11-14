@@ -37,7 +37,15 @@ test('toRun keys each operation by its name, rounded to 0.1, with its unit and l
     at: '2026-10-13T02:00:00Z',
     note: 'Home PC',
     ops: {
-      'appointments.period-year': { unit: 'ms', runs: 3, median: 14, min: 13, max: 20, limit: 200 },
+      'appointments.period-year': {
+        unit: 'ms',
+        runs: 3,
+        median: 14,
+        min: 13,
+        max: 20,
+        limit: 200,
+        within: true,
+      },
       'memory.js-heap': { unit: 'MB', runs: 1, median: 81.2, min: 81.2, max: 81.2 },
     },
   });
@@ -127,8 +135,57 @@ test('markdownTable gives no percent against a base median of 0 (#572)', () => {
   });
   expect(markdownTable(next, base).split('\n').slice(2)).toEqual([
     '| `a` | 5 | 8 ms | 7 ms | 10 ms | — | 0 ms | +8 ms (—) |',
-    '| `b` | 5 | 0 ms | 0 ms | 0 ms | — | 0 ms | +0 ms (—) |',
+    '| `b` | 5 | 0 ms | 0 ms | 0 ms | — | 0 ms | 0 ms (—) |',
   ]);
+});
+
+// CLR6-F10: what the table shows is what it compares and signs.
+test('markdownTable keeps a row for an operation only the base run has', () => {
+  const base = run({
+    a: { unit: 'ms', runs: 5, median: 100, min: 90, max: 110 },
+    'app.open-data': { unit: 'ms', runs: 3, median: 387, min: 380, max: 400 },
+  });
+  const next = run({ a: { unit: 'ms', runs: 5, median: 100, min: 90, max: 110 } });
+  expect(markdownTable(next, base).split('\n').slice(2)).toEqual([
+    '| `a` | 5 | 100 ms | 90 ms | 110 ms | — | 100 ms | 0 ms (+0%) |',
+    '| `app.open-data` | — | — | — | — | — | 387 ms | — |',
+  ]);
+});
+
+test('markdownTable signs a change by the value it shows: none for one that rounds to 0', () => {
+  const base = run({
+    down: { unit: 'ms', runs: 5, median: 20, min: 20, max: 20 },
+    up: { unit: 'ms', runs: 5, median: 20, min: 20, max: 20 },
+    heap: { unit: 'MB', runs: 1, median: 16.5, min: 16.5, max: 16.5 },
+  });
+  const next = run({
+    down: { unit: 'ms', runs: 5, median: 19.6, min: 19.6, max: 19.6 },
+    up: { unit: 'ms', runs: 5, median: 20.4, min: 20.4, max: 20.4 },
+    heap: { unit: 'MB', runs: 1, median: 16.46, min: 16.46, max: 16.46 },
+  });
+  expect(markdownTable(next, base).split('\n').slice(2)).toEqual([
+    '| `down` | 5 | 20 ms | 20 ms | 20 ms | — | 20 ms | 0 ms (−2%) |',
+    '| `up` | 5 | 20 ms | 20 ms | 20 ms | — | 20 ms | 0 ms (+2%) |',
+    '| `heap` | 1 | 16,5 MB | 16,5 MB | 16,5 MB | — | 16,5 MB | 0,0 MB (+0%) |',
+  ]);
+});
+
+test('markdownTable checks the limit on the median before it was rounded', () => {
+  const measured = toRun(
+    [
+      { name: 'under', unit: 'ms', samples: [199.96], limit: 200 },
+      { name: 'over', unit: 'ms', samples: [200.04], limit: 200 },
+    ],
+    '2026-10-13T02:00:00Z',
+  );
+  expect(markdownTable(measured).split('\n').slice(2)).toEqual([
+    '| `under` | 1 | 200 ms | 200 ms | 200 ms | < 200 ms ✅ |',
+    '| `over` | 1 | 200 ms | 200 ms | 200 ms | < 200 ms ❌ |',
+  ]);
+  // A file written before the probe kept the verdict: the stored median decides.
+  const old = { ...(measured.ops.under as PerfRun['ops'][string]) };
+  delete old.within;
+  expect(markdownTable(run({ under: old })).split('\n')[2]).toMatch(/< 200 ms ❌ \|$/);
 });
 
 test('loadDataError passes the load data and names what the exe holds otherwise', () => {

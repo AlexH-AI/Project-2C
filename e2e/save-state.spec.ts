@@ -72,6 +72,28 @@ test('the sidebar says when the data was saved, while it saves, and when it coul
   await expect(state).toHaveText('Chưa lưu được vào file');
 });
 
+// The exe shows backups\ in Explorer from Cài đặt → Dữ liệu; the web build has no such button
+// (backup.spec.ts). WBR6-F1: no case pressed it before the stand-in answered open_folder.
+test('"Mở thư mục" shows the backups folder, and says so when Explorer does not start', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/settings');
+  const open = page.getByRole('button', { name: 'Mở thư mục' });
+  const failed = page.getByRole('alert').filter({ hasText: 'Không mở được thư mục.' });
+  await open.click();
+  await expect.poll(() => page.evaluate(() => window.exe.folders)).toEqual(['backups']);
+  await expect(failed).toHaveCount(0);
+
+  await page.evaluate(() => (window.exe.failFolders = true));
+  await open.click();
+  await expect(failed).toBeVisible();
+  await page.evaluate(() => (window.exe.failFolders = false));
+  await open.click();
+  await expect(failed).toHaveCount(0);
+  expect(await page.evaluate(() => window.exe.folders)).toEqual(['backups', 'backups']);
+});
+
 test('web mode says, on every screen, that the data stays in the browser (10d)', async ({
   page,
 }) => {

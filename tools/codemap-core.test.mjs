@@ -173,6 +173,26 @@ describe('route table', () => {
     expect(viewImports(file)).toEqual(['./team-view', '../customers/customers-view']);
   });
 
+  it('takes only a module named *-view, and only a route compared with === (CLR6-F6)', () => {
+    const file = parseSource(
+      'src/routes/X.tsx',
+      "import { a } from './Overview';\nimport { b } from './team-views';\nimport { c } from './x-view';",
+    );
+    expect(viewImports(file)).toEqual(['./x-view']);
+    const other = parseSource(
+      'src/routes/Screen.tsx',
+      [
+        "import { Overview } from './Overview';",
+        "import { Help } from './Help';",
+        'export function Screen({ route }) {',
+        "  if (route.screen !== 'help') return <Overview />;",
+        "  if (route.screen === 'help') return <Help />;",
+        '}',
+      ].join('\n'),
+    );
+    expect(screenComponents(other)).toEqual([{ screen: 'help', from: './Help' }]);
+  });
+
   it('renders sections first, then other routes, and marks sections without a screen', () => {
     const rows = [
       { screen: 'customer', file: 'src/routes/customers/CustomerProfile.tsx', views: [] },
