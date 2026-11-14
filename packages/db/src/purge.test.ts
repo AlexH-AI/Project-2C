@@ -744,6 +744,26 @@ function withKyc(db: Database, rmId: string, name: string) {
   return customer;
 }
 
+/**
+ * Runs `commands` on a database saved before A3 (migration 0015), whose column of the RM is still
+ * re_id: the commands read and write rm_id, so the column has that name while they run, and re_id
+ * again after, as such a file holds it. A copy is in ai-analyses.test.ts: the codemap of
+ * packages/db/CLAUDE.md has no room for one more export of test-support.ts.
+ */
+function runBeforeA3<T>(db: Database, commands: () => T): T {
+  const rename = (from: string, to: string) => {
+    for (const table of ['customers', 'appointments', 'policies']) {
+      db.sqlite.run(`ALTER TABLE ${table} RENAME COLUMN ${from} TO ${to}`);
+    }
+  };
+  rename('re_id', 'rm_id');
+  try {
+    return commands();
+  } finally {
+    rename('rm_id', 're_id');
+  }
+}
+
 /** Runs one SQL statement on the KYC and AI rows of a customer. */
 const statement = (db: Database, customerId: string) => (sql: string) => () =>
   db.sqlite.run(`${sql} WHERE customer_id = ?`, [customerId]);
@@ -842,13 +862,16 @@ describe('the migration of the purge (0011)', () => {
     const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < purge.id), now });
     const team = createTeam(old, { name: 'Sao Mai' });
     // The commands write RM, the role and the note source, which the CHECKs of a file before A2
-    // (0013) refuse: past them, here. The rows go through 0013 as they are.
+    // (0013) refuse: past them, here. The rows go through 0013 as they are. They name the column
+    // of the RM rm_id too, which such a file calls re_id (A3): runBeforeA3.
     old.sqlite.run('PRAGMA ignore_check_constraints = ON');
     const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
-    const live = withKyc(old, re.id, 'Lan');
-    const gone = withKyc(old, re.id, 'Huệ');
+    const [live, gone] = runBeforeA3(
+      old,
+      () => [withKyc(old, re.id, 'Lan'), withKyc(old, re.id, 'Huệ')] as const,
+    );
     old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
-    softDeleteCustomer(old, gone.id);
+    runBeforeA3(old, () => softDeleteCustomer(old, gone.id));
     // The trigger before it refuses the deleted customer's rows too.
     expect(statement(old, gone.id)('DELETE FROM ai_analyses')).toThrow(/append-only/);
     expect(old.schemaVersion()).toBe(purge.id - 1);

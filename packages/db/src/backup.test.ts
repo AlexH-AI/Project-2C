@@ -261,8 +261,26 @@ describe('importBackup', () => {
     ).toEqual(['outcome_reviewer_id']);
   });
 
-  // A2 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM imports as it was saved.
-  it('A2: imports a file saved before RE became RM, with RM in place of the role and the note source RE', async () => {
+  /** Every row as the app writes it now, ids and all; only the export time differs. */
+  const unstamped = (text: string) => text.replace(/"exportedAt":"[^"]*"/, '');
+
+  /**
+   * `file` as an app before A3 (migration 0015) saved it: the column of the RM is re_id, in its
+   * place among the columns. Returns how many rows of each table carry it.
+   */
+  const withReId = (file: BackupJson) =>
+    ['customers', 'appointments', 'policies'].map((table) => {
+      file.tables[table] = file.tables[table]!.map((row) =>
+        Object.fromEntries(
+          Object.entries(row).map(([key, value]) => [key === 'rm_id' ? 're_id' : key, value]),
+        ),
+      );
+      return file.tables[table].filter((row) => 're_id' in row && !('rm_id' in row)).length;
+    });
+
+  // A2, A3 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM (version 13, after
+  // migration 0012) imports as it was saved, through the migrations of A2 and A3.
+  it('A2, A3: imports a file of migration 0012, with RM in place of the role and the note source RE, and rm_id of re_id', async () => {
     const latest = exportBackup(await small());
     const file = JSON.parse(latest) as BackupJson;
     const before = MIGRATIONS.find((m) => m.tag === '0013_role_rm')!.id - 1;
@@ -272,13 +290,43 @@ describe('importBackup', () => {
     expect(asSaved(file.tables.people!, 'role')).toBe(2);
     expect(asSaved(file.tables.kyc_notes!, 'source')).toBe(1);
     expect(file.tables.kyc_notes!.map((note) => note.source).sort()).toEqual(['RE', 'SYSTEM']);
+    expect(withReId(file)).toEqual([2, 1, 1]);
 
     const imported = await importBackup(JSON.stringify(file));
 
     expect(imported.schemaVersion).toBe(before);
     expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    // Every row as the app writes it now, ids and all; only the export time differs.
-    const unstamped = (text: string) => text.replace(/"exportedAt":"[^"]*"/, '');
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
+  });
+
+  // A3: the file of an app after A2, before the column of the RM was named rm_id (version 15).
+  it('A3: imports a file saved before rm_id, with the RM of each customer, appointment and policy', async () => {
+    const db = await small();
+    const latest = exportBackup(db);
+    const file = JSON.parse(latest) as BackupJson;
+    const before = MIGRATIONS.find((m) => m.tag === '0015_rm_id')!.id - 1;
+    file.schemaVersion = before;
+    expect(withReId(file)).toEqual([2, 1, 1]);
+    expect(Object.keys(file.tables.customers![0]!)).toEqual([
+      'id',
+      'code',
+      'name',
+      're_id',
+      'birth_date',
+      'gender',
+      'stage',
+      'created_at',
+      'updated_at',
+      'deleted_at',
+    ]);
+
+    const imported = await importBackup(JSON.stringify(file));
+
+    expect(imported.schemaVersion).toBe(before);
+    expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(listCustomers(imported.db).map((c) => c.rmId)).toEqual(
+      listCustomers(db).map((c) => c.rmId),
+    );
     expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
   });
 
