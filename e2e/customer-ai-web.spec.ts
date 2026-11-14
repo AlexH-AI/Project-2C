@@ -68,6 +68,12 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   await box.fill(' \u{200B}\n\u{2060}\u{3164} ');
   await expect(save).toBeDisabled();
   await expect(panel).toContainText('Lần thử 1 / 2');
+  // White space too long to be read is never blank: refused as too long, no attempt (T-375, CLR6-C6).
+  await box.fill(' '.repeat(40_001));
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(panel).toContainText('Câu trả lời dài quá 20.000 ký tự');
+  await expect(panel).toContainText('Lần thử 1 / 2');
 
   await box.fill(GOOD);
   await save.click();

@@ -13,6 +13,8 @@ describe('code points', () => {
     // A lone surrogate is one character, as Rust reads the string the webview sends.
     ['\ud800x', 2],
     [`x\udc00${EMOJI}`, 3],
+    // The last code point: its low surrogate is U+DFFF (CLR6-C9).
+    ['\u{10FFFF}', 1],
   ])('counts %j as %i', (text, count) => {
     expect(codePointCount(text)).toBe(count);
     expect(codePointCount(text)).toBe(Array.from(text).length);

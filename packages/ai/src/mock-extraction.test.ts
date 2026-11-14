@@ -1180,6 +1180,59 @@ describe('Mock extraction', () => {
     expect(await extracted(note)).toEqual(facts);
   });
 
+  // Each word or mark of the closed lists of §10 that no other case reads, in a note it changes
+  // (CLR6-C7): dropping it from its list turns its row red.
+  it.each([
+    // Said to be wrong (`RETRACTED`), up to two words between "không" and "đúng".
+    ['KH độc thân, ghi lộn.', []],
+    ['KH độc thân. Đính chính lại.', []],
+    ['KH độc thân, không phải.', []],
+    ['KH đã kết hôn, không hoàn toàn đúng.', []],
+    // A bullet (`BULLET`), a particle ending the clause (`CLAUSE_DONE`), a word opening another one.
+    ['* KH đã kết hôn', [MARRIED]],
+    ['• KH đã kết hôn', [MARRIED]],
+    ['+ KH đã kết hôn', [MARRIED]],
+    ['KH đã kết hôn rồi.', [MARRIED]],
+    ['KH đã kết hôn nhé.', [MARRIED]],
+    ['KH đã kết hôn vì có 2 con.', [MARRIED, TWO]],
+    // The children described, then what they do now (`CHILDREN_NOW`).
+    ['KH có 2 con lớn.', [TWO]],
+    ['KH có 2 con đang đi học.', [TWO]],
+    ['KH có 2 con đã đi làm.', [TWO]],
+    ['KH có 2 con đang học lớp 5.', [TWO]],
+    ['KH có 2 con đang học mẫu giáo.', [TWO]],
+    ['KH có 2 con đang học tiểu học.', [TWO]],
+    ['KH có 2 con đã trưởng thành.', [TWO]],
+    ['KH có 2 con đã lập gia đình.', [TWO]],
+    // How the KH says it, and is named (`SAYING`, `KH_WORD`, `OPENS`).
+    ['KH kể đã kết hôn.', [MARRIED]],
+    ['KH xác nhận đã kết hôn.', [MARRIED]],
+    ['Khách hàng đã kết hôn.', [MARRIED]],
+    ['Anh nói đã kết hôn.', [MARRIED]],
+    // A count in words (`NUMBER_WORD`), and since when (`SINCE`).
+    ['KH có 12 con. Mười con đã mất.', [{ ...TWO, quote: 'Mười con đã mất' }]],
+    ['KH góa vợ từ 5 năm nay.', [{ ...WIDOWED, quote: 'góa vợ' }]],
+  ])('reads %j as %j (§10 lists, CLR6-C7)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  // Each rule of `saysOfTheKh` that no other case holds (CLR6-C7): dropping it turns its row red.
+  it.each([
+    // A supposition before the phrase in its sentence (`SUPPOSED`), "khi … thì" around it.
+    ['Nếu vậy, KH đã kết hôn.', []],
+    ['Giả sử, KH độc thân.', []],
+    ['Khi đó, KH đã kết hôn, thì mới mua.', []],
+    // A phrase after "hay / hoặc" in its clause is one of two (`EITHER`): a later sentence that only
+    // guesses keeps the earlier proposal (§10).
+    ['KH có 2 con. Hoặc 3 con.', [TWO]],
+    // "chưa" after a phrase asks it (`NOT_ASKED`): the earlier answer stays.
+    ['KH độc thân. KH đã kết hôn chưa rõ.', [SINGLE]],
+    // Children of someone else named after the count (`ownerAfter`) are no other count.
+    ['KH có 3 con. 2 con của anh trai đã đi học.', [{ ...TWO, value: '3', quote: '3 con' }]],
+  ])('reads %j as %j (the rules of what is said of the KH, CLR6-C7)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
   it('extracts nothing from a note without a known pattern', async () => {
     const output = extractionOutputSchema.parse(
       (await completeMock({ note: 'Khách hẹn gặp lại tuần sau.', fields: [] })).value,

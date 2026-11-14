@@ -760,6 +760,20 @@ describe('runExtraction', () => {
       expect(requests).toEqual([]);
     });
 
+    // No room is not too little (CLR6-C9): the retry fills the limit, the wrong answer cut to nothing.
+    it('sends a retry that leaves no room for the wrong answer', async () => {
+      const retry = async (note: string) => {
+        const { adapter, requests } = scripted('không có JSON', '{"facts": []}');
+        await runExtraction({ ...extraction(adapter), note });
+        return requests;
+      };
+      const asked = Array.from((await retry('x'.repeat(20)))[1]!.messages[3]!.content).length;
+      const requests = await retry('x'.repeat(RUST_LIMIT - (await around()) - asked));
+      expect(requests).toHaveLength(2);
+      expect(requests[1]!.messages[2]).toEqual({ role: 'assistant', content: '' });
+      expect(charsOf(requests[1]!)).toBe(RUST_LIMIT);
+    });
+
     it('gives AI_TOO_LARGE when the retry message leaves no room', async () => {
       const note = 'x'.repeat(RUST_LIMIT - (await around()) - 50);
       const { adapter, requests } = scripted('không có JSON', '{"facts": []}');

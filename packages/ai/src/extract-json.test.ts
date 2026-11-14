@@ -6,6 +6,12 @@ describe('extractJson', () => {
     expect(extractJson('{"facts":[]}')).toEqual({ found: true, value: { facts: [] } });
   });
 
+  // What opens an object, after any white space (CLR6-C9): a key, or its end.
+  it('reads a block with a CR after its brace, and an empty one', () => {
+    expect(extractJson('{\r\n  "facts": []\r\n}')).toEqual({ found: true, value: { facts: [] } });
+    expect(extractJson('Kết quả: {}')).toEqual({ found: true, value: {} });
+  });
+
   it('reads JSON inside a ```json fence', () => {
     const content = '```json\n{ "facts": [ { "field": "x" } ] }\n```';
     expect(extractJson(content)).toEqual({ found: true, value: { facts: [{ field: 'x' }] } });

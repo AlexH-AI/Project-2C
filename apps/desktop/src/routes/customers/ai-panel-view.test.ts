@@ -427,6 +427,13 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
     },
   );
 
+  it('drops the message of a bug once a paste is refused (CLR6-C10)', () => {
+    const failed = webAfter(opened, { kind: 'failed' })!;
+    const after = webAfter(failed, { kind: 'unusable', reason: 'OWN_MESSAGE' });
+    expect(after).toMatchObject({ refused: 'OWN_MESSAGE', failed: null });
+    expect(webFailure(after!)).toBeNull();
+  });
+
   it('words a paste too long with the limit of `@p2c/ai`, as a count (mockup 4h)', () => {
     expect(t('aiPanel.web.refused.TOO_LONG', { count: MAX_AI_RAW_OUTPUT })).toBe(
       'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
