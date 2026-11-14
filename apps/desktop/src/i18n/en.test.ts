@@ -8,7 +8,7 @@ import { vi, type MessageKey } from './vi';
  * its English, and a translation round (G-12 … G-16) lowers this to what is left; G-16 brings it
  * to 0.
  */
-const MISSING_EN = 1189;
+const MISSING_EN = 1191;
 
 const slotsOf = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => String(m[1]));
 

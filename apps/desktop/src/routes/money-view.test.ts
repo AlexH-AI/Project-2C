@@ -117,6 +117,8 @@ describe('refusalKey', () => {
     ['500 Mil', 'money.unit'],
     // Both the unit and the marks change: the unit is what the interface language says.
     ['1,5 Mil', 'money.unit'],
+    // Typed as decomposed letters (a paste from a Mac): the unit is the same, as the field reads it.
+    ['1,5 tỷ'.normalize('NFD'), 'money.mark'],
   ])('%j, VND in Vietnamese → %s', (text, key) => {
     expect(keyOf(text)).toBe(key);
   });

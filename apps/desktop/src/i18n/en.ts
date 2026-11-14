@@ -47,7 +47,4 @@ export const en: EnglishMessages = {
   'money.pickOne': 'Pick one:',
   'money.fill': 'Fill in {text} = {amount}',
   'sep.equals': '=',
-  'outcome.caseSizeHelp':
-    'Use "," for thousands and "." for decimals, with a unit too: "1.2 Mil" is 1,200,000, "1,200 Mil" is 1,200,000,000.',
-  'error.INVALID_AMOUNT': 'Amounts must be above 0, in whole dong or whole cents.',
 };

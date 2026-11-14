@@ -65,8 +65,11 @@ export interface MoneyRefusalRead {
   readonly suggestions: readonly string[];
 }
 
-/** The letters of a text, its unit and currency mark, so two ways of writing compare by unit. */
-const lettersOf = (text: string) => text.replace(/\P{L}/gu, '').toLowerCase();
+/**
+ * The letters of a text as the field reads it (`normalizeText`, NFC), its unit and currency mark,
+ * so two ways of writing compare by unit.
+ */
+const lettersOf = (text: string) => normalizeText(text).replace(/\P{L}/gu, '').toLowerCase();
 
 /**
  * The sentence under a refused field (mockup #money, table "Câu lỗi của ô tiền"): by the code,
