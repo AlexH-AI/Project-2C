@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CAP_GOLDEN_ROWS,
   COMPACT_GOLDEN_ROWS,
   CURRENCY_GOLDEN_ROWS,
   DELTA_GOLDEN_ROWS,
   FULL_GOLDEN_ROWS,
+  INPUT_GOLDEN_ROWS,
+  REFUSED_GOLDEN_ROWS,
   type CompactGoldenRow,
+  type GoldenLanguage,
 } from './golden/so-va-tien-te.fixture';
 import { LANGUAGES, type Language } from './language';
 import {
@@ -19,6 +23,7 @@ import {
   formatVndDelta,
   MAX_FEE_VND,
   maxFee,
+  parseMoney,
   parseVnd,
   type VndParseResult,
 } from './money';
@@ -381,6 +386,241 @@ describe.each(LANGUAGES)('formatMoneyCompact in %s (golden §3)', (language) => 
 describe.each(LANGUAGES)('formatMoneyDelta in %s (golden §4)', (language) => {
   it.each(DELTA_GOLDEN_ROWS)('$id: $amount $currency', (row) => {
     expect(formatMoneyDelta(row.amount, row.currency, language)).toBe(expectedIn(row, language));
+  });
+});
+
+/** One case per language a §6 row is read in: `both` is each of the two. */
+const inLanguages = <Row extends { readonly language: GoldenLanguage }>(rows: readonly Row[]) =>
+  rows.flatMap((row) =>
+    (row.language === 'both' ? LANGUAGES : [row.language]).map((language) => ({
+      ...row,
+      language,
+    })),
+  );
+
+describe('parseMoney (golden §6)', () => {
+  it.each(inLanguages(INPUT_GOLDEN_ROWS))(
+    '$id: $text, $currency in $language → $amount',
+    ({ text, currency, language, amount, read }) => {
+      expect(parseMoney(text, currency, language)).toEqual({ ok: true, amount });
+      expect(formatMoney(amount, currency)).toBe(read);
+    },
+  );
+
+  it.each(inLanguages(REFUSED_GOLDEN_ROWS))(
+    '$id: $text, $currency in $language → $error',
+    ({ text, currency, language, error, suggestions }) => {
+      expect(parseMoney(text, currency, language)).toEqual({ ok: false, error, suggestions });
+    },
+  );
+
+  // A click fills the field with a suggestion (Q11): what it fills reads, never another error.
+  it.each(inLanguages(REFUSED_GOLDEN_ROWS).filter((row) => row.suggestions.length > 0))(
+    '$id: each suggestion for $text reads back',
+    ({ currency, language, suggestions }) => {
+      for (const suggestion of suggestions) {
+        expect(parseMoney(suggestion, currency, language)).toMatchObject({ ok: true });
+      }
+    },
+  );
+
+  // X27's second way of writing is M04: it reads, past the cap, and the command refuses it.
+  it('reads the second suggestion of X27 as M04, past the cap', () => {
+    expect(parseMoney('1,500 tỷ', 'VND', 'vi')).toEqual({ ok: true, amount: 1_500_000_000_000 });
+    expect(1_500_000_000_000).toBeGreaterThan(maxFee('VND'));
+  });
+
+  it.each(inLanguages(CAP_GOLDEN_ROWS))(
+    '$id: $text, $currency in $language → $amount, a fee: $isFee',
+    ({ text, currency, language, amount, isFee }) => {
+      expect(parseMoney(text, currency, language)).toEqual({ ok: true, amount });
+      expect(amount <= maxFee(currency)).toBe(isFee);
+    },
+  );
+});
+
+describe('parseMoney past the golden', () => {
+  const refused = (error: string, suggestions: readonly string[] = []) => ({
+    ok: false,
+    error,
+    suggestions,
+  });
+
+  describe('`ambiguous`: only where the reading of today differs (G2 14/11)', () => {
+    it.each([
+      ['1234.567 tr', 1_234_567_000],
+      ['1,500.500 tr', 1_500_500_000],
+      ['01.500 tr', 1_500_000],
+      ['1.5000 tr', 1_500_000],
+      ['1.50 tr', 1_500_000],
+    ])('%s → %d đồng', (text, amount) => {
+      expect(parseMoney(text, 'VND', 'vi')).toEqual({ ok: true, amount });
+    });
+
+    it.each([
+      ['1.505 tr', ['1,505,000', '1,505 tr']],
+      ['1.234 tỷ', ['1,234,000,000', '1,234 tỷ']],
+      ['999.999 tỷ', ['999,999,000,000', '999,999 tỷ']],
+      ['1.234k', ['1,234', '1,234k']],
+      ['1.230 tr', ['1.23 tr', '1,230 tr']],
+      ['1.000 tr', ['1 tr', '1,000 tr']],
+      ['1.500tr', ['1.5tr', '1,500tr']],
+      ['1.500 TR', ['1.5 TR', '1,500 TR']],
+      ['1.500 tr VNĐ', ['1.5 tr VNĐ', '1,500 tr VNĐ']],
+      ['1.234 tr đ', ['1,234,000 đ', '1,234 tr đ']],
+    ])('%s → ambiguous, %j', (text, suggestions) => {
+      expect(parseMoney(text, 'VND', 'vi')).toEqual(refused('ambiguous', suggestions));
+      for (const suggestion of suggestions) {
+        expect(parseMoney(suggestion, 'VND', 'vi')).toMatchObject({ ok: true });
+      }
+    });
+  });
+
+  describe('suggests a unit of the interface language', () => {
+    it.each([
+      ['750 nghìn', 'VND', 'en', ['750K']],
+      ['1.5 bil', 'VND', 'vi', ['1.5 tỷ']],
+      ['1,5 Mil', 'VND', 'vi', ['1.5 tr']],
+      ['250 ngàn', 'USD', 'en', ['250K']],
+    ] as const)('%s, %s in %s → %j', (text, currency, language, suggestions) => {
+      expect(parseMoney(text, currency, language)).toEqual(refused('format', suggestions));
+    });
+
+    // The unit alone changed would be read two ways: neither is picked for the user.
+    it('offers nothing when the changed unit would be ambiguous', () => {
+      expect(parseMoney('1.500 Mil', 'VND', 'vi')).toEqual(refused('format'));
+    });
+  });
+
+  describe('reads amounts as an RM says them, in Vietnamese only (Q7)', () => {
+    it.each([
+      ['1tr50', 1_050_000],
+      ['1tr250', 1_250_000],
+      ['1 tỷ 25', 1_025_000_000],
+      ['2k5', 2_500],
+      ['1,500 tỷ 2', 1_500_200_000_000],
+      ['1tr5 VNĐ', 1_500_000],
+    ])('%s → %d đồng', (text, amount) => {
+      expect(parseMoney(text, 'VND', 'vi')).toEqual({ ok: true, amount });
+    });
+
+    it.each([
+      ['1tr2345', 'vi', []],
+      ['1.5tr5', 'vi', []],
+      ['1,5tr5', 'vi', []],
+      ['1.500 tỷ 2', 'vi', ['1,500 tỷ 2']],
+      ['1 Mil 5', 'vi', []],
+      ['2k5', 'en', []],
+    ] as const)('%s in %s → format, %j', (text, language, suggestions) => {
+      expect(parseMoney(text, 'VND', language)).toEqual(refused('format', suggestions));
+    });
+  });
+
+  describe('the sign, read once', () => {
+    it.each([
+      ['−$1,250.50', 'USD'],
+      ['- 1tr5', 'VND'],
+      ['-1.500 tr', 'VND'],
+      ['-1,500', 'VND'],
+    ] as const)('%s, %s → negative', (text, currency) => {
+      expect(parseMoney(text, currency, 'vi')).toEqual(refused('negative'));
+    });
+
+    it.each(['-abc', '--500', '-1,5 tỷ', '-'])('%j → format, nothing to suggest', (text) => {
+      expect(parseMoney(text, 'VND', 'vi')).toEqual(refused('format'));
+    });
+  });
+
+  describe('the currency marks (ADR-0018 §5)', () => {
+    it.each([
+      ['500 dong', 'VND', 500],
+      ['500 ĐỒNG', 'VND', 500],
+      ['500 Mil VND', 'VND', 500_000_000],
+      ['1,250.50usd', 'USD', 125_050],
+      ['$1,250.50 USD', 'USD', 125_050],
+      ['eur 250K', 'EUR', 25_000_000],
+      ['GBP1,250.5', 'GBP', 125_050],
+      ['SGD 99.90', 'SGD', 9_990],
+    ] as const)('%s, %s → %d', (text, currency, amount) => {
+      expect(parseMoney(text, currency, 'en')).toEqual({ ok: true, amount });
+    });
+
+    it.each([
+      ['VNĐ', 'VND'],
+      ['₫500', 'VND'],
+      ['500 VNĐ', 'USD'],
+      ['100 USD', 'EUR'],
+      ['$100', 'GBP'],
+      ['500 $', 'USD'],
+    ] as const)('%s, %s → format', (text, currency) => {
+      expect(parseMoney(text, currency, 'en')).toEqual(refused('format'));
+    });
+  });
+
+  it.each([
+    ['1500.0', 'fraction', []],
+    ['500.000', 'fraction', ['500,000']],
+    ['0.500', 'fraction', []],
+    ['1.500.000 tr', 'format', ['1,500,000 tr']],
+    ['1 500 tỷ', 'format', ['1,500 tỷ']],
+    ['0,500 tỷ', 'format', ['0.500 tỷ']],
+    ['1234,5 tr', 'format', ['1234.5 tr']],
+    ['12 34', 'format', []],
+    ['1 500.5', 'format', []],
+    ['500 constructor', 'format', []],
+    ['500 toString', 'format', []],
+    ['.5', 'format', []],
+    ['99999999999 tỷ', 'too-large', []],
+  ] as const)('%j, VND → %s, %j', (text, error, suggestions) => {
+    expect(parseMoney(text, 'VND', 'vi')).toEqual(refused(error, suggestions));
+  });
+
+  it('takes the largest safe integer and refuses the next one', () => {
+    expect(parseMoney('9007199254740991', 'VND', 'en')).toEqual({
+      ok: true,
+      amount: Number.MAX_SAFE_INTEGER,
+    });
+    expect(parseMoney('90,071,992,547,409.91', 'USD', 'en')).toEqual({
+      ok: true,
+      amount: Number.MAX_SAFE_INTEGER,
+    });
+    expect(parseMoney('9007199254740992', 'VND', 'en')).toEqual(refused('too-large'));
+  });
+
+  // DR6-110: the text as normalizeText keeps it.
+  it.each([
+    ['500tr\u{200B}', 'vi'],
+    ['1.500\u{A0}tr', 'vi'],
+    ['\u{FEFF}$1,250.50', 'en'],
+    ['1tr\u{2060}5', 'vi'],
+    ['\u{200B} \u{2060}', 'en'],
+  ] as const)('%j reads as its normalized text', (text, language) => {
+    const currency = text.includes('$') ? 'USD' : 'VND';
+    expect(parseMoney(text, currency, language)).toEqual(
+      parseMoney(normalizeText(text), currency, language),
+    );
+  });
+
+  // DR-38: no pattern backtracks long over a long run of digits, spaces or marks. Timed warm, best
+  // of a few runs, as the case of parseVnd.
+  it('reads long runs quickly', () => {
+    const texts = [
+      '1' + ' '.repeat(20_000) + 'x',
+      '1 '.repeat(10_000) + '!',
+      '1 '.repeat(10_000) + 'tr',
+      '1' + '.000'.repeat(5_000) + ' tr',
+      '1' + ',000'.repeat(5_000) + '!',
+      '9'.repeat(20_000) + ' tr x',
+      '$'.repeat(20_000),
+      '-'.repeat(20_000) + '1',
+    ];
+    for (const text of texts) expect(parseMoney(text, 'VND', 'vi')).toMatchObject({ ok: false });
+    const runs = Array.from({ length: 5 }, () => {
+      const started = Date.now();
+      for (const text of texts) parseMoney(text, 'VND', 'vi');
+      return Date.now() - started;
+    });
+    expect(Math.min(...runs)).toBeLessThan(20);
   });
 });
 

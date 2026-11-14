@@ -1,10 +1,11 @@
 /**
- * Golden numbers and currencies (`docs/golden/so-va-tien-te.md` §1–§5; ADR-0018 §3, §4), approved
- * by the Owner at G2 on 12/11/2026 (T-418, PR #1222). One element per golden row, under the row's
- * code, written by hand from the golden file. Never edit it to make a test green: a change goes
- * through the Owner again (G2). Reading what is typed (§6) is G-02b; dates (§7) are G-07.
+ * Golden numbers and currencies (`docs/golden/so-va-tien-te.md` §1–§6; ADR-0018 §3–§5), approved
+ * by the Owner at G2 on 12/11/2026 (T-418, PR #1222); I41 and X35 at G2 on 14/11/2026 (T-439).
+ * One element per golden row, under the row's code, written by hand from the golden file. Never
+ * edit it to make a test green: a change goes through the Owner again (G2). Dates (§7) are G-07.
  */
-import type { CurrencyCode, Money } from '../money';
+import type { Language } from '../language';
+import type { CurrencyCode, Money, MoneyParseError } from '../money';
 
 /** A row of §1, the currency table: one per currency, in the golden's order. */
 export interface CurrencyGoldenRow {
@@ -212,4 +213,173 @@ export const NUMBER_GOLDEN_ROWS: readonly NumberGoldenRow[] = [
   { id: 'N15', kind: 'bytes', input: 1048524, text: '1,023.9 KB' },
   { id: 'N16', kind: 'bytes', input: 1048525, text: '1 MB' },
   { id: 'N17', kind: 'bytes', input: 3250585, text: '3.1 MB' },
+];
+
+/**
+ * The language of a §6 row: `both` where the golden writes "cả hai", read the same in the two
+ * languages. Money with cents goes with English only.
+ */
+export type GoldenLanguage = Language | 'both';
+
+/** A row of §6.1: what is typed, and the amount stored. */
+export interface InputGoldenRow {
+  readonly id: string;
+  readonly text: string;
+  readonly currency: CurrencyCode;
+  readonly language: GoldenLanguage;
+  readonly amount: Money;
+  /** "Đọc thành": the full form of `amount`. */
+  readonly read: string;
+}
+
+const input = (
+  id: string,
+  text: string,
+  currency: CurrencyCode,
+  language: GoldenLanguage,
+  amount: Money,
+  read: string,
+): InputGoldenRow => ({ id, text, currency, language, amount, read });
+
+export const INPUT_GOLDEN_ROWS: readonly InputGoldenRow[] = [
+  input('I01', '3000000', 'VND', 'both', 3000000, '3,000,000 VNĐ'),
+  input('I02', '3,000,000', 'VND', 'both', 3000000, '3,000,000 VNĐ'),
+  input('I03', '3,000,000 VNĐ', 'VND', 'both', 3000000, '3,000,000 VNĐ'),
+  input('I04', '3,000,000 ₫', 'VND', 'both', 3000000, '3,000,000 VNĐ'),
+  input('I05', '3,000,000đ', 'VND', 'both', 3000000, '3,000,000 VNĐ'),
+  input('I06', '500tr', 'VND', 'vi', 500000000, '500,000,000 VNĐ'),
+  input('I07', '500 triệu', 'VND', 'vi', 500000000, '500,000,000 VNĐ'),
+  input('I08', '1.5 tỷ', 'VND', 'vi', 1500000000, '1,500,000,000 VNĐ'),
+  input('I09', '0.5 tỷ', 'VND', 'vi', 500000000, '500,000,000 VNĐ'),
+  input('I10', '1.25 tr', 'VND', 'vi', 1250000, '1,250,000 VNĐ'),
+  input('I11', '750k', 'VND', 'both', 750000, '750,000 VNĐ'),
+  input('I12', '750 nghìn', 'VND', 'vi', 750000, '750,000 VNĐ'),
+  input('I13', '1.9 Bil', 'VND', 'en', 1900000000, '1,900,000,000 VNĐ'),
+  input('I14', '500 Mil', 'VND', 'en', 500000000, '500,000,000 VNĐ'),
+  input('I15', '1,500', 'VND', 'both', 1500, '1,500 VNĐ'),
+  input('I16', '2.05 tỷ', 'VND', 'vi', 2050000000, '2,050,000,000 VNĐ'),
+  input('I17', '1tr5', 'VND', 'vi', 1500000, '1,500,000 VNĐ'),
+  input('I18', '1 tỷ 2', 'VND', 'vi', 1200000000, '1,200,000,000 VNĐ'),
+  input('I19', '1250.5', 'USD', 'en', 125050, '$1,250.50'),
+  input('I20', '1,250.50', 'USD', 'en', 125050, '$1,250.50'),
+  input('I21', '$1,250.50', 'USD', 'en', 125050, '$1,250.50'),
+  input('I22', '$ 1,250.50', 'USD', 'en', 125050, '$1,250.50'),
+  input('I23', '1,250.50 USD', 'USD', 'en', 125050, '$1,250.50'),
+  input('I24', 'USD 1,250.50', 'USD', 'en', 125050, '$1,250.50'),
+  input('I25', '0.05', 'USD', 'en', 5, '$0.05'),
+  input('I26', '250K', 'USD', 'en', 25000000, '$250,000.00'),
+  input('I27', '$1.2 Mil', 'USD', 'en', 120000000, '$1,200,000.00'),
+  input('I28', '1.2345 Mil', 'USD', 'en', 123450000, '$1,234,500.00'),
+  input('I29', '1.5 Bil', 'USD', 'en', 150000000000, '$1,500,000,000.00'),
+  input('I30', '€250K', 'EUR', 'en', 25000000, '€250,000.00'),
+  input('I31', '250,000.00 EUR', 'EUR', 'en', 25000000, '€250,000.00'),
+  input('I32', '£1,250.5', 'GBP', 'en', 125050, '£1,250.50'),
+  input('I33', '$100', 'AUD', 'en', 10000, '$100.00 AUD'),
+  input('I34', '$100 AUD', 'AUD', 'en', 10000, '$100.00 AUD'),
+  input('I35', '1,000 CAD', 'CAD', 'en', 100000, '$1,000.00 CAD'),
+  input('I36', '$99.90', 'SGD', 'en', 9990, '$99.90 SGD'),
+  input('I37', '1.500 Mil', 'USD', 'en', 150000000, '$1,500,000.00'),
+  input('I38', '1.500', 'USD', 'en', 150, '$1.50'),
+  input('I39', '0.500 tr', 'VND', 'vi', 500000, '500,000 VNĐ'),
+  input('I40', '1.500', 'EUR', 'en', 150, '€1.50'),
+  input('I41', '1,234.567 tr', 'VND', 'vi', 1234567000, '1,234,567,000 VNĐ'),
+];
+
+/**
+ * A row of §6.2: what is typed, the error, and the ways of writing it offered under the field, in
+ * the golden's order ("—" is none).
+ *
+ * How a suggestion is written (a review note of PR #1222, read from X04, X28, X31; not in the
+ * ADR): it keeps what was typed — the currency mark, the case, the unit joined or spaced. A unit
+ * changed to the interface language is written in the compact form's way (Q5): K joined to the
+ * number; Mil, Bil, tr, tỷ after a space. `1.500tr` → `1.5tr` · `1,500tr`; `500tr` in English →
+ * `500 Mil`.
+ */
+export interface RefusedGoldenRow {
+  readonly id: string;
+  readonly text: string;
+  readonly currency: CurrencyCode;
+  readonly language: GoldenLanguage;
+  readonly error: MoneyParseError;
+  readonly suggestions: readonly string[];
+}
+
+const refused = (
+  id: string,
+  text: string,
+  currency: CurrencyCode,
+  language: GoldenLanguage,
+  error: MoneyParseError,
+  suggestions: readonly string[] = [],
+): RefusedGoldenRow => ({ id, text, currency, language, error, suggestions });
+
+export const REFUSED_GOLDEN_ROWS: readonly RefusedGoldenRow[] = [
+  refused('X01', '1,5 tỷ', 'VND', 'vi', 'format', ['1.5 tỷ']),
+  refused('X02', '0,5 tỷ', 'VND', 'vi', 'format', ['0.5 tỷ']),
+  refused('X03', '500.000.000', 'VND', 'both', 'format', ['500,000,000']),
+  refused('X04', '500.000.000 VNĐ', 'VND', 'both', 'format', ['500,000,000 VNĐ']),
+  refused('X05', '1.500', 'VND', 'both', 'fraction', ['1,500']),
+  refused('X06', '1.234,5 tr', 'VND', 'vi', 'format', ['1,234.5 tr']),
+  refused('X07', '500 000 000', 'VND', 'both', 'format', ['500,000,000']),
+  refused('X08', '1,5', 'VND', 'both', 'format'),
+  refused('X09', '1,50', 'VND', 'both', 'format'),
+  refused('X10', '12,34,567', 'VND', 'both', 'format'),
+  refused('X11', ',500', 'VND', 'both', 'format'),
+  refused('X12', '1.0000000001 tỷ', 'VND', 'vi', 'fraction'),
+  refused('X13', '1.5 T', 'VND', 'both', 'format'),
+  refused('X14', '1.5m', 'VND', 'both', 'format'),
+  refused('X15', '$500', 'VND', 'both', 'format'),
+  refused('X16', '-500tr', 'VND', 'vi', 'negative'),
+  refused('X17', '', 'VND', 'both', 'empty'),
+  refused('X18', '99,999,999,999,999,999', 'VND', 'both', 'too-large'),
+  refused('X19', '1.505', 'USD', 'en', 'fraction', ['1,505']),
+  refused('X20', '1,250.505', 'USD', 'en', 'fraction'),
+  refused('X21', '12,34', 'USD', 'en', 'format', ['12.34']),
+  refused('X22', '1.234,56', 'USD', 'en', 'format', ['1,234.56']),
+  refused('X23', '1.234,56 €', 'EUR', 'en', 'format'),
+  refused('X24', '€100', 'USD', 'en', 'format'),
+  refused('X25', '1.234567891 Mil', 'USD', 'en', 'fraction'),
+  refused('X26', '1.500 tr', 'VND', 'vi', 'ambiguous', ['1.5 tr', '1,500 tr']),
+  refused('X27', '1.500 tỷ', 'VND', 'vi', 'ambiguous', ['1.5 tỷ', '1,500 tỷ']),
+  refused('X28', '1.500k', 'VND', 'both', 'ambiguous', ['1.5k', '1,500k']),
+  refused('X29', '1.500 Mil', 'VND', 'en', 'ambiguous', ['1.5 Mil', '1,500 Mil']),
+  refused('X30', '500 Mil', 'VND', 'vi', 'format', ['500 tr']),
+  refused('X31', '500tr', 'VND', 'en', 'format', ['500 Mil']),
+  refused('X32', '1tr5', 'VND', 'en', 'format'),
+  refused('X33', '1.5 tr', 'USD', 'en', 'format', ['1.5 Mil']),
+  refused('X34', 'A$100', 'AUD', 'en', 'format'),
+  refused('X35', '1.234 tr', 'VND', 'vi', 'ambiguous', ['1,234,000', '1,234 tr']),
+];
+
+/**
+ * A row of §6.3: read, then a fee or not. The amount is read even past the cap; the commands check
+ * the cap (`maxFee`).
+ */
+export interface CapGoldenRow {
+  readonly id: string;
+  readonly text: string;
+  readonly currency: CurrencyCode;
+  readonly language: GoldenLanguage;
+  readonly amount: Money;
+  /** "Là phí?": whether the amount is a fee, at most the cap. */
+  readonly isFee: boolean;
+}
+
+const cap = (
+  id: string,
+  text: string,
+  currency: CurrencyCode,
+  language: GoldenLanguage,
+  amount: Money,
+  isFee: boolean,
+): CapGoldenRow => ({ id, text, currency, language, amount, isFee });
+
+export const CAP_GOLDEN_ROWS: readonly CapGoldenRow[] = [
+  cap('M01', '100 tỷ', 'VND', 'vi', 100000000000, true),
+  cap('M02', '100,000,000,001', 'VND', 'both', 100000000001, false),
+  cap('M03', '100.000000001 tỷ', 'VND', 'vi', 100000000001, false),
+  cap('M04', '1,500 tỷ', 'VND', 'vi', 1500000000000, false),
+  cap('M05', '100 Bil', 'USD', 'en', 10000000000000, true),
+  cap('M06', '100,000,000,000.01', 'USD', 'en', 10000000000001, false),
+  cap('M07', '100.01 Bil', 'USD', 'en', 10001000000000, false),
 ];
