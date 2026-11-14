@@ -70,6 +70,11 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     [
       ['KH sẵn sàng mua.', 'sẵn sàng mua'],
       ['KH tiềm năng mua gói', 'tiềm năng mua'],
+      // Each product word and each mark of the class (CLR6-C8).
+      ['KH sẵn sàng mua hợp đồng mới', 'sẵn sàng mua'],
+      ['KH sẵn sàng mua HĐ mới', 'sẵn sàng mua'],
+      ...[...',;:!?'].map((mark) => [`KH sẵn sàng mua${mark} Rồi`, 'sẵn sàng mua'] as const),
+      ['(KH tiềm năng mua)', 'tiềm năng mua'],
     ],
   '`\\b[ie][ns][tf][jp]( [at])?\\b` trên bản có dấu (vd. "INTJ", "ENFP-A")': [
     ['KH intj', 'intj'],
@@ -79,7 +84,12 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ['KH nhóm D', 'nhóm D'],
     ['KH kiểu s', 'kiểu s'],
   ],
-  '`\\bnhóm máu (a\\|b\\|ab\\|o)\\b`': [['KH nhóm máu O', 'nhóm máu O']],
+  '`\\bnhóm máu (a\\|b\\|ab\\|o)\\b`': [
+    ['KH nhóm máu O', 'nhóm máu O'],
+    ['KH nhóm máu A', 'nhóm máu A'],
+    ['KH nhóm máu B', 'nhóm máu B'],
+    ['KH nhóm máu AB', 'nhóm máu AB'],
+  ],
   '`\\b(Điều\\|ĐIỀU)\\s*\\p{Nd}+` trên **bản gốc, giữ hoa thường** (vd. "Điều 35", "Điều" + U+200B + "35"; "điều 2 vợ chồng" không khớp)':
     [
       ['Theo Điều 35', 'Điều 35'],
@@ -109,6 +119,9 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ],
   '`\\b\\p{Nd}{1,4}/\\p{Nd}{4}/[a-zđ\\p{Nd}]+\\b` (số hiệu, vd. "46/2023/NĐ-CP", "08/2022/QH15")': [
     ['Số 46/2023/abc', '46/2023/abc'],
+    // One to four digits first (CLR6-C8); five are no number of a text (below).
+    ['Số 8/2022/qh15', '8/2022/qh15'],
+    ['Theo 1234/2024/tt', '1234/2024/tt'],
   ],
   '`\\b(nđ cp\\|tt btc\\|qh1\\p{Nd})\\b` (`-` đã thành dấu cách ở bước 0)': [
     ['Theo NĐ-CP', 'NĐ-CP'],
@@ -186,6 +199,23 @@ describe('BLOCKLISTS — every other row of G5 §8', () => {
 
   it('V4 catches a product line glued to "pru" (§8.2 b)', () => {
     expect(foundIn('V4', 'Đề xuất PRULink')).toContain('PRUL');
+  });
+
+  // What a regex row lets through, by each branch of its lookahead or count (CLR6-C8).
+  it.each(
+    'lịch · ngày · giờ · buổi · thời gian · thời điểm · cuộc hẹn · hẹn · mốc · kế hoạch · mục tiêu · phương án'.split(
+      ' · ',
+    ),
+  )('V3 lets "chốt được %s" through', (word) => {
+    expect(foundIn('V3', `Đã chốt được ${word} với KH`)).toEqual([]);
+  });
+
+  it.each([
+    ['V5', 'KH ở nhóm D suite của khách sạn'],
+    ['V5', 'KH thuộc nhóm C-level'],
+    ['V6', 'Mã 12345/2024/ab'],
+  ] as const)('%s lets "%s" through', (code, text) => {
+    expect(foundIn(code, text)).toEqual([]);
   });
 });
 

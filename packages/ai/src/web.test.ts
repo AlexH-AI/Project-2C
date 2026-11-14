@@ -272,6 +272,14 @@ describe('checkWebAnswer', () => {
     });
   });
 
+  // A NUL is no character that shows nothing (K20, WBR6-C1): a paste of it alone is an answer.
+  it('counts a paste of a NUL alone as an attempt that fails V1', () => {
+    expect(checkWebAnswer(start().session, NUL)).toMatchObject({
+      kind: 'retry',
+      session: { attempts: [{ issues: [{ code: 'V1', detail: 'không có khối JSON' }] }] },
+    });
+  });
+
   it.each([
     ['empty', '', 'EMPTY'],
     ['blank', ' \n\t ', 'EMPTY'],
@@ -280,6 +288,8 @@ describe('checkWebAnswer', () => {
     ['longer than 20 000 characters', `${JSON.stringify(GOOD)}${' '.repeat(20_000)}`, 'TOO_LONG'],
     // Too long to be read, so never read as blank (DR5-09, review #1066).
     ['white space past 40 000 code units', ' '.repeat(2 * MAX_AI_RAW_OUTPUT + 1), 'TOO_LONG'],
+    // Blank is asked before too long, as the button is off for it (WBR6-C1).
+    ['white space past 20 000 characters, read whole', ' '.repeat(MAX_AI_RAW_OUTPUT + 1), 'EMPTY'],
   ] as const)('does not count a paste that is %s', (_, text, reason) => {
     const { session } = start();
 
@@ -554,6 +564,8 @@ describe('isBlankWebAnswer', () => {
   it.each([
     ['a letter', ` ${ZWSP}x `],
     ['a mark that shows', '.'],
+    // Not one of the characters that show nothing (K20, WBR6-C1): `checkWebAnswer` counts it.
+    ['only a NUL', NUL],
     // Never normalized, so never blank: `checkWebAnswer` refuses it as too long (DR5-09).
     ['white space longer than is read', ' '.repeat(read + 1)],
   ])('takes a paste with %s as not blank', (_, text) => {

@@ -80,6 +80,16 @@ describe('createAiJobs (review of PR 439: a run outlives the screen that started
     expect(jobs.get('extraction:n1')!.settings).toBeUndefined();
   });
 
+  it('lets a job go at Hủy when the runner is free: nothing runs on in Rust (CLR6-C10)', () => {
+    const { runner, jobs } = held();
+    jobs.start('analysis:c1', () => new Promise<string>(() => {}));
+    expect(runner.busy).toBe(false);
+
+    jobs.cancel('analysis:c1');
+
+    expect(jobs.get('analysis:c1')).toBeUndefined();
+  });
+
   it('ignores Hủy of a key with no job', () => {
     const { jobs } = held();
     const listener = vi.fn();

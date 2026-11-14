@@ -135,7 +135,7 @@ Mỗi vấn đề một Issue sửa theo T-386 (Issue có "Ngân sách" và "Qu�
 - **Bằng chứng:** Claude A S2 (`s2\p4-export-over-limit.log`): 11 lần `recordKycNote` 10 triệu ký tự → xuất 110 003 682 ký tự thành công → `importBackup(exportBackup(d))` → `BACKUP_TOO_LARGE`. Dữ liệu tải xuất 16 034 517 byte = 0,153 trần. Claude F đọc lại code: khớp.
 - **K48:** Low (dữ liệu cỡ ≈ 6,5× dữ liệu tải; chưa chạm được với dữ liệu v1.0) · **D** (§4.1: "lệnh và luật nhập backup cùng luật"; bản backup của app không khôi phục được) → **chặn**. Lỗi hiện rõ lúc nhập, có `project2c.db` / `backups\*.db` để chép tay, nhưng K48 không hạ theo đường vòng.
 - **Hướng sửa (Q2):** (a) xuất so số byte với `MAX_BACKUP_BYTES` (cùng thước với hộp 10b) và từ chối, không ghi file, với câu riêng chỉ bản `.db` trong `backups\`; (b) vẫn ghi file nhưng báo "file này không nhập lại được"; (c) nâng trần nhập (đổi quyết định Owner 30/09).
-- **Quét cùng mẫu:** `rg "const MAX_[A-Z_]* *=" packages/*/src apps/desktop/src apps/desktop/src-tauri/src` (Claude A S2): chỉ `MAX_BACKUP_BYTES` có trần ở phía đọc mà phía ghi không giữ (`MAX_AI_RAW_OUTPUT` cắt lúc ghi, `MAX_FEE_VND` ở lệnh + nhập, `MAX_MESSAGE_CHARS` có câu `AI_TOO_LARGE` riêng). `git grep -n "exportBackup("`: một đường xuất của app (`app-data.ts:456`).
+- **Quét cùng mẫu:** `rg -n "const MAX_[A-Z_]+\s*(:[^=]+)?=" packages/*/src apps/desktop/src apps/desktop/src-tauri/src` (Claude A S2): chỉ `MAX_BACKUP_BYTES` có trần ở phía đọc mà phía ghi không giữ (`MAX_AI_RAW_OUTPUT` cắt lúc ghi, `MAX_FEE_VND` ở lệnh + nhập, `MAX_MESSAGE_CHARS` có câu `AI_TOO_LARGE` riêng). `git grep -n "exportBackup("`: một đường xuất của app (`app-data.ts:456`).
 - **Ngân sách:** (a) ≈ 10–15 SP + 1 khóa i18n + 15–25 dòng test.
 
 ### DR6-180 — V3 / V6 lọt mã dữ kiện và tên luật trong ngoặc (CLR6-C1)
@@ -174,7 +174,7 @@ Mỗi vấn đề một Issue sửa theo T-386 (Issue có "Ngân sách" và "Qu�
 
 ## 5. Vấn đề không chặn (30) → sổ OPEN [sau v1.0]
 
-Mức · trục là của họ (cao nhất trong các phát hiện gộp). Cỡ ước lấy từ báo cáo. Không sửa trước G7 (K48, K49) trừ khi Owner kéo vào ở Q6.
+Mức · trục là của họ (cao nhất trong các phát hiện gộp). Cỡ ước lấy từ báo cáo. Không sửa trước G7 (K48, K49) trừ khi Owner kéo vào ở Q6 hay Q7.
 
 | DR6 | Họ / vấn đề | Phát hiện | Mức · trục | Vì sao không chặn | Cỡ ước |
 |---|---|---|---|---|---|
@@ -206,7 +206,7 @@ Mức · trục là của họ (cao nhất trong các phát hiện gộp). Cỡ 
 | DR6-208 | Hook gợi ý review đọc báo cáo subagent / phiên con là lời Owner khi thẻ đóng có thuộc tính | CLR6-F3 | Low · C | Công cụ phát triển; K45 rào "không tự sửa", K49 | ≈ 2–5 dòng công cụ + ca |
 | DR6-209 | `notes-for` chưa có ngoại lệ [sau v1.0] của K49; cỡ "so ngân sách" lệch ở PR xếp chồng (KNOWN) | CLR6-F8, F9; CXR6-F1 | Nit · C | Công cụ / mẫu | ≈ 2–4 dòng + 8–15 test |
 | DR6-210 | Test hở công cụ / e2e / CI: nhánh cổng merge, bộ kiểm link, bảng so probe, hai ca đọc `dist`, luật lint `test` chỉ `.ts`, vitest treo không `timeout-minutes`, bộ giả `asExe` không trả lời `open_folder` | CLR6-F6, F7, F10, F13, F14, I3; WBR6-F1 | Low · T (WBR6-F1; còn lại Nit) | Công cụ phát triển / e2e, code ghim đúng | ≈ 55–95 dòng |
-| DR6-211 | Bloat: helper e2e chép, `globals` ESLint vô tác dụng, họ tên nút Thùng rác nặng nhất diff, bộ chặn ký hiệu trong package sản phẩm, ma trận ký tự vô hình chép, hai bộ quét chữ viết tay | CLR6-F11, F12, G1, G2, G3, G4 | Nit · B | K49: không gỡ / gộp vì bloat trước v1.0 | (đề xuất của G: §7.2) |
+| DR6-211 | Bloat: helper e2e chép, `globals` ESLint vô tác dụng, họ tên nút Thùng rác nặng nhất diff, bộ chặn ký hiệu trong package sản phẩm, ma trận ký tự vô hình chép, hai bộ quét chữ viết tay | CLR6-F11, F12, G1, G2, G3, G4 | Nit · B | K49: không gỡ / gộp vì bloat trước v1.0 (Owner 08/11 đổi Q7: làm trước G7, §8.1) | (đề xuất của G: §7.2) |
 | DR6-212 | Tài liệu: spec §3.1 / §10 AI lệch code, ADR-0008:19 bốn hạng mục cốt lõi, ô "Owner duyệt" của `chi-so.md` / `ai-eval.md` chưa tick | CLR6-C11, C12; WBR6-A4, A5 | Nit · C | Chữ tài liệu (golden / ADR đã duyệt: Owner chốt cách ghi) | 0 SP |
 
 Đếm: 30 họ (25 Low, 5 Nit); 98 phát hiện. Mức chốt của từng phát hiện giữ như reviewer ghi (§6).
@@ -265,7 +265,7 @@ Exe release `5b1328a` trên Home PC, cùng script với G7 / lượt 5. **Không
 - Bundle JS / CSS 2 369 229 B (+2 773 so lượt 5, +0,12 %); `index.js` 894 865 B (+2 681); exe 5 649 408 B (= lượt 5, lượt 4, G7); mọi chunk dependency trùng từng byte lượt 5; không dependency đổi; không code test / công cụ trong bundle.
 - Gần 2 / 3 phần bundle tăng là cụm tên nút / dòng lý do của Thùng rác (họ DR6-160, Nit): ≈ 1 787 B; lớp chống tràn tên liền dài ≈ 600 B.
 - 0 thân hàm trùng ≥ 25 token; 6 nhóm trùng cấu trúc như lượt 4–5; 1 197 khóa i18n, 0 không dùng.
-- Phát hiện B (Nit, không chặn, K49 không gỡ trước v1.0): CLR6-F11, F12, G1–G4 (DR6-211). Claude G ước: gộp luồn `told` / `teams` của Thùng rác thành một chỗ; chuyển `token-guard.ts` ra khỏi `packages/ui/src`; một bảng ký tự vô hình dùng chung cho test; thay hai bộ quét chữ viết tay bằng AST khi có lượt sửa tới (chi tiết và cỡ ở `claude/G.md` mục 5–6). Mặc định [sau v1.0] (Q7).
+- Phát hiện B (Nit, không chặn, K49 không gỡ trước v1.0): CLR6-F11, F12, G1–G4 (DR6-211). Claude G ước: gộp luồn `told` / `teams` của Thùng rác thành một chỗ; chuyển `token-guard.ts` ra khỏi `packages/ui/src`; một bảng ký tự vô hình dùng chung cho test; thay hai bộ quét chữ viết tay bằng AST khi có lượt sửa tới (chi tiết và cỡ ở `claude/G.md` mục 5–6). Mặc định [sau v1.0] (Q7) (Owner 08/11 đổi Q7: làm trước G7, §8.1).
 
 ## 8. Kế hoạch xử lý
 

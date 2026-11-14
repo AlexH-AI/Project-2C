@@ -2,7 +2,7 @@
 
 /**
  * Test files, wherever they are: tests, and the test-support modules only tests import. They may
- * use vitest; no other file may.
+ * use vitest; no other file may (`vitest-only-in-tests`).
  */
 const TEST_FILES = '(\\.test\\.tsx?|/test-support\\.ts)$';
 
@@ -37,6 +37,14 @@ module.exports = {
       severity: 'error',
       from: { pathNot: TEST_FILES },
       to: { path: TEST_FILES },
+    },
+    {
+      name: 'vitest-only-in-tests',
+      comment:
+        'Only tests and test-support import vitest, in every package and app (CLR6-C5); tools/lint-rules.test.mjs holds this rule and the one above.',
+      severity: 'error',
+      from: { pathNot: TEST_FILES },
+      to: { path: '(^|/)node_modules/vitest/' },
     },
     {
       name: 'db-only-on-domain-and-ai-schema',

@@ -178,6 +178,16 @@ describe('validateOutput — V1', () => {
     expect(issues[29]).toEqual({ code: 'V1', path: '$', detail: 'và 2971 lỗi khác' });
   });
 
+  it('names "và K lỗi khác" by the first issue left out (CLR6-C9)', () => {
+    // One V3 place, then 30 insurers of V4, one issue each.
+    const insurers = `prudential manulife aia dai-ichi fwd generali sunlife chubb hanwha ageas metlife
+      cathay fubon baoviet bvnt aviva cardif bic pvi pti pjico mic vbi liberty msig vcli`;
+    const text = `KH 70% ${insurers} bảo long, tokio marine, bảo việt, bảo minh`;
+    const issues = validateOutput('analysis', { ...analysis(), needs: [item(text, 'F3')] }, input);
+    expect(issues[0]).toEqual({ code: 'V3', path: 'needs[0].text', detail: 'có "%"' });
+    expect(issues[29]).toEqual({ code: 'V4', path: '$', detail: 'và 2 lỗi khác' });
+  });
+
   it('lists exactly 30 issues as they are', () => {
     const codes = Array.from({ length: 30 }, (_, i) => `X${i}`);
     const output = { ...analysis(), hypotheses: [item('KH ưu tiên con', ...codes)] };
@@ -331,6 +341,17 @@ describe('validateOutput — V2', () => {
         path: 'nextBestActions[0].missingCategory',
         detail: 'FAMILY không phải hạng mục đang thiếu',
       },
+    ]);
+  });
+});
+
+// Places that overlap are one issue (validator-blocklists.test.ts); places that only touch are not.
+describe('validateOutput — V3 to V6', () => {
+  it('reports two places that touch as two issues (CLR6-C9)', () => {
+    const output = { ...analysis(), needs: [item('KH 70%‰', 'F3')] };
+    expect(validateOutput('analysis', output, input)).toEqual([
+      { code: 'V3', path: 'needs[0].text', detail: 'có "%"' },
+      { code: 'V3', path: 'needs[0].text', detail: 'có "‰"' },
     ]);
   });
 });

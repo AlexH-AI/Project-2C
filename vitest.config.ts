@@ -23,6 +23,7 @@ export default defineConfig({
         'apps/desktop/src/routes/**/stage-chart.ts',
         'apps/desktop/src/i18n/index.ts',
         'packages/ui/src/**/*.ts',
+        'packages/ui/scripts/token-guard.ts',
       ],
       exclude: ['**/*.test.ts', '**/*.d.ts'],
       // One threshold per area, so a drop in one is not hidden by the others (T-101).
@@ -76,6 +77,13 @@ export default defineConfig({
         },
         // The .ts helpers of the UI kit (DR6-62); its components (.tsx) are covered by e2e.
         'packages/ui/src/**': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        // The guard of `pnpm lint:tokens`, out of packages/ui/src since T-396 (review of PR 1157).
+        'packages/ui/scripts/token-guard.ts': {
           statements: 100,
           branches: 100,
           functions: 100,

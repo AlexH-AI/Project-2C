@@ -26,13 +26,22 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  // No `globals` for .ts / .tsx: typescript-eslint turns no-undef off there, and each tsconfig
-  // (`lib`, `types`) says which globals a package may use. Of the rules on, only no-global-assign
-  // read them there (`window = …`).
+  // The `globals` of .ts / .tsx files are for no-global-assign, the one rule on that reads them
+  // there (`window = …`; tools/lint-rules.test.mjs): typescript-eslint turns no-undef off, and a
+  // tsconfig (`lib`, `types`) says which globals a package may use, but for vitest.config.ts at the
+  // root, which is in no tsconfig.
   {
     files: ['apps/desktop/src/**/*.{ts,tsx}', 'packages/ui/src/**/*.tsx'],
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,
+  },
+  {
+    files: ['apps/desktop/src/**/*.{ts,tsx}'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['packages/db/src/**/*.ts'],
+    languageOptions: { globals: { crypto: 'readonly' } },
   },
   {
     // Only `zod/mini` (DR6-25): the full zod (`zod`, `zod/v4`, `zod/v3`) puts ≈ 62 KB back into
@@ -53,7 +62,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['*.config.js', '.dependency-cruiser.cjs'],
+    files: ['*.config.{js,ts}', '.dependency-cruiser.cjs'],
     languageOptions: { globals: globals.node },
   },
   {
@@ -93,6 +102,12 @@ export default tseslint.config(
             "ImportExpression[source.value='@playwright/test'], ImportExpression[source.quasis.0.value.cooked='@playwright/test']",
           message:
             'Take `test` from e2e/fixtures.ts, any other name by a static import: lint cannot tell what a dynamic import takes.',
+        },
+        {
+          // A .cjs spec takes it by require(), which no-restricted-imports does not read either.
+          selector: "CallExpression[callee.name='require'][arguments.0.value='@playwright/test']",
+          message:
+            'Write the spec in TypeScript and take `test` from e2e/fixtures.ts: lint does not tell what a require() takes.',
         },
       ],
     },

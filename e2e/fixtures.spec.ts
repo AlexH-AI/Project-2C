@@ -64,12 +64,13 @@ test("lint refuses Playwright's own test to every e2e file but fixtures.ts", asy
     expect(await refusals(code), code).toBe(1);
   }
   expect(await refusals("export { test } from '@playwright/test';", 'e2e/helper.ts')).toBe(1);
-  // Playwright runs a spec of any of these too (CLR6-F14). A .cjs one would take it by require(),
-  // which these rules do not read.
+  // Playwright runs a spec of any of these too (CLR6-F14); a .cjs one takes it by require().
   for (const extension of ['tsx', 'mts', 'cts', 'js', 'jsx', 'mjs']) {
     const code = "import { expect, test } from '@playwright/test';";
     expect(await refusals(code, `e2e/probe.spec.${extension}`), extension).toBe(1);
   }
+  const required = "const { test } = require('@playwright/test');";
+  expect(await refusals(required, 'e2e/probe.spec.cjs')).toBe(1);
   // A dynamic import, whatever it takes: lint cannot tell its names.
   for (const code of [
     "const { test } = await import('@playwright/test');",
