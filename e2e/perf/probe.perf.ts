@@ -482,7 +482,7 @@ async function customers(aiId: string) {
   await expect(panel).toContainText('Đang xem lần');
 }
 
-/** Tổng quan and Báo cáo: Lọc on Năm then on Tháng; Báo cáo by RE. */
+/** Tổng quan and Báo cáo: Lọc on Năm then on Tháng; Báo cáo by RM. */
 async function filters() {
   for (const screen of ['overview', 'reports']) {
     await go(`#/${screen}`);

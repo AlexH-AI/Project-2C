@@ -3,8 +3,8 @@
   Phản hồi Owner 01/10 · gói B (G3 #217, duyệt 01/10/2026) · docs/reviews/2026-10-01-phan-hoi-owner-kiem-exe.md
   CSS riêng của trang: dòng 25–704 · nội dung từ dòng 707 · script dựng bảng / chart từ dòng 1104
   #b1   dòng  716  B1 Team & nhân sự (TL ở đầu bảng)
-  #b2   dòng  797  B2 Khách hàng: hàng chọn RE
-  #b3   dòng  901  B3 Lịch hẹn: hàng chọn RE
+  #b2   dòng  797  B2 Khách hàng: hàng chọn RM
+  #b3   dòng  901  B3 Lịch hẹn: hàng chọn RM
   #b4   dòng  964  B4 Lịch tháng: ngày đang chọn, dải kỳ Tuần / Tùy chọn
   #b5   dòng  996  B5 Danh sách lịch hẹn: cột Ngày tô theo hôm nay (chọn phương án A)
   #b6   dòng 1053  B6 Lịch hẹn kỳ Năm: lưới 12 tháng
@@ -224,7 +224,7 @@
         padding: 12px 14px;
       }
 
-      /* ---------- B2/B3 RE strip ---------- */
+      /* ---------- B2/B3 RM strip ---------- */
       .re-strip {
         display: grid;
         grid-template-columns: 200px minmax(0, 1fr);
@@ -708,7 +708,7 @@
       <header>
         <h1>Phản hồi Owner 01/10 · gói B (G3, #217)</h1>
         <p class="lead">
-          Mockup cho các ý 2, 3, 6, 12, 13, 14, 16 sau khi Owner kiểm exe 01/10/2026. Đã áp dụng sẵn gói A: không còn chữ viết tắt trước tên (ý 7), bộ chọn góc nhìn chữ 14px (ý 1). Dữ liệu giả lập theo seed (3 team × 1 TL + 10 RE), hôm nay = <b class="num">Thứ năm 01/10/2026</b>.
+          Mockup cho các ý 2, 3, 6, 12, 13, 14, 16 sau khi Owner kiểm exe 01/10/2026. Đã áp dụng sẵn gói A: không còn chữ viết tắt trước tên (ý 7), bộ chọn góc nhìn chữ 14px (ý 1). Dữ liệu giả lập theo seed (3 team × 1 TL + 10 RM), hôm nay = <b class="num">Thứ năm 01/10/2026</b>.
         </p>
       </header>
 
@@ -717,15 +717,15 @@
         <div class="part-head"><h2 id="b1">B1 · Team &amp; nhân sự</h2><span class="idea">ý 6</span></div>
         <ul class="notes">
           <li>Đầu bảng thành viên: <b>"Team Bình Minh · TL Lý Gia Trang · Sửa"</b> — không kèm số người / số lịch hẹn. "Sửa" mở hộp Sửa nhân sự của TL.</li>
-          <li>TL <b>bỏ khỏi bảng</b>: bảng chỉ còn RE (vẫn sắp xếp được mọi cột). Nút Đổi tên team / Xóa team giữ bên phải.</li>
-          <li>"Hỗ trợ dùng chung / không thuộc team" → <b>"Người hỗ trợ"</b>. Dòng tóm tắt: <span class="num">3 team · 3 TL · 30 RE · 3 người hỗ trợ</span> (trước: "33 RE / TL · 3 hỗ trợ dùng chung").</li>
-          <li><b>Mỗi team chỉ 1 TL</b> (Owner G3 01/10): danh sách team bỏ số "1" trước TL — "TL · 10 RE"; team chưa có TL: "chưa có TL · 10 RE".</li>
+          <li>TL <b>bỏ khỏi bảng</b>: bảng chỉ còn RM (vẫn sắp xếp được mọi cột). Nút Đổi tên team / Xóa team giữ bên phải.</li>
+          <li>"Hỗ trợ dùng chung / không thuộc team" → <b>"Người hỗ trợ"</b>. Dòng tóm tắt: <span class="num">3 team · 3 TL · 30 RM · 3 người hỗ trợ</span> (trước: "33 RM / TL · 3 hỗ trợ dùng chung").</li>
+          <li><b>Mỗi team chỉ 1 TL</b> (Owner G3 01/10): danh sách team bỏ số "1" trước TL — "TL · 10 RM"; team chưa có TL: "chưa có TL · 10 RM".</li>
         </ul>
         <div class="frame">
           <header class="topbar"><h1>Team &amp; nhân sự</h1><div class="spacer"></div></header>
           <div class="content">
             <div class="tools">
-              <span class="viewing">3 team · 3 TL · 30 RE · 3 người hỗ trợ</span>
+              <span class="viewing">3 team · 3 TL · 30 RM · 3 người hỗ trợ</span>
               <div class="spacer"></div>
               <button class="btn">+ Nhân sự</button>
               <button class="btn btn-primary">+ Team</button>
@@ -734,9 +734,9 @@
               <div class="stack" style="gap: 14px">
                 <section class="card team-list">
                   <div class="card-head"><h2 style="color: var(--heading)">Team</h2></div>
-                  <a href="#">Sao Mai <span class="n">TL · 10 RE</span></a>
-                  <a href="#" class="on">Bình Minh <span class="n">TL · 10 RE</span></a>
-                  <a href="#">Hừng Đông <span class="n">TL · 10 RE</span></a>
+                  <a href="#">Sao Mai <span class="n">TL · 10 RM</span></a>
+                  <a href="#" class="on">Bình Minh <span class="n">TL · 10 RM</span></a>
+                  <a href="#">Hừng Đông <span class="n">TL · 10 RM</span></a>
                 </section>
                 <section class="card support">
                   <div class="card-head"><h2 style="color: var(--heading)">Người hỗ trợ</h2></div>
@@ -764,11 +764,11 @@
                     <tr><th class="sort asc">Họ tên</th><th class="sort">Vai trò</th><th class="sort r">KH đang mở</th><th class="sort r">Lịch hẹn 30 ngày</th><th class="sort r">HĐ năm 2026</th><th></th></tr>
                   </thead>
                   <tbody class="num">
-                    <tr><td>Đặng Hải Nam</td><td><span class="role">RE</span></td><td class="r">38</td><td class="r">19</td><td class="r">9</td><td class="r"><span class="link">Sửa</span></td></tr>
-                    <tr><td>Đinh Gia Huy</td><td><span class="role">RE</span></td><td class="r">41</td><td class="r">16</td><td class="r">7</td><td class="r"><span class="link">Sửa</span></td></tr>
-                    <tr><td>Hồ Thanh Vy</td><td><span class="role">RE</span></td><td class="r">36</td><td class="r">21</td><td class="r">11</td><td class="r"><span class="link">Sửa</span></td></tr>
-                    <tr><td>Lê Minh Khang</td><td><span class="role">RE</span></td><td class="r">44</td><td class="r">12</td><td class="r">5</td><td class="r"><span class="link">Sửa</span></td></tr>
-                    <tr><td colspan="6" class="muted" style="text-align: center">… 6 RE khác (TL không còn trong bảng)</td></tr>
+                    <tr><td>Đặng Hải Nam</td><td><span class="role">RM</span></td><td class="r">38</td><td class="r">19</td><td class="r">9</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td>Đinh Gia Huy</td><td><span class="role">RM</span></td><td class="r">41</td><td class="r">16</td><td class="r">7</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td>Hồ Thanh Vy</td><td><span class="role">RM</span></td><td class="r">36</td><td class="r">21</td><td class="r">11</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td>Lê Minh Khang</td><td><span class="role">RM</span></td><td class="r">44</td><td class="r">12</td><td class="r">5</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td colspan="6" class="muted" style="text-align: center">… 6 RM khác (TL không còn trong bảng)</td></tr>
                   </tbody>
                 </table>
               </section>
@@ -786,7 +786,7 @@
             </div>
             <div class="card">
               <p class="muted" style="margin: 0; font-size: var(--fs-xs)">Danh sách team khi có team chưa có TL:</p>
-              <div class="team-list" style="margin-top: 4px"><a href="#">Hừng Đông <span class="n">chưa có TL · 10 RE</span></a></div>
+              <div class="team-list" style="margin-top: 4px"><a href="#">Hừng Đông <span class="n">chưa có TL · 10 RM</span></a></div>
             </div>
 </div>
           </div>
@@ -795,30 +795,30 @@
 
       <!-- ================= B2 ================= -->
       <section class="part" aria-labelledby="b2">
-        <div class="part-head"><h2 id="b2">B2 · Khách hàng — hàng chọn RE</h2><span class="idea">ý 2</span></div>
+        <div class="part-head"><h2 id="b2">B2 · Khách hàng — hàng chọn RM</h2><span class="idea">ý 2</span></div>
         <ul class="notes">
-          <li>Chỉ hiện ở <b>góc nhìn Team</b>, ngay dưới thanh đầu trang. Góc nhìn Toàn bộ / RE: không có hàng này (góc nhìn RE đã chọn RE ở thanh đầu trang).</li>
-          <li>Bên trái: tên team + nút <b>"Cả team"</b> (đang bật khi chưa chọn RE). Bên phải: các <b>RE của team</b>, mỗi hàng 5 RE, sắp theo tên như danh sách RE (A2); chỉ RE, không TL / người hỗ trợ. Số cạnh tên = KH đang mở.</li>
-          <li>Bấm một RE → kanban / bảng chỉ còn KH của RE đó; <b>bấm lại RE đó</b> (hoặc "Cả team") → về cả team.</li>
-          <li>RE đang chọn <b>dùng chung</b> với Lịch hẹn (B3). Đổi team hoặc đổi góc nhìn ở thanh đầu trang → tự bỏ chọn RE.</li>
-          <li>Bố cục phần đầu: hàng 1 = hàng chọn RE; hàng 2 = dòng "đang xem" + chuyển Kanban / Bảng + "+ KH mới".</li>
+          <li>Chỉ hiện ở <b>góc nhìn Team</b>, ngay dưới thanh đầu trang. Góc nhìn Toàn bộ / RM: không có hàng này (góc nhìn RM đã chọn RM ở thanh đầu trang).</li>
+          <li>Bên trái: tên team + nút <b>"Cả team"</b> (đang bật khi chưa chọn RM). Bên phải: các <b>RM của team</b>, mỗi hàng 5 RM, sắp theo tên như danh sách RM (A2); chỉ RM, không TL / người hỗ trợ. Số cạnh tên = KH đang mở.</li>
+          <li>Bấm một RM → kanban / bảng chỉ còn KH của RM đó; <b>bấm lại RM đó</b> (hoặc "Cả team") → về cả team.</li>
+          <li>RM đang chọn <b>dùng chung</b> với Lịch hẹn (B3). Đổi team hoặc đổi góc nhìn ở thanh đầu trang → tự bỏ chọn RM.</li>
+          <li>Bố cục phần đầu: hàng 1 = hàng chọn RM; hàng 2 = dòng "đang xem" + chuyển Kanban / Bảng + "+ KH mới".</li>
         </ul>
 
         <div>
-          <p class="cap">2a · Góc nhìn Team Bình Minh, chưa chọn RE</p>
+          <p class="cap">2a · Góc nhìn Team Bình Minh, chưa chọn RM</p>
           <div class="frame">
             <header class="topbar">
               <h1>Khách hàng</h1>
               <div class="spacer"></div>
-              <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+              <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RM</button></div>
               <span class="select"><b>Bình Minh</b> ▾</span>
             </header>
             <div class="content">
-              <section class="card re-strip" aria-label="RE của team Bình Minh">
+              <section class="card re-strip" aria-label="RM của team Bình Minh">
                 <div class="team-side">
-                  <h3>Team Bình Minh · 10 RE</h3>
+                  <h3>Team Bình Minh · 10 RM</h3>
                   <button class="re-chip all on"><span class="nm">Cả team</span><span class="n">382</span></button>
-                  <span class="hint">Bấm RE để lọc · bấm lại để bỏ</span>
+                  <span class="hint">Bấm RM để lọc · bấm lại để bỏ</span>
                 </div>
                 <div class="re-grid">
                   <button class="re-chip"><span class="nm">Đặng Hải Nam</span><span class="n">38</span></button>
@@ -840,10 +840,10 @@
                 <button class="btn btn-primary">+ KH mới</button>
               </div>
               <div class="kanban">
-                <div class="kcol"><div class="kh"><span class="badge st-n4">N4</span><span class="n num">171</span></div><div class="kcard"><b>Trương Bảo Ngọc</b><span>RE Hồ Thanh Vy · Nữ · 1988</span></div><div class="kcard"><b>Lưu Quang Đạt</b><span>RE Trần Quốc Bảo · Nam · 1979</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
-                <div class="kcol"><div class="kh"><span class="badge st-n3">N3</span><span class="n num">118</span></div><div class="kcard"><b>Đoàn Thị Mỹ</b><span>RE Đặng Hải Nam · Nữ · 1984</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
-                <div class="kcol"><div class="kh"><span class="badge st-n2">N2</span><span class="n num">64</span></div><div class="kcard"><b>Hà Minh Tuấn</b><span>RE Lê Minh Khang · Nam · 1975</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
-                <div class="kcol"><div class="kh"><span class="badge st-n1">N1</span><span class="n num">29</span></div><div class="kcard"><b>Cao Thùy Dung</b><span>RE Võ Ngọc Anh · Nữ · 1990</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n4">N4</span><span class="n num">171</span></div><div class="kcard"><b>Trương Bảo Ngọc</b><span>RM Hồ Thanh Vy · Nữ · 1988</span></div><div class="kcard"><b>Lưu Quang Đạt</b><span>RM Trần Quốc Bảo · Nam · 1979</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n3">N3</span><span class="n num">118</span></div><div class="kcard"><b>Đoàn Thị Mỹ</b><span>RM Đặng Hải Nam · Nữ · 1984</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n2">N2</span><span class="n num">64</span></div><div class="kcard"><b>Hà Minh Tuấn</b><span>RM Lê Minh Khang · Nam · 1975</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n1">N1</span><span class="n num">29</span></div><div class="kcard"><b>Cao Thùy Dung</b><span>RM Võ Ngọc Anh · Nữ · 1990</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
                 <div class="kcol"><div class="kh"><span class="badge st-hold">Tạm hoãn</span><span class="n num">31</span></div><div class="kh"><span class="badge st-lost">Mất cơ hội</span><span class="n num">26</span></div></div>
               </div>
             </div>
@@ -851,20 +851,20 @@
         </div>
 
         <div>
-          <p class="cap">2b · Đã chọn RE Lê Minh Khang <span class="was">(bấm lại "Lê Minh Khang" hoặc "Cả team" → về 2a)</span></p>
+          <p class="cap">2b · Đã chọn RM Lê Minh Khang <span class="was">(bấm lại "Lê Minh Khang" hoặc "Cả team" → về 2a)</span></p>
           <div class="frame">
             <header class="topbar">
               <h1>Khách hàng</h1>
               <div class="spacer"></div>
-              <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+              <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RM</button></div>
               <span class="select"><b>Bình Minh</b> ▾</span>
             </header>
             <div class="content">
-              <section class="card re-strip" aria-label="RE của team Bình Minh">
+              <section class="card re-strip" aria-label="RM của team Bình Minh">
                 <div class="team-side">
-                  <h3>Team Bình Minh · 10 RE</h3>
+                  <h3>Team Bình Minh · 10 RM</h3>
                   <button class="re-chip all"><span class="nm">Cả team</span><span class="n">382</span></button>
-                  <span class="hint">Bấm RE để lọc · bấm lại để bỏ</span>
+                  <span class="hint">Bấm RM để lọc · bấm lại để bỏ</span>
                 </div>
                 <div class="re-grid">
                   <button class="re-chip"><span class="nm">Đặng Hải Nam</span><span class="n">38</span></button>
@@ -886,10 +886,10 @@
                 <button class="btn btn-primary">+ KH mới</button>
               </div>
               <div class="kanban">
-                <div class="kcol"><div class="kh"><span class="badge st-n4">N4</span><span class="n num">19</span></div><div class="kcard"><b>Nghiêm Hoài An</b><span>RE Lê Minh Khang · Nữ · 1986</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
-                <div class="kcol"><div class="kh"><span class="badge st-n3">N3</span><span class="n num">14</span></div><div class="kcard"><b>Tạ Đình Phúc</b><span>RE Lê Minh Khang · Nam · 1981</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
-                <div class="kcol"><div class="kh"><span class="badge st-n2">N2</span><span class="n num">8</span></div><div class="kcard"><b>Hà Minh Tuấn</b><span>RE Lê Minh Khang · Nam · 1975</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
-                <div class="kcol"><div class="kh"><span class="badge st-n1">N1</span><span class="n num">3</span></div><div class="kcard"><b>Kiều Phương Nhi</b><span>RE Lê Minh Khang · Nữ · 1992</span></div></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n4">N4</span><span class="n num">19</span></div><div class="kcard"><b>Nghiêm Hoài An</b><span>RM Lê Minh Khang · Nữ · 1986</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n3">N3</span><span class="n num">14</span></div><div class="kcard"><b>Tạ Đình Phúc</b><span>RM Lê Minh Khang · Nam · 1981</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n2">N2</span><span class="n num">8</span></div><div class="kcard"><b>Hà Minh Tuấn</b><span>RM Lê Minh Khang · Nam · 1975</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n1">N1</span><span class="n num">3</span></div><div class="kcard"><b>Kiều Phương Nhi</b><span>RM Lê Minh Khang · Nữ · 1992</span></div></div>
                 <div class="kcol"><div class="kh"><span class="badge st-hold">Tạm hoãn</span><span class="n num">4</span></div><div class="kh"><span class="badge st-lost">Mất cơ hội</span><span class="n num">2</span></div></div>
               </div>
             </div>
@@ -899,26 +899,26 @@
 
       <!-- ================= B3 ================= -->
       <section class="part" aria-labelledby="b3">
-        <div class="part-head"><h2 id="b3">B3 · Lịch hẹn — hàng chọn RE</h2><span class="idea">ý 3</span></div>
+        <div class="part-head"><h2 id="b3">B3 · Lịch hẹn — hàng chọn RM</h2><span class="idea">ý 3</span></div>
         <ul class="notes">
           <li>Cùng thành phần và cùng vị trí như B2. Số cạnh tên = <b>số lịch trong kỳ</b> đang chọn (đổi kỳ → số đổi theo).</li>
-          <li>Chọn RE → lịch tháng, "Trong ngày" và danh sách chỉ còn lịch <b>RE đó phụ trách</b>; lịch mà RE chỉ là người phối hợp không tính.</li>
-          <li>Ví dụ dưới: anh chọn Lê Minh Khang ở tab Khách hàng rồi sang Lịch hẹn → RE vẫn được chọn (dùng chung).</li>
-          <li>Bố cục phần đầu: hàng 1 = hàng chọn RE; hàng 2 = kỳ + người phối hợp + dòng "đang xem" + "+ Lịch hẹn mới".</li>
+          <li>Chọn RM → lịch tháng, "Trong ngày" và danh sách chỉ còn lịch <b>RM đó phụ trách</b>; lịch mà RM chỉ là người phối hợp không tính.</li>
+          <li>Ví dụ dưới: anh chọn Lê Minh Khang ở tab Khách hàng rồi sang Lịch hẹn → RM vẫn được chọn (dùng chung).</li>
+          <li>Bố cục phần đầu: hàng 1 = hàng chọn RM; hàng 2 = kỳ + người phối hợp + dòng "đang xem" + "+ Lịch hẹn mới".</li>
         </ul>
         <div class="frame">
           <header class="topbar">
             <h1>Lịch hẹn</h1>
             <div class="spacer"></div>
-            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RM</button></div>
             <span class="select"><b>Bình Minh</b> ▾</span>
           </header>
           <div class="content">
-            <section class="card re-strip" aria-label="RE của team Bình Minh">
+            <section class="card re-strip" aria-label="RM của team Bình Minh">
               <div class="team-side">
-                <h3>Team Bình Minh · 10 RE</h3>
+                <h3>Team Bình Minh · 10 RM</h3>
                 <button class="re-chip all"><span class="nm">Cả team</span><span class="n">161</span></button>
-                <span class="hint">Bấm RE để lọc · bấm lại để bỏ</span>
+                <span class="hint">Bấm RM để lọc · bấm lại để bỏ</span>
               </div>
               <div class="re-grid">
                 <button class="re-chip"><span class="nm">Đặng Hải Nam</span><span class="n">17</span></button>
@@ -943,7 +943,7 @@
             </div>
             <div class="two">
               <section class="card">
-                <div class="card-head"><h3 style="color: var(--heading)">Trong ngày 01/10/2026</h3><span class="meta">chỉ lịch của RE đang chọn</span></div>
+                <div class="card-head"><h3 style="color: var(--heading)">Trong ngày 01/10/2026</h3><span class="meta">chỉ lịch của RM đang chọn</span></div>
                 <div class="day-list">
                   <h3>Bình Minh</h3>
                   <h4>Lê Minh Khang</h4>
@@ -1062,7 +1062,7 @@
           <header class="topbar">
             <h1>Lịch hẹn</h1>
             <div class="spacer"></div>
-            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
+            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RM</button></div>
           </header>
           <div class="content">
             <div class="tools">
@@ -1091,7 +1091,7 @@
         <ol class="notes ask">
           <li><b>B5:</b> chọn phương án <b>A</b> — tô nền ô Ngày (token <code>--date-past-bg</code>, <code>--date-today-bg</code>, <code>--date-future-bg</code>).</li>
           <li><b>B4:</b> ô hôm nay viền <b>xanh lá nhạt</b> (<code>--date-today</code>) để nổi cả khi nằm trong dải kỳ Tuần; số ngày đang chọn màu vàng gold.</li>
-          <li><b>B2/B3:</b> đồng ý nút "Cả team" và số cạnh tên RE.</li>
+          <li><b>B2/B3:</b> đồng ý nút "Cả team" và số cạnh tên RM.</li>
           <li><b>B1:</b> đồng ý "chưa có TL · + Thêm TL"; <b>mỗi team chỉ 1 TL</b> → bỏ số "1" trước TL trong danh sách team, bỏ biến thể nhiều TL.</li>
           <li><b>B6:</b> giữ tổng lịch của quý ở đầu mỗi cột như mockup.</li>
         </ol>

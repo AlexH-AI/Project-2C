@@ -1,6 +1,6 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase. Layout: **single-context** — the whole app is one business domain (life-insurance advisory for RE teams).
+How the engineering skills should consume this repo's domain documentation when exploring the codebase. Layout: **single-context** — the whole app is one business domain (life-insurance advisory for RM teams).
 
 ## Before exploring, read these
 
@@ -22,7 +22,7 @@ If `CONTEXT.md` doesn't exist, **proceed silently**. Don't flag its absence; don
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md` and the ADRs — e.g. RE, TL, N4–N1, KYC note / KYC fact, submitted / issued, FYP, case size, chuyển RF. Don't drift to synonyms (e.g. "RM" means RE — Q16).
+When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md` and the ADRs — e.g. RM, TL, N4–N1, KYC note / KYC fact, submitted / issued, FYP, case size, chuyển RF. Don't drift to synonyms. Historical docs (ADR bodies, phase specs, review reports, metrics) still call the RM by its old name; `CONTEXT.md` says so.
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (add it to `CONTEXT.md`).
 

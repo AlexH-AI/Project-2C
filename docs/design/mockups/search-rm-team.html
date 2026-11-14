@@ -496,7 +496,7 @@
           <div class="pcard">
             <h3>Đầu trang và danh sách <small>anh duyệt 12/11 · #ask 7</small></h3>
             <ul class="bul">
-              <li><b>Năm số:</b> Doanh số, Tổng số HĐ, Tỷ lệ hủy, Tỉ lệ chốt theo kỳ trên thanh công cụ (mặc định tháng đang chạy, đổi là số đổi ngay), mỗi số kèm phép tính; <b>Forecast tuần</b> luôn là tuần này (hôm nay tới thứ Bảy), như định nghĩa của phần D.</li>
+              <li><b>Năm số:</b> Doanh số, Tổng số HĐ, Tỷ lệ hủy, Tỷ lệ chốt theo kỳ trên thanh công cụ (mặc định tháng đang chạy, đổi là số đổi ngay), mỗi số kèm phép tính; <b>Forecast tuần</b> luôn là tuần này (hôm nay tới thứ Bảy), như định nghĩa của phần D.</li>
               <li><b>Danh sách:</b> KH do RM phụ trách, đúng các cột §5: KH (kèm mã), nhóm, lần gặp gần nhất, lịch hẹn sắp tới, số HĐ; thêm cột "Nhịp gặp · 8 tuần". Không thêm cột case size (thuộc Forecast, đợt d).</li>
               <li><b>Đang mở / Đã đóng:</b> mặc định KH đang mở (N4 → N1); viên "Đã đóng" xem KH Tạm hoãn, Mất cơ hội.</li>
               <li><b>Sắp xếp mặc định:</b> KH lâu chưa gặp nhất lên đầu, KH chưa gặp lần nào xếp cuối; bấm tiêu đề cột để sắp theo cột khác. Gặp gần nhất quá 4 tuần thì số ngày chuyển màu cam.</li>
@@ -883,7 +883,7 @@
               <section class="card stat lead-n"><span class="lbl">Doanh số</span><div class="val">${money(sales).replace(/ (tr|tỷ)$/, '<small>$1</small>')}</div><p class="eq">${r.issued ? `Phát hành ${money(r.fi)} − hủy ${money(r.fc)}` : 'Chưa có HĐ trong kỳ'}</p></section>
               <section class="card stat"><span class="lbl">Tổng số HĐ</span><div class="val">${r.issued - r.cancelled}</div><p class="eq">${r.issued} phát hành − ${r.cancelled} hủy</p></section>
               <section class="card stat"><span class="lbl">Tỷ lệ hủy</span><div class="val">${pct(r.cancelled, r.issued).replace('%', '<small>%</small>')}</div><p class="eq">${r.issued ? `${r.cancelled} HĐ hủy ÷ ${r.issued} HĐ phát hành` : 'Chưa có HĐ phát hành'}</p></section>
-              <section class="card stat"><span class="lbl">Tỉ lệ chốt</span><div class="val">${pct(r.issued, r.rf).replace('%', '<small>%</small>')}</div><p class="eq">${r.rf ? `${r.issued} HĐ ÷ ${r.rf} RF` : 'Chưa có RF'}</p></section>
+              <section class="card stat"><span class="lbl">Tỷ lệ chốt</span><div class="val">${pct(r.issued, r.rf).replace('%', '<small>%</small>')}</div><p class="eq">${r.rf ? `${r.issued} HĐ ÷ ${r.rf} RF` : 'Chưa có RF'}</p></section>
               <section class="card stat"><span class="lbl">Forecast tuần</span><div class="val">${money(r.fw).replace(/ (tr|tỷ)$/, '<small>$1</small>')}</div><p class="eq">10/11 – 14/11${missing}</p></section>
             </div>
             <section class="card rm-list">

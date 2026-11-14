@@ -56,7 +56,7 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 | Lịch hẹn kỳ Tháng: bấm một ngày có lịch Đã gặp, chọn một lịch trong ngày (tháng nào: đoạn dưới bảng) | `appointments.select-day-month`, `appointments.select-row-month` |
 | Khách hàng: sang Bảng, sắp Họ tên | `customers.view-table`, `customers.sort-name` |
 | Hồ sơ KH có panel AI; bấm một lần trong Lịch sử phân tích | `customer.open-ai`, `customer.ai-history` |
-| Tổng quan / Báo cáo: bấm Lọc ở kỳ Năm và Tháng; Báo cáo Theo RE | `overview.filter-year`, `-month`, `reports.filter-year`, `-month`, `reports.table-re` |
+| Tổng quan / Báo cáo: bấm Lọc ở kỳ Năm và Tháng; Báo cáo Theo RM | `overview.filter-year`, `-month`, `reports.filter-year`, `-month`, `reports.table-re` |
 | Thùng rác: mở (đo khi đã ngắt debugger), lọc Lịch hẹn | `trash.open`, `trash.kind-appointments` |
 | Bộ nhớ JS heap của webview sau khi đi hết các màn (sau GC; không gồm bộ nhớ WebAssembly của sql.js, nơi giữ DB) | `memory.js-heap` (MB) |
 | Nhập backup: từ lúc chọn file tới hộp xác nhận; bấm xác nhận tới khi báo đã nhập | `backup.read`, `backup.import` |

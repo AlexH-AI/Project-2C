@@ -8,11 +8,11 @@ Hồ sơ KH gom mọi thứ về một KH: KYC, dòng thời gian, hợp đồng
 
 Cửa sổ rộng từ 1 440 px (cỡ mặc định của app) chia hồ sơ ba cột: **Dữ kiện KYC** và **Hợp đồng** · **Dòng thời gian** và **Lịch hẹn** · **KYC Intelligence**. Cửa sổ hẹp hơn còn hai cột, KYC Intelligence xuống cuối hồ sơ.
 
-Đầu hồ sơ: họ tên, nhóm hiện tại và ngày vào nhóm; dòng dưới là mã KH, giới tính, ngày sinh (tuổi), RE, team, "Đã có HĐ (…)" hoặc "Chưa có HĐ". Các nút:
+Đầu hồ sơ: họ tên, nhóm hiện tại và ngày vào nhóm; dòng dưới là mã KH, giới tính, ngày sinh (tuổi), RM, team, "Đã có HĐ (…)" hoặc "Chưa có HĐ". Các nút:
 
 | Nút | Làm gì | Xem |
 |---|---|---|
-| **Sửa hồ sơ** | Sửa họ tên, RE, ngày sinh, giới tính; xóa KH | [4. Khách hàng](04-khach-hang.md#sửa-hồ-sơ-kh) |
+| **Sửa hồ sơ** | Sửa họ tên, RM, ngày sinh, giới tính; xóa KH | [4. Khách hàng](04-khach-hang.md#sửa-hồ-sơ-kh) |
 | **Chuyển nhóm** | Đổi nhóm ngoài cuộc gặp, đóng / mở lại KH | [4. Khách hàng](04-khach-hang.md#chuyển-nhóm-tay) |
 | **+ Lịch hẹn** | Đặt lịch hẹn, KH điền sẵn | [3. Lịch hẹn](03-lich-hen.md#đặt-lịch-hẹn) |
 | **+ Ghi chú KYC** | Ghi điều mới biết về KH, kèm dữ kiện | [Ghi chú KYC](#ghi-chú-kyc) |
@@ -21,7 +21,7 @@ Cửa sổ rộng từ 1 440 px (cỡ mặc định của app) chia hồ sơ ba 
 
 ![Thẻ Dữ kiện KYC](img/05-du-kien-kyc.png)
 
-KYC của KH gồm **ghi chú** (RE viết, chỉ thêm, không sửa / xóa; chỉ mất khi [dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác) xóa hẳn KH đã xóa) và **dữ kiện** (giá trị có cấu trúc RE đã xác nhận, trỏ về ghi chú nguồn). Thẻ **Dữ kiện KYC** hiện các dữ kiện còn hiệu lực:
+KYC của KH gồm **ghi chú** (RM viết, chỉ thêm, không sửa / xóa; chỉ mất khi [dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác) xóa hẳn KH đã xóa) và **dữ kiện** (giá trị có cấu trúc RM đã xác nhận, trỏ về ghi chú nguồn). Thẻ **Dữ kiện KYC** hiện các dữ kiện còn hiệu lực:
 
 - Dòng đầu: số hạng mục đã có trên 8 và phiên bản KYC hiện tại (ví dụ "8/8 hạng mục · v15").
 - **Cổng KYC**: trạng thái cho biết KH đã đủ thông tin để phân tích AI chưa, kèm một câu giải thích:
@@ -87,7 +87,7 @@ Thẻ **Hợp đồng** liệt kê HĐ của KH. Mỗi HĐ có hai bước: **Đ
 ![Hộp Hợp đồng mới · đã nộp](img/05-hop-dong-moi.png)
 
 1. Bấm **+ Hợp đồng**.
-2. **RE · HĐ tính cho RE này**: mặc định RE phụ trách KH; chỉ chọn được lúc tạo HĐ.
+2. **RM · HĐ tính cho RM này**: mặc định RM phụ trách KH; chỉ chọn được lúc tạo HĐ.
 3. **Ngày nộp** và **FYP nộp** (phí năm đầu; gõ như `800tr`, `1,2 tỷ`). FYP tối đa 100 tỷ đồng. Hộp nhắc case size dự kiến của cuộc gặp gần nhất để tham khảo, không tự điền.
 4. Bấm **Lưu HĐ**.
 
@@ -101,8 +101,8 @@ HĐ nộp tháng này mà phát hành tháng sau thì vẫn tính nộp vào th�
 
 ### Sửa, xóa HĐ
 
-- Bấm **Sửa** ở dòng HĐ. Hộp **Sửa HĐ · …** cho sửa ngày nộp, FYP nộp và, với HĐ đã phát hành, ngày phát hành, FYP phát hành (RE của HĐ không đổi được). Khung **Ảnh hưởng chỉ số** cho biết FYP nộp / FYP phát hành của tháng nào tăng / giảm bao nhiêu. Dời ngày nộp hay ngày phát hành sang tháng khác thì HĐ chuyển sang tháng mới: FYP rời tháng cũ, và khung thêm một dòng số HĐ, ví dụ "tháng 08/2026: −1 HĐ nộp · tháng 09/2026: +1 HĐ nộp". Bấm **Lưu**.
-- Muốn xóa: trong hộp Sửa HĐ bấm **Xóa HĐ…**, rồi **Xóa HĐ**. HĐ không còn tính vào FYP nộp / phát hành của RE; nhóm của KH không đổi. Xóa mềm: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
+- Bấm **Sửa** ở dòng HĐ. Hộp **Sửa HĐ · …** cho sửa ngày nộp, FYP nộp và, với HĐ đã phát hành, ngày phát hành, FYP phát hành (RM của HĐ không đổi được). Khung **Ảnh hưởng chỉ số** cho biết FYP nộp / FYP phát hành của tháng nào tăng / giảm bao nhiêu. Dời ngày nộp hay ngày phát hành sang tháng khác thì HĐ chuyển sang tháng mới: FYP rời tháng cũ, và khung thêm một dòng số HĐ, ví dụ "tháng 08/2026: −1 HĐ nộp · tháng 09/2026: +1 HĐ nộp". Bấm **Lưu**.
+- Muốn xóa: trong hộp Sửa HĐ bấm **Xóa HĐ…**, rồi **Xóa HĐ**. HĐ không còn tính vào FYP nộp / phát hành của RM; nhóm của KH không đổi. Xóa mềm: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
 
 ## Lịch hẹn của KH
 

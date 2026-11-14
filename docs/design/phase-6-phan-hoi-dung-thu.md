@@ -956,8 +956,8 @@ Hợp đồng và chỉ số:
 | Doanh số | Total FYP | Owner 10/11 |
 | Case size | Case size | |
 | Case size dự kiến | Expected case size | |
-| Chuyển RF | Referrals | Owner 12/11; Tỉ lệ chốt = HĐ phát hành ÷ Referrals |
-| Tỉ lệ chốt | Close rate | |
+| Chuyển RF | Referrals | Owner 12/11; Tỷ lệ chốt = HĐ phát hành ÷ Referrals |
+| Tỷ lệ chốt | Close rate | |
 | Tỷ lệ hủy | Cancellation rate | phần B |
 | Chỉ số của kỳ | Period metrics | |
 

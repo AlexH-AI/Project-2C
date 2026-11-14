@@ -4,7 +4,7 @@ Bảng đối chiếu, **Owner duyệt G2 13/11/2026** (T-423 #1242, PR #1243; m
 
 Nguồn: spec `docs/design/phase-6-phan-hoi-dung-thu.md` §6.1 (Owner chốt 10/11/2026), §6.2 (D-a … D-f, Owner chốt 11/11/2026), §8 gạch "Mục tiêu doanh số" (Owner 11/11/2026). Phần ghi **"đề xuất"** dưới đây là điều Claude đề xuất ở T-423; Owner duyệt mọi đề xuất ở G2 ngày 13/11/2026 (câu trả lời từng điểm ở mục 5).
 
-Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.md`; số viết theo ADR-0018 (`,` ngăn hàng nghìn, `.` cho phần lẻ: "1,420", "90.7%"); viết "RE" như các golden khác (Issue A5 đổi thành "RM" một lần). Trên giao diện, số hiện theo `docs/golden/so-va-tien-te.md` ("1.42 tỷ", "620 tr").
+Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.md`; số viết theo ADR-0018 (`,` ngăn hàng nghìn, `.` cho phần lẻ: "1,420", "90.7%"); viết "RM" như các golden khác (A5 đổi một lần cho mọi golden, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §3.2). Trên giao diện, số hiện theo `docs/golden/so-va-tien-te.md` ("1.42 tỷ", "620 tr").
 
 ## Định nghĩa
 
@@ -12,7 +12,7 @@ Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.m
 |---|---|
 | **Lịch trong Forecast** | Cuộc hẹn chưa xóa, của KH chưa xóa, trạng thái **Đã lên lịch**, ngày **từ hôm nay trở đi**, ngày không phải Chủ Nhật, của KH **hiện** ở N3 / N2 / N1 (§6.1, D-c). Lịch của hôm nay vẫn tính dù giờ hẹn đã qua, tới khi ghi kết quả (như nhóm "Dự kiến" của `lich-hen.md`) |
 | **Lịch mang số** của một KH (D-a) | Trong các lịch trong Forecast của KH đó **có case size dự kiến**: lịch có thời điểm nhập / sửa số **gần nhất**. Cùng thời điểm → lịch có ngày muộn hơn; cùng ngày → giờ muộn hơn (lịch không ghi giờ xếp trước); vẫn bằng → lịch tạo sau. Lịch thiếu case size không tham gia so |
-| **Số của một KH** | Case size dự kiến của lịch mang số; nằm ở **ngày của lịch mang số** và tính cho **RE ghi trên lịch đó**. Mỗi KH một số, chọn trên mọi lịch trong Forecast của KH (mọi RE, mọi ngày từ hôm nay): **đề xuất**; Owner chọn 13/11/2026, "A · Một KH một số" |
+| **Số của một KH** | Case size dự kiến của lịch mang số; nằm ở **ngày của lịch mang số** và tính cho **RM ghi trên lịch đó**. Mỗi KH một số, chọn trên mọi lịch trong Forecast của KH (mọi RM, mọi ngày từ hôm nay): **đề xuất**; Owner chọn 13/11/2026, "A · Một KH một số" |
 | **Forecast của một khoảng** | Σ số của các KH có lịch mang số nằm trong khoảng. Cộng thẳng, không nhân hệ số theo nhóm (D-d). Tách N1 / N2 / N3 theo nhóm **hiện tại** của KH |
 | **Forecast tuần** | Khoảng từ hôm nay tới hết Thứ Bảy của tuần này. Hôm nay là Chủ Nhật → Thứ Hai tới Thứ Bảy của **tuần sau** (D-c) |
 | **Forecast tháng** | Khoảng từ hôm nay tới ngày cuối tháng, không tính Chủ Nhật |
@@ -20,11 +20,11 @@ Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.m
 | **Lịch khác của KH đã tính** | Lịch trong Forecast có case size nhưng không phải lịch mang số, nằm trong khoảng: vẫn hiện (mờ), kèm ghi chú "tính theo số ở lịch …" |
 | **Đã đạt** (D-b) | Doanh số (FYP phát hành − FYP hủy, golden B) từ ngày 1 của tháng tới hôm nay; có thể âm |
 | **Về đích** | Đã đạt + Forecast tháng |
-| **KPI tháng** | Mục tiêu Doanh số của một team cho một tháng, người dùng nhập. KPI của góc nhìn Toàn bộ = Σ KPI các team, **chỉ khi mọi team (chưa xóa) có KPI của tháng đó**; thiếu một team thì không có KPI toàn bộ (**đề xuất**). RE không có KPI |
+| **KPI tháng** | Mục tiêu Doanh số của một team cho một tháng, người dùng nhập. KPI của góc nhìn Toàn bộ = Σ KPI các team, **chỉ khi mọi team (chưa xóa) có KPI của tháng đó**; thiếu một team thì không có KPI toàn bộ (**đề xuất**). RM không có KPI |
 | **% về đích** | Về đích ÷ KPI. **Còn thiếu** = KPI − về đích khi về đích < KPI; ngược lại là **vượt** = về đích − KPI |
 | **Nhịp cần mỗi tuần** | (KPI − đã đạt) ÷ số tuần còn lại; số tuần còn lại = số ngày Thứ Hai → Thứ Bảy từ hôm nay tới cuối tháng ÷ 6. Làm tròn tới đồng. Không hiện khi đã đạt ≥ KPI, hoặc khi còn dưới 6 ngày (**đề xuất**) |
 
-Góc nhìn: lịch tính cho RE ghi trên cuộc hẹn, team = team hiện tại của RE (như chuyển RF và đếm lịch hẹn). Số của một KH chọn **trước** khi chia theo góc nhìn, nên team = Σ RE và toàn bộ = Σ team.
+Góc nhìn: lịch tính cho RM ghi trên cuộc hẹn, team = team hiện tại của RM (như chuyển RF và đếm lịch hẹn). Số của một KH chọn **trước** khi chia theo góc nhìn, nên team = Σ RM và toàn bộ = Σ team.
 
 ## 1. Dữ liệu kịch bản D
 
@@ -43,9 +43,9 @@ Người như `chi-so.md`: An, Bình (Team A); Chi, Dũng (Team B).
 
 ### Khách hàng
 
-RE phụ trách ghi ở cột RE; "Nhóm" là nhóm hiện tại.
+RM phụ trách ghi ở cột RM; "Nhóm" là nhóm hiện tại.
 
-| KH | RE | Nhóm | Ghi chú |
+| KH | RM | Nhóm | Ghi chú |
 |---|---|---|---|
 | KH 51 | An | N1 | |
 | KH 52 | An | N2 | Hai lịch cùng tuần |
@@ -62,7 +62,7 @@ RE phụ trách ghi ở cột RE; "Nhóm" là nhóm hiện tại.
 | KH 63 | An | N2 | Lịch đã xóa |
 | KH 64 | Bình | N1 | **KH đã xóa** |
 | KH 65 | An | N1 | Lịch Chủ Nhật |
-| KH 66 | Chi | N2 | Hai lịch với hai RE |
+| KH 66 | Chi | N2 | Hai lịch với hai RM |
 | KH 67 | Bình | N1 | Lịch tháng sau |
 | KH 68 | Chi | N1 | |
 | KH 69 | Dũng | N3 | |
@@ -77,7 +77,7 @@ RE phụ trách ghi ở cột RE; "Nhóm" là nhóm hiện tại.
 
 "ĐLL" = Đã lên lịch. "Nhập số lúc" = thời điểm nhập / sửa case size dự kiến gần nhất của lịch đó.
 
-| Mã | KH | RE trên lịch | Ngày | Trạng thái | Case size dự kiến | Nhập số lúc | Ghi chú |
+| Mã | KH | RM trên lịch | Ngày | Trạng thái | Case size dự kiến | Nhập số lúc | Ghi chú |
 |---|---|---|---|---|---|---|---|
 | `fc-01` | KH 51 | An | Thứ Tư 14/03 | ĐLL | 200 | 01/03 09:00 | |
 | `fc-02` | KH 52 | An | Thứ Năm 15/03 | ĐLL | 150 | 10/03 14:00 | Nhập sau `fc-03` → mang số, dù ngày sớm hơn |
@@ -100,7 +100,7 @@ RE phụ trách ghi ở cột RE; "Nhóm" là nhóm hiện tại.
 | `fc-19` | KH 64 | Bình | Thứ Sáu 16/03 | ĐLL | 400 | 03/03 09:00 | KH đã xóa |
 | `fc-20` | KH 65 | An | **Chủ Nhật** 18/03 | ĐLL | 250 | 08/03 09:00 | |
 | `fc-21` | KH 66 | Chi | Thứ Sáu 23/03 | ĐLL | 180 | 03/03 09:00 | |
-| `fc-22` | KH 66 | **An** | Thứ Ba 27/03 | ĐLL | 220 | 09/03 09:00 | RE An đi gặp thay; nhập sau `fc-21` → mang số |
+| `fc-22` | KH 66 | **An** | Thứ Ba 27/03 | ĐLL | 220 | 09/03 09:00 | RM An đi gặp thay; nhập sau `fc-21` → mang số |
 | `fc-23` | KH 67 | Bình | Thứ Hai 02/04 | ĐLL | 300 | 10/03 09:00 | Tháng sau |
 | `fc-24` | KH 68 | Chi | Thứ Sáu 30/03 | ĐLL | 160 | 11/03 09:00 | |
 | `fc-25` | KH 69 | Dũng | Thứ Bảy 31/03 | ĐLL | 40 | 11/03 10:00 | Ngày cuối tháng |
@@ -115,7 +115,7 @@ RE phụ trách ghi ở cột RE; "Nhóm" là nhóm hiện tại.
 
 FYP nộp bằng FYP phát hành. Từ 14/03/2029 trở đi không có HĐ phát hành hay hủy nào.
 
-| Mã | KH | RE | Ngày nộp | Ngày phát hành | FYP phát hành | Ngày hủy |
+| Mã | KH | RM | Ngày nộp | Ngày phát hành | FYP phát hành | Ngày hủy |
 |---|---|---|---|---|---|---|
 | `hd-31` | KH 81 | An | 01/03 | 02/03 | 500 | — |
 | `hd-32` | KH 82 | An | 05/03 | 06/03 | 300 | — |
@@ -134,16 +134,16 @@ Cột: **Dự kiến** = Forecast của khoảng (tr) · **N1 / N2 / N3** = ph�
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | F01 | 13/03 | Tuần 13/03 – 17/03 | Toàn bộ | 620 | 200 | 240 | 180 | 5 | 1 | 3 | Thứ Hai 12/03 đã qua không tính; KH 52, KH 53 tính một lần; KH 54 có số nằm ở tuần sau |
 | F02 | 13/03 | Tháng 13/03 – 31/03 | Toàn bộ | 1,420 | 490 | 710 | 220 | 10 | 2 | 5 | Không tính Chủ Nhật 18/03 (`fc-20`), lịch 02/04 (`fc-23`), N4, Tạm hoãn, Mất cơ hội (`fc-31`), Đã gặp (`fc-13`), Dời lịch, KH hủy, Không gặp được (`fc-30`), lịch đã xóa, KH đã xóa |
-| F03 | 13/03 | Tuần | RE An | 350 | 200 | 150 | 0 | 2 | 0 | 1 | KH 52: 150 của `fc-02` (nhập 10/03), không phải 100 của lịch muộn hơn `fc-03` |
-| F04 | 13/03 | Tuần | RE Bình | 120 | 0 | 0 | 120 | 1 | 0 | 2 | KH 53: hai số nhập cùng lúc → `fc-05` (ngày muộn hơn) 120; `fc-06` của KH 54 hiện mờ |
-| F05 | 13/03 | Tuần | RE Chi | 150 | 0 | 90 | 60 | 2 | 1 | 0 | `fc-09` hôm nay vẫn tính; `fc-08` thiếu: đếm, không cộng |
-| F06 | 13/03 | Tuần | RE Dũng | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `fc-12` N4, `fc-13` Đã gặp (lịch của hôm nay, có số 400), `fc-14` đã qua, `fc-15` Dời lịch, `fc-17` KH hủy, `fc-30` Không gặp được: không lịch nào tính |
+| F03 | 13/03 | Tuần | RM An | 350 | 200 | 150 | 0 | 2 | 0 | 1 | KH 52: 150 của `fc-02` (nhập 10/03), không phải 100 của lịch muộn hơn `fc-03` |
+| F04 | 13/03 | Tuần | RM Bình | 120 | 0 | 0 | 120 | 1 | 0 | 2 | KH 53: hai số nhập cùng lúc → `fc-05` (ngày muộn hơn) 120; `fc-06` của KH 54 hiện mờ |
+| F05 | 13/03 | Tuần | RM Chi | 150 | 0 | 90 | 60 | 2 | 1 | 0 | `fc-09` hôm nay vẫn tính; `fc-08` thiếu: đếm, không cộng |
+| F06 | 13/03 | Tuần | RM Dũng | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `fc-12` N4, `fc-13` Đã gặp (lịch của hôm nay, có số 400), `fc-14` đã qua, `fc-15` Dời lịch, `fc-17` KH hủy, `fc-30` Không gặp được: không lịch nào tính |
 | F07 | 13/03 | Tuần | Team A | 470 | 200 | 150 | 120 | 3 | 0 | 3 | F03 + F04 |
 | F08 | 13/03 | Tuần | Team B | 150 | 0 | 90 | 60 | 2 | 1 | 0 | F05 + F06; F07 + F08 = F01 |
-| F09 | 13/03 | Tháng | RE An | 570 | 200 | 370 | 0 | 3 | 0 | 1 | KH 66 (RE phụ trách là Chi): 220 của `fc-22` tính cho An, RE ghi trên lịch mang số |
-| F10 | 13/03 | Tháng | RE Bình | 370 | 0 | 250 | 120 | 2 | 0 | 2 | KH 54: 250 ở 20/03; `fc-31` của KH 74 (Mất cơ hội) không tính |
-| F11 | 13/03 | Tháng | RE Chi | 310 | 160 | 90 | 60 | 3 | 2 | 1 | KH 66 không tính cho Chi (`fc-21` là lịch khác); KH 57: 60, `fc-11` thiếu |
-| F12 | 13/03 | Tháng | RE Dũng | 170 | 130 | 0 | 40 | 2 | 0 | 1 | KH 61: 130 của `fc-26` (nhập 06/03) thắng 110 của `fc-16` (thời điểm 04/03 mang từ `fc-15`) |
+| F09 | 13/03 | Tháng | RM An | 570 | 200 | 370 | 0 | 3 | 0 | 1 | KH 66 (RM phụ trách là Chi): 220 của `fc-22` tính cho An, RM ghi trên lịch mang số |
+| F10 | 13/03 | Tháng | RM Bình | 370 | 0 | 250 | 120 | 2 | 0 | 2 | KH 54: 250 ở 20/03; `fc-31` của KH 74 (Mất cơ hội) không tính |
+| F11 | 13/03 | Tháng | RM Chi | 310 | 160 | 90 | 60 | 3 | 2 | 1 | KH 66 không tính cho Chi (`fc-21` là lịch khác); KH 57: 60, `fc-11` thiếu |
+| F12 | 13/03 | Tháng | RM Dũng | 170 | 130 | 0 | 40 | 2 | 0 | 1 | KH 61: 130 của `fc-26` (nhập 06/03) thắng 110 của `fc-16` (thời điểm 04/03 mang từ `fc-15`) |
 | F13 | 13/03 | Tháng | Team A | 940 | 200 | 620 | 120 | 5 | 0 | 3 | F09 + F10 |
 | F14 | 13/03 | Tháng | Team B | 480 | 290 | 90 | 100 | 5 | 2 | 2 | F11 + F12; F13 + F14 = F02 |
 | F15 | 13/03 | Ngày 14/03 | Toàn bộ | 200 | 200 | 0 | 0 | 1 | 0 | 1 | Danh sách của ngày: `fc-01` (200), `fc-06` (mờ, "tính theo số ở lịch 20/03"); `fc-15` Dời lịch không hiện |
@@ -170,8 +170,8 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 | F29 | 13/03 | Toàn bộ | 1,300 | 1,420 | 2,720 | 3,000 | 90.7% | thiếu 280 | 600 | KPI toàn bộ = 1,800 + 1,200; 17 ngày còn lại = 17/6 tuần; 1,700 ÷ (17/6) = 600 |
 | F30 | 13/03 | Team A | 950 | 940 | 1,890 | 1,800 | 105% | vượt 90 | 300 | Về đích vượt KPI nhưng đã đạt chưa tới: vẫn có nhịp (850 ÷ 17/6) |
 | F31 | 13/03 | Team B | 350 | 480 | 830 | 1,200 | 69.2% | thiếu 370 | 300 | F30 + F31 = F29 ở mọi cột tiền |
-| F32 | 13/03 | RE An | 800 | 570 | 1,370 | — | — | — | — | RE không có KPI |
-| F33 | 13/03 | RE Dũng | −80 | 170 | 90 | — | — | — | — | Đã đạt âm (`hd-36` hủy 07/03, không phát hành gì trong tháng) |
+| F32 | 13/03 | RM An | 800 | 570 | 1,370 | — | — | — | — | RM không có KPI |
+| F33 | 13/03 | RM Dũng | −80 | 170 | 90 | — | — | — | — | Đã đạt âm (`hd-36` hủy 07/03, không phát hành gì trong tháng) |
 | F34 | 13/03, **Team B chưa đặt KPI** | Toàn bộ | 1,300 | 1,420 | 2,720 | — | — | — | — | Thiếu KPI của một team → không có KPI toàn bộ, không cộng một phần (1,800) |
 | F35 | 13/03, **KPI Team A = 900** | Team A | 950 | 940 | 1,890 | 900 | 210% | vượt 990 | không hiện | Đã đạt ≥ KPI: không còn nhịp |
 | F36 | như F35 | Toàn bộ | 1,300 | 1,420 | 2,720 | 2,100 | 129.5% | vượt 620 | 282,352,941 VNĐ | 800 ÷ (17/6) = 282.35… tr, làm tròn tới đồng |
@@ -186,7 +186,7 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 - **Số của từng KH, hôm nay 13/03** (lịch trong Forecast: `fc-01` … `fc-11`, `fc-16`, `fc-21` … `fc-26`, `fc-28`, `fc-29`): KH 51 → 200 ở 14/03 (An). KH 52 → `fc-02` nhập 10/03 sau `fc-03` nhập 02/03 → 150 ở 15/03 (An). KH 53 → cùng 05/03 08:00, lấy ngày muộn hơn `fc-05` → 120 ở 16/03 (Bình). KH 54 → `fc-07` nhập 08/03 sau `fc-06` nhập 01/03 → 250 ở 20/03 (Bình). KH 55 → chỉ có `fc-08` thiếu → không có số. KH 56 → 90 ở 13/03 (Chi). KH 57 → 60 ở 17/03 (Chi). KH 61 → `fc-26` nhập 06/03 sau `fc-16` (04/03) → 130 ở 28/03 (Dũng). KH 66 → `fc-22` nhập 09/03 sau `fc-21` (03/03) → 220 ở 27/03 (An). KH 67 → 300 ở 02/04 (Bình). KH 68 → 160 ở 30/03 (Chi). KH 69 → 40 ở 31/03 (Dũng). KH 71 → 100 ở 30/04, KH 72 → 200 ở 02/05 (An).
 - **F01 (tuần 13/03 – 17/03)**: theo ngày 13/03: 90 · 14/03: 200 · 15/03: 150 · 16/03: 120 · 17/03: 60 → 620. N1: KH 51 200. N2: KH 52 150 + KH 56 90 = 240. N3: KH 53 120 + KH 57 60 = 180. Mang số: `fc-01`, `fc-02`, `fc-05`, `fc-09`, `fc-10` → 5. Thiếu: `fc-08`. Khác: `fc-03`, `fc-04`, `fc-06`.
 - **F02 (tháng)** = F01 + tuần 19/03 – 24/03 (KH 54: 250) + tuần 26/03 – 31/03 (220 + 130 + 160 + 40 = 550) = 620 + 250 + 550 = 1,420. N1: 200 + 130 + 160 = 490. N2: 150 + 90 + 250 + 220 = 710. N3: 120 + 60 + 40 = 220. Thiếu: `fc-08`, `fc-11`. Khác: `fc-03`, `fc-04`, `fc-06`, `fc-16`, `fc-21`.
-- **Kiểm cộng**: tuần F03 + F04 + F05 + F06 = 350 + 120 + 150 + 0 = 620 = F01; tháng F09 + F10 + F11 + F12 = 570 + 370 + 310 + 170 = 1,420 = F02; Team A 570 + 370 = 940, Team B 310 + 170 = 480. KH 66 có lịch với hai RE ở hai team nhưng chỉ tính một lần (220, Team A): nếu chọn số riêng trong từng góc nhìn thì Chi có thêm 180 và toàn bộ lệch khỏi tổng các team.
+- **Kiểm cộng**: tuần F03 + F04 + F05 + F06 = 350 + 120 + 150 + 0 = 620 = F01; tháng F09 + F10 + F11 + F12 = 570 + 370 + 310 + 170 = 1,420 = F02; Team A 570 + 370 = 940, Team B 310 + 170 = 480. KH 66 có lịch với hai RM ở hai team nhưng chỉ tính một lần (220, Team A): nếu chọn số riêng trong từng góc nhìn thì Chi có thêm 180 và toàn bộ lệch khỏi tổng các team.
 - **Đã đạt (01/03 – 13/03)**: An `hd-31` 500 + `hd-32` 300 = 800. Bình `hd-33` 250 − `hd-34` hủy 100 = 150. Chi `hd-35` 430. Dũng − `hd-36` hủy 80 = −80. Team A 950, Team B 350, toàn bộ 1,300.
 - **F29**: về đích 1,300 + 1,420 = 2,720; 2,720 ÷ 3,000 = 90.7%; còn thiếu 280. Ngày Thứ Hai → Thứ Bảy từ 13/03 tới 31/03: 13 – 17 (5), 19 – 24 (6), 26 – 31 (6) = 17 ngày = 17/6 tuần. Nhịp (3,000 − 1,300) ÷ (17/6) = 600. Nhịp của hai team cộng lại bằng nhịp toàn bộ: 300 + 300.
 - **F22 – F23 (hôm nay Thứ Bảy 17/03)**: lịch trước 17/03 đã qua. KH 52 chỉ còn `fc-03` → 100 ở 17/03; KH 57 60 ở 17/03 → tuần 160. Tháng: 160 + 250 + 220 + 130 + 160 + 40 = 960.
@@ -199,7 +199,7 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 
 - Số tiền của Forecast là case size dự kiến của từng lịch hẹn, do người dùng nhập ở hộp đặt lịch, hộp dời lịch hay điền tại chỗ trong Forecast; app không dùng AI hay thuật toán để ước tính (D-e).
 - Mỗi KH tính một lần, theo số nhập (hay sửa) gần nhất (D-a). Không nhân hệ số (D-d). Không tính Chủ Nhật (D-c).
-- KPI tháng theo team, do người dùng nhập; KPI toàn bộ = tổng các team, không nhập riêng; chỉ theo tháng; không có KPI của RE.
+- KPI tháng theo team, do người dùng nhập; KPI toàn bộ = tổng các team, không nhập riêng; chỉ theo tháng; không có KPI của RM.
 
 **Claude đề xuất, Owner duyệt G2 ngày 13/11/2026** (code ở phần D):
 
@@ -208,9 +208,9 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 3. **Lịch có sẵn:** migration thêm cột; lịch đã có số (từ kết quả cuộc gặp) lấy thời điểm bằng `updated_at` của nó; lịch Đã lên lịch chưa có số là "lịch thiếu case size" (§6.1: Forecast đếm và chỉ ra để bổ sung). Dữ liệu giả lập sinh lại có số cho phần lớn lịch tương lai của KH N3 / N2 / N1, vài lịch để thiếu, không có lịch Chủ Nhật (D-c).
 4. **Điền sẵn ở hộp đặt lịch:** số có thời điểm nhập gần nhất trong mọi cuộc hẹn chưa xóa của KH (mọi trạng thái); KH chưa có số nào thì ô trống. Đây là gợi ý: lưu lịch thì số trong ô (giữ hay sửa) được ghi cho lịch mới với thời điểm là lúc lưu.
 5. **Dời lịch:** ô "Case size dự kiến" của hộp dời mở sẵn số của lịch đang dời. Giữ nguyên số → lịch mới mang **cả số lẫn thời điểm** của lịch cũ (dời lịch không phải một lần ước lượng mới; `fc-15` → `fc-16`, F12). Sửa số trong hộp dời → thời điểm là lúc dời. Lịch cũ (Dời lịch) giữ số của nó, không còn trong Forecast.
-6. **KPI tháng:** bảng mới `team_targets` (`team_id`, `month` dạng `yyyy-mm`, `amount` số nguyên đồng, `created_at`, `updated_at`), mỗi team mỗi tháng nhiều nhất một dòng; kiểu `TeamTarget { teamId, month, amount }`. `amount` lớn hơn 0, tối đa 1,000 tỷ. Không có dòng = chưa đặt KPI; để trống ô rồi lưu = xóa dòng (xóa hẳn: KPI là một con số đặt, không phải bản ghi nghiệp vụ, không qua Thùng rác). Không có bảng hay cột cho KPI tuần, KPI của RE, KPI toàn bộ.
+6. **KPI tháng:** bảng mới `team_targets` (`team_id`, `month` dạng `yyyy-mm`, `amount` số nguyên đồng, `created_at`, `updated_at`), mỗi team mỗi tháng nhiều nhất một dòng; kiểu `TeamTarget { teamId, month, amount }`. `amount` lớn hơn 0, tối đa 1,000 tỷ. Không có dòng = chưa đặt KPI; để trống ô rồi lưu = xóa dòng (xóa hẳn: KPI là một con số đặt, không phải bản ghi nghiệp vụ, không qua Thùng rác). Không có bảng hay cột cho KPI tuần, KPI của RM, KPI toàn bộ.
 7. **KPI của từng tháng được giữ:** nhập KPI tháng 4 không làm đổi KPI tháng 3. Tháng mới chưa nhập thì "chưa đặt KPI"; ô nhập mở sẵn KPI của tháng liền trước làm gợi ý. Tháng đã qua vẫn có KPI của nó (Owner 13/11/2026: "A · Mỗi tháng một KPI"): luật 4 của "Điểm nhấn" chạy thêm ở kỳ Tháng đã qua, câu chỉ có số thực tế (spec §8).
-8. **KPI toàn bộ** = Σ `amount` của mọi team chưa xóa trong tháng đó, chỉ khi mọi team chưa xóa (kể cả team chưa có RE) đều có dòng; team đã xóa không tính và không chặn (F34).
+8. **KPI toàn bộ** = Σ `amount` của mọi team chưa xóa trong tháng đó, chỉ khi mọi team chưa xóa (kể cả team chưa có RM) đều có dòng; team đã xóa không tính và không chặn (F34).
 9. **Lệnh:** đặt lịch, dời lịch, sửa lịch nhận thêm case size; một lệnh đặt / đổi / xóa case size của một lịch Đã lên lịch (điền tại chỗ); một lệnh đặt / xóa KPI tháng của một team. Mọi lệnh ghi một transaction như các lệnh khác.
 10. **Nhập backup:** `expected_case_size_at` có khi và chỉ khi `expected_case_size` có, và là thời điểm đọc được; `team_targets`: `team_id` trỏ tới một team có trong file, `month` đúng dạng trong miền năm 1900–2100, `amount` trong khoảng cho phép, không trùng (team, tháng). File backup cũ đi qua migration như ở mục 3.
 11. **Xóa mềm:** lịch đã xóa và lịch của KH đã xóa không thuộc Forecast (F02); khôi phục thì giữ số và thời điểm. Xóa team không xóa KPI; Dọn sạch Thùng rác xóa hẳn team thì xóa các dòng KPI của team đó.
@@ -228,7 +228,7 @@ Cột tiền theo tr. "—" ở cột KPI = không có KPI.
 Owner, trong chat với phiên T-423 ở Home PC, trả lời chín điểm G2. Claude hỏi từng điểm, mỗi điểm kèm phương án đề xuất và một phương án khác; trong ngoặc kép là nhãn Owner chọn, điểm nào cũng là phương án đề xuất.
 
 1. KH có lịch ở hai tuần khác nhau: "A · Một KH một số" (lịch mang số chọn trên mọi lịch từ hôm nay của KH; phương án bỏ: tính riêng trong từng khoảng đang xem).
-2. Bảy cách hiểu của D-a, D-b, D-c (so theo thời điểm nhập / sửa số; cùng lúc thì lịch ngày muộn hơn; lịch thiếu số không tham gia so; số nằm ở ngày của lịch mang số, tính cho RE ghi trên lịch đó; "đã đạt" đặt cạnh dự kiến; hôm nay Chủ Nhật thì lấy tuần sau; lịch đặt vào Chủ Nhật không tính): "Duyệt cả bảy".
+2. Bảy cách hiểu của D-a, D-b, D-c (so theo thời điểm nhập / sửa số; cùng lúc thì lịch ngày muộn hơn; lịch thiếu số không tham gia so; số nằm ở ngày của lịch mang số, tính cho RM ghi trên lịch đó; "đã đạt" đặt cạnh dự kiến; hôm nay Chủ Nhật thì lấy tuần sau; lịch đặt vào Chủ Nhật không tính): "Duyệt cả bảy".
 3. Nhịp cần mỗi tuần: "A · Có, theo công thức" (phương án bỏ: không hiện nhịp).
 4. Case size dự kiến bằng 0: "A · Không nhận 0" (phương án bỏ: nhận 0 với nghĩa "không dự kiến doanh số").
 5. KPI toàn bộ khi một team chưa đặt KPI: "A · Chỉ khi đủ mọi team" (phương án bỏ: cộng các team đã có).

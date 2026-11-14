@@ -29,3 +29,11 @@ Khớp người dùng thật (một Owner), giữ app portable và đơn giản.
 
 - Đồng bộ dữ liệu app giữa 2 máy cần cơ chế riêng → ADR-0010.
 - Bộ chuyển góc nhìn là tính năng UI, không phải bảo mật.
+
+## Phụ lục — RE đổi tên thành RM (Owner duyệt 10/11/2026)
+
+Nguồn: phản hồi dùng thử exe `5215b2e` của Owner ngày 10/11/2026 (ý 1) và các câu trả lời cùng ngày, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §1, §3.
+
+- Người tư vấn tên **RM** (Relationship Manager) ở mọi nơi: giao diện, file Excel, prompt AI, hướng dẫn sử dụng, mockup, từ điển, cả code lẫn dữ liệu lưu. Owner chọn "Đổi cả tên trong code", rồi "Duyệt phần A" (spec §3.1).
+- Mục 5 của Quyết định ("RM" = RE, Q16) nay theo chiều ngược lại: tên dùng là RM. "RE" ở thân ADR này (Bối cảnh, mục 2, mục 4, Phương án đã cân nhắc) và trong tài liệu lịch sử (thân ADR, spec các phase, báo cáo review, file metrics) nghĩa là RM; thân ADR không sửa (spec §3.4, `CONTEXT.md`).
+- Nghĩa không đổi: góc nhìn Toàn bộ / Team / RM là cách xem, không phải tài khoản; dữ liệu giả lập 3 team × 10 RM.

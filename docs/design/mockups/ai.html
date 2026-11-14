@@ -378,7 +378,7 @@
               <section class="card" aria-label="Dữ liệu gửi đi">
                 <div class="card-head"><h2>Dữ liệu gửi tới OpenCode Go</h2></div>
                 <ul style="margin: 0; padding-left: 18px; color: var(--text-2); font-size: var(--fs-sm)">
-                  <li><b style="color: var(--text)">Phân tích:</b> chỉ các dữ kiện KYC đã xác nhận còn hiệu lực (trường, giá trị, ngày xác nhận), tuổi thay cho năm sinh, hạng mục còn thiếu. Không gửi tên, mã KH, tên RE, ghi chú KYC, lịch hẹn, hợp đồng.</li>
+                  <li><b style="color: var(--text)">Phân tích:</b> chỉ các dữ kiện KYC đã xác nhận còn hiệu lực (trường, giá trị, ngày xác nhận), tuổi thay cho năm sinh, hạng mục còn thiếu. Không gửi tên, mã KH, tên RM, ghi chú KYC, lịch hẹn, hợp đồng.</li>
                   <li><b style="color: var(--text)">AI trích xuất gửi nguyên văn ghi chú tới OpenCode Go</b> — ghi chú có thể có tên người.</li>
                   <li>Kiểm tra kết nối chỉ gửi một chữ "ping".</li>
                 </ul>
@@ -683,7 +683,7 @@
               </tbody>
             </table>
           </div>
-          <p class="help" style="margin-top: 6px">Mã lỗi không hiện cho RE. Không thông báo nào chứa key, header hay nội dung gửi đi.</p>
+          <p class="help" style="margin-top: 6px">Mã lỗi không hiện cho RM. Không thông báo nào chứa key, header hay nội dung gửi đi.</p>
         </section>
       </div>
 
@@ -728,7 +728,7 @@
               <span class="note">Năm sinh cập nhật từ hồ sơ KH: 1984</span>
             </div>
           </div>
-          <p class="help" style="margin-top: 6px">Nút chỉ có trên ghi chú do RE ghi; tắt khi ghi chú dưới 20 ký tự, hoặc khi đang có yêu cầu AI khác. Bỏ nút "AI trích xuất" ở đầu thẻ Dữ kiện KYC (bản cũ).</p>
+          <p class="help" style="margin-top: 6px">Nút chỉ có trên ghi chú do RM ghi; tắt khi ghi chú dưới 20 ký tự, hoặc khi đang có yêu cầu AI khác. Bỏ nút "AI trích xuất" ở đầu thẻ Dữ kiện KYC (bản cũ).</p>
         </section>
 
         <section class="specimen">
@@ -780,7 +780,7 @@
               </div>
               <div class="alert ok">
                 <b>Sau khi lưu: KYC v4</b>
-                <span class="dim">Dữ kiện gắn với ghi chú N-0914 như khi RE tự xác nhận. Trường đã có giá trị khác → chọn Cập nhật / Đánh dấu mâu thuẫn như 7c.</span>
+                <span class="dim">Dữ kiện gắn với ghi chú N-0914 như khi RM tự xác nhận. Trường đã có giá trị khác → chọn Cập nhật / Đánh dấu mâu thuẫn như 7c.</span>
               </div>
             </div>
             <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Xác nhận dữ kiện</button></div>
@@ -924,7 +924,7 @@
           <p class="cap">4f · Copy lỗi (quyền clipboard) — ô chỉ đọc</p>
           <div class="panel">
             <div class="callout warn">Không copy được — chọn hết đoạn dưới (Ctrl+A trong ô) rồi Ctrl+C. ChatGPT đã được mở.</div>
-            <div class="input" style="margin-top: 8px; width: 100%; min-height: 84px; align-items: flex-start; font-family: Consolas, 'Cascadia Mono', monospace; font-size: var(--fs-xs); color: var(--text-2)">Bạn là trợ lý phân tích KYC cho RE bảo hiểm… [prompt analysis@1]<br />Dữ kiện: F7 Gia đình: Đã kết hôn; 2 con… · F13 Mối quan tâm: …<br />Trả lời đúng một khối JSON …</div>
+            <div class="input" style="margin-top: 8px; width: 100%; min-height: 84px; align-items: flex-start; font-family: Consolas, 'Cascadia Mono', monospace; font-size: var(--fs-xs); color: var(--text-2)">Bạn là trợ lý phân tích KYC cho RM bảo hiểm… [prompt analysis@1]<br />Dữ kiện: F7 Gia đình: Đã kết hôn; 2 con… · F13 Mối quan tâm: …<br />Trả lời đúng một khối JSON …</div>
           </div>
           <p class="help" style="margin-top: 6px">Ô chỉ đọc, chọn được; khung Dán kết quả và các nút như 4e hiện ngay bên dưới. Không mở được trình duyệt → dòng AI_OPEN_BROWSER (4c), phiên vẫn mở.</p>
         </section>
@@ -1015,7 +1015,7 @@
         </ol>
       </section>
 
-      <p class="mock-note">Mockup G3 Phase 5 · dữ liệu 100% giả lập · mức bằng chứng tính deterministic (§6.3), không phải xác suất · AI không gửi, không đặt lịch thay RE</p>
+      <p class="mock-note">Mockup G3 Phase 5 · dữ liệu 100% giả lập · mức bằng chứng tính deterministic (§6.3), không phải xác suất · AI không gửi, không đặt lịch thay RM</p>
     </main>
   </body>
 </html>

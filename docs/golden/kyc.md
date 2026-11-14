@@ -7,7 +7,7 @@ Bảng đối chiếu cho Owner duyệt. Khớp 1–1 với `packages/domain/src
 ## 1. Danh mục: hạng mục KYC, trường, trường chính
 
 - **Hạng mục KYC** = 8 hạng mục lớn. **Trường** = mục nhỏ trong hạng mục. **Trường chính** = trường bắt buộc có để hạng mục được tính **"đã có"**.
-- Hạng mục "đã có" khi trường chính có ≥ 1 dữ kiện **RE đã xác nhận, còn hiệu lực** (chưa bị thay thế). Câu trả lời "không / chưa có" vẫn tính; trường đang mâu thuẫn vẫn tính; chỉ dữ kiện mới nhất có hiệu lực, bản cũ là lịch sử.
+- Hạng mục "đã có" khi trường chính có ≥ 1 dữ kiện **RM đã xác nhận, còn hiệu lực** (chưa bị thay thế). Câu trả lời "không / chưa có" vẫn tính; trường đang mâu thuẫn vẫn tính; chỉ dữ kiện mới nhất có hiệu lực, bản cũ là lịch sử.
 - **Cốt lõi** = mâu thuẫn ở trường này → chặn AI (`CONFLICT_RESOLUTION`). Mâu thuẫn ở trường khác → AI vẫn chạy, kèm cảnh báo.
 
 | # | Hạng mục KYC (mã) | Trường (mã) — **đậm** = trường chính, ★ = cốt lõi | "Đã có" khi |
@@ -29,7 +29,7 @@ Xét theo thứ tự, gặp điều kiện đầu tiên thì dừng:
 
 | # | Trạng thái | Điều kiện | Hành động |
 |---|---|---|---|
-| 1 | `CONFLICT_RESOLUTION` | Có trường **cốt lõi** đang mâu thuẫn (hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều chưa bị thay thế) | Không gọi AI; liệt kê trường mâu thuẫn để RE xử lý |
+| 1 | `CONFLICT_RESOLUTION` | Có trường **cốt lõi** đang mâu thuẫn (hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều chưa bị thay thế) | Không gọi AI; liệt kê trường mâu thuẫn để RM xử lý |
 | 2 | `KYC_INSUFFICIENT` | Thiếu một trong 3 hạng mục tối thiểu: Danh tính/tuổi, Gia đình, Nghề nghiệp/nguồn thu | Không gọi AI; hiện **"Cần chăm sóc, KYC thêm thông tin khách hàng"** + hạng mục thiếu + câu hỏi gợi ý |
 | 3 | `PROFILE_DISCOVERY` | Đủ 3 hạng mục tối thiểu nhưng < 6/8 hạng mục, **hoặc** chưa có Mục tiêu, **hoặc** chưa có cả Tài sản lẫn Bảo vệ hiện có | AI chế độ khai thác |
 | 4 | `PAIN_POINT_ANALYSIS` | ≥ 6/8 hạng mục, có Mục tiêu, có Tài sản **hoặc** Bảo vệ hiện có | AI phân tích đầy đủ |
@@ -55,7 +55,7 @@ Hiện cho mỗi hạng mục còn thiếu. Giọng văn tư vấn cho KH Ultra 
 
 ## 4. Hồ sơ mẫu
 
-Mọi dữ kiện đều **đã được RE xác nhận**. "MT" = mâu thuẫn (hai dữ kiện cùng trường, khác giá trị, đều còn hiệu lực). "Cũ" = đã bị thay thế.
+Mọi dữ kiện đều **đã được RM xác nhận**. "MT" = mâu thuẫn (hai dữ kiện cùng trường, khác giá trị, đều còn hiệu lực). "Cũ" = đã bị thay thế.
 
 Bộ dữ kiện đầy đủ dùng lại ở nhiều hồ sơ ("đủ 8"): năm sinh 1972, nơi sống TP.HCM · đã kết hôn, 2 con · chủ doanh nghiệp, nguồn thu cổ tức + cho thuê BĐS · tổng tài sản trên 200 tỷ, phân bổ BĐS + cổ phần · mục tiêu chuyển giao tài sản cho thế hệ sau, mốc 10 năm · khẩu vị cân bằng · đã có bảo vệ (BH sức khỏe quốc tế) · mối quan tâm rủi ro sức khỏe khi tuổi cao.
 

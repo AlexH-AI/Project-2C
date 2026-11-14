@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn Lịch hẹn là nơi RE làm việc hằng ngày: xem lịch, đặt lịch, ghi kết quả cuộc gặp, dời lịch.
+Màn Lịch hẹn là nơi RM làm việc hằng ngày: xem lịch, đặt lịch, ghi kết quả cuộc gặp, dời lịch.
 
 ![Màn Lịch hẹn, kỳ Tháng 09/2026](img/03-lich-hen.png)
 
@@ -25,7 +25,7 @@ Lịch hẹn chia 4 nhóm, cùng màu ở mọi chỗ trong màn:
 
 Với kỳ Ngày, Tuần, Tháng, Tùy chọn, màn hiện **Lịch tháng**: mỗi ô ngày có số lịch và một chấm màu cho mỗi lịch. Ô hôm nay có viền và chữ "hôm nay".
 
-Bấm một ngày để xem khung **Trong ngày** bên dưới: lịch của ngày đó, xếp theo team rồi RE, có giờ, tên KH và trạng thái.
+Bấm một ngày để xem khung **Trong ngày** bên dưới: lịch của ngày đó, xếp theo team rồi RM, có giờ, tên KH và trạng thái.
 
 ### Lịch năm
 
@@ -35,13 +35,13 @@ Với kỳ Năm, màn hiện **Lịch năm**: 12 tháng chia theo quý, mỗi th
 
 ### Danh sách và chi tiết
 
-Cuối màn là bảng **Danh sách lịch hẹn** của cả kỳ: Ngày, Giờ, Khách hàng, RE, Trigger, Phối hợp, Trạng thái, Kết quả. Bấm tiêu đề cột để sắp xếp; bảng dài có nút "Hiện thêm … lịch" ở cuối.
+Cuối màn là bảng **Danh sách lịch hẹn** của cả kỳ: Ngày, Giờ, Khách hàng, RM, Trigger, Phối hợp, Trạng thái, Kết quả. Bấm tiêu đề cột để sắp xếp; bảng dài có nút "Hiện thêm … lịch" ở cuối.
 
 Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết lịch hẹn** bên phải:
 
 ![Chi tiết lịch hẹn](img/03-chi-tiet-lich-hen.png)
 
-- Thông tin lịch: RE và team, Phối hợp, Trigger, Trạng thái, Kết quả, Ghi chú. **Hồ sơ KH →** mở hồ sơ KH.
+- Thông tin lịch: RM và team, Phối hợp, Trigger, Trạng thái, Kết quả, Ghi chú. **Hồ sơ KH →** mở hồ sơ KH.
 - Nút theo trạng thái: lịch Dự kiến có **Ghi kết quả**, **Dời lịch**, **Xóa**; lịch đã có kết quả có **Sửa kết quả**; lịch hôm nay hoặc đã qua có **Tạo lịch hẹn tiếp theo**.
 - Khối **KYC Intelligence** cho xem phân tích AI mới nhất của KH (chỉ đọc). Muốn phân tích, mở Hồ sơ KH (xem [6. KYC Intelligence](06-ai.md)).
 
@@ -51,7 +51,7 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 
 1. Bấm **+ Lịch hẹn** (ở màn Lịch hẹn, hoặc ở Hồ sơ KH để điền sẵn KH).
 2. **Khách hàng**: gõ tên hoặc mã KH, chọn trong danh sách. Hộp hiện lần gặp thứ mấy và **Các lần hẹn trước** của KH: 5 lịch mới nhất tới hôm nay, mỗi lịch một dòng ngày, trạng thái, nhóm trước → sau của cuộc gặp, ghi chú; **Đổi KH** để chọn lại.
-3. **RE**: RE phụ trách cuộc hẹn. Lịch hẹn và chỉ số tính cho RE này.
+3. **RM**: RM phụ trách cuộc hẹn. Lịch hẹn và chỉ số tính cho RM này.
 4. **Ngày (dd/mm)**: gõ ví dụ `20/9`; dòng dưới đọc lại thứ, ngày và "hôm nay" / "… ngày nữa". **Giờ (hh:mm, không bắt buộc)**.
 5. **Trigger**: lý do có cuộc hẹn (Giới thiệu từ KH, Đáo hạn tài sản, Hội thảo / sự kiện, Sinh nhật, dịp đặc biệt, Khác). Bắt buộc; "—" là chưa chọn. **Mô tả trigger** không bắt buộc.
 6. **Người phối hợp (không tính chỉ số)**: chọn một TL, IS, BD hoặc BDM đi cùng trong ô **+ thêm** rồi bấm **Thêm**; mỗi người thêm thành một ô có dấu × để bỏ. Người phối hợp không được tính chỉ số.
@@ -61,7 +61,7 @@ Gõ một ngày đã qua, app hỏi lại (ví dụ "Ý anh là …?") và có n
 
 Đầu năm thì ngược lại: gõ `dd/mm` mà ngày đó năm nay chưa tới, còn cùng ngày năm trước mới qua không quá 60 ngày, app hỏi ngày năm trước. Ví dụ hôm nay 02/01/2027, gõ `28/12`: "28/12/2027 còn 360 ngày nữa. Ý anh là 28/12/2026?". Giữ nguyên là lịch hẹn năm nay.
 
-Nếu RE của lịch mới nằm ngoài góc nhìn đang chọn, lịch vẫn được tạo; màn báo một dòng và bạn đổi góc nhìn để thấy nó.
+Nếu RM của lịch mới nằm ngoài góc nhìn đang chọn, lịch vẫn được tạo; màn báo một dòng và bạn đổi góc nhìn để thấy nó.
 
 ## Ghi kết quả cuộc gặp
 
@@ -83,7 +83,7 @@ Hủy và Không đến không có nhóm sau cuộc gặp, việc tiếp theo ha
 
 ## Hẹn tiếp
 
-Có hai cách đặt lần gặp kế tiếp, cùng KH, người phối hợp và trigger, với RE là RE đang phụ trách KH (khác RE của lịch cũ khi KH đã đổi RE sau lịch đó):
+Có hai cách đặt lần gặp kế tiếp, cùng KH, người phối hợp và trigger, với RM là RM đang phụ trách KH (khác RM của lịch cũ khi KH đã đổi RM sau lịch đó):
 
 - Lúc ghi kết quả: đánh dấu **Hẹn lần tiếp theo**, điền **Ngày hẹn tiếp (dd/mm)** và **Giờ hẹn tiếp**, rồi bấm **Lưu kết quả + tạo lịch**. Một lần bấm ghi kết quả và tạo lịch mới.
 - Sau đó: bấm **Tạo lịch hẹn tiếp theo** ở chi tiết lịch, hoặc **Hẹn tiếp** / **Hẹn tiếp →** ở Hồ sơ KH. Hộp **Lịch hẹn tiếp theo** điền sẵn từ lịch cũ, sửa được (không có khối Các lần hẹn trước); ngày phải từ hôm nay trở đi. Bấm **Tạo lịch hẹn**.
