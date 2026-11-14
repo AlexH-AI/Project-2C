@@ -9,6 +9,7 @@ import {
   KYC_FIELDS,
   PERSON_ROLES,
   PIPELINE_STAGES,
+  ROLES_WITH_TEAM,
   type KycField,
   type KycGateState,
 } from '@p2c/domain';
@@ -69,8 +70,11 @@ export const people = sqliteTable(
   (t) => [
     check('people_role', sql`${t.role} IN (${list(PERSON_ROLES)})`),
     // RM and TL belong to a team; IS, BD and BDM never do (spec §3.2, #252, DR6-52).
-    check('people_team_required', sql`${t.role} NOT IN ('RM', 'TL') OR ${t.teamId} IS NOT NULL`),
-    check('people_team_none', sql`${t.role} IN ('RM', 'TL') OR ${t.teamId} IS NULL`),
+    check(
+      'people_team_required',
+      sql`${t.role} NOT IN (${list(ROLES_WITH_TEAM)}) OR ${t.teamId} IS NOT NULL`,
+    ),
+    check('people_team_none', sql`${t.role} IN (${list(ROLES_WITH_TEAM)}) OR ${t.teamId} IS NULL`),
   ],
 );
 

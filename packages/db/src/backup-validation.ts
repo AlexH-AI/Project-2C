@@ -14,6 +14,7 @@ import {
   normalizeKycValue,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
+  RM_ROLE,
   type CustomerStage,
   type KycFact,
   type KycField,
@@ -308,7 +309,7 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
   // A kind POINTS_TO says nothing of is checked as one supporting the record, never left out.
   const supportingKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] !== 'rm');
   const notRm = read(
-    `SELECT 1 FROM people p WHERE (p.role <> 'RM' OR p.deleted_at IS NOT NULL) AND ${pointedTo(rmKinds)}`,
+    `SELECT 1 FROM people p WHERE (p.role <> ${sqlTexts([RM_ROLE])} OR p.deleted_at IS NOT NULL) AND ${pointedTo(rmKinds)}`,
   );
   // A coordinator or reviewer may have become an RM once their appointment was deleted.
   const supportingRoles = `(${sqlTexts(REVIEWER_ROLES)})`;

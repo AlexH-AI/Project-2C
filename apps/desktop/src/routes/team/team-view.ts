@@ -4,6 +4,7 @@ import {
   customPeriod,
   isInPeriod,
   isPipelineStage,
+  isRm,
   periodOf,
   type CalendarDate,
   type Customer,
@@ -36,7 +37,7 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
     teams: teams.map((team) => {
       const members = people.filter((person) => person.teamId === team.id);
       const leads = members.filter((p) => p.role === 'TL');
-      const reps = members.filter((p) => p.role === 'RM');
+      const reps = members.filter(isRm);
       return { team, lead: leads[0], reps, tl: leads.length, rm: reps.length };
     }),
     shared: people.filter((person) => person.teamId === null),
@@ -82,22 +83,19 @@ export function staffMetrics(
   const recent = last30Days(today);
   const year = periodOf('year', today);
   return new Map(
-    people
-      .filter((person) => person.role === 'RM')
-      .map((person) => {
-        const metrics: StaffMetrics = {
-          openCustomers: ownedBy(records.customers, person.id).filter((c) =>
-            isPipelineStage(c.stage),
-          ).length,
-          appointments30: ownedBy(records.appointments, person.id).filter((a) =>
-            isInPeriod(a.date, recent),
-          ).length,
-          issuedThisYear: ownedBy(records.policies, person.id).filter(
-            (p) => p.issuedDate && isInPeriod(p.issuedDate, year),
-          ).length,
-        };
-        return [person.id, metrics];
-      }),
+    people.filter(isRm).map((person) => {
+      const metrics: StaffMetrics = {
+        openCustomers: ownedBy(records.customers, person.id).filter((c) => isPipelineStage(c.stage))
+          .length,
+        appointments30: ownedBy(records.appointments, person.id).filter((a) =>
+          isInPeriod(a.date, recent),
+        ).length,
+        issuedThisYear: ownedBy(records.policies, person.id).filter(
+          (p) => p.issuedDate && isInPeriod(p.issuedDate, year),
+        ).length,
+      };
+      return [person.id, metrics];
+    }),
   );
 }
 

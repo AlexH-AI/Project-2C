@@ -1,4 +1,4 @@
-import { byName, type Person, type Scope, type Team } from '@p2c/domain';
+import { byName, isRm, type Person, type Scope, type Team } from '@p2c/domain';
 import { joinParts } from '../i18n';
 
 /** What the "Góc nhìn" picker holds: the kind, and the team or RM picked for it. */
@@ -55,7 +55,7 @@ export function narrowScope(
 /** The RM of one team, by name, as the RM strip of Customers and Appointments lists them. */
 export function teamRms(people: readonly Person[], teamId: string): Person[] {
   return people
-    .filter((person) => person.role === 'RM' && person.teamId === teamId)
+    .filter((person) => isRm(person) && person.teamId === teamId)
     .sort((a, b) => byName(a.name, b.name));
 }
 
@@ -65,7 +65,7 @@ export function rmOptions(
   teams: readonly Team[],
 ): { value: string; label: string }[] {
   return people
-    .filter((person) => person.role === 'RM')
+    .filter(isRm)
     .map((rm) => ({ rm, team: teams.find((team) => team.id === rm.teamId)?.name ?? '' }))
     .sort((a, b) => byName(a.team, b.team) || byName(a.rm.name, b.rm.name))
     .map(({ rm, team }) => ({

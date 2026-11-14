@@ -7,6 +7,7 @@ import {
   formatDate,
   formatIsoDate,
   fromLocalDate,
+  isRm,
   isStorableText,
   MAX_FEE_VND,
   normalizeNote,
@@ -178,7 +179,7 @@ export function requireRm(db: Database, id: string): string {
     .get();
   if (!row) throw new DbError('PERSON_NOT_FOUND');
   if (row.deletedAt) throw new DbError('PERSON_NOT_FOUND', { name: row.name, as: 'rm' });
-  if (row.role !== 'RM') throw new DbError('RM_REQUIRED', { name: row.name, role: row.role });
+  if (!isRm(row)) throw new DbError('RM_REQUIRED', { name: row.name, role: row.role });
   return id;
 }
 

@@ -10,6 +10,7 @@ import {
   formatDayOfMonth,
   formatPeriodValue,
   isInPeriod,
+  isRm,
   periodOf,
   type AppointmentAction,
   type AppointmentGroup,
@@ -149,7 +150,7 @@ export function AppointmentsScreen() {
     { value: 'any', label: t('appointments.coordinatorAny') },
     { value: 'none', label: t('appointments.coordinatorNone') },
     ...data.people
-      .filter((person) => person.role !== 'RM')
+      .filter((person) => !isRm(person))
       .map((person) => ({ value: person.id, label: personLabel(person) })),
   ];
 

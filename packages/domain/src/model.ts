@@ -30,6 +30,12 @@ export interface Person {
   readonly teamId: string | null;
 }
 
+/** The role with metrics: customers, appointments and policies belong to an RM (G2 G). */
+export const RM_ROLE: PersonRole = 'RM';
+
+/** Whether `person` is an RM, the one role a record can belong to and be counted for. */
+export const isRm = (person: Pick<Person, 'role'>): boolean => person.role === RM_ROLE;
+
 /** Closed stages a customer can be reopened from, always back to N3 (T-027). */
 export const CLOSED_STAGES = ['ON_HOLD', 'LOST'] as const;
 

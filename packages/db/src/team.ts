@@ -4,6 +4,7 @@
  */
 import {
   byName,
+  isRm,
   PERSON_ROLES,
   REVIEWER_ROLES,
   ROLES_WITH_TEAM,
@@ -224,7 +225,7 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
     // `undefined` keeps the current value; `teamId: null` clears the team.
     const role = changes.role ?? current.role;
     // Records keep pointing to their RM, who therefore has to stay an RM (spec §3.3).
-    if (current.role === 'RM' && role !== 'RM' && ownsRecords(usageCounts(db, id))) {
+    if (isRm(current) && !isRm({ role }) && ownsRecords(usageCounts(db, id))) {
       throw new DbError('PERSON_IN_USE');
     }
     // A reviewer or coordinator of a live meeting stays one of the roles that may support it (D9,

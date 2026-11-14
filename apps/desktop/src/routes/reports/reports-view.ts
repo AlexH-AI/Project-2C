@@ -10,6 +10,7 @@ import {
   formatDayOfMonth,
   formatVndCompact,
   isInPeriod,
+  isRm,
   periodMetricsByMark,
   periodMetricsByScope,
   reportMarks,
@@ -163,7 +164,7 @@ export function summaryMeta(
     return joinParts([name, teams.find((team) => team.id === teamId)?.name ?? '']);
   }
   const rms = people.filter(
-    (person) => person.role === 'RM' && (scope.kind === 'all' || person.teamId === scope.teamId),
+    (person) => isRm(person) && (scope.kind === 'all' || person.teamId === scope.teamId),
   );
   return t('reports.summaryMeta', { name, rm: rms.length });
 }

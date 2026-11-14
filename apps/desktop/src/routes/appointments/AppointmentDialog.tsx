@@ -9,6 +9,7 @@ import {
 import {
   formatDate,
   formatDayMonth,
+  isRm,
   normalizeText,
   type CalendarDate,
   type Person,
@@ -223,7 +224,7 @@ export function CoordinatorsField({
   // No RM coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RM never is one.
   const coordinators = people.filter((person) => ids.includes(person.id));
   const addable = people
-    .filter((person) => person.role !== 'RM' && !ids.includes(person.id))
+    .filter((person) => !isRm(person) && !ids.includes(person.id))
     .map((person) => ({ value: person.id, label: personLabel(person) }));
   const add = () => {
     const choice = addable.find((option) => option.value === picked);
