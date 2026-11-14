@@ -14,6 +14,7 @@ paths:
 - Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>`.
 - Chạy tay (`workflow_dispatch`): Verify + build exe.
 - Push mới lên cùng nhánh hủy run cũ đang chạy (`concurrency`).
+- `timeout-minutes`: Verify 75 (run xanh dài nhất tới 14/11/2026: 39 phút), build exe 45 (cache Rust nguội dựng lại mọi crate). Một test quay vòng mãi làm job đỏ ở mốc đó, không giữ tới 6 giờ của GitHub (CLR6-I3, T-428).
 - Đổi base PR xếp chồng không chạy lại CI (workflow nghe `opened/synchronize/reopened`).
 - Sửa workflow: giữ tiết kiệm phút (không thêm job chạy mọi PR khi không cần). Mỗi `uses:` ghim SHA 40 ký tự + comment bản (`# v7.0.1`); cập nhật mỗi phase (ADR-0015, phụ lục T-101).
 
@@ -22,4 +23,4 @@ paths:
 - Chạy ở PR có nhãn `build-mac` (sự kiện `synchronize`, `labeled`: gắn chính nhãn `build-mac`, kể cả lúc tạo PR, là chạy một lần) và chạy tay (`gh workflow run macos.yml --ref main`, artifact cho Owner thử). PR không có nhãn: run bị bỏ qua, không tốn phút. Không chạy khi push.
 - Bước: `cargo fmt --check`, clippy `-D warnings`, unit test Rust trên macOS (code `cfg(not(windows))` chỉ được kiểm ở đây), build `Heritas L-CRM.app` cho chip Apple ký ad-hoc, `codesign --verify --deep --strict`, nén bằng `ditto` → artifact `Heritas-L-CRM-macos-<SHA head>`. Bản macOS của runner ghi ở tóm tắt run.
 - PR đụng code hay cấu hình chỉ của macOS (`cfg(not(windows))`, `tauri.macos.conf.json`, `macos.yml`) gắn `build-mac` lúc tạo, cùng `build-exe`. `merge-pr` không đòi nhãn này hay run này (K49 không đổi công cụ pipeline), nhưng check của run trên head tính như mọi check (đỏ hay đang chạy thì chặn): review kiểm run `macos.yml` xanh ở đúng `headRefOid`.
-- Không nghe `opened`: PR tạo kèm `build-mac` có cả sự kiện `labeled` của nhãn, nghe cả hai thì build hai lần (PR #1219). Không nghe `reopened`: sau `gh pr close` + `gh pr reopen`, `auto-wait --since` đọc run `pull_request` mới nhất của PR là run CI, mà run (bị bỏ qua) của workflow này có thể mới hơn. Không `concurrency` hủy run cũ: `merge-pr` tính check bị hủy là đỏ. Chạy lại trên cùng head: Re-run ở trang run, hoặc push thêm.
+- Không nghe `opened`: PR tạo kèm `build-mac` có cả sự kiện `labeled` của nhãn, nghe cả hai thì build hai lần (PR #1219). Không nghe `reopened`: `gh pr close` + `gh pr reopen` để chạy lại CI, không dựng lại bản Mac. Mỗi push và mỗi nhãn của mọi PR vẫn tạo một run của workflow này (bị bỏ qua khi thiếu nhãn): `auto-wait` chỉ lấy run của `ci.yml` làm kết quả CI (T-428), còn phép "còn run đang chạy" vẫn chờ mọi run. Không `concurrency` hủy run cũ: `merge-pr` tính check bị hủy là đỏ. Chạy lại trên cùng head: Re-run ở trang run, hoặc push thêm.

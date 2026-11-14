@@ -195,6 +195,8 @@ export async function asExe(page: Page) {
       aiAnswers: [] as string[],
       exports: [] as string[],
       chatGptOpened: 0,
+      folders: [] as string[],
+      failFolders: false,
       holdBackup() {
         backupGate = new Promise((resolve) => (releaseBackup = resolve));
       },
@@ -240,6 +242,12 @@ export async function asExe(page: Page) {
       },
       open_chatgpt: () => {
         exe.chatGptOpened++;
+        return null;
+      },
+      // The one command of lib.rs the app calls that the stand-in lacked (WBR6-F1).
+      open_folder: (args) => {
+        if (exe.failFolders) throw 'The system cannot find the file specified. (os error 2)';
+        exe.folders.push(args.kind as string);
         return null;
       },
       ai_key_delete: () => {
@@ -315,6 +323,10 @@ interface Exe {
   exports: string[];
   /** How many times `open_chatgpt` opened chatgpt.com in the browser. */
   chatGptOpened: number;
+  /** The `kind` of each folder `open_folder` showed in Explorer: `backups`, `exports`. */
+  folders: string[];
+  /** While set, `open_folder` fails with what Rust sends when Explorer does not start. */
+  failFolders: boolean;
   holdBackup(): void;
   releaseBackup(): void;
   /** Holds every `db_save` until `releaseSaves`, as a slow disk would; `failSaves` is read then. */

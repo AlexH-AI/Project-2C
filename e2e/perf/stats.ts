@@ -19,7 +19,12 @@ export interface Measure {
   limit?: number;
 }
 
-export type OpResult = Summary & { unit: Unit; limit?: number };
+export type OpResult = Summary & {
+  unit: Unit;
+  limit?: number;
+  /** Whether the median, before it was rounded, keeps the limit (CLR6-F10). */
+  within?: boolean;
+};
 
 /** The JSON file of one run of the probe. */
 export interface PerfRun {
@@ -59,7 +64,7 @@ export function toRun(measures: readonly Measure[], at: string, note?: string): 
       median: round(median),
       min: round(min),
       max: round(max),
-      ...(limit === undefined ? {} : { limit }),
+      ...(limit === undefined ? {} : { limit, within: median < limit }),
     };
   }
   return { version: 1, at, ...(note === undefined ? {} : { note }), ops };
@@ -118,14 +123,20 @@ export function compareRuns(base: PerfRun, next: PerfRun): Change[] {
   return changes;
 }
 
+/** The value as the table shows it: milliseconds whole, megabytes to 0.1; never −0. */
+const shown = (value: number, unit: Unit) =>
+  (unit === 'ms' ? Math.round(value) : Math.round(value * 10) / 10) || 0;
+
 /** Milliseconds whole, as the Phase 4 tables; megabytes with one decimal, Vietnamese style. */
 function format(value: number, unit: Unit): string {
-  const text = unit === 'ms' ? String(Math.round(value)) : value.toFixed(1).replace('.', ',');
+  const number = shown(value, unit);
+  const text = unit === 'ms' ? String(number) : number.toFixed(1).replace('.', ',');
   return `${text.replace('-', '−')} ${unit}`;
 }
 
+/** Signed by the value shown: a change that rounds to 0 has no sign (CLR6-F10). */
 function signed(value: number, unit: Unit): string {
-  return `${value >= 0 ? '+' : ''}${format(value, unit)}`;
+  return `${shown(value, unit) > 0 ? '+' : ''}${format(value, unit)}`;
 }
 
 /** The change in percent of the base median; none of a base median rounded to 0. */
@@ -135,16 +146,21 @@ function ratio(delta: number, base: number): string {
   return `${percent >= 0 ? '+' : '−'}${Math.abs(percent)}%`;
 }
 
-/** The run as a Markdown table; against `base`, with the base median and the change. */
+/**
+ * The run as a Markdown table; against `base`, with the base median and the change, then a row for
+ * each operation only the base has. The limit is checked on the median before it was rounded,
+ * when the run kept that (`within`).
+ */
 export function markdownTable(run: PerfRun, base?: PerfRun): string {
   const head = ['Thao tác', 'Lần', 'Trung vị', 'Min', 'Max', 'Ngưỡng'];
   if (base) head.push('Nền', 'Δ');
-  const changes = base ? new Map(compareRuns(base, run).map((c) => [c.name, c])) : undefined;
+  const compared = base ? compareRuns(base, run) : [];
+  const changes = base ? new Map(compared.map((c) => [c.name, c])) : undefined;
   const rows = Object.entries(run.ops).map(([name, op]) => {
     const limit =
       op.limit === undefined
         ? '—'
-        : `< ${format(op.limit, op.unit)} ${op.median < op.limit ? '✅' : '❌'}`;
+        : `< ${format(op.limit, op.unit)} ${(op.within ?? op.median < op.limit) ? '✅' : '❌'}`;
     const cells = [
       `\`${name}\``,
       String(op.runs),
@@ -166,6 +182,10 @@ export function markdownTable(run: PerfRun, base?: PerfRun): string {
     }
     return `| ${cells.join(' | ')} |`;
   });
+  for (const { name, unit, base: was, next } of compared) {
+    if (next === undefined && was !== undefined)
+      rows.push(`| \`${name}\` | — | — | — | — | — | ${format(was, unit)} | — |`);
+  }
   return [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows].join('\n');
 }
 

@@ -6,9 +6,9 @@ name: macOS
 on:
   pull_request:
     # No `opened`: a PR opened with build-mac also gets that label's `labeled` event, and both
-    # would build (PR #1219). No `reopened`: after a close + reopen, tools/auto-wait.mjs --since
-    # reads the newest pull_request run of the PR as CI's, and this workflow's run (skipped
-    # without the label) could be newer.
+    # would build (PR #1219). No `reopened`: a close + reopen reruns CI, not this build. Every
+    # push and label of every PR still makes a run of this workflow (skipped without the label);
+    # tools/auto-wait.mjs reads only CI's runs (ci.yml) for its verdict (T-428).
     types: [synchronize, labeled]
   workflow_dispatch:
 

@@ -54,6 +54,9 @@ jobs:
     # main only receives PRs that already passed Verify, so a push to main skips it.
     if: github.event_name != 'push'
     runs-on: windows-latest
+    # A test that spins forever (a save queue that never empties) holds the job until this, not
+    # GitHub's 6 hours (CLR6-I3). The longest green run so far: 39 min, 17 on average.
+    timeout-minutes: 75
     outputs:
       build-exe: ${{ steps.labels.outputs.build-exe }}
     steps:
@@ -122,6 +125,8 @@ jobs:
       (github.event_name != 'pull_request' ||
        needs.verify.outputs.build-exe == 'true')
     runs-on: windows-latest
+    # 5 min at most with the Rust cache; a cold cache builds every crate again (CLR6-I3).
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10

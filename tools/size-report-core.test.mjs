@@ -72,6 +72,32 @@ describe('classifyFile', () => {
     expect(classifyFile(path)).toEqual({ pkg, kind });
   });
 
+  it('counts every code extension it lists (CLR6-F6)', () => {
+    for (const path of [
+      'tools/a.js',
+      'tools/a.mjs',
+      'tools/a.cjs',
+      'tools/a.ts',
+      'tools/a.mts',
+      'tools/a.cts',
+      'tools/a.jsx',
+      'tools/a.tsx',
+      'tools/a.rs',
+      'tools/a.css',
+      'tools/a.html',
+      'tools/a.sql',
+      'tools/bootstrap.ps1',
+      'tools/a.sh',
+      '.github/workflows/a.yml',
+      '.github/workflows/a.yaml',
+    ]) {
+      expect(classifyFile(path), path).toEqual({ pkg: 'F', kind: 'product' });
+    }
+    for (const path of ['tools/a.json', 'tools/a.toml', 'tools/a.txt', 'tools/a.tsv']) {
+      expect(classifyFile(path), path).toBeNull();
+    }
+  });
+
   it('puts a counted file outside every package in no package', () => {
     expect(classifyFile('apps/desktop/src/routes/NewScreen.tsx')).toEqual({
       pkg: null,
@@ -130,6 +156,20 @@ describe('lineReport', () => {
     expect(row('B')).toMatchObject({ product: 7, test: 6, files: 1 });
   });
 
+  it('finds an indented test module too (CLR6-F6)', () => {
+    for (const indent of ['    ', '\t']) {
+      const text = `fn a() {}\n${indent}#[cfg(test)]\n${indent}mod t {}\n`;
+      const rows = lineReport(['apps/desktop/src-tauri/src/a.rs'], () => text).rows;
+      expect(
+        rows.find((r) => r.key === 'B'),
+        JSON.stringify(indent),
+      ).toMatchObject({
+        product: 1,
+        test: 2,
+      });
+    }
+  });
+
   it('shows files outside every package on their own row', () => {
     expect(row('?')).toMatchObject({ product: 8, test: 0, generated: 0, files: 1 });
     expect(report.unassigned).toEqual(['apps/desktop/src/routes/NewScreen.tsx']);
@@ -178,6 +218,16 @@ describe('bundleReport', () => {
       { name: 'assets/index.js', files: 2, raw: 15, gzip: expect.any(Number) },
     ]);
     expect(report.files[0].gzip).toBe(report.total.gzip);
+  });
+
+  it('lists .mjs chunks and leaves out source maps (CLR6-F6)', () => {
+    const report = bundleReport([
+      { path: 'assets/worker-Ctj3jqWM.mjs', bytes: Buffer.alloc(4) },
+      { path: 'assets/index-Ctj3jqWM.js.map', bytes: Buffer.alloc(900) },
+      { path: 'assets/index-Ctj3jqWM.css.map', bytes: Buffer.alloc(900) },
+    ]);
+    expect(report.files.map((f) => f.name)).toEqual(['assets/worker.mjs']);
+    expect(report.total.raw).toBe(4);
   });
 
   it('counts as other files those a build writes, not the database e2e leaves next to them (DR6-157)', () => {
@@ -266,6 +316,16 @@ describe('sizeReportMain', () => {
     expect(text).toMatch(/\| assets\/index\.js \| 2 000 \| -500 \|/);
     expect(text).toMatch(/4 179 968 \| \+179 968/);
     expect(text).toMatch(/So với `abc1234`/);
+    // No gzip size for the other files, now or before: nothing to compare (CLR6-F6).
+    expect(text).toMatch(/\| Tệp khác \(0 file: wasm, font, ảnh…\) \| 0 \| 0 \| — \| — \|/);
+  });
+
+  it('fails with a message when the compare file is not a --json run of it (CLR6-F6)', () => {
+    for (const before of [{}, { lines: {} }, { lines: { rows: {} } }, null]) {
+      const { code, text } = run(['--compare', 'old.json'], { readJson: () => before });
+      expect(code, JSON.stringify(before)).toBe(1);
+      expect(text).toBe('--compare old.json is not the --json output of this command');
+    }
   });
 
   it('marks a bundle file that is new or gone since the earlier run', () => {

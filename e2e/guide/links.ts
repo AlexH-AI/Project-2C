@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const GUIDE = resolve(dirname(fileURLToPath(import.meta.url)), '../../docs/user-guide');
@@ -12,22 +12,37 @@ const REFERENCE = /^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s+"[^"]*")?\s*$/gm;
 const SRC = /<img\b[^>]*\bsrc="([^"]+)"/g;
 // A code span: a run of backticks, then text up to a run of the same length (CommonMark).
 const CODE_SPAN = /(?<!`)(`+)(?!`)[^\n]*?(?<!`)\1(?!`)/g;
+// A fenced code block.
+const FENCED = /^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\n]*$/gm;
 
 /** The targets a Markdown text points at, outside code. */
 export function linkTargets(markdown: string): string[] {
-  const text = markdown
-    .replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, '')
-    .replace(CODE_SPAN, '');
+  const text = markdown.replace(FENCED, '').replace(CODE_SPAN, '');
   return [INLINE, REFERENCE, SRC].flatMap((pattern) =>
     [...text.matchAll(pattern)].map((match) => match[1] as string),
   );
 }
 
-/** A target inside the repo, as a path from `from`'s folder; null for a URL or an anchor alone. */
-export function localPath(from: string, target: string): string | null {
-  if (/^[a-z][a-z\d+.-]*:/i.test(target) || target.startsWith('#')) return null;
-  const path = target.replace(/[?#].*$/, '');
-  return resolve(dirname(from), decodeURI(path));
+/**
+ * The ids GitHub gives the headings of a Markdown text, outside code: lower case, every character
+ * but letters, digits, `_`, `-` and spaces left out, spaces turned to `-`, `-1`, `-2`… after a
+ * repeated one (CLR6-F7).
+ */
+export function headingIds(markdown: string): Set<string> {
+  const text = markdown.replace(FENCED, '');
+  const seen = new Map<string, number>();
+  const ids = new Set<string>();
+  for (const [, heading] of text.matchAll(/^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/gm)) {
+    const id = (heading as string)
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '')
+      .replaceAll(' ', '-');
+    const count = seen.get(id) ?? 0;
+    seen.set(id, count + 1);
+    ids.add(count ? `${id}-${count}` : id);
+  }
+  return ids;
 }
 
 function markdownFiles(folder: string): string[] {
@@ -38,14 +53,42 @@ function markdownFiles(folder: string): string[] {
   });
 }
 
-/** Every relative link or image of the guide that points at nothing, as `file: target`. */
-export function brokenLinks(folder = GUIDE): string[] {
+/**
+ * Every relative link or image of the guide that points at nothing, as `file: target`: a file that
+ * is not there, with each name below `root` in the case it is written in (GitHub tells case apart,
+ * Windows does not), or an `#anchor` that is no heading of the Markdown file it names.
+ */
+export function brokenLinks(folder = GUIDE, root = resolve(GUIDE, '../..')): string[] {
+  const listings = new Map<string, string[]>();
+  const names = (dir: string) => {
+    if (!listings.has(dir)) listings.set(dir, existsSync(dir) ? readdirSync(dir) : []);
+    return listings.get(dir) as string[];
+  };
+  const existsAsWritten = (path: string) => {
+    const below = relative(root, path);
+    if (below.startsWith('..') || isAbsolute(below)) return existsSync(path);
+    let dir = root;
+    for (const name of below.split(sep).filter(Boolean)) {
+      if (!names(dir).includes(name)) return false;
+      dir = join(dir, name);
+    }
+    return true;
+  };
+  const ids = new Map<string, Set<string>>();
+  const idsOf = (file: string) => {
+    if (!ids.has(file)) ids.set(file, headingIds(readFileSync(file, 'utf8')));
+    return ids.get(file) as Set<string>;
+  };
+  const broken = (file: string, target: string) => {
+    if (/^[a-z][a-z\d+.-]*:/i.test(target)) return false;
+    const [, path = '', anchor = ''] = /^([^?#]*)(?:\?[^#]*)?(?:#(.*))?$/.exec(target) ?? [];
+    const named = path === '' ? file : resolve(dirname(file), decodeURI(path));
+    if (path !== '' && !existsAsWritten(named)) return true;
+    return anchor !== '' && named.endsWith('.md') && !idsOf(named).has(decodeURIComponent(anchor));
+  };
   return markdownFiles(folder).flatMap((file) =>
     linkTargets(readFileSync(file, 'utf8'))
-      .filter((target) => {
-        const path = localPath(file, target);
-        return path !== null && !existsSync(path);
-      })
+      .filter((target) => broken(file, target))
       .map((target) => `${relative(folder, file).replaceAll('\\', '/')}: ${target}`),
   );
 }

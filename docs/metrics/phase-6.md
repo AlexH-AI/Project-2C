@@ -96,7 +96,7 @@ Không đo lại ở đây: các thao tác Phase 4 không có trong §5.2 ("Đ�
 
 | Chỉ số | Tên probe | Phase 4 | Phase 6 `b139d8a` | Ngưỡng |
 |---|---|---|---|---|
-| JS heap của webview sau khi đi hết các màn (sau GC; không gồm bộ nhớ WebAssembly của sql.js, nơi giữ DB) | `memory.js-heap` | chưa đo | 16,4 MB (1 lần) | ≤ 21 MB (nền + 5 MB, như luật ⚠️ của probe) (Owner chốt 13/10) |
+| JS heap của webview sau khi đi hết các màn (sau GC; không gồm bộ nhớ WebAssembly của sql.js, nơi giữ DB) | `memory.js-heap` | chưa đo | 16,4 MB (1 lần) | ≤ 21 MB (nền + 5 MB; luật ⚠️ của probe đòi thêm hơn 20 % nền, nên chỉ trùng khi nền ≤ 25 MB) (Owner chốt 13/10) |
 
 ### Kích thước
 

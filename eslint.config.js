@@ -64,8 +64,9 @@ export default tseslint.config(
   {
     // Playwright's own `test` runs the pages on the machine's day (DR6-129): every e2e file takes
     // the `test` of e2e/fixtures.ts, a helper too, so none hands Playwright's on to a spec. The
-    // user guide and the perf probe run on configs of their own (playwright.*.config.ts).
-    files: ['e2e/**/*.ts'],
+    // user guide and the perf probe run on configs of their own (playwright.*.config.ts). Every
+    // extension Playwright runs a spec of, with no testMatch in playwright.config.ts (CLR6-F14).
+    files: ['e2e/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     ignores: ['e2e/fixtures.ts', 'e2e/**/*.guide.ts', 'e2e/**/*.perf.ts'],
     rules: {
       'no-restricted-imports': [

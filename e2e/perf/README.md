@@ -83,6 +83,6 @@ Ngưỡng: thao tác màn (đổi kỳ, sắp, chọn, Lọc, mở hồ sơ, Th�
 
 ## Đọc kết quả
 
-Cuối lần chạy, probe in bảng Markdown (thao tác, số lần, trung vị, min, max, ngưỡng ✅ / ❌) và đường dẫn file JSON. Với `PERF_BASE`, bảng thêm Nền (trung vị lần trước) và Δ; ⚠️ đánh dấu xấu hơn nền quá nhiễu (hơn 20 % **và** hơn 10 ms, bộ nhớ hơn 5 MB). Dán bảng vào PR / `docs/metrics/phase-6.md`; giữ file JSON để lượt sau so (T-219, spec §6.3).
+Cuối lần chạy, probe in bảng Markdown (thao tác, số lần, trung vị, min, max, ngưỡng ✅ / ❌) và đường dẫn file JSON. Với `PERF_BASE`, bảng thêm Nền (trung vị lần trước) và Δ; ⚠️ đánh dấu xấu hơn nền quá nhiễu (hơn 20 % **và** hơn 10 ms; bộ nhớ: hơn 20 % **và** hơn 5 MB). Thao tác chỉ có ở nền vẫn có dòng, ô Nền ghi trung vị cũ. Ô ngưỡng xét trung vị trước khi làm tròn (file JSON giữ kết quả đó ở `within`). Dán bảng vào PR / `docs/metrics/phase-6.md`; giữ file JSON để lượt sau so (T-219, spec §6.3).
 
 Khi đo lại để so: cùng máy, cùng file dữ liệu tải, cùng `PERF_RUNS`, exe build release, cửa sổ cùng cỡ.

@@ -160,7 +160,7 @@ PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có)
 
 ## Standards
 - [chặn] `file:line`: … (checklist §…)
-- [không chặn · Nit / C · đích: [DS-1]] `file:line`: … (checklist §…)
+- [không chặn · Nit / C · đích: [DS-1b]] `file:line`: … (checklist §…)
 
 ## Correctness
 - [chặn] `file:line`: … (tái hiện: …)

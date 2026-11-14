@@ -16,6 +16,8 @@ import { join } from 'node:path';
 import {
   allowedPatterns,
   formatRelated,
+  hintFor,
+  labelledNotes,
   openNotes,
   relatedNotes,
   targetPatterns,
@@ -33,30 +35,24 @@ const gh = (args) => run('gh', args, { timeout: 30000 });
 
 const isNumber = (value) => /^\d+$/.test(value ?? '');
 
-// What to do with the "Trùng file" notes, by what the files come from. Each OPEN note carries
-// one target label, the work that fixes it (ADR-0001 appendix M14, T-419).
-const PLAN =
-  'Gộp vào task mọi mục mang nhãn đích của task, [T-… #<issue>] (tính vào ước lượng; cả mục không trùng file: rg -n "#<issue>\\]" docs/state/review-notes.md). Mục mang nhãn việc khác: để lại → <nhãn>. Mục vượt cỡ hay cần cổng: đổi nhãn sang việc khác cùng loại. Trước khi mở PR chạy lại với --diff.';
-const ANSWER =
-  'Thân PR, mục "Ghi chú OPEN liên quan": mỗi mục "Trùng file" một dòng — đã sửa (mục mang nhãn của task), hoặc để lại → <nhãn> + lý do (mục mang nhãn việc khác; mục của task vượt cỡ / cần cổng thì nêu nhãn đích mới cùng loại). Mục đã sửa chuyển sang RESOLVED ở PR sổ sau review.';
-const CHECK =
-  'review-pr (Spec): mục "Trùng file" không có dòng trong "Ghi chú OPEN liên quan" của thân PR → chặn; ghi "đã sửa" mà diff không sửa → chặn; mục mang nhãn của Issue để lại mà không nêu nhãn đích mới → chặn.';
-
-/** The files to look for, how the first output line names them, and the hint to end with. */
+/**
+ * The files to look for, how the first output line names them, the hint to end with (`hintFor`),
+ * and the Issue whose labelled notes to list too.
+ */
 function targetsOf(argv, root, files) {
   const [mode, ...rest] = argv;
   if (isNumber(mode)) {
     const body = gh(['issue', 'view', mode, '--json', 'body', '--jq', '.body']);
     const targets = allowedPatterns(body, files);
-    const hint = PLAN.replaceAll('<issue>', mode);
-    return { targets, source: `Issue #${mode} (${targets.length} đường dẫn / glob)`, hint };
+    const source = `Issue #${mode} (${targets.length} đường dẫn / glob)`;
+    return { targets, source, hint: hintFor('issue', mode), issue: mode };
   }
   if (mode === '--pr' && isNumber(rest[0])) {
     // A renamed file counts under its old name too: a note may name it so.
     const path = `repos/{owner}/{repo}/pulls/${rest[0]}/files?per_page=100`;
     const jq = '.[] | .filename, (.previous_filename // empty)';
     const targets = [...new Set(lines(gh(['api', '--paginate', path, '--jq', jq])))];
-    return { targets, source: `PR #${rest[0]} (${targets.length} file)`, hint: CHECK };
+    return { targets, source: `PR #${rest[0]} (${targets.length} file)`, hint: hintFor('pr') };
   }
   if (mode === '--diff' && (rest.length === 0 || (rest[0] === '--base' && rest.length === 2))) {
     const base = rest[1] ?? 'origin/main';
@@ -70,12 +66,13 @@ function targetsOf(argv, root, files) {
     return {
       targets,
       source: `nhánh này so với ${base} (${targets.length} file, kể cả chưa commit)`,
-      hint: ANSWER,
+      hint: hintFor('diff'),
     };
   }
   if (mode === '--files' && rest.length) {
     const targets = targetPatterns(rest, files);
-    return { targets, source: `--files (${targets.length} đường dẫn / glob)`, hint: PLAN };
+    const source = `--files (${targets.length} đường dẫn / glob)`;
+    return { targets, source, hint: hintFor('files') };
   }
   return null;
 }
@@ -91,7 +88,9 @@ function main() {
   const notes = openNotes(readFileSync(join(root, REVIEW_NOTES), 'utf8'), files);
   const commit = git(['rev-parse', '--short', 'HEAD'], root).trim();
   const head = `Ghi chú OPEN của ${REVIEW_NOTES} @ ${commit}, theo ${asked.source}.`;
-  process.stdout.write(`${formatRelated(relatedNotes(notes, asked.targets), head, asked.hint)}\n`);
+  const related = relatedNotes(notes, asked.targets);
+  const labelled = asked.issue ? labelledNotes(notes, asked.issue) : [];
+  process.stdout.write(`${formatRelated({ ...related, labelled }, head, asked.hint)}\n`);
 }
 
 main();

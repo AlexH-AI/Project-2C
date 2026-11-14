@@ -15,8 +15,10 @@ const AUTO_REVIEW = /^review PR #(\d+)$/i;
 // Blocks the app writes into a prompt, each up to its own closing tag: child session reports and
 // the "Linked sessions now" note (system-reminder), background command ends (task-notification),
 // side session events. They name REVIEW comments and session names like review-1 next to PRs
-// (#952). A <cross-session-message> stays: the §3.2 brief reaches a review session that way.
-const APP_BLOCK = /<(system-reminder|task-notification|side-sessions-event)\b[^>]*>[\s\S]*?<\/\1>/g;
+// (#952). A <cross-session-message> stays: the §3.2 brief reaches a review session that way. The
+// app may write attributes on the closing tag too (`</system-reminder id="…">`, DR6-208).
+const APP_BLOCK =
+  /<(system-reminder|task-notification|side-sessions-event)\b[^>]*>[\s\S]*?<\/\1\b[^>]*>/g;
 
 /** The PR number the prompt asks to review, or null. */
 export function reviewedPr(prompt) {
