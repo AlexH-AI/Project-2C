@@ -220,7 +220,7 @@ describe('openDatabase', () => {
 
     expect(() =>
       db.sqlite.run(
-        "INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES ('p', 'A', 'RE', 'missing', 'x', 'x')",
+        "INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES ('p', 'A', 'RM', 'missing', 'x', 'x')",
       ),
     ).toThrow(/FOREIGN KEY/);
   });
@@ -273,11 +273,12 @@ describe('schema constraints', () => {
   const insertPerson = (role: string, teamId: string | null) =>
     `INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES ('p', 'A', '${role}', ${teamId === null ? 'NULL' : `'${teamId}'`}, 'x', 'x')`;
 
-  it('rejects an unknown role and an RE or TL without team', async () => {
+  it('rejects an unknown role and an RM or TL without team', async () => {
     const db = await openDatabase();
 
     expect(() => db.sqlite.run(insertPerson('CEO', null))).toThrow(/CHECK/);
-    expect(() => db.sqlite.run(insertPerson('RE', null))).toThrow(/CHECK/);
+    expect(() => db.sqlite.run(insertPerson('RE', 't'))).toThrow(/people_role/);
+    expect(() => db.sqlite.run(insertPerson('RM', null))).toThrow(/CHECK/);
     expect(() => db.sqlite.run(insertPerson('TL', null))).toThrow(/CHECK/);
     db.sqlite.run(insertPerson('BDM', null));
   });
@@ -315,7 +316,7 @@ describe('schema constraints', () => {
     db.sqlite.run(
       "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'T', 'x', 'x')",
     );
-    db.sqlite.run(insertPerson('RE', 't'));
+    db.sqlite.run(insertPerson('RM', 't'));
     db.sqlite.run(
       "INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at) VALUES ('c', 'K-0001', 'B', 'p', 'N4', 'x', 'x')",
     );
@@ -405,10 +406,11 @@ describe('schema constraints', () => {
         [id, seq, material],
       );
 
-    note('n1', 1, 'RE');
+    note('n1', 1, 'RM');
     note('n2', 2, 'SYSTEM');
     expect(() => note('n3', 3, 'AI')).toThrow(/CHECK/);
-    expect(() => note('n4', 2, 'RE')).toThrow(/UNIQUE/);
+    expect(() => note('n5', 3, 'RE')).toThrow(/kyc_notes_source/);
+    expect(() => note('n4', 2, 'RM')).toThrow(/UNIQUE/);
     fact('f1', 1, 'childrenCount', 'active');
     expect(() => fact('f2', 2, 'shoeSize', 'active')).toThrow(/CHECK/);
     expect(() => fact('f3', 3, 'childrenCount', 'deleted')).toThrow(/CHECK/);
@@ -421,6 +423,9 @@ describe('schema constraints', () => {
 describe('migrating a saved database', () => {
   const rowsOf = (sqlite: SqlJsDatabase, table: string) =>
     sqlite.exec(`SELECT * FROM ${table} ORDER BY rowid`)[0]?.values ?? [];
+  /** Rows saved before migration 0013 as it leaves them: a role or a KYC note source RE is RM (A2). */
+  const withRm = (rows: ReturnType<typeof rowsOf>) =>
+    rows.map((row) => row.map((value) => (value === 'RE' ? 'RM' : value)));
   /** How SQLite runs `query`, one step a line. */
   const queryPlan = (db: Database, query: string) =>
     db.sqlite
@@ -473,7 +478,7 @@ describe('migrating a saved database', () => {
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    for (const table of tables) expect(rowsOf(db.sqlite, table)).toEqual(before[table]);
+    for (const table of tables) expect(rowsOf(db.sqlite, table)).toEqual(withRm(before[table]!));
     // The new column comes last and is empty on every existing appointment.
     expect(rowsOf(db.sqlite, 'appointments')).toEqual(
       appointmentsBefore.map((row) => [...row, null]),
@@ -620,16 +625,101 @@ describe('migrating a saved database', () => {
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before.map(withRm));
     expect(foreignKeys(db, 'people')).toContain('team_id->teams.id');
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
     expect(() => db.sqlite.run("UPDATE people SET team_id = 't' WHERE id = 'is'")).toThrow(
       /CHECK constraint failed: people_team_none/,
     );
-    expect(() => db.sqlite.run("UPDATE people SET role = 'RE' WHERE id = 'bdm'")).toThrow(
+    expect(() => db.sqlite.run("UPDATE people SET role = 'RM' WHERE id = 'bdm'")).toThrow(
       /CHECK constraint failed: people_team_required/,
     );
     db.sqlite.run("UPDATE people SET role = 'IS', team_id = NULL WHERE id = 'tl'");
+  });
+
+  /**
+   * A database file saved before RE became RM (version 13, migration 0012), with data: an RE in use
+   * and a deleted one, a TL, an IS, and a customer with a note of the profile and one of the RE,
+   * which a fact points to.
+   */
+  async function savedAtVersion13() {
+    const db = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= 13) });
+    db.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at, deleted_at) VALUES
+        ('re', 'An', 'RE', 't', 'x', 'x', NULL), ('re-gone', 'Bình', 'RE', 't', 'x', 'x', 'y'),
+        ('tl', 'Hà', 'TL', 't', 'x', 'x', NULL), ('is', 'Chi', 'IS', NULL, 'x', 'x', NULL);
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 're', 'N3', 'x', 'x');
+      INSERT INTO kyc_notes (id, customer_id, seq, text, created_date, source, created_at) VALUES
+        ('n1', 'c', 1, 'Sinh năm 1984', '2026-09-01', 'SYSTEM', 'x'),
+        ('n2', 'c', 2, 'Hai con', '2026-09-02', 'RE', 'x');
+      INSERT INTO kyc_facts (id, customer_id, seq, field, value_json, note_id, confirmed_date,
+          status, created_at, updated_at)
+        VALUES ('f1', 'c', 1, 'childrenCount', '2', 'n2', '2026-09-02', 'active', 'x', 'x');
+    `);
+    return db;
+  }
+
+  /** The triggers of `kyc_notes`, with the SQL that made them. */
+  const kycNoteTriggers = (sqlite: SqlJsDatabase) =>
+    sqlite.exec(
+      "SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND tbl_name = 'kyc_notes' ORDER BY name",
+    )[0]?.values ?? [];
+
+  it('A2: stores RM in place of the role and the KYC note source RE, keeping every row and id', async () => {
+    const old = await savedAtVersion13();
+    const tables = ['teams', 'people', 'customers', 'kyc_notes', 'kyc_facts'];
+    const before = tables.map((table) => rowsOf(old.sqlite, table));
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    const column = (sql: string) => db.sqlite.exec(sql)[0]!.values.map(([value]) => value);
+    expect(column('SELECT role FROM people ORDER BY rowid')).toEqual(['RM', 'RM', 'TL', 'IS']);
+    expect(column('SELECT source FROM kyc_notes ORDER BY rowid')).toEqual(['SYSTEM', 'RM']);
+    // Every other value, every id and every reference stays.
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before.map(withRm));
+    expect(foreignKeys(db, 'people')).toContain('team_id->teams.id');
+    expect(foreignKeys(db, 'kyc_notes')).toContain('customer_id->customers.id');
+    expect(foreignKeys(db, 'kyc_facts')).toContain('note_id->kyc_notes.id');
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  it('A2: keeps the KYC notes append-only, and checks the roles and sources by RM', async () => {
+    const old = await savedAtVersion13();
+    const triggers = kycNoteTriggers(old.sqlite);
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    // The triggers of 0003 and 0011, as they were.
+    expect(triggers.map(([name]) => name)).toEqual(['kyc_notes_no_delete', 'kyc_notes_no_update']);
+    expect(kycNoteTriggers(db.sqlite)).toEqual(triggers);
+    expect(() => db.sqlite.run("UPDATE kyc_notes SET text = 'Ba con' WHERE id = 'n2'")).toThrow(
+      /append-only/,
+    );
+    expect(() => db.sqlite.run("DELETE FROM kyc_notes WHERE id = 'n2'")).toThrow(/append-only/);
+    const person = (id: string, role: string, teamId: string | null) => () =>
+      db.sqlite.run(
+        "INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES (?, 'Dũng', ?, ?, 'x', 'x')",
+        [id, role, teamId],
+      );
+    expect(person('p1', 'RE', 't')).toThrow(/CHECK constraint failed: people_role/);
+    expect(person('p2', 'RM', null)).toThrow(/CHECK constraint failed: people_team_required/);
+    expect(person('p3', 'BD', 't')).toThrow(/CHECK constraint failed: people_team_none/);
+    person('p4', 'RM', 't')();
+    const note = (id: string, source: string) => () =>
+      db.sqlite.run(
+        "INSERT INTO kyc_notes (id, customer_id, seq, text, created_date, source, created_at) VALUES (?, 'c', 3, 'x', '2026-09-03', ?, 'x')",
+        [id, source],
+      );
+    expect(note('n3', 'RE')).toThrow(/CHECK constraint failed: kyc_notes_source/);
+    note('n4', 'RM')();
+    // A deleted customer's notes still go with the purge of Thùng rác (0011).
+    db.sqlite.run("UPDATE customers SET deleted_at = 'y' WHERE id = 'c'");
+    db.sqlite.run("DELETE FROM kyc_facts WHERE customer_id = 'c'");
+    db.sqlite.run("DELETE FROM kyc_notes WHERE customer_id = 'c'");
+    expect(rowsOf(db.sqlite, 'kyc_notes')).toEqual([]);
   });
 
   /** A database at the latest version where a team is referenced by a person, who has a customer. */
@@ -638,7 +728,7 @@ describe('migrating a saved database', () => {
     db.sqlite.exec(`
       INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
       INSERT INTO people (id, name, role, team_id, created_at, updated_at)
-        VALUES ('re', 'An', 'RE', 't', 'x', 'x');
+        VALUES ('re', 'An', 'RM', 't', 'x', 'x');
       INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
         VALUES ('c', 'K-0001', 'Lan', 're', 'N2', 'x', 'x');
     `);

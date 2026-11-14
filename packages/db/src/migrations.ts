@@ -15,6 +15,8 @@ import m0009 from '../migrations/0009_lookup_indexes.sql?raw';
 import m0010 from '../migrations/0010_people_team_none.sql?raw';
 import m0011 from '../migrations/0011_trash_purge.sql?raw';
 import m0012 from '../migrations/0012_trash_lookups.sql?raw';
+import m0013 from '../migrations/0013_role_rm.sql?raw';
+import m0014 from '../migrations/0014_kyc_notes_append_only_rebuilt.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -37,6 +39,8 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: 11, tag: '0010_people_team_none', sql: m0010 },
   { id: 12, tag: '0011_trash_purge', sql: m0011 },
   { id: 13, tag: '0012_trash_lookups', sql: m0012 },
+  { id: 14, tag: '0013_role_rm', sql: m0013 },
+  { id: 15, tag: '0014_kyc_notes_append_only_rebuilt', sql: m0014 },
 ];
 
 /** The highest schema version a list of migrations reaches. */
