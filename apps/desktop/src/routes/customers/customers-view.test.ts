@@ -29,8 +29,8 @@ const day = (month: number, dayOfMonth: number): CalendarDate => ({
 });
 
 const people: Person[] = [
-  { id: 're1', name: 'Hoàng Nam', role: 'RE', teamId: 't1' },
-  { id: 're2', name: 'Mai Phương', role: 'RE', teamId: 't2' },
+  { id: 're1', name: 'Hoàng Nam', role: 'RM', teamId: 't1' },
+  { id: 're2', name: 'Mai Phương', role: 'RM', teamId: 't2' },
 ];
 
 const customer = (id: string, stage: CustomerRecord['stage'], reId = 're1'): CustomerRecord => ({

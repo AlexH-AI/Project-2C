@@ -134,7 +134,7 @@ describe('exportBackup', () => {
     const db = await openDatabase();
     db.now = () => new Date((clock -= 1000));
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 9) });
@@ -210,7 +210,7 @@ describe('importBackup', () => {
     const now = () => new Date(machine);
     const db = await openDatabase({ now });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
@@ -259,6 +259,27 @@ describe('importBackup', () => {
         .exec("SELECT name FROM pragma_table_info('appointments')")[0]
         ?.values.at(-1),
     ).toEqual(['outcome_reviewer_id']);
+  });
+
+  // A2 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM imports as it was saved.
+  it('A2: imports a file saved before RE became RM, with RM in place of the role and the note source RE', async () => {
+    const latest = exportBackup(await small());
+    const file = JSON.parse(latest) as BackupJson;
+    const before = MIGRATIONS.find((m) => m.tag === '0013_role_rm')!.id - 1;
+    file.schemaVersion = before;
+    const asSaved = (rows: Record<string, unknown>[], column: string) =>
+      rows.filter((row) => row[column] === 'RM').map((row) => (row[column] = 'RE')).length;
+    expect(asSaved(file.tables.people!, 'role')).toBe(2);
+    expect(asSaved(file.tables.kyc_notes!, 'source')).toBe(1);
+    expect(file.tables.kyc_notes!.map((note) => note.source).sort()).toEqual(['RE', 'SYSTEM']);
+
+    const imported = await importBackup(JSON.stringify(file));
+
+    expect(imported.schemaVersion).toBe(before);
+    expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    // Every row as the app writes it now, ids and all; only the export time differs.
+    const unstamped = (text: string) => text.replace(/"exportedAt":"[^"]*"/, '');
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
   });
 
   it('saves nothing while importing an older file: the app asks and backs up first', async () => {

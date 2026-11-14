@@ -37,7 +37,7 @@ async function atOneInstant() {
   // In place of the database clock, which never gives one instant twice (DR6-178).
   database.now = () => new Date(Date.UTC(2026, 8, 26, 11));
   const team = createTeam(database, { name: 'Sao Mai' });
-  const re = createPerson(database, { name: 'An', role: 'RE', teamId: team.id });
+  const re = createPerson(database, { name: 'An', role: 'RM', teamId: team.id });
   const customer = createCustomer(database, {
     name: 'Lan',
     reId: re.id,
@@ -69,7 +69,7 @@ describe('KYC notes', () => {
       id: expect.stringMatching(/^[0-9A-Z]{26}$/),
       text: 'Gặp lần đầu',
       createdDate: d(2, 9, 2026),
-      source: 'RE',
+      source: 'RM',
     });
     expect(second.text).toBe('Con thứ hai');
     expect(getKycProfile(database, customer.id).notes).toEqual([note, second]);
@@ -319,7 +319,7 @@ describe('birth year and gender come from the customer profile (D2)', () => {
     const profile = getKycProfile(database, customer.id);
     expect(profile.notes.map((n) => [n.source, n.text])).toEqual([
       ['SYSTEM', 'Hồ sơ KH: năm sinh 1972'],
-      ['RE', 'Gặp lần đầu'],
+      ['RM', 'Gặp lần đầu'],
       ['SYSTEM', 'Hồ sơ KH: ngày sinh 12/03/1974'],
     ]);
     expect(profile.facts.map((f) => [f.field, f.value, f.status])).toEqual([
@@ -617,7 +617,7 @@ describe('a note with its facts, recorded at once (mockup 7a)', () => {
       ],
     });
 
-    expect(note).toMatchObject({ text: 'Du học 2029', createdDate: d(14, 9, 2026), source: 'RE' });
+    expect(note).toMatchObject({ text: 'Du học 2029', createdDate: d(14, 9, 2026), source: 'RM' });
     const profile = getKycProfile(database, customer.id);
     expect(current(profile.facts)).toEqual([
       ['riskProfile', 'Thận trọng', 'conflict'],

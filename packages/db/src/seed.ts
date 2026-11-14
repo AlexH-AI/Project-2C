@@ -257,7 +257,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     const team = createTeam(db, { name: teamName(t) });
     const tl = createPerson(db, { name: staffName(), role: 'TL', teamId: team.id });
     for (let i = 0; i < scale.resPerTeam; i++) {
-      const re = createPerson(db, { name: staffName(), role: 'RE', teamId: team.id });
+      const re = createPerson(db, { name: staffName(), role: 'RM', teamId: team.id });
       res.push(re);
       coordinators.set(re.id, [tl, ...shared]);
       customers.set(re.id, []);
@@ -401,11 +401,11 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
    */
   const fillTrash = () => {
     const closed = createTeam(db, { name: CLOSED_TEAM });
-    for (const role of ['TL', 'RE'] as const) {
+    for (const role of ['TL', 'RM'] as const) {
       softDeletePerson(db, createPerson(db, { name: staffName(), role, teamId: closed.id }).id);
     }
     softDeleteTeam(db, closed.id);
-    const leaver = createPerson(db, { name: staffName(), role: 'RE', teamId: res[0]!.teamId });
+    const leaver = createPerson(db, { name: staffName(), role: 'RM', teamId: res[0]!.teamId });
     softDeletePerson(db, leaver.id);
 
     const share = <T>(items: T[]) =>

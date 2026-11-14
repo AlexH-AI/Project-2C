@@ -219,7 +219,7 @@ describe('stageSnapshotSeries', () => {
 // DR-20: Báo cáo takes the snapshot of every team and RE on one day; grouped once by RE.
 describe('stageSnapshotByScope', () => {
   // A customer of an RE outside any team and one of someone not listed.
-  const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RE', teamId: null } as const];
+  const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RM', teamId: null } as const];
   const customers = [
     ...LIVE_CUSTOMERS,
     { id: 'K-solo', name: 'K-solo', reId: 're-solo', stage: 'N2' } as const,

@@ -22,7 +22,7 @@ import { codeOf, d, errorOf, setup } from './test-support';
  */
 async function oneOfEach() {
   const { db, team, re: an, otherRe: binh, tl: ha } = await setup();
-  const chi = createPerson(db, { name: 'Chi', role: 'RE', teamId: team.id });
+  const chi = createPerson(db, { name: 'Chi', role: 'RM', teamId: team.id });
   const quang = createPerson(db, { name: 'Quang', role: 'IS', teamId: null });
   const lan = createCustomer(db, { name: 'Lan', reId: chi.id, stage: 'N3', date: d(1, 9) });
   submitPolicy(db, { customerId: lan.id, reId: chi.id, submittedDate: d(2, 9), submittedFyp: 1e6 });
@@ -105,7 +105,7 @@ describe('PERSON_REFERENCES: the one list of what points to a person', () => {
   // and import rule 5 both read, so a kind added there is counted by both.
   it('keeps the person of a kind pointing to an RE an RE, as rule 5 does, by POINTS_TO', async () => {
     const { db, people } = await oneOfEach();
-    const [[team]] = db.sqlite.exec("SELECT team_id FROM people WHERE role = 'RE' LIMIT 1")[0]!
+    const [[team]] = db.sqlite.exec("SELECT team_id FROM people WHERE role = 'RM' LIMIT 1")[0]!
       .values as [[string]];
 
     for (const person of people) {
@@ -124,7 +124,7 @@ describe('PERSON_REFERENCES: the one list of what points to a person', () => {
       // In a file, an RE that is one no more, or one supporting the meeting who is an RE now.
       const [was] = db.sqlite.exec('SELECT role, team_id FROM people WHERE id = ?', [person.id])[0]!
         .values;
-      const swap = re ? ['IS', null] : ['RE', team];
+      const swap = re ? ['IS', null] : ['RM', team];
       db.sqlite.run('UPDATE people SET role = ?, team_id = ? WHERE id = ?', [...swap, person.id]);
       expect(errorOf(() => validateBackupInvariants(db))?.params, kind).toEqual({ rule: 5 });
       db.sqlite.run('UPDATE people SET role = ?, team_id = ? WHERE id = ?', [...was!, person.id]);

@@ -149,7 +149,7 @@ export function AppointmentsScreen() {
     { value: 'any', label: t('appointments.coordinatorAny') },
     { value: 'none', label: t('appointments.coordinatorNone') },
     ...data.people
-      .filter((person) => person.role !== 'RE')
+      .filter((person) => person.role !== 'RM')
       .map((person) => ({ value: person.id, label: personLabel(person) })),
   ];
 

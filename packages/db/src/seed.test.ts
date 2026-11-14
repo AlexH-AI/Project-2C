@@ -93,7 +93,8 @@ const DEMO_ROW_COUNTS = {
 // The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
-const DEMO_HASH = '136545e625bc266707fe439e0c215534655037f303bbe2af7ef1805fdcad4783';
+// A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RE.
+const DEMO_HASH = '60333daf5821f9c283aa96cec7c63db186bac9eae4344149e9d82462f2d579fe';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
@@ -168,9 +169,9 @@ describe('seedDemoData', () => {
       for (const team of listTeams(db)) {
         const members = people.filter((p) => p.teamId === team.id);
         expect(members.filter((p) => p.role === 'TL')).toHaveLength(1);
-        expect(members.filter((p) => p.role === 'RE')).toHaveLength(10);
+        expect(members.filter((p) => p.role === 'RM')).toHaveLength(10);
       }
-      expect([count('RE'), count('TL'), count('IS'), count('BD'), count('BDM')]).toEqual([
+      expect([count('RM'), count('TL'), count('IS'), count('BD'), count('BDM')]).toEqual([
         30, 3, 1, 1, 1,
       ]);
       for (const role of ['IS', 'BD', 'BDM']) {
@@ -231,7 +232,7 @@ describe('seedDemoData', () => {
     it('gives each customer 1-5 KYC notes and covers every gate state and both kinds of conflict', () => {
       const profiles = listCustomers(db).map((c) => getKycProfile(db, c.id));
       for (const { notes } of profiles) {
-        const fromRe = notes.filter((n) => n.source === 'RE').length;
+        const fromRe = notes.filter((n) => n.source === 'RM').length;
         expect(fromRe).toBeGreaterThanOrEqual(1);
         expect(fromRe).toBeLessThanOrEqual(5);
       }
@@ -314,7 +315,7 @@ describe('seedDemoData', () => {
       ).toEqual(['Bình Minh', 'Hừng Đông', 'Sao Mai', 'Sao Mai 2']);
       const people = listPeople(db);
       expect(people.filter((p) => p.role === 'TL')).toHaveLength(4);
-      expect(people.filter((p) => p.role === 'RE')).toHaveLength(8);
+      expect(people.filter((p) => p.role === 'RM')).toHaveLength(8);
       // At most one meeting booked a week for each RE (besides those moved there), most weeks one.
       const start = Date.UTC(2025, 8, 15);
       const booked = listAppointments(db).filter((a) => a.rescheduledFromId === null);

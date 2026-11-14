@@ -183,7 +183,7 @@ async function history() {
 
   const gone = createTeam(db, { name: 'Bình Minh' });
   softDeleteTeam(db, gone.id);
-  const left = createPerson(db, { name: 'Tú', role: 'RE', teamId: team.id });
+  const left = createPerson(db, { name: 'Tú', role: 'RM', teamId: team.id });
   softDeletePerson(db, left.id);
   return { db, ids: { lan: lan.id, hoa: hoa.id, kien: kien.id } };
 }

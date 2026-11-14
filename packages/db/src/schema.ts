@@ -69,8 +69,8 @@ export const people = sqliteTable(
   (t) => [
     check('people_role', sql`${t.role} IN (${list(PERSON_ROLES)})`),
     // RE and TL belong to a team; IS, BD and BDM never do (spec §3.2, #252, DR6-52).
-    check('people_team_required', sql`${t.role} NOT IN ('RE', 'TL') OR ${t.teamId} IS NOT NULL`),
-    check('people_team_none', sql`${t.role} IN ('RE', 'TL') OR ${t.teamId} IS NULL`),
+    check('people_team_required', sql`${t.role} NOT IN ('RM', 'TL') OR ${t.teamId} IS NOT NULL`),
+    check('people_team_none', sql`${t.role} IN ('RM', 'TL') OR ${t.teamId} IS NULL`),
   ],
 );
 
@@ -245,7 +245,7 @@ export const policies = sqliteTable(
 // ---- KYC notes, facts and versions (spec §3.8–3.10, ADR-0008) ----
 
 /** `SYSTEM` notes carry the birth year and gender written from the customer profile (D2). */
-export const KYC_NOTE_SOURCES = ['RE', 'SYSTEM'] as const;
+export const KYC_NOTE_SOURCES = ['RM', 'SYSTEM'] as const;
 const KYC_FIELD_KEYS = Object.keys(KYC_FIELDS) as [KycField, ...KycField[]];
 
 /**

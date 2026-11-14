@@ -156,7 +156,7 @@ const mai: TrashRow = {
   id: 'r1',
   deletedAt: at(5, 8, 31),
   name: 'Vương Thị Mai',
-  role: 'RE',
+  role: 'RM',
   owner: { team: ref('Bình Minh', true) },
   effect: { kind: 'none' },
   blocked: { code: 'TEAM_NOT_FOUND', params: { name: 'Bình Minh' } },
@@ -336,7 +336,7 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
 
   it('a person: name and role; a team: name, its members restored one by one', () => {
     expect(recordTitle(mai, TODAY)).toBe('Vương Thị Mai');
-    expect(recordDetail(mai)).toBe('RE');
+    expect(recordDetail(mai)).toBe('RM');
     expect(recordTitle(binhMinh, TODAY)).toBe('Bình Minh');
     expect(recordDetail(binhMinh)).toBe('khôi phục chưa kèm thành viên — khôi phục từng người sau');
   });
@@ -457,7 +457,7 @@ describe('restoreLabel (DR6-43)', () => {
 
   it('names the customer with its stage, the person or the team the button restores', () => {
     expect(label(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
-    expect(label(mai)).toBe('Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh');
+    expect(label(mai)).toBe('Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh');
     expect(label(binhMinh)).toBe('Khôi phục team Bình Minh');
   });
 
@@ -485,7 +485,7 @@ describe('restoreLabel (DR6-43)', () => {
     const namesake = { ...bao, id: 'r3', name: 'Vương Thị Mai' } as TrashRow;
     expect(label(namesake)).toBe('Khôi phục nhân sự Vương Thị Mai · TL · Sao Mai');
     const moved = { ...mai, id: 'r4', owner: { team: ref('Sao Mai') } } as TrashRow;
-    expect(label(moved)).toBe('Khôi phục nhân sự Vương Thị Mai · RE · Sao Mai');
+    expect(label(moved)).toBe('Khôi phục nhân sự Vương Thị Mai · RM · Sao Mai');
     // An IS or a BDM has no team.
     expect(label({ ...mai, id: 'r5', role: 'IS', owner: {} } as TrashRow)).toBe(
       'Khôi phục nhân sự Vương Thị Mai · IS',
@@ -571,17 +571,17 @@ describe('restoreLabel (DR6-43)', () => {
   it('tells apart two people of one name, role and team by when they were deleted (DR6-160)', () => {
     const rows = [...ROWS, maiTwin];
     expect(label(mai, rows)).toBe(
-      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31',
+      'Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh · xóa lúc 05/10/2026 08:31',
     );
     expect(label(maiTwin, rows)).toBe(
-      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 04/10/2026 17:05',
+      'Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh · xóa lúc 04/10/2026 17:05',
     );
     // Their role or their team tells them apart already (DR6-151).
     for (const other of [
       { ...maiTwin, role: 'TL' },
       { ...maiTwin, owner: { team: ref('Sao Mai') } },
     ] as TrashRow[]) {
-      expect(label(mai, [...ROWS, other])).toBe('Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh');
+      expect(label(mai, [...ROWS, other])).toBe('Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh');
       expect(label(other, [...ROWS, other])).not.toContain('xóa lúc');
     }
     // An IS has no team: two of one name are alike in all the rest.
@@ -599,14 +599,14 @@ describe('restoreLabel (DR6-43)', () => {
     const late = { ...mai, id: 'r9', deletedAt: at(5, 8, 31, 40) } as TrashRow;
     const rows = [...ROWS.filter((row) => row !== mai), early, late, maiTwin];
     expect([early, late, maiTwin].map((row) => label(row, rows))).toEqual([
-      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31:05',
-      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31:40',
-      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 04/10/2026 17:05',
+      'Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh · xóa lúc 05/10/2026 08:31:05',
+      'Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh · xóa lúc 05/10/2026 08:31:40',
+      'Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh · xóa lúc 04/10/2026 17:05',
     ]);
     // The same minute of another person's deletion does not count.
     const other = { ...late, id: 'r10', role: 'TL' } as TrashRow;
     expect(label(early, [...ROWS.filter((row) => row !== mai), early, other, maiTwin])).toBe(
-      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31',
+      'Khôi phục nhân sự Vương Thị Mai · RM · Bình Minh · xóa lúc 05/10/2026 08:31',
     );
   });
 
@@ -733,7 +733,7 @@ describe('blockedReason (mockup 11d)', () => {
       today: () => calendarDate(2026, 10, 11),
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RE', teamId: team.id }).id;
+        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RM', teamId: team.id }).id;
         const customer = createCustomer(db, { name: 'Phạm Gia Bảo', reId, stage: 'N3', date: day });
         const meeting = scheduleAppointment(db, {
           customerId: customer.id,
@@ -770,11 +770,11 @@ describe('blockedReason (mockup 11d)', () => {
 
   it('E10: the reviewer now an RE; a coordinator likewise', () => {
     expect(
-      reason(met, { code: 'INVALID_REVIEWER', params: { name: 'Vũ Thanh Tâm', role: 'RE' } }),
-    ).toBe('Người đánh giá Vũ Thanh Tâm nay là RE.');
+      reason(met, { code: 'INVALID_REVIEWER', params: { name: 'Vũ Thanh Tâm', role: 'RM' } }),
+    ).toBe('Người đánh giá Vũ Thanh Tâm nay là RM.');
     expect(
-      reason(met, { code: 'INVALID_COORDINATOR', params: { name: 'Phó Đức Huy', role: 'RE' } }),
-    ).toBe('Người phối hợp Phó Đức Huy nay là RE.');
+      reason(met, { code: 'INVALID_COORDINATOR', params: { name: 'Phó Đức Huy', role: 'RM' } }),
+    ).toBe('Người phối hợp Phó Đức Huy nay là RM.');
   });
 
   it('TR-5: an outcome after today', () => {
@@ -810,8 +810,8 @@ describe('blockedReason (mockup 11d)', () => {
   });
 
   it("falls back to the command's own message for a reason without a sentence of its own", () => {
-    expect(reason(mai, { code: 'TEAM_REQUIRED', params: { role: 'RE' } })).toBe(
-      'RE phải thuộc một team.',
+    expect(reason(mai, { code: 'TEAM_REQUIRED', params: { role: 'RM' } })).toBe(
+      'RM phải thuộc một team.',
     );
     expect(reason(minhAnh, { code: 'PERSON_NOT_FOUND' })).toBe(
       'Nhân sự không còn trong dữ liệu (có thể đã bị xóa).',
@@ -979,7 +979,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
       title: 'Khôi phục Vương Thị Mai?',
       subtitle: 'Nhân sự · xóa lúc 05/10/2026 08:31',
       facts: [
-        { term: 'Vai trò', text: 'RE' },
+        { term: 'Vai trò', text: 'RM' },
         { term: 'Team', text: 'Bình Minh' },
       ],
       effect: { body: 'Nhân sự vào lại Team & nhân sự; dữ liệu cũ của người này giữ nguyên.' },
@@ -1051,7 +1051,7 @@ describe('restoreRow', () => {
       today: () => TODAY,
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id }).id;
+        reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
         const customer = createCustomer(db, {
           name: 'Trịnh Minh Anh',
           reId,
@@ -1078,9 +1078,9 @@ describe('restoreRow', () => {
       today: () => TODAY,
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id }).id;
+        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
         softDeleteTeam(db, createTeam(db, { name: 'Bình Minh' }).id);
-        const ha = createPerson(db, { name: 'Lê Thu Hà', role: 'RE', teamId: team.id });
+        const ha = createPerson(db, { name: 'Lê Thu Hà', role: 'RM', teamId: team.id });
         softDeletePerson(db, ha.id);
         const customer = (name: string) =>
           createCustomer(db, { name, reId, stage: 'N3', date: TODAY });
@@ -1131,7 +1131,7 @@ describe('restoreRow', () => {
       today: () => TODAY,
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id }).id;
+        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
         const customer = createCustomer(db, {
           name: 'Trịnh Minh Anh',
           reId,
@@ -1312,8 +1312,8 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
         const day = calendarDate(2026, 10, 2);
         const team = createTeam(db, { name: 'Sao Mai' });
         const binhMinh = createTeam(db, { name: 'Bình Minh' });
-        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RE', teamId: team.id }).id;
-        const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RE', teamId: binhMinh.id });
+        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RM', teamId: team.id }).id;
+        const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RM', teamId: binhMinh.id });
         const lan = createCustomer(db, { name: 'Hoàng Ngọc Lan', reId, stage: 'N3', date: day });
         const bao = createCustomer(db, { name: 'Phạm Gia Bảo', reId, stage: 'N3', date: day });
         const book = (customerId: string) =>

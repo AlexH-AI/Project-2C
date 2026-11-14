@@ -31,7 +31,7 @@ describe('periodMetrics — golden examples (T-028)', () => {
   });
 });
 
-const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' }];
+const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' }];
 const JAN = periodOf('month', d(1, 1, 2027));
 
 const appointment = (

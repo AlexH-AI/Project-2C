@@ -245,7 +245,7 @@ describe('customers', () => {
 
   it('hands over only when the RE changes, and saves nothing when refused', async () => {
     const { db, team, re, otherRe, tl } = await setup();
-    const third = createPerson(db, { name: 'Chi', role: 'RE', teamId: team.id });
+    const third = createPerson(db, { name: 'Chi', role: 'RM', teamId: team.id });
     const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
     // Booked for another RE than the customer's, which the dialog allows (mockups 6a, 6h).
     const booked = scheduleAppointment(db, {
@@ -333,7 +333,7 @@ describe('customers', () => {
     let machine = new Date(2026, 10, 8, 0, 5).getTime();
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
 
@@ -491,7 +491,7 @@ describe('customers', () => {
     const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
 
     expect(codeOf(() => updatePerson(db, re.id, { role: 'TL' }))).toBe('PERSON_IN_USE');
-    expect(updatePerson(db, re.id, { name: 'An Nguyễn', role: 'RE' }).name).toBe('An Nguyễn');
+    expect(updatePerson(db, re.id, { name: 'An Nguyễn', role: 'RM' }).name).toBe('An Nguyễn');
 
     softDeleteCustomer(db, customer.id);
     // The team already has its one TL (B1b), so leave for a shared role instead.

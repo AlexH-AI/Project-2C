@@ -424,9 +424,9 @@ describe('outcome reviewer', () => {
     const { id } = schedule();
     recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
 
-    expect(codeOf(() => updatePerson(db, tl.id, { role: 'RE' }))).toBe('REVIEWER_IN_USE');
+    expect(codeOf(() => updatePerson(db, tl.id, { role: 'RM' }))).toBe('REVIEWER_IN_USE');
     expect(updatePerson(db, tl.id, { name: 'Hà Lê' }).role).toBe('TL');
-    expect(updatePerson(db, is.id, { role: 'RE', teamId: team.id }).role).toBe('RE');
+    expect(updatePerson(db, is.id, { role: 'RM', teamId: team.id }).role).toBe('RM');
   });
 
   it('lets a reviewer of a live appointment move to another reviewer role', async () => {
@@ -436,7 +436,7 @@ describe('outcome reviewer', () => {
     recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: is.id });
 
     expect(updatePerson(db, is.id, { role: 'BD' }).role).toBe('BD');
-    expect(codeOf(() => updatePerson(db, is.id, { role: 'RE' }))).toBe('REVIEWER_IN_USE');
+    expect(codeOf(() => updatePerson(db, is.id, { role: 'RM' }))).toBe('REVIEWER_IN_USE');
   });
 
   it('restores no appointment whose reviewer became an RE while it was deleted', async () => {
@@ -444,7 +444,7 @@ describe('outcome reviewer', () => {
     const { id } = schedule();
     recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
     softDeleteAppointment(db, id);
-    updatePerson(db, tl.id, { role: 'RE' });
+    updatePerson(db, tl.id, { role: 'RM' });
 
     expect(codeOf(() => restoreAppointment(db, id))).toBe('INVALID_REVIEWER');
     expect(listAppointments(db)).toEqual([]);
@@ -567,7 +567,7 @@ describe('recordOutcomeWithNext', () => {
     let machine = new Date(2026, 10, 8, 0, 5).getTime();
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,
@@ -1115,7 +1115,7 @@ describe('the stage on the meeting day', () => {
     let machine = new Date(2026, 10, 8, 0, 5).getTime();
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
     const kept = scheduleAppointment(db, {
       customerId: lan.id,
@@ -1409,8 +1409,8 @@ describe('deleting appointments', () => {
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     schedule(10, [tl.id, is.id]);
 
-    expect(codeOf(() => updatePerson(db, tl.id, { role: 'RE' }))).toBe('COORDINATOR_IN_USE');
-    expect(codeOf(() => updatePerson(db, is.id, { role: 'RE', teamId: team.id }))).toBe(
+    expect(codeOf(() => updatePerson(db, tl.id, { role: 'RM' }))).toBe('COORDINATOR_IN_USE');
+    expect(codeOf(() => updatePerson(db, is.id, { role: 'RM', teamId: team.id }))).toBe(
       'COORDINATOR_IN_USE',
     );
     expect(updatePerson(db, is.id, { role: 'BDM' }).role).toBe('BDM');
@@ -1431,7 +1431,7 @@ describe('deleting appointments', () => {
     const { db, tl, schedule } = await withCustomer();
     const { id } = schedule(10, [tl.id]);
     softDeleteAppointment(db, id);
-    updatePerson(db, tl.id, { role: 'RE' });
+    updatePerson(db, tl.id, { role: 'RM' });
 
     expect(codeOf(() => restoreAppointment(db, id))).toBe('INVALID_COORDINATOR');
     expect(listAppointments(db)).toEqual([]);
@@ -1441,7 +1441,7 @@ describe('deleting appointments', () => {
   async function withdrawnOnStandingClock() {
     const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 10, 7, 5)) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,

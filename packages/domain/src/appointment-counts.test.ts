@@ -122,7 +122,7 @@ describe('appointmentCountsByScope', () => {
     { ...appointment('SCHEDULED', TODAY), id: 'ap-solo', reId: 're-solo' },
     { ...appointment('NO_SHOW', TODAY), id: 'ap-x', reId: 'x' },
   ];
-  const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RE', teamId: null } as const];
+  const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RM', teamId: null } as const];
   const SCOPES: readonly Scope[] = [
     { kind: 'all' },
     { kind: 'team', teamId: 'team-a' },

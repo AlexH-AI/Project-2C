@@ -176,7 +176,7 @@ export function addKycNote(
     liveCustomer(db, customerId);
     const text = cleanNote(note.text);
     if (text === '') throw new DbError('KYC_NOTE_EMPTY');
-    return insertNote(db, customerId, text, note.date, 'RE');
+    return insertNote(db, customerId, text, note.date, 'RM');
   });
 }
 

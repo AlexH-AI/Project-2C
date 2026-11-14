@@ -16,10 +16,10 @@ const person = (id: string, role: Person['role'], teamId: string | null): Person
 describe('groupByTeam', () => {
   it('puts each person under their team and the ones without a team under shared support', () => {
     const people = [
-      person('re1', 'RE', 't1'),
+      person('re1', 'RM', 't1'),
       person('is', 'IS', null),
       person('tl1', 'TL', 't1'),
-      person('re2', 'RE', 't1'),
+      person('re2', 'RM', 't1'),
       person('bd', 'BD', 't2'),
     ];
 
@@ -39,8 +39,8 @@ describe('groupByTeam', () => {
       [SAO_MAI, BINH_MINH, { id: 't3', name: 'Hừng Đông' }],
       [
         person('tl1', 'TL', 't1'),
-        person('re1', 'RE', 't1'),
-        person('re2', 'RE', 't2'),
+        person('re1', 'RM', 't1'),
+        person('re2', 'RM', 't2'),
         person('tlA', 'TL', 't3'),
         person('tlB', 'TL', 't3'),
       ],
@@ -87,8 +87,8 @@ const records = {
 describe('staffMetrics', () => {
   it('counts open customers, appointments of the last 30 days and policies issued this year', () => {
     const people = [
-      person('re1', 'RE', 't1'),
-      person('re2', 'RE', 't1'),
+      person('re1', 'RM', 't1'),
+      person('re2', 'RM', 't1'),
       person('tl1', 'TL', 't1'),
     ];
 

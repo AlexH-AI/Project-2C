@@ -228,7 +228,7 @@ describe('stageBlock on the demo data: each column equals the snapshot of its da
     const scopes: readonly Scope[] = [
       ALL,
       { kind: 'team', teamId: data.teams[0]!.id },
-      { kind: 're', reId: data.people.find((person) => person.role === 'RE')!.id },
+      { kind: 're', reId: data.people.find((person) => person.role === 'RM')!.id },
     ];
     const alone = (scope: Scope) =>
       chartMarks(period).map((mark) => {

@@ -12,7 +12,7 @@ import {
 // These tests keep the golden data internally consistent. They do not count anything: the counts
 // are tested against the expected results in `stage-snapshot.test.ts` and `period.test.ts`.
 
-const reIds = new Set(PEOPLE.filter((person) => person.role === 'RE').map((person) => person.id));
+const reIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
 const byId = (id: string) => SNAPSHOT_GOLDEN_CASES.find((golden) => golden.id === id)!.expected;
 
 describe('golden stage snapshot fixture', () => {

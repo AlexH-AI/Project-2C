@@ -770,7 +770,13 @@ describe('listAiAnalyses: CURRENT / STALE / REJECTED', () => {
 // Seeding takes up to a minute on a slow machine with other test files running (T-095).
 const SLOW = 180_000;
 
-/** Copies the rows of `from` into the tables of `to`, the columns `to` has, foreign keys off. */
+/** The columns that held RE before A2 (migration 0013) and hold RM since, by table. */
+const RE_BEFORE_A2: Record<string, string> = { people: 'role', kyc_notes: 'source' };
+
+/**
+ * Copies the rows of `from` into the tables of `to`, the columns `to` has, foreign keys off. `to` is
+ * older than A2: a role or a KYC note source RM goes in as RE, as a file of that version holds it.
+ */
 function copyRows(from: Database, to: Database): void {
   to.sqlite.run('PRAGMA foreign_keys = OFF');
   to.transaction(() => {
@@ -781,7 +787,12 @@ function copyRows(from: Database, to: Database): void {
       const insert = to.sqlite.prepare(
         `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
       );
-      for (const row of from.sqlite.exec(`SELECT ${columns.join(', ')} FROM ${table}`)[0]?.values ??
+      const read = columns.map((column) =>
+        RE_BEFORE_A2[table] === column
+          ? `CASE ${column} WHEN 'RM' THEN 'RE' ELSE ${column} END`
+          : column,
+      );
+      for (const row of from.sqlite.exec(`SELECT ${read.join(', ')} FROM ${table}`)[0]?.values ??
         []) {
         insert.run(row);
       }
@@ -831,7 +842,11 @@ describe('the ai_analyses migration', () => {
     const before = MIGRATIONS.findIndex((m) => m.tag === '0006_ai_analyses_append_only') + 1;
     const old = await openDatabase({ migrations: MIGRATIONS.slice(0, before), now });
     const team = createTeam(old, { name: 'Sao Mai' });
-    const re = createPerson(old, { name: 'An', role: 'RE', teamId: team.id });
+    // The command writes RM, which the CHECK of a file before A2 (0013) refuses: past it, here, then
+    // RE again once the customer has its RM, as such a file holds it (0010 copies it under that CHECK).
+    old.sqlite.run('PRAGMA ignore_check_constraints = ON');
+    const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
+    old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
     const customer = createCustomer(old, {
       name: 'Lan',
       reId: re.id,
@@ -839,6 +854,7 @@ describe('the ai_analyses migration', () => {
       date: d(1, 9),
       birthDate: { year: 1980 },
     });
+    old.sqlite.run("UPDATE people SET role = 'RE'");
     const version = latestVersionId(old, customer.id);
     recordAiAnalysis(old, analysis(customer.id, version));
     recordAiAnalysis(old, {

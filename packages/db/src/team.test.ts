@@ -111,7 +111,7 @@ describe('teams', () => {
     }
     for (const name of ['\u{3164}', '\u{2800}', '\u{85}', '\u{115F}\u{FFA0}\u{34F}\u{FE00}']) {
       expect(codeOf(() => createTeam(db, { name }))).toBe('NAME_REQUIRED');
-      expect(codeOf(() => createPerson(db, { name, role: 'RE', teamId: team.id }))).toBe(
+      expect(codeOf(() => createPerson(db, { name, role: 'RM', teamId: team.id }))).toBe(
         'NAME_REQUIRED',
       );
     }
@@ -128,7 +128,7 @@ describe('teams', () => {
     }
     expect(codeOf(() => createTeam(db, { name: '\u{1}' }))).toBe('NAME_REQUIRED');
     expect(
-      codeOf(() => createPerson(db, { name: '\u{7}\u{7F}', role: 'RE', teamId: team.id })),
+      codeOf(() => createPerson(db, { name: '\u{7}\u{7F}', role: 'RM', teamId: team.id })),
     ).toBe('NAME_REQUIRED');
   });
 
@@ -178,7 +178,7 @@ describe('teams', () => {
   it('refuses to delete a team that still has people', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
 
     expect(codeOf(() => softDeleteTeam(db, team.id))).toBe('TEAM_HAS_MEMBERS');
 
@@ -193,10 +193,10 @@ describe('people', () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
 
-    const re = createPerson(db, { name: ' An ', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: ' An ', role: 'RM', teamId: team.id });
     const is = createPerson(db, { name: 'Bình', role: 'IS', teamId: null });
 
-    expect(re).toEqual({ id: expect.any(String), name: 'An', role: 'RE', teamId: team.id });
+    expect(re).toEqual({ id: expect.any(String), name: 'An', role: 'RM', teamId: team.id });
     expect(is.teamId).toBeNull();
     expect(byId(listPeople(db), re.id)).toEqual(re);
     expect(listPeople(db)).toEqual([re, is]);
@@ -205,7 +205,7 @@ describe('people', () => {
   it('requires a team for RE and TL only', async () => {
     const { db } = await setup();
 
-    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RE', teamId: null }))).toBe(
+    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RM', teamId: null }))).toBe(
       'TEAM_REQUIRED',
     );
     expect(codeOf(() => createPerson(db, { name: 'An', role: 'TL', teamId: null }))).toBe(
@@ -236,7 +236,7 @@ describe('people', () => {
   it('refuses a team for IS, BD and BDM, also when the role changes', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const bd = createPerson(db, { name: 'Bình', role: 'BD', teamId: null });
 
     for (const role of ['IS', 'BD', 'BDM'] as const) {
@@ -266,10 +266,10 @@ describe('people', () => {
     expect(codeOf(() => createPerson(db, { name: ' ', role: 'IS', teamId: null }))).toBe(
       'NAME_REQUIRED',
     );
-    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RE', teamId: 'nope' }))).toBe(
+    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RM', teamId: 'nope' }))).toBe(
       'TEAM_NOT_FOUND',
     );
-    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RE', teamId: team.id }))).toBe(
+    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RM', teamId: team.id }))).toBe(
       'TEAM_NOT_FOUND',
     );
   });
@@ -278,7 +278,7 @@ describe('people', () => {
     const { db } = await setup();
     const saoMai = createTeam(db, { name: 'Sao Mai' });
     const binhMinh = createTeam(db, { name: 'Bình Minh' });
-    const person = createPerson(db, { name: 'An', role: 'RE', teamId: saoMai.id });
+    const person = createPerson(db, { name: 'An', role: 'RM', teamId: saoMai.id });
 
     expect(updatePerson(db, person.id, { teamId: binhMinh.id })).toEqual({
       ...person,
@@ -297,7 +297,7 @@ describe('people', () => {
   it('keeps fields that are passed as undefined', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    const person = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const person = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
 
     expect(
       updatePerson(db, person.id, { name: undefined, role: undefined, teamId: undefined }),
@@ -307,7 +307,7 @@ describe('people', () => {
   it('hides a soft-deleted person and restores them only into a live team', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    const person = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const person = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
 
     softDeletePerson(db, person.id);
     expect(listPeople(db)).toEqual([]);
@@ -357,11 +357,11 @@ describe('one TL per team (B1b)', () => {
 
   it('makes an RE the TL only of a team without one', async () => {
     const { db, saoMai, binhMinh } = await withLead();
-    const an = createPerson(db, { name: 'An', role: 'RE', teamId: saoMai.id });
-    const binh = createPerson(db, { name: 'Bình', role: 'RE', teamId: binhMinh.id });
+    const an = createPerson(db, { name: 'An', role: 'RM', teamId: saoMai.id });
+    const binh = createPerson(db, { name: 'Bình', role: 'RM', teamId: binhMinh.id });
 
     expect(codeOf(() => updatePerson(db, an.id, { role: 'TL' }))).toBe('TEAM_HAS_LEAD');
-    expect(byId(listPeople(db), an.id)?.role).toBe('RE');
+    expect(byId(listPeople(db), an.id)?.role).toBe('RM');
     expect(updatePerson(db, binh.id, { role: 'TL' }).role).toBe('TL');
   });
 
@@ -394,7 +394,7 @@ describe('commands and the save port', () => {
     createTeam(db, { name: 'Sao Mai' });
     expect(persist).toHaveBeenCalledTimes(1);
 
-    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RE', teamId: null }))).toBe(
+    expect(codeOf(() => createPerson(db, { name: 'An', role: 'RM', teamId: null }))).toBe(
       'TEAM_REQUIRED',
     );
     expect(persist).toHaveBeenCalledTimes(1);
@@ -546,6 +546,6 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
       'PERSON_IN_USE',
     );
 
-    expect(byId(listPeople(db), re.id)?.role).toBe('RE');
+    expect(byId(listPeople(db), re.id)?.role).toBe('RM');
   });
 });

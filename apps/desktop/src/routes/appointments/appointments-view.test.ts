@@ -46,9 +46,9 @@ const teams: Team[] = [
 ];
 
 const people: Person[] = [
-  { id: 're1', name: 'Hoàng Nam', role: 'RE', teamId: 't1' },
-  { id: 're2', name: 'Đỗ Khánh Linh', role: 'RE', teamId: 't1' },
-  { id: 're3', name: 'Mai Phương', role: 'RE', teamId: 't2' },
+  { id: 're1', name: 'Hoàng Nam', role: 'RM', teamId: 't1' },
+  { id: 're2', name: 'Đỗ Khánh Linh', role: 'RM', teamId: 't1' },
+  { id: 're3', name: 'Mai Phương', role: 'RM', teamId: 't2' },
   { id: 'tl1', name: 'Nguyễn Thu Hà', role: 'TL', teamId: 't1' },
   { id: 'is1', name: 'Phó Đức Huy', role: 'IS', teamId: null },
 ];

@@ -4,7 +4,7 @@ import { calendarDate, type KycFact } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { busyElsewhere, extractionButton, extractionView } from './extraction-view';
 
-const note = (text: string, source: KycNoteRecord['source'] = 'RE'): KycNoteRecord => ({
+const note = (text: string, source: KycNoteRecord['source'] = 'RM'): KycNoteRecord => ({
   id: 'n1',
   text,
   createdDate: calendarDate(2026, 9, 14),

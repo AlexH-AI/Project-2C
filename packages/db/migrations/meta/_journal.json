@@ -92,6 +92,20 @@
       "when": 1792817830104,
       "tag": "0012_trash_lookups",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1794648685989,
+      "tag": "0013_role_rm",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1794648716222,
+      "tag": "0014_kyc_notes_append_only_rebuilt",
+      "breakpoints": true
     }
   ]
 }

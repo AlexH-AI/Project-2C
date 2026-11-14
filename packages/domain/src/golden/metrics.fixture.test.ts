@@ -15,7 +15,7 @@ import {
 // These tests keep the golden data internally consistent. They do not compute any metric: the
 // stats engine (T-031, T-032) is tested against the expected results.
 
-const reIds = new Set(PEOPLE.filter((person) => person.role === 'RE').map((person) => person.id));
+const reIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
 const customerIds = new Set(CUSTOMERS.map((customer) => customer.id));
 const transitionsOf = (customerId: string) =>
   STAGE_TRANSITIONS.filter((transition) => transition.customerId === customerId);
@@ -30,10 +30,10 @@ describe('golden metrics fixture', () => {
 
   it('covers two teams of two RE each, plus coordinators without metrics', () => {
     for (const team of TEAMS) {
-      const members = PEOPLE.filter((person) => person.teamId === team.id && person.role === 'RE');
+      const members = PEOPLE.filter((person) => person.teamId === team.id && person.role === 'RM');
       expect(members).toHaveLength(2);
     }
-    expect(PEOPLE.some((person) => person.role !== 'RE')).toBe(true);
+    expect(PEOPLE.some((person) => person.role !== 'RM')).toBe(true);
   });
 
   it('assigns customers, appointments and policies to an RE and an existing customer', () => {

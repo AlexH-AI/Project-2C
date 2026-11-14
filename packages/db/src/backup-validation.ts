@@ -308,7 +308,7 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
   // A kind POINTS_TO says nothing of is checked as one supporting the record, never left out.
   const supportingKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] !== 're');
   const notRe = read(
-    `SELECT 1 FROM people p WHERE (p.role <> 'RE' OR p.deleted_at IS NOT NULL) AND ${pointedTo(reKinds)}`,
+    `SELECT 1 FROM people p WHERE (p.role <> 'RM' OR p.deleted_at IS NOT NULL) AND ${pointedTo(reKinds)}`,
   );
   // A coordinator or reviewer may have become an RE once their appointment was deleted.
   const supportingRoles = `(${sqlTexts(REVIEWER_ROLES)})`;

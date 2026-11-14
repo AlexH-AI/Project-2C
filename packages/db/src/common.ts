@@ -178,7 +178,7 @@ export function requireRe(db: Database, id: string): string {
     .get();
   if (!row) throw new DbError('PERSON_NOT_FOUND');
   if (row.deletedAt) throw new DbError('PERSON_NOT_FOUND', { name: row.name, as: 're' });
-  if (row.role !== 'RE') throw new DbError('RE_REQUIRED', { name: row.name, role: row.role });
+  if (row.role !== 'RM') throw new DbError('RE_REQUIRED', { name: row.name, role: row.role });
   return id;
 }
 

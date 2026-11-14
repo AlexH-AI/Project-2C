@@ -7,7 +7,7 @@ import { PEOPLE } from './metrics.fixture';
 // are tested against the expected results in `appointment-counts.test.ts`.
 
 const byId = new Map(APPOINTMENT_ROWS.map((row) => [row.appointment.id, row]));
-const reIds = new Set(PEOPLE.filter((person) => person.role === 'RE').map((person) => person.id));
+const reIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
 const personIds = new Set(PEOPLE.map((person) => person.id));
 
 describe('golden appointments fixture', () => {

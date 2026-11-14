@@ -55,7 +55,7 @@ export function narrowScope(
 /** The RE of one team, by name, as the RE strip of Customers and Appointments lists them. */
 export function teamRes(people: readonly Person[], teamId: string): Person[] {
   return people
-    .filter((person) => person.role === 'RE' && person.teamId === teamId)
+    .filter((person) => person.role === 'RM' && person.teamId === teamId)
     .sort((a, b) => byName(a.name, b.name));
 }
 
@@ -65,7 +65,7 @@ export function reOptions(
   teams: readonly Team[],
 ): { value: string; label: string }[] {
   return people
-    .filter((person) => person.role === 'RE')
+    .filter((person) => person.role === 'RM')
     .map((re) => ({ re, team: teams.find((team) => team.id === re.teamId)?.name ?? '' }))
     .sort((a, b) => byName(a.team, b.team) || byName(a.re.name, b.re.name))
     .map(({ re, team }) => ({

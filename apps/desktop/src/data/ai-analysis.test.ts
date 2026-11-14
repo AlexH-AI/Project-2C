@@ -46,7 +46,7 @@ const TODAY = calendarDate(2026, 9, 27);
 
 const emptySeed = (db: Database) => {
   const team = createTeam(db, { name: 'Đội 1' });
-  createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+  createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
 };
 
 /** Answers only when the test says so, as a request still running in Rust. */

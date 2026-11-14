@@ -12,7 +12,7 @@ export interface Team {
 }
 
 /** Only RE have metrics; the other roles take part in appointments as coordinators (G2 G). */
-export const PERSON_ROLES = ['RE', 'TL', 'IS', 'BD', 'BDM'] as const;
+export const PERSON_ROLES = ['RM', 'TL', 'IS', 'BD', 'BDM'] as const;
 
 export type PersonRole = (typeof PERSON_ROLES)[number];
 
@@ -20,7 +20,7 @@ export type PersonRole = (typeof PERSON_ROLES)[number];
 export const REVIEWER_ROLES: readonly PersonRole[] = ['IS', 'TL', 'BDM', 'BD'];
 
 /** Who belongs to a team, and must: IS / BD / BDM are shared by every team (D8, spec §6 rule 9). */
-export const ROLES_WITH_TEAM: readonly PersonRole[] = ['RE', 'TL'];
+export const ROLES_WITH_TEAM: readonly PersonRole[] = ['RM', 'TL'];
 
 export interface Person {
   readonly id: string;

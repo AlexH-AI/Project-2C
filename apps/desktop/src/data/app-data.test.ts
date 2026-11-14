@@ -480,7 +480,7 @@ describe('tables', () => {
     const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
     app.run((db) => {
       const team = createTeam(db, { name: 'Sao Mai' });
-      const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+      const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
       const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: TODAY });
       scheduleAppointment(db, {
         customerId: lan.id,
@@ -1028,7 +1028,7 @@ describe('purgeTrash (spec Phase 6 TR-11)', () => {
     const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
     app.run((db) => {
       const team = createTeam(db, { name: 'Sao Mai' });
-      const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+      const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
       const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: TODAY });
       scheduleAppointment(db, {
         customerId: lan.id,
@@ -1449,7 +1449,7 @@ describe('backup files', () => {
       today: () => calendarDate(2026, 9, 30),
       seed: (db, anchorDate) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+        const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
         createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: anchorDate });
       },
     });
@@ -1468,13 +1468,13 @@ describe('backup files', () => {
   it.each([
     ['a date that does not exist', '"date":"2026-09-27"', '"date":"2026-02-30"'],
     ['a stage its transitions never reached', '"stage":"N3"', '"stage":"N1"'],
-    ['a customer whose RE is a TL', '"role":"RE"', '"role":"TL"'],
+    ['a customer whose RE is a TL', '"role":"RM"', '"role":"TL"'],
     ['a gender other than its KYC fact', '"gender":"FEMALE"', '"gender":"MALE"'],
   ])('rejects a file with %s before counting its records', async (_, from, to) => {
     const source = await openAppData({
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+        const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
         const lan = createCustomer(db, {
           name: 'Lan',
           reId: re.id,

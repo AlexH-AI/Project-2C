@@ -33,8 +33,8 @@ describe('policyMetrics — golden examples (T-028)', () => {
 
 describe('policyMetrics', () => {
   const people: readonly Person[] = [
-    { id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' },
-    { id: 're-2', name: 'RE 2', role: 'RE', teamId: null },
+    { id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' },
+    { id: 're-2', name: 'RE 2', role: 'RM', teamId: null },
   ];
   const policy = (
     id: string,
@@ -107,32 +107,32 @@ describe('inScope', () => {
   const team = { kind: 'team', teamId: 'team-1' } as const;
 
   it('reads the team of the RE from the people list it is given', () => {
-    const before: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' }];
-    const after: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-2' }];
+    const before: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' }];
+    const after: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-2' }];
     expect(inScope(before, 're-1', team)).toBe(true);
     expect(inScope(after, 're-1', team)).toBe(false);
     expect(inScope(before, 're-1', team)).toBe(true);
   });
 
   it('leaves the people list untouched, so a later change is read', () => {
-    const people: Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' }];
+    const people: Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' }];
     expect(inScope(people, 're-2', team)).toBe(false);
-    people.push({ id: 're-2', name: 'RE 2', role: 'RE', teamId: 'team-1' });
+    people.push({ id: 're-2', name: 'RE 2', role: 'RM', teamId: 'team-1' });
     expect(Object.isFrozen(people)).toBe(false);
     expect(inScope(people, 're-2', team)).toBe(true);
   });
 
   it('counts an RE for the team when any entry with that id is in the team', () => {
     const people: readonly Person[] = [
-      { id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' },
-      { id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-2' },
+      { id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' },
+      { id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-2' },
     ];
     expect(inScope(people, 're-1', team)).toBe(true);
     expect(inScope(people, 're-1', { kind: 'team', teamId: 'team-2' })).toBe(true);
   });
 
   it('leaves an RE outside any team, or not in the list, out of every team', () => {
-    const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: null }];
+    const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: null }];
     expect(inScope(people, 're-1', team)).toBe(false);
     expect(inScope(people, 're-9', team)).toBe(false);
     expect(inScope(people, 're-9', { kind: 'all' })).toBe(true);
@@ -238,7 +238,7 @@ describe('periodMetricsByScope', () => {
   });
   const people: readonly Person[] = [
     ...PEOPLE,
-    { id: 're-solo', name: 'Solo', role: 'RE', teamId: null },
+    { id: 're-solo', name: 'Solo', role: 'RM', teamId: null },
   ];
   // Records of a TL (once an RE), of an RE outside any team and of someone not listed.
   const data = {
@@ -312,7 +312,7 @@ describe('periodMetricsByScope', () => {
 // DR-23: each fee is at most `MAX_FEE_VND`, so a real total stays exact; a total past a safe
 // integer is refused, never rounded into a number the formatters reject later.
 describe('totals of large fees', () => {
-  const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: null }];
+  const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: null }];
   const policy = (id: string, fyp: number): Policy => ({
     id,
     customerId: 'kh',

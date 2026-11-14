@@ -34,7 +34,7 @@ export function PersonDialog({
   person,
   teams,
   defaultTeamId,
-  defaultRole = 'RE',
+  defaultRole = 'RM',
   onClose,
   onSaved,
   onDelete,

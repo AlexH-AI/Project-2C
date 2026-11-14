@@ -48,7 +48,7 @@ const isRf = (db: Database, id: string) =>
 async function trash() {
   const base = await setup(TODAY);
   const { db, team } = base;
-  const linh = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id });
+  const linh = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id });
   const customer = (name = 'Trịnh Minh Anh', stage: CustomerStage = 'N3') =>
     createCustomer(db, { name, reId: linh.id, stage, date: d(1, 9) });
   const schedule = (customerId: string, date: CalendarDate, coordinatorIds: string[] = []) =>
@@ -544,12 +544,12 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     const meeting = schedule(customer().id, d(2, 10));
     met(meeting.id, 'N2', tam.id);
     softDeleteAppointment(db, meeting.id);
-    updatePerson(db, tam.id, { role: 'RE', teamId: team.id });
+    updatePerson(db, tam.id, { role: 'RM', teamId: team.id });
 
     const r = row(meeting.id);
     expect(r.blocked).toEqual({
       code: 'INVALID_REVIEWER',
-      params: { name: 'Vũ Thanh Tâm', role: 'RE' },
+      params: { name: 'Vũ Thanh Tâm', role: 'RM' },
     });
     expect(restored(r)).toEqual(r.blocked);
   });
@@ -638,7 +638,7 @@ describe('listTrash: people and teams (TR-2)', () => {
   it('E14: blocks a person whose team was deleted until the team comes back', async () => {
     const { db, row, restored } = await trash();
     const binhMinh = createTeam(db, { name: 'Bình Minh' });
-    const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RE', teamId: binhMinh.id });
+    const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RM', teamId: binhMinh.id });
     softDeletePerson(db, mai.id);
     softDeleteTeam(db, binhMinh.id);
 
@@ -646,7 +646,7 @@ describe('listTrash: people and teams (TR-2)', () => {
     expect(r).toMatchObject({
       kind: 'person',
       name: 'Vương Thị Mai',
-      role: 'RE',
+      role: 'RM',
       owner: { team: { name: 'Bình Minh', deleted: true } },
       blocked: { code: 'TEAM_NOT_FOUND', params: { name: 'Bình Minh' } },
     });
@@ -687,7 +687,7 @@ describe('listTrash', () => {
   it('lists every deleted record, newest deletion first, whatever its team or RE (TR-7)', async () => {
     const { db, re, linh, customer, schedule } = await trash();
     const binhMinh = createTeam(db, { name: 'Bình Minh' });
-    const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RE', teamId: binhMinh.id });
+    const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RM', teamId: binhMinh.id });
     const anh = customer();
     const lan = createCustomer(db, {
       name: 'Hoàng Ngọc Lan',

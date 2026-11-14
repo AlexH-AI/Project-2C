@@ -199,9 +199,9 @@ async function trash11a() {
   const { db, team: saoMai, tl: ha } = base;
   const { person, customer, schedule, met, notes, submit } = records(db);
   const binhMinh = createTeam(db, { name: 'Bình Minh' });
-  const linh = person('Đỗ Khánh Linh', 'RE', saoMai.id);
-  const tuan = person('Bùi Anh Tuấn', 'RE', saoMai.id);
-  const mai = person('Vương Thị Mai', 'RE', binhMinh.id);
+  const linh = person('Đỗ Khánh Linh', 'RM', saoMai.id);
+  const tuan = person('Bùi Anh Tuấn', 'RM', saoMai.id);
+  const mai = person('Vương Thị Mai', 'RM', binhMinh.id);
   const huy = person('Phó Đức Huy', 'IS', null);
 
   // Trịnh Minh Anh: 7 appointments, 5 KYC notes, 2 AI analyses; her planned appointment of 06/10,
@@ -366,7 +366,7 @@ describe('purgeTrash', () => {
   it('D4: an RE kept only by a customer in the trash can be deleted once it is purged', async () => {
     const { db, team, re } = await setup(TODAY);
     const { person, customer, schedule } = records(db);
-    const khoa = person('Vũ Minh Khoa', 'RE', team.id);
+    const khoa = person('Vũ Minh Khoa', 'RM', team.id);
     const chau = customer('Ngô Bảo Châu', khoa.id);
     schedule(chau.id, khoa.id, d(6, 10));
     // Handed over: the past appointment stays Vũ Minh Khoa's (T-233).
@@ -661,11 +661,11 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
     const binhMinh = createTeam(db, { name: 'Bình Minh' });
     const phuongNam = createTeam(db, { name: 'Phương Nam' });
     // Their ids sort in this order: Giang and Huy of Bình Minh have Mai of Phương Nam between them.
-    const giang = person('Giang', 'RE', binhMinh.id);
-    const mai = person('Mai', 'RE', phuongNam.id);
-    const huy = person('Huy', 'RE', binhMinh.id);
+    const giang = person('Giang', 'RM', binhMinh.id);
+    const mai = person('Mai', 'RM', phuongNam.id);
+    const huy = person('Huy', 'RM', binhMinh.id);
     // Quang is deleted but Sao Mai, their team, is in use: the person is kept, the team is not.
-    const quang = person('Quang', 'RE', saoMai.id);
+    const quang = person('Quang', 'RM', saoMai.id);
     for (const gone of [giang, mai, huy, quang]) softDeletePerson(db, gone.id);
     softDeleteTeam(db, binhMinh.id);
     softDeleteTeam(db, phuongNam.id);
@@ -841,9 +841,13 @@ describe('the migration of the purge (0011)', () => {
     const purge = MIGRATIONS.find((m) => m.tag === '0011_trash_purge')!;
     const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < purge.id), now });
     const team = createTeam(old, { name: 'Sao Mai' });
-    const re = createPerson(old, { name: 'An', role: 'RE', teamId: team.id });
+    // The commands write RM, the role and the note source, which the CHECKs of a file before A2
+    // (0013) refuse: past them, here. The rows go through 0013 as they are.
+    old.sqlite.run('PRAGMA ignore_check_constraints = ON');
+    const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
     const live = withKyc(old, re.id, 'Lan');
     const gone = withKyc(old, re.id, 'Huệ');
+    old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
     softDeleteCustomer(old, gone.id);
     // The trigger before it refuses the deleted customer's rows too.
     expect(statement(old, gone.id)('DELETE FROM ai_analyses')).toThrow(/append-only/);
