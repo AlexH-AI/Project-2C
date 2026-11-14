@@ -78,4 +78,18 @@ describe('watchToday', () => {
     vi.advanceTimersByTime(24 * 60 * 60_000);
     expect(listener).not.toHaveBeenCalled();
   });
+
+  // DR6-201 (CXR6-B1): unsubscribing from inside the midnight call stops the timer for good.
+  it('sets no timer again once its listener unsubscribes at midnight', () => {
+    const { watcher } = setup();
+    let unsubscribe = () => {};
+    const listener = vi.fn(() => unsubscribe());
+    unsubscribe = watcher.subscribe(listener);
+
+    vi.advanceTimersByTime(2 * 60_000);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(24 * 60 * 60_000);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });

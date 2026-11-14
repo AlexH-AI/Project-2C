@@ -93,7 +93,7 @@ const DEMO_ROW_COUNTS = {
 // The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
-// A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RM.
+// A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RE.
 const DEMO_HASH = '60333daf5821f9c283aa96cec7c63db186bac9eae4344149e9d82462f2d579fe';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {

@@ -4,7 +4,7 @@ import {
   type CustomerStage,
   type StageTransition,
 } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   changeStageManually,
   createCustomer,
@@ -29,9 +29,8 @@ import {
 import { exportBackup, importBackup } from './backup';
 import { getKycProfile, listKycVersions } from './kyc';
 import { listPolicies, submitPolicy } from './policies';
-import { openDatabase } from './database';
-import { createPerson, createTeam, softDeletePerson, updatePerson } from './team';
-import { byId, codeOf, d, errorOf, setup, stageAtEndOfDay } from './test-support';
+import { createPerson, softDeletePerson, updatePerson } from './team';
+import { byId, clockSetBack, codeOf, d, errorOf, setup, stageAtEndOfDay } from './test-support';
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
@@ -67,6 +66,19 @@ describe('customers', () => {
       },
     ]);
     expect(persist).toHaveBeenCalledTimes(1);
+  });
+
+  // Review of PR #1167: a customer being created has no meeting yet; a stage change looks (T-232).
+  it('looks for no met meeting of a customer it is creating', async () => {
+    const { db, rm } = await setup();
+    const exec = vi.spyOn(db.sqlite, 'exec');
+    const metReads = () =>
+      exec.mock.calls.map(([sql]) => sql).filter((sql) => sql.includes("status = 'MET'"));
+
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 9) });
+    expect(metReads()).toEqual([]);
+    changeStageManually(db, customer.id, { to: 'N2', date: d(5, 9) });
+    expect(metReads()).toHaveLength(1);
   });
 
   it('refuses a closed stage, a missing RM, a non-RM owner and a bad date', async () => {
@@ -330,12 +342,8 @@ describe('customers', () => {
 
   // T-398 (review of PR #1145): the machine clock set back across midnight while the app is open.
   it('dates the KYC note of a profile change by a machine clock set back across midnight', async () => {
-    let machine = new Date(2026, 10, 8, 0, 5).getTime();
-    const db = await openDatabase({ now: () => new Date(machine) });
-    const team = createTeam(db, { name: 'Sao Mai' });
-    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
-    machine = new Date(2026, 10, 7, 23, 55).getTime();
+    const { db, lan, setBack } = await clockSetBack();
+    setBack();
 
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
     expect(getKycProfile(db, lan.id).notes.at(-1)).toMatchObject({

@@ -173,6 +173,19 @@ describe('errorMessage', () => {
     );
   });
 
+  // Review of PR 1167: a met meeting after today, after the machine clock was set back (T-399).
+  it('tells to check the machine clock when the meeting in the way is after today', () => {
+    const blocked = (params: { date: string; afterToday?: number }) =>
+      errorMessage(new DbError('TRANSITION_BEFORE_MEETING', params));
+
+    expect(blocked({ date: '08/11/2026', afterToday: 1 })).toBe(
+      'Đã ghi cuộc gặp Đã gặp ngày 08/11/2026, sau hôm nay của máy: không đổi nhóm vào ngày trước 08/11/2026. Kiểm lại ngày giờ của máy: đồng hồ có thể đã bị chỉnh lùi.',
+    );
+    expect(blocked({ date: '12/01/2026' })).toBe(
+      'Đã ghi cuộc gặp Đã gặp ngày 12/01/2026, cuộc gặp đó ghi nhóm của KH ngày ấy: không đổi nhóm vào ngày trước 12/01/2026.',
+    );
+  });
+
   // F-12: a code the UI can show without its own text reads as the general error.
   it('has a message for every code a command can reject with in the UI', () => {
     // Shown by their own screens, never through `errorMessage`: the seed runs on an empty

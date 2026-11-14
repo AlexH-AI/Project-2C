@@ -50,7 +50,8 @@ export const DB_ERROR_CODES = [
   'TRANSITION_BEFORE_LATEST',
   /**
    * A transition dated before a met appointment of the customer, which recorded the stage of its
-   * own day (T-232); params `date` (the latest such meeting's, as shown).
+   * own day (T-232); params `date` (the latest such meeting's, as shown), and `afterToday`: 1 when
+   * that day is after today, as it is once the machine clock was set back (T-399).
    */
   'TRANSITION_BEFORE_MEETING',
   /**

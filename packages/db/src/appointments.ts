@@ -5,7 +5,8 @@
  * transition carries the meeting day, so an outcome recorded or restored after a later stage change
  * is refused (D10); one that keeps the stage records the stage of its day (T-232).
  * Once a later transition exists, only the status, the stage after and the day are locked (D7).
- * A meeting held or missed is dated today at the latest; only a cancellation may come ahead.
+ * A meeting is recorded held or missed only from its day on (`requireOutcomeDay`); only a
+ * cancellation may come ahead.
  */
 import {
   canAppointment,
@@ -150,8 +151,8 @@ export function recordMeetingOutcome(
 ): AppointmentRecord {
   return db.transaction(() => {
     const row = liveAppointment(db, id);
-    // Wider than 6c, which records a scheduled appointment only (`recordOutcomeWithNext` checks
-    // that): the seed and the tests record an outcome again over one, as editing it would.
+    // Wider than 6c, offered on a scheduled appointment only (the UI; `recordOutcomeWithNext` when
+    // it books the next one): the tests record an outcome again over one, as editing it would.
     if (!canAppointment(row.status, 'record') && !canAppointment(row.status, 'edit')) {
       throw new DbError('INVALID_STATUS');
     }

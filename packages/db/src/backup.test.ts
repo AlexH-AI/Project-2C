@@ -15,7 +15,7 @@ import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
 import { createPerson, createTeam, listTeams, renameTeam } from './team';
-import { d, setup } from './test-support';
+import { clockSetBack, d, setup } from './test-support';
 
 const SLOW = 60_000;
 const EXPORTED_AT = new Date(Date.UTC(2026, 8, 30, 7, 45, 0));
@@ -206,13 +206,8 @@ describe('importBackup', () => {
 
   // T-398 (review of PR #1145): rule 10 reads the day of the import's clock, as the commands do.
   it('takes back the file just exported on a machine clock set back across midnight', async () => {
-    let machine = new Date(2026, 10, 8, 0, 5).getTime();
-    const now = () => new Date(machine);
-    const db = await openDatabase({ now });
-    const team = createTeam(db, { name: 'Sao Mai' });
-    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
-    machine = new Date(2026, 10, 7, 23, 55).getTime();
+    const { db, now, lan, setBack } = await clockSetBack();
+    setBack();
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
 
     const { db: imported } = await importBackup(exportBackup(db), { now });

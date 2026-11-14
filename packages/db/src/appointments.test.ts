@@ -31,7 +31,7 @@ import {
 import { openDatabase, type Database } from './database';
 import { listPolicies } from './policies';
 import { createPerson, createTeam, listPeople, softDeletePerson, updatePerson } from './team';
-import { byId, codeOf, errorOf, setup, stageAtEndOfDay } from './test-support';
+import { byId, clockSetBack, codeOf, errorOf, setup, stageAtEndOfDay } from './test-support';
 
 // The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
 const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
@@ -564,18 +564,14 @@ describe('recordOutcomeWithNext', () => {
 
   // T-398 (review of PR #1145): the machine clock set back across midnight while the app is open.
   it('books the next appointment on the day of a machine clock set back across midnight', async () => {
-    let machine = new Date(2026, 10, 8, 0, 5).getTime();
-    const db = await openDatabase({ now: () => new Date(machine) });
-    const team = createTeam(db, { name: 'Sao Mai' });
-    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
+    const { db, rm, lan, setBack } = await clockSetBack();
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,
       rmId: rm.id,
       date: d(5, 11),
       triggerType: 'OTHER',
     });
-    machine = new Date(2026, 10, 7, 23, 55).getTime();
+    setBack();
 
     expect(recordOutcomeWithNext(db, id, MET_N2, { date: d(7, 11) }).next.date).toEqual(d(7, 11));
   });
@@ -1098,9 +1094,10 @@ describe('the stage on the meeting day', () => {
     const late = schedule(8);
 
     const blocked = { code: 'TRANSITION_BEFORE_MEETING', params: { date: '12/01/2026' } };
-    expect(
-      errorOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(11, 1) })),
-    ).toMatchObject(blocked);
+    const change = () => changeStageManually(db, customer.id, { to: 'N2', date: d(11, 1) });
+    expect(errorOf(change)).toMatchObject(blocked);
+    // A meeting of today or before: nothing of the machine clock (review of PR #1167).
+    expect(errorOf(change)?.params).toEqual(blocked.params);
     expect(errorOf(() => recordMeetingOutcome(db, late.id, MET_N2))).toMatchObject(blocked);
     expect(stage()).toBe('N3');
 
@@ -1111,12 +1108,43 @@ describe('the stage on the meeting day', () => {
 
   // T-399 (review of PR #1163): a meeting met just before the machine clock was set back across
   // midnight is dated after the new today; the change still may not come before it.
+  // Review of PR #1167: the restore and the edit dialog (6f) check the met meetings as the 5d does.
+  it('refuses to restore a stage move dated before a met appointment recorded since', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const moved = schedule(5);
+    recordMeetingOutcome(db, moved.id, MET_N2);
+    softDeleteAppointment(db, moved.id);
+    const kept = schedule(12);
+    recordMeetingOutcome(db, kept.id, KEPT_N3);
+
+    expect(errorOf(() => restoreAppointment(db, moved.id))).toMatchObject({
+      code: 'TRANSITION_BEFORE_MEETING',
+      params: { date: '12/01/2026' },
+    });
+    expect(stage()).toBe('N3');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(1);
+  });
+
+  it('refuses an edited outcome that moves the stage before a met appointment', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const missed = schedule(5);
+    recordMeetingOutcome(db, missed.id, { status: 'NO_SHOW' });
+    const kept = schedule(12);
+    recordMeetingOutcome(db, kept.id, KEPT_N3);
+
+    expect(errorOf(() => editMeetingOutcome(db, missed.id, MET_N2, {}))).toMatchObject({
+      code: 'TRANSITION_BEFORE_MEETING',
+      params: { date: '12/01/2026' },
+    });
+    expect(byId(listAppointments(db), missed.id)?.status).toBe('NO_SHOW');
+    expect(stage()).toBe('N3');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(1);
+  });
+
+  // The meeting day is after today then: no day typed gets past it, and the error says so for the
+  // message to name the machine clock (review of PR #1167).
   it('refuses a stage change dated before a met appointment after the clock was set back', async () => {
-    let machine = new Date(2026, 10, 8, 0, 5).getTime();
-    const db = await openDatabase({ now: () => new Date(machine) });
-    const team = createTeam(db, { name: 'Sao Mai' });
-    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
+    const { db, rm, lan, setBack } = await clockSetBack();
     const kept = scheduleAppointment(db, {
       customerId: lan.id,
       rmId: rm.id,
@@ -1124,11 +1152,11 @@ describe('the stage on the meeting day', () => {
       triggerType: 'OTHER',
     });
     recordMeetingOutcome(db, kept.id, KEPT_N3);
-    machine = new Date(2026, 10, 7, 23, 55).getTime();
+    setBack();
 
-    expect(
-      errorOf(() => changeStageManually(db, lan.id, { to: 'N2', date: d(7, 11) })),
-    ).toMatchObject({ code: 'TRANSITION_BEFORE_MEETING', params: { date: '08/11/2026' } });
+    const error = errorOf(() => changeStageManually(db, lan.id, { to: 'N2', date: d(7, 11) }));
+    expect(error?.code).toBe('TRANSITION_BEFORE_MEETING');
+    expect(error?.params).toEqual({ date: '08/11/2026', afterToday: 1 });
     expect(listStageTransitions(db, lan.id)).toHaveLength(1);
   });
 
@@ -1490,7 +1518,7 @@ describe('deleting appointments', () => {
 });
 
 describe('the status rule of the commands (T-403)', () => {
-  /** A live appointment of 10/01 in `status`, the only one of its customer. */
+  /** A live appointment of 10/01 in `status`; rescheduled, the one of 14/01 takes its place. */
   async function inStatus(status: AppointmentStatus) {
     const ctx = await withCustomer();
     const { id } = ctx.schedule(10);
