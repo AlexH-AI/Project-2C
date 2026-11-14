@@ -5333,7 +5333,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const COMMON = path.dirname(fileURLToPath(import.meta.url));
+// NTFS names ignore case, the keys of dot2-baseline.json and the paths of dot2-acl.json do not: WS,
+// R6 and all below them are spelt as on disk, whatever case the script's path was typed in (T-430).
+const COMMON = fs.realpathSync.native(path.dirname(fileURLToPath(import.meta.url)));
 const R6 = path.dirname(COMMON);
 const WS = path.dirname(R6);
 const { USERPROFILE: HOME, TEMP, APPDATA, LOCALAPPDATA, USERNAME: USER, USERDOMAIN } = process.env;
@@ -5461,6 +5463,9 @@ function baseline() {
 function clean() {
   needBaseline();
   const base = readJson(BASELINE);
+  // A worktree with no key of its own would keep nothing of the baseline: stop before deleting (T-430).
+  const missing = WORKTREES.filter((wt) => !Object.hasOwn(base, wt));
+  if (missing.length) throw new Stop(`${BASELINE} has no key for ${missing.join(', ')}; its keys: ${Object.keys(base).join(', ')}`);
   const extras = (wt, held) => {
     const kept = new Set(base[wt]);
     return leftovers(wt, held).filter((e) => !kept.has(e));
@@ -5572,7 +5577,7 @@ function treeTargets() {
     for (const id of new Set(list(proj).map((e) => e.name.replace(/\.jsonl$/, '')))) out.push(path.join(c, 'file-history', id));
   }
   out.push(path.join(TEMP, 'claude', PROJECT), ...reviewTempDirs());
-  // NTFS names ignore case: PROJECT is spelt as the script's path was typed, reviewTempDirs as on disk (T-388).
+  // NTFS names ignore case: PROJECT is spelt from WS, reviewTempDirs as Claude Code named each folder (T-388).
   return [...new Map(out.map((p) => [p.toLowerCase(), p])).values()].filter(exists);
 }
 
