@@ -6,6 +6,6 @@ import { StageHead } from './CustomersScreen';
 describe('StageHead', () => {
   it('shows the count of a column with its thousands grouped', () => {
     const html = renderToStaticMarkup(<StageHead stage="N4" count={1234} className="" />);
-    expect(html).toContain('>1.234</span>');
+    expect(html).toContain('>1,234</span>');
   });
 });

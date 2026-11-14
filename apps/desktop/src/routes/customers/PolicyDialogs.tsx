@@ -8,8 +8,6 @@ import {
 } from '@p2c/db';
 import {
   formatDate,
-  formatVndCompact,
-  formatVndDelta,
   normalizeText,
   type CalendarDate,
   type Person,
@@ -36,6 +34,7 @@ import {
   type PolicyDraft,
   type PolicyMode,
 } from './policy-form';
+import { formatAmountCompact, formatAmountDelta } from '../money-view';
 
 export type { PolicyMode } from './policy-form';
 
@@ -158,7 +157,7 @@ export function PolicyDialog({
             ? t('policyForm.sub', {
                 customer: customer.name,
                 date: formatDate(saved.submittedDate),
-                fyp: formatVndCompact(saved.submittedFyp),
+                fyp: formatAmountCompact(saved.submittedFyp),
               })
             : t('policyForm.newSub', { customer: customer.name, code: customer.code })
       }
@@ -215,7 +214,7 @@ export function PolicyDialog({
           </div>
           {mode.kind === 'new' && caseSize !== null && (
             <span className="text-xs text-fg-3">
-              {t('policyForm.caseSizeHelp', { amount: formatVndCompact(caseSize) })}
+              {t('policyForm.caseSizeHelp', { amount: formatAmountCompact(caseSize) })}
             </span>
           )}
         </>
@@ -242,7 +241,7 @@ export function PolicyDialog({
                 : change?.fromSubmitted
                   ? t('policyForm.fromSubmitted', {
                       read: amountRead(issuedFyp),
-                      diff: formatVndDelta(change.fromSubmitted),
+                      diff: formatAmountDelta(change.fromSubmitted),
                     })
                   : amountRead(issuedFyp)
             }
@@ -321,7 +320,7 @@ function DeletePolicyDialog({
       title={t('policyDelete.title', { date: formatDate(policy.submittedDate) })}
       subtitle={t('policyDelete.sub', {
         customer: customer.name,
-        fyp: formatVndCompact(policy.submittedFyp),
+        fyp: formatAmountCompact(policy.submittedFyp),
       })}
       onClose={onClose}
       onSubmit={remove}

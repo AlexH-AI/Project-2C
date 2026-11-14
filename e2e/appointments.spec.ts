@@ -29,13 +29,13 @@ function screen(page: Page) {
   };
 }
 
-const SUMMARY = /[\d.]+ lịch · [\d.]+ đã gặp/;
+const SUMMARY = /[\d,]+ lịch · [\d,]+ đã gặp/;
 
 /** The list shows the first hundred of the period's `count` rows, with a foot over a hundred (T-150). */
 async function expectList(page: Page, count: number) {
   const { rows } = screen(page);
   await expect(rows).toHaveCount(Math.min(count, 100));
-  const foot = page.getByText(/^Đang hiện \d+ \/ [\d.]+ lịch$/);
+  const foot = page.getByText(/^Đang hiện \d+ \/ [\d,]+ lịch$/);
   if (count > 100)
     await expect(foot).toHaveText(`Đang hiện 100 / ${count.toLocaleString('vi-VN')} lịch`);
   else await expect(foot).toHaveCount(0);
@@ -49,10 +49,10 @@ async function showDay(page: Page, date: string) {
   await expect(day.getByRole('heading', { level: 2 })).toHaveText(`Trong ngày ${date}`);
 }
 
-/** The period's "1.482 lịch · 349 đã gặp" → 1482 (the header comes before the calendar's). */
+/** The period's "1,482 lịch · 349 đã gặp" → 1482 (the header comes before the calendar's). */
 async function total(page: Page): Promise<number> {
   const text = await page.getByText(SUMMARY).first().textContent();
-  return Number(text?.match(/[\d.]+/)?.[0].replaceAll('.', ''));
+  return Number(text?.match(/[\d,]+/)?.[0].replaceAll(',', ''));
 }
 
 test.beforeEach(async ({ page }) => {
@@ -164,7 +164,7 @@ test('the year period shows twelve months in four quarters, without the day', as
     .getByRole('button')
     .evaluateAll((cells) => cells.map((cell) => cell.getAttribute('aria-label') ?? ''));
   const sum = labels.reduce(
-    (n, label) => n + Number(label.match(/: ([\d.]+) lịch/)?.[1]?.replaceAll('.', '')),
+    (n, label) => n + Number(label.match(/: ([\d,]+) lịch/)?.[1]?.replaceAll(',', '')),
     0,
   );
   expect(sum).toBeGreaterThan(999);
@@ -177,12 +177,12 @@ test('the year period shows twelve months in four quarters, without the day', as
     );
   expect(
     quarters.reduce(
-      (n, text) => n + Number(text.match(/^([\d.]+) lịch$/)?.[1]?.replaceAll('.', '')),
+      (n, text) => n + Number(text.match(/^([\d,]+) lịch$/)?.[1]?.replaceAll(',', '')),
       0,
     ),
   ).toBe(sum);
   // R2-03: the year's line in the whole scope groups its thousands, like the months.
-  await expect(page.getByText(SUMMARY).first()).toHaveText(/^\d{1,3}(\.\d{3})+ lịch · /);
+  await expect(page.getByText(SUMMARY).first()).toHaveText(/^\d{1,3}(,\d{3})+ lịch · /);
   await expectList(page, sum);
 });
 
@@ -713,7 +713,7 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
     year.getByRole('button', { name: /^Tháng 9\/2026:/ }).locator('[title^="Chưa ghi kết quả: "]'),
   ).toHaveCount(1);
   await expect(year.getByRole('button', { name: /^Tháng 9\/2026:/ })).toHaveAccessibleName(
-    /^Tháng 9\/2026: [\d.]+ lịch — Đã gặp [\d.]+, Dời lịch \/ hủy \/ không đến [\d.]+, Chưa ghi kết quả [1-9]\d*, Dự kiến [\d.]+$/,
+    /^Tháng 9\/2026: [\d,]+ lịch — Đã gặp [\d,]+, Dời lịch \/ hủy \/ không đến [\d,]+, Chưa ghi kết quả [1-9][\d,]*, Dự kiến [\d,]+$/,
   );
 });
 

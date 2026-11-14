@@ -149,9 +149,13 @@ export function closeRate(issuedCount: number, rfCount: number): CloseRate | nul
   return rfCount === 0 ? null : { numerator: issuedCount, denominator: rfCount };
 }
 
-/** The close rate in percent, unrounded: the KPI shows it, its delta is the difference in points. */
+/**
+ * The close rate in percent, unrounded: the KPI shows it, its delta is the difference in points.
+ * Multiplied before it is divided, so a rate at half a tenth is exact and rounds up: 23 ÷ 80 is
+ * 28.75, not 28.749999999999996.
+ */
 export function closeRatePercent({ numerator, denominator }: CloseRate): number {
-  return (numerator / denominator) * 100;
+  return (numerator * 100) / denominator;
 }
 
 export interface PeriodMetrics extends PolicyMetrics {

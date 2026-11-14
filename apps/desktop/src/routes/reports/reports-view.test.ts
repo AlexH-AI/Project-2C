@@ -80,10 +80,10 @@ describe('reportRows', () => {
     const rows = reportRows(GOLDEN, JAN_2027, { kind: 'all' }, d(2027, 3, 15));
 
     expect(rows.summary.name).toBe('Toàn bộ');
-    expect(results(reportCells(rows.summary))).toEqual(['5', '5', '1,9 tỷ', '5', '2,3 tỷ', '100%']);
+    expect(results(reportCells(rows.summary))).toEqual(['5', '5', '1.9 tỷ', '5', '2.3 tỷ', '100%']);
     expect(rows.byTeam?.rows.map((row) => row.name)).toEqual(['Team A', 'Team B']);
     expect(rows.byTeam?.rows.map((row) => results(reportCells(row)))).toEqual([
-      ['3', '3', '1,5 tỷ', '2', '1,5 tỷ', '66,7%'],
+      ['3', '3', '1.5 tỷ', '2', '1.5 tỷ', '66.7%'],
       ['2', '2', '400 tr', '3', '800 tr', '150%'],
     ]);
     expect(rows.byTeam?.total.name).toBe('Tổng');
@@ -91,9 +91,9 @@ describe('reportRows', () => {
     expect(results(reportCells(rows.byTeam!.total))).toEqual([
       '5',
       '5',
-      '1,9 tỷ',
+      '1.9 tỷ',
       '5',
-      '2,3 tỷ',
+      '2.3 tỷ',
       '100%',
     ]);
   });
@@ -110,7 +110,7 @@ describe('reportRows', () => {
     expect(results(reportCells(rows.byRm!.rows[3]!))).toEqual([
       '0',
       '0',
-      '0 ₫',
+      '0 VNĐ',
       '1',
       '400 tr',
       '—',
@@ -156,7 +156,14 @@ describe('reportRows', () => {
 
     const past = reportRows(data, JAN_2027, scope, d(2027, 3, 15));
     expect(reportCells(past.byRm!.total)).toEqual(reportCells(past.summary));
-    expect(reportCells(past.byRm!.total).slice(5, 11)).toEqual(['0', '0', '0 ₫', '0', '0 ₫', '—']);
+    expect(reportCells(past.byRm!.total).slice(5, 11)).toEqual([
+      '0',
+      '0',
+      '0 VNĐ',
+      '0',
+      '0 VNĐ',
+      '—',
+    ]);
   });
 });
 

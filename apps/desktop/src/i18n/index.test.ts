@@ -1,6 +1,7 @@
 import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from '@p2c/ai';
 import { DB_ERROR_CODES, DbError } from '@p2c/db';
 import { KYC_CATEGORIES, KYC_FIELDS, type KycField } from '@p2c/domain';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COUNT_SLOTS, errorMessage, fillSlots, formatMessage, joinParts, t, tableMore } from '.';
 import { vi } from './vi';
@@ -14,6 +15,7 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'amount',
   'code',
   'compact',
+  'currency',
   'customer',
   'date',
   'defaults',
@@ -91,11 +93,11 @@ describe('t', () => {
     );
   });
 
-  // R2-03: "4.528 lịch" next to "1.234 lịch", however the count was passed.
+  // R2-03: "4,528 lịch" next to "1,234 lịch", however the count was passed (ADR-0018 §4).
   it('groups the thousands of a count', () => {
-    expect(t('appointments.summary', { total: 4528, met: 1234 })).toBe('4.528 lịch · 1.234 đã gặp');
+    expect(t('appointments.summary', { total: 4528, met: 1234 })).toBe('4,528 lịch · 1,234 đã gặp');
     expect(t('customers.summary', { open: 12045, closed: 0 })).toBe(
-      '12.045 KH đang mở · 0 đã đóng',
+      '12,045 KH đang mở · 0 đã đóng',
     );
     expect(t('appointments.year', { year: 2026 })).toBe('Lịch năm 2026');
   });
@@ -123,6 +125,7 @@ describe('formatMessage', () => {
     expect(formatMessage(customers, { count: 1 })).toBe('1 customer');
     expect(formatMessage(customers, { count: 2 })).toBe('2 customers');
     expect(formatMessage(customers, { count: 0 })).toBe('0 customers');
+    expect(formatMessage(customers, { count: 1204 })).toBe('1,204 customers');
   });
 
   it('goes by the slot that holds a count, whatever its name', () => {
@@ -140,6 +143,18 @@ describe('formatMessage', () => {
     expect(formatMessage({ one: 'Year {year}', other: 'Years {year}' }, { year: 1 })).toBe(
       'Years 1',
     );
+  });
+
+  // A count passed as text is shown as passed and never picks `one` ('1' is not 1): "1 tokens".
+  // So every caller passes the number and `fillSlots` writes it (review note of T-437, L162).
+  it('gets the number of every count from its callers, never a formatted text', () => {
+    const src = new URL('../', import.meta.url);
+    const formatted = new RegExp(`\\b(?:${[...COUNT_SLOTS].join('|')}): *format\\w*\\(`);
+    const callers = (readdirSync(src, { recursive: true }) as string[])
+      .map((file) => file.replaceAll('\\', '/'))
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .filter((file) => formatted.test(readFileSync(new URL(file, src), 'utf8')));
+    expect(callers).toEqual([]);
   });
 
   it('fills the slots of a message with one form', () => {
@@ -248,9 +263,9 @@ describe('errorMessage', () => {
 describe('tableMore', () => {
   it('words the foot of a big table as the mockup does, thousands grouped', () => {
     const appointments = tableMore('appointments');
-    expect(appointments.shown(100, 7071)).toBe('Đang hiện 100 / 7.071 lịch');
+    expect(appointments.shown(100, 7071)).toBe('Đang hiện 100 / 7,071 lịch');
     expect(appointments.more(71)).toBe('Hiện thêm 71 lịch');
-    expect(appointments.all(7071)).toBe('Đã hiện hết 7.071 lịch');
+    expect(appointments.all(7071)).toBe('Đã hiện hết 7,071 lịch');
     expect(tableMore('customers').more(100)).toBe('Hiện thêm 100 khách hàng');
     expect(tableMore('people').all(120)).toBe('Đã hiện hết 120 người');
   });

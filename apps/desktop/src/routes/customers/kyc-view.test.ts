@@ -113,20 +113,21 @@ describe('factText', () => {
 
 describe('kycAmountRead (NT-HS-05, mockup 7b / 7c)', () => {
   it('reads an amount typed for a money trường as every money input does', () => {
-    expect(kycAmountRead('annualIncome', '6 tỷ')).toBe('6.000.000.000 ₫ (6 tỷ)');
-    expect(kycAmountRead('totalAssets', '1 tỷ 2')).toBe('1.200.000.000 ₫ (1,2 tỷ)');
-    expect(kycAmountRead('liabilities', '800tr')).toBe('800.000.000 ₫ (800 tr)');
+    expect(kycAmountRead('annualIncome', '6 tỷ')).toBe('6,000,000,000 VNĐ (6 tỷ)');
+    expect(kycAmountRead('totalAssets', '1 tỷ 2')).toBe('1,200,000,000 VNĐ (1.2 tỷ)');
+    expect(kycAmountRead('liabilities', '800tr')).toBe('800,000,000 VNĐ (800 tr)');
+    expect(kycAmountRead('annualIncome', '500k')).toBe('500,000 VNĐ (500K)');
   });
 
-  it('gives the full form once when the compact one is the same', () => {
-    expect(kycAmountRead('liabilities', '0')).toBe('0 ₫');
-    expect(kycAmountRead('annualIncome', '500k')).toBe('500.000 ₫');
+  it('gives the full form once when the compact one is the same, under 1,000', () => {
+    expect(kycAmountRead('liabilities', '0')).toBe('0 VNĐ');
+    expect(kycAmountRead('annualIncome', '950')).toBe('950 VNĐ');
   });
 
   it('reads the text as the command stores it, invisible characters dropped (K20, DR6-101)', () => {
     // Saved as "6tỷ", which reads as 6 tỷ.
-    expect(kycAmountRead('annualIncome', '6\u200btỷ')).toBe('6.000.000.000 ₫ (6 tỷ)');
-    expect(kycAmountRead('totalAssets', '\ufeff1 tỷ\u2060 2')).toBe('1.200.000.000 ₫ (1,2 tỷ)');
+    expect(kycAmountRead('annualIncome', '6\u200btỷ')).toBe('6,000,000,000 VNĐ (6 tỷ)');
+    expect(kycAmountRead('totalAssets', '\ufeff1 tỷ\u2060 2')).toBe('1,200,000,000 VNĐ (1.2 tỷ)');
   });
 
   it('reads nothing the parser cannot, nor any other trường', () => {

@@ -116,9 +116,9 @@ describe('buildReportWorkbook', () => {
       'Tổng',
       'Chuyển RF',
       'HĐ nộp',
-      'Case size (₫)',
+      'Case size (VNĐ)',
       'HĐ phát hành',
-      'Doanh số (₫)',
+      'Doanh số (VNĐ)',
       'Tỉ lệ chốt',
       'N4',
       'N3',
@@ -160,7 +160,7 @@ describe('buildReportWorkbook', () => {
     expect(
       (sheet.getRow(3).values as unknown[])
         .slice(1)
-        .map((label) => String(label).replace(' (₫)', '')),
+        .map((label) => String(label).replace(' (VNĐ)', '')),
     ).toEqual(headers('col').map(({ text }) => text));
   });
 

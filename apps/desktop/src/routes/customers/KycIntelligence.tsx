@@ -1,7 +1,7 @@
 import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
 import {
   evaluateKycGate,
-  formatCount,
+  formatNumber,
   formatDate,
   formatDayMonth,
   KYC_INSUFFICIENT_MESSAGE,
@@ -275,7 +275,7 @@ function Analysis({
 
 /** Mockups 2a, 4d: what Phân tích sends, and where, before the first analysis. */
 function HelpLine({ help }: { help: AiPanelHelp }) {
-  const count = formatCount(help.count);
+  const count = formatNumber(help.count);
   return (
     <p className="m-0 text-xs text-fg-3">
       {help.provider === 'MOCK'

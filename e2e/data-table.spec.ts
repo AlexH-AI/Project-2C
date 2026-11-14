@@ -81,7 +81,7 @@ test('headers sort from the keyboard', async ({ page }) => {
 });
 
 // T-150 (DR-03, mockup table-more.html): a big table shows a hundred rows at a time.
-const SUMMARY = /^[\d.]+ lịch · [\d.]+ đã gặp/;
+const SUMMARY = /^[\d,]+ lịch · [\d,]+ đã gặp/;
 const grouped = (n: number) => n.toLocaleString('vi-VN');
 
 async function openYear(page: Page) {
@@ -92,7 +92,7 @@ async function openYear(page: Page) {
     .click();
   await expect(page.getByRole('region', { name: /^Lịch năm/ })).toBeVisible();
   const text = (await page.getByText(SUMMARY).first().textContent()) ?? '';
-  const total = Number(/^[\d.]+/.exec(text)?.[0].replaceAll('.', ''));
+  const total = Number(/^[\d,]+/.exec(text)?.[0].replaceAll(',', ''));
   return { ...opened, total, rows: opened.table.locator('tbody tr') };
 }
 
@@ -152,7 +152,7 @@ test('another period goes back to a hundred rows; the last click shows the rest'
     .getByRole('radio', { name: 'Tháng' })
     .click();
   const text = (await page.getByText(SUMMARY).first().textContent()) ?? '';
-  const month = Number(/^[\d.]+/.exec(text)?.[0].replaceAll('.', ''));
+  const month = Number(/^[\d,]+/.exec(text)?.[0].replaceAll(',', ''));
   expect(month).toBeGreaterThan(100);
   await expect(rows).toHaveCount(100);
 
@@ -174,7 +174,7 @@ test('"+ n KH" of the kanban goes with it: the table it opens takes the focus (D
   page,
 }) => {
   await page.goto('/#/customers');
-  const more = page.getByRole('button', { name: /^\+ [\d.]+ KH · xem dạng bảng$/ }).first();
+  const more = page.getByRole('button', { name: /^\+ [\d,]+ KH · xem dạng bảng$/ }).first();
   await more.focus();
   await page.keyboard.press('Enter');
 

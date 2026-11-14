@@ -67,7 +67,7 @@ test('the stage chart is described by its numbers of today, a hidden table after
   // A row per day of September; today (15/09) is the four tiles, the days after it "—".
   const rows = table.getByRole('row').filter({ has: page.getByRole('rowheader') });
   await expect(rows).toHaveCount(30);
-  const count = (text: string | null) => Number((text ?? '').replaceAll('.', ''));
+  const count = (text: string | null) => Number((text ?? '').replaceAll(',', ''));
   const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
   const tiles = await Promise.all(
     ['N4', 'N3', 'N2', 'N1'].map(async (stage) =>

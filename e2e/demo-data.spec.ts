@@ -9,7 +9,7 @@ async function cardCounts(page: Page) {
   await page.getByRole('link', { name: 'Cài đặt' }).click();
   const card = await page.getByRole('region', { name: 'File dữ liệu' }).innerText();
   const [, customers, appointments, policies] =
-    /([\d.]+) KH · ([\d.]+) lịch hẹn · ([\d.]+) HĐ/.exec(card)!;
+    /([\d,]+) KH · ([\d,]+) lịch hẹn · ([\d,]+) HĐ/.exec(card)!;
   return { customers, appointments, policies };
 }
 

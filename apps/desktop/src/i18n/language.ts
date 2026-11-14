@@ -1,7 +1,12 @@
+import { languageFor, type CurrencyCode, type Language } from '@p2c/domain';
 import type { PersistQueue } from '../data/persist-queue';
 
-/** The two interface languages (ADR-0018 §1). */
-export type Language = 'vi' | 'en';
+/**
+ * The currency of the data (ADR-0018 §2): the one place the app picks it. Money is shown through
+ * `routes/money-view.ts`, which passes it to `@p2c/domain`. Every database is VND until the
+ * `currency` key of `settings` (G-04), which this then reads.
+ */
+export const DATA_CURRENCY: CurrencyCode = 'VND';
 
 /**
  * Where this machine keeps its language: the webview's storage, never the database, so importing
@@ -35,17 +40,15 @@ export function readStoredLanguage(
  * shows English, keeping what the machine stored; for VND data the stored language, else
  * Vietnamese.
  */
-export function resolveLanguage(stored: Language | undefined, currency: string): Language {
-  if (currency !== 'VND') return 'en';
-  return stored ?? 'vi';
+export function resolveLanguage(stored: Language | undefined, currency: CurrencyCode): Language {
+  return languageFor(currency, stored ?? 'vi');
 }
 
 /**
  * The language of this run, set once as the i18n loads: before any module builds its labels
- * (`PERIOD_LABELS`) and before the first render. Every database is VND until the `currency` key
- * (G-04).
+ * (`PERIOD_LABELS`) and before the first render.
  */
-export const LANGUAGE: Language = resolveLanguage(readStoredLanguage(), 'VND');
+export const LANGUAGE: Language = resolveLanguage(readStoredLanguage(), DATA_CURRENCY);
 
 export interface ChangeLanguagePorts {
   /** The app's save queue (`AppData.saves`). */

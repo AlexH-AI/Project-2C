@@ -4,11 +4,10 @@ import {
   appointmentCountsByScope,
   closeRate,
   compareDates,
-  formatCount,
+  formatNumber,
   formatDate,
   formatDayMonth,
   formatDayOfMonth,
-  formatVndCompact,
   isInPeriod,
   isRm,
   periodMetricsByMark,
@@ -34,6 +33,7 @@ import { joinParts, t } from '../../i18n';
 import { rmOptions } from '../../shell/scope';
 import { closeRateText, countedWindow } from '../overview/overview-view';
 import { eachMark } from '../overview/stage-view';
+import { formatAmountCompact } from '../money-view';
 
 export interface ReportData extends MetricsData {
   readonly customers: readonly Customer[];
@@ -326,7 +326,7 @@ export interface ReportColumn {
   readonly format: 'count' | 'money' | 'percent';
   /** The number Excel adds up; null leaves its cell empty, where the screen shows "—". */
   readonly value: (figures: ReportFigures) => number | null;
-  /** The cell on screen: money short (`1,9 tỷ`), "—" for a number not there yet. */
+  /** The cell on screen: money short (`1.9 tỷ`), "—" for a number not there yet. */
   readonly text: (figures: ReportFigures) => string;
 }
 
@@ -338,7 +338,7 @@ function figureColumn(
   value: (figures: ReportFigures) => number | null,
   format: 'count' | 'money' = 'count',
 ): ReportColumn {
-  const write = format === 'money' ? formatVndCompact : formatCount;
+  const write = format === 'money' ? formatAmountCompact : formatNumber;
   const text = (figures: ReportFigures) => {
     const figure = value(figures);
     return figure === null ? t('overview.none') : write(figure);

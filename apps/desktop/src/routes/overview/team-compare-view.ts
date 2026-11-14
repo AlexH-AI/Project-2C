@@ -3,9 +3,8 @@ import {
   appointmentCountsByScope,
   closeRate,
   customPeriod,
-  formatCount,
+  formatNumber,
   formatPeriodValue,
-  formatVndCompact,
   periodMetricsByScope,
   type CalendarDate,
   type MetricsData,
@@ -17,6 +16,7 @@ import {
 import { t } from '../../i18n';
 import { teamRms } from '../../shell/scope';
 import { closeRateText, countedWindow } from './overview-view';
+import { formatAmountCompact } from '../money-view';
 
 export interface TeamCompareData extends MetricsData {
   readonly teams: readonly Team[];
@@ -48,14 +48,14 @@ export interface TeamCompareView {
 }
 
 function cells(met: number, metrics: PeriodMetrics | null): string[] {
-  if (!metrics) return [formatCount(met), ...Array<string>(6).fill(t('overview.none'))];
+  if (!metrics) return [formatNumber(met), ...Array<string>(6).fill(t('overview.none'))];
   return [
-    formatCount(met),
-    formatCount(metrics.rfCount),
-    formatCount(metrics.submittedCount),
-    formatVndCompact(metrics.caseSize),
-    formatCount(metrics.issuedCount),
-    formatVndCompact(metrics.revenue),
+    formatNumber(met),
+    formatNumber(metrics.rfCount),
+    formatNumber(metrics.submittedCount),
+    formatAmountCompact(metrics.caseSize),
+    formatNumber(metrics.issuedCount),
+    formatAmountCompact(metrics.revenue),
     closeRateText(metrics.closeRate),
   ];
 }

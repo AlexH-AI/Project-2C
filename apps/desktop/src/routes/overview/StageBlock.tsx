@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react';
-import { formatCount } from '@p2c/domain';
+import { formatNumber } from '@p2c/domain';
 import { Chart } from '@p2c/ui';
 import { t } from '../../i18n';
 import { HEADING, PANEL } from '../classes';
@@ -60,7 +60,7 @@ export function StageBlock({ block }: { block: StageBlockView }) {
               <b
                 className={`ml-auto text-2xl tabular-nums ${off || !block.tiles ? 'font-medium text-fg-3' : 'font-semibold'}`}
               >
-                {block.tiles ? formatCount(block.tiles[stage]) : t('overview.none')}
+                {block.tiles ? formatNumber(block.tiles[stage]) : t('overview.none')}
               </b>
             </button>
           );

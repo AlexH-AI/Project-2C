@@ -193,13 +193,13 @@ export function markdownTable(run: PerfRun, base?: PerfRun): string {
 const LOAD_MIN = { customers: 1400, appointments: 9000 };
 
 const count = (text: string, label: string): number | undefined => {
-  const match = new RegExp(`([\\d.]+) ${label}`).exec(text);
-  return match ? Number((match[1] as string).replaceAll('.', '')) : undefined;
+  const match = new RegExp(`([\\d,]+) ${label}`).exec(text);
+  return match ? Number((match[1] as string).replaceAll(',', '')) : undefined;
 };
 
 /**
- * Null when Cài đặt → Dữ liệu → Nội dung ("4 team · 51 nhân sự · 1.481 KH · 10.252 lịch hẹn ·
- * 1.674 HĐ") counts the load data; else why the probe must not measure.
+ * Null when Cài đặt → Dữ liệu → Nội dung ("4 team · 51 nhân sự · 1,481 KH · 10,252 lịch hẹn ·
+ * 1,674 HĐ") counts the load data; else why the probe must not measure.
  */
 export function loadDataError(content: string): string | null {
   const customers = count(content, 'KH');
