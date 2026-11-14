@@ -36,16 +36,18 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/golden/appointments.fixture.ts` — APPOINTMENT_TODAY, type GoldenAppointmentRow, APPOINTMENT_ROWS, type AppointmentGoldenCase, APPOINTMENT_GOLDEN_CASES
 - `src/golden/kyc.fixture.ts` — type ExpectedGate, type KycGoldenProfile, KYC_GOLDEN_PROFILES
 - `src/golden/metrics.fixture.ts` — TEAMS, PEOPLE, CUSTOMERS, APPOINTMENTS, STAGE_TRANSITIONS, POLICIES, EXPECTED_RF_APPOINTMENT_IDS, type ExpectedMetrics, type GoldenCase, MTD_VIEWING_DATE, GOLDEN_CASES
+- `src/golden/so-va-tien-te.fixture.ts` — type CurrencyGoldenRow, CURRENCY_GOLDEN_ROWS, type FullGoldenRow, FULL_GOLDEN_ROWS, type CompactGoldenRow, COMPACT_GOLDEN_ROWS, DELTA_GOLDEN_ROWS, type NumberGoldenRow, NUMBER_GOLDEN_ROWS
 - `src/golden/stage-snapshot.fixture.ts` — SNAPSHOT_TODAY, type GoldenCustomerRow, SNAPSHOT_CUSTOMERS, type SnapshotGoldenCase, SNAPSHOT_GOLDEN_CASES, CHART_GOLDEN_PERIOD, type ChartGoldenCase, CHART_GOLDEN_CASES, type MarksGoldenCase, REPORT_MARKS_GOLDEN_CASES
-- `src/index.ts` — re-exports ./pipeline-stage, ./period, ./kyc-catalog, ./kyc-fact, ./evidence-level, ./kyc, ./kyc-gate, ./customer-lifecycle, ./appointment-lifecycle, ./stats, ./compare, ./appointment-counts, ./stage-snapshot, ./name-order, ./text, ./money, ./number, ./model
+- `src/index.ts` — re-exports ./pipeline-stage, ./period, ./kyc-catalog, ./kyc-fact, ./evidence-level, ./kyc, ./kyc-gate, ./customer-lifecycle, ./appointment-lifecycle, ./stats, ./compare, ./appointment-counts, ./stage-snapshot, ./name-order, ./text, ./language, ./money, ./number, ./model
 - `src/kyc-catalog.ts` — KYC_CATEGORIES, type KycCategory, KYC_FIELDS, type KycField, type KycCategorySpec, KYC_CATEGORY_SPECS, KYC_GATE_STATES, type KycGateState, KYC_GATE_THRESHOLDS, KYC_INSUFFICIENT_MESSAGE
 - `src/kyc-fact.ts` — KYC_FACT_STATUSES, type KycFactStatus, type KycValue, type KycFieldType, kycFieldType, normalizeKycValue, type KycFact
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate
 - `src/kyc.ts` — type KycNote, type KycProfile, type KycFactInput, type KycVersion, addNote, currentFacts, confirmFact, markConflict, resolveConflict, kycHash, isMaterialChange, nextKycVersion
+- `src/language.ts` — LANGUAGES, type Language
 - `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, RM_ROLE, isRm, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
-- `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta
+- `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta, CURRENCY_CODES, type CurrencyCode, type Money, type Currency, CURRENCIES, maxFee, addMoney, formatMoney, formatMoneyCompact, formatMoneyDelta
 - `src/name-order.ts` — LATIN, byName
-- `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize
+- `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize, groupDigits, formatNumber, formatPercentage, formatBytes
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatLocalDayMonthTime, formatLocalTime, formatIsoDate, fromIsoDate, isIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, sameDayYearBefore, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage
 - `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotByScope, stageSnapshotSeries

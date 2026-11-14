@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COMPACT_GOLDEN_ROWS,
+  CURRENCY_GOLDEN_ROWS,
+  DELTA_GOLDEN_ROWS,
+  FULL_GOLDEN_ROWS,
+  type CompactGoldenRow,
+} from './golden/so-va-tien-te.fixture';
+import { LANGUAGES, type Language } from './language';
+import {
+  addMoney,
+  CURRENCIES,
+  CURRENCY_CODES,
+  formatMoney,
+  formatMoneyCompact,
+  formatMoneyDelta,
   formatVnd,
   formatVndCompact,
   formatVndDelta,
   MAX_FEE_VND,
+  maxFee,
   parseVnd,
   type VndParseResult,
 } from './money';
@@ -294,5 +309,92 @@ describe('formatVndCompact', () => {
 
   it('reads back the full form', () => {
     expect(amountOf(parseVnd(formatVnd(1_234_567)))).toBe(1_234_567);
+  });
+});
+
+// Golden `docs/golden/so-va-tien-te.md` §1–§4 (ADR-0018 §3, §4), through the fixture.
+
+const NOT_WHOLE = [0.5, -1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1];
+
+describe('the currency table (golden §1)', () => {
+  it('lists the seven currencies of the golden, in its order', () => {
+    expect(CURRENCY_CODES).toEqual(CURRENCY_GOLDEN_ROWS.map((row) => row.currency));
+  });
+
+  it.each(CURRENCY_GOLDEN_ROWS)(
+    '$currency: decimals, cap and the examples of the table',
+    ({ currency, decimals, example, full, compact, maxFee: cap }) => {
+      expect(CURRENCIES[currency].decimals).toBe(decimals);
+      expect(maxFee(currency)).toBe(cap);
+      expect(formatMoney(example, currency)).toBe(full);
+      if (compact !== null) expect(formatMoneyCompact(example, currency, 'en')).toBe(compact);
+    },
+  );
+});
+
+describe('addMoney', () => {
+  it('adds whole amounts exactly', () => {
+    expect(addMoney(125_050, 5)).toBe(125_055);
+    expect(addMoney(-125_050, 125_050)).toBe(0);
+  });
+
+  it.each(CURRENCY_GOLDEN_ROWS)(
+    '$currency: adds $exactFees fees at the cap exactly, then throws rather than add wrong',
+    ({ currency, exactFees }) => {
+      const cap = maxFee(currency);
+      let total = 0;
+      for (let count = 0; count < exactFees; count++) total = addMoney(total, cap);
+      expect(total).toBe(cap * exactFees);
+      expect(() => addMoney(total, cap)).toThrow(RangeError);
+    },
+  );
+});
+
+describe('formatMoney (golden §2)', () => {
+  it.each(FULL_GOLDEN_ROWS)('$id: $amount $currency → $text', ({ amount, currency, text }) => {
+    expect(formatMoney(amount, currency)).toBe(text);
+  });
+
+  it('writes the cents of the largest safe amount exactly', () => {
+    expect(formatMoney(Number.MAX_SAFE_INTEGER, 'USD')).toBe('$90,071,992,547,409.91');
+    expect(formatMoney(-Number.MAX_SAFE_INTEGER, 'SGD')).toBe('-$90,071,992,547,409.91 SGD');
+  });
+
+  it('refuses what is not a whole number of the smallest unit', () => {
+    for (const amount of NOT_WHOLE) expect(() => formatMoney(amount, 'USD')).toThrow(RangeError);
+  });
+});
+
+/**
+ * The text a row expects in a language. Money with cents goes with English only: its Vietnamese
+ * column is "—" and the language does not change its text, so the English one is expected.
+ */
+const expectedIn = (row: CompactGoldenRow, language: Language) =>
+  language === 'vi' ? (row.vi ?? row.en) : row.en;
+
+describe.each(LANGUAGES)('formatMoneyCompact in %s (golden §3)', (language) => {
+  it.each(COMPACT_GOLDEN_ROWS)('$id: $amount $currency', (row) => {
+    expect(formatMoneyCompact(row.amount, row.currency, language)).toBe(expectedIn(row, language));
+  });
+});
+
+describe.each(LANGUAGES)('formatMoneyDelta in %s (golden §4)', (language) => {
+  it.each(DELTA_GOLDEN_ROWS)('$id: $amount $currency', (row) => {
+    expect(formatMoneyDelta(row.amount, row.currency, language)).toBe(expectedIn(row, language));
+  });
+});
+
+describe('formatMoneyCompact past the golden', () => {
+  it('rounds the largest safe amount exactly, past the top unit', () => {
+    expect(formatMoneyCompact(Number.MAX_SAFE_INTEGER, 'VND', 'vi')).toBe('9,007,199.25 tỷ');
+    expect(formatMoneyCompact(Number.MAX_SAFE_INTEGER, 'VND', 'en')).toBe('9,007.2T');
+    expect(formatMoneyCompact(Number.MAX_SAFE_INTEGER, 'USD', 'en')).toBe('$90.07T');
+  });
+
+  it('refuses what is not a whole number of the smallest unit', () => {
+    for (const amount of NOT_WHOLE) {
+      expect(() => formatMoneyCompact(amount, 'VND', 'vi')).toThrow(RangeError);
+      expect(() => formatMoneyDelta(amount, 'USD', 'en')).toThrow(RangeError);
+    }
   });
 });
