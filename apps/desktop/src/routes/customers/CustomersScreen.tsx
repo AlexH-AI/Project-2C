@@ -3,7 +3,7 @@ import type { CustomerRecord } from '@p2c/db';
 import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
-  formatCount,
+  formatNumber,
   formatDate,
   inScope,
   type ClosedStage,
@@ -260,7 +260,7 @@ export function StageHead({
   return (
     <div className={`flex items-center ${className}`}>
       {stageBadge(stage)}
-      <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatCount(count)}</span>
+      <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatNumber(count)}</span>
     </div>
   );
 }

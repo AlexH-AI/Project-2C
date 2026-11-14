@@ -118,7 +118,7 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
 
 /**
  * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, as every money input
- * reads (`amountRead`): "6.000.000.000 ₫ (6 tỷ)". Null for another trường, or for words `parseVnd`
+ * reads (`amountRead`): "6,000,000,000 VNĐ (6 tỷ)". Null for another trường, or for words `parseVnd`
  * cannot read ("Khoảng 12 tỷ"), which are kept all the same.
  * Read from the text as the command stores it, `normalizeText` of `parseVnd` (K20, DR6-101).
  */

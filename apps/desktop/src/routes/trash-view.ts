@@ -14,10 +14,9 @@ import {
   type TrashRow,
 } from '@p2c/db';
 import {
-  formatCount,
+  formatNumber,
   formatDate,
   formatLocalDateTime,
-  formatVnd,
   searchText,
   type CalendarDate,
   type CustomerStage,
@@ -28,6 +27,7 @@ import { errorMessage, joinParts, t } from '../i18n';
 import { routeToHash } from '../shell/routes';
 import { statusLabel } from './appointments/appointments-view';
 import { policyStatusText } from './customers/policy-form';
+import { formatAmount } from './money-view';
 
 /** The kinds of the filter of Thùng rác, in the order of mockup 11a. */
 export const TRASH_FILTERS = [
@@ -93,7 +93,7 @@ export function recordTitle(row: TrashRow, today: CalendarDate): string {
     case 'policy':
       return t('trash.policy.title', {
         date: formatDate(row.submittedDate),
-        fyp: formatVnd(row.submittedFyp),
+        fyp: formatAmount(row.submittedFyp),
       });
     default:
       return row.name;
@@ -453,7 +453,7 @@ export function restoreView(row: TrashRow, today: CalendarDate): RestoreView {
         title: t('trash.restore.titlePolicy', { date: formatDate(row.submittedDate) }),
         subtitle: ownerLine(row),
         facts: [
-          { term: t('trash.restore.fyp'), text: formatVnd(row.submittedFyp) },
+          { term: t('trash.restore.fyp'), text: formatAmount(row.submittedFyp) },
           {
             // The status in the words of its badge (`policyStatusText`), an issue with its day and FYP.
             term: t('trash.restore.status'),
@@ -463,7 +463,7 @@ export function restoreView(row: TrashRow, today: CalendarDate): RestoreView {
                 : t('trash.restore.issued', {
                     status: policyStatusText(row),
                     date: formatDate(row.issuedDate),
-                    fyp: formatVnd(row.issuedFyp ?? 0),
+                    fyp: formatAmount(row.issuedFyp ?? 0),
                   }),
           },
         ],
@@ -744,16 +744,16 @@ export function purgeView({ counts, kept }: PurgePlan): PurgeView {
       fact(
         'customer',
         customers === 0
-          ? formatCount(0)
+          ? formatNumber(0)
           : t('trash.purge.customers', {
               count: customers,
               parts: joinParts(customerRecordParts(counts.customerRecords).map((p) => p.text)),
             }),
       ),
-      fact('appointment', formatCount(appointments)),
-      fact('policy', formatCount(policies)),
-      fact('person', formatCount(people)),
-      fact('team', formatCount(teams)),
+      fact('appointment', formatNumber(appointments)),
+      fact('policy', formatNumber(policies)),
+      fact('person', formatNumber(people)),
+      fact('team', formatNumber(teams)),
     ],
     kept: kept.length === 0 ? null : t('trash.purge.kept', { count: kept.length }),
   };

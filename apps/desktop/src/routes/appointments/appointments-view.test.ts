@@ -612,7 +612,7 @@ describe('dayLabel / monthLabel', () => {
   it('names a month with its total, then each group it has in the order of its bar', () => {
     const cell = { month: 9, met: 1566, missed: 151, unrecorded: 0, planned: 3 };
     expect(monthLabel(cell, 2026)).toBe(
-      'Tháng 9/2026: 1.720 lịch — Đã gặp 1.566, Dời lịch / hủy / không đến 151, Dự kiến 3',
+      'Tháng 9/2026: 1,720 lịch — Đã gặp 1,566, Dời lịch / hủy / không đến 151, Dự kiến 3',
     );
     expect(monthLabel({ month: 12, met: 0, missed: 0, unrecorded: 0, planned: 0 }, 2026)).toBe(
       'Tháng 12/2026: 0 lịch',

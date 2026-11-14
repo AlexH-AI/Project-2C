@@ -257,7 +257,7 @@ export const vi = {
   'aiError.AI_BUSY': 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.',
   'aiError.AI_KEYRING': 'Không đọc / ghi được key trong Windows Credential Manager.',
   'aiError.AI_TOO_LARGE':
-    'Dữ liệu gửi AI quá lớn (quá 200.000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
+    'Dữ liệu gửi AI quá lớn (quá 200,000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
   'aiError.GENERAL': 'Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ.',
   'aiError.http': 'OpenCode báo lỗi (HTTP {status}): {message}',
   'aiError.httpBare': 'OpenCode báo lỗi (HTTP {status}).',
@@ -1067,7 +1067,7 @@ export const vi = {
   'reports.exportBuildFailedHelp':
     'Không tạo được file Excel. Thử lại; nếu vẫn lỗi, mở lại app. Dữ liệu trong app không bị ảnh hưởng.',
   'reports.excel.title': 'Báo cáo {table} · {period} · {scope} · xuất {exported}',
-  'reports.excel.money': '{label} (₫)',
+  'reports.excel.money': '{label} ({currency})',
   'reports.excel.period': '{period} ({range})',
   'reports.excel.mtd': 'MTD {range}',
   'reports.excel.file': 'bao-cao',

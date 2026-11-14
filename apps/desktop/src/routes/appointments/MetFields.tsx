@@ -1,18 +1,13 @@
 import type { ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
-import {
-  formatDate,
-  formatVnd,
-  isRfTransition,
-  type CustomerStage,
-  type Person,
-} from '@p2c/domain';
+import { formatDate, isRfTransition, type CustomerStage, type Person } from '@p2c/domain';
 import { Choices, SelectField, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { amountRead } from '../money-view';
 import { stageBadge } from '../stage-badge';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
+import { formatAmount } from '../money-view';
 
 const FIELD_ERROR = 'm-0 text-sm text-danger';
 
@@ -32,7 +27,7 @@ export const metDraftOf = (a: AppointmentRecord): MetDraft => ({
   stageAfter: a.stageAfter,
   reviewerId: a.outcomeReviewerId ?? '',
   nextStep: a.nextStep ?? '',
-  caseSize: a.expectedCaseSize === null ? '' : formatVnd(a.expectedCaseSize),
+  caseSize: a.expectedCaseSize === null ? '' : formatAmount(a.expectedCaseSize),
 });
 
 /**

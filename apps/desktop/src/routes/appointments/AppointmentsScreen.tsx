@@ -6,7 +6,7 @@ import {
   compareDates,
   formatDate,
   formatDayMonth,
-  formatCount,
+  formatNumber,
   formatDayOfMonth,
   formatPeriodValue,
   isInPeriod,
@@ -525,7 +525,7 @@ function DayButton({
     >
       <span className="flex items-start justify-between">
         {dayNumber}
-        <b className="text-lg">{count > 0 ? formatCount(count) : ''}</b>
+        <b className="text-lg">{count > 0 ? formatNumber(count) : ''}</b>
       </span>
       <span className="mt-auto flex gap-0.5">
         {dots.map((kind, i) => (

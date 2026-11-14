@@ -8,6 +8,7 @@ import {
   STAGE_TRANSITIONS,
 } from './golden/metrics.fixture';
 import type { Appointment, CustomerStage, Person, Policy, StageTransition } from './model';
+import { formatPercentage } from './number';
 import { calendarDate, periodOf } from './period';
 import { closeRate, closeRatePercent, isRfAppointment, periodMetrics, rfCount } from './stats';
 
@@ -167,6 +168,12 @@ describe('closeRate', () => {
     expect(closeRatePercent({ numerator: 3, denominator: 2 })).toBe(150);
     expect(closeRatePercent({ numerator: 0, denominator: 4 })).toBe(0);
     expect(closeRatePercent({ numerator: 2, denominator: 3 })).toBeCloseTo(66.667, 3);
+  });
+
+  it('is exact at half a tenth, so the KPI rounds it half up (golden so-va-tien-te.md §5 N09)', () => {
+    // 23 ÷ 80 is 28.75%; dividing first gives 28.749999999999996, shown 28.7.
+    expect(closeRatePercent({ numerator: 23, denominator: 80 })).toBe(28.75);
+    expect(formatPercentage(closeRatePercent({ numerator: 23, denominator: 80 }))).toBe('28.8');
   });
 
   it('counts a policy issued in the period even when its RF was in an earlier period', () => {

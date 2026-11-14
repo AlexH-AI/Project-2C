@@ -1,4 +1,4 @@
-import { formatCount } from '@p2c/domain';
+import { formatNumber } from '@p2c/domain';
 import { t } from '../../i18n';
 import { CARD, FOCUS, HEADING } from '../classes';
 import {
@@ -51,7 +51,7 @@ export function YearGrid({
               <span aria-hidden="true">{t('appointments.quarter', { quarter: q + 1 })}</span>
               <span>
                 {t('appointments.quarterTotal', {
-                  count: formatCount(months.reduce((sum, cell) => sum + total(cell), 0)),
+                  count: months.reduce((sum, cell) => sum + total(cell), 0),
                 })}
               </span>
             </p>
@@ -98,7 +98,7 @@ function MonthButton({
           {t('appointments.monthCell', { month: cell.month })}
         </span>
         <span className="text-xs text-fg-3">
-          <b className="mr-0.75 text-lg text-fg">{formatCount(count)}</b>
+          <b className="mr-0.75 text-lg text-fg">{formatNumber(count)}</b>
           {t('appointments.unit')}
         </span>
       </span>
@@ -120,7 +120,7 @@ function MonthButton({
                   key={group.key}
                   title={t('appointments.segment', {
                     group: t(group.label),
-                    count: formatCount(cell[group.key]),
+                    count: cell[group.key],
                   })}
                   style={{ flex: cell[group.key] }}
                   className={`@container grid min-w-0.75 place-items-center text-xs font-bold ${
@@ -130,7 +130,7 @@ function MonthButton({
                   }`}
                 >
                   {/* A part narrower than `--container-bar-label` keeps its count for the tooltip only. */}
-                  <span className="@max-bar-label:invisible">{formatCount(cell[group.key])}</span>
+                  <span className="@max-bar-label:invisible">{formatNumber(cell[group.key])}</span>
                 </span>
               ),
           )
