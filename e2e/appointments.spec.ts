@@ -37,7 +37,7 @@ async function expectList(page: Page, count: number) {
   await expect(rows).toHaveCount(Math.min(count, 100));
   const foot = page.getByText(/^Đang hiện \d+ \/ [\d,]+ lịch$/);
   if (count > 100)
-    await expect(foot).toHaveText(`Đang hiện 100 / ${count.toLocaleString('vi-VN')} lịch`);
+    await expect(foot).toHaveText(`Đang hiện 100 / ${count.toLocaleString('en-US')} lịch`);
   else await expect(foot).toHaveCount(0);
 }
 

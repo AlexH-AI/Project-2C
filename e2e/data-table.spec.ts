@@ -82,7 +82,7 @@ test('headers sort from the keyboard', async ({ page }) => {
 
 // T-150 (DR-03, mockup table-more.html): a big table shows a hundred rows at a time.
 const SUMMARY = /^[\d,]+ lịch · [\d,]+ đã gặp/;
-const grouped = (n: number) => n.toLocaleString('vi-VN');
+const grouped = (n: number) => n.toLocaleString('en-US');
 
 async function openYear(page: Page) {
   const opened = await openTable(page);
