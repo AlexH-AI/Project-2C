@@ -23,25 +23,61 @@ export function linkTargets(markdown: string): string[] {
   );
 }
 
+const ATX = /^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/;
+const UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/;
+/** A line of text an underline makes a setext heading: no list item, quote, table row, heading. */
+const TEXT_LINE = /^ {0,3}(?![-*+>#|]|\d+[.)])\S/;
+/** Named entities read; another stays as written, so a link to its heading shows as broken. */
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+/** Markdown out of code as GitHub shows it: links as their text, no tag nor `_` emphasis. */
+const shown = (markdown: string) =>
+  markdown
+    .replace(/!?\[([^\]]*)\](?:\([^)]*\)|\[[^\]]*\])/g, '$1')
+    .replace(/<\/?[a-z][^>]*>/gi, '')
+    // A pair of `_` runs around words, not one inside a word (`my_var`).
+    .replace(/(?<![\p{L}\p{N}])(_+)(?=\S)(.+?)(?<=\S)\1(?![\p{L}\p{N}])/gu, '$2')
+    .replace(/&(?:#(\d+)|#x([\da-f]+)|([a-z]+));/gi, (entity, dec, hex, name) =>
+      dec || hex
+        ? String.fromCodePoint(parseInt(dec ?? hex, dec ? 10 : 16))
+        : (ENTITIES[name.toLowerCase()] ?? entity),
+    );
+
+/** The text of a heading as GitHub shows it; a code span as it is written. */
+function headingText(heading: string): string {
+  let text = '';
+  let at = 0;
+  for (const span of heading.matchAll(CODE_SPAN)) {
+    const ticks = (span[1] as string).length;
+    text += shown(heading.slice(at, span.index)) + span[0].slice(ticks, -ticks);
+    at = span.index + span[0].length;
+  }
+  return text + shown(heading.slice(at));
+}
+
 /**
- * The ids GitHub gives the headings of a Markdown text, outside code: lower case, every character
- * but letters, digits, `_`, `-` and spaces left out, spaces turned to `-`, `-1`, `-2`… after a
- * repeated one (CLR6-F7).
+ * The ids GitHub gives the headings of a Markdown text, outside code, ATX ones and one-line setext
+ * ones in the order they come (L182): of the text it shows, lower case, every character but
+ * letters, digits, `_`, `-` and spaces left out, spaces turned to `-`, `-1`, `-2`… after a repeated
+ * one (CLR6-F7).
  */
 export function headingIds(markdown: string): Set<string> {
-  const text = markdown.replace(FENCED, '');
+  const lines = markdown.replace(FENCED, '').split('\n');
   const seen = new Map<string, number>();
   const ids = new Set<string>();
-  for (const [, heading] of text.matchAll(/^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/gm)) {
-    const id = (heading as string)
-      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+  lines.forEach((line, i) => {
+    const setext =
+      TEXT_LINE.test(line) && !UNDERLINE.test(line) && UNDERLINE.test(lines[i + 1] ?? '');
+    const heading = ATX.exec(line)?.[1] ?? (setext ? line.trim() : undefined);
+    if (heading === undefined) return;
+    const id = headingText(heading)
       .toLowerCase()
       .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '')
       .replaceAll(' ', '-');
     const count = seen.get(id) ?? 0;
     seen.set(id, count + 1);
     ids.add(count ? `${id}-${count}` : id);
-  }
+  });
   return ids;
 }
 

@@ -103,7 +103,10 @@ async function openPlanned(page: Page) {
   await expect(detail(page)).toBeVisible();
 }
 
-/** The profile of the customer of yesterday's first met appointment; returns its name. */
+/**
+ * The profile of the customer of yesterday's first met appointment; returns its name. Not the
+ * openProfile of ../support: the shots go by the guide's helpers above, on its own config.
+ */
 async function openProfile(page: Page) {
   await openAppointments(page);
   await kinds(page).getByRole('radio', { name: 'Ngày' }).click();

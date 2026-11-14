@@ -1,27 +1,8 @@
 import { expect, test, type Page } from './fixtures';
-import { asExe } from './support';
+import { asExe, openProfile } from './support';
 
 // Keyboard paths of the shared dialog and segmented control (DR-58, 59, 02, 76). The e2e build pins
 // today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
-
-/** Opens the profile of the customer of a past met appointment. */
-async function openProfile(page: Page) {
-  await page.goto('/#/appointments');
-  // Yesterday's day alone, so the met ones are among the rows shown (T-150).
-  await page
-    .getByRole('radiogroup', { name: 'Loại kỳ' })
-    .getByRole('radio', { name: 'Ngày' })
-    .click();
-  await page.getByRole('button', { name: 'Kỳ trước' }).click();
-  const met = page
-    .getByRole('table', { name: 'Danh sách lịch hẹn' })
-    .locator('tbody tr')
-    .filter({ hasText: 'Đã gặp' })
-    .first();
-  await met.getByRole('button').click();
-  await page.getByRole('link', { name: 'Hồ sơ KH →' }).click();
-  await expect(page.locator('#customer-name')).toBeVisible();
-}
 
 /** Holds every read of a chosen file (`Blob.text`) until `releaseReads`, as a slow disk would. */
 async function holdReads(page: Page) {

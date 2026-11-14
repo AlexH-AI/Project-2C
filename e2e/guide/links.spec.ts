@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test } from '../fixtures';
-import { brokenLinks, linkTargets } from './links';
+import { brokenLinks, headingIds, linkTargets } from './links';
 
 // The pure part of the guide's link check (check.guide.ts, which runs with the guide's own config);
 // this test runs with `pnpm e2e`.
@@ -40,6 +40,11 @@ test('brokenLinks finds a missing file, a missing anchor and a name in the wrong
       '#team--nhân-sự',
       '#thư-mục-project2c-data-bản-exe',
       '#lặp-1',
+      '#hello-world',
+      '#press-ctrl-now',
+      '#tom--jerry',
+      '#xem-mục-hai-trước',
+      '#cài-đặt',
       'img/Anh.png',
       'https://example.com/#x',
       'b.md#không-có',
@@ -58,6 +63,14 @@ test('brokenLinks finds a missing file, a missing anchor and a name in the wrong
         '## Thư mục `Project2C-data\\` (bản exe)',
         '## Lặp',
         '## Lặp',
+        // As GitHub shows them (L182): emphasis, a tag, an entity, a reference link, setext.
+        '## Hello _world_',
+        '## Press <kbd>Ctrl</kbd> now',
+        '## Tom &amp; Jerry',
+        '## Xem [mục hai][r] trước',
+        'Cài đặt',
+        '---',
+        '[r]: b.md#mục-hai',
         ...links.map((link) => `[x](${link})`),
       ].join('\n'),
     );
@@ -72,4 +85,27 @@ test('brokenLinks finds a missing file, a missing anchor and a name in the wrong
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('headingIds takes each heading in order, ATX or setext, from the text GitHub shows', () => {
+  const text = [
+    '## Hello _world_',
+    '## my_var và `__init__` &lt;b&gt;',
+    'Cài đặt',
+    '---',
+    '## Cài đặt',
+    'Báo **cáo**',
+    '===',
+    '- Không phải tiêu đề',
+    '---',
+    '',
+    '---',
+  ].join('\n');
+  expect([...headingIds(text)]).toEqual([
+    'hello-world',
+    'my_var-và-__init__-b',
+    'cài-đặt',
+    'cài-đặt-1',
+    'báo-cáo',
+  ]);
 });
