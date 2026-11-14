@@ -4,7 +4,7 @@ Bảng đối chiếu, **Owner duyệt G2 13/11/2026** (T-423 #1242, PR #1243; m
 
 Nguồn: spec `docs/design/phase-6-phan-hoi-dung-thu.md` §6.1 (Owner chốt 10/11/2026), §6.2 (D-a … D-f, Owner chốt 11/11/2026), §8 gạch "Mục tiêu doanh số" (Owner 11/11/2026). Phần ghi **"đề xuất"** dưới đây là điều Claude đề xuất ở T-423; Owner duyệt mọi đề xuất ở G2 ngày 13/11/2026 (câu trả lời từng điểm ở mục 5).
 
-Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.md`; số viết theo ADR-0018 (`,` ngăn hàng nghìn, `.` cho phần lẻ: "1,420", "90.7%"); viết "RE" như các golden khác (Issue A5 đổi thành "RM" một lần). Trên giao diện, số hiện theo `docs/golden/so-va-tien-te.md` ("1.42 tỷ", "620 tr").
+Cách viết trong file: tiền ghi theo **triệu đồng (tr)** như `chi-so.md`; số viết theo ADR-0018 (`,` ngăn hàng nghìn, `.` cho phần lẻ: "1,420", "90.7%"); viết "RM" như các golden khác (A5 đổi một lần cho mọi golden, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §3.2). Trên giao diện, số hiện theo `docs/golden/so-va-tien-te.md` ("1.42 tỷ", "620 tr").
 
 ## Định nghĩa
 

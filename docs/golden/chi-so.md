@@ -136,7 +136,7 @@ Phần B của spec `docs/design/phase-6-phan-hoi-dung-thu.md` (§4, nội dung 
 
 **Kịch bản B là bộ dữ liệu riêng, mọi ngày ở năm 2028.** G19–G22 là dòng cả năm 2026 / 2027, nên một HĐ mới trong hai năm đó làm đổi số của chúng; mục 1 không có gì ở năm 2028, nên tính G23–G41 trên kịch bản B hay trên mục 1 + kịch bản B đều ra cùng số (kiểm ở mục 4.3).
 
-Cách viết "Tỷ lệ" cho cả hai chỉ số, Tỷ lệ hủy và Tỷ lệ chốt: Owner chọn ngày 13/11/2026, "Tỷ". Bảng định nghĩa và nhãn cột của mục 2 đã đổi theo; chữ "Tỉ lệ > 100%" ở ô G11, G20 giữ nguyên tới Issue A5 (spec §4.6).
+Cách viết "Tỷ lệ" cho cả hai chỉ số, Tỷ lệ hủy và Tỷ lệ chốt: Owner chọn ngày 13/11/2026, "Tỷ". Bảng định nghĩa và nhãn cột của mục 2 đã đổi theo; chữ "Tỷ lệ > 100%" ở ô G11, G20 đổi ở A5 (spec §4.6).
 
 ### 4.1 Dữ liệu kịch bản B
 

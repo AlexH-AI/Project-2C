@@ -154,3 +154,11 @@ Phụ lục này thêm một nhóm số mới, không đổi định nghĩa nào
   - nhập backup: thời điểm nhập số đi cùng số; `team_targets` trỏ tới team có trong file, tháng đúng dạng, không trùng (team, tháng).
 
 - **Duyệt G2:** Owner ngày 13/11/2026, PR #1243 (chat với phiên T-423 ở Home PC), trả lời chín điểm, điểm nào cũng chọn phương án đề xuất: "A · Một KH một số"; "Duyệt cả bảy" (bảy cách hiểu của D-a, D-b, D-c); "A · Có, theo công thức" (nhịp cần mỗi tuần); "A · Không nhận 0"; "A · Chỉ khi đủ mọi team" (KPI toàn bộ); "A · Mỗi tháng một KPI"; "Duyệt" (đã đạt vượt KPI, ba điều kiện biên của "Điểm nhấn"); "A · Mang cả thời điểm" (dời lịch); "Duyệt G2 cả ba". Câu cuối duyệt dữ liệu kịch bản D, kết quả F01–F41 và mô hình dữ liệu.
+
+## Phụ lục — RE đổi tên thành RM (Phase 6 phần A; Owner duyệt 10/11/2026)
+
+Nguồn: phản hồi dùng thử exe `5215b2e` của Owner ngày 10/11/2026 (ý 1) và các câu trả lời cùng ngày, spec `docs/design/phase-6-phan-hoi-dung-thu.md` §1, §3.
+
+- Người tư vấn tên **RM** (Relationship Manager) thay RE ở mọi nơi, cả code lẫn dữ liệu lưu: vai trò `RM`, nguồn ghi chú KYC `RM`, trường `rmId`, cột `rm_id` (spec §3.1–§3.3).
+- Nghĩa không đổi: RM là người tư vấn, phụ trách KH, cuộc hẹn và HĐ; chỉ RM có chỉ số; TL / IS / BD / BDM giữ nguyên. Mọi định nghĩa chỉ số ở trên và ở các phụ lục trước giữ nguyên.
+- "RE" ở thân ADR này và các phụ lục trước nghĩa là RM; thân và các phụ lục đó không sửa (spec §3.4). Golden fixtures chỉ đổi tên trường và giá trị vai trò, không đổi con số nào (Owner duyệt G2 cùng phần A).

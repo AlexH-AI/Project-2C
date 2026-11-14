@@ -4,7 +4,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 
 ## Người và góc nhìn
 
-- **RE** (`role: 'RE'`) — người tư vấn, phụ trách KH, cuộc hẹn và HĐ. Chỉ RE có chỉ số. "RM" trong văn bản cũ = RE (Q16).
+- **RM** (`role: 'RM'`, Relationship Manager) — người tư vấn, phụ trách KH, cuộc hẹn và HĐ. Chỉ RM có chỉ số. Trước ngày 10/11/2026 vai trò này tên **RE** (Relationship Expert): "RE" trong tài liệu lịch sử (thân ADR, spec các phase, báo cáo review, file metrics) và trong file dữ liệu / backup cũ nghĩa là RM (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §3; phụ lục 10/11/2026 của ADR-0004, ADR-0007).
 - **TL / IS / BD / BDM** — người phối hợp trong cuộc hẹn (`coordinatorIds`); không có chỉ số riêng (ADR-0007, G2).
 - **Team** (`Team`) — nhóm RM. RM thuộc team hiện tại; v1 không theo dõi lịch sử chuyển team.
 - **Góc nhìn** (`Scope`) — Toàn bộ / Team / RM. Đây là cách xem dữ liệu, không phải tài khoản (ADR-0004).
