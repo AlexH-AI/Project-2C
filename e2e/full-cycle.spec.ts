@@ -51,8 +51,8 @@ async function pick(page: Page, name: string, label: string) {
 
 /** The scope of the top bar on RE, ours. */
 async function scopeOnRe(page: Page) {
-  await scope(page).getByRole('radio', { name: 'RE' }).click();
-  await pick(page, 'RE của góc nhìn', RE_LABEL);
+  await scope(page).getByRole('radio', { name: 'RM' }).click();
+  await pick(page, 'RM của góc nhìn', RE_LABEL);
 }
 
 async function openSettings(page: Page, section: 'Dữ liệu' | 'Thùng rác') {
@@ -115,7 +115,7 @@ async function figures(page: Page) {
 
   await scopeOnRe(page);
   await filter(page).click();
-  await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(`· RE ${RE}`);
+  await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(`· RM ${RE}`);
   const tile = page.getByRole('region', { name: 'Lịch hẹn · cả tháng' });
   const appointments = [
     (await tile.getByRole('paragraph').first().innerText()).replace(/\s/g, ''),
@@ -198,7 +198,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
     await expect(person).toBeHidden();
     await expect(
       page.getByRole('region', { name: 'Team', exact: true }).getByRole('button', { name: TEAM }),
-    ).toContainText('chưa có TL · 1 RE');
+    ).toContainText('chưa có TL · 1 RM');
   });
 
   let profile = '';
@@ -206,7 +206,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
     await createKycCustomer(page, CUSTOMER, RE_LABEL);
     profile = new URL(page.url()).hash;
     await expect(page.getByRole('region', { name: CUSTOMER })).toContainText(
-      `RE ${RE} · Team ${TEAM}`,
+      `RM ${RE} · Team ${TEAM}`,
     );
     await addKycNote(page, CUSTOMER, discoveryFacts);
     const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });

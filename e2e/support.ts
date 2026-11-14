@@ -353,7 +353,7 @@ export async function createKycCustomer(page: Page, name: string, re?: string) {
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
   await dialog
-    .getByRole('combobox', { name: 'RE phụ trách' })
+    .getByRole('combobox', { name: 'RM phụ trách' })
     .selectOption(re === undefined ? { index: 1 } : { label: re });
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
   await dialog.getByRole('radio', { name: 'Nữ' }).check();

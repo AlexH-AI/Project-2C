@@ -119,7 +119,7 @@ describe('inUseHelp (mockup 9b)', () => {
   /** Customers in the trash of these names, each with a code of its own. */
   const trash = (...names: string[]) =>
     names.map((name, i) => ({ name, code: `K-${String(i).padStart(4, '0')}` }));
-  const RE = 'Chuyển KH sang RE khác trước (Sửa hồ sơ KH).';
+  const RE = 'Chuyển KH sang RM khác trước (Sửa hồ sơ KH).';
   const REVIEWER = 'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả)';
   // DR6-80, Q5 (a): a coordinator is changed in 6f only, never on a moved or planned appointment.
   const COORDINATOR = 'người phối hợp của lịch Dời lịch / Dự kiến không đổi được';
@@ -153,7 +153,7 @@ describe('inUseHelp (mockup 9b)', () => {
   // (K19), and a coordinator is changed in Sửa kết quả (6f) only, which a planned or moved
   // appointment has not.
   const reTrash = (customers: string) =>
-    `Có cả dữ liệu của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RE khác chỉ chuyển được lịch Dự kiến.`;
+    `Có cả dữ liệu của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RM khác chỉ chuyển được lịch Dự kiến.`;
   const supportTrash = (customers: string) =>
     `Có cả lịch hẹn của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.`;
 

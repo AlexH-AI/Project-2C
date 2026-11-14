@@ -134,7 +134,7 @@ test('at 1 440 a row is one line whatever its result; another year puts the time
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const form = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await form.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
-  await form.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await form.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await form.getByRole('radio', { name: 'N3', exact: true }).check();
   await form.getByRole('textbox', { name: /^Ngày ghi nhận/ }).fill('1/8');
   await form.getByRole('button', { name: 'Lưu KH' }).click();
@@ -244,7 +244,7 @@ test('a customer without appointments says so', async ({ page }) => {
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Chưa Hẹn Lần Nào');
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(dialog).toBeHidden();
   await page.getByRole('link', { name: /Chưa Hẹn Lần Nào/ }).click();

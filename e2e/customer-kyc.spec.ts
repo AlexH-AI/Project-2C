@@ -39,7 +39,7 @@ async function createCustomer(page: Page) {
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
   await dialog.getByRole('radio', { name: 'Nữ' }).check();
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();

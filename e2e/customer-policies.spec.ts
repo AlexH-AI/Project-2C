@@ -230,7 +230,7 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   // Mockup 8d: once issued, the issued FYP is a hand correction.
   await dialog.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385,5tr');
   await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −14,5 tr');
-  await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RE');
+  await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RM');
   await expect(dialog).toContainText('giảm 14,5 tr');
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(dialog).toBeHidden();
@@ -245,18 +245,18 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('31/8');
   await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −4,5 tr');
   await expect(dialog.getByRole('definition').locator('span')).toHaveText([
-    /^FYP nộp tháng 09\/2026 của RE .+ giảm 400 tr$/,
-    /^FYP nộp tháng 08\/2026 của RE .+ tăng 390 tr$/,
+    /^FYP nộp tháng 09\/2026 của RM .+ giảm 400 tr$/,
+    /^FYP nộp tháng 08\/2026 của RM .+ tăng 390 tr$/,
     'tháng 09/2026: −1 HĐ nộp · tháng 08/2026: +1 HĐ nộp',
-    /^FYP phát hành tháng 09\/2026 của RE .+ giảm 385,5 tr$/,
-    /^FYP phát hành tháng 08\/2026 của RE .+ tăng 385,5 tr$/,
+    /^FYP phát hành tháng 09\/2026 của RM .+ giảm 385,5 tr$/,
+    /^FYP phát hành tháng 08\/2026 của RM .+ tăng 385,5 tr$/,
     'tháng 09/2026: −1 HĐ phát hành · tháng 08/2026: +1 HĐ phát hành',
   ]);
   // Back within the month the policy was in, only the FYP lines are left.
   await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('2/9');
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('14/9');
   await expect(dialog.getByRole('definition').locator('span')).toHaveText([
-    /^FYP nộp tháng 09\/2026 của RE .+ giảm 10 tr$/,
+    /^FYP nộp tháng 09\/2026 của RM .+ giảm 10 tr$/,
   ]);
   await dialog.getByRole('button', { name: 'Xóa HĐ…' }).click();
   const confirm = page.getByRole('dialog', { name: 'Xóa HĐ nộp 01/09/2026' });

@@ -20,22 +20,22 @@ test('Toàn bộ: Tổng hợp over Theo team, and Theo RE can be chosen', async
   const { viewing, summary, tables } = await openReports(page);
 
   await expect(viewing).toHaveText('Đang xem: Tháng 09/2026MTD 01/09 – 15/09/2026 · Toàn bộ');
-  await expect(page.getByRole('region', { name: 'Tổng hợp' })).toContainText('Toàn bộ · 30 RE');
+  await expect(page.getByRole('region', { name: 'Tổng hợp' })).toContainText('Toàn bộ · 30 RM');
   await expect(summary.getByRole('rowheader')).toHaveText(['Toàn bộ']);
   await expect(summary.getByRole('columnheader', { name: 'Kết quả · tới hôm nay' })).toBeVisible();
   await expect(summary.getByRole('columnheader', { name: 'Mất cơ hội' })).toBeVisible();
 
-  await expect(tables.getByRole('radio')).toHaveText(['Theo team', 'Theo RE', 'Theo mốc']);
+  await expect(tables.getByRole('radio')).toHaveText(['Theo team', 'Theo RM', 'Theo mốc']);
   await expect(tables.getByRole('radio', { checked: true })).toHaveText('Theo team');
   const byTeam = page.getByRole('table', { name: 'Theo team' });
   await expect(byTeam.getByRole('rowheader')).toHaveCount(4);
   await expect(byTeam.getByRole('rowheader').last()).toHaveText('Tổng');
 
-  await tables.getByRole('radio', { name: 'Theo RE' }).click();
-  const byRe = page.getByRole('table', { name: 'Theo RE' });
+  await tables.getByRole('radio', { name: 'Theo RM' }).click();
+  const byRe = page.getByRole('table', { name: 'Theo RM' });
   await expect(byRe.getByRole('rowheader')).toHaveCount(31);
-  await expect(page.getByRole('region', { name: 'Theo RE' })).toContainText(
-    '30 RE · thứ tự theo team rồi tên',
+  await expect(page.getByRole('region', { name: 'Theo RM' })).toContainText(
+    '30 RM · thứ tự theo team rồi tên',
   );
   expect(errors).toEqual([]);
 });
@@ -45,8 +45,8 @@ test('scrolled sideways, Theo RE keeps the RE name and every figure of Tổng re
 }) => {
   await page.setViewportSize({ width: 1100, height: 800 });
   const { tables } = await openReports(page);
-  await tables.getByRole('radio', { name: 'Theo RE' }).click();
-  const table = page.getByRole('table', { name: 'Theo RE' });
+  await tables.getByRole('radio', { name: 'Theo RM' }).click();
+  const table = page.getByRole('table', { name: 'Theo RM' });
   await expect(table.getByRole('rowheader')).toHaveCount(31);
 
   // Scrolled to the far right: the RE name stays at the left edge, and every cell of the first RE
@@ -88,8 +88,8 @@ test('Team Bình Minh has no Theo team, and Theo RE lists its 10 RE', async ({ p
 
   await expect(viewing).toContainText('· Team Bình Minh');
   await expect(summary.getByRole('rowheader')).toHaveText(['Team Bình Minh']);
-  await expect(tables.getByRole('radio')).toHaveText(['Theo RE', 'Theo mốc']);
-  const byRe = page.getByRole('table', { name: 'Theo RE' });
+  await expect(tables.getByRole('radio')).toHaveText(['Theo RM', 'Theo mốc']);
+  const byRe = page.getByRole('table', { name: 'Theo RM' });
   await expect(byRe.getByRole('rowheader')).toHaveCount(11);
   await expect(byRe.getByRole('row').filter({ hasText: 'Bình Minh' })).toHaveCount(10);
 });
@@ -100,12 +100,12 @@ test('RE · Năm: Tổng hợp and Theo mốc of 12 months, the months after tod
   const errors = trackConsoleErrors(page);
   const { kinds, scope, filter, viewing, summary, tables } = await openReports(page);
 
-  await scope.getByRole('radio', { name: 'RE' }).click();
+  await scope.getByRole('radio', { name: 'RM' }).click();
   await kinds.getByRole('radio', { name: 'Năm' }).click();
   await filter.click();
 
   // NT-TQ-22, NT-BC-09: the year in progress, then its days set off by a dot (mockup 2e).
-  await expect(viewing).toHaveText(/^Đang xem: Năm 2026 · 01\/01 – 15\/09\/2026 · RE \S/);
+  await expect(viewing).toHaveText(/^Đang xem: Năm 2026 · 01\/01 – 15\/09\/2026 · RM \S/);
   await expect(summary).toBeVisible();
   await expect(tables.getByRole('radio')).toHaveText(['Theo mốc']);
   await expect(page.getByRole('table')).toHaveCount(2);
@@ -160,7 +160,7 @@ test('Xuất Excel downloads the report of the period and scope viewed, a sheet 
   expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
     'Tổng hợp',
     'Theo team',
-    'Theo RE',
+    'Theo RM',
     'Theo mốc',
   ]);
   const sheet = workbook.getWorksheet('Theo team')!;
