@@ -8,19 +8,19 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| **RE** | Người tư vấn: phụ trách KH, ghi lịch hẹn, kết quả cuộc gặp và HĐ. Chỉ RE có chỉ số |
+| **RM** | Người tư vấn: phụ trách KH, ghi lịch hẹn, kết quả cuộc gặp và HĐ. Chỉ RM có chỉ số |
 | **TL** | Trưởng team. Mỗi team một TL. Là người phối hợp trong lịch hẹn, không có chỉ số riêng |
 | **IS**, **BD**, **BDM** | Người hỗ trợ dùng chung cho mọi team, không thuộc team nào. Là người phối hợp trong lịch hẹn, không có chỉ số |
-| **Người phối hợp** | TL, IS, BD hoặc BDM đi cùng RE trong một lịch hẹn. Không tính chỉ số |
+| **Người phối hợp** | TL, IS, BD hoặc BDM đi cùng RM trong một lịch hẹn. Không tính chỉ số |
 | **Người đánh giá kết quả** | Người quyết định nhóm sau cuộc gặp (TL, IS, BD hoặc BDM), ghi khi có kết quả Đã gặp; không bắt buộc |
-| **Team** | Nhóm RE, có một TL. RE thuộc team hiện tại; app không lưu lịch sử chuyển team |
-| **Góc nhìn** | **Toàn bộ** / **Team** / **RE**: cách xem dữ liệu, không phải tài khoản. Ai dùng app cũng xem và sửa được mọi dữ liệu |
+| **Team** | Nhóm RM, có một TL. RM thuộc team hiện tại; app không lưu lịch sử chuyển team |
+| **Góc nhìn** | **Toàn bộ** / **Team** / **RM**: cách xem dữ liệu, không phải tài khoản. Ai dùng app cũng xem và sửa được mọi dữ liệu |
 
 ## Khách hàng và nhóm
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| **KH** | Khách hàng, do một RE phụ trách. Mỗi KH có **mã KH** (ví dụ K-9A1C) |
+| **KH** | Khách hàng, do một RM phụ trách. Mỗi KH có **mã KH** (ví dụ K-9A1C) |
 | **N4** | KH mới, thiếu thông tin KYC; hoặc đã có KYC và đang khơi gợi nhu cầu |
 | **N3** | KH quan tâm, lắng nghe; khơi gợi nhu cầu thành công |
 | **N2** | KH được IS trình bày giải pháp cụ thể, hoặc được gửi giải pháp cụ thể |
@@ -43,7 +43,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | **Chưa ghi kết quả** | Lịch Dự kiến mà ngày hẹn đã qua: cần ghi kết quả |
 | **Nhóm sau cuộc gặp** | Nhóm của KH sau một cuộc gặp Đã gặp; khác nhóm hiện tại thì app ghi chuyển nhóm vào ngày gặp |
 | **Trigger** | Lý do có cuộc hẹn: Giới thiệu từ KH, Đáo hạn tài sản, Hội thảo / sự kiện, Sinh nhật, dịp đặc biệt, Khác |
-| **Hẹn tiếp** | Tạo lịch hẹn tiếp theo, điền sẵn KH, RE, người phối hợp, trigger từ lịch trước |
+| **Hẹn tiếp** | Tạo lịch hẹn tiếp theo, điền sẵn KH, RM, người phối hợp, trigger từ lịch trước |
 | **Nhập bù** | Ghi một lịch hẹn đã diễn ra trong quá khứ |
 
 ## Hợp đồng và chỉ số
@@ -52,10 +52,10 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 |---|---|
 | **HĐ** | Hợp đồng bảo hiểm. Một KH có nhiều HĐ. Hai bước: **Đã nộp** (KH đã đóng phí) → **Đã phát hành** |
 | **FYP** | Phí năm đầu. **FYP nộp** ghi khi nộp; **FYP phát hành** mặc định bằng FYP nộp, sửa tay được. Mỗi phí tối đa 100 tỷ đồng |
-| **Chuyển RF** (Refer) | Cuộc gặp Đã gặp đưa KH từ N4 / N3 lên N2 / N1. Tính vào ngày gặp, tối đa 1 lần mỗi cuộc gặp, cho RE ghi trên lịch hẹn. RF chỉ đo hiệu quả cuộc gặp |
+| **Chuyển RF** (Refer) | Cuộc gặp Đã gặp đưa KH từ N4 / N3 lên N2 / N1. Tính vào ngày gặp, tối đa 1 lần mỗi cuộc gặp, cho RM ghi trên lịch hẹn. RF chỉ đo hiệu quả cuộc gặp |
 | **HĐ nộp** | Số HĐ có ngày nộp trong kỳ |
 | **Case size** | Tổng FYP nộp của các HĐ nộp trong kỳ (tổng, không trung bình) |
-| **Case size dự kiến** | Số RE ước lượng khi ghi kết quả Đã gặp; chỉ để tham khảo, không tính vào chỉ số |
+| **Case size dự kiến** | Số RM ước lượng khi ghi kết quả Đã gặp; chỉ để tham khảo, không tính vào chỉ số |
 | **HĐ phát hành** | Số HĐ có ngày phát hành trong kỳ |
 | **Doanh số** | Tổng FYP phát hành của các HĐ phát hành trong kỳ |
 | **Tỉ lệ chốt** | HĐ phát hành trong kỳ ÷ Chuyển RF trong kỳ, không lũy kế. Kỳ có 0 RF hiện "—" |
@@ -67,10 +67,10 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| **KYC** | Know your customer: thông tin RE biết về KH |
-| **Ghi chú KYC** | Văn bản RE ghi về KH. Chỉ thêm, không sửa, không xóa; chỉ mất khi dọn sạch Thùng rác xóa hẳn KH đã xóa |
+| **KYC** | Know your customer: thông tin RM biết về KH |
+| **Ghi chú KYC** | Văn bản RM ghi về KH. Chỉ thêm, không sửa, không xóa; chỉ mất khi dọn sạch Thùng rác xóa hẳn KH đã xóa |
 | **Ghi chú hệ thống** | Ghi chú app tự ghi khi tạo / sửa hồ sơ KH (ngày sinh, giới tính) |
-| **Dữ kiện KYC** | Một giá trị có cấu trúc RE đã xác nhận (ví dụ Số con: 2), trỏ về ghi chú nguồn. Còn hiệu lực, đã thay thế (cũ) hoặc mâu thuẫn |
+| **Dữ kiện KYC** | Một giá trị có cấu trúc RM đã xác nhận (ví dụ Số con: 2), trỏ về ghi chú nguồn. Còn hiệu lực, đã thay thế (cũ) hoặc mâu thuẫn |
 | **Mã F** | Tên ngắn của một dữ kiện (F1, F2…). Phân tích AI dùng mã F làm bằng chứng |
 | **Hạng mục KYC** | 8 hạng mục lớn: Danh tính / tuổi, Gia đình, Nghề nghiệp / nguồn thu, Tài sản / AUM, Mục tiêu & mốc thời gian, Khẩu vị rủi ro, Bảo vệ hiện có, Mối quan tâm. Hạng mục "đã có" khi có đủ các trường chính |
 | **Trường** | Mục nhỏ trong hạng mục (ví dụ Năm sinh, Số con) |
@@ -79,7 +79,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | **Mâu thuẫn** | Hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều còn hiệu lực. **Mâu thuẫn cốt lõi** (ở trường cốt lõi) chặn phân tích AI; **mâu thuẫn phụ** chỉ cảnh báo |
 | **Cổng KYC** | Trạng thái cho biết KH đủ thông tin để phân tích AI chưa, theo thứ tự ưu tiên: `CONFLICT_RESOLUTION` (có mâu thuẫn cốt lõi) > `KYC_INSUFFICIENT` (thiếu thông tin) > `PROFILE_DISCOVERY` (đủ tối thiểu, nên khám phá thêm) > `PAIN_POINT_ANALYSIS` (đủ để phân tích nhu cầu). Chỉ hai trạng thái cuối gọi AI được |
 | **Phiên bản KYC** (`kyc v…`) | Tạo mới mỗi khi tập dữ kiện còn hiệu lực đổi |
-| **Thay đổi quan trọng** | Phiên bản KYC có đổi ở trường cốt lõi (app tự đánh dấu) hoặc được RE đánh dấu; kyc v1 luôn là thay đổi quan trọng. Dòng thời gian ghi nhãn "thay đổi quan trọng". Nhắc nên phân tích AI lại |
+| **Thay đổi quan trọng** | Phiên bản KYC có đổi ở trường cốt lõi (app tự đánh dấu) hoặc được RM đánh dấu; kyc v1 luôn là thay đổi quan trọng. Dòng thời gian ghi nhãn "thay đổi quan trọng". Nhắc nên phân tích AI lại |
 
 ## AI
 
@@ -99,7 +99,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | **Discovery Strategy** | Nên hỏi / tìm hiểu gì tiếp |
 | **Next Best Actions** | Việc nên làm tiếp với KH |
 | **Mức bằng chứng** | Thấp / trung bình / cao, app đếm theo số dữ kiện một ý dựa vào và độ mới của dữ kiện |
-| **AI trích xuất** | AI đọc một ghi chú KYC và đề xuất dữ kiện; RE xác nhận thì mới ghi |
+| **AI trích xuất** | AI đọc một ghi chú KYC và đề xuất dữ kiện; RM xác nhận thì mới ghi |
 | **Token** | Đơn vị đo lượng chữ gửi / nhận của AI |
 
 ## Dữ liệu
@@ -108,7 +108,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 |---|---|
 | **Bản exe** | App chạy trên Windows, dữ liệu lưu trong file `Project2C-data\project2c.db` |
 | **Bản web** | App chạy trong trình duyệt để thử; dữ liệu mất khi tải lại trang |
-| **Dữ liệu giả lập** | Dữ liệu mẫu app tạo (3 team × 10 RE, ~12 tháng), tên và số liệu đều giả |
+| **Dữ liệu giả lập** | Dữ liệu mẫu app tạo (3 team × 10 RM, ~12 tháng), tên và số liệu đều giả |
 | **Xóa mềm** | Bản ghi ẩn khỏi danh sách và chỉ số nhưng vẫn còn, khôi phục được ở Thùng rác |
 | **Thùng rác** | Nơi liệt kê bản ghi đã xóa mềm để khôi phục (Cài đặt → Thùng rác) |
 | **Backup tự động** | Bản sao file dữ liệu app tạo mỗi lần mở (bản exe), giữ 10 bản mới nhất trong `backups\` |

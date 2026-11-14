@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn Báo cáo đặt số liệu của một kỳ thành bảng: lịch hẹn, kết quả (6 chỉ số) và KH theo nhóm, chia theo team, theo RE hoặc theo từng mốc thời gian. Mọi bảng xuất được ra Excel.
+Màn Báo cáo đặt số liệu của một kỳ thành bảng: lịch hẹn, kết quả (6 chỉ số) và KH theo nhóm, chia theo team, theo RM hoặc theo từng mốc thời gian. Mọi bảng xuất được ra Excel.
 
 ![Báo cáo, kỳ Tháng 09/2026, góc nhìn Toàn bộ](img/07-bao-cao.png)
 
@@ -26,19 +26,19 @@ Kỳ chưa bắt đầu thì Kết quả và KH cuối kỳ hiện "—". Tỉ l
 
 ## Tổng hợp
 
-Bảng **Tổng hợp** luôn ở trên: một dòng cho cả góc nhìn đang xem (ví dụ "Toàn bộ · 30 RE").
+Bảng **Tổng hợp** luôn ở trên: một dòng cho cả góc nhìn đang xem (ví dụ "Toàn bộ · 30 RM").
 
-## Theo team, Theo RE, Theo mốc
+## Theo team, Theo RM, Theo mốc
 
-Bảng thứ hai chọn bằng ô **Theo team** / **Theo RE** / **Theo mốc**:
+Bảng thứ hai chọn bằng ô **Theo team** / **Theo RM** / **Theo mốc**:
 
 - **Theo team**: mỗi team một dòng, xếp theo tên, dòng **Tổng** ở cuối.
-- **Theo RE**: mỗi RE một dòng (cột Team, RE), xếp theo team rồi tên, dòng **Tổng** ở cuối.
+- **Theo RM**: mỗi RM một dòng (cột Team, RM), xếp theo team rồi tên, dòng **Tổng** ở cuối.
 - **Theo mốc**: mỗi mốc thời gian của kỳ một dòng, cho góc nhìn đang xem. Không có dòng Tổng: cộng các mốc ra đúng bảng Tổng hợp.
 
 Dòng **Tổng** cộng các dòng trên; Tỉ lệ chốt của dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình.
 
-Bảng nào trùng Tổng hợp thì không có: góc nhìn Team không có Theo team; góc nhìn RE chỉ có Theo mốc.
+Bảng nào trùng Tổng hợp thì không có: góc nhìn Team không có Theo team; góc nhìn RM chỉ có Theo mốc.
 
 ### Theo mốc
 
@@ -59,7 +59,7 @@ Mốc có hôm nay được đánh dấu và ghi "tới …" (ví dụ "14–20/
 1. Chọn kỳ, góc nhìn, bấm **Lọc**.
 2. Bấm **Xuất Excel** (góc phải hàng Kỳ thống kê). Nút ghi "Đang xuất…" trong lúc tạo file.
 
-File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các bảng của góc nhìn): Toàn bộ 4 sheet, Team 3 sheet, RE 2 sheet. Dòng đầu mỗi sheet ghi tên bảng, kỳ, góc nhìn và ngày xuất. Ô giữ số thật (tiền theo đồng, tỉ lệ dạng %) để tính tiếp trong Excel.
+File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các bảng của góc nhìn): Toàn bộ 4 sheet, Team 3 sheet, RM 2 sheet. Dòng đầu mỗi sheet ghi tên bảng, kỳ, góc nhìn và ngày xuất. Ô giữ số thật (tiền theo đồng, tỉ lệ dạng %) để tính tiếp trong Excel.
 
 - (bản exe) File lưu vào `Project2C-data\exports\`, tên dạng `bao-cao_<kỳ>_<góc nhìn>_<ngày xuất>.xlsx`, ví dụ `bao-cao_2026-10_toan-bo_2026-10-15.xlsx`. App báo "Đã xuất báo cáo · 4 sheet: …" kèm đường dẫn và nút **Mở thư mục**.
 - Bản web: file tải về thư mục tải xuống của trình duyệt.

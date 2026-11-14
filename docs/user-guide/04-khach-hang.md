@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RE phụ trách và luôn ở một nhóm: bốn nhóm mở **N4** → **N3** → **N2** → **N1** (N1 gần chốt nhất) hoặc hai nhóm đóng **Tạm hoãn**, **Mất cơ hội**. Ý nghĩa từng nhóm ở [11. Thuật ngữ](11-thuat-ngu.md#khách-hàng-và-nhóm).
+Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RM phụ trách và luôn ở một nhóm: bốn nhóm mở **N4** → **N3** → **N2** → **N1** (N1 gần chốt nhất) hoặc hai nhóm đóng **Tạm hoãn**, **Mất cơ hội**. Ý nghĩa từng nhóm ở [11. Thuật ngữ](11-thuat-ngu.md#khách-hàng-và-nhóm).
 
 Đầu màn ghi số KH theo góc nhìn, ví dụ "884 KH đang mở · 316 đã đóng". Ô **Cách xem** chuyển giữa **Kanban** và **Bảng**.
 
@@ -10,7 +10,7 @@ Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RE phụ trách v�
 
 ![Khách hàng, cách xem Kanban](img/04-khach-hang.png)
 
-- Bốn cột N4, N3, N2, N1, mỗi cột có số KH. Mỗi thẻ KH ghi họ tên, RE phụ trách, giới tính · năm sinh; KH đã có HĐ có nhãn số HĐ (ví dụ "1 HĐ").
+- Bốn cột N4, N3, N2, N1, mỗi cột có số KH. Mỗi thẻ KH ghi họ tên, RM phụ trách, giới tính · năm sinh; KH đã có HĐ có nhãn số HĐ (ví dụ "1 HĐ").
 - Cột dài chỉ hiện vài thẻ đầu; dòng **+ … KH · xem dạng bảng** ở cuối cột chuyển sang Bảng.
 - Hai khung bên phải là KH đã đóng (**Tạm hoãn**, **Mất cơ hội**), kèm ngày đóng. KH đã đóng "Mở lại được bất cứ lúc nào" bằng [Chuyển nhóm](#chuyển-nhóm-tay).
 - Bấm một thẻ (hoặc một tên) để mở [Hồ sơ KH](05-ho-so-kh.md).
@@ -19,14 +19,14 @@ Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RE phụ trách v�
 
 ![Khách hàng, cách xem Bảng](img/04-khach-hang-bang.png)
 
-Bảng có mọi KH của góc nhìn: **Mã KH**, **Họ tên**, **Nhóm**, **RE**, **Ngày sinh**, **HĐ** (số HĐ), **Từ ngày** (ngày vào nhóm hiện tại). Bấm tiêu đề cột để sắp xếp; bấm tên để mở hồ sơ. Bảng dài có nút "Hiện thêm … khách hàng" ở cuối.
+Bảng có mọi KH của góc nhìn: **Mã KH**, **Họ tên**, **Nhóm**, **RM**, **Ngày sinh**, **HĐ** (số HĐ), **Từ ngày** (ngày vào nhóm hiện tại). Bấm tiêu đề cột để sắp xếp; bấm tên để mở hồ sơ. Bảng dài có nút "Hiện thêm … khách hàng" ở cuối.
 
 ## Tạo KH
 
 ![Hộp Khách hàng mới](img/04-khach-hang-moi.png)
 
 1. Bấm **+ Khách hàng**.
-2. Điền **Họ tên** và chọn **RE phụ trách**.
+2. Điền **Họ tên** và chọn **RM phụ trách**.
 3. **Ngày sinh (năm hoặc đủ ngày)**: gõ năm (`1984`) hoặc đủ ngày (`12/03/1984`); không bắt buộc. **Giới tính**: Nam, Nữ hoặc Chưa rõ.
 4. **Nhóm ban đầu**: N4, N3, N2 hoặc N1. KH mới chỉ vào nhóm mở; Tạm hoãn / Mất cơ hội chọn sau bằng "Chuyển nhóm".
 5. **Ngày ghi nhận KH**: mặc định hôm nay, không được sau hôm nay.
@@ -37,11 +37,11 @@ Ngày sinh và giới tính được ghi thêm thành ghi chú KYC nguồn "Hệ
 ## Sửa hồ sơ KH
 
 1. Mở hồ sơ KH, bấm **Sửa hồ sơ**.
-2. Sửa họ tên, RE phụ trách, ngày sinh, giới tính. Nhóm không sửa ở đây (đổi nhóm ở "Chuyển nhóm").
+2. Sửa họ tên, RM phụ trách, ngày sinh, giới tính. Nhóm không sửa ở đây (đổi nhóm ở "Chuyển nhóm").
 3. Khung **Khi lưu, app tự ghi vào KYC** cho biết app có tạo phiên bản KYC mới không (khi ngày sinh / giới tính đổi).
 4. Bấm **Lưu**.
 
-Đổi RE phụ trách: từ nay KH thuộc RE mới, và khi lưu, mọi lịch hẹn **Dự kiến** (từ hôm nay trở đi, chưa ghi kết quả) chuyển sang RE mới — hộp báo trước "Khi lưu: n lịch hẹn Dự kiến chuyển sang RE mới.". Lịch hẹn khác (đã có kết quả, hoặc đã qua mà chưa ghi kết quả) và HĐ vẫn tính cho RE đã ghi trên từng bản ghi.
+Đổi RM phụ trách: từ nay KH thuộc RM mới, và khi lưu, mọi lịch hẹn **Dự kiến** (từ hôm nay trở đi, chưa ghi kết quả) chuyển sang RM mới — hộp báo trước "Khi lưu: n lịch hẹn Dự kiến chuyển sang RM mới.". Lịch hẹn khác (đã có kết quả, hoặc đã qua mà chưa ghi kết quả) và HĐ vẫn tính cho RM đã ghi trên từng bản ghi.
 
 ## Xóa KH
 

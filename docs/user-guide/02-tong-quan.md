@@ -18,7 +18,7 @@ Hàng **Kỳ thống kê** ở đầu màn:
 
 Dòng **Đang xem:** bên phải cho biết số trên màn thuộc kỳ và góc nhìn nào. Tháng đang diễn ra có nhãn **MTD** (từ ngày 1 tới hôm nay), kèm khoảng ngày được tính.
 
-Ở Tổng quan, góc nhìn **Team** cộng mọi team và vẽ mỗi team một biểu đồ; muốn xem một team riêng, dùng màn Báo cáo hoặc góc nhìn RE.
+Ở Tổng quan, góc nhìn **Team** cộng mọi team và vẽ mỗi team một biểu đồ; muốn xem một team riêng, dùng màn Báo cáo hoặc góc nhìn RM.
 
 ## Ô Lịch hẹn
 
@@ -66,6 +66,6 @@ Trình đọc màn hình (ví dụ Narrator) đọc được số của biểu �
 
 Bảng **So sánh team** (góc nhìn Toàn bộ và Team) đặt các team cạnh nhau: Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng **Tổng** cộng mọi team (Tỉ lệ chốt dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình).
 
-Bấm một team để xem các RE của team ngay bên dưới; bấm lại để thu. Bảng không so với kỳ trước. Góc nhìn RE không có bảng này.
+Bấm một team để xem các RM của team ngay bên dưới; bấm lại để thu. Bảng không so với kỳ trước. Góc nhìn RM không có bảng này.
 
 [← 1. Bắt đầu](01-bat-dau.md) · [3. Lịch hẹn →](03-lich-hen.md)

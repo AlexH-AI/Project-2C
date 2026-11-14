@@ -27,7 +27,7 @@ API key OpenCode **không** nằm trong thư mục này: key lưu trong Windows 
 
 ## Lần mở đầu: dữ liệu giả lập
 
-Khi chưa có file dữ liệu, app tự tạo **dữ liệu giả lập**: 3 team × 10 RE, KH, lịch hẹn và HĐ khoảng 12 tháng tính tới hôm nay. Dữ liệu này để làm quen và thử app; tên người, số liệu đều là giả.
+Khi chưa có file dữ liệu, app tự tạo **dữ liệu giả lập**: 3 team × 10 RM, KH, lịch hẹn và HĐ khoảng 12 tháng tính tới hôm nay. Dữ liệu này để làm quen và thử app; tên người, số liệu đều là giả.
 
 Muốn bắt đầu lại từ dữ liệu giả lập mới: **Cài đặt → Dữ liệu → Nạp lại…** (xem [9. Cài đặt](09-cai-dat.md#nạp-lại-dữ-liệu-giả-lập)).
 
@@ -88,12 +88,12 @@ Góc trên sidebar là logo Heritas L-CRM và slogan "Where legacy meets trust".
 
 | Góc nhìn | Xem gì |
 |---|---|
-| **Toàn bộ** | Mọi team, mọi RE |
+| **Toàn bộ** | Mọi team, mọi RM |
 | **Team** | Một team: chọn team ở ô bên cạnh. Ở Tổng quan, Team hiện mọi team cạnh nhau (không chọn một team) |
-| **RE** | Một RE: chọn RE ở ô bên cạnh |
+| **RM** | Một RM: chọn RM ở ô bên cạnh |
 
 Góc nhìn là cách xem dữ liệu, không phải tài khoản đăng nhập: ai dùng app cũng xem và sửa được mọi dữ liệu. Góc nhìn chọn ở một màn giữ nguyên khi chuyển sang màn khác.
 
-Ở Lịch hẹn và Khách hàng, khi góc nhìn là Team, phía trên có hàng RE của team (kèm số đếm). Bấm một RE để chỉ xem RE đó, bấm lại để bỏ; **Cả team** xem cả team.
+Ở Lịch hẹn và Khách hàng, khi góc nhìn là Team, phía trên có hàng RM của team (kèm số đếm). Bấm một RM để chỉ xem RM đó, bấm lại để bỏ; **Cả team** xem cả team.
 
 [Mục kế tiếp: 2. Tổng quan →](02-tong-quan.md)

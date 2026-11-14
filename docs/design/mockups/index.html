@@ -139,7 +139,7 @@
 
       <nav class="screens" aria-label="Màn hình">
         <a href="overview.html"><b>1 · Tổng quan</b><span>Thay ở Phase 4 (#254): KPI theo kỳ + so kỳ trước, KH theo nhóm, so sánh team</span></a>
-        <a href="appointments.html"><b>2 · Lịch hẹn</b><span>Team → RE → ngày, ghi kết quả, chi tiết + KYC + AI</span></a>
+        <a href="appointments.html"><b>2 · Lịch hẹn</b><span>Team → RM → ngày, ghi kết quả, chi tiết + KYC + AI</span></a>
         <a href="customers.html"><b>3 · Khách hàng</b><span>Kanban N4→N1 + cột đã đóng, chuyển sang bảng</span></a>
         <a href="customer.html"><b>4 · Hồ sơ KH</b><span>Dữ kiện KYC 8 chiều, dòng thời gian, KYC Intelligence</span></a>
       </nav>
@@ -161,13 +161,13 @@
         <ol class="q">
           <li><b>Lý do hạ nhóm / đóng: không hỏi.</b> Hạ nhóm / đóng là quyết định khi review kết quả cuộc gặp gần nhất. Thêm ô tùy chọn <b>"Người đánh giá kết quả"</b> (vd. TL, IS) trong hộp thoại Ghi kết quả (6c). <span class="c-warn">Cần bổ sung spec G2 §3.5: cột <code>appointments.outcome_reviewer_id</code> (FK <code>people</code>, không bắt buộc) — PR docs riêng.</span></li>
           <li><b>D7 — đồng ý.</b> Chỉ khóa 3 ô: trạng thái cuộc hẹn (Dự kiến / Đã gặp / Dời lịch / Hủy / Không đến), ngày cuộc hẹn, nhóm sau cuộc gặp (N4–N1 / Tạm hoãn / Mất cơ hội). Việc tiếp theo, case size, ghi chú, trigger, người phối hợp vẫn sửa được (6f).</li>
-          <li><b>Trigger bắt buộc</b>; mặc định hiện <b>"—"</b> (chưa chọn) để RE biết cần chọn, không mặc định "Khác" (6a, 6b).</li>
+          <li><b>Trigger bắt buộc</b>; mặc định hiện <b>"—"</b> (chưa chọn) để RM biết cần chọn, không mặc định "Khác" (6a, 6b).</li>
           <li><b>Mở DB hỏng khi khởi động (10d)</b> và <b>gõ "NẠP LẠI" để xác nhận (10c)</b> — đồng ý.</li>
           <li><b>Tên tiếng Việt các trường KYC</b> (7a, 7b) — đồng ý, đưa vào i18n.</li>
         </ol>
         <div class="subhead">Bổ sung theo phản hồi G3 vòng 1</div>
         <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
-          <li><b style="color: var(--text)">Tạo lịch hẹn tiếp theo</b> từ mọi lịch đã qua, mọi trạng thái: nút ở bảng chi tiết lịch hẹn, bảng Lịch hẹn ở Hồ sơ KH ("Hẹn tiếp"), dòng thời gian. Mở form 6a điền sẵn KH, RE, người phối hợp, trigger — sửa được (6h).</li>
+          <li><b style="color: var(--text)">Tạo lịch hẹn tiếp theo</b> từ mọi lịch đã qua, mọi trạng thái: nút ở bảng chi tiết lịch hẹn, bảng Lịch hẹn ở Hồ sơ KH ("Hẹn tiếp"), dòng thời gian. Mở form 6a điền sẵn KH, RM, người phối hợp, trigger — sửa được (6h).</li>
           <li><b style="color: var(--text)">Hẹn lần tiếp theo</b> trong hộp thoại Ghi kết quả với Đã gặp / Hủy / Không đến: khối tùy chọn ngày + giờ + dòng →; "Lưu kết quả + tạo lịch" một lần bấm (6c, 6i).</li>
           <li>Ngày lịch mới (hai lối trên) phải <b style="color: var(--text)">từ hôm nay trở đi</b>; gõ ngày đã qua → báo lỗi, không tự đổi (6d, 6h).</li>
           <li><b style="color: var(--text)">Không</b> lưu liên kết lịch mới ↔ lịch cũ: schema giữ nguyên, không dùng <code>rescheduled_from_id</code> (chỉ dành cho Dời lịch, D3).</li>
@@ -180,7 +180,7 @@
       <section class="card">
         <div class="card-head"><h2>Phase 3 · Phản hồi Owner 01/10 — gói B (G3, #217)</h2><span class="meta">Owner đã duyệt G3 01/10/2026 (B5 = phương án A)</span></div>
         <nav class="screens" aria-label="Mockup gói B">
-          <a href="phase-3-feedback.html"><b>B1–B6 · Phản hồi Owner 01/10</b><span>Team (TL ở đầu bảng), hàng chọn RE ở Khách hàng / Lịch hẹn, lịch tháng tô dải kỳ, màu cột Ngày (3 phương án), lưới năm</span></a>
+          <a href="phase-3-feedback.html"><b>B1–B6 · Phản hồi Owner 01/10</b><span>Team (TL ở đầu bảng), hàng chọn RM ở Khách hàng / Lịch hẹn, lịch tháng tô dải kỳ, màu cột Ngày (3 phương án), lưới năm</span></a>
           <a href="table-more.html"><b>T-150 · Bảng "Hiện thêm"</b><span>Bảng lớn hiện 100 dòng đầu, nút Hiện thêm 100, 4 trạng thái (DR-03)</span></a>
         </nav>
       </section>
@@ -188,8 +188,8 @@
       <section class="card">
         <div class="card-head"><h2>Phase 4 · Tổng quan và Báo cáo (G3, #254)</h2><span class="meta">Owner đã duyệt G3 03/10/2026</span></div>
         <nav class="screens" aria-label="Mockup Phase 4">
-          <a href="overview.html"><b>Tổng quan (ý 9)</b><span>Lọc, ô Lịch hẹn 4 nhóm, 6 KPI + so kỳ trước, N4–N1 + chart, so sánh team → RE; màn Lịch hẹn 4 nhóm (cam = chưa ghi kết quả, xám = dời / hủy / không đến)</span></a>
-          <a href="reports.html"><b>Báo cáo</b><span>Tổng hợp, Theo team, Theo RE, Theo mốc; kỳ Tuần / Tháng / Năm; xuất Excel</span></a>
+          <a href="overview.html"><b>Tổng quan (ý 9)</b><span>Lọc, ô Lịch hẹn 4 nhóm, 6 KPI + so kỳ trước, N4–N1 + chart, so sánh team → RM; màn Lịch hẹn 4 nhóm (cam = chưa ghi kết quả, xám = dời / hủy / không đến)</span></a>
+          <a href="reports.html"><b>Báo cáo</b><span>Tổng hợp, Theo team, Theo RM, Theo mốc; kỳ Tuần / Tháng / Năm; xuất Excel</span></a>
         </nav>
       </section>
 
@@ -291,7 +291,7 @@
             <tr><th>Thành phần</th><th>Trong app</th><th>Nền kề</th><th class="r">Trước</th><th class="r">Sau</th></tr>
           </thead>
           <tbody class="num">
-            <tr><td>Viền ô nhập</td><td><code>TextField</code>, <code>SelectField</code>: hộp thoại, Cài đặt → AI, chọn team / RE trên thanh trên cùng</td><td>ruột ô bg-0 · hộp thoại, thẻ bg-1</td><td class="r">--border-strong 1,88 · 1,76</td><td class="r">4,25 · 3,97</td></tr>
+            <tr><td>Viền ô nhập</td><td><code>TextField</code>, <code>SelectField</code>: hộp thoại, Cài đặt → AI, chọn team / RM trên thanh trên cùng</td><td>ruột ô bg-0 · hộp thoại, thẻ bg-1</td><td class="r">--border-strong 1,88 · 1,76</td><td class="r">4,25 · 3,97</td></tr>
             <tr><td>Viền ô ngày Tùy chọn</td><td><code>PeriodPicker</code></td><td>ruột ô bg-2 · màn bg-0</td><td class="r">--border 1,25 · 1,47</td><td class="r">3,61 · 4,25</td></tr>
             <tr><td>Viền ô tìm, ô tin nhắn ChatGPT web</td><td><code>SettingsTrash.tsx</code>, <code>KycWebSession.tsx</code></td><td>ruột ô bg-0 · thẻ bg-1</td><td class="r">--border-strong 1,88 · 1,76</td><td class="r">4,25 · 3,97</td></tr>
             <tr><td>Mũi tên sắp xếp chưa chọn ↕</td><td><code>DataTable</code></td><td>thẻ bg-1</td><td class="r">--border-strong 1,76</td><td class="r">3,97</td></tr>
@@ -309,7 +309,7 @@
               <div class="in">Đỗ Khánh Linh · Sao Mai ▾</div>
               <div class="in ph">Tìm theo tên KH, nhân sự, team…</div>
               <table>
-                <thead><tr><th class="sort">Khách hàng</th><th class="sort asc">Ngày</th><th class="sort">RE</th></tr></thead>
+                <thead><tr><th class="sort">Khách hàng</th><th class="sort asc">Ngày</th><th class="sort">RM</th></tr></thead>
               </table>
             </div>
             <div class="surface s0">
@@ -324,7 +324,7 @@
               <div class="in">Đỗ Khánh Linh · Sao Mai ▾</div>
               <div class="in ph">Tìm theo tên KH, nhân sự, team…</div>
               <table>
-                <thead><tr><th class="sort">Khách hàng</th><th class="sort asc">Ngày</th><th class="sort">RE</th></tr></thead>
+                <thead><tr><th class="sort">Khách hàng</th><th class="sort asc">Ngày</th><th class="sort">RM</th></tr></thead>
               </table>
             </div>
             <div class="surface s0">
@@ -352,7 +352,7 @@
         <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
           <li>Bộ chọn kỳ dùng chung: <b style="color: var(--text)">Ngày · Tuần · Tháng · Năm · Tùy chọn</b> + ‹ › — có ở Tổng quan, Lịch hẹn, Khách hàng.</li>
           <li>Tiêu đề cột bảng bấm được để sắp xếp (↕ / ↑ / ↓); mọi cột ngày giờ đều sắp xếp được.</li>
-          <li>Tổng quan: thanh công cụ kỳ + góc nhìn; chân thẻ team có RF / HĐ nộp / doanh số / tỉ lệ chốt; bảng so sánh team + lịch 7 ngày tới; top RE 8 dòng.</li>
+          <li>Tổng quan: thanh công cụ kỳ + góc nhìn; chân thẻ team có RF / HĐ nộp / doanh số / tỷ lệ chốt; bảng so sánh team + lịch 7 ngày tới; top RM 8 dòng.</li>
           <li>Lịch hẹn: chế độ Tháng (lịch tháng có số lịch và trạng thái từng ngày), tóm tắt tháng, trigger trong tháng, chuyển nhóm sau cuộc gặp, danh sách lịch hẹn toàn chiều ngang.</li>
           <li>Khách hàng: dải tóm tắt từng nhóm trong kỳ + độ phủ KYC, kanban cao đều, cột Đã đóng thành 2 danh sách có lý do và sắp xếp theo ngày.</li>
           <li>Hồ sơ KH: đề mục AI màu <code>--heading</code>; thêm khối Hợp đồng và Lịch hẹn của KH.</li>

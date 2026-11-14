@@ -435,8 +435,8 @@
         ? { c: 'danger', i: 'alert', b: `Tỷ lệ hủy ${pctS(cr)}, tăng ${nf(dcr, 1)} điểm`, s: `${d.cancelled} HĐ hủy trong kỳ, ${d.cancelled > 1 ? 'đều ' : ''}ở tuần 02 – 08/11`, go: 'reports' }
         : { c: 'ok', i: 'check', b: `Tỷ lệ hủy ${pctS(cr)}, giảm ${nf(-dcr, 1)} điểm`, s: 'Không có HĐ hủy trong kỳ', go: 'reports' },
       all
-        ? { c: 'accent', i: 'star', b: `${TEAMS[byTeam[0].t].name} dẫn đầu: ${moneyS(byTeam[0].d.sales)}`, s: `${nf((byTeam[0].d.sales / d.sales) * 100)}% doanh số · tỉ lệ chốt ${pctS(rate(byTeam[0].d.issued, byTeam[0].d.rf))}`, go: 'reports' }
-        : { c: 'accent', i: 'star', b: `Đứng thứ ${byTeam.findIndex((x) => x.t === state.scope) + 1} / 3 về doanh số`, s: `${nf((d.sales / 1380) * 100)}% doanh số toàn bộ · tỉ lệ chốt ${pctS(close)}`, go: 'reports' },
+        ? { c: 'accent', i: 'star', b: `${TEAMS[byTeam[0].t].name} dẫn đầu: ${moneyS(byTeam[0].d.sales)}`, s: `${nf((byTeam[0].d.sales / d.sales) * 100)}% doanh số · tỷ lệ chốt ${pctS(rate(byTeam[0].d.issued, byTeam[0].d.rf))}`, go: 'reports' }
+        : { c: 'accent', i: 'star', b: `Đứng thứ ${byTeam.findIndex((x) => x.t === state.scope) + 1} / 3 về doanh số`, s: `${nf((d.sales / 1380) * 100)}% doanh số toàn bộ · tỷ lệ chốt ${pctS(close)}`, go: 'reports' },
       { c: 'warn', i: 'clock', b: `${d.appt[2]} buổi chưa ghi kết quả`, s: all ? 'Sao Mai 5 · Hừng Đông 4 · Bình Minh 3' : 'Ghi kết quả để chỉ số của kỳ đủ', go: 'appointments' },
       { c: 'info', i: 'forecast', b: `Tuần này dự kiến ${moneyS(fw)}`, s: `N1 chiếm ${nf((d.fw[0] / fw) * 100)}% · từ nay tới cuối tháng ${moneyS(d.fm)}`, go: 'forecast' },
     ];
@@ -447,7 +447,7 @@
     const tiles = [
       { l: 'Tổng số HĐ', n: d.total, t: nf(d.total), f: `${d.issued} phát hành − ${d.cancelled} hủy`, z: `<div class="meter"><b style="--w: ${cap((d.total / d.issued) * 100)}%"></b><b style="--w: ${cap((d.cancelled / d.issued) * 100)}%; --c: var(--danger)"></b></div>` },
       { l: 'Tỷ lệ hủy', n: cr, t: nf(cr, 1), u: '%', f: `${arrow(dcr)} ${nf(Math.abs(dcr), 1)} điểm · ${d.cancelled} ÷ ${d.issued}`, c: dcr > 0 ? 'bad' : dcr < 0 ? 'up' : '', z: `<div class="meter" style="--c: var(--danger)" title="Vạch là kỳ trước"><b style="--w: ${cap((cr / 15) * 100)}%"></b><u style="--at: ${cap((crWas / 15) * 100)}%"></u></div>` },
-      { l: 'Tỉ lệ chốt', n: close, t: nf(close, 1), u: '%', f: `${d.issued} HĐ ÷ ${d.rf} RF`, z: ringViz(close) },
+      { l: 'Tỷ lệ chốt', n: close, t: nf(close, 1), u: '%', f: `${d.issued} HĐ ÷ ${d.rf} RF`, z: ringViz(close) },
       { l: 'Chuyển RF', n: d.rf, t: nf(d.rf), ...diff(d.rf, d.p.rf), z: spark(TREND.rf) },
       { l: 'HĐ nộp', n: d.sub, t: nf(d.sub), ...diff(d.sub, d.p.sub), z: spark(TREND.sub) },
       { l: 'Case size', n: d.cs, t: nf(cs.v, cs.d), u: cs.u, f: `${arrow(csG)} ${nf(Math.abs(csG), 1)}% so với kỳ trước`, c: csG > 0 ? 'up' : 'bad', z: spark(TREND.cs) },
@@ -649,7 +649,7 @@
   }
   const LEDGER = {
     result: {
-      cols: ['HĐ phát hành', 'HĐ hủy', 'Tổng số HĐ', 'FYP phát hành', 'FYP hủy', 'Doanh số', 'Tỷ lệ hủy', 'Tỉ lệ chốt'],
+      cols: ['HĐ phát hành', 'HĐ hủy', 'Tổng số HĐ', 'FYP phát hành', 'FYP hủy', 'Doanh số', 'Tỷ lệ hủy', 'Tỷ lệ chốt'],
       row: (d, max) => {
         const cr = rate(d.cancelled, d.issued);
         return [`<td>${nf(d.issued)}</td>`, d.cancelled ? `<td>${nf(d.cancelled)}</td>` : '<td class="zero">0</td>', `<td>${nf(d.issued - d.cancelled)}</td>`, `<td>${moneyS(d.fi)}</td>`, cell(d.fc),
@@ -690,7 +690,7 @@
       all.cancelled
         ? `<li><b>HĐ hủy:</b> ${nf(all.cancelled)} HĐ, FYP hủy ${moneyS(all.fc)}. Cao nhất ở ${TEAMS[worst.t].name}: tỷ lệ hủy ${pctS(rate(worst.d.cancelled, worst.d.issued))}.</li>`
         : '<li><b>Không có HĐ hủy</b> trong kỳ.</li>',
-      `<li><b>${TEAMS[weak.t].name} cần hỗ trợ:</b> tỉ lệ chốt ${pctS(rate(weak.d.issued, weak.d.rf))}, thấp nhất ba team.</li>`,
+      `<li><b>${TEAMS[weak.t].name} cần hỗ trợ:</b> tỷ lệ chốt ${pctS(rate(weak.d.issued, weak.d.rf))}, thấp nhất ba team.</li>`,
       `<li><b>RM dẫn đầu:</b> ${top.name} (${TEAMS[top.team].name}), doanh số ${moneyS(net(top))} từ ${top.issued - top.cancelled} HĐ.</li>`,
       p.note ? '<li><b>Tuần này dự kiến ' + moneyS(sum(fwOf(() => true))) + '</b> từ các lịch đã đặt của KH N3, N2, N1 (màn Forecast).</li>' : '',
     ].join('');
@@ -704,7 +704,7 @@
         <div class="kpi4 num">
           <div><span class="lbl">Doanh số</span><span class="v">${nf(money(sales).v, money(sales).d)} <small>${money(sales).u}</small></span><span class="f">${moneyS(all.fi)} phát hành − ${moneyS(all.fc)} hủy</span></div>
           <div><span class="lbl">Tổng số HĐ</span><span class="v">${nf(total)}</span><span class="f">${nf(all.issued)} phát hành − ${nf(all.cancelled)} hủy · kỳ so sánh ${nf(c.issued - c.cancelled)}</span></div>
-          <div><span class="lbl">Tỉ lệ chốt</span><span class="v">${nf(rate(all.issued, all.rf), 1)} <small>%</small></span><span class="f">${nf(all.issued)} HĐ phát hành ÷ ${nf(all.rf)} RF</span></div>
+          <div><span class="lbl">Tỷ lệ chốt</span><span class="v">${nf(rate(all.issued, all.rf), 1)} <small>%</small></span><span class="f">${nf(all.issued)} HĐ phát hành ÷ ${nf(all.rf)} RF</span></div>
           <div><span class="lbl">Tỷ lệ hủy</span><span class="v">${nf(cr, 1)} <small>%</small></span><span class="f">${nf(all.cancelled)} ÷ ${nf(all.issued)} · ${arrow(dcr)} ${nf(Math.abs(dcr), 1)} điểm</span></div>
         </div>
         <div class="two">
@@ -727,7 +727,7 @@
         <h5>Khách hàng theo nhóm <small>cuối kỳ</small></h5>
         <table class="tbl">${ledgerHtml('kh', 'flat', rms)}</table>
         <h5>Định nghĩa chỉ số</h5>
-        <dl class="defs"><dt>Tổng số HĐ</dt><dd>HĐ phát hành − HĐ hủy. Có thể âm trong một kỳ ngắn.</dd><dt>Doanh số</dt><dd>FYP phát hành − FYP hủy. HĐ hủy tính vào kỳ của ngày hủy.</dd><dt>Tỷ lệ hủy</dt><dd>HĐ hủy ÷ HĐ phát hành; "—" khi kỳ không có HĐ phát hành; có thể vượt 100%.</dd><dt>Tỉ lệ chốt</dt><dd>HĐ phát hành ÷ RF, chưa trừ HĐ hủy.</dd><dt>Kỳ so sánh</dt><dd>Kỳ đang chạy so với cùng số ngày của kỳ trước; kỳ đã xong so với cả kỳ liền trước.</dd></dl>
+        <dl class="defs"><dt>Tổng số HĐ</dt><dd>HĐ phát hành − HĐ hủy. Có thể âm trong một kỳ ngắn.</dd><dt>Doanh số</dt><dd>FYP phát hành − FYP hủy. HĐ hủy tính vào kỳ của ngày hủy.</dd><dt>Tỷ lệ hủy</dt><dd>HĐ hủy ÷ HĐ phát hành; "—" khi kỳ không có HĐ phát hành; có thể vượt 100%.</dd><dt>Tỷ lệ chốt</dt><dd>HĐ phát hành ÷ RF, chưa trừ HĐ hủy.</dd><dt>Kỳ so sánh</dt><dd>Kỳ đang chạy so với cùng số ngày của kỳ trước; kỳ đã xong so với cả kỳ liền trước.</dd></dl>
         ${foot(3)}
       </article>`;
   }
@@ -928,7 +928,7 @@
   RENDER.rm = () => {
     const r = RMS[state.rm], list = CUS.filter((c) => c.rm === r.i).sort((a, b) => a.st.localeCompare(b.st));
     $('#rm-head').innerHTML = `<span class="av lg">${initials(r.name)}</span><div><h3>${r.name} <span class="chip">RM</span></h3><p>${teamMark(r.team)} Team ${TEAMS[r.team].name} · TL ${TEAMS[r.team].tl}</p></div>
-      <div class="stats num"><div><span>Doanh số tháng 11</span><b>${moneyS(r.fi - r.fc)}</b></div><div><span>Tổng số HĐ</span><b>${r.issued - r.cancelled}</b></div><div><span>Tỷ lệ hủy</span><b>${pctS(rate(r.cancelled, r.issued))}</b></div><div><span>Tỉ lệ chốt</span><b>${pctS(rate(r.issued, r.rf))}</b></div><div><span>Forecast tuần</span><b>${moneyS(sum(fwOf((c) => c.rm === r.i)))}</b></div></div>`;
+      <div class="stats num"><div><span>Doanh số tháng 11</span><b>${moneyS(r.fi - r.fc)}</b></div><div><span>Tổng số HĐ</span><b>${r.issued - r.cancelled}</b></div><div><span>Tỷ lệ hủy</span><b>${pctS(rate(r.cancelled, r.issued))}</b></div><div><span>Tỷ lệ chốt</span><b>${pctS(rate(r.issued, r.rf))}</b></div><div><span>Forecast tuần</span><b>${moneyS(sum(fwOf((c) => c.rm === r.i)))}</b></div></div>`;
     $('#rm-count').innerHTML = `${sum(r.kh)} KH đang mở · bản concept hiện ${list.length} KH mẫu<span class="legend">${cadHtml('m')} đã gặp</span><span class="legend">${cadHtml('x')} dời, hủy, không đến</span><span class="legend">${cadHtml('s')} có lịch tuần này</span>`;
     $('#rm-tbl').innerHTML = '<thead><tr><th>Khách hàng</th><th class="l">Nhóm</th><th class="l">Nhịp gặp · 8 tuần</th><th>Gặp gần nhất</th><th>Lịch sắp tới</th><th>Case size dự kiến</th><th>HĐ</th></tr></thead><tbody>'
       + list.map((c) => `<tr class="rm link" data-c="${c.i}"><td style="padding-left: 12px; color: var(--text)"><b>${c.name}</b></td><td class="l"><span class="st ${c.st}">${STAGE[c.st]}</span></td><td class="l">${cadHtml(c.cad)}</td><td>${c.last || '—'}</td><td>${c.next || '—'}</td><td>${c.cs ? c.cs + ' tr' : '—'}</td><td>${c.pol || '—'}</td></tr>`).join('') + '</tbody>';
@@ -1020,7 +1020,7 @@
     const t = TEAMS.findIndex((x) => q.includes(fold(x.name)));
     const sc = t < 0 ? 'all' : t, who = t < 0 ? 'Toàn bộ' : 'Team ' + TEAMS[t].name, d = scopeData(sc);
     const toReports = () => go('reports'), cr = pctS(rate(d.cancelled, d.issued));
-    if (/doanh so|fyp/.test(q)) return { q: `Doanh số · ${who} · tháng 11 (01/11 – 10/11)`, a: moneyS(d.sales), s: `${d.total} HĐ · tỷ lệ hủy ${cr} · tỉ lệ chốt ${pctS(rate(d.issued, d.rf))}`, run: toReports };
+    if (/doanh so|fyp/.test(q)) return { q: `Doanh số · ${who} · tháng 11 (01/11 – 10/11)`, a: moneyS(d.sales), s: `${d.total} HĐ · tỷ lệ hủy ${cr} · tỷ lệ chốt ${pctS(rate(d.issued, d.rf))}`, run: toReports };
     if (/ty le huy|hd huy|\bhuy\b/.test(q)) return { q: `Tỷ lệ hủy · ${who} · tháng 11 (01/11 – 10/11)`, a: cr, s: `${d.cancelled} HĐ hủy ÷ ${d.issued} HĐ phát hành`, run: toReports };
     if (/forecast|du kien/.test(q)) return { q: `Forecast tuần này · ${who} · 10/11 – 14/11`, a: moneyS(sum(d.fw)), s: `N1 ${moneyS(d.fw[0])} · N2 ${moneyS(d.fw[1])} · N3 ${moneyS(d.fw[2])} · cả tháng ${moneyS(d.fm)}`, run: () => { setScope(sc); go('forecast'); } };
     return null;
@@ -1094,7 +1094,7 @@
     ['12', 'Tìm kiếm và điều hướng', 'Một cụm góc nhìn và kỳ', 'Góc nhìn (Toàn bộ / Team / RM) và kỳ nằm cùng một chỗ trên thanh công cụ ở mọi màn có số liệu, cùng một cách dùng.', 'Hôm nay mỗi màn đặt bộ lọc một kiểu. Một cụm thống nhất thì học một lần.', 'S–M', [], 1, { view: 'overview' }],
     ['13', 'Tìm kiếm và điều hướng', 'Menu và phím tắt của hệ điều hành', 'macOS có menu Tệp, Sửa, Xem, Đi tới, Cửa sổ, Trợ giúp với phím ⌘ (⌘1–⌘6 đổi màn, ⌘, mở Cài đặt, ⌘F tìm). Windows dùng Ctrl tương ứng. Rê chuột vào mục thanh bên để thấy phím.', 'Người dùng Mac tìm lệnh trên menu trước tiên; menu Sửa còn cần để sao chép, dán chạy đúng trong app. Trong trang thử này trình duyệt giữ các phím số; ⌘K, ⌘F và ⌘Z thì chạy.', 'S–M', [['Mac']], 0, { view: 'overview', pre: () => { setSwitch('os', 'mac'); } }],
     ['14', 'Tổng quan', 'Một số chủ đạo', 'Doanh số là con số lớn nhất màn, kèm phép tính FYP phát hành − FYP hủy. Dưới là đường lũy kế: tháng này, phần dự kiến tới cuối tháng (nét đứt) và tháng trước (nét mờ).', 'Mở app là trả lời được "tháng này tới đâu rồi, có hơn tháng trước không". Nối luôn Tổng quan với Forecast.', 'M', [['B'], ['D']], 1, { view: 'overview' }],
-    ['15', 'Tổng quan', 'Ô chỉ số ghi rõ phép tính', 'Tổng số HĐ ghi "34 phát hành − 2 hủy"; Tỷ lệ hủy tăng thì đỏ; Tỉ lệ chốt ghi "34 HĐ ÷ 47 RF". Bấm một ô để mở Báo cáo.', 'Chỉ số mới của phần B dễ hiểu sai. Ghi phép tính ngay dưới số thì không ai phải hỏi lại.', 'S–M', [['B']], 1, { view: 'overview' }],
+    ['15', 'Tổng quan', 'Ô chỉ số ghi rõ phép tính', 'Tổng số HĐ ghi "34 phát hành − 2 hủy"; Tỷ lệ hủy tăng thì đỏ; Tỷ lệ chốt ghi "34 HĐ ÷ 47 RF". Bấm một ô để mở Báo cáo.', 'Chỉ số mới của phần B dễ hiểu sai. Ghi phép tính ngay dưới số thì không ai phải hỏi lại.', 'S–M', [['B']], 1, { view: 'overview' }],
     ['16', 'Tổng quan', 'Điểm nhấn', 'Bốn câu nhận xét viết từ số theo luật cố định: hủy tăng, team dẫn đầu, buổi chưa ghi kết quả, dự kiến tuần này. Bấm một câu để tới đúng nơi.', 'Số nhiều thì người xem bỏ sót điều quan trọng; câu chữ kéo mắt tới đó. Không dùng AI nên luôn đúng số.', 'M', [['G2', 'gate']], 1, { view: 'overview' }],
     ['17', 'Forecast', 'Đường băng tháng', 'Một thanh: đã đạt, dự kiến tuần này tách N1 / N2 / N3, và các tuần còn lại. Cuối thanh là số "về đích".', 'Câu quản lý hỏi nhiều nhất là "tháng này về bao nhiêu". Một thanh trả lời được.', 'S–M', [['D']], 1, { view: 'forecast' }],
     ['18', 'Forecast', 'Dải tuần thứ Hai → thứ Bảy', 'Mỗi ngày một cột, mỗi lịch hẹn một thẻ có case size và màu nhóm; tổng tiền ở đầu cột. KH có hai lịch chỉ tính một lần, theo số case size nhập gần nhất; thẻ kia mờ đi.', 'Thấy tiền dự kiến nằm ở ngày nào, của ai, để biết hôm nào phải dồn sức.', 'M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'week'; } }],

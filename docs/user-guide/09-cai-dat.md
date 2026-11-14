@@ -62,7 +62,7 @@ Trong lúc đang nhập, app không nhận thay đổi khác (xem [10. Khi có l
 
 ![Hộp Nạp lại dữ liệu giả lập?](img/09-nap-lai.png)
 
-Xóa dữ liệu hiện tại và tạo lại dữ liệu giả lập: 3 team × 10 RE, khoảng 12 tháng tính tới hôm nay.
+Xóa dữ liệu hiện tại và tạo lại dữ liệu giả lập: 3 team × 10 RM, khoảng 12 tháng tính tới hôm nay.
 
 1. Bấm **Nạp lại…**.
 2. Hộp **Nạp lại dữ liệu giả lập?** ghi số KH, lịch hẹn, HĐ sắp bị thay và ngày neo của dữ liệu mới. (bản exe) App backup file dữ liệu vào `Project2C-data\backups\` trước.
@@ -127,7 +127,7 @@ Bảng **Bản ghi đã xóa**, mới xóa nhất ở trên:
 |---|---|
 | **Loại** | KH, Lịch hẹn, HĐ, Nhân sự, Team |
 | **Bản ghi** | KH: tên, nhóm, số bản ghi sẽ hiện lại ("khôi phục kèm … lịch hẹn · … HĐ · … ghi chú KYC"). Lịch hẹn: ngày giờ, trạng thái / kết quả. HĐ: "Nộp … · FYP". Nhân sự: tên, vai trò. Team: tên |
-| **Thuộc** | KH, RE, team của bản ghi; bản ghi cha cũng đã xóa thì ghi "(đã xóa)" |
+| **Thuộc** | KH, RM, team của bản ghi; bản ghi cha cũng đã xóa thì ghi "(đã xóa)" |
 | **Xóa lúc** | Ngày giờ xóa |
 
 Thùng rác trống thì ghi "Thùng rác trống".
@@ -136,7 +136,7 @@ Thùng rác trống thì ghi "Thùng rác trống".
 
 1. Bấm **Khôi phục…** ở dòng cần khôi phục.
 2. Hộp **Khôi phục …?** cho biết điều sẽ xảy ra:
-   - **KH**: nhóm, RE, và mục **Hiện lại cùng KH**: số lịch hẹn (đã gặp, lần tính RF), HĐ, ghi chú KYC, phân tích AI. Lịch hẹn / HĐ đã xóa riêng trước khi xóa KH vẫn ở Thùng rác, khôi phục riêng sau.
+   - **KH**: nhóm, RM, và mục **Hiện lại cùng KH**: số lịch hẹn (đã gặp, lần tính RF), HĐ, ghi chú KYC, phân tích AI. Lịch hẹn / HĐ đã xóa riêng trước khi xóa KH vẫn ở Thùng rác, khôi phục riêng sau.
    - **Lịch hẹn** Đã gặp đã chuyển nhóm KH (lúc xóa, app hủy chuyển nhóm đó): kết quả và nhóm sau cuộc gặp, nhóm KH hiện tại, rồi một trong hai:
      - "Nhóm KH: … → … từ …": app ghi lại chuyển nhóm của cuộc gặp vào đúng ngày cuộc hẹn, và cho biết có tính RF không.
      - "Nhóm KH giữ …": KH đã ở nhóm sau cuộc gặp ngay trong ngày cuộc hẹn nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF. KH tới nhóm đó vào ngày sau thì lịch không khôi phục được (nhóm KH đã đổi sau ngày cuộc hẹn).
@@ -157,8 +157,8 @@ Khi bản ghi cần một bản ghi khác đã xóa hoặc đã đổi, nút **K
 | Lý do trên màn | Làm gì |
 |---|---|
 | "Khôi phục KH … trước." | Khôi phục KH (cũng trong Thùng rác), rồi khôi phục lịch hẹn / HĐ |
-| "RE … đã xóa — khôi phục RE trước." | Khôi phục RE ở loại Nhân sự trước |
-| "… nay là TL, không phụ trách KH được — đổi lại vai trò RE trước." | Đổi vai trò người đó về RE ở [Team & nhân sự](08-team.md#sửa-người) |
+| "RM … đã xóa — khôi phục RM trước." | Khôi phục RM ở loại Nhân sự trước |
+| "… nay là TL, không phụ trách KH được — đổi lại vai trò RM trước." | Đổi vai trò người đó về RM ở [Team & nhân sự](08-team.md#sửa-người) |
 | "Người phối hợp … đã xóa — khôi phục trước." / "Người đánh giá … đã xóa — khôi phục trước." | Khôi phục người đó trước |
 | "Nhóm KH đã đổi ngày …, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." | Không khôi phục được cuộc gặp này: nhóm KH đã đổi sau ngày gặp. Chỉ gặp với cuộc gặp đã chuyển nhóm KH |
 | "Nhóm KH đã đổi ngày …, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." | Như dòng trên: nhóm KH đã đổi chính ngày gặp, nhưng ghi sau lúc xóa lịch |
@@ -198,7 +198,7 @@ Dọn xong, app báo "Đã dọn sạch Thùng rác", kèm số bản ghi đã x
   | Lý do trên màn | Nghĩa |
   |---|---|
   | "Giữ lại khi dọn: lịch … dời từ lịch này." | Lịch Dời lịch đã xóa (chỉ có khi nhập từ file) mà lịch mới dời từ nó vẫn còn |
-  | "Giữ lại khi dọn: lịch … còn ghi người này." | Nhân sự đã xóa, là RE, người phối hợp hoặc người đánh giá của một lịch được giữ |
+  | "Giữ lại khi dọn: lịch … còn ghi người này." | Nhân sự đã xóa, là RM, người phối hợp hoặc người đánh giá của một lịch được giữ |
   | "Giữ lại khi dọn: nhân sự … còn thuộc team này." | Team đã xóa của một nhân sự được giữ |
 
   Khi có bản ghi được giữ, hộp dọn sạch ghi "Giữ lại … bản ghi còn được dùng". Nếu mọi bản ghi còn lại đều được giữ thì nút **Dọn sạch Thùng rác…** tắt.

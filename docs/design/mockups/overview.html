@@ -4,7 +4,7 @@
   CSS riêng của trang: dòng 25–786 · nội dung từ dòng 789 · script dựng bảng / chart từ dòng 1162
   #p1a  dòng  799  1a Toàn bộ · Tháng (MTD): Lọc, ô Lịch hẹn, 6 KPI, KH theo nhóm + chart, So sánh team, bảng khối ↔ chỉ số
   #p1b  dòng  933  1b Team · Tuần: KH theo nhóm từng team
-  #p1c  dòng  979  1c RE · Năm
+  #p1c  dòng  979  1c RM · Năm
   #p1d  dòng 1042  1d Đã đổi kỳ / góc nhìn, chưa bấm Lọc
   #p1e  dòng 1071  1e Trạng thái rỗng, 0 RF, không so
   #p2   dòng 1112  2 Màn Lịch hẹn: 4 nhóm đếm (spec §1)
@@ -534,7 +534,7 @@
         font-variant-numeric: tabular-nums;
       }
 
-      /* ---------- Team comparison: click a team → its RE ---------- */
+      /* ---------- Team comparison: click a team → its RM ---------- */
       .cmp td,
       .cmp th {
         white-space: nowrap;
@@ -790,8 +790,8 @@
       <header>
         <h1>Tổng quan · Phase 4 (G3, #254)</h1>
         <p class="lead">
-          Tổng quan chạy bằng dữ liệu thật theo ý 9 của Owner và spec G2 <code>docs/design/phase-4-chi-so.md</code> (§1, §2, §4.2, §4.3). Thay mockup Tổng quan cũ (bỏ ô "Tỉ lệ chốt · lũy kế" công thức cũ, F-10; bỏ "Top RE" và lịch hẹn hôm nay theo team). Màn Báo cáo: <a href="reports.html">reports.html</a>.
-          Dữ liệu giả lập theo seed (3 team × 1 TL + 10 RE), hôm nay = <b class="num">Thứ Năm 15/10/2026</b>. Chart vẽ bằng HTML để mockup chạy offline; app thật dùng ECharts (ADR-0014).
+          Tổng quan chạy bằng dữ liệu thật theo ý 9 của Owner và spec G2 <code>docs/design/phase-4-chi-so.md</code> (§1, §2, §4.2, §4.3). Thay mockup Tổng quan cũ (bỏ ô "Tỷ lệ chốt · lũy kế" công thức cũ, F-10; bỏ "Top RM" và lịch hẹn hôm nay theo team). Màn Báo cáo: <a href="reports.html">reports.html</a>.
+          Dữ liệu giả lập theo seed (3 team × 1 TL + 10 RM), hôm nay = <b class="num">Thứ Năm 15/10/2026</b>. Chart vẽ bằng HTML để mockup chạy offline; app thật dùng ECharts (ADR-0014).
         </p>
       </header>
 
@@ -802,13 +802,13 @@
           <li><b>Lọc:</b> đổi kỳ (bộ chọn kỳ) hay góc nhìn (thanh đầu trang) <b>chỉ áp dụng khi bấm Lọc</b>. Dòng "Đang xem" luôn ghi kỳ + góc nhìn đang hiện số. Mở Tổng quan lần đầu: Tháng hiện tại (MTD) + góc nhìn đang chọn, đã áp dụng sẵn.</li>
           <li><b>Kỳ tháng chưa hết = MTD</b> (01/10 → hôm nay): nhãn "MTD" cạnh kỳ. Ô Lịch hẹn vẫn đếm <b>cả tháng</b> (Dự kiến có ngày sau hôm nay); 6 ô KPI tính tới hôm nay và so với cùng số ngày của tháng trước (C01).</li>
           <li><b>4 ô N4–N1 là chú giải của chart</b> (màu <code>StageBadge</code>): bấm một ô để ẩn / hiện nhóm đó trên chart (xem 1b). Chart: mỗi cột = ảnh chụp cuối ngày; cột sau hôm nay để trống (vạch đứt). N1 nằm sát trục để dễ so ngày với ngày.</li>
-          <li><b>So sánh team:</b> thứ tự team theo tên; bấm một team → RE của team hiện ngay dưới (sắp theo tên), bấm lại → thu. Không so kỳ trước trong bảng. Đầu cột không sắp xếp (giữ khối team → RE liền nhau).</li>
+          <li><b>So sánh team:</b> thứ tự team theo tên; bấm một team → RM của team hiện ngay dưới (sắp theo tên), bấm lại → thu. Không so kỳ trước trong bảng. Đầu cột không sắp xếp (giữ khối team → RM liền nhau).</li>
         </ul>
         <div class="frame">
           <header class="topbar">
             <h1>Tổng quan</h1>
             <div class="spacer"></div>
-            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
+            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RM</button></div>
           </header>
           <div class="content">
             <div class="tools">
@@ -860,7 +860,7 @@
                   <div class="foot"><span class="up">▲ 55 tr</span> so với 01/09 – 15/09</div>
                 </div>
                 <div class="kpi">
-                  <div class="label">Tỉ lệ chốt <span class="src">§4.1</span></div>
+                  <div class="label">Tỷ lệ chốt <span class="src">§4.1</span></div>
                   <div class="value">43,8<small>%</small></div>
                   <div class="foot"><span class="down">▼ 2,4 điểm %</span> so với 01/09 – 15/09 <span class="formula">· 7 HĐ phát hành ÷ 16 RF</span></div>
                 </div>
@@ -887,11 +887,11 @@
                 <h2 style="color: var(--heading)">So sánh team</h2>
                 <span class="meta num">01/10 – 15/10/2026 (MTD)</span>
                 <span class="src">§4.1 · §4.3</span>
-                <span class="actions meta">bấm một team để xem RE</span>
+                <span class="actions meta">bấm một team để xem RM</span>
               </div>
               <table class="cmp">
                 <thead>
-                  <tr><th>Team</th><th class="r">Đã gặp</th><th class="r">Chuyển RF</th><th class="r">HĐ nộp</th><th class="r">Case size</th><th class="r">HĐ phát hành</th><th class="r">Doanh số</th><th class="r">Tỉ lệ chốt</th></tr>
+                  <tr><th>Team</th><th class="r">Đã gặp</th><th class="r">Chuyển RF</th><th class="r">HĐ nộp</th><th class="r">Case size</th><th class="r">HĐ phát hành</th><th class="r">Doanh số</th><th class="r">Tỷ lệ chốt</th></tr>
                 </thead>
                 <tbody class="num">
                   <tr class="team open"><td><span class="tog">▾</span>Bình Minh</td><td class="r">22</td><td class="r">5</td><td class="r">3</td><td class="r">150 tr</td><td class="r">3</td><td class="r">165 tr</td><td class="r">60,0%</td></tr>
@@ -917,13 +917,13 @@
         <section class="card">
           <div class="card-head"><h3 style="color: var(--heading)">Khối ↔ chỉ số ↔ định nghĩa</h3><span class="meta">spec G2 <code>phase-4-chi-so.md</code></span></div>
           <table class="spec">
-            <thead><tr><th>Khối</th><th>Chỉ số · định nghĩa nguồn</th><th>Toàn bộ</th><th>Team</th><th>RE</th><th>Rỗng / 0 RF</th></tr></thead>
+            <thead><tr><th>Khối</th><th>Chỉ số · định nghĩa nguồn</th><th>Toàn bộ</th><th>Team</th><th>RM</th><th>Rỗng / 0 RF</th></tr></thead>
             <tbody>
-              <tr><td>Lịch hẹn</td><td>Đã gặp / Tổng + Dời – hủy – không đến, Chưa ghi kết quả, Dự kiến — §1 (mỗi bản ghi một lần, ở kỳ của ngày của nó; RE ghi trên cuộc hẹn). Cả kỳ, kể cả ngày sau hôm nay.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>Không lịch: "0 / 0", thanh ghi "chưa có lịch". Không so kỳ trước.</td></tr>
-              <tr><td>6 ô KPI</td><td>Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số (ADR-0007), Tỉ lệ chốt = HĐ phát hành ÷ RF cùng kỳ (§4.1). Tới hôm nay. So kỳ trước §4.2 (C01–C09): số / tiền ▲ ▼ =, tỉ lệ chốt theo điểm %.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>0 RF → tỉ lệ chốt "—", không so. Kỳ chưa bắt đầu → "—" cả 6 ô. Tùy chọn, kỳ trước ngoài miền 1900–2100 → không có dòng so.</td></tr>
-              <tr><td>4 ô N4–N1</td><td>Ảnh chụp cuối ngày mốc (§2): mốc = ngày cuối kỳ, kỳ chưa hết → hôm nay. RE hiện tại của KH.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>Kỳ chưa bắt đầu → "—". Không KH → 0.</td></tr>
+              <tr><td>Lịch hẹn</td><td>Đã gặp / Tổng + Dời – hủy – không đến, Chưa ghi kết quả, Dự kiến — §1 (mỗi bản ghi một lần, ở kỳ của ngày của nó; RM ghi trên cuộc hẹn). Cả kỳ, kể cả ngày sau hôm nay.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>Không lịch: "0 / 0", thanh ghi "chưa có lịch". Không so kỳ trước.</td></tr>
+              <tr><td>6 ô KPI</td><td>Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số (ADR-0007), Tỷ lệ chốt = HĐ phát hành ÷ RF cùng kỳ (§4.1). Tới hôm nay. So kỳ trước §4.2 (C01–C09): số / tiền ▲ ▼ =, tỷ lệ chốt theo điểm %.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>0 RF → tỷ lệ chốt "—", không so. Kỳ chưa bắt đầu → "—" cả 6 ô. Tùy chọn, kỳ trước ngoài miền 1900–2100 → không có dòng so.</td></tr>
+              <tr><td>4 ô N4–N1</td><td>Ảnh chụp cuối ngày mốc (§2): mốc = ngày cuối kỳ, kỳ chưa hết → hôm nay. RM hiện tại của KH.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>Kỳ chưa bắt đầu → "—". Không KH → 0.</td></tr>
               <tr><td>Chart N4–N1</td><td>Cột chồng 4 màu, mỗi cột = ảnh chụp cuối mốc con (§2.8: Ngày 1 cột · Tuần 7 · Tháng từng ngày · Năm 12 tháng · Tùy chọn ≤ 31 ngày từng ngày, dài hơn từng tháng). Cột sau hôm nay trống. Tooltip: formatter mặc định / escape tên (F-18).</td><td>1 chart</td><td>mỗi team 1 chart, ẩn ô chọn team</td><td>1 chart</td><td>Kỳ chưa bắt đầu: mọi cột trống + "Kỳ chưa bắt đầu".</td></tr>
-              <tr><td>So sánh team</td><td>Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng Tổng = cộng, tỉ lệ chốt Tổng = Σ HĐ phát hành ÷ Σ RF (§4.1, G09–G11).</td><td>✓</td><td>✓</td><td>ẩn</td><td>Tỉ lệ chốt dòng 0 RF → "—". Tiền 0 → "0 ₫" (<code>formatVndCompact</code>).</td></tr>
+              <tr><td>So sánh team</td><td>Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỷ lệ chốt; dòng Tổng = cộng, tỷ lệ chốt Tổng = Σ HĐ phát hành ÷ Σ RF (§4.1, G09–G11).</td><td>✓</td><td>✓</td><td>ẩn</td><td>Tỷ lệ chốt dòng 0 RF → "—". Tiền 0 → "0 ₫" (<code>formatVndCompact</code>).</td></tr>
             </tbody>
           </table>
         </section>
@@ -940,7 +940,7 @@
           <header class="topbar">
             <h1>Tổng quan</h1>
             <div class="spacer"></div>
-            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RM</button></div>
           </header>
           <div class="content">
             <div class="tools">
@@ -977,17 +977,17 @@
 
       <!-- ================= 1c ================= -->
       <section class="part" aria-labelledby="p1c">
-        <div class="part-head"><h2 id="p1c">1c · RE · Năm 2026</h2><span class="idea">ý 9</span></div>
+        <div class="part-head"><h2 id="p1c">1c · RM · Năm 2026</h2><span class="idea">ý 9</span></div>
         <ul class="notes">
-          <li>Góc nhìn <b>RE</b>: chọn RE ở thanh đầu trang (danh sách theo team rồi tên, như <code>reOptions</code>). Một chart; <b>không có bảng So sánh team</b>.</li>
+          <li>Góc nhìn <b>RM</b>: chọn RM ở thanh đầu trang (danh sách theo team rồi tên, như <code>reOptions</code>). Một chart; <b>không có bảng So sánh team</b>.</li>
           <li>Năm chưa hết: so theo <b>cùng ngày tháng</b> của năm trước, 01/01 → 15/10/2025 (§4.2 mục 3, C06). Chart 12 cột = cuối mỗi tháng; tháng 10 = hôm nay; tháng 11, 12 trống.</li>
         </ul>
         <div class="frame">
           <header class="topbar">
             <h1>Tổng quan</h1>
             <div class="spacer"></div>
-            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RE</button></div>
-            <span class="select">RE: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
+            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RM</button></div>
+            <span class="select">RM: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
           </header>
           <div class="content">
             <div class="tools">
@@ -996,7 +996,7 @@
               <button class="btn btn-sm">Hôm nay</button>
               <button class="btn btn-sm">Lọc</button>
               <div class="spacer"></div>
-              <span class="viewing">Đang xem: <b>Năm 2026</b> · 01/01 – 15/10/2026 · RE <b>Bùi Ngọc Trâm</b></span>
+              <span class="viewing">Đang xem: <b>Năm 2026</b> · 01/01 – 15/10/2026 · RM <b>Bùi Ngọc Trâm</b></span>
             </div>
             <div class="top">
               <div class="appt-tile">
@@ -1017,7 +1017,7 @@
                 <div class="kpi"><div class="label">Case size</div><div class="value">360 <small>tr</small></div><div class="foot"><span class="down">▼ 50 tr</span> so với 01/01 – 15/10/2025</div></div>
                 <div class="kpi"><div class="label">HĐ phát hành</div><div class="value">6</div><div class="foot"><span class="same">=</span> so với 01/01 – 15/10/2025</div></div>
                 <div class="kpi"><div class="label">Doanh số</div><div class="value">255 <small>tr</small></div><div class="foot"><span class="up">▲ 25 tr</span> so với 01/01 – 15/10/2025</div></div>
-                <div class="kpi"><div class="label">Tỉ lệ chốt</div><div class="value">42,9<small>%</small></div><div class="foot"><span class="down">▼ 11,6 điểm %</span> so với 01/01 – 15/10/2025 <span class="formula">· 6 ÷ 14 RF</span></div></div>
+                <div class="kpi"><div class="label">Tỷ lệ chốt</div><div class="value">42,9<small>%</small></div><div class="foot"><span class="down">▼ 11,6 điểm %</span> so với 01/01 – 15/10/2025 <span class="formula">· 6 ÷ 14 RF</span></div></div>
               </div>
             </div>
             <section class="card">
@@ -1049,8 +1049,8 @@
           <header class="topbar">
             <h1>Tổng quan</h1>
             <div class="spacer"></div>
-            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RE</button></div>
-            <span class="select">RE: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
+            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RM</button></div>
+            <span class="select">RM: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
           </header>
           <div class="content">
             <div class="tools">
@@ -1089,8 +1089,8 @@
           </section>
           <section class="card">
             <p class="cap">0 RF · và kỳ trước 0 RF</p>
-            <div class="kpi"><div class="label">Tỉ lệ chốt</div><div class="value muted">—</div><div class="foot">0 RF trong kỳ · không so</div></div>
-            <div class="kpi"><div class="label">Tỉ lệ chốt</div><div class="value">66,7<small>%</small></div><div class="foot">— kỳ trước 0 RF, không so <span class="formula">· 2 ÷ 3 RF</span></div></div>
+            <div class="kpi"><div class="label">Tỷ lệ chốt</div><div class="value muted">—</div><div class="foot">0 RF trong kỳ · không so</div></div>
+            <div class="kpi"><div class="label">Tỷ lệ chốt</div><div class="value">66,7<small>%</small></div><div class="foot">— kỳ trước 0 RF, không so <span class="formula">· 2 ÷ 3 RF</span></div></div>
             <div class="kpi"><div class="label">Chuyển RF</div><div class="value">3</div><div class="foot"><span class="up">▲ 3</span> so với 01/12 – 15/12/2026</div></div>
             <p class="notes" style="padding: 0">Ví dụ số của spec §4.2 (golden <code>chi-so.md</code>, hôm nay 15/01/2027, Tháng 01 MTD).</p>
           </section>

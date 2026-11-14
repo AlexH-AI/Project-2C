@@ -1,26 +1,26 @@
 # Hướng dẫn sử dụng Heritas L-CRM
 
-Heritas L-CRM là app quản lý khách hàng (KH), lịch hẹn, hợp đồng (HĐ) và chỉ số cho đội tư vấn bảo hiểm: RE ghi lịch hẹn và kết quả cuộc gặp, ghi KYC của KH, ghi HĐ nộp / phát hành; TL và Owner xem chỉ số theo team, theo RE, theo kỳ. App có phần AI (KYC Intelligence) gợi ý hướng khám phá nhu cầu KH từ dữ kiện KYC đã xác nhận.
+Heritas L-CRM là app quản lý khách hàng (KH), lịch hẹn, hợp đồng (HĐ) và chỉ số cho đội tư vấn bảo hiểm: RM ghi lịch hẹn và kết quả cuộc gặp, ghi KYC của KH, ghi HĐ nộp / phát hành; TL và Owner xem chỉ số theo team, theo RM, theo kỳ. App có phần AI (KYC Intelligence) gợi ý hướng khám phá nhu cầu KH từ dữ kiện KYC đã xác nhận.
 
 Tên mã của app là Project-2C, nên tên file và vài câu báo vẫn dùng tên này: file exe `project2c.exe`, thư mục dữ liệu `Project2C-data\`, file backup `.p2cbackup`, câu báo như "Project-2C đang mở ở một cửa sổ khác".
 
-Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **in đậm** là nhãn đúng như trên màn. Thuật ngữ ngành (RE, TL, KYC, FYP, RF…) giữ tiếng Anh, giải thích ở [11. Thuật ngữ](11-thuat-ngu.md).
+Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **in đậm** là nhãn đúng như trên màn. Thuật ngữ ngành (RM, TL, KYC, FYP, RF…) giữ tiếng Anh, giải thích ở [11. Thuật ngữ](11-thuat-ngu.md).
 
 ## Mục lục
 
 | Mục | Nội dung |
 |---|---|
-| [1. Bắt đầu](01-bat-dau.md) | Chạy exe, thư mục `Project2C-data\`, dữ liệu giả lập lúc mở lần đầu, báo lỗi lưu, góc nhìn Toàn bộ / Team / RE |
+| [1. Bắt đầu](01-bat-dau.md) | Chạy exe, thư mục `Project2C-data\`, dữ liệu giả lập lúc mở lần đầu, báo lỗi lưu, góc nhìn Toàn bộ / Team / RM |
 | [2. Tổng quan](02-tong-quan.md) | Chọn kỳ, Lọc, ô Lịch hẹn, 6 chỉ số + so kỳ trước, KH theo nhóm, So sánh team |
 | [3. Lịch hẹn](03-lich-hen.md) | Lịch tháng / năm, đặt lịch, ghi kết quả, hẹn tiếp, dời lịch, sửa / xóa |
 | [4. Khách hàng](04-khach-hang.md) | Kanban / Bảng, tạo / sửa / xóa KH, chuyển nhóm tay |
 | [5. Hồ sơ KH](05-ho-so-kh.md) | Dữ kiện KYC, ghi chú KYC, mâu thuẫn, dòng thời gian, hợp đồng, lịch hẹn của KH |
 | [6. KYC Intelligence](06-ai.md) | Phân tích AI, CURRENT / STALE, mã F và mức bằng chứng, lịch sử, ChatGPT web, AI trích xuất, giới hạn của AI |
-| [7. Báo cáo](07-bao-cao.md) | Tổng hợp / Theo team / Theo RE / Theo mốc, xuất Excel |
-| [8. Team & nhân sự](08-team.md) | Vai trò RE / TL / IS / BD / BDM, tạo / đổi tên / xóa team, thêm / sửa / xóa người |
+| [7. Báo cáo](07-bao-cao.md) | Tổng hợp / Theo team / Theo RM / Theo mốc, xuất Excel |
+| [8. Team & nhân sự](08-team.md) | Vai trò RM / TL / IS / BD / BDM, tạo / đổi tên / xóa team, thêm / sửa / xóa người |
 | [9. Cài đặt](09-cai-dat.md) | Dữ liệu (file, xuất / nhập backup, nạp lại), AI (provider, gói, model, key), Thùng rác |
 | [10. Khi có lỗi](10-su-co.md) | Lỗi lúc mở app, mở lại từ backup, lỗi lưu, lỗi xuất file, lỗi AI thường gặp |
-| [11. Thuật ngữ](11-thuat-ngu.md) | RE, TL, IS, BD, BDM, KH N4–N1, RF, FYP, KYC, CURRENT / STALE… |
+| [11. Thuật ngữ](11-thuat-ngu.md) | RM, TL, IS, BD, BDM, KH N4–N1, RF, FYP, KYC, CURRENT / STALE… |
 
 ## Bản exe và bản web
 
@@ -47,7 +47,7 @@ Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có tron
 
 | Màn | Mục hướng dẫn | Ảnh |
 |---|---|---|
-| Sidebar, góc nhìn Toàn bộ / Team / RE | [1. Bắt đầu → Sidebar và góc nhìn](01-bat-dau.md#sidebar-và-góc-nhìn) | [01-bat-dau-sidebar](img/01-bat-dau-sidebar.png) |
+| Sidebar, góc nhìn Toàn bộ / Team / RM | [1. Bắt đầu → Sidebar và góc nhìn](01-bat-dau.md#sidebar-và-góc-nhìn) | [01-bat-dau-sidebar](img/01-bat-dau-sidebar.png) |
 | Tổng quan | [2. Tổng quan](02-tong-quan.md) | [02-tong-quan](img/02-tong-quan.png), [02-tong-quan-so-sanh-team](img/02-tong-quan-so-sanh-team.png) |
 | Lịch hẹn | [3. Lịch hẹn](03-lich-hen.md) | [03-lich-hen](img/03-lich-hen.png), [03-lich-hen-thang](img/03-lich-hen-thang.png), [03-lich-hen-nam](img/03-lich-hen-nam.png), [03-chi-tiet-lich-hen](img/03-chi-tiet-lich-hen.png) |
 | Khách hàng | [4. Khách hàng](04-khach-hang.md) | [04-khach-hang](img/04-khach-hang.png), [04-khach-hang-bang](img/04-khach-hang-bang.png) |

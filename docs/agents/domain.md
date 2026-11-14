@@ -1,6 +1,6 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase. Layout: **single-context** — the whole app is one business domain (life-insurance advisory for RE teams).
+How the engineering skills should consume this repo's domain documentation when exploring the codebase. Layout: **single-context** — the whole app is one business domain (life-insurance advisory for RM teams).
 
 ## Before exploring, read these
 
