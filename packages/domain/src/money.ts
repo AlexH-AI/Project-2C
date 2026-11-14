@@ -401,12 +401,12 @@ const INPUT_UNITS: Readonly<Record<Language, ReadonlyMap<string, number>>> = {
 
 /**
  * The marks a currency is typed with (ADR-0018 §5), as typed before and after the number. Each
- * pattern matches, the empty text when there is no mark. VND: `VNĐ`, `VND`, `₫`, `đ`, `đồng` (and
- * `dong`, bare as the units are) after the number. The others: their symbol or ISO code before
- * it, the ISO code after it; AUD, CAD, SGD take `$` (Q1).
+ * pattern matches, the empty text when there is no mark. VND: `VNĐ`, `VND`, `₫`, `đ`, `đồng` after
+ * the number. The others: their symbol or ISO code before it, the ISO code after it; AUD, CAD, SGD
+ * take `$` (Q1).
  */
 const CURRENCY_MARKS: Readonly<Record<CurrencyCode, readonly [before: RegExp, after: RegExp]>> = {
-  VND: [/^/u, /(?: ?(?:vnđ|vnd|đồng|dong|₫|đ))?$/iu],
+  VND: [/^/u, /(?: ?(?:vnđ|vnd|đồng|₫|đ))?$/iu],
   USD: [/^(?:(?:\$|usd) ?)?/iu, /(?: ?usd)?$/iu],
   EUR: [/^(?:(?:€|eur) ?)?/iu, /(?: ?eur)?$/iu],
   GBP: [/^(?:(?:£|gbp) ?)?/iu, /(?: ?gbp)?$/iu],

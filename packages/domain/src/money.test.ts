@@ -533,8 +533,8 @@ describe('parseMoney past the golden', () => {
 
   describe('the currency marks (ADR-0018 §5)', () => {
     it.each([
-      ['500 dong', 'VND', 500],
       ['500 ĐỒNG', 'VND', 500],
+      ['500vnd', 'VND', 500],
       ['500 Mil VND', 'VND', 500_000_000],
       ['1,250.50usd', 'USD', 125_050],
       ['$1,250.50 USD', 'USD', 125_050],
