@@ -690,6 +690,8 @@ export const vi = {
   'error.TRANSITION_BEFORE_LATEST': 'Ngày chuyển trước lần đổi nhóm gần nhất ({date}).',
   'error.TRANSITION_BEFORE_MEETING':
     'Đã ghi cuộc gặp Đã gặp ngày {date}, cuộc gặp đó ghi nhóm của KH ngày ấy: không đổi nhóm vào ngày trước {date}.',
+  'error.TRANSITION_BEFORE_MEETING.afterToday':
+    'Đã ghi cuộc gặp Đã gặp ngày {date}, sau hôm nay của máy: không đổi nhóm vào ngày trước {date}. Kiểm lại ngày giờ của máy: đồng hồ có thể đã bị chỉnh lùi.',
   'error.STAGE_KEPT_BY_MEETING':
     'Cuộc gặp ngày {date} ghi KH giữ nhóm mà cuộc gặp này chuyển tới: không đổi được trạng thái, ngày, nhóm sau cuộc gặp, cũng không xóa được.',
   'error.STAGE_NOT_ON_DAY':

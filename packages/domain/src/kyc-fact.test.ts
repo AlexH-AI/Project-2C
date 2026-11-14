@@ -26,6 +26,10 @@ describe('normalizeKycValue', () => {
     expect(refuses('childrenCount', 'hai')).toThrow(RangeError);
     expect(refuses('childrenCount', 1.5)).toThrow(RangeError);
     expect(refuses('childrenCount', -1)).toThrow(RangeError);
+    // CLR6-A4: no digit is not 0, whether nothing, invisible characters or spaces.
+    expect(refuses('childrenCount', '')).toThrow(RangeError);
+    expect(refuses('childrenCount', '​')).toThrow(RangeError);
+    expect(refuses('birthYear', '   ')).toThrow(RangeError);
     expect(refuses('hasProtection', 'có lẽ')).toThrow(RangeError);
     expect(refuses('hasProtection', 1)).toThrow(RangeError);
     expect(refuses('occupation', '   ')).toThrow(RangeError);

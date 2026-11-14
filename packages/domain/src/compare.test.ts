@@ -218,6 +218,11 @@ describe('metricDeltas (spec Phase 4 §4.2)', () => {
     });
   });
 
+  // CLR6-A3: the two rates are taken apart unrounded, not rounded each and then taken apart (34).
+  it('gives the change of rates that are not whole: 2/3 after 1/3 is ▲ 33.33… points', () => {
+    expect(metricDeltas(metrics(3, 2), metrics(3, 1)).closeRatePoints).toBeCloseTo(100 / 3, 10);
+  });
+
   it('gives no close-rate change when the current window has no RF', () => {
     expect(metricDeltas(metrics(0, 1), metrics(2, 1)).closeRatePoints).toBeNull();
   });

@@ -61,7 +61,9 @@ export const tableMore = (noun: 'appointments' | 'customers' | 'people'): DataTa
  */
 export function errorMessage(error: unknown, params?: MessageParams): string {
   if (error instanceof DbError) {
-    const key = `error.${error.code}`;
+    // A met meeting after today, as once the machine clock was set back (T-399), has its own.
+    const setBack = error.code === 'TRANSITION_BEFORE_MEETING' && error.params?.afterToday === 1;
+    const key = setBack ? 'error.TRANSITION_BEFORE_MEETING.afterToday' : `error.${error.code}`;
     if (Object.hasOwn(vi, key)) return t(key as MessageKey, { ...params, ...error.params });
   }
   return t('error.unknown');

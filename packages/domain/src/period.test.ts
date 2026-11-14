@@ -368,6 +368,22 @@ describe('switchKind', () => {
     expect(range(switchKind(month, 'day', today))).toBe('28/09/2026 – 28/09/2026');
   });
 
+  // CLR6-A2: the last day of the period is in it, a Sunday, the 30th of November, the 31st of December.
+  it('anchors on today when today is the last day of the period being viewed', () => {
+    const sunday = d(8, 11, 2026);
+    expect(range(switchKind(periodOf('week', sunday), 'day', sunday))).toBe(
+      '08/11/2026 – 08/11/2026',
+    );
+    const monthEnd = d(30, 11, 2026);
+    expect(range(switchKind(periodOf('month', monthEnd), 'week', monthEnd))).toBe(
+      '30/11/2026 – 06/12/2026',
+    );
+    const yearEnd = d(31, 12, 2026);
+    expect(range(switchKind(periodOf('year', yearEnd), 'month', yearEnd))).toBe(
+      '01/12/2026 – 31/12/2026',
+    );
+  });
+
   it('anchors on the period start otherwise', () => {
     const october = periodOf('month', d(1, 10, 2026));
     expect(range(switchKind(october, 'week', today))).toBe('28/09/2026 – 04/10/2026');

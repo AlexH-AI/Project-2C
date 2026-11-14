@@ -34,11 +34,12 @@ export function watchToday(
     },
     subscribe(listener) {
       let timer: ReturnType<typeof setTimeout>;
+      let stopped = false;
       // A timer may fire a little early; the listener then reads the same day and it waits again.
       const wait = () => {
         timer = setTimeout(() => {
           listener();
-          wait();
+          if (!stopped) wait();
         }, untilMidnight(new Date()));
       };
       const onFocus = () => listener();
@@ -49,6 +50,7 @@ export function watchToday(
       events.window.addEventListener('focus', onFocus);
       events.document.addEventListener('visibilitychange', onVisible);
       return () => {
+        stopped = true;
         clearTimeout(timer);
         events.window.removeEventListener('focus', onFocus);
         events.document.removeEventListener('visibilitychange', onVisible);

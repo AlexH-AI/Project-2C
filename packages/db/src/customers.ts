@@ -281,7 +281,8 @@ function writeTransition(
 }
 
 /**
- * Checks `appendTransition` without writing: the date not before the latest transition's (D10)
+ * Checks `appendTransition` without writing: the date not before the latest transition's (D10),
+ * nor before a met appointment of the customer, which recorded the stage of its own day (T-232),
  * and the change allowed (ADR-0007). Returns the stage the customer moves from. A transition
  * recorded after the one numbered `afterSeq` counts as later even on the same day: a restored
  * meeting goes before what was recorded since its deletion (spec Phase 6 E20), and the error says
@@ -307,17 +308,20 @@ export function checkTransition(
         order < 0 ? { date: shown } : { date: shown, sameDay: 1 },
       );
     }
-  }
-  // A met appointment recorded the stage of its own day, which no change may come before (T-232),
-  // whatever today is: one met before the machine clock was set back is dated after it (T-399).
-  const [[meeting]] = selectRows(
-    db,
-    `SELECT MAX(date) FROM appointments
-     WHERE customer_id = ? AND status = 'MET' AND deleted_at IS NULL AND date > ?`,
-    [customerId, storedDate(date)],
-  ) as [[string | null]];
-  if (meeting) {
-    throw new DbError('TRANSITION_BEFORE_MEETING', { date: formatDate(fromIsoDate(meeting)) });
+    // A met appointment recorded the stage of its own day, which no change may come before (T-232),
+    // whatever today is: one met before the machine clock was set back may be dated after it, and
+    // then no day gets past it (T-399, `afterToday`). A customer being created has none yet.
+    const [[meeting]] = selectRows(
+      db,
+      `SELECT MAX(date) FROM appointments
+       WHERE customer_id = ? AND status = 'MET' AND deleted_at IS NULL AND date > ?`,
+      [customerId, storedDate(date)],
+    ) as [[string | null]];
+    if (meeting) {
+      const day = fromIsoDate(meeting);
+      const after = compareDates(day, today(db)) > 0 && { afterToday: 1 };
+      throw new DbError('TRANSITION_BEFORE_MEETING', { date: formatDate(day), ...after });
+    }
   }
   const from = latest ? latest.toStage : null;
   try {

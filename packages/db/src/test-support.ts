@@ -11,6 +11,7 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { vi } from 'vitest';
+import { createCustomer } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
 import { createPerson, createTeam } from './team';
@@ -28,6 +29,24 @@ export async function setup(today: CalendarDate = d(26, 9)) {
   const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
   persist.mockClear();
   return { db, persist, team, rm, otherRm, tl };
+}
+
+/**
+ * The machine clock set back across midnight while the app is open (T-398): a database on a clock
+ * at 08/11/2026 00:05 local, with a team, the RM An and the customer Lan (N3 from 01/10);
+ * `setBack()` turns that clock to 07/11 23:55. `now` is the clock, to open another database on.
+ */
+export async function clockSetBack() {
+  let machine = new Date(2026, 10, 8, 0, 5).getTime();
+  const now = () => new Date(machine);
+  const db = await openDatabase({ now });
+  const team = createTeam(db, { name: 'Sao Mai' });
+  const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+  const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
+  const setBack = () => {
+    machine = new Date(2026, 10, 7, 23, 55).getTime();
+  };
+  return { db, now, rm, lan, setBack };
 }
 
 /** The DbError `fn` rejects with, or undefined when it does not throw. */
