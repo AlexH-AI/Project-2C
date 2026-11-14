@@ -149,7 +149,9 @@ describe('formatMessage', () => {
   // So every caller passes the number and `fillSlots` writes it (review note of T-437, L162).
   it('gets the number of every count from its callers, never a formatted text', () => {
     const src = new URL('../', import.meta.url);
-    const formatted = new RegExp(`\\b(?:${[...COUNT_SLOTS].join('|')}): *format\\w*\\(`);
+    // `count: formatNumber(n)`, or `const count = formatNumber(n)` passed on as `{ count }`.
+    const slots = [...COUNT_SLOTS].join('|');
+    const formatted = new RegExp(`\\b(?:(?:${slots}): *|const (?:${slots}) = )format\\w*\\(`);
     const callers = (readdirSync(src, { recursive: true }) as string[])
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))

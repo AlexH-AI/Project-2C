@@ -20,7 +20,7 @@ Bảng đối chiếu cho Owner duyệt. Khớp 1–1 với fixture `packages/do
 
 Chỉ cuộc hẹn **Đã gặp** mới có "nhóm sau cuộc gặp"; Đã lên lịch / Dời lịch / KH hủy / Không gặp được thì để trống. KH lên nhóm ngoài cuộc gặp (vd. được **gửi** giải pháp, chuyển hóa qua điện thoại) → sửa nhóm bằng tay, không tính RF.
 
-Kỳ: tuần Thứ Hai → Chủ Nhật; MTD = ngày 1 → ngày đang xem. Góc nhìn: HĐ tính cho RM ghi trên HĐ, chuyển RF tính cho RM ghi trên cuộc hẹn; team = team hiện tại của RM. Tiền ghi theo **triệu đồng (tr)**. Số viết theo dấu kiểu Excel (ADR-0018 §4): `,` ngăn hàng nghìn, `.` cho phần lẻ.
+Kỳ: tuần Thứ Hai → Chủ Nhật; MTD = ngày 1 → ngày đang xem. Góc nhìn: HĐ tính cho RM ghi trên HĐ, chuyển RF tính cho RM ghi trên cuộc hẹn; team = team hiện tại của RM. Tiền ghi theo **triệu đồng (tr)**.
 
 ## 1. Dữ liệu kịch bản
 

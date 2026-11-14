@@ -235,7 +235,7 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
   - Dữ kiện KYC về tiền (thu nhập, tổng tài sản, khoản vay) là chữ người dùng gõ và gửi nguyên văn, nên với DB tiền khác VND, chữ đó mang ký hiệu và đơn vị khác.
   - Hai prompt `analysis.ts`, `discovery.ts` ghi "tại Việt Nam". A6 xem lại câu này, và xem có cần báo tiền tệ cho AI không.
   - `kyc-catalog.ts` không có ngưỡng tiền nào (rà 12/11).
-- **Excel** (phần E): ngôn ngữ theo app lúc xuất; `numFmt` theo tiền tệ. Hôm nay `numFmt` là `#,##0`; tiêu đề cột tiền ghi ký hiệu của tiền tệ, vd. "Doanh số (VNĐ)" (`report-workbook.ts`; trước G-03a là "(₫)").
+- **Excel** (phần E): ngôn ngữ theo app lúc xuất; `numFmt` theo tiền tệ. Hôm nay `numFmt` là `#,##0` và tiêu đề cột tiền ghi "(VNĐ)", vd. "Doanh số (VNĐ)" (`report-workbook.ts`; trước G-03a là "(₫)").
 - **macOS:** khai hai ngôn ngữ vi + en cho gói app, để menu và hộp chọn file theo ngôn ngữ của app. Làm ở một Issue Mac sau, ghi vào ADR "Bản macOS".
 - **Để sau:** hướng dẫn sử dụng tiếng Anh để sau v1.0; video demo làm khi UI/UX final.
 
