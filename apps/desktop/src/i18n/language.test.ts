@@ -79,7 +79,8 @@ describe('changeLanguage', () => {
   it('stores the language and reloads once the save running is on disk', async () => {
     const { saves, writes } = savingQueue();
     const storage = memoryStorage({ 'p2c.language': 'vi' });
-    const reload = vi.fn();
+    // The page that loads again reads the language stored by then.
+    const reload = vi.fn(() => storage.items.get('p2c.language'));
     saves.persist(new Uint8Array([1]));
 
     const changed = changeLanguage('en', { saves, storage: storage.port, reload });
@@ -88,8 +89,8 @@ describe('changeLanguage', () => {
 
     writes[0]?.resolve();
     await changed;
-    expect(storage.items.get('p2c.language')).toBe('en');
     expect(reload).toHaveBeenCalledOnce();
+    expect(reload).toHaveReturnedWith('en');
   });
 
   it('reloads at once when nothing waits to be saved', async () => {
