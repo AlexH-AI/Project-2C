@@ -841,9 +841,13 @@ describe('the migration of the purge (0011)', () => {
     const purge = MIGRATIONS.find((m) => m.tag === '0011_trash_purge')!;
     const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < purge.id), now });
     const team = createTeam(old, { name: 'Sao Mai' });
+    // The commands write RM, the role and the note source, which the CHECKs of a file before A2
+    // (0013) refuse: past them, here. The rows go through 0013 as they are.
+    old.sqlite.run('PRAGMA ignore_check_constraints = ON');
     const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
     const live = withKyc(old, re.id, 'Lan');
     const gone = withKyc(old, re.id, 'Huệ');
+    old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
     softDeleteCustomer(old, gone.id);
     // The trigger before it refuses the deleted customer's rows too.
     expect(statement(old, gone.id)('DELETE FROM ai_analyses')).toThrow(/append-only/);

@@ -771,10 +771,10 @@ describe('blockedReason (mockup 11d)', () => {
   it('E10: the reviewer now an RE; a coordinator likewise', () => {
     expect(
       reason(met, { code: 'INVALID_REVIEWER', params: { name: 'Vũ Thanh Tâm', role: 'RM' } }),
-    ).toBe('Người đánh giá Vũ Thanh Tâm nay là RE.');
+    ).toBe('Người đánh giá Vũ Thanh Tâm nay là RM.');
     expect(
       reason(met, { code: 'INVALID_COORDINATOR', params: { name: 'Phó Đức Huy', role: 'RM' } }),
-    ).toBe('Người phối hợp Phó Đức Huy nay là RE.');
+    ).toBe('Người phối hợp Phó Đức Huy nay là RM.');
   });
 
   it('TR-5: an outcome after today', () => {
