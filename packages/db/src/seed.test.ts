@@ -86,7 +86,7 @@ const DEMO_ROW_COUNTS = {
   kyc_versions: 9726,
   people: 36,
   policies: 988,
-  settings: 0,
+  settings: 1,
   stage_transitions: 3309,
   teams: 3,
 };
@@ -98,7 +98,8 @@ const DEMO_ROW_COUNTS = {
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
 // A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RE.
-const DEMO_HASH = '60333daf5821f9c283aa96cec7c63db186bac9eae4344149e9d82462f2d579fe';
+// G-04 (T-442) on purpose too: the same rows, and the currency key the seed writes (ADR-0018 §7).
+const DEMO_HASH = 'b7b5ec5cd48c21d922c750050a6a87323c56596d805594ce313940bf80fad320';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();

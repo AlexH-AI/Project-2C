@@ -981,7 +981,9 @@ export const vi = {
   'error.INVALID_TRIGGER': 'Chọn loại trigger ("—" là chưa chọn).',
   'error.INVALID_STATUS': 'Lịch này không nhận kết quả đó (có thể đã có kết quả hoặc đã dời).',
   'error.INVALID_AMOUNT': 'Số tiền phải lớn hơn 0, không có số lẻ dưới 1 đồng (hay 1 cent).',
-  'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa 100 tỷ đồng.',
+  // The cap in the compact form of the data's currency (ADR-0018 §3; mockup #money "Quá trần phí").
+  'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa {max} VNĐ.',
+  'error.AMOUNT_TOO_LARGE.cents': 'Số tiền tối đa {max}.',
   'overview.filter': 'Lọc',
   'overview.pending': 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật',
   'overview.viewing': 'Đang xem:',
@@ -1177,6 +1179,11 @@ export const vi = {
   'settings.backup.tooLargeHelp':
     'Backup của Project-2C nhỏ hơn nhiều: kiểm tra lại file đã chọn. Dữ liệu hiện tại không bị đổi.',
   'settings.backup.invalid': 'File hỏng hoặc không phải backup Project-2C',
+  // ADR-0018 §7, mockup ngon-ngu-tien-te.html: a valid file of another currency; {file}, {expected}
+  // as `currencyName` writes them. The button "Thiết lập lại từ đầu…" comes with set-up (G-08).
+  'settings.backup.otherCurrency': 'File dùng tiền tệ {file}, dữ liệu đang mở dùng {expected}',
+  'settings.backup.otherCurrencyHelp':
+    'Một bộ dữ liệu chỉ có một tiền tệ và app không quy đổi tỷ giá. Muốn dùng file này: Thiết lập lại từ đầu, chọn {file} ở bước Tiền tệ, rồi chọn file này ở bước Dữ liệu. Dữ liệu hiện tại không bị đổi.',
   'settings.backup.invalidHelp':
     'Chỉ nhận file .p2cbackup do Project-2C xuất (không nhận .p2backup của Project-2). Dữ liệu hiện tại không bị đổi.',
   'settings.backup.close': 'Đóng',

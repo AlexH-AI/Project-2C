@@ -1,12 +1,12 @@
 /**
  * Stats engine (ADR-0007, golden examples approved at G2 in T-028). Every metric is computed for
  * one period and one scope from the raw records; nothing is accumulated across periods.
- * FYP amounts are integer đồng (see `model.ts`), so sums stay exact; `addVnd` refuses a sum past a
- * safe integer rather than round it (DR-23).
+ * FYP amounts are whole numbers of the currency's smallest unit (`Money`), so sums stay exact;
+ * `addMoney` refuses a sum past a safe integer rather than round it (DR-23).
  */
 import { isRfTransition } from './customer-lifecycle';
 import type { Appointment, Person, Policy, Scope, StageTransition } from './model';
-import { addVnd, type Vnd } from './money';
+import { addMoney, type Money } from './money';
 import { daysBetween, formatDate, isInPeriod } from './period';
 import type { CalendarDate, Period } from './period';
 
@@ -87,7 +87,7 @@ export function inScope(people: readonly Person[], rmId: string, scope: Scope): 
   return scopeMatcher(people, scope)(rmId);
 }
 
-const sum = (values: readonly Vnd[]) => values.reduce(addVnd, 0);
+const sum = (values: readonly Money[]) => values.reduce(addMoney, 0);
 
 export function policyMetrics(
   data: { readonly people: readonly Person[]; readonly policies: readonly Policy[] },
@@ -196,12 +196,12 @@ export function periodMetricsByMark(
     const submitted = parts[markOf(policy.submittedDate)];
     if (submitted) {
       submitted.submittedCount += 1;
-      submitted.caseSize = addVnd(submitted.caseSize, policy.submittedFyp);
+      submitted.caseSize = addMoney(submitted.caseSize, policy.submittedFyp);
     }
     const issued = policy.issuedDate && parts[markOf(policy.issuedDate)];
     if (issued) {
       issued.issuedCount += 1;
-      issued.revenue = addVnd(issued.revenue, policy.issuedFyp ?? policy.submittedFyp);
+      issued.revenue = addMoney(issued.revenue, policy.issuedFyp ?? policy.submittedFyp);
     }
   }
   for (const appointment of data.appointments) {
@@ -232,12 +232,12 @@ export function periodMetricsByScope(
     if (isInPeriod(policy.submittedDate, period)) {
       const part = partOf(policy.rmId);
       part.submittedCount += 1;
-      part.caseSize = addVnd(part.caseSize, policy.submittedFyp);
+      part.caseSize = addMoney(part.caseSize, policy.submittedFyp);
     }
     if (policy.issuedDate && isInPeriod(policy.issuedDate, period)) {
       const part = partOf(policy.rmId);
       part.issuedCount += 1;
-      part.revenue = addVnd(part.revenue, policy.issuedFyp ?? policy.submittedFyp);
+      part.revenue = addMoney(part.revenue, policy.issuedFyp ?? policy.submittedFyp);
     }
   }
   for (const appointment of data.appointments) {
@@ -251,9 +251,9 @@ export function periodMetricsByScope(
     for (const [rmId, part] of byRm) {
       if (!matches(rmId)) continue;
       total.submittedCount += part.submittedCount;
-      total.caseSize = addVnd(total.caseSize, part.caseSize);
+      total.caseSize = addMoney(total.caseSize, part.caseSize);
       total.issuedCount += part.issuedCount;
-      total.revenue = addVnd(total.revenue, part.revenue);
+      total.revenue = addMoney(total.revenue, part.revenue);
       total.rfCount += part.rfCount;
     }
     return withCloseRate(total);

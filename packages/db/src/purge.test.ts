@@ -880,7 +880,9 @@ describe('the migration of the purge (0011)', () => {
     const migrated = await openDatabase({ bytes: old.export(), now });
 
     expect(migrated.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    expect(dump(migrated)).toEqual(saved);
+    // Every row kept; the one added is the currency of 0016 (ADR-0018 §7).
+    const { settings, ...rest } = dump(migrated);
+    expect({ ...rest, settings: settings!.filter((row) => row[0] !== 'currency') }).toEqual(saved);
     expect(purgeTrash(migrated).counts).toMatchObject({
       customers: 1,
       customerRecords: { kycNotes: 1, aiAnalyses: 1 },

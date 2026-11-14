@@ -2,9 +2,9 @@ import {
   compareDates,
   formatDate,
   type CalendarDate,
+  type Money,
   type Person,
   type Policy,
-  type Vnd,
 } from '@p2c/domain';
 import type { Ref } from 'react';
 import { Button, PolicyBadge } from '@p2c/ui';
@@ -31,7 +31,7 @@ export function CustomerPolicies({
 }: {
   policies: readonly Policy[];
   people: readonly Person[];
-  caseSize: Vnd | null;
+  caseSize: Money | null;
   today: CalendarDate;
   /** The card's heading: the focus lands there when a policy dialog's button went (DR6-83). */
   heading: Ref<HTMLHeadingElement>;
@@ -39,7 +39,7 @@ export function CustomerPolicies({
   onIssue: (policy: Policy) => void;
   onEdit: (policy: Policy) => void;
 }) {
-  const dayFyp = (key: 'policies.submitted' | 'policies.issued', date: CalendarDate, fyp: Vnd) =>
+  const dayFyp = (key: 'policies.submitted' | 'policies.issued', date: CalendarDate, fyp: Money) =>
     t(key, { date: dayText(date, today), fyp: formatAmountCompact(fyp) });
   const meta = [
     t('policies.count', { count: policies.length }),

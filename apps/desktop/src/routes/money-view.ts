@@ -12,26 +12,30 @@ import {
   type MoneyParseResult,
 } from '@p2c/domain';
 import { t, type MessageKey } from '../i18n';
-import { DATA_CURRENCY, LANGUAGE } from '../i18n/language';
+import { appLanguage, dataCurrency } from '../i18n/language';
 
 /*
  * Money as the app shows it: in the currency of the data and the language of this run, both from
  * `i18n/language.ts` (ADR-0018 §4). Screens call these, never the domain formats with a currency.
  */
 
+/** A currency as a sentence names it: VND as the app writes it, `VNĐ`; the others by code, `USD`. */
+export const currencyName = (currency: CurrencyCode): string =>
+  currency === 'VND' ? CURRENCIES.VND.symbol : currency;
+
 /** Full form: `3,000,000 VNĐ`. */
-export const formatAmount = (amount: Money) => formatMoney(amount, DATA_CURRENCY);
+export const formatAmount = (amount: Money) => formatMoney(amount, dataCurrency());
 
 /** Compact form for KPIs, charts and narrow columns: `1.9 tỷ`, `500K`, under 1,000 in full. */
 export const formatAmountCompact = (amount: Money) =>
-  formatMoneyCompact(amount, DATA_CURRENCY, LANGUAGE);
+  formatMoneyCompact(amount, dataCurrency(), appLanguage());
 
 /** A difference in the compact form, signed with `−` or `+`: `−14.5 tr`. */
 export const formatAmountDelta = (amount: Money) =>
-  formatMoneyDelta(amount, DATA_CURRENCY, LANGUAGE);
+  formatMoneyDelta(amount, dataCurrency(), appLanguage());
 
 /** The currency's symbol, for a heading in money: `VNĐ`. */
-export const moneySymbol = () => CURRENCIES[DATA_CURRENCY].symbol;
+export const moneySymbol = () => CURRENCIES[dataCurrency()].symbol;
 
 /**
  * What an amount typed reads as, under its field: "800,000,000 VNĐ (800 tr)", the full form alone
@@ -53,10 +57,10 @@ export function amountRead(amount: Money): string {
 
 /** What a money field reads as typed: an amount, or why not and the ways of writing to offer. */
 export const readMoney = (text: string): MoneyParseResult =>
-  parseMoney(text, DATA_CURRENCY, LANGUAGE);
+  parseMoney(text, dataCurrency(), appLanguage());
 
 /** The example in an empty money field: `vd. 500 tr · 1.5 tỷ`, `e.g. 1,250.50 · 250K`. */
-export const moneyPlaceholder = (currency: CurrencyCode = DATA_CURRENCY) =>
+export const moneyPlaceholder = (currency: CurrencyCode = dataCurrency()) =>
   t(currency === 'VND' ? 'money.placeholder' : 'money.placeholder.cents');
 
 /** A refusal of the reading: its code and the ways of writing that read. */
@@ -79,7 +83,7 @@ const lettersOf = (text: string) => normalizeText(text).replace(/\P{L}/gu, '').t
 export function refusalKey(
   { error, suggestions }: MoneyRefusalRead,
   typed: string,
-  currency: CurrencyCode = DATA_CURRENCY,
+  currency: CurrencyCode = dataCurrency(),
 ): MessageKey {
   const cents = currency === 'VND' ? '' : '.cents';
   const [offered] = suggestions;
@@ -113,6 +117,22 @@ export const sentenceOnly = (message: string): FieldRefusal => ({
 });
 
 /**
+ * What stands under a money field a form refuses (an FYP, a case size): the form's own refusal —
+ * `own.code`, such as an FYP of 0 — as its sentence alone, any other as the field refuses it.
+ */
+export function formRefusal<Own extends string>(
+  {
+    error,
+    suggestions,
+  }: { readonly error: MoneyParseError | Own; readonly suggestions: readonly string[] },
+  typed: string,
+  own: { readonly code: Own; readonly message: string },
+): FieldRefusal {
+  if (error === own.code) return sentenceOnly(own.message);
+  return moneyRefusal({ error: error as MoneyParseError, suggestions }, typed);
+}
+
+/**
  * What stands under the field for a refusal of `typed`: the sentence, and each way of writing with
  * the amount it reads as in full, "1.5 tr = 1,500,000 VNĐ" (mockup #money): two to pick one from
  * for an ambiguous amount, else the one meant perhaps.
@@ -120,8 +140,8 @@ export const sentenceOnly = (message: string): FieldRefusal => ({
 export function moneyRefusal(
   refusal: MoneyRefusalRead,
   typed: string,
-  currency: CurrencyCode = DATA_CURRENCY,
-  language: Language = LANGUAGE,
+  currency: CurrencyCode = dataCurrency(),
+  language: Language = appLanguage(),
 ): FieldRefusal {
   const suggestions = refusal.suggestions.flatMap((text) => {
     const read = parseMoney(text, currency, language);

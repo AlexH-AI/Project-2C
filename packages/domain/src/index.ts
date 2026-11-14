@@ -128,19 +128,11 @@ export {
   formatMoneyCompact,
   formatMoneyDelta,
   languageFor,
-  MAX_FEE_VND,
   maxFee,
   parseMoney,
 } from './money';
 export { formatBytes, formatNumber, formatPercentage } from './number';
-export type {
-  Currency,
-  CurrencyCode,
-  Money,
-  MoneyParseError,
-  MoneyParseResult,
-  Vnd,
-} from './money';
+export type { Currency, CurrencyCode, Money, MoneyParseError, MoneyParseResult } from './money';
 export {
   APPOINTMENT_STATUSES,
   CLOSED_STAGES,

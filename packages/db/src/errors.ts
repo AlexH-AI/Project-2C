@@ -36,7 +36,7 @@ export const DB_ERROR_CODES = [
   'INVALID_TIME',
   'INVALID_TRIGGER',
   'INVALID_AMOUNT',
-  /** A fee (FYP, case size) over `MAX_FEE_VND`, 100 tỷ đồng (DR-23). */
+  /** A fee (FYP, case size) over `maxFee` of the data's currency: 100 Billions (DR-23, ADR-0018 §3). */
   'AMOUNT_TOO_LARGE',
   /** Params `name` when the customer is deleted (spec Phase 6 TR-1). */
   'CUSTOMER_NOT_FOUND',
@@ -109,6 +109,11 @@ export const DB_ERROR_CODES = [
   'BACKUP_INVALID',
   /** A backup file over `MAX_BACKUP_BYTES`; params `limitMb`. */
   'BACKUP_TOO_LARGE',
+  /**
+   * A valid backup file in another currency than the open data (ADR-0018 §7); params `file` and
+   * `expected`, the two codes, `USD` and `VND`.
+   */
+  'BACKUP_CURRENCY_MISMATCH',
   /**
    * A write refused by the app while it replaces all the data (Nạp lại / Nhập backup, spec Phase 6
    * S2-2); never thrown by a command here.

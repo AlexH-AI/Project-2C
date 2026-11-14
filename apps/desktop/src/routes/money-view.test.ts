@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { parseMoney, type CurrencyCode, type Language } from '@p2c/domain';
 import { en } from '../i18n/en';
+import { setDataCurrency } from '../i18n/language';
 import { vi } from '../i18n/vi';
 import {
   amountRead,
+  currencyName,
   formatAmount,
   formatAmountCompact,
   formatAmountDelta,
+  formRefusal,
   moneyPlaceholder,
   moneyRefusal,
   moneySymbol,
@@ -209,6 +212,46 @@ describe('moneyRefusal', () => {
     expect(refusal.suggestions.map(({ text, read }) => [text, read])).toEqual([
       ['12.34', '$12.34'],
     ]);
+  });
+});
+
+// G-04: the currency of the data that opened, and the language that goes with it (ADR-0018 §1).
+describe('money in the currency of a database not in VND', () => {
+  it('writes, reads and offers in that currency, in English', () => {
+    try {
+      setDataCurrency('USD', 'vi');
+      expect(formatAmount(125_050)).toBe('$1,250.50');
+      expect(formatAmountCompact(125_000_000)).toBe('$1.25 Mil');
+      expect(readMoney('1,250.50')).toEqual({ ok: true, amount: 125_050 });
+      expect(moneySymbol()).toBe('$');
+      expect(moneyPlaceholder()).toBe('e.g. 1,250.50 · 250K');
+    } finally {
+      setDataCurrency('VND', 'vi');
+    }
+  });
+});
+
+describe('currencyName', () => {
+  it('names VND as the app writes it, and the others by their code (mockup #wizard)', () => {
+    expect(currencyName('VND')).toBe('VNĐ');
+    expect(currencyName('USD')).toBe('USD');
+    expect(currencyName('AUD')).toBe('AUD');
+  });
+});
+
+// A review note of PR 1293: one rule for the refusals of an FYP and a case size.
+describe('formRefusal', () => {
+  const own = { code: 'zero', message: 'FYP phải lớn hơn 0.' } as const;
+
+  it("shows the form's own refusal as its sentence alone", () => {
+    expect(formRefusal({ error: 'zero', suggestions: [] }, '0', own)).toEqual(
+      sentenceOnly('FYP phải lớn hơn 0.'),
+    );
+  });
+
+  it('shows any other as the money field refuses it', () => {
+    const refused = refusalOf('1.500 tr');
+    expect(formRefusal(refused, '1.500 tr', own)).toEqual(moneyRefusal(refused, '1.500 tr'));
   });
 });
 

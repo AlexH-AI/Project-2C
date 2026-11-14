@@ -1,4 +1,4 @@
-import { calendarDate, MAX_FEE_VND, normalizeNote, normalizeText } from '@p2c/domain';
+import { calendarDate, normalizeNote, normalizeText } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
@@ -14,6 +14,7 @@ import { addKycNote, recordKycNote } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
+import { getCurrency, getSetting, putSetting } from './settings';
 import { createPerson, createTeam, listTeams, renameTeam } from './team';
 import { clockSetBack, d, setup } from './test-support';
 
@@ -74,6 +75,19 @@ async function small() {
 async function smallBackup(): Promise<BackupJson> {
   return JSON.parse(exportBackup(await small())) as BackupJson;
 }
+
+/** `backup` with its currency key written as `valueJson` (JSON as stored), or left out (null). */
+function withCurrencyJson(backup: BackupJson, valueJson: string | null): BackupJson {
+  const others = backup.tables.settings!.filter((row) => row.key !== 'currency');
+  const key = { key: 'currency', value_json: valueJson, updated_at: STAMP };
+  return {
+    ...backup,
+    tables: { ...backup.tables, settings: valueJson === null ? others : [...others, key] },
+  };
+}
+
+const inCurrency = (backup: BackupJson, currency: string) =>
+  withCurrencyJson(backup, JSON.stringify(currency));
 
 async function codeOfImport(text: string): Promise<string | undefined> {
   const error = await importBackup(text).catch((e: unknown) => e);
@@ -172,7 +186,7 @@ describe('exportBackup', () => {
 
 describe('importBackup', () => {
   it(
-    'seed → export → import → export gives the same file, byte for byte',
+    'seed → export → import → export gives the same file but for the export time',
     async () => {
       const db = await openDatabase({ now: exportClock });
       seedDemoData(db, { anchorDate: calendarDate(2026, 9, 15), seed: 1 });
@@ -513,12 +527,75 @@ describe('importBackup', () => {
     const backup = await smallBackup();
     const row = backup.tables[table]![0]!;
 
-    for (const fee of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
+    for (const fee of [100_000_000_001, Number.MAX_SAFE_INTEGER]) {
       backup.tables[table]![0] = { ...row, ...change(fee) };
       expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
     }
     backup.tables[table]![0] = { ...row, ...change(100_000_000_000) };
     await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+  });
+
+  // ADR-0018 §3: the cap of the file's currency, read before any fee: 100 Bil dollars in cents.
+  it.each(feeRows)('checks %s by the cap of the currency of the file', async (_, table, change) => {
+    const backup = inCurrency(await smallBackup(), 'USD');
+    const row = backup.tables[table]![0]!;
+
+    backup.tables[table]![0] = { ...row, ...change(10_000_000_000_001) };
+    expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
+    backup.tables[table]![0] = { ...row, ...change(10_000_000_000_000) };
+    await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+  });
+
+  it('keeps the currency of the file, the only key a migration writes', async () => {
+    const usd = JSON.stringify(inCurrency(await smallBackup(), 'USD'));
+
+    const { db } = await importBackup(usd, { expectedCurrency: 'USD' });
+
+    expect(getCurrency(db)).toBe('USD');
+    expect(exportBackup(db)).toContain('"key":"currency","value_json":"\\"USD\\""');
+  });
+
+  // ADR-0018 §7: a file saved before the key was VND, which migration 0016 writes as it loads.
+  it('takes a file saved before the key as VND', async () => {
+    const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < 17) });
+    putSetting(old, 'ai', { provider: 'MOCK' });
+    const file = exportBackup(old);
+    expect(file).not.toContain('currency');
+
+    const { db } = await importBackup(file, { expectedCurrency: 'VND' });
+
+    expect(getCurrency(db)).toBe('VND');
+    expect(getSetting(db, 'ai')).toBe('{"provider":"MOCK"}');
+  });
+
+  it('refuses a file of this version without the key, or with one the app never writes', async () => {
+    const backup = await smallBackup();
+    for (const valueJson of [null, '"JPY"', '"vnd"', '" VND"', '1', 'VND']) {
+      expect(await codeOfImport(JSON.stringify(withCurrencyJson(backup, valueJson)))).toBe(
+        'BACKUP_INVALID',
+      );
+    }
+  });
+
+  // ADR-0018 §7 (Owner): a data set has one currency, never converted; start over to use the file.
+  it('refuses a file in another currency than the open data, naming both', async () => {
+    const current = await small();
+    const before = current.export();
+    const usd = JSON.stringify(inCurrency(JSON.parse(exportBackup(current)) as BackupJson, 'USD'));
+
+    const error = await importBackup(usd, { expectedCurrency: 'VND' }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DbError);
+    expect(error).toMatchObject({
+      code: 'BACKUP_CURRENCY_MISMATCH',
+      params: { file: 'USD', expected: 'VND' },
+    });
+    expect(current.export()).toEqual(before);
+    // A damaged file of another currency is a damaged file: every check runs on its own currency.
+    const damaged = usd.replace(/"date":"\d{4}-\d{2}-\d{2}"/, '"date":"2026-02-30"');
+    await expect(importBackup(damaged, { expectedCurrency: 'VND' })).rejects.toMatchObject({
+      code: 'BACKUP_INVALID',
+    });
   });
 
   it('keeps an expected case size, or none, through export and import', async () => {

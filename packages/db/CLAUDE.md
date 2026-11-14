@@ -24,35 +24,13 @@ Drizzle trên sql.js ở mọi nơi (ADR-0016): một DB SQLite trong bộ nhớ
 ## Quy ước
 
 - Mỗi lệnh là một transaction; từ chối thì ném `DbError` và DB không đổi.
-- Xóa là xóa mềm (`deleted_at`), có `restore*`; chỉ Dọn sạch Thùng rác (`src/purge.ts`, spec Phase 6 TR-11) xóa hẳn. Ngày lưu dạng `yyyy-mm-dd`, tiền là số nguyên đồng — chuyển đổi qua `common.ts` / `domain`.
-- Dữ liệu là giả lập: luật chặt hơn thì từ chối / bỏ dữ liệu cũ không hợp lệ, không viết migration dữ liệu (quyết định 02/10; ngoại lệ `0013`).
+- Xóa là xóa mềm (`deleted_at`), có `restore*`; chỉ Dọn sạch Thùng rác (`src/purge.ts`, spec Phase 6 TR-11) xóa hẳn. Ngày lưu dạng `yyyy-mm-dd`, tiền là số nguyên theo đơn vị nhỏ nhất của tiền tệ của DB (khóa `currency` của `settings`, `getCurrency`; ADR-0018 §2, §3) — chuyển đổi qua `common.ts` / `domain`.
+- Dữ liệu là giả lập: luật chặt hơn thì từ chối / bỏ dữ liệu cũ không hợp lệ, không viết migration dữ liệu (quyết định 02/10; ngoại lệ `0013`, và `0016` ghi `currency = "VND"` cho DB / backup cũ: ngoại lệ có chủ ý, ADR-0018 §7, Owner duyệt Q12).
 
 ## Bản đồ export
 
 Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `pnpm verify` báo đỏ khi lệch code.
 
 <!-- codemap:start -->
-- `src/ai-analyses.ts` — type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, type AnalysisFields, analysisLabelsFit, analysisContentFits, listAiAnalyses
-- `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment, checkRestoreAppointment, restoreStageMove
-- `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, storedKycHash, dataTables
-- `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup
-- `src/common.ts` — cleanText, cleanNote, storable, requireChoice, requireName, optionalText, sqlTexts, readsBackAsIs, isLabel, stampDeleted, storedDate, today, storedPastDate, nextSeq, isFee, requireAmount, requireRm, selectRows, prepared, rowInsert, findRow, requireRow, liveRow, updateRow, liveCustomer, lastSeq
-- `src/counts.ts` — type RecordCounts, countRecords, type CustomerRecordCounts, countCustomerRecords
-- `src/customers.ts` — type Gender, type BirthDate, type CustomerRecord, type CustomerProfile, type NewCustomer, listCustomers, getCustomer, listStageTransitions, createCustomer, updateCustomerProfile, previewHandover, previewCustomerProfile, changeStageManually, softDeleteCustomer, restoreCustomer, checkRestoreCustomer, appendTransition, checkTransition, requireStage, stagesOfDay, withdrawAppointmentTransition, meetingKeepingMove, transitionWithdrawnAt, reinstateTransition
-- `src/database.ts` — type OpenDatabaseOptions, type Sources, type Database, openDatabase, assertSupported, migrate
-- `src/errors.ts` — DB_ERROR_CODES, type DbErrorCode, DbError
-- `src/ids.ts` — type RandomFill, cryptoFill, ulid, encodeBase32
-- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./seed, ./schema, ./ai-analyses, ./trash, ./purge, ./settings
-- `src/kyc.ts` — type KycSource, type KycNoteRecord, type KycFactRecord, type KycProfileRecord, type KycVersionRecord, type KycFactCommand, type KycChange, getKycProfile, listKycVersions, listKycVersionFacts, listKycRecordingOrder, addKycNote, type KycNoteFact, recordKycNote, confirmKycFact, markKycConflict, resolveKycConflict, type ProfileFields, recordProfileFacts, type ProfileKycPreview, previewProfileFacts, profileFactValue, normalizeKycValue
-- `src/migrations.ts` — type Migration, MIGRATIONS, latestVersion, LATEST_SCHEMA_VERSION
-- `src/person-references.ts` — PERSON_REFERENCE_KINDS, type PersonReferenceKind, POINTS_TO, quotedKinds, PERSON_REFERENCES
-- `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy, checkRestorePolicy
-- `src/purge.ts` — type KeptBy, type KeptRecord, type PurgeCounts, type PurgePlan, previewPurge, purgeTrash, keptRecords
-- `src/schema.ts` — teams, people, settings, schemaMigrations, CUSTOMER_STAGES, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, aiAnalyses
-- `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES
-- `src/seed.ts` — type SeedOptions, type SeedScale, seedDemoData
-- `src/settings.ts` — getSetting, putSetting
-- `src/team.ts` — listTeams, listPeople, type PersonUsage, personUsage, ownsRecords, isPersonInUse, createTeam, renameTeam, softDeleteTeam, restoreTeam, checkRestoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson, checkRestorePerson
-- `src/test-support.ts` — setup, clockSetBack, errorOf, codeOf, d, byId, stageAtEndOfDay
-- `src/trash.ts` — type TrashRef, type TrashOwner, type TrashEffect, type TrashBlock, type TrashRow, listTrash
+- `src/` — ai-analyses.ts, appointments.ts, backup-validation.ts, backup.ts, common.ts, counts.ts, customers.ts, database.ts, errors.ts, ids.ts, index.ts, kyc.ts, migrations.ts, person-references.ts, policies.ts, purge.ts, schema.ts, seed-data.ts, seed.ts, settings.ts, team.ts, test-support.ts, trash.ts
 <!-- codemap:end -->

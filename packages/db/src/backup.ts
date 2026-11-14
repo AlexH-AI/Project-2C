@@ -3,9 +3,15 @@
  * table sorted by its primary key, soft-deleted rows included. Importing builds a new database and
  * never touches the open one (D5: the app replaces it afterwards).
  */
+import type { CurrencyCode } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import * as z from 'zod/mini';
-import { dataTables, validateBackupInvariants, validateBackupValues } from './backup-validation';
+import {
+  checkCodeIsText,
+  dataTables,
+  validateBackupInvariants,
+  validateBackupValues,
+} from './backup-validation';
 import { readsBackAsIs } from './common';
 import {
   assertSupported,
@@ -16,6 +22,7 @@ import {
 } from './database';
 import { DbError } from './errors';
 import { MIGRATIONS } from './migrations';
+import { getCurrency } from './settings';
 
 /** Tells our files apart from any other JSON, including Project-2's `.p2backup`. */
 export const BACKUP_FORMAT = 'project2c-backup';
@@ -30,6 +37,14 @@ export interface ImportedBackup {
   readonly exportedAt: string;
   /** The schema version the file was written at. */
   readonly schemaVersion: number;
+}
+
+export interface ImportBackupOptions extends OpenDatabaseOptions {
+  /**
+   * The currency of the data the file is to replace (ADR-0018 §7): a file in another one is
+   * refused. Left out, a file in any currency is read.
+   */
+  readonly expectedCurrency?: CurrencyCode;
 }
 
 type Row = Record<string, SqlValue>;
@@ -68,14 +83,16 @@ export function exportBackup(db: Database): string {
 /**
  * Builds a database at the file's schema version, loads the rows, runs the migrations the file is
  * missing, then checks every value (`validateBackupValues`) and the rules across tables
- * (`validateBackupInvariants`). Rejects with `BACKUP_TOO_LARGE`,
- * `SCHEMA_TOO_NEW` or `BACKUP_INVALID`; the open database is never touched. `options` are those
- * of the new database: nothing is saved while importing, `persist` fires only for later
- * transactions (the app asks and backs up the current file first, spec §6).
+ * (`validateBackupInvariants`), the fees by the cap of the file's currency (ADR-0018 §3). Rejects
+ * with `BACKUP_TOO_LARGE`, `SCHEMA_TOO_NEW`, `BACKUP_INVALID`, or `BACKUP_CURRENCY_MISMATCH` (params
+ * `file`, `expected`: the two currencies) for a valid file of another currency than
+ * `expectedCurrency`; the open database is never touched. The other `options` are those of the
+ * new database: nothing is saved while importing, `persist` fires only for later transactions (the
+ * app asks and backs up the current file first, spec §6).
  */
 export async function importBackup(
   text: string,
-  options: OpenDatabaseOptions = {},
+  { expectedCurrency, ...options }: ImportBackupOptions = {},
 ): Promise<ImportedBackup> {
   // Characters, not bytes: a file of at most the limit in bytes never has more characters.
   if (text.length > MAX_BACKUP_BYTES) {
@@ -93,12 +110,18 @@ export async function importBackup(
   });
   let bytes: Uint8Array;
   try {
+    let currency!: CurrencyCode;
     fromFile(() => {
       load(staging, file.tables);
       migrate(staging, migrations);
-      validateBackupValues(staging);
+      // A file without the key, or with one the app never writes, is damaged (ADR-0018 §7).
+      currency = getCurrency(staging);
+      validateBackupValues(staging, currency);
       validateBackupInvariants(staging);
     });
+    if (expectedCurrency !== undefined && currency !== expectedCurrency) {
+      throw new DbError('BACKUP_CURRENCY_MISMATCH', { file: currency, expected: expectedCurrency });
+    }
     bytes = staging.export();
   } finally {
     staging.sqlite.close();
@@ -134,7 +157,8 @@ function parse(text: string): z.infer<typeof envelope> {
 
 /**
  * Inserts every row with foreign keys off (rows reference each other in any order), then checks and
- * turns them back on for the migrations.
+ * turns them back on for the migrations. The tables hold the file's rows and only them: the
+ * staging database of a file at this version has the currency migration 0016 wrote.
  */
 function load(db: Database, tables: Record<string, Record<string, unknown>[]>): void {
   const names = dataTables(db.sqlite);
@@ -143,6 +167,7 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
   db.transaction(() => {
     for (const table of names) {
       const columns = columnsOf(db.sqlite, table);
+      db.sqlite.run(`DELETE FROM ${quote(table)}`);
       // One statement per table: `run(sql, values)` would prepare and free one for every row.
       const insert = db.sqlite.prepare(
         `INSERT INTO ${quote(table)} (${columnList(columns)}) VALUES (${columns.map(() => '?').join(', ')})`,
@@ -156,6 +181,7 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
             )
           )
             throw invalid();
+          if (table === 'customers') checkCodeIsText(row);
           insert.run(columns.map((c) => valueOf(c, row[c.name])));
         }
       } finally {

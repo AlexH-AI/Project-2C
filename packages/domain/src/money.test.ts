@@ -19,19 +19,10 @@ import {
   formatMoneyCompact,
   formatMoneyDelta,
   languageFor,
-  MAX_FEE_VND,
   maxFee,
   parseMoney,
 } from './money';
 import { normalizeText } from './text';
-
-describe('MAX_FEE_VND', () => {
-  // Owner, 06/10/2026 (DR-23): a fee — FYP or case size — is at most 100 tỷ đồng.
-  it('is 100 tỷ đồng', () => {
-    expect(MAX_FEE_VND).toBe(100_000_000_000);
-    expect(parseMoney('100 tỷ', 'VND', 'vi')).toEqual({ ok: true, amount: MAX_FEE_VND });
-  });
-});
 
 // A form fills its money field with the amount as shown (`policy-form.ts`, `MetFields.tsx`), and
 // `parseMoney` reads the field (G-03b): what the app writes must read back as the same amount.

@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { DbError, LATEST_SCHEMA_VERSION, MAX_BACKUP_BYTES } from '@p2c/db';
-import { formatBytes, formatLocalDateTime } from '@p2c/domain';
+import { formatBytes, formatLocalDateTime, type CurrencyCode } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
 import { ALERT, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmButton } from './ConfirmWordDialog';
+import { currencyName } from './money-view';
 import { countsText, OpenFolderButton } from './SettingsDataFile';
 
 export type BackupNotice =
@@ -301,7 +302,17 @@ function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => 
       ? (['settings.backup.tooNew', 'settings.backup.tooNewHelp'] as const)
       : code === 'BACKUP_TOO_LARGE'
         ? (['settings.backup.tooLarge', 'settings.backup.tooLargeHelp'] as const)
-        : (['settings.backup.invalid', 'settings.backup.invalidHelp'] as const);
+        : code === 'BACKUP_CURRENCY_MISMATCH'
+          ? (['settings.backup.otherCurrency', 'settings.backup.otherCurrencyHelp'] as const)
+          : (['settings.backup.invalid', 'settings.backup.invalidHelp'] as const);
+  // A file of another currency names both as a sentence does: USD, VNĐ (ADR-0018 §7).
+  const named =
+    code === 'BACKUP_CURRENCY_MISMATCH'
+      ? {
+          file: currencyName(params?.file as CurrencyCode),
+          expected: currencyName(params?.expected as CurrencyCode),
+        }
+      : params;
   return (
     <Dialog
       title={t('settings.backup.refusedTitle')}
@@ -311,8 +322,8 @@ function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => 
       actions={<Button type="submit">{t('settings.backup.close')}</Button>}
     >
       <div role="alert" className={`${ALERT} flex flex-col gap-1 border-danger`}>
-        <b className="text-danger">{t(message, params)}</b>
-        <span className="text-fg-2">{t(help)}</span>
+        <b className="text-danger">{t(message, named)}</b>
+        <span className="text-fg-2">{t(help, named)}</span>
       </div>
     </Dialog>
   );

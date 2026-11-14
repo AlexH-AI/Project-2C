@@ -233,6 +233,23 @@ test('refuses a backup made by a newer app, naming both schema versions (10b)', 
   await expect(alert).toContainText('Cập nhật app rồi nhập lại. Dữ liệu hiện tại không bị đổi.');
 });
 
+// ADR-0018 §7: one currency per data set, never converted; the message names both (mockup #wizard).
+test('refuses a backup in another currency than the open data, naming both', async ({ page }) => {
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+  const usd = exported.text.replace(
+    '"key":"currency","value_json":"\\"VND\\""',
+    '"key":"currency","value_json":"\\"USD\\""',
+  );
+  expect(usd).not.toBe(exported.text);
+
+  await chooseFile(page, exported.name, usd);
+
+  const alert = page.getByRole('dialog', { name: 'Không nhập được file' }).getByRole('alert');
+  await expect(alert).toContainText('File dùng tiền tệ USD, dữ liệu đang mở dùng VNĐ');
+  await expect(alert).toContainText('chọn USD ở bước Tiền tệ');
+});
+
 test('refuses a backup with a date that does not exist, keeping the current data', async ({
   page,
 }) => {

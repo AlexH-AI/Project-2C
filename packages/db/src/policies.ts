@@ -1,5 +1,5 @@
 /** Policies (spec §3.7, §4): submitted, then issued with the submitted FYP unless changed (G2 D). */
-import { compareDates, fromIsoDate, type CalendarDate, type Policy, type Vnd } from '@p2c/domain';
+import { compareDates, fromIsoDate, type CalendarDate, type Money, type Policy } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
   liveCustomer,
@@ -13,6 +13,7 @@ import {
 } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
+import { getCurrency } from './settings';
 import { ulid } from './ids';
 import { customers, policies } from './schema';
 
@@ -61,7 +62,7 @@ export function submitPolicy(db: Database, input: NewPolicy): Policy {
 export function issuePolicy(
   db: Database,
   id: string,
-  issue: { readonly issuedDate: CalendarDate; readonly issuedFyp?: Vnd },
+  issue: { readonly issuedDate: CalendarDate; readonly issuedFyp?: Money },
 ): Policy {
   const current = toPolicy(livePolicy(db, id));
   return updatePolicy(db, id, {
@@ -109,6 +110,7 @@ export function checkRestorePolicy(db: Database, row: PolicyRow): void {
 
 function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
   const { issuedDate, issuedFyp } = policy;
+  const currency = getCurrency(db);
   if ((issuedDate === null) !== (issuedFyp === null)) throw new DbError('ISSUE_INCOMPLETE');
   if (issuedDate !== null && compareDates(issuedDate, policy.submittedDate) < 0) {
     throw new DbError('ISSUED_BEFORE_SUBMITTED');
@@ -116,9 +118,9 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
   return {
     rmId: requireRm(db, policy.rmId),
     submittedDate: storedPastDate(db, policy.submittedDate, 'submitted'),
-    submittedFyp: requireAmount(policy.submittedFyp),
+    submittedFyp: requireAmount(policy.submittedFyp, currency),
     issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate, 'issued'),
-    issuedFyp: issuedFyp === null ? null : requireAmount(issuedFyp),
+    issuedFyp: issuedFyp === null ? null : requireAmount(issuedFyp, currency),
   };
 }
 

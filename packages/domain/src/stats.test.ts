@@ -9,7 +9,7 @@ import {
 import type { Person, Policy, Scope } from './model';
 import { calendarDate, chartMarks, customPeriod, periodOf, reportMarks } from './period';
 import type { Period } from './period';
-import { formatMoneyCompact, MAX_FEE_VND } from './money';
+import { formatMoneyCompact, maxFee } from './money';
 import {
   inScope,
   periodMetrics,
@@ -309,7 +309,7 @@ describe('periodMetricsByScope', () => {
   });
 });
 
-// DR-23: each fee is at most `MAX_FEE_VND`, so a real total stays exact; a total past a safe
+// DR-23: each fee is at most `maxFee`, so a real total stays exact; a total past a safe
 // integer is refused, never rounded into a number the formatters reject later.
 describe('totals of large fees', () => {
   const people: readonly Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: null }];
@@ -331,7 +331,7 @@ describe('totals of large fees', () => {
   const month = periodOf('month', d(1, 10, 2026));
 
   it('adds fees at the cap exactly, in a total the overview can show', () => {
-    const atCap = data([policy('p1', MAX_FEE_VND), policy('p2', MAX_FEE_VND)]);
+    const atCap = data([policy('p1', maxFee('VND')), policy('p2', maxFee('VND'))]);
     const metrics = periodMetrics(atCap, month, { kind: 'all' });
     expect(metrics.caseSize).toBe(200_000_000_000);
     expect(metrics.revenue).toBe(200_000_000_000);

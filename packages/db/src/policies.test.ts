@@ -1,4 +1,4 @@
-import { MAX_FEE_VND } from '@p2c/domain';
+import { maxFee } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import {
@@ -9,6 +9,7 @@ import {
   submitPolicy,
   updatePolicy,
 } from './policies';
+import { setCurrency } from './settings';
 import { restorePerson, softDeletePerson, updatePerson } from './team';
 import { byId, codeOf, d, setup } from './test-support';
 
@@ -92,7 +93,7 @@ describe('policies', () => {
     const { id } = submit();
     persist.mockClear();
 
-    for (const fyp of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
+    for (const fyp of [maxFee('VND') + 1, Number.MAX_SAFE_INTEGER]) {
       expect(codeOf(() => submitPolicy(db, { ...base, submittedFyp: fyp }))).toBe(
         'AMOUNT_TOO_LARGE',
       );
@@ -104,12 +105,26 @@ describe('policies', () => {
     expect(persist).not.toHaveBeenCalled();
     expect(listPolicies(db)).toHaveLength(1);
 
-    const atCap = submitPolicy(db, { ...base, submittedFyp: MAX_FEE_VND });
+    const atCap = submitPolicy(db, { ...base, submittedFyp: maxFee('VND') });
     expect(atCap.submittedFyp).toBe(100_000_000_000);
-    expect(issuePolicy(db, id, { issuedDate: d(1, 2), issuedFyp: MAX_FEE_VND }).issuedFyp).toBe(
-      MAX_FEE_VND,
+    expect(issuePolicy(db, id, { issuedDate: d(1, 2), issuedFyp: maxFee('VND') }).issuedFyp).toBe(
+      maxFee('VND'),
     );
-    expect(updatePolicy(db, id, { submittedFyp: MAX_FEE_VND }).submittedFyp).toBe(MAX_FEE_VND);
+    expect(updatePolicy(db, id, { submittedFyp: maxFee('VND') }).submittedFyp).toBe(maxFee('VND'));
+  });
+
+  // ADR-0018 §3: the cap of the data's currency, 100 Bil dollars in cents.
+  it('takes a FYP up to the cap of the currency of the data', async () => {
+    const { db, rm, customer } = await withCustomer();
+    setCurrency(db, 'USD');
+    const base = { customerId: customer.id, rmId: rm.id, submittedDate: d(31, 1) };
+
+    const { id } = submitPolicy(db, { ...base, submittedFyp: maxFee('USD') });
+
+    expect(codeOf(() => updatePolicy(db, id, { submittedFyp: maxFee('USD') + 1 }))).toBe(
+      'AMOUNT_TOO_LARGE',
+    );
+    expect(updatePolicy(db, id, { submittedFyp: 1 }).submittedFyp).toBe(1);
   });
 
   it('updates any field but keeps the issued date and FYP together', async () => {

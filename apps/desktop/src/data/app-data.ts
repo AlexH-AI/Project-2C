@@ -7,6 +7,7 @@ import {
   countRecords,
   DbError,
   exportBackup,
+  getCurrency,
   getSetting,
   importBackup,
   MAX_BACKUP_BYTES,
@@ -14,6 +15,7 @@ import {
   purgeTrash,
   putSetting,
   seedDemoData,
+  setCurrency,
   type Database,
   type PurgePlan,
   type RecordCounts,
@@ -24,6 +26,7 @@ import {
   fromLocalDate,
   localFileStamp,
   type CalendarDate,
+  type CurrencyCode,
 } from '@p2c/domain';
 import { createAppAi, type AppAi, type AppAiOptions } from './ai-analysis';
 import { notify } from './listeners';
@@ -87,6 +90,11 @@ export interface PurgedTrash extends PurgePlan {
 export interface AppData {
   /** The open database; `reloadDemoData` replaces it, see `subscribe`. */
   db(): Database;
+  /**
+   * The currency of the data (ADR-0018 §2), read once it opened: the same for the whole run, as
+   * Nạp lại keeps it and an import refuses a file in another one.
+   */
+  readonly currency: CurrencyCode;
   /**
    * Called whenever the data changes (`run`, `reloadDemoData`, `importBackup`, `purgeTrash`);
    * returns the unsubscribe function. A listener that throws is reported as a bug, and the others
@@ -152,7 +160,8 @@ export interface AppData {
   exportFile(name: string, bytes: Uint8Array): Promise<string | undefined>;
   /**
    * Reads and checks a backup file without touching the current data. Rejects with the `DbError`
-   * `BACKUP_INVALID` or `SCHEMA_TOO_NEW`.
+   * `BACKUP_INVALID`, `SCHEMA_TOO_NEW` or `BACKUP_CURRENCY_MISMATCH` (a file in another currency
+   * than `currency`).
    */
   readBackup(text: string): Promise<BackupPreview>;
   /**
@@ -330,8 +339,13 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   };
 
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
-  // `aiSettings` is the stored JSON of Settings → AI, carried over as it is.
-  const demoData = async (anchor: CalendarDate, aiSettings?: string): Promise<Uint8Array> => {
+  // `aiSettings` is the stored JSON of Settings → AI, carried over as it is, and `currency` the
+  // currency of the data it replaces (ADR-0018 §7).
+  const demoData = async (
+    anchor: CalendarDate,
+    aiSettings?: string,
+    currency?: CurrencyCode,
+  ): Promise<Uint8Array> => {
     const db = await openDatabase({ locateFile, now });
     try {
       const start = performance.now();
@@ -340,6 +354,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       performance.measure('p2c:demo-seed', { start });
       const carried = parseJson(aiSettings);
       if (carried !== undefined) putSetting(db, AI_SETTINGS, carried);
+      if (currency !== undefined) setCurrency(db, currency);
       return db.export();
     } finally {
       db.sqlite.close();
@@ -353,8 +368,11 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     if (storage && !migrated) saves.persist(db.export());
     return db;
   };
-  const openNew = async (anchor: CalendarDate, aiSettings?: string): Promise<Database> =>
-    openFrom(await demoData(anchor, aiSettings));
+  const openNew = async (
+    anchor: CalendarDate,
+    aiSettings?: string,
+    currency?: CurrencyCode,
+  ): Promise<Database> => openFrom(await demoData(anchor, aiSettings, currency));
 
   const stored = await storage?.load();
   let db: Database;
@@ -372,6 +390,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     const ready = await snapshot?.(today());
     db = ready ? await openFrom(ready) : await openNew(today());
   }
+  const currency = getCurrency(db);
   const listeners = new Set<() => void>();
   let revision = 0;
   let generation = 0;
@@ -435,6 +454,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
 
   return {
     db: () => db,
+    currency,
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -451,9 +471,12 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       // The day is read once the backup is done, so the data and the message name the same day
       // even when the dialog or the backup ran past midnight (DR-30).
       // Settings → AI belong to the machine, not to the simulated data: the new data keeps them
-      // (DR5-50). An import takes the backup's instead (§4.1).
+      // (DR5-50), and the currency of the data (ADR-0018 §7). An import takes the backup's AI
+      // settings instead (§4.1).
       let anchor!: CalendarDate;
-      const backup = await replace(() => openNew((anchor = today()), getSetting(db, AI_SETTINGS)));
+      const backup = await replace(() =>
+        openNew((anchor = today()), getSetting(db, AI_SETTINGS), currency),
+      );
       return { anchor, backup };
     },
     counts: () => countRecords(db),
@@ -470,8 +493,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     exportFile: (name, bytes) => storage?.writeExport(name, bytes) ?? Promise.resolve(undefined),
     async readBackup(text) {
-      // The app's day, as the commands check theirs (DR-86).
-      const imported = await importBackup(text, { locateFile, now });
+      // The app's day, as the commands check theirs (DR-86); the currency of the data (ADR-0018 §7).
+      const imported = await importBackup(text, { locateFile, now, expectedCurrency: currency });
       try {
         return {
           exportedAt: imported.exportedAt,

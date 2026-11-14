@@ -1,7 +1,7 @@
 import {
   APPOINTMENT_STATUSES,
   calendarDate,
-  MAX_FEE_VND,
+  maxFee,
   periodMetricsByScope,
   periodOf,
   type AppointmentStatus,
@@ -30,6 +30,7 @@ import {
 } from './customers';
 import { openDatabase, type Database } from './database';
 import { listPolicies } from './policies';
+import { setCurrency } from './settings';
 import { createPerson, createTeam, listPeople, softDeletePerson, updatePerson } from './team';
 import { byId, clockSetBack, codeOf, errorOf, setup, stageAtEndOfDay } from './test-support';
 
@@ -272,13 +273,20 @@ describe('recordMeetingOutcome', () => {
     const { id } = schedule();
     const sized = (expectedCaseSize: number) => ({ ...MET_N2, expectedCaseSize });
 
-    for (const size of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
+    for (const size of [maxFee('VND') + 1, Number.MAX_SAFE_INTEGER]) {
       expect(codeOf(() => recordMeetingOutcome(db, id, sized(size)))).toBe('AMOUNT_TOO_LARGE');
     }
     expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
-    expect(recordMeetingOutcome(db, id, sized(MAX_FEE_VND)).expectedCaseSize).toBe(100_000_000_000);
-    expect(codeOf(() => editMeetingOutcome(db, id, sized(MAX_FEE_VND + 1), {}))).toBe(
+    expect(recordMeetingOutcome(db, id, sized(maxFee('VND'))).expectedCaseSize).toBe(
+      100_000_000_000,
+    );
+    expect(codeOf(() => editMeetingOutcome(db, id, sized(maxFee('VND') + 1), {}))).toBe(
       'AMOUNT_TOO_LARGE',
+    );
+    // ADR-0018 §3: the cap of the data's currency, 100 Bil dollars in cents.
+    setCurrency(db, 'USD');
+    expect(editMeetingOutcome(db, id, sized(maxFee('USD')), {}).expectedCaseSize).toBe(
+      10_000_000_000_000,
     );
   });
 

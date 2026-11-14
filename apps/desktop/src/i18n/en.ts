@@ -39,6 +39,13 @@ export const en: EnglishMessages = {
   'money.error.format.cents': 'Could not read this amount. Type it like 1,250.50 or 250K.',
   'money.error.fraction': 'VNĐ amounts have no decimals.',
   'money.error.fraction.cents': 'Amounts must be whole cents.',
+  // The cap of a fee (G-04), the mockup's sentence "Quá trần phí".
+  'error.AMOUNT_TOO_LARGE': 'The maximum is {max} VNĐ.',
+  'error.AMOUNT_TOO_LARGE.cents': 'The maximum is {max}.',
+  // A backup of another currency (G-04), the mockup's dialog.
+  'settings.backup.otherCurrency': 'The file uses {file}; the open data uses {expected}',
+  'settings.backup.otherCurrencyHelp':
+    'A database has one currency and the app does not convert. To use this file: Start over, choose {file} at the Currency step, then choose this file at the Data step. Your current data has not changed.',
   'money.error.too-large': 'This amount is too large.',
   'money.error.ambiguous': '"{text}" can be read two ways.',
   'money.mark': 'Use "," for thousands and "." for decimals.',
