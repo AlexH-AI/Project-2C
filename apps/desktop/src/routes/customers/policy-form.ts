@@ -6,9 +6,9 @@ import {
   formatPeriodValue,
   periodOf,
   type CalendarDate,
+  type Money,
   type MoneyParseError,
   type Policy,
-  type Vnd,
 } from '@p2c/domain';
 import { t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
@@ -16,7 +16,7 @@ import { parseRecordDate, type RecordDateResult } from './customers-view';
 import { formatAmount, formatAmountCompact, readMoney } from '../money-view';
 
 export type FypResult =
-  | { readonly ok: true; readonly amount: Vnd }
+  | { readonly ok: true; readonly amount: Money }
   | {
       readonly ok: false;
       readonly error: MoneyParseError | 'zero';
@@ -149,7 +149,7 @@ export type Effect =
       readonly metric: 'submitted' | 'issued';
       readonly year: number;
       readonly month: number;
-      readonly diff: Vnd;
+      readonly diff: Money;
     }
   /**
    * A day moved to another month: the policy leaves the count of policies submitted or issued of
@@ -194,10 +194,10 @@ export function policyChange(saved: Policy, read: PolicyRead) {
 
 interface Booked {
   readonly date: CalendarDate;
-  readonly fyp: Vnd;
+  readonly fyp: Money;
 }
 
-const booked = (date: CalendarDate | null, fyp: Vnd | null): Booked | null =>
+const booked = (date: CalendarDate | null, fyp: Money | null): Booked | null =>
   date && fyp !== null ? { date, fyp } : null;
 
 /**
@@ -210,7 +210,7 @@ function monthEffects(
   before: Booked | null,
   after: Booked | null,
 ): Effect[] {
-  const effect = ({ date }: Booked, diff: Vnd): Extract<Effect, { kind: 'fyp' }> => ({
+  const effect = ({ date }: Booked, diff: Money): Extract<Effect, { kind: 'fyp' }> => ({
     kind: 'fyp',
     metric,
     year: date.year,
@@ -268,7 +268,7 @@ export function effectText(effect: Effect, rmName: string | undefined): string {
  */
 export function expectedCaseSize(
   appointments: readonly Pick<AppointmentRecord, 'date' | 'time' | 'status' | 'expectedCaseSize'>[],
-): Vnd | null {
+): Money | null {
   let latest: (typeof appointments)[number] | undefined;
   for (const a of appointments) {
     if (a.status !== 'MET') continue;

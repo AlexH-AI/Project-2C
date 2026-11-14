@@ -4,6 +4,7 @@ import { KYC_CATEGORIES, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COUNT_SLOTS, errorMessage, fillSlots, formatMessage, joinParts, t, tableMore } from '.';
+import { setDataCurrency } from './language';
 import { vi } from './vi';
 
 /**
@@ -20,6 +21,7 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'date',
   'defaults',
   'diff',
+  'expected',
   'exported',
   'field',
   'fields',
@@ -32,6 +34,7 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'label',
   'limitMb',
   'mark',
+  'max',
   'message',
   'month',
   'model',
@@ -211,6 +214,19 @@ describe('errorMessage', () => {
     expect(errorMessage(new DbError('NAME_REQUIRED'))).toBe('Chưa nhập tên.');
   });
 
+  // ADR-0018 §3, mockup #money "Quá trần phí": the cap of the data's currency, in its compact form.
+  it('names the fee cap of the currency of the data', () => {
+    expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('Số tiền tối đa 100 tỷ VNĐ.');
+    try {
+      setDataCurrency('USD', 'vi');
+      expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('The maximum is $100 Bil.');
+      setDataCurrency('VND', 'en');
+      expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('The maximum is 100 Bil VNĐ.');
+    } finally {
+      setDataCurrency('VND', 'vi');
+    }
+  });
+
   it('fills in the parameters', () => {
     expect(errorMessage(new DbError('TEAM_NAME_TAKEN'), { name: 'Sao Mai' })).toBe(
       'Đã có team "Sao Mai".',
@@ -248,6 +264,7 @@ describe('errorMessage', () => {
       'SCHEMA_TOO_NEW',
       'BACKUP_INVALID',
       'BACKUP_TOO_LARGE',
+      'BACKUP_CURRENCY_MISMATCH',
     ];
 
     const missing = DB_ERROR_CODES.filter(

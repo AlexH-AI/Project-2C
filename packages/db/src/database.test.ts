@@ -956,6 +956,9 @@ describe('migrating a saved database', () => {
 });
 
 describe('transaction', () => {
+  // The keys a test wrote: every database has `currency` from its migration (ADR-0018 §7).
+  const written = "SELECT key FROM settings WHERE key <> 'currency' ORDER BY key";
+
   it('persists the exported bytes exactly once after a successful transaction', async () => {
     const persist = vi.fn();
     const db = await openDatabase({ persist });
@@ -969,7 +972,7 @@ describe('transaction', () => {
     expect(result).toBe(42);
     expect(persist).toHaveBeenCalledTimes(1);
     const reopened = await openDatabase({ bytes: persist.mock.calls[0]?.[0] as Uint8Array });
-    expect(reopened.sqlite.exec('SELECT key FROM settings')[0]?.values).toEqual([['a']]);
+    expect(reopened.sqlite.exec(written)[0]?.values).toEqual([['a']]);
   });
 
   it('rolls back and does not persist when the transaction throws', async () => {
@@ -985,7 +988,7 @@ describe('transaction', () => {
     ).toThrow('boom');
 
     expect(persist).not.toHaveBeenCalled();
-    expect(db.sqlite.exec('SELECT key FROM settings')).toEqual([]);
+    expect(db.sqlite.exec(written)).toEqual([]);
   });
 
   it('rolls back and does not persist when COMMIT fails, so the next transaction can start', async () => {
@@ -1041,10 +1044,7 @@ describe('transaction', () => {
     });
 
     expect(persist).toHaveBeenCalledTimes(1);
-    expect(db.sqlite.exec('SELECT key FROM settings ORDER BY key')[0]?.values).toEqual([
-      ['kept'],
-      ['outer'],
-    ]);
+    expect(db.sqlite.exec(written)[0]?.values).toEqual([['kept'], ['outer']]);
   });
 });
 

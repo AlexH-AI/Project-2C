@@ -1,28 +1,12 @@
 /**
- * VND money (PROJECT-PLAN §4.4). An amount is a whole number of đồng — never a float — so sums
- * and comparisons are exact up to `Number.MAX_SAFE_INTEGER` (≈ 9 triệu tỷ). Output is written in
- * the currency of the data, the Excel way (`formatMoney` below); a field is read by the same rule
- * of the two marks (`parseMoney`, ADR-0018 §5).
+ * Money in the currency of the data (ADR-0018 §2–§5). An amount is a whole number of the currency's
+ * smallest unit — never a float — so sums and comparisons are exact up to
+ * `Number.MAX_SAFE_INTEGER`. Output is written the Excel way (`formatMoney` below); a field is read
+ * by the same rule of the two marks (`parseMoney`).
  */
 import type { Language } from './language';
 import { groupDigits } from './number';
 import { normalizeText } from './text';
-
-export type Vnd = number;
-
-/**
- * The largest fee — FYP nộp, FYP phát hành, case size dự kiến — the commands and a backup accept:
- * 100 tỷ đồng (Owner, 06/10/2026, DR-23). Totals of up to ~90 000 such fees stay exact. A sum
- * insured, should one be recorded, is not a fee and has no such cap.
- */
-export const MAX_FEE_VND: Vnd = 100_000_000_000;
-
-/** `total + amount`, or a `RangeError` when the sum is past a safe integer and so not exact. */
-export function addVnd(total: Vnd, amount: Vnd): Vnd {
-  const sum = total + amount;
-  if (!Number.isSafeInteger(sum)) throw new RangeError(`Total past a safe integer: ${sum}`);
-  return sum;
-}
 
 /**
  * The units a Vietnamese field reads (Q6), with or without the marks of the language; English has
@@ -94,10 +78,8 @@ function splitNumber(text: string): { integer: string; fraction: string } | null
 
 /*
  * Money in the currency of the data (ADR-0018 §2–§4; golden `docs/golden/so-va-tien-te.md`
- * §1–§4), written the Excel way in every language: `,` groups thousands, `.` marks decimals. The
- * VND helpers above (`Vnd`, `MAX_FEE_VND`, `addVnd`) stay until the app moves over (G-04). No
- * `Intl`: the table below
- * writes the same on every webview (ADR-0018 §4, option 5).
+ * §1–§4), written the Excel way in every language: `,` groups thousands, `.` marks decimals. No
+ * `Intl`: the table below writes the same on every webview (ADR-0018 §4, option 5).
  */
 
 /** The seven currencies a data set may use, chosen once at set-up (ADR-0018 §2). */
@@ -147,8 +129,10 @@ export const CURRENCIES: Readonly<Record<CurrencyCode, Currency>> = {
 };
 
 /**
- * The largest fee — FYP nộp, FYP phát hành, case size dự kiến — in `currency`: 100 Billions of its
- * major unit (ADR-0018 §3). Totals stay exact up to 90,071 such fees in VND and 900 in cents.
+ * The largest fee — FYP nộp, FYP phát hành, case size dự kiến — the commands and a backup accept in
+ * `currency`: 100 Billions of its major unit (Owner, DR-23; ADR-0018 §3). Totals stay exact up to
+ * 90,071 such fees in VND and 900 in cents. A sum insured, should one be recorded, is not a fee and
+ * has no such cap.
  */
 export function maxFee(currency: CurrencyCode): Money {
   return CURRENCIES[currency].maxFee;

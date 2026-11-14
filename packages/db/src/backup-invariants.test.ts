@@ -16,7 +16,7 @@ import {
   softDeleteAppointment,
 } from './appointments';
 import { exportBackup, importBackup } from './backup';
-import { storedKycHash } from './backup-validation';
+import { storedKycHash, validateBackupInvariants } from './backup-validation';
 import {
   changeStageManually,
   createCustomer,
@@ -37,7 +37,7 @@ import {
 import { restorePolicy, softDeletePolicy, submitPolicy } from './policies';
 import { seedDemoData } from './seed';
 import { createPerson, restorePerson, softDeletePerson, updatePerson } from './team';
-import { byId, codeOf, setup } from './test-support';
+import { byId, codeOf, errorOf, setup } from './test-support';
 
 type Row = Record<string, unknown>;
 interface BackupJson {
@@ -1202,12 +1202,67 @@ describe('importBackup — rules across tables', () => {
         ['with U, which Crockford base32 leaves out', 'lan', 'K-9A1U'],
         ['with I, L and O', 'lan', 'K-ILO0'],
         ['with a full-width digit', 'lan', 'K-9A1\u{FF11}'],
+        // DR6-202: not text at all, which the load refuses before any rule runs.
+        ['that is a number', 'lan', 1234],
+        ['that is null, of a deleted customer', 'kien', null],
       ] as const
     ).map(([what, who, code]): [string, (b: BackupJson, ids: Ids) => void] => [
       `15: a customer code ${what}`,
       (b, ids) => (row(b, 'customers', (c) => c.id === ids[who]).code = code),
     ]),
   ];
+
+  // DR6-202: the first rule broken, in the order of spec §6 — 15 after 1–14.
+  it.each([
+    [
+      2,
+      'a stage not the latest transition, and a customer code in lower case (15)',
+      (b: BackupJson, ids: Ids) => {
+        row(b, 'customers', (c) => c.id === ids.lan).stage = 'N1';
+        row(b, 'customers', (c) => c.id === ids.lan).code = 'K-9a1c';
+      },
+    ],
+    [
+      10,
+      'a stage change after today, and an analysis after today (14)',
+      (b: BackupJson, ids: Ids) => {
+        transition(b, ids.lan, 3).date = TOMORROW;
+        analysis(b, ids.rejected).date = TOMORROW;
+      },
+    ],
+  ])('names rule %i of a file breaking two: %s', async (rule, _, damage) => {
+    const { db, ids } = await history();
+    const backup = b(db);
+    damage(backup, ids);
+
+    const error = await importBackup(JSON.stringify(backup), { now: db.now }).catch(
+      (e: unknown) => e,
+    );
+
+    expect(error).toMatchObject({ code: 'BACKUP_INVALID', params: { rule } });
+  });
+
+  // DR6-202: rules 10 and 14 by one reading of the clock, so an import across midnight never
+  // checks an analysis by the next day and the rest by the day before.
+  it('reads today once for rules 10 and 14, across midnight too', async () => {
+    const late = new Date(2026, 8, 26, 23, 59, 59, 999);
+    const next = new Date(2026, 8, 27, 0, 0, 0, 1);
+    const { db: source, ids } = await history();
+    const backup = b(source);
+    analysis(backup, ids.rejected).date = TOMORROW;
+    const { db: copy } = await importBackup(JSON.stringify(backup), { now: () => next });
+    let reads = 0;
+    const db = await openDatabase({
+      bytes: copy.export(),
+      now: () => (reads++ === 0 ? late : next),
+    });
+    reads = 0;
+
+    expect(errorOf(() => validateBackupInvariants(db))).toMatchObject({
+      code: 'BACKUP_INVALID',
+      params: { rule: 14 },
+    });
+  });
 
   it.each(broken)('refuses %s, the current database unchanged', async (label, damage) => {
     const { db, persist, ids } = await history();

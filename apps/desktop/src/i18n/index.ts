@@ -1,8 +1,8 @@
 import { DbError } from '@p2c/db';
-import { formatNumber } from '@p2c/domain';
+import { formatMoneyCompact, formatNumber, maxFee } from '@p2c/domain';
 import type { DataTableMoreLabels } from '@p2c/ui';
 import { en, type PluralMessage } from './en';
-import { LANGUAGE } from './language';
+import { appLanguage, dataCurrency } from './language';
 import { vi, type MessageKey } from './vi';
 
 export type MessageParams = Readonly<Record<string, string | number>>;
@@ -65,7 +65,7 @@ export function formatMessage(message: string | PluralMessage, params?: MessageP
  * Vietnamese of a key it lacks. Keys are typed, so a missing key fails typecheck.
  */
 export function t(key: MessageKey, params?: MessageParams): string {
-  return formatMessage((LANGUAGE === 'en' ? en[key] : undefined) ?? vi[key], params);
+  return formatMessage((appLanguage() === 'en' ? en[key] : undefined) ?? vi[key], params);
 }
 
 /** The known parts of one line, apart by the `sep.*` mark: `Nữ · 1991`, `N2 → N1`. */
@@ -90,9 +90,20 @@ export function errorMessage(error: unknown, params?: MessageParams): string {
     // A met meeting after today, as once the machine clock was set back (T-399), has its own.
     const setBack = error.code === 'TRANSITION_BEFORE_MEETING' && error.params?.afterToday === 1;
     const key = setBack ? 'error.TRANSITION_BEFORE_MEETING.afterToday' : `error.${error.code}`;
+    if (error.code === 'AMOUNT_TOO_LARGE') return feeCapMessage();
     if (Object.hasOwn(vi, key)) return t(key as MessageKey, { ...params, ...error.params });
   }
   return t('error.unknown');
+}
+
+/**
+ * A fee past the cap of the data's currency, which the sentence names in the compact form (ADR-0018
+ * §3; mockup ngon-ngu-tien-te.html #money "Quá trần phí"): `100 tỷ` VNĐ, `$100 Bil`.
+ */
+function feeCapMessage(): string {
+  const currency = dataCurrency();
+  const max = formatMoneyCompact(maxFee(currency), currency, appLanguage());
+  return t(currency === 'VND' ? 'error.AMOUNT_TOO_LARGE' : 'error.AMOUNT_TOO_LARGE.cents', { max });
 }
 
 export type { MessageKey };

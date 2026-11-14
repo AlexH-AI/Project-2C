@@ -11,8 +11,8 @@ import {
   type Appointment,
   type CalendarDate,
   type CustomerStage,
+  type Money,
   type PersonRole,
-  type Vnd,
 } from '@p2c/domain';
 import { isNotNull, sql } from 'drizzle-orm';
 import { checkRestoreAppointment, restoreStageMove } from './appointments';
@@ -93,9 +93,9 @@ export type TrashRow =
   | (TrashBase & {
       readonly kind: 'policy';
       readonly submittedDate: CalendarDate;
-      readonly submittedFyp: Vnd;
+      readonly submittedFyp: Money;
       readonly issuedDate: CalendarDate | null;
-      readonly issuedFyp: Vnd | null;
+      readonly issuedFyp: Money | null;
     });
 
 const NONE: TrashEffect = { kind: 'none' };

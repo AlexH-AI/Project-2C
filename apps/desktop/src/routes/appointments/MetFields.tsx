@@ -4,25 +4,12 @@ import { formatDate, isRfTransition, type CustomerStage, type Person } from '@p2
 import { Choices, SelectField, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { MoneyField } from '../MoneyField';
-import { amountRead, formatAmount, moneyRefusal, sentenceOnly } from '../money-view';
+import { amountRead, formatAmount, formRefusal } from '../money-view';
 import { stageBadge } from '../stage-badge';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
-import {
-  readCaseSize,
-  stageAfterChoices,
-  type CaseSizeRead,
-  type OutcomeError,
-} from './outcome-form';
+import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
 
 const FIELD_ERROR = 'm-0 text-sm text-danger';
-
-/** What stands under a case size refused: one of 0, or what the money field refuses. */
-function caseSizeRefusal(size: Extract<CaseSizeRead, { ok: false }>, text: string) {
-  const { error, suggestions } = size;
-  return error === 'notPositive'
-    ? sentenceOnly(t('outcome.caseSizePositive'))
-    : moneyRefusal({ error, suggestions }, text);
-}
 
 /** What a met meeting adds to its outcome (mockups 6c, 6f). */
 export interface MetDraft {
@@ -130,7 +117,14 @@ export function MetFields({
         label={t('outcome.caseSize')}
         value={draft.caseSize}
         onChange={set('caseSize')}
-        refusal={size && !size.ok ? caseSizeRefusal(size, draft.caseSize) : undefined}
+        refusal={
+          size && !size.ok
+            ? formRefusal(size, draft.caseSize, {
+                code: 'notPositive',
+                message: t('outcome.caseSizePositive'),
+              })
+            : undefined
+        }
         hint={size?.ok ? amountRead(size.amount) : undefined}
         // Mockup 6d: how a mark reads, for every case size typed; part of the field's description.
         help={t('outcome.caseSizeHelp')}

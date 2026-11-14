@@ -18,8 +18,8 @@ import {
   type CalendarDate,
   type CustomerStage,
   type OutcomeStatus,
+  type Money,
   type PersonRole,
-  type Vnd,
   fromIsoDate,
 } from '@p2c/domain';
 import { asc, eq } from 'drizzle-orm';
@@ -50,6 +50,7 @@ import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
 import { APPOINTMENT_TRIGGERS, appointmentCoordinators, appointments, people } from './schema';
+import { getCurrency } from './settings';
 
 type AppointmentRow = typeof appointments.$inferSelect;
 
@@ -80,7 +81,7 @@ export interface MeetingOutcome {
   readonly status: OutcomeStatus;
   readonly stageAfter?: CustomerStage | null;
   readonly nextStep?: string | null;
-  readonly expectedCaseSize?: Vnd | null;
+  readonly expectedCaseSize?: Money | null;
   readonly note?: string;
   readonly outcomeReviewerId?: string | null;
 }
@@ -129,7 +130,7 @@ export function listAppointments(db: Database, customerId?: string): Appointment
       triggerType: row[6] as AppointmentTrigger,
       triggerNote: row[7] as string | null,
       stageAfter: row[8] as CustomerStage | null,
-      expectedCaseSize: row[9] as Vnd | null,
+      expectedCaseSize: row[9] as Money | null,
       nextStep: row[10] as string | null,
       note: row[11] as string,
       rescheduledFromId: row[12] as string | null,
@@ -358,7 +359,7 @@ function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
     status: outcome.status,
     stageAfter,
     nextStep,
-    expectedCaseSize: size === null ? null : requireAmount(size),
+    expectedCaseSize: size === null ? null : requireAmount(size, getCurrency(db)),
     note: outcome.note === undefined ? note : (optionalText(outcome.note) ?? ''),
     outcomeReviewerId: reviewerId,
   };

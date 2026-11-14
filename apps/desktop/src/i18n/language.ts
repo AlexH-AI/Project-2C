@@ -2,13 +2,6 @@ import { languageFor, type CurrencyCode, type Language } from '@p2c/domain';
 import type { PersistQueue } from '../data/persist-queue';
 
 /**
- * The currency of the data (ADR-0018 §2): the one place the app picks it. Money is shown through
- * `routes/money-view.ts`, which passes it to `@p2c/domain`. Every database is VND until the
- * `currency` key of `settings` (G-04), which this then reads.
- */
-export const DATA_CURRENCY: CurrencyCode = 'VND';
-
-/**
  * Where this machine keeps its language: the webview's storage, never the database, so importing
  * a backup or sharing the file between two machines leaves each one's choice (ADR-0018 §1).
  */
@@ -44,11 +37,29 @@ export function resolveLanguage(stored: Language | undefined, currency: Currency
   return languageFor(currency, stored ?? 'vi');
 }
 
-/**
- * The language of this run, set once as the i18n loads: before any module builds its labels
- * (`PERIOD_LABELS`) and before the first render.
+/*
+ * The currency of the data and the language of this run (ADR-0018 §1, §2): the one place the app
+ * picks them. Money is shown through `routes/money-view.ts`, which passes them to `@p2c/domain`.
+ * Until the data opened — the loading line, a start that failed — VND and the machine's language.
  */
-export const LANGUAGE: Language = resolveLanguage(readStoredLanguage(), DATA_CURRENCY);
+let currency: CurrencyCode = 'VND';
+let language: Language = resolveLanguage(readStoredLanguage(), currency);
+
+/** The currency of the data: the `currency` key of the database that opened. */
+export const dataCurrency = (): CurrencyCode => currency;
+
+/** The language of this run. */
+export const appLanguage = (): Language => language;
+
+/**
+ * Takes the currency of the data once it opened, and the language that goes with it. `main.tsx`
+ * calls it once, before it loads the screens: their modules build labels as they load
+ * (`PERIOD_LABELS`), so a later call would leave those in the language before it.
+ */
+export function setDataCurrency(next: CurrencyCode, stored = readStoredLanguage()): void {
+  currency = next;
+  language = resolveLanguage(stored, next);
+}
 
 export interface ChangeLanguagePorts {
   /** The app's save queue (`AppData.saves`). */

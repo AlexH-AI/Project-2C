@@ -26,8 +26,8 @@ import {
   type CustomerStage,
   type KycField,
   type KycValue,
+  type Money,
   type Person,
-  type Vnd,
 } from '@p2c/domain';
 import { recordAiAnalysis } from './ai-analyses';
 import {
@@ -60,6 +60,7 @@ import {
   resolveKycConflict,
 } from './kyc';
 import { issuePolicy, listPolicies, softDeletePolicy, submitPolicy } from './policies';
+import { setCurrency } from './settings';
 import {
   APPOINTMENT_TIMES,
   BIRTH_DATE_KINDS,
@@ -195,6 +196,8 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
       for (; today <= end; today++) simulate.day(today);
       // The clock is back on the anchor day.
       if (options.trash) simulate.fillTrash();
+      // The sample data is in VND (ADR-0018 §8), stamped by the seed's clock as the rest of it.
+      setCurrency(db, 'VND');
     }),
   );
 }
@@ -235,7 +238,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
   const customers = new Map<string, SimCustomer[]>();
   const arrivals = new Map<number, Person[]>();
   const agenda = new Map<number, Slot[]>();
-  const issues = new Map<number, { id: string; fyp: Vnd }[]>();
+  const issues = new Map<number, { id: string; fyp: Money }[]>();
   const add = <T>(map: Map<number, T[]>, day: number, item: T) =>
     map.set(day, [...(map.get(day) ?? []), item]);
 

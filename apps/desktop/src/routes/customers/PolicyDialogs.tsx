@@ -10,10 +10,10 @@ import {
   formatDate,
   normalizeText,
   type CalendarDate,
+  type Money,
   type Person,
   type Policy,
   type Team,
-  type Vnd,
 } from '@p2c/domain';
 import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
@@ -21,13 +21,7 @@ import { errorMessage, t } from '../../i18n';
 import { rmOptions } from '../../shell/scope';
 import { ALERT } from '../classes';
 import { MoneyField } from '../MoneyField';
-import {
-  amountRead,
-  formatAmountCompact,
-  formatAmountDelta,
-  moneyRefusal,
-  sentenceOnly,
-} from '../money-view';
+import { amountRead, formatAmountCompact, formatAmountDelta, formRefusal } from '../money-view';
 import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
@@ -45,13 +39,8 @@ import {
 export type { PolicyMode } from './policy-form';
 
 /** What stands under an FYP field the form refuses: an FYP of 0, or what the money field refuses. */
-function fypRefusal(read: FypResult, text: string) {
-  if (read.ok) return undefined;
-  const { error, suggestions } = read;
-  return error === 'zero'
-    ? sentenceOnly(t('policyForm.zero'))
-    : moneyRefusal({ error, suggestions }, text);
-}
+const fypRefusal = (read: FypResult, text: string) =>
+  read.ok ? undefined : formRefusal(read, text, { code: 'zero', message: t('policyForm.zero') });
 
 /** Mockups 8a–8d: the policy block of the customer profile opens this. */
 export function PolicyDialog({
@@ -67,7 +56,7 @@ export function PolicyDialog({
   people: readonly Person[];
   teams: readonly Team[];
   /** The expected case size of the latest met meeting, shown for reference on a new policy. */
-  caseSize: Vnd | null;
+  caseSize: Money | null;
   onClose: () => void;
 }) {
   const app = useAppData();

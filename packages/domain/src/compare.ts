@@ -1,4 +1,4 @@
-import type { Vnd } from './money';
+import type { Money } from './money';
 import {
   addDays,
   canShift,
@@ -53,9 +53,9 @@ export function comparisonWindows(period: Period, today: CalendarDate): Comparis
 export interface MetricDeltas {
   readonly rfCount: number;
   readonly submittedCount: number;
-  readonly caseSize: Vnd;
+  readonly caseSize: Money;
   readonly issuedCount: number;
-  readonly revenue: Vnd;
+  readonly revenue: Money;
   readonly closeRatePoints: number | null;
 }
 

@@ -15,6 +15,7 @@ import {
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   RM_ROLE,
+  type CurrencyCode,
   type CustomerStage,
   type KycFact,
   type KycField,
@@ -47,12 +48,17 @@ const TIMESTAMPS = new Set(['created_at', 'updated_at', 'deleted_at']);
 const timestamp = z.iso.datetime({ precision: 3 });
 const OPEN_STAGES: readonly unknown[] = PIPELINE_STAGES;
 
-/** Throws `BACKUP_INVALID` at the first value the app could not read back. */
-export function validateBackupValues(db: Database): void {
+/**
+ * Throws `BACKUP_INVALID` at the first value the app could not read back; a fee by the cap of
+ * `currency`, the file's (ADR-0018 §3).
+ */
+export function validateBackupValues(db: Database, currency: CurrencyCode): void {
   for (const table of dataTables(db.sqlite)) {
     for (const row of rowsOf(db.sqlite, `SELECT * FROM "${table.replaceAll('"', '""')}"`)) {
       for (const [column, value] of Object.entries(row)) {
-        if (value !== null && !validValue(column, value)) throw new DbError('BACKUP_INVALID');
+        if (value !== null && !validValue(column, value, currency)) {
+          throw new DbError('BACKUP_INVALID');
+        }
       }
       if (table === 'kyc_facts' && !validKycValue(String(row.field), String(row.value_json))) {
         throw new DbError('BACKUP_INVALID');
@@ -68,7 +74,7 @@ export function validateBackupValues(db: Database): void {
   }
 }
 
-function validValue(column: string, value: SqlValue): boolean {
+function validValue(column: string, value: SqlValue, currency: CurrencyCode): boolean {
   if (column === 'birth_date') return validYear(value) || validDate(value);
   if (column === 'date' || column.endsWith('_date')) return validDate(value);
   if (column === 'time') return typeof value === 'string' && TIME.test(value);
@@ -76,7 +82,7 @@ function validValue(column: string, value: SqlValue): boolean {
   // A safe integer, as `nextSeq` writes it (DR-34).
   if (column === 'seq') return Number.isSafeInteger(value) && (value as number) >= 1;
   // A fee, as `requireAmount` takes it (DR-23).
-  if (FEES.has(column)) return isFee(value);
+  if (FEES.has(column)) return isFee(value, currency);
   return true;
 }
 
@@ -178,14 +184,17 @@ export function validateBackupInvariants(db: Database): void {
   const customers = read('SELECT * FROM customers');
   const transitions = read('SELECT * FROM stage_transitions ORDER BY customer_id, seq');
   const appointments = new Map(read('SELECT * FROM appointments').map((a) => [a.id, a]));
+  // One reading of the clock for rules 10 and 14: an import across midnight checks both by one day
+  // (DR6-202).
+  const day = storedDate(today(db));
   const broken =
     transitionRule(customers, transitions) ??
     meetingRule(appointments, transitions) ??
     ownerRule(read, appointments) ??
     kycRule(read, customers) ??
     staffRule(read) ??
-    futureRule(read, storedDate(today(db))) ??
-    aiRule(read, storedDate(today(db))) ??
+    futureRule(read, day) ??
+    aiRule(read, day) ??
     codeRule(customers) ??
     withdrawalRule(transitions);
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
@@ -199,6 +208,15 @@ function withdrawalRule(transitions: Row[]): Rule | null {
   const withdrawn = transitions.filter((t) => t.appointment_id !== null && t.deleted_at !== null);
   const seen = new Set(withdrawn.map((t) => JSON.stringify([t.appointment_id, t.deleted_at])));
   return seen.size === withdrawn.length ? null : 16;
+}
+
+/**
+ * Rule 15 for a code that is not text at all (null, a number), on the file's row as it loads: the
+ * load and SQLite's NOT NULL refuse it before any check, with no rule (DR6-202). A code of text is
+ * checked with the rules across tables, after rules 1–14 (`codeRule`, spec §6).
+ */
+export function checkCodeIsText(customer: Readonly<Record<string, unknown>>): void {
+  if (typeof customer.code !== 'string') throw new DbError('BACKUP_INVALID', { rule: 15 });
 }
 
 /** A customer's code as `freeCode` writes it: `K-` and four characters of Crockford base32. */

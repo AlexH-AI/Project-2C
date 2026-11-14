@@ -4,6 +4,7 @@ import {
   createPerson,
   createTeam,
   DbError,
+  getCurrency,
   getSetting,
   importBackup,
   LATEST_SCHEMA_VERSION,
@@ -12,6 +13,7 @@ import {
   MAX_BACKUP_BYTES,
   openDatabase,
   scheduleAppointment,
+  setCurrency,
   softDeleteCustomer,
   softDeleteTeam,
   type Database,
@@ -76,6 +78,14 @@ const teamNames = (db: Database) =>
   listTeams(db)
     .map((team) => team.name)
     .sort(byName);
+
+/** A saved database file of `currency` with the stand-in data (ADR-0018 §2). */
+async function fileIn(currency: 'USD' | 'VND'): Promise<Uint8Array> {
+  const db = await openDatabase();
+  fakeSeed(db, TODAY);
+  setCurrency(db, currency);
+  return db.export();
+}
 
 /** A promise the test settles. */
 function deferred<T>() {
@@ -180,6 +190,15 @@ function openAtVersion(version: number): Promise<Database> {
 }
 
 describe('openAppData', () => {
+  // ADR-0018 §2: the app reads the currency of the data it opens; the simulated data is VND.
+  it('opens the currency of the data: of the saved file, else VND', async () => {
+    const { storage } = memoryStorage(await fileIn('USD'));
+    expect((await openAppData({ storage, today: () => TODAY, seed: fakeSeed })).currency).toBe(
+      'USD',
+    );
+    expect((await openAppData({ today: () => TODAY, seed: fakeSeed })).currency).toBe('VND');
+  });
+
   it('without storage (web mode) opens a migrated database with the simulated data', async () => {
     const seed = vi.fn(fakeSeed);
     const app = await openAppData({ today: () => TODAY, seed });
@@ -705,6 +724,19 @@ describe('reloadDemoData', () => {
     expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
     const saved = await openDatabase({ bytes: saves.at(-1) });
     expect(JSON.parse(getSetting(saved, 'ai')!)).toEqual(chosen);
+  });
+
+  // ADR-0018 §7: Nạp lại keeps the currency of the data, as it keeps Settings → AI.
+  it('keeps the currency of the data, saved too', async () => {
+    const { storage, saves } = memoryStorage(await fileIn('USD'));
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+
+    await app.reloadDemoData();
+    await app.saves.idle();
+
+    expect(getCurrency(app.db())).toBe('USD');
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
+    expect(getCurrency(await openDatabase({ bytes: saves.at(-1) }))).toBe('USD');
   });
 
   it('leaves Settings → AI at the defaults when none were saved', async () => {
@@ -1429,6 +1461,22 @@ describe('backup files', () => {
     expect(opened.size).toBeGreaterThan(0);
     for (const db of opened) expect(() => (db as Database['sqlite']).exec('SELECT 1')).toThrow();
     expect(() => current.exec('SELECT 1')).not.toThrow();
+  });
+
+  // ADR-0018 §7: a file of another currency than the open data is refused, naming both.
+  it('refuses a backup in another currency than the data, changing nothing', async () => {
+    const { storage } = memoryStorage(await fileIn('USD'));
+    const source = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const text = (await source.exportBackup()).text;
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+
+    const error = await app.readBackup(text).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({
+      code: 'BACKUP_CURRENCY_MISMATCH',
+      params: { file: 'USD', expected: 'VND' },
+    });
+    await expect(source.readBackup(text)).resolves.toBeDefined();
   });
 
   it('rejects a damaged file with its code, changing nothing', async () => {

@@ -1,17 +1,41 @@
 import { fromLocalDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
+import { CAP_GOLDEN_ROWS } from '../../domain/src/golden/so-va-tien-te.fixture';
 import {
   cleanNote,
   cleanText,
+  isFee,
   isLabel,
   optionalText,
   readsBackAsIs,
+  requireAmount,
   requireName,
   today,
 } from './common';
 import { openDatabase } from './database';
 import { cryptoFill } from './ids';
 import { codeOf, d } from './test-support';
+
+// Golden so-va-tien-te §6.3: the cap is 100 Billions of the currency's major unit (ADR-0018 §3).
+describe('isFee, requireAmount', () => {
+  it.each(CAP_GOLDEN_ROWS)('$id: $amount in $currency is a fee: $isFee', (row) => {
+    expect(isFee(row.amount, row.currency)).toBe(row.isFee);
+    expect(codeOf(() => requireAmount(row.amount, row.currency))).toBe(
+      row.isFee ? undefined : 'AMOUNT_TOO_LARGE',
+    );
+  });
+
+  it('takes a whole amount above 0 only, in every currency', () => {
+    for (const currency of ['VND', 'USD'] as const) {
+      for (const value of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 2, '1', null]) {
+        expect(isFee(value, currency)).toBe(false);
+      }
+      expect(isFee(1, currency)).toBe(true);
+      expect(codeOf(() => requireAmount(0, currency))).toBe('INVALID_AMOUNT');
+      expect(codeOf(() => requireAmount(0.5, currency))).toBe('INVALID_AMOUNT');
+    }
+  });
+});
 
 describe('today', () => {
   it('is the local calendar day of one read of the database clock', async () => {

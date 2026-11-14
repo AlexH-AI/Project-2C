@@ -9,11 +9,12 @@ import {
   fromLocalDate,
   isRm,
   isStorableText,
-  MAX_FEE_VND,
+  maxFee,
   normalizeNote,
   normalizeText,
   type CalendarDate,
-  type Vnd,
+  type CurrencyCode,
+  type Money,
 } from '@p2c/domain';
 import { eq, getTableColumns, max, sql } from 'drizzle-orm';
 import type { SQLiteTable, SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core';
@@ -152,16 +153,25 @@ export function nextSeq(last: number | null | undefined): number {
   return next;
 }
 
-/** Whether a value is a fee (FYP, case size): whole đồng, above 0, at most `MAX_FEE_VND` (DR-23). */
-export function isFee(value: unknown): value is Vnd {
+/**
+ * Whether a value is a fee (FYP, case size) in `currency`: a whole number of its smallest unit,
+ * above 0, at most `maxFee` of it (DR-23, ADR-0018 §3).
+ */
+export function isFee(value: unknown, currency: CurrencyCode): value is Money {
   return (
-    typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value <= MAX_FEE_VND
+    typeof value === 'number' &&
+    Number.isSafeInteger(value) &&
+    value > 0 &&
+    value <= maxFee(currency)
   );
 }
 
-/** A fee, as `isFee` reads it; past the cap is its own error, so the UI can name the cap. */
-export function requireAmount(amount: Vnd): Vnd {
-  if (isFee(amount)) return amount;
+/**
+ * A fee in the currency of the data, as `isFee` reads it; past the cap is its own error, so the UI
+ * can name the cap.
+ */
+export function requireAmount(amount: Money, currency: CurrencyCode): Money {
+  if (isFee(amount, currency)) return amount;
   throw new DbError(
     Number.isSafeInteger(amount) && amount > 0 ? 'AMOUNT_TOO_LARGE' : 'INVALID_AMOUNT',
   );

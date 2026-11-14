@@ -18,6 +18,7 @@ import { openDatabase, type Database } from './database';
 import { getKycProfile, listKycVersions, type KycProfileRecord } from './kyc';
 import { listPolicies } from './policies';
 import { seedDemoData, type SeedOptions } from './seed';
+import { getCurrency } from './settings';
 import { stageAtEndOfDay } from './test-support';
 
 const SLOW = 60_000;
@@ -226,7 +227,7 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
     });
 
     it('passes every rule of a backup import, on the deleted records too (spec §6)', () => {
-      expect(() => validateBackupValues(db)).not.toThrow();
+      expect(() => validateBackupValues(db, getCurrency(db))).not.toThrow();
       expect(() => validateBackupInvariants(db)).not.toThrow();
     });
   });
