@@ -2,7 +2,7 @@ import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from '@p2c/ai';
 import { DB_ERROR_CODES, DbError } from '@p2c/db';
 import { KYC_CATEGORIES, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { COUNT_SLOTS, errorMessage, fillSlots, joinParts, t, tableMore } from '.';
+import { COUNT_SLOTS, errorMessage, fillSlots, formatMessage, joinParts, t, tableMore } from '.';
 import { vi } from './vi';
 
 /**
@@ -112,6 +112,41 @@ describe('t', () => {
       (slot) => !COUNT_SLOTS.has(slot) && !PLAIN_SLOTS.has(slot),
     );
     expect(unclassified).toEqual([]);
+  });
+});
+
+// ADR-0018 §9: an English message with a count has a form for 1 and one for any other number.
+describe('formatMessage', () => {
+  const customers = { one: '{count} customer', other: '{count} customers' };
+
+  it('picks the form by the count: one for 1, other for any other number', () => {
+    expect(formatMessage(customers, { count: 1 })).toBe('1 customer');
+    expect(formatMessage(customers, { count: 2 })).toBe('2 customers');
+    expect(formatMessage(customers, { count: 0 })).toBe('0 customers');
+  });
+
+  it('goes by the slot that holds a count, whatever its name', () => {
+    const open = {
+      one: '{open} open customer in {year}',
+      other: '{open} open customers in {year}',
+    };
+    expect(formatMessage(open, { year: 1, open: 3 })).toBe('3 open customers in 1');
+    expect(formatMessage(open, { year: 2026, open: 1 })).toBe('1 open customer in 2026');
+  });
+
+  it('reads the other form without a count to go by', () => {
+    expect(formatMessage(customers)).toBe('{count} customers');
+    expect(formatMessage(customers, { total: 1 })).toBe('{count} customers');
+    expect(formatMessage({ one: 'Year {year}', other: 'Years {year}' }, { year: 1 })).toBe(
+      'Years 1',
+    );
+  });
+
+  it('fills the slots of a message with one form', () => {
+    expect(formatMessage('Anchored on {date}.', { date: '15/09/2026' })).toBe(
+      'Anchored on 15/09/2026.',
+    );
+    expect(formatMessage('Anchored on {date}.')).toBe('Anchored on {date}.');
   });
 });
 
