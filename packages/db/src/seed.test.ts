@@ -28,6 +28,10 @@ import { seedDemoData } from './seed';
 import { createTeam, listPeople, listTeams } from './team';
 import { codeOf } from './test-support';
 import { listTrash } from './trash';
+// @ts-expect-error This package declares only `*.sql?raw` (sql-raw.d.ts); Vite reads any file so.
+import seedSource from './seed.ts?raw';
+// @ts-expect-error As above: the words of the sample data, as written.
+import seedDataSource from './seed-data.ts?raw';
 
 const ANCHOR = calendarDate(2026, 9, 15);
 // A seed is slow, the more so when other test files run in parallel: 60 s made `pnpm verify` flaky
@@ -403,4 +407,29 @@ describe('seedDemoData', () => {
     },
     SLOW,
   );
+});
+
+/**
+ * A number written as the app read a money field before the rule of the two marks (ADR-0018 §5):
+ * groups by `.` (`500.000.000`) or a decimal `,` before a unit (`1,5 tỷ`). The field now refuses
+ * both, so the sample data never shows one (G-05, kept as a test by G-03b).
+ */
+const OLD_NUMBER = /\d{1,3}(?:\.\d{3})+|\d,\d{1,2} ?(?:tr|tỷ)/u;
+
+describe('the words of the sample data', () => {
+  it('know the numbers written the old way', () => {
+    for (const old of ['1,5 tỷ', '1,25tr', '500.000.000', '1.500']) {
+      expect(OLD_NUMBER.test(`'Thu nhập ${old}'`), old).toBe(true);
+    }
+    for (const written of ['1.5 tỷ', '1–2 tỷ', '500,000,000', '1 tỷ', '0.5']) {
+      expect(OLD_NUMBER.test(`'Thu nhập ${written}'`), written).toBe(false);
+    }
+  });
+
+  it('write no number the money field now refuses', () => {
+    const lines = [seedSource, seedDataSource]
+      .flatMap((source: string) => source.split('\n'))
+      .filter((line) => OLD_NUMBER.test(line));
+    expect(lines).toEqual([]);
+  });
 });

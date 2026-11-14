@@ -245,7 +245,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
 
   await test.step('policies: one issued, one only submitted', async () => {
     await page.goto(profile);
-    await addPolicy(page, '10/09', '500tr', ['12/9', '485,5tr']);
+    await addPolicy(page, '10/09', '500tr', ['12/9', '485.5tr']);
     await addPolicy(page, '14/09', '120tr');
     const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
     await expect(card.getByRole('listitem')).toHaveText([

@@ -57,7 +57,7 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('12/9');
   await expect(dialog).toContainText('2 ngày sau khi nộp');
   // The issued FYP may differ from the submitted one (G2 D).
-  await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('485,5tr');
+  await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('485.5tr');
   await expect(dialog).toContainText('485,500,000 VNĐ (485.5 tr)');
   await dialog.getByRole('button', { name: 'Phát hành' }).click();
   await expect(dialog).toBeHidden();
@@ -101,17 +101,70 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
   await fyp.fill('0');
   await expect(dialog).toContainText('FYP phải lớn hơn 0.');
   await fyp.fill('năm trăm');
-  await expect(dialog).toContainText('Gõ số tiền như');
+  await expect(dialog).toContainText('Chưa đọc được số tiền. Gõ như 1,500,000 hoặc 1.5 tr.');
   await fyp.fill('-50tr');
   await expect(dialog).toContainText('Số tiền không được âm.');
+  // ADR-0018 §5: the marks of today are refused, the way meant offered, never filled by the app.
   await fyp.fill('1,2 tỷ');
+  await expect(fyp).toHaveAccessibleDescription('Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ.');
   await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('14/9');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText(
+    'Chưa lưu được — 1 ô cần sửaKhông có gì được ghi vào dữ liệu.',
+  );
+  await dialog.getByRole('button', { name: 'Điền 1.2 tỷ = 1,200,000,000 VNĐ' }).click();
+  await expect(fyp).toHaveValue('1.2 tỷ');
   await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
   await expect(dialog).toBeHidden();
 
   const row = card.getByRole('listitem').filter({ hasText: 'Nộp 14/09 · 1.2 tỷ' });
   await expect(row).toContainText('Đã nộp');
   expect(await policyCount(page)).toBe(before + 1);
+});
+
+// Mockup ngon-ngu-tien-te.html #money (ADR-0018 §5, golden X26, X03, X08): a money field shows how
+// to type an amount, refuses what reads two ways or by the marks of today, and offers the ways of
+// writing that read as buttons; a click fills the field, which reads it back.
+test('offers the ways of writing an FYP refused, filled only when picked (G-03b)', async ({
+  page,
+}) => {
+  await openProfile(page);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  const fyp = dialog.getByRole('textbox', { name: /^FYP nộp/ });
+  await expect(fyp).toHaveAttribute('placeholder', 'vd. 500 tr · 1.5 tỷ');
+
+  // X08: nothing reads, nothing to offer; the sentence says how to type it.
+  await fyp.fill('1,5');
+  await expect(fyp).toHaveAccessibleDescription(
+    'Chưa đọc được số tiền. Gõ như 1,500,000 hoặc 1.5 tr.',
+  );
+  await expect(dialog.getByRole('button', { name: /^Điền / })).toHaveCount(0);
+
+  // X03: one way of writing, in the new marks.
+  await fyp.fill('500.000.000');
+  const offered = dialog.getByRole('group', { name: 'Có phải là:' });
+  await expect(offered.getByRole('button')).toHaveText(['500,000,000 = 500,000,000 VNĐ']);
+
+  // X26: read two ways, both offered; the field keeps what was typed until one is picked.
+  await fyp.fill('1.500 tr');
+  await expect(fyp).toHaveAccessibleDescription('"1.500 tr" đọc được theo hai cách.');
+  const ways = dialog.getByRole('group', { name: 'Chọn một cách viết:' }).getByRole('button');
+  await expect(ways).toHaveText(['1.5 tr = 1,500,000 VNĐ', '1,500 tr = 1,500,000,000 VNĐ']);
+  await expect(fyp).toHaveValue('1.500 tr');
+  await dialog.getByRole('button', { name: 'Điền 1.5 tr = 1,500,000 VNĐ' }).click();
+  await expect(fyp).toHaveValue('1.5 tr');
+  await expect(fyp).toBeFocused();
+  await expect(fyp).toHaveAccessibleDescription('1,500,000 VNĐ (1.5 tr)');
+  await expect(ways).toHaveCount(0);
+
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('13/9');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(card.getByRole('listitem').filter({ hasText: 'Nộp 13/09 · 1.5 tr' })).toContainText(
+    'Đã nộp',
+  );
 });
 
 // DR6-173: a day or an FYP of invisible characters alone shows nothing and waits for "Lưu HĐ" as an
@@ -228,7 +281,7 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   dialog = page.getByRole('dialog', { name: `Sửa HĐ · ${name}` });
   await expect(dialog).toContainText('Đã phát hành 15/09/2026');
   // Mockup 8d: once issued, the issued FYP is a hand correction.
-  await dialog.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385,5tr');
+  await dialog.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385.5tr');
   await expect(dialog).toContainText('385,500,000 VNĐ (385.5 tr) · khác FYP nộp −14.5 tr');
   await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RM');
   await expect(dialog).toContainText('giảm 14.5 tr');

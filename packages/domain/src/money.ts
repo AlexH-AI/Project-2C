@@ -1,8 +1,8 @@
 /**
  * VND money (PROJECT-PLAN §4.4). An amount is a whole number of đồng — never a float — so sums
  * and comparisons are exact up to `Number.MAX_SAFE_INTEGER` (≈ 9 triệu tỷ). Output is written in
- * the currency of the data, the Excel way (`formatMoney` below). Until G-03b a field is read by
- * `parseVnd`, which accepts either mark for either role, told apart by the digits that follow.
+ * the currency of the data, the Excel way (`formatMoney` below); a field is read by the same rule
+ * of the two marks (`parseMoney`, ADR-0018 §5).
  */
 import type { Language } from './language';
 import { groupDigits } from './number';
@@ -24,12 +24,10 @@ export function addVnd(total: Vnd, amount: Vnd): Vnd {
   return sum;
 }
 
-export type VndParseError = 'empty' | 'negative' | 'format' | 'fraction' | 'too-large';
-
-export type VndParseResult =
-  | { readonly ok: true; readonly amount: Vnd }
-  | { readonly ok: false; readonly error: VndParseError };
-
+/**
+ * The units a Vietnamese field reads (Q6), with or without the marks of the language; English has
+ * K, Mil, Bil (`INPUT_UNITS`).
+ */
 const UNIT_EXPONENTS: Readonly<Record<string, number>> = {
   tỷ: 9,
   tỉ: 9,
@@ -45,62 +43,8 @@ const UNIT_EXPONENTS: Readonly<Record<string, number>> = {
   k: 3,
 };
 
-/*
- * Matched on `normalizeText`, where every run of white space is one space, so each optional space
- * is a single character and the pattern never backtracks over a long run of them (DR-38).
- */
-const AMOUNT_PATTERN =
-  /^([\d.,]+(?: \d+)*)(?: ?(tỷ|tỉ|ty|ti|triệu|trieu|tr|nghìn|nghin|ngàn|ngan|k)(?: ?(\d+))?)? ?(?:₫|đồng|dong|đ|vnđ|vnd)?$/;
-
-/** Thousands grouped by spaces: `500 000 000`, `1 500`. */
+/** Thousands grouped by spaces, as the app read them before the rule: `500 000 000`, `1 500`. */
 const SPACE_GROUPED = /^[1-9]\d{0,2}(?: \d{3})+$/;
-
-/**
- * Reads an amount the way an RM types it: `500tr`, `1,2 tỷ`, `750k`, `500.000.000`, `500,000`,
- * `500 000 000`, `500000000 ₫`, `500.000 VNĐ`. `.` and `,` follow the same rule (see
- * `splitNumber`), so `500,000` is 500 000 đồng and `1,500 tỷ` is 1 500 tỷ; `1,5 tỷ` is 1,5 tỷ.
- * Digits after the unit are said as the next group of three below it (see `spokenTail`): `1tr5` is
- * 1 triệu 500 nghìn, `1tr50` is 1 triệu 50 nghìn, `1 tỷ 2` is 1 tỷ 200 triệu. One unit per amount.
- * Anything below 1 đồng is an error, never rounded away. The text is read as `normalizeText` keeps
- * it, so an amount pasted with an invisible character reads as on screen (DR6-110).
- */
-export function parseVnd(text: string): VndParseResult {
-  let body = normalizeText(text).toLowerCase();
-  if (body === '') return { ok: false, error: 'empty' };
-  // The sign is read once (DR-32): `--500` is malformed, not a negative of a negative.
-  const negative = body.startsWith('-') || body.startsWith('−');
-  if (negative) body = body.slice(1).trimStart();
-  const magnitude = parseMagnitude(body);
-  return negative && magnitude.ok ? { ok: false, error: 'negative' } : magnitude;
-}
-
-function parseMagnitude(text: string): VndParseResult {
-  const match = AMOUNT_PATTERN.exec(text);
-  if (!match) return { ok: false, error: 'format' };
-  const written = match[1] as string;
-  const number = written.includes(' ')
-    ? SPACE_GROUPED.test(written)
-      ? { integer: written.replaceAll(' ', ''), fraction: '' }
-      : null
-    : splitNumber(written);
-  if (!number) return { ok: false, error: 'format' };
-
-  const exponent = match[2] === undefined ? 0 : (UNIT_EXPONENTS[match[2]] as number);
-  const tail = match[3];
-  if (tail !== undefined) {
-    const group = spokenTail(tail);
-    if (group === null || number.fraction !== '') return { ok: false, error: 'format' };
-    return wholeAmount(number.integer + group + '0'.repeat(exponent - 3));
-  }
-
-  const scale = exponent - number.fraction.length;
-  let digits = number.integer + number.fraction;
-  if (scale < 0) {
-    if (!/^0*$/.test(digits.slice(scale))) return { ok: false, error: 'fraction' };
-    digits = digits.slice(0, scale);
-  }
-  return wholeAmount(digits + '0'.repeat(Math.max(scale, 0)));
-}
 
 /**
  * The three digits of the group below the unit, as the digits after it are said: one digit is
@@ -112,15 +56,16 @@ function spokenTail(tail: string): string | null {
   return tail.length === 1 ? `${tail}00` : tail.padStart(3, '0');
 }
 
-function wholeAmount(digits: string): VndParseResult {
+function wholeAmount(digits: string): Reading {
   const amount = Number(digits);
   if (!Number.isSafeInteger(amount)) return { ok: false, error: 'too-large' };
   return { ok: true, amount };
 }
 
 /**
- * Integer and fraction digits of the number before the unit; null when malformed. `.` and `,` are
- * alike: a mark followed by exactly 3 digits groups thousands (`1.234.567`, `1,234,567`), with a
+ * Integer and fraction digits of the number before the unit as the app read a field before the
+ * rule (ADR-0018 §5), kept for the suggestions only (`readToday`); null when malformed. `.` and `,`
+ * are alike: a mark followed by exactly 3 digits groups thousands (`1.234.567`, `1,234,567`), with a
  * first group of 1–3 digits that is not `0`. A mark followed by 1–2 or 4+ digits, or a lone mark
  * after `0` (`0,500`), is the decimal mark; it comes last, once, and differs from the grouping
  * mark (`1.234,5`, `1,234.5`).
@@ -150,7 +95,8 @@ function splitNumber(text: string): { integer: string; fraction: string } | null
 /*
  * Money in the currency of the data (ADR-0018 §2–§4; golden `docs/golden/so-va-tien-te.md`
  * §1–§4), written the Excel way in every language: `,` groups thousands, `.` marks decimals. The
- * VND functions above stay until the app moves over (G-03b, G-04). No `Intl`: the table below
+ * VND helpers above (`Vnd`, `MAX_FEE_VND`, `addVnd`) stay until the app moves over (G-04). No
+ * `Intl`: the table below
  * writes the same on every webview (ADR-0018 §4, option 5).
  */
 
@@ -332,10 +278,12 @@ export function formatMoneyDelta(
  * Reading a money field (ADR-0018 §5; golden §6). One rule for the two marks: `,` groups thousands,
  * `.` marks decimals. A way of typing that the rule does not read is refused, never read another
  * way; when another reading gives an amount, the ways of writing it are returned for the field to
- * offer (Q11). `parseVnd` above stays until the app moves over (G-03b).
+ * offer (Q11). Every money field of the app reads so (G-03b).
  */
 
-export type MoneyParseError = VndParseError | 'ambiguous';
+/** Why a field is refused (golden §6.2): the codes of the app before the rule, and `ambiguous`. */
+export type MoneyParseError =
+  'empty' | 'negative' | 'format' | 'fraction' | 'too-large' | 'ambiguous';
 
 export type MoneyParseResult =
   | { readonly ok: true; readonly amount: Money }

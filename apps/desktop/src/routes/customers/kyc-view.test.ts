@@ -138,6 +138,14 @@ describe('kycAmountRead (NT-HS-05, mockup 7b / 7c)', () => {
     expect(kycAmountRead('goalHorizon', '2029')).toBeNull();
     expect(kycAmountRead('assetAllocation', '6 tỷ')).toBeNull();
   });
+
+  // ADR-0018 §5: text saved by the rule of today only loses its line, never reads as another amount.
+  it('reads by the rule of the two marks: text saved the old way reads nothing', () => {
+    expect(kycAmountRead('annualIncome', '1.2 tỷ')).toBe('1,200,000,000 VNĐ (1.2 tỷ)');
+    for (const old of ['1,2 tỷ', '500.000.000', '1.500 tr', '1.500', '500 000 000']) {
+      expect(kycAmountRead('totalAssets', old)).toBeNull();
+    }
+  });
 });
 
 describe('currentFactRecords (mockup 7c "Đang có")', () => {

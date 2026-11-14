@@ -57,15 +57,26 @@ describe('policyStatusText', () => {
 describe('readFyp', () => {
   it('reads a positive amount the way the money field does', () => {
     expect(readFyp('500tr')).toEqual({ ok: true, amount: 500 * MILLION });
-    expect(readFyp('385,5tr')).toEqual({ ok: true, amount: 385_500_000 });
-    expect(readFyp('500.000.000 ₫')).toEqual({ ok: true, amount: 500 * MILLION });
+    expect(readFyp('385.5tr')).toEqual({ ok: true, amount: 385_500_000 });
+    // The FYP as a dialog fills it reads back (formatAmount).
+    expect(readFyp('500,000,000 VNĐ')).toEqual({ ok: true, amount: 500 * MILLION });
   });
 
   it('refuses nothing, zero, a negative amount and words (mockup 8c)', () => {
-    expect(readFyp(' ')).toEqual({ ok: false, error: 'empty' });
-    expect(readFyp('0')).toEqual({ ok: false, error: 'zero' });
-    expect(readFyp('-50tr')).toEqual({ ok: false, error: 'negative' });
-    expect(readFyp('năm trăm')).toEqual({ ok: false, error: 'format' });
+    expect(readFyp(' ')).toEqual({ ok: false, error: 'empty', suggestions: [] });
+    expect(readFyp('0')).toEqual({ ok: false, error: 'zero', suggestions: [] });
+    expect(readFyp('-50tr')).toEqual({ ok: false, error: 'negative', suggestions: [] });
+    expect(readFyp('năm trăm')).toEqual({ ok: false, error: 'format', suggestions: [] });
+  });
+
+  // ADR-0018 §5: a way of typing the rule does not read is refused, with ways of writing to offer.
+  it('refuses the marks of today, with the ways of writing to offer', () => {
+    expect(readFyp('1,2 tỷ')).toEqual({ ok: false, error: 'format', suggestions: ['1.2 tỷ'] });
+    expect(readFyp('1.500 tr')).toEqual({
+      ok: false,
+      error: 'ambiguous',
+      suggestions: ['1.5 tr', '1,500 tr'],
+    });
   });
 });
 
@@ -84,7 +95,7 @@ describe('readPolicy', () => {
   });
 
   it('gives the issued day and FYP, and how many days after the submission it came', () => {
-    const read = readPolicy({ ...issued, issued: { date: '18/9', fyp: '385,5tr' } }, TODAY);
+    const read = readPolicy({ ...issued, issued: { date: '18/9', fyp: '385.5tr' } }, TODAY);
     expect(read.policy).toMatchObject({ issuedDate: d(18, 9), issuedFyp: 385_500_000 });
     expect(read.issuedDate).toEqual({ ok: true, date: d(18, 9), daysAfter: 29 });
   });
@@ -93,7 +104,7 @@ describe('readPolicy', () => {
     const read = readPolicy({ ...issued, issued: { date: '15/8', fyp: '0' } }, TODAY);
     expect(read.policy).toBeNull();
     expect(read.issuedDate).toEqual({ ok: false, error: 'beforeSubmitted', date: d(15, 8) });
-    expect(read.issuedFyp).toEqual({ ok: false, error: 'zero' });
+    expect(read.issuedFyp).toEqual({ ok: false, error: 'zero', suggestions: [] });
   });
 
   it('allows the issue on the day of the submission, not the day before', () => {
@@ -204,8 +215,8 @@ describe('policyChange', () => {
     );
 
   it('tells how far the issued FYP is from the submitted one, both as typed (DR6-40)', () => {
-    expect(change({ date: '18/9', fyp: '385,5tr' }).fromSubmitted).toBe(-14_500_000);
-    expect(change({ date: '18/9', fyp: '385,5tr' }, { submittedFyp: '390tr' }).fromSubmitted).toBe(
+    expect(change({ date: '18/9', fyp: '385.5tr' }).fromSubmitted).toBe(-14_500_000);
+    expect(change({ date: '18/9', fyp: '385.5tr' }, { submittedFyp: '390tr' }).fromSubmitted).toBe(
       -4_500_000,
     );
     expect(change({ date: '18/9', fyp: '400tr' }).fromSubmitted).toBe(0);
@@ -222,11 +233,11 @@ describe('policyChange', () => {
   });
 
   it('measures the effect on the month from the saved issued FYP (mockup 8d)', () => {
-    expect(change({ date: '18/9', fyp: '385,5tr' }).effects).toEqual([
+    expect(change({ date: '18/9', fyp: '385.5tr' }).effects).toEqual([
       fyp('issued', 9, -14_500_000),
     ]);
     const saved = { ...policy, issuedFyp: 390 * MILLION };
-    expect(change({ date: '18/9', fyp: '385,5tr' }, {}, saved).effects).toEqual([
+    expect(change({ date: '18/9', fyp: '385.5tr' }, {}, saved).effects).toEqual([
       fyp('issued', 9, -4_500_000),
     ]);
   });

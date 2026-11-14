@@ -22,7 +22,6 @@ import {
   KYC_FIELDS,
   markConflict,
   nextKycVersion,
-  parseVnd,
   type CalendarDate,
   type KycCategory,
   type KycFact,
@@ -33,7 +32,7 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { errorMessage, t } from '../../i18n';
-import { amountRead } from '../money-view';
+import { amountRead, readMoney } from '../money-view';
 
 export interface KycCategoryRow<F extends KycFact = KycFact> {
   readonly category: KycCategory;
@@ -118,13 +117,14 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
 
 /**
  * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, as every money input
- * reads (`amountRead`): "6,000,000,000 VNĐ (6 tỷ)". Null for another trường, or for words `parseVnd`
- * cannot read ("Khoảng 12 tỷ"), which are kept all the same.
- * Read from the text as the command stores it, `normalizeText` of `parseVnd` (K20, DR6-101).
+ * reads (`readMoney`, `amountRead`): "6,000,000,000 VNĐ (6 tỷ)". Null for another trường, or for
+ * words the field cannot read ("Khoảng 12 tỷ"), which are kept all the same; no sentence, nothing
+ * offered (mockup #money). Text saved by the rule of today stays as typed and only loses its line
+ * (ADR-0018 §5). Read from the text as the command stores it, `normalizeText` (K20, DR6-101).
  */
 export function kycAmountRead(field: KycField, text: string): string | null {
   if (!AMOUNT_FIELDS.has(field)) return null;
-  const parsed = parseVnd(text);
+  const parsed = readMoney(text);
   return parsed.ok ? amountRead(parsed.amount) : null;
 }
 

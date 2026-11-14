@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AppointmentRecord } from '@p2c/db';
-import { calendarDate, parseVnd } from '@p2c/domain';
+import { calendarDate } from '@p2c/domain';
+import { readMoney } from '../money-view';
 import { metDraftOf } from './MetFields';
 
 const met: AppointmentRecord = {
@@ -25,7 +26,7 @@ describe('metDraftOf', () => {
   it('fills the draft from a met appointment, keeping its reviewer', () => {
     const draft = metDraftOf(met);
     expect(draft).toMatchObject({ stageAfter: 'N2', reviewerId: 'p-tl', nextStep: 'Gặp cùng TL' });
-    expect(parseVnd(draft.caseSize)).toEqual({ ok: true, amount: 500_000_000 });
+    expect(readMoney(draft.caseSize)).toEqual({ ok: true, amount: 500_000_000 });
   });
 
   it('leaves missing values empty', () => {
