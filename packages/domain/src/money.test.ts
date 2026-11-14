@@ -22,245 +22,78 @@ import {
   MAX_FEE_VND,
   maxFee,
   parseMoney,
-  parseVnd,
-  type VndParseResult,
 } from './money';
 import { normalizeText } from './text';
-
-const amountOf = (result: VndParseResult) => (result.ok ? result.amount : result.error);
 
 describe('MAX_FEE_VND', () => {
   // Owner, 06/10/2026 (DR-23): a fee — FYP or case size — is at most 100 tỷ đồng.
   it('is 100 tỷ đồng', () => {
     expect(MAX_FEE_VND).toBe(100_000_000_000);
-    expect(amountOf(parseVnd('100 tỷ'))).toBe(MAX_FEE_VND);
-  });
-});
-
-describe('parseVnd', () => {
-  it.each(['500tr', '500 triệu', '500.000.000', '500000000', '500 TR', '  500 trieu  '])(
-    '%s → 500 000 000 đồng',
-    (text) => {
-      expect(amountOf(parseVnd(text))).toBe(500_000_000);
-    },
-  );
-
-  it.each(['1,2 tỷ', '1.2 tỷ', '1,2ty', '1,2 tỉ', '1,20 tỷ'])('%s → 1 200 000 000 đồng', (text) => {
-    expect(amountOf(parseVnd(text))).toBe(1_200_000_000);
-  });
-
-  it.each([
-    ['2 triệu', 2_000_000],
-    ['750k', 750_000],
-    ['750 nghìn', 750_000],
-    ['750 ngàn', 750_000],
-    ['1,5tr', 1_500_000],
-    ['1,25 tỷ', 1_250_000_000],
-    ['1.500 tỷ', 1_500_000_000_000],
-    ['0', 0],
-    ['1.000', 1_000],
-    ['500.000.000 ₫', 500_000_000],
-    ['500000đ', 500_000],
-    ['500.000 vnd', 500_000],
-  ])('%s → %d đồng', (text, amount) => {
-    expect(amountOf(parseVnd(text))).toBe(amount);
-  });
-
-  it.each([
-    ['', 'empty'],
-    ['   ', 'empty'],
-    ['-500tr', 'negative'],
-    ['−1 tỷ', 'negative'],
-    ['-abc', 'format'],
-    ['abc', 'format'],
-    ['500 đô', 'format'],
-    ['1,2,3 tỷ', 'format'],
-    ['1.2.3 tỷ', 'format'],
-    ['1.20.000', 'format'],
-    ['tr', 'format'],
-    [',5 tr', 'format'],
-    ['5, tr', 'format'],
-    ['1,5', 'fraction'],
-    ['1.5', 'fraction'],
-    ['1,2345k', 'fraction'],
-    ['99999999999 tỷ', 'too-large'],
-  ])('%j → error %s', (text, error) => {
-    expect(parseVnd(text)).toEqual({ ok: false, error });
-  });
-
-  it('accepts trailing zeros past the đồng, which are not a fraction', () => {
-    expect(amountOf(parseVnd('1,2340k'))).toBe(1_234);
-  });
-
-  describe('treats `.` and `,` alike: 3 digits after the mark group thousands', () => {
-    it.each(['500,000', '500.000', '500000', '0,5tr', '0.5 triệu', '500k'])(
-      '%s → 500 000 đồng',
-      (text) => {
-        expect(amountOf(parseVnd(text))).toBe(500_000);
-      },
-    );
-
-    it.each([
-      ['1,000', 1_000],
-      ['1,234,567', 1_234_567],
-      ['500,000,000', 500_000_000],
-      ['1,500 tỷ', 1_500_000_000_000],
-      ['1.500 tỷ', 1_500_000_000_000],
-      ['1,5 tỷ', 1_500_000_000],
-      ['1.5 tỷ', 1_500_000_000],
-      ['1,50 tỷ', 1_500_000_000],
-      ['0,500 tỷ', 500_000_000],
-      ['1.234,5 tr', 1_234_500_000],
-      ['1,234.5 tr', 1_234_500_000],
-    ])('%s → %d đồng', (text, amount) => {
-      expect(amountOf(parseVnd(text))).toBe(amount);
-    });
-
-    it.each([
-      '1,2,3 tỷ',
-      '1.2.3',
-      '1.20.000',
-      '1,234,5',
-      '1.234.5',
-      '1,234.567.8',
-      '1.234,567',
-      '0,500,000',
-      ',5',
-      '5,',
-      '5.',
-    ])('%j → error format', (text) => {
-      expect(parseVnd(text)).toEqual({ ok: false, error: 'format' });
-    });
-  });
-
-  // The table of #356, approved by the Owner on 06/10/2026 (DR-37).
-  describe('reads amounts as an RM says them', () => {
-    it.each([
-      ['500tr VNĐ', 500_000_000],
-      ['500.000.000 vnđ', 500_000_000],
-      ['500000000VND', 500_000_000],
-      ['500.000 VNĐ', 500_000],
-      ['500 000 000', 500_000_000],
-      ['1 234 567', 1_234_567],
-      ['1 500 000', 1_500_000],
-      ['1 500 tỷ', 1_500_000_000_000],
-      ['500 000 000 vnđ', 500_000_000],
-      ['1tr5', 1_500_000],
-      ['1 tr 5', 1_500_000],
-      ['1tr50', 1_050_000],
-      ['1tr250', 1_250_000],
-      ['1 tỷ 2', 1_200_000_000],
-      ['1tỷ2', 1_200_000_000],
-      ['1 tỷ 25', 1_025_000_000],
-      ['1 tỷ 250', 1_250_000_000],
-      ['2k5', 2_500],
-      ['1.500 tỷ 2', 1_500_200_000_000],
-      ['5tr ₫', 5_000_000],
-      ['1tr5 VNĐ', 1_500_000],
-    ])('%s → %d đồng', (text, amount) => {
-      expect(amountOf(parseVnd(text))).toBe(amount);
-    });
-
-    it.each([
-      ['1tr5k', 'format'],
-      ['2 tỷ 5 tr', 'format'],
-      ['1 tỷ 200 triệu', 'format'],
-      ['1tr2345', 'format'],
-      ['1tr5555555', 'format'],
-      ['1tr5,5', 'format'],
-      ['1,5tr5', 'format'],
-      ['500 00', 'format'],
-      ['500 000.000', 'format'],
-      ['1 500.000', 'format'],
-      ['1 2', 'format'],
-      ['12 34', 'format'],
-      ['0 500', 'format'],
-      ['1 tỷ2 5', 'format'],
-      ['-500tr', 'negative'],
-      ['−500tr', 'negative'],
-      ['- 1tr5', 'negative'],
-      ['--500', 'format'],
-      ['-', 'format'],
-      ['−-500', 'format'],
-    ])('%j → error %s', (text, error) => {
-      expect(parseVnd(text)).toEqual({ ok: false, error });
-    });
-  });
-
-  // DR-38: a run of white space of any kind, as pasted from a spreadsheet, is one space.
-  it.each([
-    ['500\u{A0}000\u{A0}000', 500_000_000],
-    ['500\u{202F}000\u{202F}000', 500_000_000],
-    ['1  500 000', 1_500_000],
-    ['1 tr  5', 1_500_000],
-    ['1 tỷ\t2', 1_200_000_000],
-  ])('%j → %d đồng', (text, amount) => {
-    expect(amountOf(parseVnd(text))).toBe(amount);
-  });
-
-  // DR6-110: the text as normalizeText keeps it, as the KYC money line reads it (DR6-101).
-  it.each([
-    ['500tr\u{200B}', 500_000_000],
-    ['500\u{85}000\u{85}000', 500_000_000],
-    ['5\u{2800}tr', 5_000_000],
-    ['1tr\u{2060}5', 1_500_000],
-    ['\u{FEFF}750k', 750_000],
-    ['2\u{7} triệu', 2_000_000],
-  ])('%j with an invisible character → %d đồng', (text, amount) => {
-    expect(amountOf(parseVnd(text))).toBe(amount);
-    expect(parseVnd(text)).toEqual(parseVnd(normalizeText(text)));
-  });
-
-  it('reads text of invisible characters only as empty', () => {
-    expect(parseVnd('\u{200B} \u{2060}')).toEqual({ ok: false, error: 'empty' });
-  });
-
-  describe('at the edges of what a number holds', () => {
-    it('takes the largest safe integer and refuses the next one', () => {
-      expect(amountOf(parseVnd('9007199254740991'))).toBe(Number.MAX_SAFE_INTEGER);
-      expect(amountOf(parseVnd('9.007.199.254.740.991'))).toBe(Number.MAX_SAFE_INTEGER);
-      expect(parseVnd('9007199254740992')).toEqual({ ok: false, error: 'too-large' });
-      expect(parseVnd('9007199254740993')).toEqual({ ok: false, error: 'too-large' });
-    });
-
-    // DR-32: the sign is read once, not once per character.
-    it('reads a long run of minus signs as a malformed number', () => {
-      expect(parseVnd('-'.repeat(32_000) + '1')).toEqual({ ok: false, error: 'format' });
-      expect(parseVnd('−'.repeat(32_000) + '1')).toEqual({ ok: false, error: 'format' });
-    });
-
-    // DR-38: spaces in a row are one space, so the pattern never backtracks over them.
-    // Timed warm, best of a few runs, so a slow CI runner's first call or a pause does not fail it;
-    // the quadratic pattern took 173 ms here, far past the bound either way.
-    it('reads a long run of spaces quickly', () => {
-      const texts = ['1' + ' '.repeat(20_000) + 'x', '1' + ' '.repeat(20_000) + '2'];
-      expect(texts.map(parseVnd)).toEqual([
-        { ok: false, error: 'format' },
-        { ok: false, error: 'format' },
-      ]);
-      const runs = Array.from({ length: 5 }, () => {
-        const started = Date.now();
-        texts.forEach(parseVnd);
-        return Date.now() - started;
-      });
-      expect(Math.min(...runs)).toBeLessThan(20);
-    });
+    expect(parseMoney('100 tỷ', 'VND', 'vi')).toEqual({ ok: true, amount: MAX_FEE_VND });
   });
 });
 
 // A form fills its money field with the amount as shown (`policy-form.ts`, `MetFields.tsx`), and
-// `parseVnd` reads the field until G-03b: what the app writes must read back as the same amount.
-describe('parseVnd reads back VND as the app shows it', () => {
+// `parseMoney` reads the field (G-03b): what the app writes must read back as the same amount.
+describe('parseMoney reads back VND as the app shows it', () => {
   it.each([1_200_000_000, 500_000_000, 1_000_000_000, 1_500_000, 1_500_000_000_000, 750_000, 0])(
     'reads back %d from its compact form',
     (amount) => {
-      expect(amountOf(parseVnd(formatMoneyCompact(amount, 'VND', 'vi')))).toBe(amount);
+      const shown = formatMoneyCompact(amount, 'VND', 'vi');
+      expect(parseMoney(shown, 'VND', 'vi')).toEqual({ ok: true, amount });
     },
   );
 
-  it('reads back the full form', () => {
-    expect(amountOf(parseVnd(formatMoney(1_234_567, 'VND')))).toBe(1_234_567);
-    expect(amountOf(parseVnd(formatMoney(500_000_000, 'VND')))).toBe(500_000_000);
+  it.each(LANGUAGES)('reads back the full form in %s', (language) => {
+    for (const amount of [1_234_567, 500_000_000, 950]) {
+      expect(parseMoney(formatMoney(amount, 'VND'), 'VND', language)).toEqual({ ok: true, amount });
+    }
+  });
+});
+
+// The reading of today (`splitNumber`), kept for the suggestions only (ADR-0018 §5): a number it
+// reads is offered in the new marks; one it does not read is offered nothing.
+describe('parseMoney offers the reading of today, never applies it', () => {
+  const refused = (error: string, suggestions: readonly string[] = []) => ({
+    ok: false,
+    error,
+    suggestions,
+  });
+
+  it.each([
+    ['1,2 tỷ', ['1.2 tỷ']],
+    ['1,20 tỷ', ['1.20 tỷ']],
+    ['1,25 tỷ', ['1.25 tỷ']],
+    ['1.234,5 tr', ['1,234.5 tr']],
+    ['500.000.000 vnđ', ['500,000,000 vnđ']],
+    ['1.234.567', ['1,234,567']],
+    ['1 234 567', ['1,234,567']],
+  ])('%s → format, %j', (text, suggestions) => {
+    expect(parseMoney(text, 'VND', 'vi')).toEqual(refused('format', suggestions));
+  });
+
+  it.each([
+    '1,2,3 tỷ',
+    '1.2.3',
+    '1.20.000',
+    '1,234,5',
+    '1.234.5',
+    '1,234.567.8',
+    '1.234,567',
+    '0,500,000',
+    '1234,567,000',
+    ',5',
+    '5,',
+    '5.',
+    '500 00',
+    '0 500',
+  ])('%j → format, nothing to offer', (text) => {
+    expect(parseMoney(text, 'VND', 'vi')).toEqual(refused('format'));
+  });
+
+  // VND has no decimals: the reading of today of `1,5` (1.5 đồng) does not read either.
+  it.each(['1,5', '1,50'])('%j → format, nothing to offer', (text) => {
+    expect(parseMoney(text, 'VND', 'en')).toEqual(refused('format'));
   });
 });
 
@@ -559,7 +392,7 @@ describe('parseMoney past the golden', () => {
   });
 
   // DR-38: no pattern backtracks long over a long run of digits, spaces or marks. Timed warm, best
-  // of a few runs, as the case of parseVnd.
+  // of a few runs, so a slow CI runner's first call or a pause does not fail it.
   it('reads long runs quickly', () => {
     const texts = [
       '1' + ' '.repeat(20_000) + 'x',

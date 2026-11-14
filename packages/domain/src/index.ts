@@ -131,7 +131,6 @@ export {
   MAX_FEE_VND,
   maxFee,
   parseMoney,
-  parseVnd,
 } from './money';
 export { formatBytes, formatNumber, formatPercentage } from './number';
 export type {
@@ -141,8 +140,6 @@ export type {
   MoneyParseError,
   MoneyParseResult,
   Vnd,
-  VndParseError,
-  VndParseResult,
 } from './money';
 export {
   APPOINTMENT_STATUSES,

@@ -4,6 +4,7 @@ export const vi = {
   'app.slogan': 'Where legacy meets trust',
   'sep.dot': '·',
   'sep.arrow': '→',
+  'sep.equals': '=',
   'sep.range': '{from} – {to}',
   'sep.list': ', ',
   'sep.semicolon': '; ',
@@ -901,7 +902,7 @@ export const vi = {
   'outcome.nextStepRequired': 'Nhập việc tiếp theo.',
   'outcome.caseSize': 'Case size dự kiến (để trống = chưa ước lượng)',
   'outcome.caseSizeHelp':
-    'Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn, kể cả khi có đơn vị: "1,234 tr" = 1.234.000.000 ₫ (số đứng trước là 0 thì là dấu thập phân: "0,500 tr" = 500.000 ₫). Muốn 1,2 triệu thì gõ "1,2 tr" → 1.200.000 ₫.',
+    'Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ, có đơn vị cũng vậy: "1.2 tr" là 1 triệu 2, "1,200 tr" là 1 tỷ 2.',
   'outcome.caseSizePositive': 'Case size phải lớn hơn 0 (hoặc để trống).',
   'outcome.note': 'Ghi chú cuộc gặp',
   'outcome.noteHelp': 'Ghi chú cuộc gặp không phải ghi chú KYC.',
@@ -952,11 +953,25 @@ export const vi = {
     'KH đã đổi nhóm sau cuộc gặp này: không đổi được trạng thái, ngày, nhóm sau cuộc gặp, cũng không xóa được. Sửa nhóm bằng Chuyển nhóm tay.',
   // What an amount typed reads as (amountRead): in full, then in short.
   'money.read': '{amount} ({compact})',
+  // A money field (mockup ngon-ngu-tien-te.html #money, ADR-0018 §5): its example when empty, the
+  // sentence of a refusal by its code, and the ways of writing offered under it. `.cents`: money
+  // with cents, shown in English only (the Vietnamese is never shown).
+  'money.placeholder': 'vd. 500 tr · 1.5 tỷ',
+  'money.placeholder.cents': 'vd. 1,250.50 · 250K',
   'money.error.empty': 'Chưa nhập số tiền.',
   'money.error.negative': 'Số tiền không được âm.',
-  'money.error.format': 'Gõ số tiền như 800tr, 1,2 tỷ hoặc 500.000.000.',
-  'money.error.fraction': 'Số tiền phải là số đồng nguyên.',
+  'money.error.format': 'Chưa đọc được số tiền. Gõ như 1,500,000 hoặc 1.5 tr.',
+  'money.error.format.cents': 'Chưa đọc được số tiền. Gõ như 1,250.50 hoặc 250K.',
+  'money.error.fraction': 'Số tiền VNĐ không có số lẻ.',
+  'money.error.fraction.cents': 'Số tiền phải tròn cent.',
   'money.error.too-large': 'Số tiền quá lớn.',
+  'money.error.ambiguous': '"{text}" đọc được theo hai cách.',
+  'money.mark': 'Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ.',
+  'money.unit': 'Giao diện tiếng Việt dùng đơn vị K, tr, tỷ.',
+  'money.didYouMean': 'Có phải là:',
+  'money.pickOne': 'Chọn một cách viết:',
+  // A way of writing offered, as a screen reader says its button: what it fills, what it reads as.
+  'money.fill': 'Điền {text} = {amount}',
   'error.OUTCOME_REQUIRED': 'Đã gặp thì cần nhóm sau cuộc gặp và việc tiếp theo.',
   'error.OUTCOME_IN_FUTURE':
     'Lịch chưa tới ngày: Đã gặp và Không đến chỉ ghi khi ngày hẹn là hôm nay hoặc đã qua.',
@@ -965,7 +980,7 @@ export const vi = {
   'error.NEXT_APPOINTMENT_PAST': 'Lịch hẹn tiếp theo phải từ hôm nay trở đi.',
   'error.INVALID_TRIGGER': 'Chọn loại trigger ("—" là chưa chọn).',
   'error.INVALID_STATUS': 'Lịch này không nhận kết quả đó (có thể đã có kết quả hoặc đã dời).',
-  'error.INVALID_AMOUNT': 'Số tiền phải là số đồng nguyên, lớn hơn 0.',
+  'error.INVALID_AMOUNT': 'Số tiền phải lớn hơn 0, không có số lẻ dưới 1 đồng (hay 1 cent).',
   'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa 100 tỷ đồng.',
   'overview.filter': 'Lọc',
   'overview.pending': 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật',

@@ -88,7 +88,7 @@ Thẻ **Hợp đồng** liệt kê HĐ của KH. Mỗi HĐ có hai bước: **Đ
 
 1. Bấm **+ Hợp đồng**.
 2. **RM · HĐ tính cho RM này**: mặc định RM phụ trách KH; chỉ chọn được lúc tạo HĐ.
-3. **Ngày nộp** và **FYP nộp** (phí năm đầu; gõ như `800tr`, `1,2 tỷ`). FYP tối đa 100 tỷ đồng. Hộp nhắc case size dự kiến của cuộc gặp gần nhất để tham khảo, không tự điền.
+3. **Ngày nộp** và **FYP nộp** (phí năm đầu; gõ như `800tr`, `1.2 tỷ`; luật dấu như ô case size ở [3. Lịch hẹn](03-lich-hen.md#ghi-kết-quả-cuộc-gặp)). FYP tối đa 100 tỷ đồng. Hộp nhắc case size dự kiến của cuộc gặp gần nhất để tham khảo, không tự điền.
 4. Bấm **Lưu HĐ**.
 
 ### Phát hành HĐ

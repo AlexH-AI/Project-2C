@@ -97,17 +97,27 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   await expect(o.dialog).toContainText('800,000,000 VNĐ (800 tr)');
   // The amount read, then the help under the field: both are what a screen reader says of it
   // (review of PR 838).
-  await o.caseSize.fill('0,500 tr');
+  await o.caseSize.fill('0.5 tr');
   await expect(o.caseSize).toHaveAccessibleDescription(
-    /^500,000 VNĐ \(500K\) Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,
+    /^500,000 VNĐ \(500K\) Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ/,
   );
-  // Mockup 6d: how the marks read, under the field.
-  const help = o.dialog.getByText(
-    /^Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,
-  );
-  await expect(help).toContainText('"0,500 tr" = 500.000 ₫');
+  // Mockup 6d: how the marks read, under the field, by the rule of ADR-0018 §5.
+  const help = o.dialog.getByText(/^Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ, có đơn vị/);
+  await expect(help).toContainText('"1,200 tr" là 1 tỷ 2');
   const field = (await o.caseSize.boundingBox())!;
   expect((await help.boundingBox())!.y).toBeGreaterThan(field.y + field.height);
+  // Mockup #money: the example when empty, and the rule of every money field, the way of writing
+  // meant offered as a button, never filled by the app (Q11).
+  await expect(o.caseSize).toHaveAttribute('placeholder', 'vd. 500 tr · 1.5 tỷ');
+  await o.caseSize.fill('0,5 tỷ');
+  await expect(o.caseSize).toHaveAccessibleDescription(
+    /^Dấu "," ngăn hàng nghìn, dấu "." cho phần lẻ\./,
+  );
+  await expect(o.caseSize).toHaveValue('0,5 tỷ');
+  await o.dialog.getByRole('button', { name: 'Điền 0.5 tỷ = 500,000,000 VNĐ' }).click();
+  await expect(o.caseSize).toHaveValue('0.5 tỷ');
+  await expect(o.caseSize).toBeFocused();
+  await expect(o.caseSize).toHaveAccessibleDescription(/^500,000,000 VNĐ \(500 tr\)/);
   await o.caseSize.fill('0');
   await expect(o.dialog).toContainText('Case size phải lớn hơn 0');
   await o.caseSize.fill('');

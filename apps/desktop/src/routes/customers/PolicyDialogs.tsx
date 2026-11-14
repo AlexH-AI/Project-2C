@@ -20,7 +20,14 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { rmOptions } from '../../shell/scope';
 import { ALERT } from '../classes';
-import { amountRead, formatAmountCompact, formatAmountDelta } from '../money-view';
+import { MoneyField } from '../MoneyField';
+import {
+  amountRead,
+  formatAmountCompact,
+  formatAmountDelta,
+  moneyRefusal,
+  sentenceOnly,
+} from '../money-view';
 import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
@@ -37,8 +44,14 @@ import {
 
 export type { PolicyMode } from './policy-form';
 
-const fypError = (read: FypResult) =>
-  read.ok ? undefined : t(read.error === 'zero' ? 'policyForm.zero' : `money.error.${read.error}`);
+/** What stands under an FYP field the form refuses: an FYP of 0, or what the money field refuses. */
+function fypRefusal(read: FypResult, text: string) {
+  if (read.ok) return undefined;
+  const { error, suggestions } = read;
+  return error === 'zero'
+    ? sentenceOnly(t('policyForm.zero'))
+    : moneyRefusal({ error, suggestions }, text);
+}
 
 /** Mockups 8a–8d: the policy block of the customer profile opens this. */
 export function PolicyDialog({
@@ -82,14 +95,16 @@ export function PolicyDialog({
     shown(draft.submittedDate) && !read.submittedDate.ok
       ? t(`date.error.${read.submittedDate.error}`)
       : undefined;
-  const submittedFypError = shown(draft.submittedFyp) ? fypError(read.submittedFyp) : undefined;
+  const submittedFypError = shown(draft.submittedFyp)
+    ? fypRefusal(read.submittedFyp, draft.submittedFyp)
+    : undefined;
   const issuedDateError =
     draft.issued && read.issuedDate && shown(draft.issued.date)
       ? issuedDateMessage(read.issuedDate, read.submittedDate.ok ? read.submittedDate.date : null)
       : undefined;
   const issuedFypError =
     draft.issued && read.issuedFyp && shown(draft.issued.fyp)
-      ? fypError(read.issuedFyp)
+      ? fypRefusal(read.issuedFyp, draft.issued.fyp)
       : undefined;
   const rmError = attempted && rmId === '' ? t('error.RM_REQUIRED') : undefined;
   const errorCount = [
@@ -202,11 +217,11 @@ export function PolicyDialog({
               required
               autoFocus={mode.kind === 'new'}
             />
-            <TextField
+            <MoneyField
               label={t('policyForm.submittedFyp')}
               value={draft.submittedFyp}
               onChange={(submittedFyp) => edit({ submittedFyp })}
-              error={submittedFypError}
+              refusal={submittedFypError}
               hint={read.submittedFyp.ok ? amountRead(read.submittedFyp.amount) : undefined}
               required
             />
@@ -229,11 +244,11 @@ export function PolicyDialog({
             required
             autoFocus={mode.kind === 'issue'}
           />
-          <TextField
+          <MoneyField
             label={t(mode.kind === 'edit' ? 'policyForm.issuedFyp' : 'policyForm.issuedFypDefault')}
             value={draft.issued.fyp}
             onChange={(fyp) => editIssued({ fyp })}
-            error={issuedFypError}
+            refusal={issuedFypError}
             hint={
               issuedFyp === null
                 ? undefined

@@ -4,26 +4,30 @@ import {
   compareDates,
   daysBetween,
   formatPeriodValue,
-  parseVnd,
   periodOf,
   type CalendarDate,
+  type MoneyParseError,
   type Policy,
   type Vnd,
-  type VndParseError,
 } from '@p2c/domain';
 import { t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
 import { parseRecordDate, type RecordDateResult } from './customers-view';
-import { formatAmount, formatAmountCompact } from '../money-view';
+import { formatAmount, formatAmountCompact, readMoney } from '../money-view';
 
 export type FypResult =
   | { readonly ok: true; readonly amount: Vnd }
-  | { readonly ok: false; readonly error: VndParseError | 'zero' };
+  | {
+      readonly ok: false;
+      readonly error: MoneyParseError | 'zero';
+      /** Ways of writing the text that read, for the field to offer (ADR-0018 §5). */
+      readonly suggestions: readonly string[];
+    };
 
-/** An FYP as typed (`500tr`, `1,2 tỷ`): more than 0 (spec §3.7). */
+/** An FYP as typed (`500tr`, `1.2 tỷ`), read as every money field: more than 0 (spec §3.7). */
 export function readFyp(text: string): FypResult {
-  const parsed = parseVnd(text);
-  if (parsed.ok && parsed.amount <= 0) return { ok: false, error: 'zero' };
+  const parsed = readMoney(text);
+  if (parsed.ok && parsed.amount <= 0) return { ok: false, error: 'zero', suggestions: [] };
   return parsed;
 }
 

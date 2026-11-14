@@ -61,6 +61,7 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'supported',
   'table',
   'team',
+  'text',
   'time',
   'to',
   'today',

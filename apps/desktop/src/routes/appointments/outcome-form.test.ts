@@ -425,7 +425,17 @@ describe('readCaseSize', () => {
   });
 
   it('rejects zero and text that is not an amount', () => {
-    expect(readCaseSize('0')).toMatchObject({ ok: false });
-    expect(readCaseSize('sai')).toMatchObject({ ok: false });
+    expect(readCaseSize('0')).toEqual({ ok: false, error: 'notPositive', suggestions: [] });
+    expect(readCaseSize('sai')).toEqual({ ok: false, error: 'format', suggestions: [] });
+  });
+
+  // ADR-0018 §5: the same rule as every money field, with the ways of writing to offer.
+  it('refuses the marks of today, with the ways of writing to offer', () => {
+    expect(readCaseSize('0,5 tỷ')).toEqual({ ok: false, error: 'format', suggestions: ['0.5 tỷ'] });
+    expect(readCaseSize('1.000 tr')).toEqual({
+      ok: false,
+      error: 'ambiguous',
+      suggestions: ['1 tr', '1,000 tr'],
+    });
   });
 });

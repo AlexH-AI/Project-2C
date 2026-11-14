@@ -11,13 +11,13 @@ import {
   compareDates,
   normalizeText,
   PIPELINE_STAGES,
-  parseVnd,
   type CalendarDate,
   type CustomerStage,
+  type MoneyParseError,
   type StageTransition,
-  type VndParseError,
 } from '@p2c/domain';
 import { allowedStages } from '../customers/customers-view';
+import { readMoney } from '../money-view';
 import { isPastOrToday, type parseTime, type ScheduleDate } from './appointment-form';
 
 /** The statuses the outcome dialog offers (mockups 6c–6e, 6i), in their order. */
@@ -25,19 +25,24 @@ export const OUTCOME_CHOICES = ['MET', 'RESCHEDULED', 'CANCELLED', 'NO_SHOW'] as
 export type OutcomeChoice = (typeof OUTCOME_CHOICES)[number];
 
 /**
- * The case size typed: none when it shows nothing, as `parseVnd` reads the text (`normalizeText`,
- * DR6-150); the db only stores a positive one (requireAmount).
+ * The case size typed, read as every money field (`readMoney`): none when it shows nothing, as the
+ * field reads the text (`normalizeText`, DR6-150); the db only stores a positive one
+ * (requireAmount). A refusal carries the ways of writing to offer (ADR-0018 §5).
  */
 export type CaseSizeRead =
   | null
   | { readonly ok: true; readonly amount: number }
-  | { readonly ok: false; readonly error: VndParseError | 'notPositive' };
+  | {
+      readonly ok: false;
+      readonly error: MoneyParseError | 'notPositive';
+      readonly suggestions: readonly string[];
+    };
 
 export function readCaseSize(text: string): CaseSizeRead {
   if (normalizeText(text) === '') return null;
-  const size = parseVnd(text);
+  const size = readMoney(text);
   if (!size.ok) return size;
-  return size.amount > 0 ? size : { ok: false, error: 'notPositive' };
+  return size.amount > 0 ? size : { ok: false, error: 'notPositive', suggestions: [] };
 }
 
 /**

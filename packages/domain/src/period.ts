@@ -232,7 +232,7 @@ const SUGGESTION_DAYS = 60;
  * days ago (DR-39). Early in the year it is the other way: a date not yet come whose day last year
  * passed 60 days ago at most suggests that day (ADR-0007, Owner 23/10/2026). The two never come
  * together. The caller shows the result and lets the RM choose — nothing is guessed silently.
- * The text is read as `normalizeText` keeps it, as `parseVnd` reads an amount (DR6-110).
+ * The text is read as `normalizeText` keeps it, as `parseMoney` reads an amount (DR6-110).
  */
 export function parseQuickDate(text: string, today: CalendarDate): QuickDateResult {
   const clean = normalizeText(text);
