@@ -361,12 +361,12 @@ describe('KYC material flag', () => {
     expect(next(after)?.material).toBe(false);
   });
 
-  it('lets the RE switch the flag on for a non-core change', () => {
+  it('lets the RM switch the flag on for a non-core change', () => {
     const after = confirmAll(base, [['f3', 'gender', 'Nữ']]);
     expect(next(after, true)?.material).toBe(true);
   });
 
-  it('keeps the flag on when the rule sets it, whatever the RE chose', () => {
+  it('keeps the flag on when the rule sets it, whatever the RM chose', () => {
     const after = confirmAll(base, [['f3', 'birthYear', 1974]]);
     expect(next(after, false)?.material).toBe(true);
   });

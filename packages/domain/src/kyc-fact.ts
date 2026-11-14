@@ -67,7 +67,7 @@ export interface KycFact {
   readonly value: KycValue;
   /** The KYC note the fact was confirmed from. */
   readonly noteId: string;
-  /** Day the RE confirmed the fact. */
+  /** Day the RM confirmed the fact. */
   readonly confirmedDate: CalendarDate;
   readonly status: KycFactStatus;
 }

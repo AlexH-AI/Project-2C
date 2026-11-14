@@ -30,7 +30,7 @@ import {
   type Team,
 } from '@p2c/domain';
 import { joinParts, t } from '../../i18n';
-import { reOptions } from '../../shell/scope';
+import { rmOptions } from '../../shell/scope';
 import { closeRateText, countedWindow } from '../overview/overview-view';
 import { eachMark } from '../overview/stage-view';
 
@@ -49,11 +49,11 @@ export interface ReportFigures {
   readonly stages: StageCounts | null;
 }
 
-/** One row of a report table: the scope viewed, a team, an RE, or Tổng. */
+/** One row of a report table: the scope viewed, a team, an RM, or Tổng. */
 export interface ReportRow extends ReportFigures {
   readonly key: string;
   readonly name: string;
-  /** The team of a Theo RE row; null on the other tables. */
+  /** The team of a Theo RM row; null on the other tables. */
   readonly team: string | null;
 }
 
@@ -71,12 +71,12 @@ export interface ReportMarkRow extends ReportRow {
 /**
  * The tables of Báo cáo (spec Phase 4 §4.4, mockup reports.html 2a–2e), shared by the screen and
  * the Excel export. A table that would repeat Tổng hợp is null: Theo team in the Team scope, Theo
- * team and Theo RE in the RE scope. Theo mốc has no Tổng: it adds up to Tổng hợp.
+ * team and Theo RM in the RM scope. Theo mốc has no Tổng: it adds up to Tổng hợp.
  */
 export interface ReportRows {
   readonly summary: ReportRow;
   readonly byTeam: ReportTable | null;
-  readonly byRe: ReportTable | null;
+  readonly byRm: ReportTable | null;
   readonly byMark: readonly ReportMarkRow[];
 }
 
@@ -131,7 +131,7 @@ function sumFigures(
   };
 }
 
-/** The scope as the report names it: `Toàn bộ`, `Team Bình Minh`, `RE Bùi Ngọc Trâm`. */
+/** The scope as the report names it: `Toàn bộ`, `Team Bình Minh`, `RM Bùi Ngọc Trâm`. */
 export function reportScopeName(
   scope: Scope,
   people: readonly Person[],
@@ -144,28 +144,28 @@ export function reportScopeName(
       return t('reports.scopeTeam', {
         name: teams.find((team) => team.id === scope.teamId)?.name ?? '',
       });
-    case 're':
-      return t('overview.scopeRe', {
+    case 'rm':
+      return t('overview.scopeRm', {
         name: people.find((person) => person.id === scope.rmId)?.name ?? '',
       });
   }
 }
 
-/** Beside the Tổng hợp heading: the scope with its RE count, or an RE with its team. */
+/** Beside the Tổng hợp heading: the scope with its RM count, or an RM with its team. */
 export function summaryMeta(
   scope: Scope,
   people: readonly Person[],
   teams: readonly Team[],
 ): string {
   const name = reportScopeName(scope, people, teams);
-  if (scope.kind === 're') {
+  if (scope.kind === 'rm') {
     const teamId = people.find((person) => person.id === scope.rmId)?.teamId;
     return joinParts([name, teams.find((team) => team.id === teamId)?.name ?? '']);
   }
-  const res = people.filter(
+  const rms = people.filter(
     (person) => person.role === 'RM' && (scope.kind === 'all' || person.teamId === scope.teamId),
   );
-  return t('reports.summaryMeta', { name, re: res.length });
+  return t('reports.summaryMeta', { name, rm: rms.length });
 }
 
 /** `T2 12/10`; with its year when the period spans two years. */
@@ -214,8 +214,8 @@ function markName(mark: Period, period: Period, today: CalendarDate): string {
 
 /**
  * The report rows for `period` and `scope` viewed on `today` (spec Phase 4 §4.4): appointments over
- * the whole period, results up to today, customers by stage at the snapshot day. Teams by name; RE
- * by team, then name, as `reOptions` lists them, an RE without numbers still with its row. Theo mốc
+ * the whole period, results up to today, customers by stage at the snapshot day. Teams by name; RM
+ * by team, then name, as `rmOptions` lists them, an RM without numbers still with its row. Theo mốc
  * counts each mark the same way, so a mark after today has its appointments only.
  */
 export function reportRows(
@@ -227,7 +227,7 @@ export function reportRows(
   const counted = countedWindow(period, today);
   const series = stageSnapshotSeries(data.customers, data.transitions, data.people);
   const date = snapshotDate(period, today);
-  // Each record is grouped by RE once; every row then adds up the RE of its scope (DR-20).
+  // Each record is grouped by RM once; every row then adds up the RM of its scope (DR-20).
   const counts = appointmentCountsByScope(data.appointments, period, data.people, today);
   const metrics = counted && periodMetricsByScope(data, counted);
   const stages = date && stageSnapshotByScope(data.customers, data.transitions, data.people, date);
@@ -276,21 +276,21 @@ export function reportRows(
     metrics: markMetrics[index] ?? null,
     stages: markStages[index] ?? null,
   }));
-  if (scope.kind === 're') return { summary, byTeam: null, byRe: null, byMark };
+  if (scope.kind === 'rm') return { summary, byTeam: null, byRm: null, byMark };
 
   const teamName = new Map(data.teams.map((team) => [team.id, team.name]));
   const people = new Map(data.people.map((person) => [person.id, person]));
-  const res = reOptions(data.people, data.teams)
+  const rms = rmOptions(data.people, data.teams)
     .map(({ value }) => people.get(value))
-    .filter((re): re is Person => re !== undefined)
-    .filter((re) => scope.kind === 'all' || re.teamId === scope.teamId)
-    .map((re): ReportRow => ({
-      key: re.id,
-      name: re.name,
-      team: (re.teamId && teamName.get(re.teamId)) ?? '',
-      ...figures({ kind: 're', rmId: re.id }),
+    .filter((rm): rm is Person => rm !== undefined)
+    .filter((rm) => scope.kind === 'all' || rm.teamId === scope.teamId)
+    .map((rm): ReportRow => ({
+      key: rm.id,
+      name: rm.name,
+      team: (rm.teamId && teamName.get(rm.teamId)) ?? '',
+      ...figures({ kind: 'rm', rmId: rm.id }),
     }));
-  if (scope.kind === 'team') return { summary, byTeam: null, byRe: table(res), byMark };
+  if (scope.kind === 'team') return { summary, byTeam: null, byRm: table(rms), byMark };
 
   const teams = [...data.teams]
     .sort((a, b) => byName(a.name, b.name))
@@ -300,7 +300,7 @@ export function reportRows(
       team: null,
       ...figures({ kind: 'team', teamId: team.id }),
     }));
-  return { summary, byTeam: table(teams), byRe: table(res), byMark };
+  return { summary, byTeam: table(teams), byRm: table(rms), byMark };
 }
 
 /** The groups of the figure columns, in their order: Lịch hẹn · Kết quả · KH cuối kỳ. */

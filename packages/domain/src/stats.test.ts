@@ -33,8 +33,8 @@ describe('policyMetrics — golden examples (T-028)', () => {
 
 describe('policyMetrics', () => {
   const people: readonly Person[] = [
-    { id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' },
-    { id: 're-2', name: 'RE 2', role: 'RM', teamId: null },
+    { id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-1' },
+    { id: 're-2', name: 'RM 2', role: 'RM', teamId: null },
   ];
   const policy = (
     id: string,
@@ -87,7 +87,7 @@ describe('policyMetrics', () => {
     ).toBe(100);
   });
 
-  it('counts a policy for its RE’s team only, and not for an RE outside any team', () => {
+  it('counts a policy for its RM’s team only, and not for an RM outside any team', () => {
     const policies = [
       policy('p1', 're-1', d(3, 1, 2027), null),
       policy('p2', 're-2', d(3, 1, 2027), null),
@@ -97,7 +97,7 @@ describe('policyMetrics', () => {
       policyMetrics({ people, policies }, month, { kind: 'team', teamId: 'team-1' }).submittedCount,
     ).toBe(1);
     expect(
-      policyMetrics({ people, policies }, month, { kind: 're', rmId: 're-2' }).submittedCount,
+      policyMetrics({ people, policies }, month, { kind: 'rm', rmId: 're-2' }).submittedCount,
     ).toBe(1);
     expect(policyMetrics({ people, policies }, month, { kind: 'all' }).submittedCount).toBe(2);
   });
@@ -106,33 +106,33 @@ describe('policyMetrics', () => {
 describe('inScope', () => {
   const team = { kind: 'team', teamId: 'team-1' } as const;
 
-  it('reads the team of the RE from the people list it is given', () => {
-    const before: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' }];
-    const after: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-2' }];
+  it('reads the team of the RM from the people list it is given', () => {
+    const before: readonly Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-1' }];
+    const after: readonly Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-2' }];
     expect(inScope(before, 're-1', team)).toBe(true);
     expect(inScope(after, 're-1', team)).toBe(false);
     expect(inScope(before, 're-1', team)).toBe(true);
   });
 
   it('leaves the people list untouched, so a later change is read', () => {
-    const people: Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' }];
+    const people: Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-1' }];
     expect(inScope(people, 're-2', team)).toBe(false);
-    people.push({ id: 're-2', name: 'RE 2', role: 'RM', teamId: 'team-1' });
+    people.push({ id: 're-2', name: 'RM 2', role: 'RM', teamId: 'team-1' });
     expect(Object.isFrozen(people)).toBe(false);
     expect(inScope(people, 're-2', team)).toBe(true);
   });
 
-  it('counts an RE for the team when any entry with that id is in the team', () => {
+  it('counts an RM for the team when any entry with that id is in the team', () => {
     const people: readonly Person[] = [
-      { id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' },
-      { id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-2' },
+      { id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-1' },
+      { id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-2' },
     ];
     expect(inScope(people, 're-1', team)).toBe(true);
     expect(inScope(people, 're-1', { kind: 'team', teamId: 'team-2' })).toBe(true);
   });
 
-  it('leaves an RE outside any team, or not in the list, out of every team', () => {
-    const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: null }];
+  it('leaves an RM outside any team, or not in the list, out of every team', () => {
+    const people: readonly Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: null }];
     expect(inScope(people, 're-1', team)).toBe(false);
     expect(inScope(people, 're-9', team)).toBe(false);
     expect(inScope(people, 're-9', { kind: 'all' })).toBe(true);
@@ -149,7 +149,7 @@ describe('periodMetricsByMark', () => {
   const SCOPES: readonly Scope[] = [
     { kind: 'all' },
     { kind: 'team', teamId: 'team-b' },
-    { kind: 're', rmId: 're-an' },
+    { kind: 'rm', rmId: 're-an' },
   ];
   const months = [d(1, 12, 2026), d(1, 1, 2027), d(1, 2, 2027)].map((day) =>
     periodOf('month', day),
@@ -229,7 +229,7 @@ describe('periodMetricsByMark', () => {
   });
 });
 
-// DR-20: So sánh team and Báo cáo read every team and RE of one period; grouped once by RE.
+// DR-20: So sánh team and Báo cáo read every team and RM of one period; grouped once by RM.
 describe('periodMetricsByScope', () => {
   const extra = (id: string, rmId: string): Policy => ({
     ...POLICIES[0]!,
@@ -240,7 +240,7 @@ describe('periodMetricsByScope', () => {
     ...PEOPLE,
     { id: 're-solo', name: 'Solo', role: 'RM', teamId: null },
   ];
-  // Records of a TL (once an RE), of an RE outside any team and of someone not listed.
+  // Records of a TL (once an RM), of an RM outside any team and of someone not listed.
   const data = {
     people,
     policies: [
@@ -259,7 +259,7 @@ describe('periodMetricsByScope', () => {
     { kind: 'team', teamId: 'team-a' },
     { kind: 'team', teamId: 'team-b' },
     { kind: 'team', teamId: 'team-none' },
-    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 're', rmId })),
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 'rm', rmId })),
   ];
   const PERIODS: readonly Period[] = [
     periodOf('month', d(1, 1, 2027)),
@@ -303,7 +303,7 @@ describe('periodMetricsByScope', () => {
     });
     const past = { ...data, policies: [big('p1', 're-an'), big('p2', 're-binh')] };
     const byScope = periodMetricsByScope(past, periodOf('month', d(1, 1, 2027)));
-    expect(byScope({ kind: 're', rmId: 're-an' }).caseSize).toBe(Number.MAX_SAFE_INTEGER - 1);
+    expect(byScope({ kind: 'rm', rmId: 're-an' }).caseSize).toBe(Number.MAX_SAFE_INTEGER - 1);
     expect(() => byScope({ kind: 'team', teamId: 'team-a' })).toThrow(RangeError);
     expect(() => byScope({ kind: 'all' })).toThrow(RangeError);
   });
@@ -312,7 +312,7 @@ describe('periodMetricsByScope', () => {
 // DR-23: each fee is at most `MAX_FEE_VND`, so a real total stays exact; a total past a safe
 // integer is refused, never rounded into a number the formatters reject later.
 describe('totals of large fees', () => {
-  const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: null }];
+  const people: readonly Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: null }];
   const policy = (id: string, fyp: number): Policy => ({
     id,
     customerId: 'kh',

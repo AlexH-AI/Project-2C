@@ -4,10 +4,10 @@ import { createContext, useContext } from 'react';
 export interface ScopeState {
   /** The "Góc nhìn" picked in the topbar. */
   readonly picked: Scope;
-  /** `picked`, narrowed to the RE picked in the RE strip of a Team scope: what screens filter by. */
+  /** `picked`, narrowed to the RM picked in the RM strip of a Team scope: what screens filter by. */
   readonly scope: Scope;
-  /** Picks an RE of the team in the strip, or the whole team (null). */
-  readonly pickRe: (rmId: string | null) => void;
+  /** Picks an RM of the team in the strip, or the whole team (null). */
+  readonly pickRm: (rmId: string | null) => void;
 }
 
 const all: Scope = { kind: 'all' };
@@ -16,7 +16,7 @@ const all: Scope = { kind: 'all' };
 export const ScopeContext = createContext<ScopeState>({
   picked: all,
   scope: all,
-  pickRe: () => {},
+  pickRm: () => {},
 });
 
 export function useScopeState(): ScopeState {

@@ -40,14 +40,14 @@ async function withCustomer() {
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    rmId: ctx.re.id,
+    rmId: ctx.rm.id,
     stage: 'N3',
     date: d(1, 1),
   });
   const schedule = (day = 10, coordinatorIds: string[] = []) =>
     scheduleAppointment(ctx.db, {
       customerId: customer.id,
-      rmId: ctx.re.id,
+      rmId: ctx.rm.id,
       date: d(day, 1),
       triggerType: 'REFERRAL',
       coordinatorIds,
@@ -60,11 +60,11 @@ const MET_N2 = { status: 'MET', stageAfter: 'N2', nextStep: 'Gửi minh họa' }
 
 describe('scheduleAppointment', () => {
   it('schedules an appointment with its trigger and coordinators', async () => {
-    const { db, re, tl, customer } = await withCustomer();
+    const { db, rm, tl, customer } = await withCustomer();
 
     const appointment = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(10, 1),
       time: '09:30',
       triggerType: 'EVENT',
@@ -75,7 +75,7 @@ describe('scheduleAppointment', () => {
     expect(appointment).toEqual({
       id: expect.any(String),
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       coordinatorIds: [tl.id],
       date: d(10, 1),
       time: '09:30',
@@ -93,21 +93,21 @@ describe('scheduleAppointment', () => {
     expect(listAppointments(db)).toEqual([appointment]);
   });
 
-  it('takes as coordinator an IS, TL, BDM or BD, never an RE (ADR-0007)', async () => {
-    const { db, re, otherRe, tl, customer } = await withCustomer();
+  it('takes as coordinator an IS, TL, BDM or BD, never an RM (ADR-0007)', async () => {
+    const { db, rm, otherRm, tl, customer } = await withCustomer();
     const support = (['IS', 'BDM', 'BD'] as const).map(
       (role) => createPerson(db, { name: role, role, teamId: null }).id,
     );
     const base = {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(10, 1),
       triggerType: 'OTHER' as const,
     };
 
     const coordinated = scheduleAppointment(db, { ...base, coordinatorIds: [tl.id, ...support] });
     expect(coordinated.coordinatorIds).toEqual([tl.id, ...support].sort());
-    for (const coordinatorIds of [[re.id], [tl.id, otherRe.id]]) {
+    for (const coordinatorIds of [[rm.id], [tl.id, otherRm.id]]) {
       expect(codeOf(() => scheduleAppointment(db, { ...base, coordinatorIds }))).toBe(
         'INVALID_COORDINATOR',
       );
@@ -115,18 +115,18 @@ describe('scheduleAppointment', () => {
     expect(listAppointments(db)).toEqual([coordinated]);
   });
 
-  it('refuses a bad time, a coordinator who is the RE or unknown, and a missing customer', async () => {
-    const { db, re, tl, customer } = await withCustomer();
+  it('refuses a bad time, a coordinator who is the RM or unknown, and a missing customer', async () => {
+    const { db, rm, tl, customer } = await withCustomer();
     const base = {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(10, 1),
       triggerType: 'OTHER' as const,
     };
 
     expect(codeOf(() => scheduleAppointment(db, { ...base, time: '24:00' }))).toBe('INVALID_TIME');
     expect(codeOf(() => scheduleAppointment(db, { ...base, time: '9:30' }))).toBe('INVALID_TIME');
-    expect(codeOf(() => scheduleAppointment(db, { ...base, coordinatorIds: [re.id] }))).toBe(
+    expect(codeOf(() => scheduleAppointment(db, { ...base, coordinatorIds: [rm.id] }))).toBe(
       'INVALID_COORDINATOR',
     );
     expect(codeOf(() => scheduleAppointment(db, { ...base, coordinatorIds: ['x'] }))).toBe(
@@ -135,7 +135,7 @@ describe('scheduleAppointment', () => {
     expect(codeOf(() => scheduleAppointment(db, { ...base, triggerType: 'X' as never }))).toBe(
       'INVALID_TRIGGER',
     );
-    expect(codeOf(() => scheduleAppointment(db, { ...base, rmId: tl.id }))).toBe('RE_REQUIRED');
+    expect(codeOf(() => scheduleAppointment(db, { ...base, rmId: tl.id }))).toBe('RM_REQUIRED');
     expect(codeOf(() => scheduleAppointment(db, { ...base, customerId: 'x' }))).toBe(
       'CUSTOMER_NOT_FOUND',
     );
@@ -145,10 +145,10 @@ describe('scheduleAppointment', () => {
 
 describe('listAppointments', () => {
   it('reads the coordinators of every appointment in one query, not one per appointment', async () => {
-    const { db, re, otherRe, tl, customer, schedule } = await withCustomer();
+    const { db, rm, otherRm, tl, customer, schedule } = await withCustomer();
     const other = createCustomer(db, {
       name: 'Minh',
-      rmId: otherRe.id,
+      rmId: otherRm.id,
       stage: 'N2',
       date: d(1, 1),
     });
@@ -163,14 +163,14 @@ describe('listAppointments', () => {
     const one = queries();
     const both = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(11, 1),
       triggerType: 'EVENT',
       coordinatorIds: [tl.id, is.id],
     });
     const theirs = scheduleAppointment(db, {
       customerId: other.id,
-      rmId: otherRe.id,
+      rmId: otherRm.id,
       date: d(12, 1),
       triggerType: 'OTHER',
       coordinatorIds: [tl.id],
@@ -184,11 +184,11 @@ describe('listAppointments', () => {
 
   // DR-45: the customer's list puts the latest first by reversing this order.
   it('orders the appointments of one day by time, those without a time first', async () => {
-    const { db, re, customer } = await withCustomer();
+    const { db, rm, customer } = await withCustomer();
     const at = (time: string | null) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        rmId: re.id,
+        rmId: rm.id,
         date: d(10, 1),
         time,
         triggerType: 'REFERRAL',
@@ -406,11 +406,11 @@ describe('outcome reviewer', () => {
     expect(recordMeetingOutcome(db, id, MET_N2).outcomeReviewerId).toBeNull();
   });
 
-  it('refuses an RE as reviewer, the appointment’s own or another, recording nothing', async () => {
-    const { db, re, otherRe, schedule } = await withCustomer();
+  it('refuses an RM as reviewer, the appointment’s own or another, recording nothing', async () => {
+    const { db, rm, otherRm, schedule } = await withCustomer();
     const { id } = schedule();
 
-    for (const reviewer of [re, otherRe]) {
+    for (const reviewer of [rm, otherRm]) {
       expect(
         codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: reviewer.id })),
       ).toBe('INVALID_REVIEWER');
@@ -418,7 +418,7 @@ describe('outcome reviewer', () => {
     expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
   });
 
-  it('keeps a reviewer of a live appointment from becoming an RE; others change role freely', async () => {
+  it('keeps a reviewer of a live appointment from becoming an RM; others change role freely', async () => {
     const { db, team, tl, schedule } = await withCustomer();
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     const { id } = schedule();
@@ -439,7 +439,7 @@ describe('outcome reviewer', () => {
     expect(codeOf(() => updatePerson(db, is.id, { role: 'RM' }))).toBe('REVIEWER_IN_USE');
   });
 
-  it('restores no appointment whose reviewer became an RE while it was deleted', async () => {
+  it('restores no appointment whose reviewer became an RM while it was deleted', async () => {
     const { db, tl, schedule } = await withCustomer();
     const { id } = schedule();
     recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
@@ -451,15 +451,15 @@ describe('outcome reviewer', () => {
   });
 
   it('refuses a reviewer on another status, and one deleted or unknown, recording nothing', async () => {
-    const { db, tl, otherRe, schedule } = await withCustomer();
+    const { db, tl, otherRm, schedule } = await withCustomer();
     const { id } = schedule();
-    softDeletePerson(db, otherRe.id);
+    softDeletePerson(db, otherRm.id);
 
     expect(
       codeOf(() => recordMeetingOutcome(db, id, { status: 'NO_SHOW', outcomeReviewerId: tl.id })),
     ).toBe('REVIEWER_NOT_ALLOWED');
     expect(
-      codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: otherRe.id })),
+      codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: otherRm.id })),
     ).toBe('PERSON_NOT_FOUND');
     expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: 'x' }))).toBe(
       'PERSON_NOT_FOUND',
@@ -491,10 +491,10 @@ describe('outcome reviewer', () => {
 // Mockups 6c, 6i: "Hẹn lần tiếp theo" is saved with the outcome, in one transaction.
 describe('recordOutcomeWithNext', () => {
   it('records the outcome and books the next appointment like it, without linking them', async () => {
-    const { db, re, tl, customer, stage } = await withCustomer();
+    const { db, rm, tl, customer, stage } = await withCustomer();
     const { id } = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(10, 1),
       time: '09:00',
       triggerType: 'EVENT',
@@ -508,7 +508,7 @@ describe('recordOutcomeWithNext', () => {
     expect(saved.next).toEqual({
       id: expect.any(String),
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       coordinatorIds: [tl.id],
       date: d(20, 10),
       time: '14:00',
@@ -567,11 +567,11 @@ describe('recordOutcomeWithNext', () => {
     let machine = new Date(2026, 10, 8, 0, 5).getTime();
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(5, 11),
       triggerType: 'OTHER',
     });
@@ -580,19 +580,19 @@ describe('recordOutcomeWithNext', () => {
     expect(recordOutcomeWithNext(db, id, MET_N2, { date: d(7, 11) }).next.date).toEqual(d(7, 11));
   });
 
-  // T-233 (DR6-02): the RF goes to the RE on the meeting (ADR-0007), the RE who held it.
-  it('books the next appointment for the RE now in charge of the customer', async () => {
-    const { db, re, otherRe, customer } = await withCustomer();
+  // T-233 (DR6-02): the RF goes to the RM on the meeting (ADR-0007), the RM who held it.
+  it('books the next appointment for the RM now in charge of the customer', async () => {
+    const { db, rm, otherRm, customer } = await withCustomer();
     const book = (date: CalendarDate) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        rmId: re.id,
+        rmId: rm.id,
         date,
         triggerType: 'REFERRAL',
       });
     const unrecorded = book(d(25, 9));
     const planned = book(d(26, 9));
-    updateCustomerProfile(db, customer.id, { rmId: otherRe.id });
+    updateCustomerProfile(db, customer.id, { rmId: otherRm.id });
 
     const missed = recordOutcomeWithNext(
       db,
@@ -602,8 +602,8 @@ describe('recordOutcomeWithNext', () => {
     );
     const met = recordOutcomeWithNext(db, planned.id, MET_N2, { date: d(20, 10) });
 
-    expect([missed.recorded.rmId, missed.next.rmId]).toEqual([re.id, otherRe.id]);
-    expect([met.recorded.rmId, met.next.rmId]).toEqual([otherRe.id, otherRe.id]);
+    expect([missed.recorded.rmId, missed.next.rmId]).toEqual([rm.id, otherRm.id]);
+    expect([met.recorded.rmId, met.next.rmId]).toEqual([otherRm.id, otherRm.id]);
     const metrics = periodMetricsByScope(
       {
         people: listPeople(db),
@@ -613,8 +613,8 @@ describe('recordOutcomeWithNext', () => {
       },
       periodOf('month', d(26, 9)),
     );
-    expect(metrics({ kind: 're', rmId: otherRe.id }).rfCount).toBe(1);
-    expect(metrics({ kind: 're', rmId: re.id }).rfCount).toBe(0);
+    expect(metrics({ kind: 'rm', rmId: otherRm.id }).rfCount).toBe(1);
+    expect(metrics({ kind: 'rm', rmId: rm.id }).rfCount).toBe(0);
   });
 
   it('books nothing for an appointment whose outcome is already recorded', async () => {
@@ -666,8 +666,8 @@ describe('editMeetingOutcome — the details', () => {
     });
   });
 
-  it('adds no coordinator who is deleted, unknown or an RE, and changes nothing then', async () => {
-    const { db, re, tl, otherRe, schedule } = await withCustomer();
+  it('adds no coordinator who is deleted, unknown or an RM, and changes nothing then', async () => {
+    const { db, rm, tl, otherRm, schedule } = await withCustomer();
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     const { id } = schedule(10, [tl.id]);
     recordMeetingOutcome(db, id, MET_N2);
@@ -679,8 +679,8 @@ describe('editMeetingOutcome — the details', () => {
       codeOf(() => editMeetingOutcome(db, id, MET_N2, { triggerType: 'OTHER', coordinatorIds }));
     expect(refused([is.id])).toBe('PERSON_NOT_FOUND');
     expect(refused(['x'])).toBe('PERSON_NOT_FOUND');
-    expect(refused([re.id])).toBe('INVALID_COORDINATOR');
-    expect(refused([otherRe.id])).toBe('INVALID_COORDINATOR');
+    expect(refused([rm.id])).toBe('INVALID_COORDINATOR');
+    expect(refused([otherRm.id])).toBe('INVALID_COORDINATOR');
     expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, { time: '7h' }))).toBe('INVALID_TIME');
     expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, { triggerType: 'X' as never }))).toBe(
       'INVALID_TRIGGER',
@@ -816,10 +816,10 @@ describe('editMeetingOutcome', () => {
   });
 
   it('turns a cancellation ahead of time into a meeting once its day is moved back', async () => {
-    const { db, re, customer, stage } = await withCustomer();
+    const { db, rm, customer, stage } = await withCustomer();
     const { id } = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(30, 9),
       triggerType: 'OTHER',
     });
@@ -1115,11 +1115,11 @@ describe('the stage on the meeting day', () => {
     let machine = new Date(2026, 10, 8, 0, 5).getTime();
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
     const kept = scheduleAppointment(db, {
       customerId: lan.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(8, 11),
       triggerType: 'OTHER',
     });
@@ -1140,17 +1140,17 @@ describe('the stage on the meeting day', () => {
   ])(
     'keeps a meeting met before the customer was created in the stage it was created in%s',
     async (_label, changes, latest) => {
-      const { db, re } = await setup();
+      const { db, rm } = await setup();
       const customer = createCustomer(db, {
         name: 'Lan',
-        rmId: re.id,
+        rmId: rm.id,
         stage: 'N3',
         date: d(10, 9),
       });
       for (const change of changes) changeStageManually(db, customer.id, change);
       const { id } = scheduleAppointment(db, {
         customerId: customer.id,
-        rmId: re.id,
+        rmId: rm.id,
         date: d(5, 9),
         triggerType: 'REFERRAL',
       });
@@ -1198,10 +1198,10 @@ describe('the stage on the meeting day', () => {
 
 describe('rescheduleAppointment', () => {
   it('creates a new appointment pointing back to the old one, which becomes rescheduled', async () => {
-    const { db, tl, customer, re } = await withCustomer();
+    const { db, tl, customer, rm } = await withCustomer();
     const old = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(8, 1),
       triggerType: 'OCCASION',
       coordinatorIds: [tl.id],
@@ -1239,8 +1239,8 @@ describe('rescheduleAppointment', () => {
 
   // DR-66 T7: the rule of the dialog (mockup 6e) is the command's, so nothing else can break it.
   it('refuses the same day and time as the old appointment, and takes another time that day', async () => {
-    const { db, customer, re, persist } = await withCustomer();
-    const input = { customerId: customer.id, rmId: re.id, triggerType: 'REFERRAL' } as const;
+    const { db, customer, rm, persist } = await withCustomer();
+    const input = { customerId: customer.id, rmId: rm.id, triggerType: 'REFERRAL' } as const;
     const timed = scheduleAppointment(db, { ...input, date: d(8, 1), time: '09:00' });
     const untimed = scheduleAppointment(db, { ...input, date: d(9, 1) });
     const before = db.export();
@@ -1267,7 +1267,7 @@ describe('rescheduleAppointment', () => {
 // R2-13: sql.js would store the text cut at the NUL without a word, as the import refuses it.
 describe('text with a NUL', () => {
   it('is refused by every command that takes free text, which writes nothing', async () => {
-    const { db, customer, re, schedule, persist } = await withCustomer();
+    const { db, customer, rm, schedule, persist } = await withCustomer();
     const scheduled = schedule();
     const met = recordMeetingOutcome(db, schedule().id, MET_N2);
     const before = db.export();
@@ -1278,7 +1278,7 @@ describe('text with a NUL', () => {
       () =>
         scheduleAppointment(db, {
           customerId: customer.id,
-          rmId: re.id,
+          rmId: rm.id,
           date: d(12, 1),
           triggerType: 'REFERRAL',
           triggerNote: nul,
@@ -1311,11 +1311,11 @@ describe('optional text with nothing to see', () => {
   });
 
   it('is stored as none: no trigger note, an empty note, no reason under the old note', async () => {
-    const { db, customer, re, schedule } = await withCustomer();
+    const { db, customer, rm, schedule } = await withCustomer();
     for (const text of NOTHING) {
       const booked = scheduleAppointment(db, {
         customerId: customer.id,
-        rmId: re.id,
+        rmId: rm.id,
         date: d(12, 1),
         triggerType: 'REFERRAL',
         triggerNote: text,
@@ -1365,8 +1365,8 @@ describe('deleting appointments', () => {
   });
 
   it('DR6-71: gives back no withdrawn transition of another customer’s', async () => {
-    const { db, re, schedule, stage } = await withCustomer();
-    const other = createCustomer(db, { name: 'Hoa', rmId: re.id, stage: 'N3', date: d(1, 1) });
+    const { db, rm, schedule, stage } = await withCustomer();
+    const other = createCustomer(db, { name: 'Hoa', rmId: rm.id, stage: 'N3', date: d(1, 1) });
     const { id } = schedule();
     recordMeetingOutcome(db, id, MET_N2);
     softDeleteAppointment(db, id);
@@ -1382,8 +1382,8 @@ describe('deleting appointments', () => {
     expect(listStageTransitions(db, other.id)).toHaveLength(1);
   });
 
-  it('restores no appointment whose RE or coordinator left while it was deleted', async () => {
-    const { db, re, otherRe, tl, customer } = await withCustomer();
+  it('restores no appointment whose RM or coordinator left while it was deleted', async () => {
+    const { db, rm, otherRm, tl, customer } = await withCustomer();
     const book = (rmId: string, coordinatorIds: string[]) =>
       scheduleAppointment(db, {
         customerId: customer.id,
@@ -1392,19 +1392,19 @@ describe('deleting appointments', () => {
         triggerType: 'OTHER',
         coordinatorIds,
       }).id;
-    const coordinated = book(re.id, [tl.id]);
-    const owned = book(otherRe.id, []);
+    const coordinated = book(rm.id, [tl.id]);
+    const owned = book(otherRm.id, []);
     softDeleteAppointment(db, coordinated);
     softDeleteAppointment(db, owned);
     softDeletePerson(db, tl.id);
-    updatePerson(db, otherRe.id, { role: 'TL' });
+    updatePerson(db, otherRm.id, { role: 'TL' });
 
     expect(codeOf(() => restoreAppointment(db, coordinated))).toBe('PERSON_NOT_FOUND');
-    expect(codeOf(() => restoreAppointment(db, owned))).toBe('RE_REQUIRED');
+    expect(codeOf(() => restoreAppointment(db, owned))).toBe('RM_REQUIRED');
     expect(listAppointments(db)).toEqual([]);
   });
 
-  it('keeps a coordinator of a live appointment from becoming an RE (ADR-0007)', async () => {
+  it('keeps a coordinator of a live appointment from becoming an RM (ADR-0007)', async () => {
     const { db, team, tl, schedule } = await withCustomer();
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     schedule(10, [tl.id, is.id]);
@@ -1427,7 +1427,7 @@ describe('deleting appointments', () => {
     expect(codeOf(() => restoreAppointment(db, id))).toBe('PERSON_NOT_FOUND');
   });
 
-  it('restores no appointment whose coordinator became an RE while it was deleted', async () => {
+  it('restores no appointment whose coordinator became an RM while it was deleted', async () => {
     const { db, tl, schedule } = await withCustomer();
     const { id } = schedule(10, [tl.id]);
     softDeleteAppointment(db, id);
@@ -1441,11 +1441,11 @@ describe('deleting appointments', () => {
   async function withdrawnOnStandingClock() {
     const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 10, 7, 5)) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(5, 10),
       triggerType: 'OTHER',
     });

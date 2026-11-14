@@ -98,16 +98,16 @@ describe('reportRows', () => {
     ]);
   });
 
-  it('lists every RE by team, then name, with its team; 0 RF shows "—" (G15)', () => {
+  it('lists every RM by team, then name, with its team; 0 RF shows "—" (G15)', () => {
     const rows = reportRows(GOLDEN, JAN_2027, { kind: 'all' }, d(2027, 3, 15));
 
-    expect(rows.byRe?.rows.map((row) => [row.team, row.name])).toEqual([
+    expect(rows.byRm?.rows.map((row) => [row.team, row.name])).toEqual([
       ['Team A', 'An'],
       ['Team A', 'Bình'],
       ['Team B', 'Chi'],
       ['Team B', 'Dũng'],
     ]);
-    expect(results(reportCells(rows.byRe!.rows[3]!))).toEqual([
+    expect(results(reportCells(rows.byRm!.rows[3]!))).toEqual([
       '0',
       '0',
       '0 ₫',
@@ -115,25 +115,25 @@ describe('reportRows', () => {
       '400 tr',
       '—',
     ]);
-    expect(rows.byRe?.total.metrics).toEqual(rows.byTeam?.total.metrics);
+    expect(rows.byRm?.total.metrics).toEqual(rows.byTeam?.total.metrics);
   });
 
-  it('the Team scope has no Theo team, and Theo RE holds the RE of the team only', () => {
+  it('the Team scope has no Theo team, and Theo RM holds the RM of the team only', () => {
     const rows = reportRows(GOLDEN, JAN_2027, { kind: 'team', teamId: 'team-b' }, d(2027, 3, 15));
 
     expect(rows.summary.name).toBe('Team Team B');
     expect(rows.byTeam).toBeNull();
-    expect(rows.byRe?.rows.map((row) => row.name)).toEqual(['Chi', 'Dũng']);
-    expect(results(reportCells(rows.byRe!.total))).toEqual(results(reportCells(rows.summary)));
+    expect(rows.byRm?.rows.map((row) => row.name)).toEqual(['Chi', 'Dũng']);
+    expect(results(reportCells(rows.byRm!.total))).toEqual(results(reportCells(rows.summary)));
   });
 
-  it('the RE scope has Tổng hợp only', () => {
-    const rows = reportRows(GOLDEN, JAN_2027, { kind: 're', rmId: 're-binh' }, d(2027, 3, 15));
+  it('the RM scope has Tổng hợp only', () => {
+    const rows = reportRows(GOLDEN, JAN_2027, { kind: 'rm', rmId: 're-binh' }, d(2027, 3, 15));
 
     expect(rows.summary.name).toBe('RM Bình');
     expect(results(reportCells(rows.summary))).toEqual(['2', '1', '1 tỷ', '1', '1 tỷ', '50%']);
     expect(rows.byTeam).toBeNull();
-    expect(rows.byRe).toBeNull();
+    expect(rows.byRm).toBeNull();
   });
 
   it('a period not started yet still counts its appointments, the rest is "—"', () => {
@@ -145,18 +145,18 @@ describe('reportRows', () => {
     expect(cells.slice(5)).toEqual(Array(12).fill('—'));
   });
 
-  it('a team without RE: Tổng of the empty Theo RE matches Tổng hợp, "—" or 0', () => {
+  it('a team without RM: Tổng of the empty Theo RM matches Tổng hợp, "—" or 0', () => {
     const data = { ...GOLDEN, teams: [...TEAMS, { id: 'team-c', name: 'Team C' }] };
     const scope = { kind: 'team', teamId: 'team-c' } as const;
 
     const notStarted = reportRows(data, JAN_2027, scope, d(2026, 12, 20));
-    expect(notStarted.byRe?.rows).toEqual([]);
-    expect(reportCells(notStarted.byRe!.total)).toEqual(reportCells(notStarted.summary));
-    expect(reportCells(notStarted.byRe!.total).slice(5)).toEqual(Array(12).fill('—'));
+    expect(notStarted.byRm?.rows).toEqual([]);
+    expect(reportCells(notStarted.byRm!.total)).toEqual(reportCells(notStarted.summary));
+    expect(reportCells(notStarted.byRm!.total).slice(5)).toEqual(Array(12).fill('—'));
 
     const past = reportRows(data, JAN_2027, scope, d(2027, 3, 15));
-    expect(reportCells(past.byRe!.total)).toEqual(reportCells(past.summary));
-    expect(reportCells(past.byRe!.total).slice(5, 11)).toEqual(['0', '0', '0 ₫', '0', '0 ₫', '—']);
+    expect(reportCells(past.byRm!.total)).toEqual(reportCells(past.summary));
+    expect(reportCells(past.byRm!.total).slice(5, 11)).toEqual(['0', '0', '0 ₫', '0', '0 ₫', '—']);
   });
 });
 
@@ -248,12 +248,12 @@ describe('reportRows Theo mốc', () => {
 });
 
 describe('summaryMeta', () => {
-  it('counts the RE of the scope, or names the team of the RE (mockup 2a, 2d, 2e)', () => {
+  it('counts the RM of the scope, or names the team of the RM (mockup 2a, 2d, 2e)', () => {
     expect(summaryMeta({ kind: 'all' }, PEOPLE, TEAMS)).toBe('Toàn bộ · 4 RM');
     expect(summaryMeta({ kind: 'team', teamId: 'team-a' }, PEOPLE, TEAMS)).toBe(
       'Team Team A · 2 RM',
     );
-    expect(summaryMeta({ kind: 're', rmId: 're-chi' }, PEOPLE, TEAMS)).toBe('RM Chi · Team B');
+    expect(summaryMeta({ kind: 'rm', rmId: 're-chi' }, PEOPLE, TEAMS)).toBe('RM Chi · Team B');
   });
 });
 
@@ -281,20 +281,20 @@ describe('reportRows on the demo data', () => {
     };
   }, SEEDING);
 
-  it('Σ RE = team and Σ team = Toàn bộ, for every column', () => {
+  it('Σ RM = team and Σ team = Toàn bộ, for every column', () => {
     const rows = reportRows(data, periodOf('month', TODAY), { kind: 'all' }, TODAY);
     const teams = rows.byTeam!.rows;
 
     expect(teams).toHaveLength(3);
-    expect(rows.byRe!.rows).toHaveLength(30);
+    expect(rows.byRm!.rows).toHaveLength(30);
     expect(rows.summary.metrics!.rfCount).toBeGreaterThan(0);
     expect(added(teams)).toEqual(numbers(rows.summary));
     expect(numbers(rows.byTeam!.total)).toEqual(numbers(rows.summary));
-    expect(numbers(rows.byRe!.total)).toEqual(numbers(rows.summary));
+    expect(numbers(rows.byRm!.total)).toEqual(numbers(rows.summary));
     for (const team of teams) {
-      const res = rows.byRe!.rows.filter((re) => re.team === team.name);
-      expect(res, team.name).toHaveLength(10);
-      expect(added(res), team.name).toEqual(numbers(team));
+      const rms = rows.byRm!.rows.filter((rm) => rm.team === team.name);
+      expect(rms, team.name).toHaveLength(10);
+      expect(added(rms), team.name).toEqual(numbers(team));
     }
   });
 
@@ -336,7 +336,7 @@ describe('reportRows on the demo data', () => {
     const scopes = (): readonly Scope[] => [
       { kind: 'all' },
       { kind: 'team', teamId: data.teams[0]!.id },
-      { kind: 're', rmId: data.people.find((person) => person.role === 'RM')!.id },
+      { kind: 'rm', rmId: data.people.find((person) => person.role === 'RM')!.id },
     ];
 
     it.each(Object.entries(PERIODS))('%s, every scope', (_, period) => {

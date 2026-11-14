@@ -114,7 +114,7 @@ describe('listTrash: customers (TR-2, TR-4)', () => {
       code: anh.code,
       stage: 'N3',
       owner: {
-        re: { name: 'Đỗ Khánh Linh', deleted: false },
+        rm: { name: 'Đỗ Khánh Linh', deleted: false },
         team: { name: 'Sao Mai', deleted: false },
       },
       effect: {
@@ -135,7 +135,7 @@ describe('listTrash: customers (TR-2, TR-4)', () => {
     expect(listTrash(db).map((t) => t.id)).toEqual([appointments[7]!.id]);
   });
 
-  it('E2: blocks a customer whose RE was deleted, naming the RE', async () => {
+  it('E2: blocks a customer whose RM was deleted, naming the RM', async () => {
     const { db, linh, customer, row, restored } = await trash();
     const anh = customer();
     softDeleteCustomer(db, anh.id);
@@ -144,13 +144,13 @@ describe('listTrash: customers (TR-2, TR-4)', () => {
     const r = row(anh.id);
     expect(r.blocked).toEqual({
       code: 'PERSON_NOT_FOUND',
-      params: { name: 'Đỗ Khánh Linh', as: 're' },
+      params: { name: 'Đỗ Khánh Linh', as: 'rm' },
     });
-    expect(r.owner.re).toMatchObject({ name: 'Đỗ Khánh Linh', deleted: true });
+    expect(r.owner.rm).toMatchObject({ name: 'Đỗ Khánh Linh', deleted: true });
     expect(restored(r)).toEqual(r.blocked);
   });
 
-  it('E3: blocks a customer whose RE is now a TL', async () => {
+  it('E3: blocks a customer whose RM is now a TL', async () => {
     const { db, linh, tl, customer, row, restored } = await trash();
     const anh = customer();
     softDeleteCustomer(db, anh.id);
@@ -159,7 +159,7 @@ describe('listTrash: customers (TR-2, TR-4)', () => {
 
     const r = row(anh.id);
     expect(r.blocked).toEqual({
-      code: 'RE_REQUIRED',
+      code: 'RM_REQUIRED',
       params: { name: 'Đỗ Khánh Linh', role: 'TL' },
     });
     expect(restored(r)).toEqual(r.blocked);
@@ -182,7 +182,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
       owner: {
         // With the code that tells two customers of a name apart (DR6-160).
         customer: { id: anh.id, name: 'Trịnh Minh Anh', code: anh.code, deleted: true },
-        re: { name: 'Đỗ Khánh Linh', deleted: false },
+        rm: { name: 'Đỗ Khánh Linh', deleted: false },
       },
       blocked: { code: 'CUSTOMER_NOT_FOUND', params: { name: 'Trịnh Minh Anh' } },
     });
@@ -538,7 +538,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(restored(r)).toEqual(r.blocked);
   });
 
-  it('E10: blocks a met appointment whose reviewer is now an RE', async () => {
+  it('E10: blocks a met appointment whose reviewer is now an RM', async () => {
     const { db, team, customer, schedule, met, row, restored } = await trash();
     const tam = createPerson(db, { name: 'Vũ Thanh Tâm', role: 'IS', teamId: null });
     const meeting = schedule(customer().id, d(2, 10));
@@ -579,7 +579,7 @@ describe('listTrash: policies (TR-2, TR-5)', () => {
   const submit = (db: Parameters<typeof submitPolicy>[0], customerId: string, rmId: string) =>
     submitPolicy(db, { customerId, rmId, submittedDate: d(15, 9), submittedFyp: 24_000_000 });
 
-  it('E12: restores a policy whose customer and RE are live', async () => {
+  it('E12: restores a policy whose customer and RM are live', async () => {
     const { db, linh, customer, row, restored } = await trash();
     const lan = customer('Hoàng Ngọc Lan');
     const policy = submit(db, lan.id, linh.id);
@@ -594,7 +594,7 @@ describe('listTrash: policies (TR-2, TR-5)', () => {
       issuedFyp: null,
       owner: {
         customer: { id: lan.id, name: 'Hoàng Ngọc Lan', code: lan.code, deleted: false },
-        re: { name: 'Đỗ Khánh Linh', deleted: false },
+        rm: { name: 'Đỗ Khánh Linh', deleted: false },
       },
       effect: { kind: 'none' },
     });
@@ -684,8 +684,8 @@ describe('listTrash: people and teams (TR-2)', () => {
 });
 
 describe('listTrash', () => {
-  it('lists every deleted record, newest deletion first, whatever its team or RE (TR-7)', async () => {
-    const { db, re, linh, customer, schedule } = await trash();
+  it('lists every deleted record, newest deletion first, whatever its team or RM (TR-7)', async () => {
+    const { db, rm, linh, customer, schedule } = await trash();
     const binhMinh = createTeam(db, { name: 'Bình Minh' });
     const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RM', teamId: binhMinh.id });
     const anh = customer();
@@ -707,12 +707,12 @@ describe('listTrash', () => {
     softDeletePolicy(db, policy.id);
     softDeleteAppointment(db, planned.id);
     softDeleteCustomer(db, lan.id);
-    softDeletePerson(db, re.id);
+    softDeletePerson(db, rm.id);
     softDeleteTeam(db, empty.id);
 
     expect(listTrash(db).map((r) => [r.kind, r.id])).toEqual([
       ['team', empty.id],
-      ['person', re.id],
+      ['person', rm.id],
       ['customer', lan.id],
       ['appointment', planned.id],
       ['policy', policy.id],

@@ -163,7 +163,7 @@ describe('stageSnapshotSeries', () => {
   const SCOPES: readonly Scope[] = [
     ALL,
     { kind: 'team', teamId: 'team-a' },
-    { kind: 're', rmId: 're-an' },
+    { kind: 'rm', rmId: 're-an' },
   ];
   const DATES: Readonly<Record<string, readonly CalendarDate[]>> = {
     'every day of 12/2026 – 02/2027': [
@@ -216,9 +216,9 @@ describe('stageSnapshotSeries', () => {
   });
 });
 
-// DR-20: Báo cáo takes the snapshot of every team and RE on one day; grouped once by RE.
+// DR-20: Báo cáo takes the snapshot of every team and RM on one day; grouped once by RM.
 describe('stageSnapshotByScope', () => {
-  // A customer of an RE outside any team and one of someone not listed.
+  // A customer of an RM outside any team and one of someone not listed.
   const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RM', teamId: null } as const];
   const customers = [
     ...LIVE_CUSTOMERS,
@@ -249,7 +249,7 @@ describe('stageSnapshotByScope', () => {
     { kind: 'team', teamId: 'team-a' },
     { kind: 'team', teamId: 'team-b' },
     { kind: 'team', teamId: 'team-none' },
-    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 're', rmId })),
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 'rm', rmId })),
   ];
   const DATES = [calendarDate(2026, 11, 30), calendarDate(2026, 12, 31), TODAY];
 

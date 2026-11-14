@@ -23,11 +23,11 @@ export async function setup(today: CalendarDate = d(26, 9)) {
   const persist = vi.fn();
   const db = await openDatabase({ persist, now: () => new Date(clock++) });
   const team = createTeam(db, { name: 'Sao Mai' });
-  const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-  const otherRe = createPerson(db, { name: 'Bình', role: 'RM', teamId: team.id });
+  const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+  const otherRm = createPerson(db, { name: 'Bình', role: 'RM', teamId: team.id });
   const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
   persist.mockClear();
-  return { db, persist, team, re, otherRe, tl };
+  return { db, persist, team, rm, otherRm, tl };
 }
 
 /** The DbError `fn` rejects with, or undefined when it does not throw. */

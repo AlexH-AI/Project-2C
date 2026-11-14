@@ -15,7 +15,7 @@ import {
 // These tests keep the golden data internally consistent. They do not compute any metric: the
 // stats engine (T-031, T-032) is tested against the expected results.
 
-const reIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
+const rmIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
 const customerIds = new Set(CUSTOMERS.map((customer) => customer.id));
 const transitionsOf = (customerId: string) =>
   STAGE_TRANSITIONS.filter((transition) => transition.customerId === customerId);
@@ -28,7 +28,7 @@ describe('golden metrics fixture', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('covers two teams of two RE each, plus coordinators without metrics', () => {
+  it('covers two teams of two RM each, plus coordinators without metrics', () => {
     for (const team of TEAMS) {
       const members = PEOPLE.filter((person) => person.teamId === team.id && person.role === 'RM');
       expect(members).toHaveLength(2);
@@ -36,10 +36,10 @@ describe('golden metrics fixture', () => {
     expect(PEOPLE.some((person) => person.role !== 'RM')).toBe(true);
   });
 
-  it('assigns customers, appointments and policies to an RE and an existing customer', () => {
-    for (const customer of CUSTOMERS) expect(reIds.has(customer.rmId)).toBe(true);
+  it('assigns customers, appointments and policies to an RM and an existing customer', () => {
+    for (const customer of CUSTOMERS) expect(rmIds.has(customer.rmId)).toBe(true);
     for (const item of [...APPOINTMENTS, ...POLICIES]) {
-      expect(reIds.has(item.rmId)).toBe(true);
+      expect(rmIds.has(item.rmId)).toBe(true);
       expect(customerIds.has(item.customerId)).toBe(true);
     }
   });

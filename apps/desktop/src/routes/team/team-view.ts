@@ -18,10 +18,10 @@ export interface TeamEntry {
   readonly team: Team;
   /** The team's TL (one per team, spec §6 rule 9). */
   readonly lead: Person | undefined;
-  /** Only the RE, in the order given (the repository sorts by name). */
+  /** Only the RM, in the order given (the repository sorts by name). */
   readonly reps: readonly Person[];
   readonly tl: number;
-  readonly re: number;
+  readonly rm: number;
 }
 
 export interface TeamView {
@@ -37,7 +37,7 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
       const members = people.filter((person) => person.teamId === team.id);
       const leads = members.filter((p) => p.role === 'TL');
       const reps = members.filter((p) => p.role === 'RM');
-      return { team, lead: leads[0], reps, tl: leads.length, re: reps.length };
+      return { team, lead: leads[0], reps, tl: leads.length, rm: reps.length };
     }),
     shared: people.filter((person) => person.teamId === null),
   };
@@ -50,12 +50,12 @@ export interface StaffRecords {
   readonly policies: ReadonlyArray<Pick<Policy, 'rmId' | 'issuedDate'>>;
 }
 
-/** Member columns of an RE (mockup team.html); the table lists only RE (B1, 01/10/2026). */
+/** Member columns of an RM (mockup team.html); the table lists only RM (B1, 01/10/2026). */
 export interface StaffMetrics {
   /** Customers in charge still in N4–N1. */
   readonly openCustomers: number;
   /**
-   * Appointments as RE dated in the 30 days up to today (Owner, 28/09/2026); an RE never
+   * Appointments as RM dated in the 30 days up to today (Owner, 28/09/2026); an RM never
    * coordinates one (ADR-0007).
    */
   readonly appointments30: number;
@@ -68,12 +68,12 @@ function last30Days(today: CalendarDate): Period {
   return customPeriod(addDays(today, -29), today);
 }
 
-/** The records a person is the RE of. */
+/** The records a person is the RM of. */
 function ownedBy<T extends { readonly rmId: string }>(list: readonly T[], personId: string) {
   return list.filter((record) => record.rmId === personId);
 }
 
-/** The member columns of each RE among `people`; other roles have none (G2 G). */
+/** The member columns of each RM among `people`; other roles have none (G2 G). */
 export function staffMetrics(
   people: readonly Person[],
   records: StaffRecords,
@@ -105,8 +105,8 @@ export function staffMetrics(
 const NAMED_IN_TRASH = 3;
 
 /**
- * How a person gets out of what keeps them (mockup 9b): one sentence for their role — the RE's
- * whenever they own records, as the mockup shows for an RE who also coordinates (review of PR 636) —
+ * How a person gets out of what keeps them (mockup 9b): one sentence for their role — the RM's
+ * whenever they own records, as the mockup shows for an RM who also coordinates (review of PR 636) —
  * then, when some of it belongs to customers in the trash, which ones (T-250): a purge of the trash
  * deletes it for good, while restoring them hands over or edits only part of it (DR6-115).
  */

@@ -31,7 +31,7 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useDatabase, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { reOptions } from '../../shell/scope';
+import { rmOptions } from '../../shell/scope';
 import { ALERT } from '../classes';
 import { stageBadge } from '../stage-badge';
 import {
@@ -43,10 +43,10 @@ import {
   stageDirection,
 } from './customers-view';
 
-type Field = 'name' | 're' | 'birth' | 'date' | 'stage' | 'form';
+type Field = 'name' | 'rm' | 'birth' | 'date' | 'stage' | 'form';
 type Errors = Partial<Record<Field, string>>;
 
-const readRes = (db: Database) => reOptions(listPeople(db), listTeams(db));
+const readRms = (db: Database) => rmOptions(listPeople(db), listTeams(db));
 
 export function Actions({ onClose, save }: { onClose: () => void; save: string }) {
   return (
@@ -134,7 +134,7 @@ function useKycPreview(
   }
 }
 
-/** Mockup 5c: how many planned appointments saving hands over to the RE picked (T-233). */
+/** Mockup 5c: how many planned appointments saving hands over to the RM picked (T-233). */
 function useHandover(customer: CustomerRecord | undefined, rmId: string): number {
   const db = useDatabase();
   if (!customer || !rmId) return 0;
@@ -165,27 +165,27 @@ function KycPreview({ preview }: { preview: ProfileKycPreview }) {
 }
 
 /**
- * Mockup 5a–5c: a new customer (`customer` omitted), starting on `defaultReId` and given to
+ * Mockup 5a–5c: a new customer (`customer` omitted), starting on `defaultRmId` and given to
  * `onCreated` once saved, or the profile of one, which "Xóa KH…" deletes (5f) before `onDeleted`.
  */
 export function CustomerFormDialog({
   customer,
-  defaultReId,
+  defaultRmId,
   onClose,
   onCreated,
   onDeleted,
 }: {
   customer?: CustomerRecord;
-  defaultReId?: string;
+  defaultRmId?: string;
   onClose: () => void;
   onCreated?: (created: CustomerRecord) => void;
   onDeleted?: () => void;
 }) {
   const data = useAppData();
   const today = data.today();
-  const res = useQuery(readRes);
+  const rms = useQuery(readRms);
   const [name, setName] = useState(customer?.name ?? '');
-  const [rmId, setReId] = useState(customer?.rmId ?? defaultReId ?? '');
+  const [rmId, setRmId] = useState(customer?.rmId ?? defaultRmId ?? '');
   const [birthText, setBirthText] = useState(
     customer?.birthDate ? birthLabel(customer.birthDate) : '',
   );
@@ -205,7 +205,7 @@ export function CustomerFormDialog({
   const profileGender = gender === 'UNKNOWN' ? null : gender;
   const kyc = useKycPreview(customer, birth.ok ? birth.birth : undefined, profileGender);
   const handover = useHandover(customer, rmId);
-  const invalid = (['name', 're', 'birth', 'date'] as const).filter((f) => errors[f]).length;
+  const invalid = (['name', 'rm', 'birth', 'date'] as const).filter((f) => errors[f]).length;
   const birthHint =
     birth.ok && birth.birth
       ? 'month' in birth.birth
@@ -225,7 +225,7 @@ export function CustomerFormDialog({
     // The command gets the name as typed: it checks it can be stored first (DR6-109).
     const found: Errors = {};
     if (!normalizeText(name)) found.name = t('error.NAME_REQUIRED');
-    if (!rmId) found.re = t('error.RE_REQUIRED');
+    if (!rmId) found.rm = t('error.RM_REQUIRED');
     if (!birth.ok) found.birth = t(`birth.error.${birth.error}`);
     if (!customer && !date.parsed.ok) found.date = date.error;
     setErrors(found);
@@ -295,13 +295,13 @@ export function CustomerFormDialog({
         autoFocus
       />
       <SelectField
-        label={t('customerForm.re')}
+        label={t('customerForm.rm')}
         value={rmId}
-        options={res}
-        placeholder={t('customerForm.rePick')}
-        onChange={edit('re', setReId)}
-        error={errors.re}
-        help={customer ? t('customerForm.reHelp') : undefined}
+        options={rms}
+        placeholder={t('customerForm.rmPick')}
+        onChange={edit('rm', setRmId)}
+        error={errors.rm}
+        help={customer ? t('customerForm.rmHelp') : undefined}
         required
       />
       {handover > 0 && (

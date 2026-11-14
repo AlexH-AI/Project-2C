@@ -2,7 +2,7 @@
  * KYC notes, facts and versions (spec §3.8–3.10, ADR-0008). The commands run the `domain`
  * operations on the stored profile and save the difference: new facts, changed statuses, and a new
  * version when the hash changes. "Latest" is by recording order (`seq`), never by date (review #36).
- * Birth year and gender come only from the customer profile, through `SYSTEM` notes (D2); the RE
+ * Birth year and gender come only from the customer profile, through `SYSTEM` notes (D2); the RM
  * may flag a disagreeing value as a conflict, but only the profile value can settle it (Owner, #62).
  */
 import {
@@ -188,7 +188,7 @@ export interface KycNoteFact {
 }
 
 /**
- * Mockup 7a: a new note from the RE and the facts confirmed from it, saved at once as a single
+ * Mockup 7a: a new note from the RM and the facts confirmed from it, saved at once as a single
  * version (none when the facts in effect did not change). Any refused fact rejects the whole note.
  */
 export function recordKycNote(
@@ -412,7 +412,7 @@ function toInput(
   };
 }
 
-/** The RE may flag a birth year or gender as a conflict, but never confirm one (D2). */
+/** The RM may flag a birth year or gender as a conflict, but never confirm one (D2). */
 function applyFact(profile: KycProfile, input: KycFactInput, conflict: boolean): KycProfile {
   if (!conflict) {
     if (PROFILE_FIELDS.has(input.field)) throw new DbError('KYC_FIELD_FROM_PROFILE');

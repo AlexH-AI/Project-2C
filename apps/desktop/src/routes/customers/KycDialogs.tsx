@@ -466,7 +466,7 @@ export function ResolveKycDialog({
 
 /**
  * Mockup ai.html 3f: Xác nhận of an AI proposal (spec Phase 5 §8 item 3). The fact filled in from
- * the proposal, its value open to change, is saved on the note it came from by the commands the RE
+ * the proposal, its value open to change, is saved on the note it came from by the commands the RM
  * uses: a new value, an update or a conflict (7c).
  */
 export function ConfirmFactDialog({

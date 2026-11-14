@@ -21,7 +21,7 @@ export const COUNT_SLOTS: ReadonlySet<string> = new Set([
   'policies',
   'kycNotes',
   'tl',
-  're',
+  'rm',
   'shared',
   'unrecorded',
   'sheets',

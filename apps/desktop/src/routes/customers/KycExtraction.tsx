@@ -32,7 +32,7 @@ function Proposed({ fact }: { fact: ExtractedFact }) {
 
 /**
  * A KYC note of the timeline with AI trích xuất (spec Phase 5 §8, mockup ai.html 3b–3e): a KYC
- * update with the versions its facts recorded (customer.html), the button on a note the RE wrote,
+ * update with the versions its facts recorded (customer.html), the button on a note the RM wrote,
  * the run with Hủy, and below the note the proposals to confirm or drop. Proposals stay here only:
  * leaving the profile loses them (§8 item 4).
  */
@@ -58,7 +58,7 @@ export function NoteEvent({
   const running = useSyncExternalStore(runner.subscribe, () => runner.busy);
   const busy = running || webOpen;
   const job = useAiJob('extraction', note.id);
-  // The proposals the RE confirmed or dropped, by their place in the answer.
+  // The proposals the RM confirmed or dropped, by their place in the answer.
   const [handled, setHandled] = useState<ReadonlySet<number>>(new Set());
   const button = extractionButton(note);
   const view = job.phase === 'idle' ? extractionView(job.ended, handled, facts) : null;
@@ -120,7 +120,7 @@ export function NoteEvent({
           </Button>
         )}
       </span>
-      {/* The note quoted as the RE or the profile wrote it, one per note of the timeline. */}
+      {/* The note quoted as the RM or the profile wrote it, one per note of the timeline. */}
       <div className="whitespace-pre-line wrap-anywhere text-fg-2">
         <blockquote id={textId} tabIndex={-1} className="m-0 inline">
           {note.text}

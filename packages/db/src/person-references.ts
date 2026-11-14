@@ -1,8 +1,8 @@
 /**
  * Every reference to a person (spec §3.3, ADR-0007, D9), one row each: `kind` is the column it is,
- * the RE of a customer, an appointment or a policy, or a coordinator or the reviewer of an
+ * the RM of a customer, an appointment or a policy, or a coordinator or the reviewer of an
  * appointment; `appointment_id` the appointment it is on (none for a customer or a policy);
- * `customer_id` the customer it belongs to (the customer itself, for its RE); `live` whether that
+ * `customer_id` the customer it belongs to (the customer itself, for its RM); `live` whether that
  * record is not deleted (for a coordinator or the reviewer, its appointment).
  *
  * What keeps a person from deletion (`personUsage`), the customers in the trash it is about, what
@@ -24,13 +24,13 @@ export const PERSON_REFERENCE_KINDS = [
 export type PersonReferenceKind = (typeof PERSON_REFERENCE_KINDS)[number];
 
 /**
- * Whom each kind points to: the RE of the record, who stays an RE while it is live (spec §3.3), or
+ * Whom each kind points to: the RM of the record, who stays an RM while it is live (spec §3.3), or
  * one supporting an appointment (ADR-0007, D9). `ownsRecords` and import rule 5 both read it.
  */
-export const POINTS_TO: Record<PersonReferenceKind, 're' | 'supporting'> = {
-  customer: 're',
-  appointment: 're',
-  policy: 're',
+export const POINTS_TO: Record<PersonReferenceKind, 'rm' | 'supporting'> = {
+  customer: 'rm',
+  appointment: 'rm',
+  policy: 'rm',
   coordinator: 'supporting',
   reviewer: 'supporting',
 };

@@ -54,7 +54,7 @@ function outcome(page: Page) {
 
 /**
  * The reviewer's choices (D9, Owner 04/10/2026): none, then only IS, TL, BDM and BD — the seed's
- * 3 TL and one of each other role, never one of its RE.
+ * 3 TL and one of each other role, never one of its RM.
  */
 async function expectReviewerChoices(dialog: Locator) {
   const reviewer = dialog.getByRole('combobox', { name: /^Người đánh giá/ });
@@ -718,7 +718,7 @@ test('early in the year a day not yet come offers last year where a day past can
   await page.clock.fastForward((24 * 60 + 3) * MINUTE); // 02/01/2027
   const offer = '28/12/2027 còn 360 ngày nữa. Ý anh là 28/12/2026?';
 
-  // 6e before "Nhập bù" is ticked: the day last year is past, so the box shows; the RE ticks it.
+  // 6e before "Nhập bù" is ticked: the day last year is past, so the box shows; the RM ticks it.
   await detail(page).getByRole('button', { name: 'Dời lịch' }).click();
   const moving = page.getByRole('dialog', { name: 'Dời lịch' });
   await moving.getByRole('textbox', { name: /^Ngày mới/ }).fill('28/12');

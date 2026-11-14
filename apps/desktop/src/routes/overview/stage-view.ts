@@ -47,7 +47,7 @@ export interface StageColumn {
 
 export interface StageChart {
   readonly key: string;
-  /** The team of a Team scope chart; null for the single chart of Toàn bộ / RE. */
+  /** The team of a Team scope chart; null for the single chart of Toàn bộ / RM. */
   readonly team: string | null;
   readonly columns: readonly StageColumn[];
 }

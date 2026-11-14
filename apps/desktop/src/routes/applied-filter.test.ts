@@ -13,7 +13,7 @@ const today = calendarDate(2026, 10, 15);
 const month = periodOf('month', today);
 const year = periodOf('year', today);
 const all: Scope = { kind: 'all' };
-const re: Scope = { kind: 're', rmId: 're-1' };
+const rm: Scope = { kind: 'rm', rmId: 're-1' };
 
 describe('applied filter (Lọc)', () => {
   it('opens with the selection already applied', () => {
@@ -36,7 +36,7 @@ describe('applied filter (Lọc)', () => {
   it('a new scope is waiting too', () => {
     const filter = chooseFilter(startFilter({ period: month, scope: all }), {
       period: month,
-      scope: re,
+      scope: rm,
     });
 
     expect(isPending(filter)).toBe(true);
@@ -55,7 +55,7 @@ describe('applied filter (Lọc)', () => {
   });
 
   it('Lọc applies the choice and nothing is waiting any more', () => {
-    const chosen = { period: year, scope: re };
+    const chosen = { period: year, scope: rm };
     const filter = applyFilter(chooseFilter(startFilter({ period: month, scope: all }), chosen));
 
     expect(filter.applied).toEqual(chosen);
@@ -63,9 +63,9 @@ describe('applied filter (Lọc)', () => {
   });
 
   it('choosing the applied selection again leaves nothing waiting', () => {
-    const start = startFilter({ period: month, scope: re });
-    const away = chooseFilter(start, { period: year, scope: re });
-    const back = chooseFilter(away, { period: periodOf('month', today), scope: { ...re } });
+    const start = startFilter({ period: month, scope: rm });
+    const away = chooseFilter(start, { period: year, scope: rm });
+    const back = chooseFilter(away, { period: periodOf('month', today), scope: { ...rm } });
 
     expect(isPending(back)).toBe(false);
   });
@@ -77,8 +77,8 @@ describe('sameSelection', () => {
   it('holds for the same period and scope made anew', () => {
     expect(
       sameSelection(
-        { period: month, scope: re },
-        { period: periodOf('month', today), scope: { ...re } },
+        { period: month, scope: rm },
+        { period: periodOf('month', today), scope: { ...rm } },
       ),
     ).toBe(true);
     expect(
@@ -86,7 +86,7 @@ describe('sameSelection', () => {
     ).toBe(true);
   });
 
-  const otherRe: Scope = { kind: 're', rmId: 're-2' };
+  const otherRm: Scope = { kind: 'rm', rmId: 're-2' };
   const otherTeam: Scope = { kind: 'team', teamId: 'team-2' };
   it.each<[string, FilterSelection, FilterSelection]>([
     [
@@ -101,8 +101,8 @@ describe('sameSelection', () => {
     ],
     ['a team instead of all', { period: month, scope: all }, { period: month, scope: team }],
     ['another team', { period: month, scope: team }, { period: month, scope: otherTeam }],
-    ['an RE instead of a team', { period: month, scope: team }, { period: month, scope: re }],
-    ['another RE', { period: month, scope: re }, { period: month, scope: otherRe }],
+    ['an RM instead of a team', { period: month, scope: team }, { period: month, scope: rm }],
+    ['another RM', { period: month, scope: rm }, { period: month, scope: otherRm }],
   ])('fails for %s', (_, a, b) => {
     expect(sameSelection(a, b)).toBe(false);
   });

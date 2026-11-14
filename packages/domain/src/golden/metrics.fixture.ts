@@ -184,7 +184,7 @@ export const MTD_VIEWING_DATE = d(15, 1, 2027);
 
 const ALL: Scope = { kind: 'all' };
 const team = (teamId: string): Scope => ({ kind: 'team', teamId });
-const re = (rmId: string): Scope => ({ kind: 're', rmId });
+const rm = (rmId: string): Scope => ({ kind: 'rm', rmId });
 
 const expected = (
   submittedCount: number,
@@ -219,19 +219,19 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
   { id: 'G02', period: DAY_31_01, scope: ALL, expected: expected(2, 500, 0, 0, 0) },
   { id: 'G03', period: DAY_02_02, scope: ALL, expected: expected(0, 0, 1, 280, 0) },
   { id: 'G04', period: WEEK_ACROSS_YEAR, scope: ALL, expected: expected(1, 500, 0, 0, 2) },
-  { id: 'G05', period: WEEK_ACROSS_YEAR, scope: re('re-an'), expected: expected(1, 500, 0, 0, 2) },
+  { id: 'G05', period: WEEK_ACROSS_YEAR, scope: rm('re-an'), expected: expected(1, 500, 0, 0, 2) },
   { id: 'G06', period: WEEK_ACROSS_YEAR, scope: team('team-b'), expected: expected(0, 0, 0, 0, 0) },
   { id: 'G07', period: WEEK_25_01, scope: ALL, expected: expected(3, 1_500, 1, 1_000, 1) },
   { id: 'G08', period: DEC_2026, scope: ALL, expected: expected(2, 900, 0, 0, 1) },
   { id: 'G09', period: JAN_2027, scope: ALL, expected: expected(5, 1_900, 5, 2_300, 5) },
   { id: 'G10', period: JAN_2027, scope: team('team-a'), expected: expected(3, 1_500, 2, 1_500, 3) },
   { id: 'G11', period: JAN_2027, scope: team('team-b'), expected: expected(2, 400, 3, 800, 2) },
-  { id: 'G12', period: JAN_2027, scope: re('re-an'), expected: expected(2, 500, 1, 500, 1) },
-  { id: 'G13', period: JAN_2027, scope: re('re-binh'), expected: expected(1, 1_000, 1, 1_000, 2) },
-  { id: 'G14', period: JAN_2027, scope: re('re-chi'), expected: expected(2, 400, 2, 400, 2) },
-  { id: 'G15', period: JAN_2027, scope: re('re-dung'), expected: expected(0, 0, 1, 400, 0) },
+  { id: 'G12', period: JAN_2027, scope: rm('re-an'), expected: expected(2, 500, 1, 500, 1) },
+  { id: 'G13', period: JAN_2027, scope: rm('re-binh'), expected: expected(1, 1_000, 1, 1_000, 2) },
+  { id: 'G14', period: JAN_2027, scope: rm('re-chi'), expected: expected(2, 400, 2, 400, 2) },
+  { id: 'G15', period: JAN_2027, scope: rm('re-dung'), expected: expected(0, 0, 1, 400, 0) },
   { id: 'G16', period: FEB_2027, scope: ALL, expected: expected(0, 0, 1, 280, 0) },
-  { id: 'G17', period: FEB_2027, scope: re('re-an'), expected: expected(0, 0, 1, 280, 0) },
+  { id: 'G17', period: FEB_2027, scope: rm('re-an'), expected: expected(0, 0, 1, 280, 0) },
   { id: 'G18', period: MTD_JAN_2027, scope: ALL, expected: expected(2, 400, 2, 900, 3) },
   { id: 'G19', period: YEAR_2026, scope: ALL, expected: expected(2, 900, 0, 0, 1) },
   { id: 'G20', period: YEAR_2027, scope: ALL, expected: expected(5, 1_900, 6, 2_580, 5) },

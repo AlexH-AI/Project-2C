@@ -69,7 +69,7 @@ function EditLink({ person, onEdit }: { person: Person; onEdit: (person: Person)
   );
 }
 
-/** A metric cell of an RE, the only role the member table lists. */
+/** A metric cell of an RM, the only role the member table lists. */
 function metricColumn(
   id: string,
   header: string,
@@ -125,7 +125,7 @@ export function TeamScreen() {
   const [editing, setEditing] = useState<Editing | null>(null);
   const selected = view.teams.find((entry) => entry.team.id === selectedId) ?? view.teams[0];
   const tlCount = view.teams.reduce((sum, entry) => sum + entry.tl, 0);
-  const reCount = view.teams.reduce((sum, entry) => sum + entry.re, 0);
+  const rmCount = view.teams.reduce((sum, entry) => sum + entry.rm, 0);
   const teams = view.teams.map((entry) => entry.team);
   const close = () => setEditing(null);
   const editPerson = (person: Person) => setEditing({ kind: 'editPerson', person });
@@ -141,7 +141,7 @@ export function TeamScreen() {
           {t('team.summary', {
             teams: view.teams.length,
             tl: tlCount,
-            re: reCount,
+            rm: rmCount,
             shared: view.shared.length,
           })}
         </span>
@@ -176,7 +176,7 @@ export function TeamScreen() {
                 >
                   {entry.team.name}
                   <span className="ml-auto shrink-0 font-normal text-fg-3 tabular-nums">
-                    {t(entry.lead ? 'team.count' : 'team.countNoLead', { re: entry.re })}
+                    {t(entry.lead ? 'team.count' : 'team.countNoLead', { rm: entry.rm })}
                   </span>
                 </button>
               );
@@ -329,7 +329,7 @@ function Members({
         </div>
       </div>
       {entry.reps.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>}
-      {/* Hidden, not gone, for a team without RE: the sort holds for the team shown after. */}
+      {/* Hidden, not gone, for a team without RM: the sort holds for the team shown after. */}
       <div className="overflow-x-auto" hidden={entry.reps.length === 0}>
         <DataTable
           label={t('team.members', { name: entry.team.name })}

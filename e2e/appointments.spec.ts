@@ -60,7 +60,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('table', { name: 'Danh sách lịch hẹn' })).toBeVisible();
 });
 
-test("opens on this month, today's day by team → RE, the list matching the summary", async ({
+test("opens on this month, today's day by team → RM, the list matching the summary", async ({
   page,
 }) => {
   const { calendar, day, column } = screen(page);
@@ -322,7 +322,7 @@ test('the date cell is tinted past, today or future, kept on hover; the time cel
   expect(await css(row.locator('td').nth(1), 'background-color')).toBe('rgba(0, 0, 0, 0)');
 });
 
-test('the scope narrows the day and the list to one team, then one RE', async ({ page }) => {
+test('the scope narrows the day and the list to one team, then one RM', async ({ page }) => {
   const { day, column } = screen(page);
   const all = await total(page);
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
@@ -335,9 +335,9 @@ test('the scope narrows the day and the list to one team, then one RE', async ({
   await expect.poll(() => total(page)).toBeLessThan(all);
 
   await scope.getByRole('radio', { name: 'RM' }).click();
-  const re = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-  const reName = (await re.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
-  await expect.poll(async () => new Set(await column(4))).toEqual(new Set([reName]));
+  const rm = page.getByRole('combobox', { name: 'RM của góc nhìn' });
+  const rmName = (await rm.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
+  await expect.poll(async () => new Set(await column(4))).toEqual(new Set([rmName]));
   await expectList(page, await total(page));
 });
 
@@ -476,10 +476,10 @@ test('creates an appointment: the day is read back, a trigger is required, the d
   await f.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
   await f.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
   const name = (await f.dialog.locator('b').first().textContent()) ?? '';
-  const re = f.dialog.getByRole('combobox', { name: /^RM/ });
-  await expect(re).not.toHaveValue('');
-  // The RE option reads "RE · team".
-  const [reName, team] = ((await re.locator('option:checked').textContent()) ?? '').split(' · ');
+  const rm = f.dialog.getByRole('combobox', { name: /^RM/ });
+  await expect(rm).not.toHaveValue('');
+  // The RM option reads "RM · team".
+  const [rmName, team] = ((await rm.locator('option:checked').textContent()) ?? '').split(' · ');
 
   await f.date.fill('30/9');
   await expect(f.dialog).toContainText('Thứ Tư 30/09/2026 · 15 ngày nữa');
@@ -501,7 +501,7 @@ test('creates an appointment: the day is read back, a trigger is required, the d
   await expect(
     day
       .getByRole('region', { name: team, exact: true })
-      .getByRole('region', { name: reName, exact: true })
+      .getByRole('region', { name: rmName, exact: true })
       .getByRole('button', { name }),
   ).toBeVisible();
   await expect(detail.getByRole('heading', { level: 2 })).toContainText(
@@ -511,7 +511,7 @@ test('creates an appointment: the day is read back, a trigger is required, the d
   await expect(detail.locator('dt:text-is("Phối hợp") + dd')).toHaveText('—');
 });
 
-test('a day long past without a year offers next year; the RE picks', async ({ page }) => {
+test('a day long past without a year offers next year; the RM picks', async ({ page }) => {
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const f = form(page);
 
@@ -637,23 +637,23 @@ test('a rescheduled day already past is refused unless it back-fills a meeting h
   await expect(detail.getByRole('heading', { level: 2 })).toContainText(name);
 });
 
-/** Opens the dialog and fills a customer (its RE, or another team's), `date` and a trigger. */
+/** Opens the dialog and fills a customer (its RM, or another team's), `date` and a trigger. */
 async function fillAppointment(page: Page, date: string, otherTeam?: string) {
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const f = form(page);
   await f.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
   await f.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
   const name = (await f.dialog.locator('b').first().textContent()) ?? '';
-  const re = f.dialog.getByRole('combobox', { name: /^RM/ });
+  const rm = f.dialog.getByRole('combobox', { name: /^RM/ });
   if (otherTeam) {
-    const options = await re.locator('option').allTextContents();
+    const options = await rm.locator('option').allTextContents();
     const other = options.find((option) => option.includes(' · ') && !option.endsWith(otherTeam));
-    await re.selectOption({ label: other ?? '' });
+    await rm.selectOption({ label: other ?? '' });
   }
-  const reName = ((await re.locator('option:checked').textContent()) ?? '').split(' · ')[0] ?? '';
+  const rmName = ((await rm.locator('option:checked').textContent()) ?? '').split(' · ')[0] ?? '';
   await f.date.fill(date);
   await f.trigger.selectOption({ label: 'Hội thảo / sự kiện' });
-  return { ...f, name, reName };
+  return { ...f, name, rmName };
 }
 
 test('keeping a day long past records a late appointment on that day', async ({ page }) => {
@@ -795,7 +795,7 @@ test('a coordinator filter hiding the new appointment is cleared', async ({ page
   await expect(detail.getByRole('heading', { level: 2 })).toContainText(`30/09/2026 · ${f.name}`);
 });
 
-test('an appointment for an RE outside the scope says so; the scope stays', async ({ page }) => {
+test('an appointment for an RM outside the scope says so; the scope stays', async ({ page }) => {
   const { detail } = screen(page);
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
@@ -809,7 +809,7 @@ test('an appointment for an RE outside the scope says so; the scope stays', asyn
   await expect(f.dialog).toHaveCount(0);
   const notice = page.getByRole('status').filter({ hasText: 'Đã tạo lịch hẹn' });
   await expect(notice).toHaveText(
-    `Đã tạo lịch hẹn 30/09/2026 cho ${f.reName}. RM này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`,
+    `Đã tạo lịch hẹn 30/09/2026 cho ${f.rmName}. RM này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`,
   );
   await expect(team.locator('option:checked')).toHaveText('Sao Mai');
   await expect(detail).toContainText('Chọn một lịch hẹn để xem chi tiết.');
@@ -825,7 +825,7 @@ test('an appointment for an RE outside the scope says so; the scope stays', asyn
 const chipCount = async (chip: ReturnType<Page['getByRole']>) =>
   Number(await chip.locator('span').last().textContent());
 
-// DR6-83: 6h for an RE outside the scope takes the detail away, its button with it; the focus goes
+// DR6-83: 6h for an RM outside the scope takes the detail away, its button with it; the focus goes
 // to the line saying where the appointment went, not to the page.
 test('by the keyboard, a next appointment made out of sight leaves the focus on the line saying so (DR6-83)', async ({
   page,
@@ -837,10 +837,10 @@ test('by the keyboard, a next appointment made out of sight leaves the focus on 
   const next = detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
   await next.press('Enter');
   const f = form(page);
-  const re = f.dialog.getByRole('combobox', { name: /^RM/ });
-  const options = await re.locator('option').allTextContents();
+  const rm = f.dialog.getByRole('combobox', { name: /^RM/ });
+  const options = await rm.locator('option').allTextContents();
   const other = options.find((option) => option.includes(' · ') && !option.endsWith('Sao Mai'));
-  await re.selectOption({ label: other ?? '' });
+  await rm.selectOption({ label: other ?? '' });
   await f.date.fill('16/9');
   await f.create.press('Enter');
 
@@ -851,7 +851,7 @@ test('by the keyboard, a next appointment made out of sight leaves the focus on 
   await expect(notice).toBeFocused();
 });
 
-// Review of PR 846: a customer handed over to another RE takes the planned appointment with it, not
+// Review of PR 846: a customer handed over to another RM takes the planned appointment with it, not
 // the one it was moved from. "Dời sang" / "Dời từ" naming the one out of sight takes the detail
 // away, its link with it; the focus goes to the line saying where it is, which made nothing.
 test('by the keyboard, a reschedule link to an appointment out of sight leaves the focus on the line saying so', async ({
@@ -862,7 +862,7 @@ test('by the keyboard, a reschedule link to an appointment out of sight leaves t
   const planned = rows.filter({ hasText: 'Dự kiến' }).first();
   const oldDate = (await planned.locator('td:nth-child(1)').textContent()) ?? '';
   const oldTime = (await planned.locator('td:nth-child(2)').textContent()) ?? '';
-  const oldRe = (await planned.locator('td:nth-child(4)').textContent()) ?? '';
+  const oldRm = (await planned.locator('td:nth-child(4)').textContent()) ?? '';
   const name = (await planned.getByRole('button').textContent()) ?? '';
   await planned.getByRole('button').click();
   await detail.getByRole('button', { name: 'Dời lịch' }).click();
@@ -878,32 +878,32 @@ test('by the keyboard, a reschedule link to an appointment out of sight leaves t
   const picker = edit.getByRole('combobox', { name: 'RM phụ trách' });
   const options = await picker.locator('option').allTextContents();
   const other = options.find((option) => option.includes(' · ') && !option.endsWith('Sao Mai'));
-  const [newRe = '', newTeam = ''] = (other ?? '').split(' · ');
+  const [newRm = '', newTeam = ''] = (other ?? '').split(' · ');
   await picker.selectOption({ label: other ?? '' });
   await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(edit).toHaveCount(0);
 
-  const outside = (date: string, re: string) =>
-    `Lịch hẹn ${date} do ${re} phụ trách. RM này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`;
+  const outside = (date: string, rm: string) =>
+    `Lịch hẹn ${date} do ${rm} phụ trách. RM này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`;
   const notice = page.getByRole('status').filter({ hasText: 'ngoài góc nhìn' });
   await page.goto('/#/appointments');
   await showDay(page, oldDate);
   await rows.filter({ hasText: name }).filter({ hasText: 'Dời lịch' }).getByRole('button').click();
   await detail.getByRole('button', { name: '02/10/2026 10:00' }).press('Enter');
-  await expect(notice).toHaveText(outside('02/10/2026', newRe));
+  await expect(notice).toHaveText(outside('02/10/2026', newRm));
   await expect(notice).toBeFocused();
 
-  // From the new RE's team, the new one is shown; "Dời từ" names the old one, on the old RE.
+  // From the new RM's team, the new one is shown; "Dời từ" names the old one, on the old RM.
   await pickTeam(page, newTeam);
   await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
   await detail
     .getByRole('button', { name: [oldDate, oldTime].filter(Boolean).join(' ') })
     .press('Enter');
-  await expect(notice).toHaveText(outside(oldDate, oldRe));
+  await expect(notice).toHaveText(outside(oldDate, oldRm));
   await expect(notice).toBeFocused();
 });
 
-test('an RE picked in the strip narrows the appointments to it, until picked again', async ({
+test('an RM picked in the strip narrows the appointments to it, until picked again', async ({
   page,
 }) => {
   const { day, column } = screen(page);
@@ -920,8 +920,8 @@ test('an RE picked in the strip narrows the appointments to it, until picked aga
   await expect.poll(() => total(page)).toBe(await chipCount(chip));
   await expectList(page, await total(page));
   expect(new Set(await column(4))).toEqual(new Set([name]));
-  for (const re of await day.getByRole('heading', { level: 4 }).allTextContents()) {
-    expect(re).toBe(name);
+  for (const rm of await day.getByRole('heading', { level: 4 }).allTextContents()) {
+    expect(rm).toBe(name);
   }
 
   await chip.click();
@@ -929,7 +929,7 @@ test('an RE picked in the strip narrows the appointments to it, until picked aga
   await expect.poll(() => total(page)).toBe(teamTotal);
 });
 
-test('the RE picked on Customers is still picked on Appointments', async ({ page }) => {
+test('the RM picked on Customers is still picked on Appointments', async ({ page }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
   await nav.getByRole('link', { name: 'Khách hàng' }).click();
   await pickTeam(page, 'Sao Mai');

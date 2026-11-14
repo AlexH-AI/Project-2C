@@ -31,12 +31,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('creates a customer in N4 on the kanban, then moves it to N2 by hand', async ({ page }) => {
-  // One RE's board, so the new card is among the few shown per column.
+  // One RM's board, so the new card is among the few shown per column.
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
     .getByRole('radio', { name: 'RM' })
     .click();
-  const re = await page
+  const rm = await page
     .getByRole('combobox', { name: 'RM của góc nhìn' })
     .locator('option:checked')
     .textContent();
@@ -52,7 +52,7 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
   await expect(
     dialog.getByRole('combobox', { name: 'RM phụ trách' }).locator('option:checked'),
-  ).toHaveText(re ?? '');
+  ).toHaveText(rm ?? '');
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
   // Screen readers hear what the app understood, not only sighted users.
   await expect(dialog.getByRole('textbox', { name: /^Ngày sinh/ })).toHaveAccessibleDescription(
@@ -78,14 +78,14 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
   await expect(history(page).first()).toHaveText('15/09/2026N4→N2chuyển tay · không tính RF');
 });
 
-test('a customer made for an RE outside the scope is said to be, with a link to it (DR6-31)', async ({
+test('a customer made for an RM outside the scope is said to be, with a link to it (DR6-31)', async ({
   page,
 }) => {
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
     .getByRole('radio', { name: 'RM' })
     .click();
-  const scopeRe = await page
+  const scopeRm = await page
     .getByRole('combobox', { name: 'RM của góc nhìn' })
     .locator('option:checked')
     .textContent();
@@ -93,13 +93,13 @@ test('a customer made for an RE outside the scope is said to be, with a link to 
   const before = await summary.textContent();
 
   const dialog = await openCreate(page);
-  const re = dialog.getByRole('combobox', { name: 'RM phụ trách' });
-  // The scope's RE to begin with, as the new customer most likely is theirs.
-  await expect(re.locator('option:checked')).toHaveText(scopeRe ?? '');
+  const rm = dialog.getByRole('combobox', { name: 'RM phụ trách' });
+  // The scope's RM to begin with, as the new customer most likely is theirs.
+  await expect(rm.locator('option:checked')).toHaveText(scopeRm ?? '');
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
-  const other = (await re.locator('option').nth(2).textContent()) ?? '';
-  expect(other).not.toBe(scopeRe);
-  await re.selectOption({ label: other });
+  const other = (await rm.locator('option').nth(2).textContent()) ?? '';
+  expect(other).not.toBe(scopeRm);
+  await rm.selectOption({ label: other });
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
 
   await expect(dialog).toBeHidden();
@@ -234,16 +234,16 @@ test('editing the profile says what saving records in KYC (5c)', async ({ page }
   );
 });
 
-// NT-KH-09 with appointments still ahead (T-233): the new RE takes them over; a past one stays.
-test('changing the RE hands the planned appointments over, not the past ones (5c, 6h)', async ({
+// NT-KH-09 with appointments still ahead (T-233): the new RM takes them over; a past one stays.
+test('changing the RM hands the planned appointments over, not the past ones (5c, 6h)', async ({
   page,
 }) => {
   const name = 'Bàn Giao Thử';
   const created = await openCreate(page);
   await created.getByRole('textbox', { name: 'Họ tên' }).fill(name);
   const picker = created.getByRole('combobox', { name: 'RM phụ trách' });
-  const [, oldRe = '', newRe = ''] = await picker.locator('option').allTextContents();
-  await picker.selectOption({ label: oldRe });
+  const [, oldRm = '', newRm = ''] = await picker.locator('option').allTextContents();
+  await picker.selectOption({ label: oldRm });
   await created.getByRole('button', { name: 'Lưu KH' }).click();
   await page.getByRole('link', { name: new RegExp(name) }).click();
   const dialog = page.getByRole('dialog');
@@ -260,18 +260,18 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
   }
 
   await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
-  const re = dialog.getByRole('combobox', { name: 'RM phụ trách' });
+  const rm = dialog.getByRole('combobox', { name: 'RM phụ trách' });
   const handover = dialog.getByRole('status');
   await expect(handover).toHaveCount(0);
-  await re.selectOption({ label: newRe });
+  await rm.selectOption({ label: newRm });
   await expect(handover).toHaveText('Khi lưu: 1 lịch hẹn Dự kiến chuyển sang RM mới.');
-  await re.selectOption({ label: oldRe });
+  await rm.selectOption({ label: oldRm });
   await expect(handover).toHaveCount(0);
-  await re.selectOption({ label: newRe });
+  await rm.selectOption({ label: newRm });
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(dialog).toHaveCount(0);
 
-  // 6h from the past appointment: the RE in charge now, not the one on it.
+  // 6h from the past appointment: the RM in charge now, not the one on it.
   await page
     .getByRole('region', { name: 'Lịch hẹn', exact: true })
     .getByRole('button', { name: /^Hẹn tiếp sau lịch 14\/09/ })
@@ -279,7 +279,7 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
   await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Lịch hẹn tiếp theo');
   await expect(
     dialog.getByRole('combobox', { name: 'RM', exact: true }).locator('option:checked'),
-  ).toHaveText(newRe);
+  ).toHaveText(newRm);
   await dialog.getByRole('button', { name: 'Hủy' }).click();
 
   await page.goto('/#/appointments');
@@ -292,15 +292,15 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
     .locator('tbody tr')
     .filter({ hasText: name });
   for (const [date, label, status] of [
-    ['20/09/2026', newRe, 'Dự kiến'],
-    ['14/09/2026', oldRe, 'Chưa ghi kết quả'],
+    ['20/09/2026', newRm, 'Dự kiến'],
+    ['14/09/2026', oldRm, 'Chưa ghi kết quả'],
   ] as const) {
     await page
       .getByRole('region', { name: /^Lịch tháng/ })
       .getByRole('button', { name: new RegExp(`^${date}:`) })
       .click();
     await expect(row).toContainText(status);
-    // The RE column holds the name alone.
+    // The RM column holds the name alone.
     await expect(row.locator('td:nth-child(4)')).toHaveText(label.split(' · ')[0]!);
   }
 });

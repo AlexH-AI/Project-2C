@@ -16,7 +16,7 @@ import {
 import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { reOptions } from '../../shell/scope';
+import { rmOptions } from '../../shell/scope';
 import { routeToHash } from '../../shell/routes';
 import { ALERT, FOCUS, LINK } from '../classes';
 import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
@@ -78,8 +78,8 @@ export function AppointmentDialog({
   const today = app.today();
   const [customer, setCustomer] = useState(fixed);
   const [query, setQuery] = useState('');
-  // The customer's RE, who may have taken over since `from` was booked (T-233).
-  const [rmId, setReId] = useState(fixed?.rmId ?? from?.rmId ?? '');
+  // The customer's RM, who may have taken over since `from` was booked (T-233).
+  const [rmId, setRmId] = useState(fixed?.rmId ?? from?.rmId ?? '');
   const [filled] = useState(() => from && prefill(from.date, today));
   const [dateText, setDateText] = useState(filled?.text ?? '');
   const [timeText, setTimeText] = useState(from?.time ?? '');
@@ -91,7 +91,7 @@ export function AppointmentDialog({
   const [attempted, setAttempted] = useState(false);
   const { failure, setFailure, edit } = useSaveFailure();
 
-  const reChoices = useMemo(() => reOptions(data.people, data.teams), [data]);
+  const rmChoices = useMemo(() => rmOptions(data.people, data.teams), [data]);
   const history = useMemo(
     () => (customer ? priorMeetings(data, customer.id, today) : undefined),
     [data, customer, today],
@@ -149,7 +149,7 @@ export function AppointmentDialog({
         onQuery={setQuery}
         onPick={(picked) => {
           setCustomer(picked);
-          setReId(picked?.rmId ?? '');
+          setRmId(picked?.rmId ?? '');
         }}
         error={attempted && !customer ? t('appointmentForm.customerRequired') : undefined}
         history={history}
@@ -159,12 +159,12 @@ export function AppointmentDialog({
         <History customer={customer} history={history} today={today} onSeeAll={onSeeAll} />
       )}
       <SelectField
-        label={t('appointmentForm.re')}
+        label={t('appointmentForm.rm')}
         value={rmId}
-        options={reChoices}
-        placeholder={t('customerForm.rePick')}
-        onChange={edit(setReId)}
-        error={attempted && !rmId ? t('error.RE_REQUIRED') : undefined}
+        options={rmChoices}
+        placeholder={t('customerForm.rmPick')}
+        onChange={edit(setRmId)}
+        error={attempted && !rmId ? t('error.RM_REQUIRED') : undefined}
         required
       />
       <div className="grid grid-cols-2 gap-3">
@@ -220,7 +220,7 @@ export function CoordinatorsField({
 }) {
   const [picked, setPicked] = useState('');
   const [added, setAdded] = useState('');
-  // No RE coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RE never is one.
+  // No RM coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RM never is one.
   const coordinators = people.filter((person) => ids.includes(person.id));
   const addable = people
     .filter((person) => person.role !== 'RM' && !ids.includes(person.id))
@@ -280,7 +280,7 @@ export function dateFieldError(date: ScheduleDate, today: CalendarDate): string 
 /**
  * A year-less day long past, or one this year lacks (29/02), offers the same day next year (6b);
  * early in the year, one not yet come offers the same day last year (ADR-0007, Owner 23/10/2026).
- * The RE picks.
+ * The RM picks.
  */
 export function DateSuggestion({
   date,

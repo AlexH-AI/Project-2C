@@ -137,7 +137,7 @@ export const reviewerChoices = (people: readonly Person[]): Person[] =>
 export interface AppointmentRow {
   readonly appointment: AppointmentRecord;
   readonly customer: CustomerRecord | undefined;
-  readonly re: Person | undefined;
+  readonly rm: Person | undefined;
   readonly team: Team | undefined;
   readonly coordinators: readonly Person[];
   readonly outcome: Outcome;
@@ -170,8 +170,8 @@ export interface MonthCell {
 
 export interface DayGroup {
   readonly team: Team | undefined;
-  readonly res: readonly {
-    readonly re: Person | undefined;
+  readonly rms: readonly {
+    readonly rm: Person | undefined;
     readonly rows: readonly AppointmentRow[];
   }[];
 }
@@ -201,7 +201,7 @@ const matchesCoordinator = (a: AppointmentRecord, coordinator: CoordinatorFilter
   coordinator === 'any' ||
   (coordinator === 'none' ? a.coordinatorIds.length === 0 : a.coordinatorIds.includes(coordinator));
 
-/** The appointments of the RE in scope, filtered by coordinator, in the repository's order. */
+/** The appointments of the RM in scope, filtered by coordinator, in the repository's order. */
 export function appointmentRows(
   data: AppointmentData,
   scope: Scope,
@@ -217,12 +217,12 @@ export function appointmentRows(
   return data.appointments
     .filter((a) => matches(a.rmId) && matchesCoordinator(a, coordinator))
     .map((a) => {
-      const re = people.get(a.rmId);
+      const rm = people.get(a.rmId);
       return {
         appointment: a,
         customer: customers.get(a.customerId),
-        re,
-        team: re?.teamId ? teams.get(re.teamId) : undefined,
+        rm,
+        team: rm?.teamId ? teams.get(rm.teamId) : undefined,
         coordinators: a.coordinatorIds.flatMap((id) => people.get(id) ?? []),
         outcome: outcome(a),
       };
@@ -230,10 +230,10 @@ export function appointmentRows(
 }
 
 /**
- * The appointments in `period` per RE in charge (`rm_id`; a coordinator counts nothing), for the
- * RE strip; an RE with none is not listed.
+ * The appointments in `period` per RM in charge (`rm_id`; a coordinator counts nothing), for the
+ * RM strip; an RM with none is not listed.
  */
-export function appointmentsByRe(
+export function appointmentsByRm(
   rows: readonly AppointmentRow[],
   period: Period,
 ): ReadonlyMap<string, number> {
@@ -246,7 +246,7 @@ export function appointmentsByRe(
 
 /**
  * How the screen shows an appointment just made: the coordinator filter, cleared when it would
- * hide it; whether its RE is outside the scope, which is shared by every screen and so stays.
+ * hide it; whether its RM is outside the scope, which is shared by every screen and so stays.
  */
 export function revealCreated(
   created: AppointmentRecord,
@@ -446,27 +446,27 @@ export function pickDay(period: Period, date: CalendarDate): Period | null {
   return period.kind === 'custom' ? null : periodOf(period.kind, date);
 }
 
-/** The appointments on `date` by team, then RE (both by name), each RE's by time. */
+/** The appointments on `date` by team, then RM (both by name), each RM's by time. */
 export function dayBoard(rows: readonly AppointmentRow[], date: CalendarDate): DayGroup[] {
-  const groups = new Map<string, { team: Team | undefined; res: Map<string, AppointmentRow[]> }>();
+  const groups = new Map<string, { team: Team | undefined; rms: Map<string, AppointmentRow[]> }>();
   for (const row of rows) {
     if (compareDates(row.appointment.date, date) !== 0) continue;
     const teamKey = row.team?.id ?? '';
-    const group = groups.get(teamKey) ?? { team: row.team, res: new Map() };
+    const group = groups.get(teamKey) ?? { team: row.team, rms: new Map() };
     groups.set(teamKey, group);
-    group.res.set(row.appointment.rmId, [...(group.res.get(row.appointment.rmId) ?? []), row]);
+    group.rms.set(row.appointment.rmId, [...(group.rms.get(row.appointment.rmId) ?? []), row]);
   }
   return [...groups.values()]
     .sort((a, b) => byName(a.team?.name ?? '', b.team?.name ?? ''))
-    .map(({ team, res }) => ({
+    .map(({ team, rms }) => ({
       team,
-      res: [...res.values()]
+      rms: [...rms.values()]
         .map((list) => ({
-          re: list[0]?.re,
+          rm: list[0]?.rm,
           rows: list.sort((a, b) =>
             (a.appointment.time ?? '').localeCompare(b.appointment.time ?? ''),
           ),
         }))
-        .sort((a, b) => byName(a.re?.name ?? '', b.re?.name ?? '')),
+        .sort((a, b) => byName(a.rm?.name ?? '', b.rm?.name ?? '')),
     }));
 }

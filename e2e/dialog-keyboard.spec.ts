@@ -52,7 +52,7 @@ test('Escape, Hủy and saving each close the dialog and give focus back to its 
 test('dialogs open on the field they ask for first, not on the first one', async ({ page }) => {
   await openProfile(page);
 
-  // Hẹn tiếp: the RE is known, so the day comes first.
+  // Hẹn tiếp: the RM is known, so the day comes first.
   const next = page
     .getByRole('table', { name: 'Lịch hẹn' })
     .getByRole('button', { name: /^Hẹn tiếp sau lịch/ })

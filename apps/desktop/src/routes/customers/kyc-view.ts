@@ -296,7 +296,7 @@ export function kycTimeline(
 
 export type KycNotePreview =
   | { readonly kind: 'none' }
-  /** `auto`: material because a cốt lõi trường changed, so the RE cannot switch it off. */
+  /** `auto`: material because a cốt lõi trường changed, so the RM cannot switch it off. */
   | {
       readonly kind: 'version';
       readonly number: number;

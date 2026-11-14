@@ -20,7 +20,7 @@ import {
 import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { reOptions } from '../../shell/scope';
+import { rmOptions } from '../../shell/scope';
 import { ALERT } from '../classes';
 import { amountRead } from '../money-view';
 import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
@@ -64,7 +64,7 @@ export function PolicyDialog({
   const saved = mode.kind === 'new' ? null : mode.policy;
   const [opened] = useState(() => openDraft(mode, today));
   const [draft, setDraft] = useState(opened.draft);
-  const [rmId, setReId] = useState(customer.rmId);
+  const [rmId, setRmId] = useState(customer.rmId);
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string>();
   const [deleting, setDeleting] = useState(false);
@@ -93,13 +93,13 @@ export function PolicyDialog({
     draft.issued && read.issuedFyp && shown(draft.issued.fyp)
       ? fypError(read.issuedFyp)
       : undefined;
-  const reError = attempted && rmId === '' ? t('error.RE_REQUIRED') : undefined;
+  const rmError = attempted && rmId === '' ? t('error.RM_REQUIRED') : undefined;
   const errorCount = [
     submittedDateError,
     submittedFypError,
     issuedDateError,
     issuedFypError,
-    reError,
+    rmError,
   ].filter(Boolean).length;
 
   const save = () => {
@@ -139,7 +139,7 @@ export function PolicyDialog({
   const issuedRead = read.issuedDate?.ok ? read.issuedDate : null;
   const issuedFyp = read.issuedFyp?.ok ? read.issuedFyp.amount : null;
   const change = mode.kind === 'edit' ? policyChange(mode.policy, read) : null;
-  const re = people.find((person) => person.id === saved?.rmId);
+  const rm = people.find((person) => person.id === saved?.rmId);
 
   return (
     <Dialog
@@ -183,14 +183,14 @@ export function PolicyDialog({
         <>
           {mode.kind === 'new' && (
             <SelectField
-              label={t('policyForm.re')}
+              label={t('policyForm.rm')}
               value={rmId}
-              options={reOptions(people, teams)}
+              options={rmOptions(people, teams)}
               onChange={(value) => {
-                setReId(value);
+                setRmId(value);
                 setFailure(undefined);
               }}
-              error={reError}
+              error={rmError}
               required
             />
           )}
@@ -264,7 +264,7 @@ export function PolicyDialog({
           <dd className="m-0 flex flex-col gap-0.5">
             {/* Keyed by its words: one line per month and metric, one per count moved. */}
             {change.effects
-              .map((effect) => effectText(effect, re?.name))
+              .map((effect) => effectText(effect, rm?.name))
               .map((line) => (
                 <span key={line}>{line}</span>
               ))}

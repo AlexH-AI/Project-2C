@@ -31,7 +31,7 @@ describe('periodMetrics — golden examples (T-028)', () => {
   });
 });
 
-const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RM', teamId: 'team-1' }];
+const people: readonly Person[] = [{ id: 're-1', name: 'RM 1', role: 'RM', teamId: 'team-1' }];
 const JAN = periodOf('month', d(1, 1, 2027));
 
 const appointment = (
@@ -143,12 +143,12 @@ describe('rfCount', () => {
     expect(isRfAppointment(met, transitions)).toBe(true);
   });
 
-  it('counts for the RE on the appointment', () => {
+  it('counts for the RM on the appointment', () => {
     const appointments = [appointment('ap', 5, 'MET', 'N2')];
     const transitions = [move('N3', 'N2', 5, 'ap')];
     const data = { people, appointments, transitions };
-    expect(rfCount(data, JAN, { kind: 're', rmId: 're-1' })).toBe(1);
-    expect(rfCount(data, JAN, { kind: 're', rmId: 're-2' })).toBe(0);
+    expect(rfCount(data, JAN, { kind: 'rm', rmId: 're-1' })).toBe(1);
+    expect(rfCount(data, JAN, { kind: 'rm', rmId: 're-2' })).toBe(0);
     expect(rfCount(data, JAN, { kind: 'team', teamId: 'team-1' })).toBe(1);
   });
 });

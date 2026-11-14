@@ -128,7 +128,7 @@ describe('parseVnd', () => {
   });
 
   // The table of #356, approved by the Owner on 06/10/2026 (DR-37).
-  describe('reads amounts as an RE says them', () => {
+  describe('reads amounts as an RM says them', () => {
     it.each([
       ['500tr VNĐ', 500_000_000],
       ['500.000.000 vnđ', 500_000_000],

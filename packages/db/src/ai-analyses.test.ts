@@ -23,7 +23,7 @@ async function withCustomer() {
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    rmId: ctx.re.id,
+    rmId: ctx.rm.id,
     stage: 'N4',
     date: d(1, 9),
     birthDate: { year: 1980 },
@@ -142,10 +142,10 @@ const rejected = (customerId: string, kycVersionId: string): NewAiAnalysis =>
 
 describe('recordAiAnalysis', () => {
   it('appends analyses numbered per customer, dated by the app clock', async () => {
-    const { db: database, customer, re, persist } = await withCustomer();
+    const { db: database, customer, rm, persist } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Minh',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       date: d(2, 9),
       birthDate: { year: 1975 },
@@ -323,10 +323,10 @@ describe('recordAiAnalysis', () => {
   });
 
   it('refuses a deleted customer, a KYC version of another customer and a mode that is not its gate', async () => {
-    const { db: database, customer, re, persist } = await withCustomer();
+    const { db: database, customer, rm, persist } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Minh',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       date: d(2, 9),
       birthDate: { year: 1975 },
@@ -868,13 +868,13 @@ describe('the ai_analyses migration', () => {
     // The command writes RM, which the CHECK of a file before A2 (0013) refuses: past it, here, then
     // RE again once the customer has its RM, as such a file holds it (0010 copies it under that CHECK).
     old.sqlite.run('PRAGMA ignore_check_constraints = ON');
-    const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
+    const rm = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
     old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
     // The commands name the column of the RM rm_id, which a file before A3 (0015) calls re_id.
     const { customer, web } = runBeforeA3(old, () => {
       const customer = createCustomer(old, {
         name: 'Lan',
-        rmId: re.id,
+        rmId: rm.id,
         stage: 'N4',
         date: d(1, 9),
         birthDate: { year: 1980 },

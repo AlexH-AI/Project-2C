@@ -35,11 +35,11 @@ import { byId, codeOf, d, errorOf, setup, stageAtEndOfDay } from './test-support
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
-    const { db, re, persist } = await setup();
+    const { db, rm, persist } = await setup();
 
     const customer = createCustomer(db, {
       name: ' Lan ',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       date: d(1, 9),
       birthDate: { year: 1985 },
@@ -50,7 +50,7 @@ describe('customers', () => {
       id: expect.stringMatching(/^[0-9A-Z]{26}$/),
       code: expect.stringMatching(/^K-[0-9A-HJKMNP-TV-Z]{4}$/),
       name: 'Lan',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       birthDate: { year: 1985 },
       gender: 'FEMALE',
@@ -69,16 +69,16 @@ describe('customers', () => {
     expect(persist).toHaveBeenCalledTimes(1);
   });
 
-  it('refuses a closed stage, a missing RE, a non-RE owner and a bad date', async () => {
-    const { db, re, tl } = await setup();
-    const base = { name: 'Lan', rmId: re.id, stage: 'N3' as const, date: d(1, 1) };
+  it('refuses a closed stage, a missing RM, a non-RM owner and a bad date', async () => {
+    const { db, rm, tl } = await setup();
+    const base = { name: 'Lan', rmId: rm.id, stage: 'N3' as const, date: d(1, 1) };
 
     expect(codeOf(() => createCustomer(db, { ...base, stage: 'ON_HOLD' }))).toBe(
       'INVALID_TRANSITION',
     );
     expect(codeOf(() => createCustomer(db, { ...base, stage: 'LOST' }))).toBe('INVALID_TRANSITION');
     expect(codeOf(() => createCustomer(db, { ...base, rmId: 'nobody' }))).toBe('PERSON_NOT_FOUND');
-    expect(codeOf(() => createCustomer(db, { ...base, rmId: tl.id }))).toBe('RE_REQUIRED');
+    expect(codeOf(() => createCustomer(db, { ...base, rmId: tl.id }))).toBe('RM_REQUIRED');
     expect(codeOf(() => createCustomer(db, { ...base, name: ' ' }))).toBe('NAME_REQUIRED');
     // DR6-72: the blank Braille pattern shows nothing.
     expect(codeOf(() => createCustomer(db, { ...base, name: '\u{2800}' }))).toBe('NAME_REQUIRED');
@@ -102,8 +102,8 @@ describe('customers', () => {
 
   // DR6-51: a value outside its list has a code the UI can show, not the raw CHECK error.
   it('refuses a gender or a stage outside their lists with a code', async () => {
-    const { db, re, persist } = await setup();
-    const base = { name: 'Lan', rmId: re.id, stage: 'N3' as const, date: d(1, 1) };
+    const { db, rm, persist } = await setup();
+    const base = { name: 'Lan', rmId: rm.id, stage: 'N3' as const, date: d(1, 1) };
     const lan = createCustomer(db, base);
     const before = db.export();
     persist.mockClear();
@@ -122,8 +122,8 @@ describe('customers', () => {
 
   // Review #640: the stage is checked once, before the row is written, with the codes as they were.
   it('checks the stage of a new customer once, writing only its first transition', async () => {
-    const { db, re, persist } = await setup();
-    const base = { name: 'Lan', rmId: re.id, date: d(1, 1) };
+    const { db, rm, persist } = await setup();
+    const base = { name: 'Lan', rmId: rm.id, date: d(1, 1) };
     const before = db.export();
     persist.mockClear();
 
@@ -144,15 +144,15 @@ describe('customers', () => {
   });
 
   it('stores a full birth date or none, and lists customers in creation order', async () => {
-    const { db, re } = await setup();
+    const { db, rm } = await setup();
     const mai = createCustomer(db, {
       name: 'Mai',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N1',
       date: d(1, 1),
       birthDate: d(9, 3, 1990),
     });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
 
     expect(mai.birthDate).toEqual(d(9, 3, 1990));
     expect(lan).toMatchObject({ birthDate: null, gender: null });
@@ -162,26 +162,26 @@ describe('customers', () => {
 
   // Clearing a birth date or gender once set is refused (D2, see kyc.test.ts).
   it('updates the profile, keeping what is not given', async () => {
-    const { db, re, otherRe, tl } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+    const { db, rm, otherRm, tl } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
 
     const updated = updateCustomerProfile(db, customer.id, {
       name: 'Lan Anh',
-      rmId: otherRe.id,
+      rmId: otherRm.id,
       birthDate: { year: 1985 },
     });
 
     expect(updated).toEqual({
       ...customer,
       name: 'Lan Anh',
-      rmId: otherRe.id,
+      rmId: otherRm.id,
       birthDate: { year: 1985 },
       gender: null,
     });
     expect(updateCustomerProfile(db, customer.id, {})).toEqual(updated);
     expect(updateCustomerProfile(db, customer.id, { gender: null }).gender).toBeNull();
     expect(codeOf(() => updateCustomerProfile(db, customer.id, { rmId: tl.id }))).toBe(
-      'RE_REQUIRED',
+      'RM_REQUIRED',
     );
     expect(codeOf(() => updateCustomerProfile(db, 'nobody', { name: 'X' }))).toBe(
       'CUSTOMER_NOT_FOUND',
@@ -189,14 +189,14 @@ describe('customers', () => {
   });
 
   // Owner 15/10/2026 (deep review round 1 §9 Q3, T-233): what has an outcome or is past, and the
-  // policies, keep counting for the RE recorded on them (ADR-0007).
-  it('hands the planned appointments over to a new RE, and nothing else (5c)', async () => {
-    const { db, re, otherRe, tl } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+  // policies, keep counting for the RM recorded on them (ADR-0007).
+  it('hands the planned appointments over to a new RM, and nothing else (5c)', async () => {
+    const { db, rm, otherRm, tl } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
     const schedule = (date: CalendarDate) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        rmId: re.id,
+        rmId: rm.id,
         date,
         triggerType: 'REFERRAL',
         coordinatorIds: [tl.id],
@@ -214,72 +214,72 @@ describe('customers', () => {
     softDeleteAppointment(db, deleted.id);
     const policy = submitPolicy(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       submittedDate: d(16, 9),
       submittedFyp: 1_000_000,
     });
 
-    expect(previewHandover(db, customer.id, otherRe.id)).toBe(2);
-    expect(previewHandover(db, customer.id, re.id)).toBe(0);
-    updateCustomerProfile(db, customer.id, { rmId: otherRe.id });
+    expect(previewHandover(db, customer.id, otherRm.id)).toBe(2);
+    expect(previewHandover(db, customer.id, rm.id)).toBe(0);
+    updateCustomerProfile(db, customer.id, { rmId: otherRm.id });
 
-    const reOf = new Map(listAppointments(db, customer.id).map((a) => [a.id, a.rmId]));
-    expect(reOf).toEqual(
+    const rmOf = new Map(listAppointments(db, customer.id).map((a) => [a.id, a.rmId]));
+    expect(rmOf).toEqual(
       new Map([
-        [met.id, re.id],
-        [unrecorded.id, re.id],
-        [today.id, otherRe.id],
-        [nextWeek.id, otherRe.id],
-        [cancelled.id, re.id],
+        [met.id, rm.id],
+        [unrecorded.id, rm.id],
+        [today.id, otherRm.id],
+        [nextWeek.id, otherRm.id],
+        [cancelled.id, rm.id],
       ]),
     );
     expect(byId(listAppointments(db), today.id)?.coordinatorIds).toEqual([tl.id]);
-    expect(byId(listPolicies(db), policy.id)?.rmId).toBe(re.id);
-    expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
+    expect(byId(listPolicies(db), policy.id)?.rmId).toBe(rm.id);
+    expect(previewHandover(db, customer.id, otherRm.id)).toBe(0);
     // The trash gives an appointment back as it was deleted (spec Phase 6 TR-3).
     restoreAppointment(db, deleted.id);
-    expect(byId(listAppointments(db), deleted.id)?.rmId).toBe(re.id);
-    // Backup rule 5 holds: every live record is on a live RE.
+    expect(byId(listAppointments(db), deleted.id)?.rmId).toBe(rm.id);
+    // Backup rule 5 holds: every live record is on a live RM.
     await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
   });
 
-  it('hands over only when the RE changes, and saves nothing when refused', async () => {
-    const { db, team, re, otherRe, tl } = await setup();
+  it('hands over only when the RM changes, and saves nothing when refused', async () => {
+    const { db, team, rm, otherRm, tl } = await setup();
     const third = createPerson(db, { name: 'Chi', role: 'RM', teamId: team.id });
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
-    // Booked for another RE than the customer's, which the dialog allows (mockups 6a, 6h).
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
+    // Booked for another RM than the customer's, which the dialog allows (mockups 6a, 6h).
     const booked = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: otherRe.id,
+      rmId: otherRm.id,
       date: d(30, 9),
       triggerType: 'REFERRAL',
     });
 
     updateCustomerProfile(db, customer.id, { name: 'Lan Anh', birthDate: { year: 1985 } });
-    expect(byId(listAppointments(db), booked.id)?.rmId).toBe(otherRe.id);
-    // Theirs already: nothing to hand over, the appointment booked for another RE included (R16).
-    expect(previewHandover(db, customer.id, re.id)).toBe(0);
-    expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
+    expect(byId(listAppointments(db), booked.id)?.rmId).toBe(otherRm.id);
+    // Theirs already: nothing to hand over, the appointment booked for another RM included (R16).
+    expect(previewHandover(db, customer.id, rm.id)).toBe(0);
+    expect(previewHandover(db, customer.id, otherRm.id)).toBe(0);
     expect(previewHandover(db, customer.id, third.id)).toBe(1);
     expect(codeOf(() => updateCustomerProfile(db, customer.id, { rmId: tl.id }))).toBe(
-      'RE_REQUIRED',
+      'RM_REQUIRED',
     );
     expect(
       codeOf(() => updateCustomerProfile(db, customer.id, { rmId: third.id, name: ' ' })),
     ).toBe('NAME_REQUIRED');
-    expect(byId(listAppointments(db), booked.id)?.rmId).toBe(otherRe.id);
+    expect(byId(listAppointments(db), booked.id)?.rmId).toBe(otherRm.id);
 
-    updateCustomerProfile(db, customer.id, { rmId: otherRe.id });
-    updateCustomerProfile(db, customer.id, { rmId: re.id });
-    expect(byId(listAppointments(db), booked.id)?.rmId).toBe(re.id);
-    expect(codeOf(() => previewHandover(db, 'nobody', re.id))).toBe('CUSTOMER_NOT_FOUND');
+    updateCustomerProfile(db, customer.id, { rmId: otherRm.id });
+    updateCustomerProfile(db, customer.id, { rmId: rm.id });
+    expect(byId(listAppointments(db), booked.id)?.rmId).toBe(rm.id);
+    expect(codeOf(() => previewHandover(db, 'nobody', rm.id))).toBe('CUSTOMER_NOT_FOUND');
   });
 
   it('previews the KYC note, facts and version that saving the profile records (5c)', async () => {
-    const { db, re } = await setup();
+    const { db, rm } = await setup();
     const customer = createCustomer(db, {
       name: 'Lan',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 1),
       birthDate: { year: 1984 },
@@ -333,8 +333,8 @@ describe('customers', () => {
     let machine = new Date(2026, 10, 8, 0, 5).getTime();
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
 
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
@@ -345,8 +345,8 @@ describe('customers', () => {
   });
 
   it('changes the stage by hand, keeping the stage equal to the latest transition', async () => {
-    const { db, re } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+    const { db, rm } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
 
     const hold = changeStageManually(db, customer.id, { to: 'ON_HOLD', date: d(5, 1) });
     changeStageManually(db, customer.id, { to: 'N3', date: d(5, 1) });
@@ -371,8 +371,8 @@ describe('customers', () => {
   // reads them by day, disagree with `customers.stage`, so it is refused; the same day is fine
   // and counts in recording order.
   it('refuses a stage change dated before the latest transition, even before creation', async () => {
-    const { db, re, persist } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(10, 1) });
+    const { db, rm, persist } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(10, 1) });
     changeStageManually(db, customer.id, { to: 'N4', date: d(20, 1) });
     persist.mockClear();
 
@@ -390,7 +390,7 @@ describe('customers', () => {
     expect(listStageTransitions(db, customer.id)).toHaveLength(2);
     expect(persist).not.toHaveBeenCalled();
 
-    const fresh = createCustomer(db, { name: 'Mai', rmId: re.id, stage: 'N3', date: d(10, 1) });
+    const fresh = createCustomer(db, { name: 'Mai', rmId: rm.id, stage: 'N3', date: d(10, 1) });
     expect(codeOf(() => changeStageManually(db, fresh.id, { to: 'N2', date: d(1, 1) }))).toBe(
       'TRANSITION_BEFORE_LATEST',
     );
@@ -399,8 +399,8 @@ describe('customers', () => {
   // F-11: the stage snapshot of today equals `customers.stage` only while no transition, the
   // creation's included, is dated after today.
   it('refuses a creation or stage change dated after today, and takes today itself', async () => {
-    const { db, re, persist } = await setup();
-    const input = { name: 'Lan', rmId: re.id, stage: 'N3', birthDate: { year: 1984 } } as const;
+    const { db, rm, persist } = await setup();
+    const input = { name: 'Lan', rmId: rm.id, stage: 'N3', birthDate: { year: 1984 } } as const;
 
     expect(codeOf(() => createCustomer(db, { ...input, date: d(27, 9) }))).toBe('DATE_IN_FUTURE');
     expect(listCustomers(db)).toEqual([]);
@@ -422,8 +422,8 @@ describe('customers', () => {
 
   // DR-42: a birth date has already happened too; a year alone is after today only from next year.
   it('refuses a birth date or birth year after today, and takes today and this year', async () => {
-    const { db, re, persist } = await setup();
-    const input = { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 9) } as const;
+    const { db, rm, persist } = await setup();
+    const input = { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 9) } as const;
 
     for (const birthDate of [d(27, 9), { year: 2027 }]) {
       expect(codeOf(() => createCustomer(db, { ...input, birthDate }))).toBe('DATE_IN_FUTURE');
@@ -444,8 +444,8 @@ describe('customers', () => {
   });
 
   it('allows a stage change on the day of the latest transition, in recording order', async () => {
-    const { db, re } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(10, 1) });
+    const { db, rm } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(10, 1) });
 
     changeStageManually(db, customer.id, { to: 'N2', date: d(10, 1) });
     changeStageManually(db, customer.id, { to: 'N1', date: d(10, 1) });
@@ -456,8 +456,8 @@ describe('customers', () => {
   });
 
   it('hides a soft-deleted customer and its transitions until restored', async () => {
-    const { db, re } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+    const { db, rm } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
 
     softDeleteCustomer(db, customer.id);
 
@@ -475,40 +475,40 @@ describe('customers', () => {
     expect(codeOf(() => restoreCustomer(db, 'nobody'))).toBe('CUSTOMER_NOT_FOUND');
   });
 
-  it('restores a customer only while its RE is live, and keeps a used RE from deletion', async () => {
-    const { db, re } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+  it('restores a customer only while its RM is live, and keeps a used RM from deletion', async () => {
+    const { db, rm } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
 
-    expect(codeOf(() => softDeletePerson(db, re.id))).toBe('PERSON_IN_USE');
+    expect(codeOf(() => softDeletePerson(db, rm.id))).toBe('PERSON_IN_USE');
     softDeleteCustomer(db, customer.id);
-    softDeletePerson(db, re.id);
+    softDeletePerson(db, rm.id);
 
     expect(codeOf(() => restoreCustomer(db, customer.id))).toBe('PERSON_NOT_FOUND');
   });
 
-  it('keeps an RE who owns a live customer from leaving the RE role', async () => {
-    const { db, re } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 1) });
+  it('keeps an RM who owns a live customer from leaving the RM role', async () => {
+    const { db, rm } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 1) });
 
-    expect(codeOf(() => updatePerson(db, re.id, { role: 'TL' }))).toBe('PERSON_IN_USE');
-    expect(updatePerson(db, re.id, { name: 'An Nguyễn', role: 'RM' }).name).toBe('An Nguyễn');
+    expect(codeOf(() => updatePerson(db, rm.id, { role: 'TL' }))).toBe('PERSON_IN_USE');
+    expect(updatePerson(db, rm.id, { name: 'An Nguyễn', role: 'RM' }).name).toBe('An Nguyễn');
 
     softDeleteCustomer(db, customer.id);
     // The team already has its one TL (B1b), so leave for a shared role instead.
-    expect(updatePerson(db, re.id, { role: 'IS', teamId: null }).role).toBe('IS');
+    expect(updatePerson(db, rm.id, { role: 'IS', teamId: null }).role).toBe('IS');
   });
 
   it('refuses to withdraw a first transition tied to an appointment, leaving the stage as it was', async () => {
-    const { db, re } = await setup();
+    const { db, rm } = await setup();
     const customer = createCustomer(db, {
       name: 'Lan',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const met = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(1, 9),
       triggerType: 'REFERRAL',
     });

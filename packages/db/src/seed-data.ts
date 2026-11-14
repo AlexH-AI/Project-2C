@@ -160,7 +160,7 @@ export const MEETING_NOTES = [
 export const CASE_SIZES_MILLION = [10, 15, 20, 25, 30, 40, 50, 60, 80, 100] as const;
 
 /**
- * What an RE learns about a hạng mục in one KYC note: each trường with the chance it is asked.
+ * What an RM learns about a hạng mục in one KYC note: each trường with the chance it is asked.
  * Trường chính always are (chance 1). Birth year and gender come from the customer profile (D2).
  */
 export const KYC_TOPICS: readonly {
@@ -223,7 +223,7 @@ export const KYC_TOPICS: readonly {
   { category: 'IDENTITY', fields: [['residence', 1]] },
 ];
 
-/** Label and possible values of each trường the RE confirms, as written in a KYC note. */
+/** Label and possible values of each trường the RM confirms, as written in a KYC note. */
 export const KYC_VALUES: Readonly<
   Partial<Record<KycField, { readonly label: string; readonly values: readonly KycValue[] }>>
 > = {

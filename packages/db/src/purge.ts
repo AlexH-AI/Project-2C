@@ -23,7 +23,7 @@ import { PERSON_REFERENCES } from './person-references';
 export type KeptBy =
   /** An appointment, live or kept, rescheduled from this one. */
   | { readonly kind: 'rescheduled'; readonly date: CalendarDate; readonly time: string | null }
-  /** A kept appointment of this person: its RE or a coordinator. */
+  /** A kept appointment of this person: its RM or a coordinator. */
   | { readonly kind: 'appointment'; readonly date: CalendarDate; readonly time: string | null }
   /** A kept person of this team. */
   | { readonly kind: 'member'; readonly name: string };
@@ -90,7 +90,7 @@ const KEPT_APPOINTMENTS = `WITH RECURSIVE kept(id, by_id) AS (
 /**
  * Deleted people any reference of the kept appointments `$appointments` points to, each with one of
  * those appointments, the earliest. A kept appointment is one that was rescheduled, which has no
- * reviewer (the CHECK `appointments_outcome_reviewer` gives one to a met appointment only): the RE
+ * reviewer (the CHECK `appointments_outcome_reviewer` gives one to a met appointment only): the RM
  * and the coordinators are what points to a person.
  */
 const KEPT_PEOPLE = `SELECT p.id, a.date, a.time FROM people p

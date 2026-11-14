@@ -149,8 +149,8 @@ describe('golden metrics through the database', () => {
         return scope;
       case 'team':
         return { kind: 'team', teamId: ids.get(scope.teamId)! };
-      case 're':
-        return { kind: 're', rmId: ids.get(scope.rmId)! };
+      case 'rm':
+        return { kind: 'rm', rmId: ids.get(scope.rmId)! };
     }
   };
 

@@ -27,8 +27,8 @@ function Figures({ row }: { row: CompareRow }) {
 }
 
 /**
- * So sánh team (mockup overview.html 1a): teams by name, a click opens the team's RE right under
- * it and a second click closes them. No sorting by column, to keep each team and its RE together.
+ * So sánh team (mockup overview.html 1a): teams by name, a click opens the team's RM right under
+ * it and a second click closes them. No sorting by column, to keep each team and its RM together.
  */
 export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean }) {
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
@@ -98,12 +98,12 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                   <Figures row={team} />
                 </tr>
                 {expanded &&
-                  team.res.map((re) => (
-                    <tr key={re.key} className="bg-surface-0 text-fg-2">
+                  team.rms.map((rm) => (
+                    <tr key={rm.key} className="bg-surface-0 text-fg-2">
                       <th scope="row" className={`${NAME} pl-8.5 font-normal`}>
-                        {re.name}
+                        {rm.name}
                       </th>
-                      <Figures row={re} />
+                      <Figures row={rm} />
                     </tr>
                   ))}
               </Fragment>

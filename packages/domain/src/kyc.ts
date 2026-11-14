@@ -1,6 +1,6 @@
 /**
  * KYC profile (ADR-0008 1–3): raw notes that are only ever appended, structured facts confirmed by
- * the RE with their source note and history, and versions with an order-independent hash. Every
+ * the RM with their source note and history, and versions with an order-independent hash. Every
  * operation returns a new profile; nothing is mutated.
  */
 import { KYC_FIELDS } from './kyc-catalog';
@@ -9,7 +9,7 @@ import type { KycFact, KycValue } from './kyc-fact';
 import { formatDate } from './period';
 import type { CalendarDate } from './period';
 
-/** Raw KYC note, as the RE wrote it. Immutable: there is no edit or delete. */
+/** Raw KYC note, as the RM wrote it. Immutable: there is no edit or delete. */
 export interface KycNote {
   readonly id: string;
   readonly text: string;
@@ -21,7 +21,7 @@ export interface KycProfile {
   readonly facts: readonly KycFact[];
 }
 
-/** A fact as the RE confirms it; its hạng mục comes from the catalog. */
+/** A fact as the RM confirms it; its hạng mục comes from the catalog. */
 export interface KycFactInput {
   readonly id: string;
   readonly field: KycField;
@@ -36,7 +36,7 @@ export interface KycVersion {
   /** `Cập nhật KYC dd/mm/yyyy`. */
   readonly summary: string;
   readonly date: CalendarDate;
-  /** Whether the change matters for the analysis (ADR-0008 7: rule, or switched on by the RE). */
+  /** Whether the change matters for the analysis (ADR-0008 7: rule, or switched on by the RM). */
   readonly material: boolean;
 }
 
@@ -148,7 +148,7 @@ export function isMaterialChange(before: KycProfile | null, after: KycProfile): 
 /**
  * The version to record after a change, or null when the facts in effect are the same as at the
  * previous version. `previous` is the latest version with the profile it was recorded for, null
- * before the first version. The RE may switch `material` on for a non-core change, but cannot
+ * before the first version. The RM may switch `material` on for a non-core change, but cannot
  * switch it off when the rule sets it.
  */
 export function nextKycVersion(

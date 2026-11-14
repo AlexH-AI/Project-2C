@@ -8,7 +8,7 @@ export const EVIDENCE_LEVELS = ['LOW', 'MEDIUM', 'HIGH'] as const;
 
 export type EvidenceLevel = (typeof EVIDENCE_LEVELS)[number];
 
-/** A cited fact: its code in the AI input (`F{seq}`) and the day the RE confirmed it. */
+/** A cited fact: its code in the AI input (`F{seq}`) and the day the RM confirmed it. */
 export interface EvidenceFact {
   readonly code: string;
   readonly confirmedDate: CalendarDate;

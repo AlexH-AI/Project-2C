@@ -18,10 +18,10 @@ import { codeOf, d, errorOf, setup } from './test-support';
 /**
  * A value in each column of the schema that points to a person, each column its own person: Lan was
  * Chi's when her policy was submitted, Bình's when he met her with Hà coordinating and Quang
- * reviewing, and is An's now; the RE of a record stays the one it was written for (ADR-0007).
+ * reviewing, and is An's now; the RM of a record stays the one it was written for (ADR-0007).
  */
 async function oneOfEach() {
-  const { db, team, re: an, otherRe: binh, tl: ha } = await setup();
+  const { db, team, rm: an, otherRm: binh, tl: ha } = await setup();
   const chi = createPerson(db, { name: 'Chi', role: 'RM', teamId: team.id });
   const quang = createPerson(db, { name: 'Quang', role: 'IS', teamId: null });
   const lan = createCustomer(db, { name: 'Lan', rmId: chi.id, stage: 'N3', date: d(1, 9) });
@@ -101,9 +101,9 @@ describe('PERSON_REFERENCES: the one list of what points to a person', () => {
     }
   });
 
-  // Review #805: whom a kind points to is one table, which the RE rule of the commands (spec §3.3)
+  // Review #805: whom a kind points to is one table, which the RM rule of the commands (spec §3.3)
   // and import rule 5 both read, so a kind added there is counted by both.
-  it('keeps the person of a kind pointing to an RE an RE, as rule 5 does, by POINTS_TO', async () => {
+  it('keeps the person of a kind pointing to an RM an RM, as rule 5 does, by POINTS_TO', async () => {
     const { db, people } = await oneOfEach();
     const [[team]] = db.sqlite.exec("SELECT team_id FROM people WHERE role = 'RM' LIMIT 1")[0]!
       .values as [[string]];
@@ -114,17 +114,17 @@ describe('PERSON_REFERENCES: the one list of what points to a person', () => {
         `SELECT kind FROM (${PERSON_REFERENCES}) WHERE person_id = ? AND live`,
         [person.id],
       ).flat() as [PersonReferenceKind];
-      const re = POINTS_TO[kind] === 're';
-      expect(ownsRecords(personUsage(db, person.id)), kind).toBe(re);
-      if (re) {
+      const rm = POINTS_TO[kind] === 'rm';
+      expect(ownsRecords(personUsage(db, person.id)), kind).toBe(rm);
+      if (rm) {
         expect(codeOf(() => updatePerson(db, person.id, { role: 'IS', teamId: null }))).toBe(
           'PERSON_IN_USE',
         );
       }
-      // In a file, an RE that is one no more, or one supporting the meeting who is an RE now.
+      // In a file, an RM that is one no more, or one supporting the meeting who is an RM now.
       const [was] = db.sqlite.exec('SELECT role, team_id FROM people WHERE id = ?', [person.id])[0]!
         .values;
-      const swap = re ? ['IS', null] : ['RM', team];
+      const swap = rm ? ['IS', null] : ['RM', team];
       db.sqlite.run('UPDATE people SET role = ?, team_id = ? WHERE id = ?', [...swap, person.id]);
       expect(errorOf(() => validateBackupInvariants(db))?.params, kind).toEqual({ rule: 5 });
       db.sqlite.run('UPDATE people SET role = ?, team_id = ? WHERE id = ?', [...was!, person.id]);

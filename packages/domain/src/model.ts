@@ -11,12 +11,12 @@ export interface Team {
   readonly name: string;
 }
 
-/** Only RE have metrics; the other roles take part in appointments as coordinators (G2 G). */
+/** Only RM have metrics; the other roles take part in appointments as coordinators (G2 G). */
 export const PERSON_ROLES = ['RM', 'TL', 'IS', 'BD', 'BDM'] as const;
 
 export type PersonRole = (typeof PERSON_ROLES)[number];
 
-/** Who may review a met meeting's outcome: the people who support it, never an RE (D9). */
+/** Who may review a met meeting's outcome: the people who support it, never an RM (D9). */
 export const REVIEWER_ROLES: readonly PersonRole[] = ['IS', 'TL', 'BDM', 'BD'];
 
 /** Who belongs to a team, and must: IS / BD / BDM are shared by every team (D8, spec §6 rule 9). */
@@ -40,7 +40,7 @@ export type CustomerStage = PipelineStage | ClosedStage;
 export interface Customer {
   readonly id: string;
   readonly name: string;
-  /** The RE in charge; the customer's metrics count for this RE and their team (G2 E). */
+  /** The RM in charge; the customer's metrics count for this RM and their team (G2 E). */
   readonly rmId: string;
   /** Always equal to the `to` of the customer's latest stage transition. */
   readonly stage: CustomerStage;
@@ -74,9 +74,9 @@ export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 export interface Appointment {
   readonly id: string;
   readonly customerId: string;
-  /** The RE in charge of the appointment. */
+  /** The RM in charge of the appointment. */
   readonly rmId: string;
-  /** TL/IS/BD/BDM joining the meeting, never an RE (DR-47); they get no metrics from it. */
+  /** TL/IS/BD/BDM joining the meeting, never an RM (DR-47); they get no metrics from it. */
   readonly coordinatorIds: readonly string[];
   /** The meeting day; an RF counts on this day (G2 C). */
   readonly date: CalendarDate;
@@ -95,7 +95,7 @@ export interface Appointment {
 export interface Policy {
   readonly id: string;
   readonly customerId: string;
-  /** The RE in charge written on the policy; the policy counts for this RE and their team (G2 E). */
+  /** The RM in charge written on the policy; the policy counts for this RM and their team (G2 E). */
   readonly rmId: string;
   /** Day the customer paid and the policy was submitted. */
   readonly submittedDate: CalendarDate;
@@ -106,8 +106,8 @@ export interface Policy {
   readonly issuedFyp: Vnd | null;
 }
 
-/** Góc nhìn: everyone, one team, or one RE. */
+/** Góc nhìn: everyone, one team, or one RM. */
 export type Scope =
   | { readonly kind: 'all' }
   | { readonly kind: 'team'; readonly teamId: string }
-  | { readonly kind: 're'; readonly rmId: string };
+  | { readonly kind: 'rm'; readonly rmId: string };

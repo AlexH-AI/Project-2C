@@ -47,7 +47,7 @@ const mark = (name: string): ReportMarkRow => ({ ...row(name), today: false });
 const ALL: ReportRows = {
   summary: row('Toàn bộ'),
   byTeam: table([row('Bình Minh'), row('Sao Mai')]),
-  byRe: table([row('Bùi Ngọc Trâm', 'Bình Minh')]),
+  byRm: table([row('Bùi Ngọc Trâm', 'Bình Minh')]),
   byMark: [mark('01–04/10 (T5–CN)'), mark('05–11/10')],
 };
 
@@ -60,19 +60,19 @@ async function read(rows: ReportRows, meta = META): Promise<ExcelJS.Workbook> {
 const sheetNames = (workbook: ExcelJS.Workbook) => workbook.worksheets.map((sheet) => sheet.name);
 
 describe('buildReportWorkbook', () => {
-  it('has one sheet per table the scope shows: 4 for Toàn bộ, 3 for a team, 2 for an RE', async () => {
+  it('has one sheet per table the scope shows: 4 for Toàn bộ, 3 for a team, 2 for an RM', async () => {
     expect(sheetNames(await read(ALL))).toEqual(['Tổng hợp', 'Theo team', 'Theo RM', 'Theo mốc']);
     expect(sheetNames(await read({ ...ALL, byTeam: null }))).toEqual([
       'Tổng hợp',
       'Theo RM',
       'Theo mốc',
     ]);
-    expect(sheetNames(await read({ ...ALL, byTeam: null, byRe: null }))).toEqual([
+    expect(sheetNames(await read({ ...ALL, byTeam: null, byRm: null }))).toEqual([
       'Tổng hợp',
       'Theo mốc',
     ]);
     expect(reportSheetCount(ALL)).toBe(4);
-    expect(reportSheetCount({ ...ALL, byTeam: null, byRe: null })).toBe(2);
+    expect(reportSheetCount({ ...ALL, byTeam: null, byRm: null })).toBe(2);
   });
 
   it('opens every sheet with the table, the period, the scope and the export day', async () => {
@@ -192,27 +192,27 @@ describe('buildReportWorkbook', () => {
     expect(values(5).slice(7, 13)).toEqual([0, 4, 150_000_000, 3, 165_000_000, undefined]);
   });
 
-  it('writes team and RE names as they are: text, never a formula or a number', async () => {
+  it('writes team and RM names as they are: text, never a formula or a number', async () => {
     const names = ['=SUM(B4:B9)', '+84 Đông', '007', '  Hừng  Đông '];
     const rows = {
       ...ALL,
       byTeam: table(names.map((name) => row(name))),
-      byRe: table([row('=HYPERLINK("x")', '@Sao Mai')]),
+      byRm: table([row('=HYPERLINK("x")', '@Sao Mai')]),
     };
     const workbook = await read(rows);
     const byTeam = workbook.getWorksheet('Theo team')!;
-    const byRe = workbook.getWorksheet('Theo RM')!;
+    const byRm = workbook.getWorksheet('Theo RM')!;
     const cells = [
       ...names.map((_, index) => byTeam.getCell(4 + index, 1)),
-      byRe.getCell('A4'),
-      byRe.getCell('B4'),
+      byRm.getCell('A4'),
+      byRm.getCell('B4'),
     ];
 
     expect(cells.map((cell) => cell.value)).toEqual([...names, '@Sao Mai', '=HYPERLINK("x")']);
     expect(cells.map((cell) => cell.type)).toEqual(Array(6).fill(ExcelJS.ValueType.String));
   });
 
-  it('puts Team before RE on Theo RE', async () => {
+  it('puts Team before RM on Theo RM', async () => {
     const sheet = (await read(ALL)).getWorksheet('Theo RM')!;
 
     expect((sheet.getRow(3).values as unknown[]).slice(1, 4)).toEqual(['Team', 'RM', 'Đã gặp']);
@@ -358,7 +358,7 @@ describe('reportFileName', () => {
   });
 
   it('cuts a long scope to 60 characters, so the exe can always write the file', () => {
-    // An RE name as long as the db takes; its 60th character is a `-`, which is dropped too.
+    // An RM name as long as the db takes; its 60th character is a `-`, which is dropped too.
     const name = `RM ${'Lê '.repeat(85)}Lê`;
     const file = reportFileName(customPeriod(d(2026, 9, 20), d(2026, 10, 5)), name, today);
 

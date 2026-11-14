@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   chooseKind,
   narrowScope,
-  reOptions,
+  rmOptions,
   resolveScope,
-  teamRes,
+  teamRms,
   type ScopeChoice,
 } from './scope';
 
@@ -24,50 +24,50 @@ describe('resolveScope', () => {
     expect(resolveScope({ kind: 'all' }, teams, people)).toEqual({ kind: 'all' });
   });
 
-  it('keeps the chosen team or RE while it still exists', () => {
+  it('keeps the chosen team or RM while it still exists', () => {
     expect(resolveScope({ kind: 'team', id: 't2' }, teams, people)).toEqual({
       kind: 'team',
       teamId: 't2',
     });
-    expect(resolveScope({ kind: 're', id: 're2' }, teams, people)).toEqual({
-      kind: 're',
+    expect(resolveScope({ kind: 'rm', id: 're2' }, teams, people)).toEqual({
+      kind: 'rm',
       rmId: 're2',
     });
   });
 
-  it('falls back to the first team or RE when none is chosen or it is gone', () => {
+  it('falls back to the first team or RM when none is chosen or it is gone', () => {
     expect(resolveScope({ kind: 'team' }, teams, people)).toEqual({ kind: 'team', teamId: 't1' });
     expect(resolveScope({ kind: 'team', id: 'gone' }, teams, people)).toEqual({
       kind: 'team',
       teamId: 't1',
     });
-    // A TL has no metrics, so only an RE can be the scope.
-    expect(resolveScope({ kind: 're', id: 'tl1' }, teams, people)).toEqual({
-      kind: 're',
+    // A TL has no metrics, so only an RM can be the scope.
+    expect(resolveScope({ kind: 'rm', id: 'tl1' }, teams, people)).toEqual({
+      kind: 'rm',
       rmId: 're1',
     });
   });
 
-  it('shows everyone when there is no team or RE to pick', () => {
+  it('shows everyone when there is no team or RM to pick', () => {
     expect(resolveScope({ kind: 'team' }, [], people)).toEqual({ kind: 'all' });
-    expect(resolveScope({ kind: 're' }, teams, [])).toEqual({ kind: 'all' });
+    expect(resolveScope({ kind: 'rm' }, teams, [])).toEqual({ kind: 'all' });
   });
 });
 
 describe('chooseKind', () => {
-  it('keeps the team or RE picked when its kind is clicked again', () => {
+  it('keeps the team or RM picked when its kind is clicked again', () => {
     expect(chooseKind({ kind: 'team', id: 't2' }, 'team')).toEqual({ kind: 'team', id: 't2' });
   });
 
-  it('drops the team or RE picked when another kind is clicked', () => {
-    expect(chooseKind({ kind: 'team', id: 't2' }, 're')).toEqual({ kind: 're' });
+  it('drops the team or RM picked when another kind is clicked', () => {
+    expect(chooseKind({ kind: 'team', id: 't2' }, 'rm')).toEqual({ kind: 'rm' });
   });
 
-  it('drops the RE picked within the team when another kind is clicked', () => {
-    expect(chooseKind({ kind: 'team', id: 't1', reInTeam: 're1' }, 'all')).toEqual({
+  it('drops the RM picked within the team when another kind is clicked', () => {
+    expect(chooseKind({ kind: 'team', id: 't1', rmInTeam: 're1' }, 'all')).toEqual({
       kind: 'all',
     });
-    expect(chooseKind({ kind: 'team', id: 't1', reInTeam: 're1' }, 're')).toEqual({ kind: 're' });
+    expect(chooseKind({ kind: 'team', id: 't1', rmInTeam: 're1' }, 'rm')).toEqual({ kind: 'rm' });
   });
 
   it('takes Everyone while a Team choice with no team to pick already shows everyone', () => {
@@ -78,7 +78,7 @@ describe('chooseKind', () => {
   });
 });
 
-describe('reOptions', () => {
+describe('rmOptions', () => {
   const threeTeams: Team[] = [
     { id: 'sm', name: 'Sao Mai' },
     { id: 'bm', name: 'Bình Minh' },
@@ -97,8 +97,8 @@ describe('reOptions', () => {
     { id: 'r6', name: 'Em', role: 'RM', teamId: 'bm' },
   ];
 
-  it('orders the RE by team, then by name, with Vietnamese letters in place', () => {
-    expect(reOptions(staff, threeTeams).map((option) => option.label)).toEqual([
+  it('orders the RM by team, then by name, with Vietnamese letters in place', () => {
+    expect(rmOptions(staff, threeTeams).map((option) => option.label)).toEqual([
       'Dung · Bình Minh',
       'Đạt · Bình Minh',
       'Em · Bình Minh',
@@ -108,12 +108,12 @@ describe('reOptions', () => {
     ]);
   });
 
-  it('is where the RE scope falls back to its first RE', () => {
-    expect(resolveScope({ kind: 're' }, threeTeams, staff)).toEqual({ kind: 're', rmId: 'r3' });
+  it('is where the RM scope falls back to its first RM', () => {
+    expect(resolveScope({ kind: 'rm' }, threeTeams, staff)).toEqual({ kind: 'rm', rmId: 'r3' });
   });
 
   it('leaves out TL, IS, BD and BDM', () => {
-    const values = reOptions(staff, threeTeams).map((option) => option.value);
+    const values = rmOptions(staff, threeTeams).map((option) => option.value);
     for (const id of ['tl', 'is', 'bd', 'bdm']) expect(values).not.toContain(id);
   });
 });
@@ -121,30 +121,30 @@ describe('reOptions', () => {
 describe('narrowScope', () => {
   const team = { kind: 'team', teamId: 't1' } as const;
 
-  it('narrows a team to the RE picked within it', () => {
-    expect(narrowScope(team, 're1', people)).toEqual({ kind: 're', rmId: 're1' });
+  it('narrows a team to the RM picked within it', () => {
+    expect(narrowScope(team, 're1', people)).toEqual({ kind: 'rm', rmId: 're1' });
   });
 
-  it('keeps the team when the RE picked is not one of its RE', () => {
+  it('keeps the team when the RM picked is not one of its RM', () => {
     expect(narrowScope(team, undefined, people)).toBe(team);
     // Of another team, moved away, or deleted (not listed any more).
     expect(narrowScope(team, 're2', people)).toBe(team);
     expect(narrowScope(team, 'gone', people)).toBe(team);
-    // A TL is not an RE.
+    // A TL is not an RM.
     expect(narrowScope(team, 'tl1', people)).toBe(team);
   });
 
-  it('leaves the Everyone and RE scopes as they are', () => {
+  it('leaves the Everyone and RM scopes as they are', () => {
     expect(narrowScope({ kind: 'all' }, 're1', people)).toEqual({ kind: 'all' });
-    expect(narrowScope({ kind: 're', rmId: 're2' }, 're1', people)).toEqual({
-      kind: 're',
+    expect(narrowScope({ kind: 'rm', rmId: 're2' }, 're1', people)).toEqual({
+      kind: 'rm',
       rmId: 're2',
     });
   });
 });
 
-describe('teamRes', () => {
-  it('lists the RE of one team by name, with Vietnamese letters in place', () => {
+describe('teamRms', () => {
+  it('lists the RM of one team by name, with Vietnamese letters in place', () => {
     const staff: Person[] = [
       { id: 'r1', name: 'Em', role: 'RM', teamId: 'bm' },
       { id: 'tl', name: 'Ánh', role: 'TL', teamId: 'bm' },
@@ -152,6 +152,6 @@ describe('teamRes', () => {
       { id: 'r3', name: 'An', role: 'RM', teamId: 'sm' },
       { id: 'r4', name: 'Dung', role: 'RM', teamId: 'bm' },
     ];
-    expect(teamRes(staff, 'bm').map((re) => re.name)).toEqual(['Dung', 'Đạt', 'Em']);
+    expect(teamRms(staff, 'bm').map((rm) => rm.name)).toEqual(['Dung', 'Đạt', 'Em']);
   });
 });

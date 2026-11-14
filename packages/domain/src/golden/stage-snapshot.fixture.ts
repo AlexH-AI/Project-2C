@@ -71,7 +71,7 @@ export const SNAPSHOT_CUSTOMERS: readonly GoldenCustomerRow[] = [
     [d(2, 1), 'N4'],
     [d(13, 1), 'N3'],
   ]),
-  // Dũng was in charge until 10/01; v1 keeps no RE history, so An gets K-29 in every period.
+  // Dũng was in charge until 10/01; v1 keeps no RM history, so An gets K-29 in every period.
   customer('K-29', 're-an', [[d(1, 12, 2026), 'N1']]),
 ];
 
@@ -131,14 +131,14 @@ export const SNAPSHOT_GOLDEN_CASES: readonly SnapshotGoldenCase[] = [
     id: 'S06',
     period: JANUARY,
     date: d(13, 1),
-    scope: { kind: 're', rmId: 're-an' },
+    scope: { kind: 'rm', rmId: 're-an' },
     expected: counts(0, 1, 1, 1, 0, 0),
   },
   {
     id: 'S07',
     period: DECEMBER,
     date: d(31, 12, 2026),
-    scope: { kind: 're', rmId: 're-dung' },
+    scope: { kind: 'rm', rmId: 're-dung' },
     expected: counts(0, 0, 0, 0, 0, 0),
   },
   {

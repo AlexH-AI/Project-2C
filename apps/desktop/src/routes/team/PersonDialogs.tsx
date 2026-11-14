@@ -23,7 +23,7 @@ import { inUseHelp, retriesDelete } from './team-view';
 
 const ROLE_CHOICES = PERSON_ROLES.map((role) => ({ value: role, label: role }));
 
-/** RE and TL belong to a team; IS / BD / BDM are shared by every team (D8). The commands' rule. */
+/** RM and TL belong to a team; IS / BD / BDM are shared by every team (D8). The commands' rule. */
 const needsTeam = (role: PersonRole) => ROLES_WITH_TEAM.includes(role);
 
 /** Where a refused save shows its reason: on the field it is about, else above the buttons. */
@@ -119,7 +119,7 @@ export function PersonDialog({
         onChange={(value) => {
           setRole(value);
           edited();
-          // IS / BD / BDM have no team (spec §6 rule 9); back to RE or TL, the person's own team
+          // IS / BD / BDM have no team (spec §6 rule 9); back to RM or TL, the person's own team
           // returns, or for a new one the team being viewed.
           if (!needsTeam(value)) setTeamId('');
           else if (!teamId) setTeamId(person?.teamId ?? defaultTeamId ?? '');

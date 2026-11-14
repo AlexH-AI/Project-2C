@@ -19,7 +19,7 @@ const MILLION = 1_000_000;
 describe('effectText', () => {
   const down: Effect = { kind: 'fyp', metric: 'issued', year: 2026, month: 9, diff: -14_500_000 };
 
-  it('names the metric, the month and the RE of the policy', () => {
+  it('names the metric, the month and the RM of the policy', () => {
     expect(effectText(down, 'Đỗ Khánh Linh')).toBe(
       'FYP phát hành tháng 09/2026 của RM Đỗ Khánh Linh giảm 14,5 tr',
     );
@@ -27,14 +27,14 @@ describe('effectText', () => {
     expect(effectText({ ...down, metric: 'submitted' }, 'Linh')).toMatch(/^FYP nộp tháng 09\/2026/);
   });
 
-  it('never shows an empty RE name, e.g. when the RE was deleted', () => {
+  it('never shows an empty RM name, e.g. when the RM was deleted', () => {
     for (const name of [undefined, '', '  ']) {
       expect(effectText(down, name)).toMatch(/^FYP phát hành tháng \S+ giảm 14,5 tr$/);
     }
   });
 
   // G3 T-284, mockup 8d "dời tháng": the months with their years, as the FYP lines name them.
-  it('moves the policy from the count of one month to that of another, without the RE', () => {
+  it('moves the policy from the count of one month to that of another, without the RM', () => {
     const moved: Effect = { kind: 'count', metric: 'submitted', from: d(20, 8), to: d(1, 9) };
     expect(effectText(moved, 'Đỗ Khánh Linh')).toBe(
       'tháng 08/2026: −1 HĐ nộp · tháng 09/2026: +1 HĐ nộp',
@@ -134,7 +134,7 @@ describe('openDraft and readPolicy across New Year', () => {
   const policy: Policy = {
     id: 'p',
     customerId: 'c',
-    rmId: 're',
+    rmId: 'rm',
     submittedDate: d(20, 12),
     submittedFyp: 400 * MILLION,
     issuedDate: null,
@@ -187,7 +187,7 @@ describe('policyChange', () => {
   const policy: Policy = {
     id: 'p',
     customerId: 'c',
-    rmId: 're',
+    rmId: 'rm',
     submittedDate: d(20, 8),
     submittedFyp: 400 * MILLION,
     issuedDate: d(18, 9),

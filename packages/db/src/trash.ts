@@ -32,11 +32,11 @@ export interface TrashRef {
   readonly deleted: boolean;
 }
 
-/** The "Thuộc" column: customer and RE of an appointment or policy, RE and team of a customer. */
+/** The "Thuộc" column: customer and RM of an appointment or policy, RM and team of a customer. */
 export interface TrashOwner {
   /** With its code, which tells apart two customers of one name (DR6-160). */
   readonly customer?: TrashRef & { readonly code: string };
-  readonly re?: TrashRef;
+  readonly rm?: TrashRef;
   readonly team?: TrashRef;
 }
 
@@ -126,7 +126,7 @@ export function listTrash(db: Database): TrashRow[] {
     );
   }
   for (const row of deleted.customers) {
-    const re = ref.person(row.rmId);
+    const rm = ref.person(row.rmId);
     const teamId = ref.teamOf(row.rmId);
     rows.push(
       entry(row, () => checkRestoreCustomer(db, row), {
@@ -134,7 +134,7 @@ export function listTrash(db: Database): TrashRow[] {
         name: row.name,
         code: row.code,
         stage: row.stage,
-        owner: teamId === null ? { re } : { re, team: ref.team(teamId) },
+        owner: teamId === null ? { rm } : { rm, team: ref.team(teamId) },
         effect: customerEffect(db, row.id),
       }),
     );
@@ -149,7 +149,7 @@ export function listTrash(db: Database): TrashRow[] {
         time: row.time,
         status: row.status,
         stageAfter: row.stageAfter,
-        owner: { customer: ref.customer(row.customerId), re: ref.person(row.rmId) },
+        owner: { customer: ref.customer(row.customerId), rm: ref.person(row.rmId) },
         effect:
           move === null
             ? NONE
@@ -173,7 +173,7 @@ export function listTrash(db: Database): TrashRow[] {
         submittedFyp: row.submittedFyp,
         issuedDate: row.issuedDate === null ? null : fromIsoDate(row.issuedDate),
         issuedFyp: row.issuedFyp,
-        owner: { customer: ref.customer(row.customerId), re: ref.person(row.rmId) },
+        owner: { customer: ref.customer(row.customerId), rm: ref.person(row.rmId) },
         effect: NONE,
       }),
     );

@@ -20,7 +20,7 @@ import { errorOf } from './test-support';
 
 const ANCHOR = calendarDate(2026, 9, 15);
 // The demo's code path at a scale a test can delete and restore record by record.
-const SCALE = { teams: 1, resPerTeam: 2, customersPerRe: 10, meetingDays: [2, 2] } as const;
+const SCALE = { teams: 1, rmsPerTeam: 2, customersPerRm: 10, meetingDays: [2, 2] } as const;
 const SLOW = 180_000;
 
 async function seeded(): Promise<Database> {

@@ -60,7 +60,7 @@ test('what scrolls into view keeps the height of the bar above it, on every scre
       await sidebar.getByRole('link', { name: screen }).click();
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(screen);
       await fits();
-      // The scope picker, where shown, with its team or RE list too.
+      // The scope picker, where shown, with its team or RM list too.
       for (const kind of (await scope.count()) > 0 ? ['Team', 'RM', 'Toàn bộ'] : []) {
         await scope.getByRole('radio', { name: kind }).click();
         await fits();

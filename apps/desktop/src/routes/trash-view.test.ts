@@ -74,7 +74,7 @@ const minhAnh: TrashRow = {
   name: 'Trịnh Minh Anh',
   code: 'K-7QX2',
   stage: 'N3',
-  owner: { re: ref('Đỗ Khánh Linh'), team: ref('Sao Mai') },
+  owner: { rm: ref('Đỗ Khánh Linh'), team: ref('Sao Mai') },
   effect: {
     kind: 'customer',
     appointments: 7,
@@ -96,7 +96,7 @@ const met: TrashRow = {
   time: '09:30',
   status: 'MET',
   stageAfter: 'N2',
-  owner: { customer: customerRef('Phạm Gia Bảo', 'K-4PGB'), re: ref('Bùi Anh Tuấn') },
+  owner: { customer: customerRef('Phạm Gia Bảo', 'K-4PGB'), rm: ref('Bùi Anh Tuấn') },
   effect: { kind: 'stageChange', from: 'N3', to: 'N2', date: calendarDate(2026, 10, 2), rf: true },
 };
 
@@ -111,7 +111,7 @@ const planned: TrashRow = {
   // The customer of `minhAnh`, deleted since.
   owner: {
     customer: { id: 'c1', name: 'Trịnh Minh Anh', code: 'K-7QX2', deleted: true },
-    re: ref('Đỗ Khánh Linh'),
+    rm: ref('Đỗ Khánh Linh'),
   },
   effect: { kind: 'none' },
   blocked: { code: 'CUSTOMER_NOT_FOUND', params: { name: 'Trịnh Minh Anh' } },
@@ -125,7 +125,7 @@ const blockedMet: TrashRow = {
   time: '15:00',
   status: 'MET',
   stageAfter: 'N2',
-  owner: { customer: customerRef('Lê Hoài Nam', 'K-8LHN'), re: ref('Lâm Bảo Phương') },
+  owner: { customer: customerRef('Lê Hoài Nam', 'K-8LHN'), rm: ref('Lâm Bảo Phương') },
   // Counted from the customer's stage now, which the blocked restore would not move from.
   effect: { kind: 'stageChange', from: 'N1', to: 'N2', date: calendarDate(2026, 9, 28), rf: false },
   blocked: { code: 'TRANSITION_BEFORE_LATEST', params: { date: '05/10/2026' } },
@@ -139,7 +139,7 @@ const policy: TrashRow = {
   submittedFyp: 24_000_000,
   issuedDate: null,
   issuedFyp: null,
-  owner: { customer: customerRef('Hoàng Ngọc Lan', 'K-2HNL'), re: ref('Hoàng Nhật Minh') },
+  owner: { customer: customerRef('Hoàng Ngọc Lan', 'K-2HNL'), rm: ref('Hoàng Nhật Minh') },
   effect: { kind: 'none' },
 };
 
@@ -241,7 +241,7 @@ describe('filterTrash', () => {
   it("finds an appointment or a policy by its customer's name", () => {
     expect(filterTrash(ROWS, 'all', 'Trịnh Minh Anh')).toEqual([minhAnh, planned]);
     expect(filterTrash(ROWS, 'all', 'hoang ngoc')).toEqual([policy]);
-    // Not by the RE's name: the box searches customers, people and teams by their own name.
+    // Not by the RM's name: the box searches customers, people and teams by their own name.
     expect(filterTrash(ROWS, 'all', 'Hoàng Nhật Minh')).toEqual([]);
   });
 
@@ -359,14 +359,14 @@ describe('recordBadge (spec Phase 6 §4.2 "Bản ghi")', () => {
 });
 
 describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
-  it('a customer: its RE and team', () => {
+  it('a customer: its RM and team', () => {
     expect(ownerParts(minhAnh)).toEqual([
       { text: 'RM Đỗ Khánh Linh', deleted: false },
       { text: 'Sao Mai', deleted: false },
     ]);
   });
 
-  it('an appointment or a policy: customer and RE, a deleted one marked', () => {
+  it('an appointment or a policy: customer and RM, a deleted one marked', () => {
     expect(ownerParts(planned)).toEqual([
       { text: 'KH Trịnh Minh Anh', deleted: true },
       { text: 'RM Đỗ Khánh Linh', deleted: false },
@@ -394,12 +394,12 @@ describe('trashNames: teams of one name (review of PR 1072, PR 1088)', () => {
   const third = { ...remade, id: 't3', deletedAt: at(9, 14, 20, 30) } as TrashRow;
   const two = [...ROWS, remade];
   const three = [...two, third];
-  /** A customer of the team with the id `team`, after her deleted RE. */
+  /** A customer of the team with the id `team`, after her deleted RM. */
   const customerOf = (team: string) =>
     ({
       ...minhAnh,
       owner: {
-        re: ref('Đỗ Khánh Linh', true),
+        rm: ref('Đỗ Khánh Linh', true),
         team: { id: team, name: 'Bình Minh', deleted: true },
       },
     }) as TrashRow;
@@ -522,7 +522,7 @@ describe('restoreLabel (DR6-43)', () => {
 
   /** A meeting on 20/10 and a policy like `policy`, of `customer` (CLR5-A1). */
   const recordsOf = (customer: ReturnType<typeof customerRef>, n: number): TrashRow[] => {
-    const owner = { customer, re: ref('Hồ Ngọc Yến') };
+    const owner = { customer, rm: ref('Hồ Ngọc Yến') };
     return [
       {
         ...planned,
@@ -651,7 +651,7 @@ describe('restoreLabel (DR6-43)', () => {
   });
 
   it('leaves "của KH" out for a row with no customer, which the foreign key keeps from existing', () => {
-    expect(label({ ...met, owner: { re: ref('Bùi Anh Tuấn') } } as TrashRow)).toBe(
+    expect(label({ ...met, owner: { rm: ref('Bùi Anh Tuấn') } } as TrashRow)).toBe(
       'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp',
     );
     expect(label({ ...policy, owner: {} } as TrashRow)).toBe(
@@ -683,15 +683,15 @@ describe('deletedAtText', () => {
 describe('blockedReason (mockup 11d)', () => {
   const reason = (row: TrashRow, blocked: TrashBlock) => blockedReason(row, blocked);
 
-  it('E2: the RE deleted', () => {
+  it('E2: the RM deleted', () => {
     expect(
-      reason(minhAnh, { code: 'PERSON_NOT_FOUND', params: { name: 'Đỗ Khánh Linh', as: 're' } }),
+      reason(minhAnh, { code: 'PERSON_NOT_FOUND', params: { name: 'Đỗ Khánh Linh', as: 'rm' } }),
     ).toBe('RM Đỗ Khánh Linh đã xóa — khôi phục RM trước.');
   });
 
-  it('E3: the RE now a TL', () => {
+  it('E3: the RM now a TL', () => {
     expect(
-      reason(minhAnh, { code: 'RE_REQUIRED', params: { name: 'Đỗ Khánh Linh', role: 'TL' } }),
+      reason(minhAnh, { code: 'RM_REQUIRED', params: { name: 'Đỗ Khánh Linh', role: 'TL' } }),
     ).toBe('Đỗ Khánh Linh nay là TL, không phụ trách KH được — đổi lại vai trò RM trước.');
   });
 
@@ -768,7 +768,7 @@ describe('blockedReason (mockup 11d)', () => {
     ).toBe('Người đánh giá Vũ Thanh Tâm đã xóa — khôi phục trước.');
   });
 
-  it('E10: the reviewer now an RE; a coordinator likewise', () => {
+  it('E10: the reviewer now an RM; a coordinator likewise', () => {
     expect(
       reason(met, { code: 'INVALID_REVIEWER', params: { name: 'Vũ Thanh Tâm', role: 'RM' } }),
     ).toBe('Người đánh giá Vũ Thanh Tâm nay là RM.');
@@ -832,7 +832,7 @@ const pastPlanned = {
   id: 'a5',
   date: calendarDate(2026, 9, 30),
   time: '10:00',
-  owner: { customer: customerRef('Phạm Gia Bảo', 'K-4PGB'), re: ref('Bùi Anh Tuấn') },
+  owner: { customer: customerRef('Phạm Gia Bảo', 'K-4PGB'), rm: ref('Bùi Anh Tuấn') },
   blocked: undefined,
 } as TrashRow;
 
@@ -1044,7 +1044,7 @@ describe('restoredNotice (mockup 11e)', () => {
 });
 
 describe('restoreRow', () => {
-  /** Trịnh Minh Anh deleted, her RE Đỗ Khánh Linh of Sao Mai still there. */
+  /** Trịnh Minh Anh deleted, her RM Đỗ Khánh Linh of Sao Mai still there. */
   async function deletedCustomer() {
     let rmId = '';
     const app = await openAppData({
@@ -1302,7 +1302,7 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
 
   /**
    * A trash of every kind, by the commands: Lan deleted with its records, one appointment deleted on
-   * its own before; Bảo's Dời lịch kept by the appointment rescheduled from it (D5), a policy; an RE
+   * its own before; Bảo's Dời lịch kept by the appointment rescheduled from it (D5), a policy; an RM
    * and the team.
    */
   const everyKind = () =>

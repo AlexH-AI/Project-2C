@@ -16,11 +16,11 @@ import {
   type ReportRows,
 } from './reports-view';
 
-type TableKey = 'byTeam' | 'byRe' | 'byMark';
+type TableKey = 'byTeam' | 'byRm' | 'byMark';
 
 /**
  * Báo cáo (spec Phase 4 §4.4, mockup reports.html 2a–2e): the Lọc bar, Tổng hợp always, and one of
- * Theo team / Theo RE / Theo mốc under it. A table that would repeat Tổng hợp is left out. Xuất
+ * Theo team / Theo RM / Theo mốc under it. A table that would repeat Tổng hợp is left out. Xuất
  * Excel exports every table shown for the scope, one sheet each (2f).
  */
 export function ReportsScreen() {
@@ -40,7 +40,7 @@ export function ReportsScreen() {
     () => reportRows(data, applied.period, applied.scope, today),
     [data, applied.period, applied.scope, today],
   );
-  const tables = (['byTeam', 'byRe', 'byMark'] as const).filter((key) => rows[key]);
+  const tables = (['byTeam', 'byRm', 'byMark'] as const).filter((key) => rows[key]);
   // Theo mốc is always there, so the list is never empty.
   const shown = tables.includes(chosenTable) ? chosenTable : (tables[0] ?? 'byMark');
   const summary = t('reports.summary');
@@ -65,7 +65,7 @@ export function ReportsScreen() {
       <section aria-label={summary} className={PANEL}>
         <div className="flex flex-wrap items-baseline gap-2">
           <h2 className={HEADING}>{summary}</h2>
-          {/* A long team or RE name breaks on its line rather than push the page (DR6-170). */}
+          {/* A long team or RM name breaks on its line rather than push the page (DR6-170). */}
           <span className="min-w-0 text-xs wrap-anywhere text-fg-3">
             {summaryMeta(applied.scope, data.people, data.teams)}
           </span>
@@ -109,5 +109,5 @@ function tableOf(rows: ReportRows, shown: TableKey): ShownTable {
   const table = rows[shown]!;
   return shown === 'byTeam'
     ? { lead: 'team', ...table, meta: t('reports.byTeamMeta', { teams: table.rows.length }) }
-    : { lead: 're', ...table, meta: t('reports.byReMeta', { re: table.rows.length }) };
+    : { lead: 'rm', ...table, meta: t('reports.byRmMeta', { rm: table.rows.length }) };
 }

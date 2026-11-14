@@ -27,7 +27,7 @@ import {
   liveRow,
   optionalText,
   requireAmount,
-  requireRe,
+  requireRm,
   requireRow,
   selectRows,
   stampDeleted,
@@ -170,7 +170,7 @@ export function recordMeetingOutcome(
 /**
  * Records the first outcome of a scheduled appointment and books the next one in one go (mockups
  * 6c, 6i): same customer, coordinators and trigger, today or later, and not linked to this one.
- * The RE is the customer's, who may have taken over since this one was booked (T-233). Editing an
+ * The RM is the customer's, who may have taken over since this one was booked (T-233). Editing an
  * outcome (6f) books nothing.
  */
 export function recordOutcomeWithNext(
@@ -451,11 +451,11 @@ function insertCoordinators(db: Database, appointmentId: string, ids: readonly s
 }
 
 /**
- * A live RE and live coordinators of a supporting role (`REVIEWER_ROLES`), never an RE, the
+ * A live RM and live coordinators of a supporting role (`REVIEWER_ROLES`), never an RM, the
  * appointment's own included (ADR-0007) — checked again on restore (spec §4).
  */
 function requirePeople(db: Database, rmId: string, coordinatorIds: readonly string[]): void {
-  requireRe(db, rmId);
+  requireRm(db, rmId);
   for (const personId of coordinatorIds) {
     const { name, role } = requirePerson(db, personId, 'coordinator');
     if (!REVIEWER_ROLES.includes(role)) throw new DbError('INVALID_COORDINATOR', { name, role });

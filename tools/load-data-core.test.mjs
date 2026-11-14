@@ -18,7 +18,7 @@ import {
 } from './load-data-core.mjs';
 
 const TODAY = calendarDate(2026, 10, 12);
-const SMALL = { teams: 2, resPerTeam: 2, customersPerRe: 10, meetingDays: [3, 4] };
+const SMALL = { teams: 2, rmsPerTeam: 2, customersPerRm: 10, meetingDays: [3, 4] };
 const SLOW = 180_000;
 
 describe('parseLoadArgs', () => {

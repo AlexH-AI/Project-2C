@@ -16,16 +16,16 @@ export const DB_ERROR_CODES = [
   'TEAM_REQUIRED',
   /** A team already has a live TL; params `name` (that TL's). */
   'TEAM_HAS_LEAD',
-  /** An IS, BD or BDM given a team: only RE and TL belong to one. */
+  /** An IS, BD or BDM given a team: only RM and TL belong to one. */
   'TEAM_NOT_ALLOWED',
   /**
-   * Params when the person is deleted: `name`, and `as` — what the record needs them as: `re`,
+   * Params when the person is deleted: `name`, and `as` — what the record needs them as: `rm`,
    * `coordinator` or `reviewer` (spec Phase 6 TR-1).
    */
   'PERSON_NOT_FOUND',
   'PERSON_IN_USE',
   /** Params `name` and `role`, the role the person holds instead. */
-  'RE_REQUIRED',
+  'RM_REQUIRED',
   'INVALID_DATE',
   /**
    * A day after today for something that already happened: a customer's creation, a manual stage
@@ -75,12 +75,12 @@ export const DB_ERROR_CODES = [
   'REVIEWER_NOT_ALLOWED',
   /** An outcome reviewer who is not an IS, TL, BDM or BD (D9); params `name`, `role`. */
   'INVALID_REVIEWER',
-  /** A reviewer of a live appointment made an RE (D9). */
+  /** A reviewer of a live appointment made an RM (D9). */
   'REVIEWER_IN_USE',
   'NEXT_APPOINTMENT_PAST',
   /** A coordinator who is not an IS, TL, BDM or BD (ADR-0007); params `name`, `role`. */
   'INVALID_COORDINATOR',
-  /** A coordinator of a live appointment made an RE (ADR-0007). */
+  /** A coordinator of a live appointment made an RM (ADR-0007). */
   'COORDINATOR_IN_USE',
   'POLICY_NOT_FOUND',
   'ISSUED_BEFORE_SUBMITTED',

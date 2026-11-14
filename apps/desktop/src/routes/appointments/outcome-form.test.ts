@@ -255,7 +255,7 @@ describe('outcomeLock', () => {
 });
 
 // The demo's code path at a scale a test goes through record by record (restore-roundtrip.test.ts).
-const DEMO_SCALE = { teams: 1, resPerTeam: 2, customersPerRe: 10, meetingDays: [2, 2] } as const;
+const DEMO_SCALE = { teams: 1, rmsPerTeam: 2, customersPerRm: 10, meetingDays: [2, 2] } as const;
 
 /** What the command refuses deleting the appointment with, the deletion rolled back; null if none. */
 function deleteRefusal(db: Database, id: string) {

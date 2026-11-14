@@ -178,11 +178,11 @@ describe('teams', () => {
   it('refuses to delete a team that still has people', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
 
     expect(codeOf(() => softDeleteTeam(db, team.id))).toBe('TEAM_HAS_MEMBERS');
 
-    softDeletePerson(db, re.id);
+    softDeletePerson(db, rm.id);
     softDeleteTeam(db, team.id);
     expect(listTeams(db)).toEqual([]);
   });
@@ -193,16 +193,16 @@ describe('people', () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
 
-    const re = createPerson(db, { name: ' An ', role: 'RM', teamId: team.id });
+    const rm = createPerson(db, { name: ' An ', role: 'RM', teamId: team.id });
     const is = createPerson(db, { name: 'Bình', role: 'IS', teamId: null });
 
-    expect(re).toEqual({ id: expect.any(String), name: 'An', role: 'RM', teamId: team.id });
+    expect(rm).toEqual({ id: expect.any(String), name: 'An', role: 'RM', teamId: team.id });
     expect(is.teamId).toBeNull();
-    expect(byId(listPeople(db), re.id)).toEqual(re);
-    expect(listPeople(db)).toEqual([re, is]);
+    expect(byId(listPeople(db), rm.id)).toEqual(rm);
+    expect(listPeople(db)).toEqual([rm, is]);
   });
 
-  it('requires a team for RE and TL only', async () => {
+  it('requires a team for RM and TL only', async () => {
     const { db } = await setup();
 
     expect(codeOf(() => createPerson(db, { name: 'An', role: 'RM', teamId: null }))).toBe(
@@ -236,7 +236,7 @@ describe('people', () => {
   it('refuses a team for IS, BD and BDM, also when the role changes', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const bd = createPerson(db, { name: 'Bình', role: 'BD', teamId: null });
 
     for (const role of ['IS', 'BD', 'BDM'] as const) {
@@ -245,8 +245,8 @@ describe('people', () => {
       );
     }
     expect(codeOf(() => updatePerson(db, bd.id, { teamId: team.id }))).toBe('TEAM_NOT_ALLOWED');
-    expect(codeOf(() => updatePerson(db, re.id, { role: 'BD' }))).toBe('TEAM_NOT_ALLOWED');
-    expect(updatePerson(db, re.id, { role: 'BD', teamId: null })).toMatchObject({
+    expect(codeOf(() => updatePerson(db, rm.id, { role: 'BD' }))).toBe('TEAM_NOT_ALLOWED');
+    expect(updatePerson(db, rm.id, { role: 'BD', teamId: null })).toMatchObject({
       role: 'BD',
       teamId: null,
     });
@@ -355,7 +355,7 @@ describe('one TL per team (B1b)', () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
-  it('makes an RE the TL only of a team without one', async () => {
+  it('makes an RM the TL only of a team without one', async () => {
     const { db, saoMai, binhMinh } = await withLead();
     const an = createPerson(db, { name: 'An', role: 'RM', teamId: saoMai.id });
     const binh = createPerson(db, { name: 'Bình', role: 'RM', teamId: binhMinh.id });
@@ -421,17 +421,17 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
   const named = (...customers: { readonly name: string; readonly code: string }[]) =>
     customers.map(({ name, code }) => ({ name, code }));
 
-  /** Customers of the RE, each met on `day` with the TL joining and the IS reviewing. */
+  /** Customers of the RM, each met on `day` with the TL joining and the IS reviewing. */
   async function withRecords() {
     const ctx = await withStaff();
-    const { db, re, tl } = ctx;
+    const { db, rm, tl } = ctx;
     const is = createPerson(db, { name: 'Quang', role: 'IS', teamId: null });
     const customer = (name: string) =>
-      createCustomer(db, { name, rmId: re.id, stage: 'N3', date: d(1, 1) });
+      createCustomer(db, { name, rmId: rm.id, stage: 'N3', date: d(1, 1) });
     const meet = (customerId: string, day: number) => {
       const { id } = scheduleAppointment(db, {
         customerId,
-        rmId: re.id,
+        rmId: rm.id,
         date: d(day, 1),
         triggerType: 'REFERRAL',
         coordinatorIds: [tl.id],
@@ -445,24 +445,24 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
       return id;
     };
     const submit = (customerId: string) =>
-      submitPolicy(db, { customerId, rmId: re.id, submittedDate: d(31, 1), submittedFyp: 1e6 }).id;
+      submitPolicy(db, { customerId, rmId: rm.id, submittedDate: d(31, 1), submittedFyp: 1e6 }).id;
     return { ...ctx, is, customer, meet, submit };
   }
 
   it('counts the records pointing to the person, those of a customer in the trash named; the delete refuses them as before', async () => {
-    const { db, re, otherRe, tl, is, customer, meet, submit } = await withRecords();
+    const { db, rm, otherRm, tl, is, customer, meet, submit } = await withRecords();
     const lan = customer('Lan');
     meet(lan.id, 10);
     submit(lan.id);
     const usage = { ...NONE, customers: 1, appointments: 1, policies: 1, inTrash: [] };
-    expect(personUsage(db, re.id)).toEqual(usage);
+    expect(personUsage(db, rm.id)).toEqual(usage);
     expect(personUsage(db, tl.id)).toEqual({ ...NONE, coordinating: 1, inTrash: [] });
-    expect([is, otherRe].map((p) => isPersonInUse(personUsage(db, p.id)))).toEqual([true, false]);
-    softDeletePerson(db, otherRe.id);
+    expect([is, otherRm].map((p) => isPersonInUse(personUsage(db, p.id)))).toEqual([true, false]);
+    softDeletePerson(db, otherRm.id);
     softDeleteCustomer(db, lan.id);
 
     // Deleting a customer only hides its appointments and policies (TR-4).
-    expect(personUsage(db, re.id)).toEqual({
+    expect(personUsage(db, rm.id)).toEqual({
       ...NONE,
       appointments: 1,
       policies: 1,
@@ -470,18 +470,18 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     });
     expect(personUsage(db, tl.id)).toEqual({ ...NONE, coordinating: 1, inTrash: named(lan) });
     expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 1, inTrash: named(lan) });
-    for (const person of [re, tl, is]) {
+    for (const person of [rm, tl, is]) {
       expect(codeOf(() => softDeletePerson(db, person.id))).toBe('PERSON_IN_USE');
     }
 
-    // The customer still comes back, its RE and supporters with it.
+    // The customer still comes back, its RM and supporters with it.
     restoreCustomer(db, lan.id);
-    expect(personUsage(db, re.id)).toMatchObject({ customers: 1, inTrash: [] });
+    expect(personUsage(db, rm.id)).toMatchObject({ customers: 1, inTrash: [] });
     expect(personUsage(db, is.id)).toMatchObject({ reviewing: 1, inTrash: [] });
   });
 
   it('leaves out what was deleted on its own, and names each customer in the trash once, by name', async () => {
-    const { db, re, is, customer, meet, submit } = await withRecords();
+    const { db, rm, is, customer, meet, submit } = await withRecords();
     const bao = customer('Bảo');
     meet(bao.id, 10);
     meet(bao.id, 12);
@@ -494,7 +494,7 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     for (const { id } of [bao, anh, cuc]) softDeleteCustomer(db, id);
 
     // "Ánh" before "Bảo" as the screens order names (DR-48); Cúc holds nothing live any more.
-    expect(personUsage(db, re.id)).toEqual({
+    expect(personUsage(db, rm.id)).toEqual({
       ...NONE,
       customers: 1,
       appointments: 2,
@@ -503,28 +503,28 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     });
     expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 2, inTrash: named(bao) });
 
-    // A customer in the trash with nothing left pointing to the RE is not named.
+    // A customer in the trash with nothing left pointing to the RM is not named.
     softDeleteCustomer(db, live.id);
     for (const { id } of [bao, anh]) restoreCustomer(db, id);
-    expect(personUsage(db, re.id)).toMatchObject({ customers: 2, inTrash: [] });
+    expect(personUsage(db, rm.id)).toMatchObject({ customers: 2, inTrash: [] });
   });
 
   // Review of PR 669: by name alone, 9b said "Lan, Lan".
   it('names two customers of one name in the trash apart, by their codes', async () => {
-    const { db, re, customer, submit } = await withRecords();
+    const { db, rm, customer, submit } = await withRecords();
     const lans = [customer('Lan'), customer('Lan')];
     for (const { id } of lans) {
       submit(id);
       softDeleteCustomer(db, id);
     }
 
-    const { inTrash } = personUsage(db, re.id);
+    const { inTrash } = personUsage(db, rm.id);
 
     expect(inTrash).toEqual(named(...lans.sort((a, b) => (a.code < b.code ? -1 : 1))));
     expect(new Set(inTrash.map((c) => c.code)).size).toBe(2);
   });
 
-  it('is the RE of records only through customers, appointments and policies', () => {
+  it('is the RM of records only through customers, appointments and policies', () => {
     expect(ownsRecords({ ...NONE, customers: 1 })).toBe(true);
     expect(ownsRecords({ ...NONE, appointments: 1 })).toBe(true);
     expect(ownsRecords({ ...NONE, policies: 1 })).toBe(true);
@@ -533,19 +533,19 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     expect(isPersonInUse(NONE)).toBe(false);
   });
 
-  // The past appointments of a customer stay with their RE after a handover (T-233), who is no
-  // longer the customer's RE nor the RE of a policy, and still may not leave the role (DR6-126).
-  it('keeps an RE left only with appointments from before a handover in the role', async () => {
-    const { db, re, otherRe, customer, meet } = await withRecords();
+  // The past appointments of a customer stay with their RM after a handover (T-233), who is no
+  // longer the customer's RM nor the RM of a policy, and still may not leave the role (DR6-126).
+  it('keeps an RM left only with appointments from before a handover in the role', async () => {
+    const { db, rm, otherRm, customer, meet } = await withRecords();
     const lan = customer('Lan');
     meet(lan.id, 10);
-    updateCustomerProfile(db, lan.id, { rmId: otherRe.id });
-    expect(personUsage(db, re.id)).toMatchObject({ customers: 0, appointments: 1, policies: 0 });
+    updateCustomerProfile(db, lan.id, { rmId: otherRm.id });
+    expect(personUsage(db, rm.id)).toMatchObject({ customers: 0, appointments: 1, policies: 0 });
 
-    expect(codeOf(() => updatePerson(db, re.id, { role: 'IS', teamId: null }))).toBe(
+    expect(codeOf(() => updatePerson(db, rm.id, { role: 'IS', teamId: null }))).toBe(
       'PERSON_IN_USE',
     );
 
-    expect(byId(listPeople(db), re.id)?.role).toBe('RM');
+    expect(byId(listPeople(db), rm.id)?.role).toBe('RM');
   });
 });

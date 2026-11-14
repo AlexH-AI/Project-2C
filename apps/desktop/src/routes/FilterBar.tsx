@@ -67,7 +67,7 @@ export function FilterBar({
         {pending && t('overview.pending')}
       </span>
       <div className="flex-1" />
-      {/* A long team or RE name breaks in the line rather than push it out (DR6-170). */}
+      {/* A long team or RM name breaks in the line rather than push it out (DR6-170). */}
       <p className="m-0 min-w-0 text-sm wrap-anywhere text-fg-3 tabular-nums" aria-live="polite">
         {t('overview.viewing')} <b className="font-semibold text-fg-2">{viewing.period}</b>
         {viewing.mtd && (

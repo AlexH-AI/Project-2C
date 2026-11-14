@@ -42,11 +42,11 @@ const LEAD_HEADER = {
   mark: 'reports.col.mark',
 } as const;
 
-export type ReportLead = 'scope' | 'team' | 're' | 'mark';
+export type ReportLead = 'scope' | 'team' | 'rm' | 'mark';
 
 /**
  * A report table (mockup reports.html 2a–2e): the name column(s), then Lịch hẹn · Kết quả · KH
- * cuối kỳ. Theo RE has Team before RE, a rule where the team changes, and the RE name stays put.
+ * cuối kỳ. Theo RM has Team before RM, a rule where the team changes, and the RM name stays put.
  * Theo mốc marks the mark holding today. A "—" is dimmed.
  */
 export function ReportTable({
@@ -61,7 +61,7 @@ export function ReportTable({
   total?: ReportRow | undefined;
 }) {
   const leads =
-    lead === 're' ? [t('reports.col.team'), t('reports.col.re')] : [t(LEAD_HEADER[lead])];
+    lead === 'rm' ? [t('reports.col.team'), t('reports.col.rm')] : [t(LEAD_HEADER[lead])];
   const none = t('overview.none');
   const nameIndex = leads.length - 1;
 
@@ -115,11 +115,11 @@ export function ReportTable({
         </thead>
         <tbody className="tabular-nums">
           {rows.map((row, index) => {
-            const teamStart = lead === 're' && index > 0 && rows[index - 1]?.team !== row.team;
+            const teamStart = lead === 'rm' && index > 0 && rows[index - 1]?.team !== row.team;
             const start = teamStart ? 'border-t border-t-border-strong' : '';
             return (
               <tr key={row.key}>
-                {lead === 're' && (
+                {lead === 'rm' && (
                   <td className={`${CELL} ${start} text-fg-2`}>
                     <span className={NAME}>{row.team}</span>
                   </td>
@@ -136,9 +136,9 @@ export function ReportTable({
           })}
           {total && (
             <tr className="font-semibold">
-              {/* Tổng sits in the RE column, sticky like the RE names; a wider sticky cell would
+              {/* Tổng sits in the RM column, sticky like the RM names; a wider sticky cell would
                   cover the first figures once the table scrolls. */}
-              {lead === 're' && <td className={`${CELL} border-t border-t-border-strong`} />}
+              {lead === 'rm' && <td className={`${CELL} border-t border-t-border-strong`} />}
               <th
                 scope="row"
                 className={`${CELL} ${STICKY} border-t border-t-border-strong text-left`}

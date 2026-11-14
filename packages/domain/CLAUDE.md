@@ -6,7 +6,7 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 
 - **Không import package nào khác** (kể cả `node:*`, trình duyệt) — `dependency-cruiser` rule `domain-is-pure` (`pnpm lint:deps`). Test (`*.test.ts`) được import `vitest`.
 - Mọi package khác dùng domain qua `@p2c/domain` (`src/index.ts`); thêm export mới thì thêm vào `index.ts`. Ngoại lệ: hàm chỉ dùng chung giữa các file trong `src/` (vd. `markIndexer` của `stats.ts`, dùng ở `appointment-counts.ts`) được `export` nhưng không vào `index.ts`.
-- Lọc nhiều bản ghi theo góc nhìn: dựng `scopeMatcher(people, scope)` một lần rồi gọi cho từng bản ghi (`inScope` chỉ cho một bản ghi). Chỉ số / số lịch của nhiều góc nhìn cùng kỳ: `periodMetricsByScope`, `appointmentCountsByScope` (gom theo RE một lượt).
+- Lọc nhiều bản ghi theo góc nhìn: dựng `scopeMatcher(people, scope)` một lần rồi gọi cho từng bản ghi (`inScope` chỉ cho một bản ghi). Chỉ số / số lịch của nhiều góc nhìn cùng kỳ: `periodMetricsByScope`, `appointmentCountsByScope` (gom theo RM một lượt).
 - Coverage ≥ 95% (`pnpm test:coverage` trong `pnpm verify`).
 
 ## File hay tìm

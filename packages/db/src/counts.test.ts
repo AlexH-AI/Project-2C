@@ -15,23 +15,23 @@ import { d, setup } from './test-support';
 
 describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
   it("counts the customer's records not deleted on their own, the RFs as the metrics count them", async () => {
-    const { db, re } = await setup(d(11, 10));
+    const { db, rm } = await setup(d(11, 10));
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const other = createCustomer(db, {
       name: 'Lê Văn Cường',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const schedule = (customerId: string, day: number) =>
       scheduleAppointment(db, {
         customerId,
-        rmId: re.id,
+        rmId: rm.id,
         date: d(day, 10),
         triggerType: 'REFERRAL',
         coordinatorIds: [],
@@ -50,13 +50,13 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     met(schedule(other.id, 1).id, 'N2');
     submitPolicy(db, {
       customerId: anh.id,
-      rmId: re.id,
+      rmId: rm.id,
       submittedDate: d(3, 10),
       submittedFyp: 24_000_000,
     });
     const dropped = submitPolicy(db, {
       customerId: anh.id,
-      rmId: re.id,
+      rmId: rm.id,
       submittedDate: d(4, 10),
       submittedFyp: 12_000_000,
     });
@@ -85,16 +85,16 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
   // Moving a met meeting's day (6f) withdraws its transition and records it again on the new day:
   // the withdrawn one still points at the live appointment (DR6-59).
   it('counts one RF for a met meeting moved to another day', async () => {
-    const { db, re } = await setup(d(11, 10));
+    const { db, rm } = await setup(d(11, 10));
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const meeting = scheduleAppointment(db, {
       customerId: anh.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(1, 10),
       triggerType: 'REFERRAL',
       coordinatorIds: [],
@@ -109,16 +109,16 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
   // An appointment holds one live transition only as the commands write it (rule 4): the count is
   // of appointments, as `isRfAppointment` counts them, not of transitions (review of PR 541).
   it('counts one RF for a meeting with two RF transitions, made by hand', async () => {
-    const { db, re } = await setup(d(11, 10));
+    const { db, rm } = await setup(d(11, 10));
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const meeting = scheduleAppointment(db, {
       customerId: anh.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: d(1, 10),
       triggerType: 'REFERRAL',
       coordinatorIds: [],
@@ -147,10 +147,10 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
   // The birth year and gender of the profile are written as notes of the system (spec Phase 3 D2):
   // 5f and the trash row count them as the box of the purge does (DR6-125, mockup 11i).
   it('counts the notes the system wrote from the profile with the others', async () => {
-    const { db, re } = await setup(d(11, 10));
+    const { db, rm } = await setup(d(11, 10));
     const lan = createCustomer(db, {
       name: 'Lan',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
       birthDate: { year: 1985 },
@@ -158,15 +158,15 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     });
     addKycNote(db, lan.id, { text: 'Làm luật sư', date: d(2, 9) });
 
-    // One note of the system holds both fields, and the RE wrote the other.
+    // One note of the system holds both fields, and the RM wrote the other.
     expect(countCustomerRecords(db, lan.id).kycNotes).toBe(2);
   });
 
   it('counts nothing for a customer without records', async () => {
-    const { db, re } = await setup();
+    const { db, rm } = await setup();
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       date: d(1, 9),
     });
