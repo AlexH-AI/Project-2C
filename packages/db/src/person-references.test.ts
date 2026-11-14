@@ -24,12 +24,12 @@ async function oneOfEach() {
   const { db, team, re: an, otherRe: binh, tl: ha } = await setup();
   const chi = createPerson(db, { name: 'Chi', role: 'RM', teamId: team.id });
   const quang = createPerson(db, { name: 'Quang', role: 'IS', teamId: null });
-  const lan = createCustomer(db, { name: 'Lan', reId: chi.id, stage: 'N3', date: d(1, 9) });
-  submitPolicy(db, { customerId: lan.id, reId: chi.id, submittedDate: d(2, 9), submittedFyp: 1e6 });
-  updateCustomerProfile(db, lan.id, { reId: binh.id });
+  const lan = createCustomer(db, { name: 'Lan', rmId: chi.id, stage: 'N3', date: d(1, 9) });
+  submitPolicy(db, { customerId: lan.id, rmId: chi.id, submittedDate: d(2, 9), submittedFyp: 1e6 });
+  updateCustomerProfile(db, lan.id, { rmId: binh.id });
   const { id } = scheduleAppointment(db, {
     customerId: lan.id,
-    reId: binh.id,
+    rmId: binh.id,
     date: d(10, 9),
     triggerType: 'REFERRAL',
     coordinatorIds: [ha.id],
@@ -40,7 +40,7 @@ async function oneOfEach() {
     nextStep: 'Gửi minh họa',
     outcomeReviewerId: quang.id,
   });
-  updateCustomerProfile(db, lan.id, { reId: an.id });
+  updateCustomerProfile(db, lan.id, { rmId: an.id });
   return { db, people: [an, binh, chi, ha, quang] };
 }
 
@@ -71,9 +71,9 @@ describe('PERSON_REFERENCES: the one list of what points to a person', () => {
     expect(Object.fromEntries(kinds)).toEqual({
       'appointment_coordinators.person_id': ['coordinator'],
       'appointments.outcome_reviewer_id': ['reviewer'],
-      'appointments.re_id': ['appointment'],
-      'customers.re_id': ['customer'],
-      'policies.re_id': ['policy'],
+      'appointments.rm_id': ['appointment'],
+      'customers.rm_id': ['customer'],
+      'policies.rm_id': ['policy'],
     });
   });
 

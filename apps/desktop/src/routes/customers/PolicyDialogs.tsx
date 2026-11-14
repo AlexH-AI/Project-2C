@@ -64,7 +64,7 @@ export function PolicyDialog({
   const saved = mode.kind === 'new' ? null : mode.policy;
   const [opened] = useState(() => openDraft(mode, today));
   const [draft, setDraft] = useState(opened.draft);
-  const [reId, setReId] = useState(customer.reId);
+  const [rmId, setReId] = useState(customer.rmId);
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string>();
   const [deleting, setDeleting] = useState(false);
@@ -93,7 +93,7 @@ export function PolicyDialog({
     draft.issued && read.issuedFyp && shown(draft.issued.fyp)
       ? fypError(read.issuedFyp)
       : undefined;
-  const reError = attempted && reId === '' ? t('error.RE_REQUIRED') : undefined;
+  const reError = attempted && rmId === '' ? t('error.RE_REQUIRED') : undefined;
   const errorCount = [
     submittedDateError,
     submittedFypError,
@@ -105,12 +105,12 @@ export function PolicyDialog({
   const save = () => {
     setAttempted(true);
     const values = read.policy;
-    if (!values || reId === '') return;
+    if (!values || rmId === '') return;
     try {
       app.run((db) => {
         if (!saved) {
           const { submittedDate, submittedFyp } = values;
-          return submitPolicy(db, { customerId: customer.id, reId, submittedDate, submittedFyp });
+          return submitPolicy(db, { customerId: customer.id, rmId, submittedDate, submittedFyp });
         }
         if (mode.kind === 'edit') return updatePolicy(db, saved.id, values);
         // An issue draft that reads always has its day and FYP.
@@ -139,7 +139,7 @@ export function PolicyDialog({
   const issuedRead = read.issuedDate?.ok ? read.issuedDate : null;
   const issuedFyp = read.issuedFyp?.ok ? read.issuedFyp.amount : null;
   const change = mode.kind === 'edit' ? policyChange(mode.policy, read) : null;
-  const re = people.find((person) => person.id === saved?.reId);
+  const re = people.find((person) => person.id === saved?.rmId);
 
   return (
     <Dialog
@@ -184,7 +184,7 @@ export function PolicyDialog({
           {mode.kind === 'new' && (
             <SelectField
               label={t('policyForm.re')}
-              value={reId}
+              value={rmId}
               options={reOptions(people, teams)}
               onChange={(value) => {
                 setReId(value);

@@ -28,21 +28,21 @@ export const PEOPLE: readonly Person[] = [
 ];
 
 export const CUSTOMERS: readonly Customer[] = [
-  { id: 'kh-01', name: 'KH 01', reId: 're-an', stage: 'N2' },
-  { id: 'kh-02', name: 'KH 02', reId: 're-an', stage: 'N1' },
-  { id: 'kh-03', name: 'KH 03', reId: 're-binh', stage: 'N2' },
-  { id: 'kh-04', name: 'KH 04', reId: 're-binh', stage: 'N1' },
-  { id: 'kh-05', name: 'KH 05', reId: 're-chi', stage: 'N1' },
-  { id: 'kh-06', name: 'KH 06', reId: 're-chi', stage: 'N2' },
-  { id: 'kh-07', name: 'KH 07', reId: 're-chi', stage: 'LOST' },
-  { id: 'kh-08', name: 'KH 08', reId: 're-dung', stage: 'N3' },
-  { id: 'kh-09', name: 'KH 09', reId: 're-dung', stage: 'N1' },
+  { id: 'kh-01', name: 'KH 01', rmId: 're-an', stage: 'N2' },
+  { id: 'kh-02', name: 'KH 02', rmId: 're-an', stage: 'N1' },
+  { id: 'kh-03', name: 'KH 03', rmId: 're-binh', stage: 'N2' },
+  { id: 'kh-04', name: 'KH 04', rmId: 're-binh', stage: 'N1' },
+  { id: 'kh-05', name: 'KH 05', rmId: 're-chi', stage: 'N1' },
+  { id: 'kh-06', name: 'KH 06', rmId: 're-chi', stage: 'N2' },
+  { id: 'kh-07', name: 'KH 07', rmId: 're-chi', stage: 'LOST' },
+  { id: 'kh-08', name: 'KH 08', rmId: 're-dung', stage: 'N3' },
+  { id: 'kh-09', name: 'KH 09', rmId: 're-dung', stage: 'N1' },
 ];
 
 const meeting = (
   id: string,
   customerId: string,
-  reId: string,
+  rmId: string,
   date: CalendarDate,
   status: Appointment['status'],
   stageAfter: Appointment['stageAfter'],
@@ -50,7 +50,7 @@ const meeting = (
 ): Appointment => ({
   id,
   customerId,
-  reId,
+  rmId,
   date,
   status,
   stageAfter,
@@ -120,12 +120,12 @@ export const STAGE_TRANSITIONS: readonly StageTransition[] = [
 const policy = (
   id: string,
   customerId: string,
-  reId: string,
+  rmId: string,
   submittedDate: CalendarDate,
   submittedFyp: number,
   issuedDate: CalendarDate | null,
   issuedFyp: number | null,
-): Policy => ({ id, customerId, reId, submittedDate, submittedFyp, issuedDate, issuedFyp });
+): Policy => ({ id, customerId, rmId, submittedDate, submittedFyp, issuedDate, issuedFyp });
 
 export const POLICIES: readonly Policy[] = [
   policy('hd-01', 'kh-01', 're-an', d(30, 12, 2026), 500 * MILLION, d(5, 1, 2027), 500 * MILLION),
@@ -184,7 +184,7 @@ export const MTD_VIEWING_DATE = d(15, 1, 2027);
 
 const ALL: Scope = { kind: 'all' };
 const team = (teamId: string): Scope => ({ kind: 'team', teamId });
-const re = (reId: string): Scope => ({ kind: 're', reId });
+const re = (rmId: string): Scope => ({ kind: 're', rmId });
 
 const expected = (
   submittedCount: number,

@@ -427,11 +427,11 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     const { db, re, tl } = ctx;
     const is = createPerson(db, { name: 'Quang', role: 'IS', teamId: null });
     const customer = (name: string) =>
-      createCustomer(db, { name, reId: re.id, stage: 'N3', date: d(1, 1) });
+      createCustomer(db, { name, rmId: re.id, stage: 'N3', date: d(1, 1) });
     const meet = (customerId: string, day: number) => {
       const { id } = scheduleAppointment(db, {
         customerId,
-        reId: re.id,
+        rmId: re.id,
         date: d(day, 1),
         triggerType: 'REFERRAL',
         coordinatorIds: [tl.id],
@@ -445,7 +445,7 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
       return id;
     };
     const submit = (customerId: string) =>
-      submitPolicy(db, { customerId, reId: re.id, submittedDate: d(31, 1), submittedFyp: 1e6 }).id;
+      submitPolicy(db, { customerId, rmId: re.id, submittedDate: d(31, 1), submittedFyp: 1e6 }).id;
     return { ...ctx, is, customer, meet, submit };
   }
 
@@ -539,7 +539,7 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     const { db, re, otherRe, customer, meet } = await withRecords();
     const lan = customer('Lan');
     meet(lan.id, 10);
-    updateCustomerProfile(db, lan.id, { reId: otherRe.id });
+    updateCustomerProfile(db, lan.id, { rmId: otherRe.id });
     expect(personUsage(db, re.id)).toMatchObject({ customers: 0, appointments: 1, policies: 0 });
 
     expect(codeOf(() => updatePerson(db, re.id, { role: 'IS', teamId: null }))).toBe(

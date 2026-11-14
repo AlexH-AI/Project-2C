@@ -116,7 +116,7 @@ export function CustomersScreen() {
     picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
   const re =
     scope !== picked && scope.kind === 're'
-      ? data.people.find((person) => person.id === scope.reId)
+      ? data.people.find((person) => person.id === scope.rmId)
       : undefined;
   const summary = t('customers.summary', { open: board.openCount, closed: board.closedCount });
   const rows = useMemo(
@@ -145,7 +145,7 @@ export function CustomersScreen() {
     null,
   );
   const outside =
-    created?.scopeKey === scopeKey && !inScope(data.people, created.customer.reId, scope)
+    created?.scopeKey === scopeKey && !inScope(data.people, created.customer.rmId, scope)
       ? created.customer
       : null;
 
@@ -181,7 +181,7 @@ export function CustomersScreen() {
       </div>
       {creating && (
         <CustomerFormDialog
-          defaultReId={scope.kind === 're' ? scope.reId : undefined}
+          defaultReId={scope.kind === 're' ? scope.rmId : undefined}
           onCreated={(customer) => setCreated({ customer, scopeKey })}
           onClose={() => setCreating(false)}
         />
@@ -190,7 +190,7 @@ export function CustomersScreen() {
         <p role="status" className={`${ALERT} border-info text-sm`}>
           {t('customers.createdOutside', {
             name: outside.name,
-            re: data.people.find((person) => person.id === outside.reId)?.name ?? '',
+            re: data.people.find((person) => person.id === outside.rmId)?.name ?? '',
           })}{' '}
           <a href={routeToHash({ screen: 'customer', id: outside.id })} className={LINK}>
             {t('customers.createdProfile')}

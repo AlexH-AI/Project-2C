@@ -131,7 +131,7 @@ export function AppointmentsScreen() {
     picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
   const re =
     scope !== picked && scope.kind === 're'
-      ? data.people.find((person) => person.id === scope.reId)
+      ? data.people.find((person) => person.id === scope.rmId)
       : undefined;
   const yearCells = useMemo(
     () => yearGrid(period.start.year, rows, today),
@@ -281,7 +281,7 @@ export function AppointmentsScreen() {
         <p ref={outsideLine} tabIndex={-1} role="status" className={`${ALERT} border-info text-sm`}>
           {t(outside.linked ? 'appointments.linkedOutside' : 'appointments.createdOutside', {
             date: formatDate(outside.appointment.date),
-            re: data.people.find((person) => person.id === outside.appointment.reId)?.name ?? '',
+            re: data.people.find((person) => person.id === outside.appointment.rmId)?.name ?? '',
           })}
         </p>
       )}

@@ -55,7 +55,7 @@ export interface CustomerRecord extends Customer {
 
 export interface CustomerProfile {
   readonly name: string;
-  readonly reId: string;
+  readonly rmId: string;
   readonly birthDate?: BirthDate | null;
   readonly gender?: Gender | null;
 }
@@ -145,18 +145,18 @@ export function updateCustomerProfile(
     const current = toCustomer(row);
     const profile = validateProfile(db, {
       name: changes.name ?? current.name,
-      reId: changes.reId ?? current.reId,
+      rmId: changes.rmId ?? current.rmId,
       birthDate: changes.birthDate === undefined ? current.birthDate : changes.birthDate,
       gender: changes.gender === undefined ? current.gender : changes.gender,
     });
     updateRow(db, customers, id, profile);
     // The new RE takes over what is still planned (Owner 15/10/2026, T-233); what has an outcome or
     // is past, and the policies, count for the RE recorded on them (ADR-0007).
-    if (profile.reId !== row.reId) {
+    if (profile.rmId !== row.rmId) {
       db.orm
         .update(appointments)
-        .set({ reId: profile.reId, updatedAt: db.now().toISOString() })
-        .where(plannedOff(db, id, profile.reId))
+        .set({ rmId: profile.rmId, updatedAt: db.now().toISOString() })
+        .where(plannedOff(db, id, profile.rmId))
         .run();
     }
     recordProfileFacts(db, id, row, profile, today(db));
@@ -165,15 +165,15 @@ export function updateCustomerProfile(
 }
 
 /**
- * Mockup 5c: how many planned appointments `updateCustomerProfile` hands over to the RE `reId`;
+ * Mockup 5c: how many planned appointments `updateCustomerProfile` hands over to the RE `rmId`;
  * none when the customer is theirs already.
  */
-export function previewHandover(db: Database, id: string, reId: string): number {
-  if (liveCustomer(db, id).reId === reId) return 0;
+export function previewHandover(db: Database, id: string, rmId: string): number {
+  if (liveCustomer(db, id).rmId === rmId) return 0;
   return db.orm
     .select({ n: count() })
     .from(appointments)
-    .where(plannedOff(db, id, reId))
+    .where(plannedOff(db, id, rmId))
     .get()!.n;
 }
 
@@ -227,7 +227,7 @@ export function restoreCustomer(db: Database, id: string): void {
 
 /** Why the customer cannot be restored, thrown as `restoreCustomer` throws it (TR-2). */
 export function checkRestoreCustomer(db: Database, row: CustomerRow): void {
-  requireRe(db, row.reId);
+  requireRe(db, row.rmId);
 }
 
 // ---- transitions, shared with the appointment commands --------------------
@@ -519,21 +519,21 @@ function latestTransition(db: Database, customerId: string): TransitionRow | und
     .get();
 }
 
-/** The customer's planned appointments (scheduled, today or later: spec Phase 4 §1) not on `reId`. */
-function plannedOff(db: Database, customerId: string, reId: string) {
+/** The customer's planned appointments (scheduled, today or later: spec Phase 4 §1) not on `rmId`. */
+function plannedOff(db: Database, customerId: string, rmId: string) {
   return and(
     eq(appointments.customerId, customerId),
     eq(appointments.status, 'SCHEDULED'),
     isNull(appointments.deletedAt),
     gte(appointments.date, storedDate(today(db))),
-    ne(appointments.reId, reId),
+    ne(appointments.rmId, rmId),
   );
 }
 
 function validateProfile(db: Database, input: CustomerProfile) {
   return {
     name: requireName(input.name),
-    reId: requireRe(db, input.reId),
+    rmId: requireRe(db, input.rmId),
     birthDate: input.birthDate ? birthDateText(db, input.birthDate) : null,
     gender: input.gender == null ? null : requireChoice(GENDERS, input.gender),
   };
@@ -565,7 +565,7 @@ function toCustomer(row: CustomerRow): CustomerRecord {
     id: row.id,
     code: row.code,
     name: row.name,
-    reId: row.reId,
+    rmId: row.rmId,
     stage: row.stage,
     birthDate:
       birth === null ? null : birth.length === 4 ? { year: Number(birth) } : fromIsoDate(birth),

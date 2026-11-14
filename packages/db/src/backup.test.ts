@@ -38,21 +38,21 @@ async function small() {
   const date = calendarDate(2026, 9, 1);
   const lan = createCustomer(db, {
     name: 'Lan',
-    reId: re.id,
+    rmId: re.id,
     stage: 'N3',
     date,
     birthDate: { year: 1984 },
   });
   scheduleAppointment(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     date: calendarDate(2026, 9, 3),
     time: '09:30',
     triggerType: 'REFERRAL',
   });
   submitPolicy(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     submittedDate: date,
     submittedFyp: 20_000_000,
   });
@@ -63,7 +63,7 @@ async function small() {
   });
   const gone = createCustomer(db, {
     name: 'Minh',
-    reId: re.id,
+    rmId: re.id,
     stage: 'N4',
     date: calendarDate(2026, 9, 2),
   });
@@ -116,7 +116,7 @@ describe('exportBackup', () => {
       'id',
       'code',
       'name',
-      're_id',
+      'rm_id',
       'birth_date',
       'gender',
       'stage',
@@ -137,11 +137,11 @@ describe('exportBackup', () => {
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 9) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 9) });
     const book = (coordinatorId: string) =>
       scheduleAppointment(db, {
         customerId: lan.id,
-        reId: re.id,
+        rmId: re.id,
         date: d(3, 9),
         triggerType: 'REFERRAL',
         coordinatorIds: [coordinatorId],
@@ -211,7 +211,7 @@ describe('importBackup', () => {
     const db = await openDatabase({ now });
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
 
@@ -261,8 +261,26 @@ describe('importBackup', () => {
     ).toEqual(['outcome_reviewer_id']);
   });
 
-  // A2 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM imports as it was saved.
-  it('A2: imports a file saved before RE became RM, with RM in place of the role and the note source RE', async () => {
+  /** Every row as the app writes it now, ids and all; only the export time differs. */
+  const unstamped = (text: string) => text.replace(/"exportedAt":"[^"]*"/, '');
+
+  /**
+   * `file` as an app before A3 (migration 0015) saved it: the column of the RM is re_id, in its
+   * place among the columns. Returns how many rows of each table carry it.
+   */
+  const withReId = (file: BackupJson) =>
+    ['customers', 'appointments', 'policies'].map((table) => {
+      file.tables[table] = file.tables[table]!.map((row) =>
+        Object.fromEntries(
+          Object.entries(row).map(([key, value]) => [key === 'rm_id' ? 're_id' : key, value]),
+        ),
+      );
+      return file.tables[table].filter((row) => 're_id' in row && !('rm_id' in row)).length;
+    });
+
+  // A2, A3 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM (version 13, after
+  // migration 0012) imports as it was saved, through the migrations of A2 and A3.
+  it('A2, A3: imports a file of migration 0012, with RM in place of the role and the note source RE, and rm_id of re_id', async () => {
     const latest = exportBackup(await small());
     const file = JSON.parse(latest) as BackupJson;
     const before = MIGRATIONS.find((m) => m.tag === '0013_role_rm')!.id - 1;
@@ -272,13 +290,43 @@ describe('importBackup', () => {
     expect(asSaved(file.tables.people!, 'role')).toBe(2);
     expect(asSaved(file.tables.kyc_notes!, 'source')).toBe(1);
     expect(file.tables.kyc_notes!.map((note) => note.source).sort()).toEqual(['RE', 'SYSTEM']);
+    expect(withReId(file)).toEqual([2, 1, 1]);
 
     const imported = await importBackup(JSON.stringify(file));
 
     expect(imported.schemaVersion).toBe(before);
     expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    // Every row as the app writes it now, ids and all; only the export time differs.
-    const unstamped = (text: string) => text.replace(/"exportedAt":"[^"]*"/, '');
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
+  });
+
+  // A3: the file of an app after A2, before the column of the RM was named rm_id (version 15).
+  it('A3: imports a file saved before rm_id, with the RM of each customer, appointment and policy', async () => {
+    const db = await small();
+    const latest = exportBackup(db);
+    const file = JSON.parse(latest) as BackupJson;
+    const before = MIGRATIONS.find((m) => m.tag === '0015_rm_id')!.id - 1;
+    file.schemaVersion = before;
+    expect(withReId(file)).toEqual([2, 1, 1]);
+    expect(Object.keys(file.tables.customers![0]!)).toEqual([
+      'id',
+      'code',
+      'name',
+      're_id',
+      'birth_date',
+      'gender',
+      'stage',
+      'created_at',
+      'updated_at',
+      'deleted_at',
+    ]);
+
+    const imported = await importBackup(JSON.stringify(file));
+
+    expect(imported.schemaVersion).toBe(before);
+    expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(listCustomers(imported.db).map((c) => c.rmId)).toEqual(
+      listCustomers(db).map((c) => c.rmId),
+    );
     expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
   });
 
@@ -351,7 +399,7 @@ describe('importBackup', () => {
       (b) => withRow(b, 'stage_transitions', (row) => ({ ...row, seq: 1.5 })),
     ],
     ['a number in a text column', (b) => withRow(b, 'teams', (row) => ({ ...row, name: 7 }))],
-    ['a broken reference', (b) => withRow(b, 'customers', (row) => ({ ...row, re_id: 'nobody' }))],
+    ['a broken reference', (b) => withRow(b, 'customers', (row) => ({ ...row, rm_id: 'nobody' }))],
     ['a failed check', (b) => withRow(b, 'customers', (row) => ({ ...row, stage: 'N9' }))],
     [
       'a duplicate id',
@@ -481,11 +529,11 @@ describe('importBackup', () => {
   it('keeps an expected case size, or none, through export and import', async () => {
     const { db, re } = await setup();
     const date = calendarDate(2026, 9, 3);
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date });
     for (const expectedCaseSize of [100_000_000, null]) {
       const { id } = scheduleAppointment(db, {
         customerId: lan.id,
-        reId: re.id,
+        rmId: re.id,
         date,
         triggerType: 'REFERRAL',
       });

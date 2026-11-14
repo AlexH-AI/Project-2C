@@ -16,7 +16,7 @@ const TODAY = calendarDate(2027, 1, 13);
 const appointment = (status: AppointmentStatus, date: CalendarDate): Appointment => ({
   id: 'ap',
   customerId: 'kh',
-  reId: 're-an',
+  rmId: 're-an',
   coordinatorIds: [],
   date,
   status,
@@ -81,7 +81,7 @@ describe('appointmentCountsByMark', () => {
   const SCOPES: readonly Scope[] = [
     { kind: 'all' },
     { kind: 'team', teamId: 'team-a' },
-    { kind: 're', reId: 're-an' },
+    { kind: 're', rmId: 're-an' },
   ];
   const MARKS: Readonly<Record<string, readonly Period[]>> = {
     'days of 12/2026 – 03/2027': [
@@ -118,9 +118,9 @@ describe('appointmentCountsByScope', () => {
   // An appointment of a TL (once an RE), of an RE outside any team and of someone not listed.
   const appointments = [
     ...live,
-    { ...appointment('MET', TODAY), id: 'ap-tl', reId: 'tl-ha' },
-    { ...appointment('SCHEDULED', TODAY), id: 'ap-solo', reId: 're-solo' },
-    { ...appointment('NO_SHOW', TODAY), id: 'ap-x', reId: 'x' },
+    { ...appointment('MET', TODAY), id: 'ap-tl', rmId: 'tl-ha' },
+    { ...appointment('SCHEDULED', TODAY), id: 'ap-solo', rmId: 're-solo' },
+    { ...appointment('NO_SHOW', TODAY), id: 'ap-x', rmId: 'x' },
   ];
   const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RM', teamId: null } as const];
   const SCOPES: readonly Scope[] = [
@@ -128,7 +128,7 @@ describe('appointmentCountsByScope', () => {
     { kind: 'team', teamId: 'team-a' },
     { kind: 'team', teamId: 'team-b' },
     { kind: 'team', teamId: 'team-none' },
-    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((reId): Scope => ({ kind: 're', reId })),
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 're', rmId })),
   ];
   const PERIODS: readonly Period[] = [
     periodOf('month', TODAY),

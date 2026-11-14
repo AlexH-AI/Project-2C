@@ -23,7 +23,7 @@ async function withCustomer() {
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    reId: ctx.re.id,
+    rmId: ctx.re.id,
     stage: 'N4',
     date: d(1, 9),
     birthDate: { year: 1980 },
@@ -145,7 +145,7 @@ describe('recordAiAnalysis', () => {
     const { db: database, customer, re, persist } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Minh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(2, 9),
       birthDate: { year: 1975 },
@@ -326,7 +326,7 @@ describe('recordAiAnalysis', () => {
     const { db: database, customer, re, persist } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Minh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(2, 9),
       birthDate: { year: 1975 },
@@ -774,8 +774,29 @@ const SLOW = 180_000;
 const RE_BEFORE_A2: Record<string, string> = { people: 'role', kyc_notes: 'source' };
 
 /**
+ * Runs `commands` on a database saved before A3 (migration 0015), whose column of the RM is still
+ * re_id: the commands read and write rm_id, so the column has that name while they run, and re_id
+ * again after, as such a file holds it. A copy is in purge.test.ts: the codemap of
+ * packages/db/CLAUDE.md has no room for one more export of test-support.ts.
+ */
+function runBeforeA3<T>(db: Database, commands: () => T): T {
+  const rename = (from: string, to: string) => {
+    for (const table of ['customers', 'appointments', 'policies']) {
+      db.sqlite.run(`ALTER TABLE ${table} RENAME COLUMN ${from} TO ${to}`);
+    }
+  };
+  rename('re_id', 'rm_id');
+  try {
+    return commands();
+  } finally {
+    rename('rm_id', 're_id');
+  }
+}
+
+/**
  * Copies the rows of `from` into the tables of `to`, the columns `to` has, foreign keys off. `to` is
- * older than A2: a role or a KYC note source RM goes in as RE, as a file of that version holds it.
+ * older than A2: a role or a KYC note source RM goes in as RE, as a file of that version holds it;
+ * and than A3: its column of the RM, re_id, takes the rm_id of `from`.
  */
 function copyRows(from: Database, to: Database): void {
   to.sqlite.run('PRAGMA foreign_keys = OFF');
@@ -790,7 +811,9 @@ function copyRows(from: Database, to: Database): void {
       const read = columns.map((column) =>
         RE_BEFORE_A2[table] === column
           ? `CASE ${column} WHEN 'RM' THEN 'RE' ELSE ${column} END`
-          : column,
+          : column === 're_id'
+            ? 'rm_id'
+            : column,
       );
       for (const row of from.sqlite.exec(`SELECT ${read.join(', ')} FROM ${table}`)[0]?.values ??
         []) {
@@ -847,30 +870,34 @@ describe('the ai_analyses migration', () => {
     old.sqlite.run('PRAGMA ignore_check_constraints = ON');
     const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
     old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
-    const customer = createCustomer(old, {
-      name: 'Lan',
-      reId: re.id,
-      stage: 'N4',
-      date: d(1, 9),
-      birthDate: { year: 1980 },
+    // The commands name the column of the RM rm_id, which a file before A3 (0015) calls re_id.
+    const { customer, web } = runBeforeA3(old, () => {
+      const customer = createCustomer(old, {
+        name: 'Lan',
+        rmId: re.id,
+        stage: 'N4',
+        date: d(1, 9),
+        birthDate: { year: 1980 },
+      });
+      old.sqlite.run("UPDATE people SET role = 'RE'");
+      const version = latestVersionId(old, customer.id);
+      recordAiAnalysis(old, analysis(customer.id, version));
+      recordAiAnalysis(old, {
+        ...rejected(customer.id, version),
+        provider: 'OPENCODE_GO',
+        model: 'glm-5.3',
+        reasoning: 'DEFAULT',
+        promptTokens: 10,
+        completionTokens: 5,
+      });
+      const web = analysis(customer.id, version, {
+        provider: 'CHATGPT_WEB',
+        promptVersion: 'analysis@1+web@1',
+      });
+      // The CHECK of the old table refuses it.
+      expect(() => recordAiAnalysis(old, web)).toThrow(/CHECK/);
+      return { customer, web };
     });
-    old.sqlite.run("UPDATE people SET role = 'RE'");
-    const version = latestVersionId(old, customer.id);
-    recordAiAnalysis(old, analysis(customer.id, version));
-    recordAiAnalysis(old, {
-      ...rejected(customer.id, version),
-      provider: 'OPENCODE_GO',
-      model: 'glm-5.3',
-      reasoning: 'DEFAULT',
-      promptTokens: 10,
-      completionTokens: 5,
-    });
-    const web = analysis(customer.id, version, {
-      provider: 'CHATGPT_WEB',
-      promptVersion: 'analysis@1+web@1',
-    });
-    // The CHECK of the old table refuses it.
-    expect(() => recordAiAnalysis(old, web)).toThrow(/CHECK/);
     const rows = (database: Database) =>
       database.sqlite.exec('SELECT * FROM ai_analyses ORDER BY rowid')[0]!.values;
     const saved = rows(old);

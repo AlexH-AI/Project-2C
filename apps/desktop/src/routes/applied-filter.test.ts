@@ -13,7 +13,7 @@ const today = calendarDate(2026, 10, 15);
 const month = periodOf('month', today);
 const year = periodOf('year', today);
 const all: Scope = { kind: 'all' };
-const re: Scope = { kind: 're', reId: 're-1' };
+const re: Scope = { kind: 're', rmId: 're-1' };
 
 describe('applied filter (Lọc)', () => {
   it('opens with the selection already applied', () => {
@@ -86,7 +86,7 @@ describe('sameSelection', () => {
     ).toBe(true);
   });
 
-  const otherRe: Scope = { kind: 're', reId: 're-2' };
+  const otherRe: Scope = { kind: 're', rmId: 're-2' };
   const otherTeam: Scope = { kind: 'team', teamId: 'team-2' };
   it.each<[string, FilterSelection, FilterSelection]>([
     [

@@ -236,7 +236,7 @@ function appt(customerId: string, date: CalendarDate, time: string | null, extra
   return {
     id: `A${seq}`,
     customerId,
-    reId: 'RE1',
+    rmId: 'RE1',
     coordinatorIds: [],
     date,
     time,

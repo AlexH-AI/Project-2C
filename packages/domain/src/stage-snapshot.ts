@@ -40,8 +40,8 @@ export function stageSnapshot(
 ): StageCounts {
   const matches = scopeMatcher(people, scope);
   const counts = noCustomers();
-  for (const { reId, sorted } of customerHistories(customers, transitions)) {
-    if (!matches(reId)) continue;
+  for (const { rmId, sorted } of customerHistories(customers, transitions)) {
+    if (!matches(rmId)) continue;
     const stage = stageAtEndOf(sorted, date);
     if (stage !== null) counts[stage] += 1;
   }
@@ -61,7 +61,7 @@ const noCustomers = (): Record<CustomerStage, number> => ({
 function customerHistories(
   customers: readonly Customer[],
   transitions: readonly StageTransition[],
-): { readonly reId: string; readonly sorted: readonly StageTransition[] }[] {
+): { readonly rmId: string; readonly sorted: readonly StageTransition[] }[] {
   const grouped = new Map<string, StageTransition[]>();
   for (const transition of transitions) {
     const list = grouped.get(transition.customerId);
@@ -69,7 +69,7 @@ function customerHistories(
     else grouped.set(transition.customerId, [transition]);
   }
   return customers.map((customer) => ({
-    reId: customer.reId,
+    rmId: customer.rmId,
     sorted: sortedByDate(grouped.get(customer.id) ?? []),
   }));
 }
@@ -86,18 +86,18 @@ export function stageSnapshotByScope(
   date: CalendarDate,
 ): (scope: Scope) => StageCounts {
   const byRe = new Map<string, Record<CustomerStage, number>>();
-  for (const { reId, sorted } of customerHistories(customers, transitions)) {
+  for (const { rmId, sorted } of customerHistories(customers, transitions)) {
     const stage = stageAtEndOf(sorted, date);
     if (stage === null) continue;
-    const counts = byRe.get(reId) ?? noCustomers();
-    byRe.set(reId, counts);
+    const counts = byRe.get(rmId) ?? noCustomers();
+    byRe.set(rmId, counts);
     counts[stage] += 1;
   }
   return (scope) => {
     const matches = scopeMatcher(people, scope);
     const total = noCustomers();
-    for (const [reId, counts] of byRe) {
-      if (!matches(reId)) continue;
+    for (const [rmId, counts] of byRe) {
+      if (!matches(rmId)) continue;
       for (const stage of STAGES) total[stage] += counts[stage];
     }
     return total;
@@ -140,8 +140,8 @@ export function stageSnapshotSeries(
     const matches = scopeMatcher(people, scope);
     // How the count of each stage moves from the previous day of `dates` to this one.
     const changes = dates.map(noCustomers);
-    for (const { reId, sorted } of histories) {
-      if (!matches(reId)) continue;
+    for (const { rmId, sorted } of histories) {
+      if (!matches(rmId)) continue;
       sorted.forEach((transition, index) => {
         const next = sorted[index + 1];
         const from = firstOnOrAfter(dates, transition.date);

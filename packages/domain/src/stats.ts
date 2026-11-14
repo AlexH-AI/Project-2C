@@ -27,17 +27,17 @@ export interface PolicyMetrics {
  */
 
 /** Whether a record owned by an RE counts in the scope; built once, then checked per record. */
-export function scopeMatcher(people: readonly Person[], scope: Scope): (reId: string) => boolean {
+export function scopeMatcher(people: readonly Person[], scope: Scope): (rmId: string) => boolean {
   switch (scope.kind) {
     case 'all':
       return () => true;
     case 're':
-      return (reId) => reId === scope.reId;
+      return (rmId) => rmId === scope.rmId;
     case 'team': {
       const members = new Set(
         people.filter((person) => person.teamId === scope.teamId).map((person) => person.id),
       );
-      return (reId) => members.has(reId);
+      return (rmId) => members.has(rmId);
     }
   }
 }
@@ -80,11 +80,11 @@ function rfMatcher(transitions: readonly StageTransition[]): (appointment: Appoi
 }
 
 /**
- * Whether a record owned by `reId` counts in the scope. A record counts for its RE and for that
+ * Whether a record owned by `rmId` counts in the scope. A record counts for its RE and for that
  * RE's current team (G2 E).
  */
-export function inScope(people: readonly Person[], reId: string, scope: Scope): boolean {
-  return scopeMatcher(people, scope)(reId);
+export function inScope(people: readonly Person[], rmId: string, scope: Scope): boolean {
+  return scopeMatcher(people, scope)(rmId);
 }
 
 const sum = (values: readonly Vnd[]) => values.reduce(addVnd, 0);
@@ -95,7 +95,7 @@ export function policyMetrics(
   scope: Scope,
 ): PolicyMetrics {
   const matches = scopeMatcher(data.people, scope);
-  const policies = data.policies.filter((policy) => matches(policy.reId));
+  const policies = data.policies.filter((policy) => matches(policy.rmId));
   const submitted = policies.filter((policy) => isInPeriod(policy.submittedDate, period));
   const issued = policies.filter(
     (policy) => policy.issuedDate !== null && isInPeriod(policy.issuedDate, period),
@@ -134,7 +134,7 @@ export function rfCount(
   const isRf = rfMatcher(data.transitions);
   return data.appointments.filter(
     (appointment) =>
-      matches(appointment.reId) && isInPeriod(appointment.date, period) && isRf(appointment),
+      matches(appointment.rmId) && isInPeriod(appointment.date, period) && isRf(appointment),
   ).length;
 }
 
@@ -188,7 +188,7 @@ export function periodMetricsByMark(
   const isRf = rfMatcher(data.transitions);
   const parts = marks.map(noParts);
   for (const policy of data.policies) {
-    if (!matches(policy.reId)) continue;
+    if (!matches(policy.rmId)) continue;
     const submitted = parts[markOf(policy.submittedDate)];
     if (submitted) {
       submitted.submittedCount += 1;
@@ -201,7 +201,7 @@ export function periodMetricsByMark(
     }
   }
   for (const appointment of data.appointments) {
-    if (!matches(appointment.reId) || !isRf(appointment)) continue;
+    if (!matches(appointment.rmId) || !isRf(appointment)) continue;
     const part = parts[markOf(appointment.date)];
     if (part) part.rfCount += 1;
   }
@@ -219,33 +219,33 @@ export function periodMetricsByScope(
 ): (scope: Scope) => PeriodMetrics {
   const isRf = rfMatcher(data.transitions);
   const byRe = new Map<string, MetricParts>();
-  const partOf = (reId: string) => {
-    const part = byRe.get(reId) ?? noParts();
-    byRe.set(reId, part);
+  const partOf = (rmId: string) => {
+    const part = byRe.get(rmId) ?? noParts();
+    byRe.set(rmId, part);
     return part;
   };
   for (const policy of data.policies) {
     if (isInPeriod(policy.submittedDate, period)) {
-      const part = partOf(policy.reId);
+      const part = partOf(policy.rmId);
       part.submittedCount += 1;
       part.caseSize = addVnd(part.caseSize, policy.submittedFyp);
     }
     if (policy.issuedDate && isInPeriod(policy.issuedDate, period)) {
-      const part = partOf(policy.reId);
+      const part = partOf(policy.rmId);
       part.issuedCount += 1;
       part.revenue = addVnd(part.revenue, policy.issuedFyp ?? policy.submittedFyp);
     }
   }
   for (const appointment of data.appointments) {
     if (isInPeriod(appointment.date, period) && isRf(appointment)) {
-      partOf(appointment.reId).rfCount += 1;
+      partOf(appointment.rmId).rfCount += 1;
     }
   }
   return (scope) => {
     const matches = scopeMatcher(data.people, scope);
     const total = noParts();
-    for (const [reId, part] of byRe) {
-      if (!matches(reId)) continue;
+    for (const [rmId, part] of byRe) {
+      if (!matches(rmId)) continue;
       total.submittedCount += part.submittedCount;
       total.caseSize = addVnd(total.caseSize, part.caseSize);
       total.issuedCount += part.issuedCount;

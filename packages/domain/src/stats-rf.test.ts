@@ -43,7 +43,7 @@ const appointment = (
 ): Appointment => ({
   id,
   customerId: 'kh',
-  reId: 're-1',
+  rmId: 're-1',
   coordinatorIds: [],
   date: d(day, month, 2027),
   status,
@@ -147,8 +147,8 @@ describe('rfCount', () => {
     const appointments = [appointment('ap', 5, 'MET', 'N2')];
     const transitions = [move('N3', 'N2', 5, 'ap')];
     const data = { people, appointments, transitions };
-    expect(rfCount(data, JAN, { kind: 're', reId: 're-1' })).toBe(1);
-    expect(rfCount(data, JAN, { kind: 're', reId: 're-2' })).toBe(0);
+    expect(rfCount(data, JAN, { kind: 're', rmId: 're-1' })).toBe(1);
+    expect(rfCount(data, JAN, { kind: 're', rmId: 're-2' })).toBe(0);
     expect(rfCount(data, JAN, { kind: 'team', teamId: 'team-1' })).toBe(1);
   });
 });
@@ -179,7 +179,7 @@ describe('closeRate', () => {
       {
         id: 'p1',
         customerId: 'kh',
-        reId: 're-1',
+        rmId: 're-1',
         submittedDate: d(10, 1, 2027),
         submittedFyp: 100,
         issuedDate: d(3, 2, 2027),

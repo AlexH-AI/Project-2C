@@ -61,7 +61,7 @@ async function history() {
   const { db, persist, re, otherRe, tl } = await setup();
   const lan = createCustomer(db, {
     name: 'Lan',
-    reId: re.id,
+    rmId: re.id,
     stage: 'N4',
     date: day(1),
     birthDate: { year: 1984 },
@@ -69,7 +69,7 @@ async function history() {
   });
   const met = scheduleAppointment(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     date: day(10),
     triggerType: 'REFERRAL',
     coordinatorIds: [tl.id],
@@ -81,7 +81,7 @@ async function history() {
   });
   const moved = scheduleAppointment(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     date: day(12),
     triggerType: 'EVENT',
   });
@@ -89,7 +89,7 @@ async function history() {
   changeStageManually(db, lan.id, { to: 'N2', date: day(18) });
   submitPolicy(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     submittedDate: day(19),
     submittedFyp: 20_000_000,
   });
@@ -100,10 +100,10 @@ async function history() {
   });
   markKycConflict(db, lan.id, { field: 'childrenCount', value: 3, noteId: note.id, date: day(21) });
 
-  const hoa = createCustomer(db, { name: 'Hoa', reId: otherRe.id, stage: 'N4', date: day(2) });
+  const hoa = createCustomer(db, { name: 'Hoa', rmId: otherRe.id, stage: 'N4', date: day(2) });
   const withdrawn = scheduleAppointment(db, {
     customerId: hoa.id,
-    reId: otherRe.id,
+    rmId: otherRe.id,
     date: day(5),
     triggerType: 'OTHER',
   });
@@ -111,10 +111,10 @@ async function history() {
   softDeleteAppointment(db, withdrawn.id);
   recordKycNote(db, hoa.id, { text: 'Độc thân', date: day(6), facts: [] });
 
-  const minh = createCustomer(db, { name: 'Minh', reId: re.id, stage: 'N1', date: day(3) });
+  const minh = createCustomer(db, { name: 'Minh', rmId: re.id, stage: 'N1', date: day(3) });
   const restored = scheduleAppointment(db, {
     customerId: minh.id,
-    reId: re.id,
+    rmId: re.id,
     date: day(7),
     triggerType: 'OCCASION',
   });
@@ -123,7 +123,7 @@ async function history() {
   restoreAppointment(db, restored.id);
   softDeleteCustomer(db, minh.id);
   restoreCustomer(db, minh.id);
-  const kien = createCustomer(db, { name: 'Kiên', reId: re.id, stage: 'N3', date: day(4) });
+  const kien = createCustomer(db, { name: 'Kiên', rmId: re.id, stage: 'N3', date: day(4) });
   softDeleteCustomer(db, kien.id);
   // Lan's analyses (spec Phase 5 §7): one by Mock, accepted, then one by a model, rejected, then
   // one through ChatGPT web, accepted (§3.1).
@@ -300,7 +300,7 @@ describe('importBackup — rules across tables', () => {
   it('accepts a deleted customer whose RE has since become a TL (spec §3.3)', async () => {
     const { db, ids } = await history();
     const backup = JSON.parse(exportBackup(db)) as BackupJson;
-    row(backup, 'customers', (c) => c.id === ids.kien).re_id = ids.tl;
+    row(backup, 'customers', (c) => c.id === ids.kien).rm_id = ids.tl;
 
     const imported = await importBackup(JSON.stringify(backup));
 
@@ -320,7 +320,7 @@ describe('importBackup — rules across tables', () => {
       'a deleted customer of a deleted RE',
       (b, ids) => {
         const gone = person(b, ids.re, { id: 'gone-re', deleted_at: DELETED });
-        row(b, 'customers', (c) => c.id === ids.kien).re_id = gone.id;
+        row(b, 'customers', (c) => c.id === ids.kien).rm_id = gone.id;
       },
     ],
     [
@@ -575,13 +575,13 @@ describe('importBackup — rules across tables', () => {
     ],
     [
       '5: a live customer whose RE is a TL',
-      (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).re_id = ids.tl),
+      (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).rm_id = ids.tl),
     ],
     [
       '5: a live appointment whose RE is a TL',
-      (b, ids) => (row(b, 'appointments', (a) => a.rescheduled_from_id !== null).re_id = ids.tl),
+      (b, ids) => (row(b, 'appointments', (a) => a.rescheduled_from_id !== null).rm_id = ids.tl),
     ],
-    ['5: a live policy whose RE is a TL', (b, ids) => (b.tables.policies![0]!.re_id = ids.tl)],
+    ['5: a live policy whose RE is a TL', (b, ids) => (b.tables.policies![0]!.rm_id = ids.tl)],
     [
       '5: a live customer, appointment and policy of a deleted RE',
       (b, ids) => (row(b, 'people', (p) => p.id === ids.re).deleted_at = DELETED),
@@ -601,7 +601,7 @@ describe('importBackup — rules across tables', () => {
         const deleted = row(b, 'appointments', (a) => a.customer_id === ids.hoa);
         b.tables.appointment_coordinators!.push({
           appointment_id: deleted.id,
-          person_id: deleted.re_id,
+          person_id: deleted.rm_id,
         });
       },
     ],
@@ -1329,7 +1329,7 @@ describe('importBackup — a file the app wrote from an imported one', () => {
     seedDemoData(seeded, { anchorDate: day(15), seed: 2 });
     const { db } = await importBackup(exportBackup(seeded), { now });
     const first = (sql: string) => db.sqlite.exec(`${sql} LIMIT 1`)[0]!.values[0]!.map(String);
-    const [reId] = first("SELECT id FROM people WHERE role = 'RM' AND deleted_at IS NULL");
+    const [rmId] = first("SELECT id FROM people WHERE role = 'RM' AND deleted_at IS NULL");
     const [tlId] = first("SELECT id FROM people WHERE role = 'TL' AND deleted_at IS NULL");
     // A meeting whose transition is still its customer's latest, so deleting it withdraws it.
     const [metId] = first(
@@ -1347,7 +1347,7 @@ describe('importBackup — a file the app wrote from an imported one', () => {
 
     const lan = createCustomer(db, {
       name: 'Lan',
-      reId: reId!,
+      rmId: rmId!,
       stage: 'N4',
       date: day(14),
       birthDate: { year: 1984 },
@@ -1355,14 +1355,14 @@ describe('importBackup — a file the app wrote from an imported one', () => {
     });
     const meeting = scheduleAppointment(db, {
       customerId: lan.id,
-      reId: reId!,
+      rmId: rmId!,
       date: day(15),
       triggerType: 'REFERRAL',
     });
     recordMeetingOutcome(db, meeting.id, { status: 'MET', stageAfter: 'N3', nextStep: 'Gặp lại' });
     softDeleteAppointment(db, metId!);
     resolveKycConflict(db, conflictCustomerId!, { factId: factId!, date: day(15) });
-    updatePerson(db, reId!, { name: 'An Mới' });
+    updatePerson(db, rmId!, { name: 'An Mới' });
     updatePerson(db, tlId!, { name: 'Hà Mới' });
     // The RE gives another birth year; the profile's settles it (D2).
     const flagged = recordKycNote(db, lan.id, {

@@ -104,7 +104,7 @@ export const customers = sqliteTable(
     id: text('id').primaryKey(),
     code: text('code').notNull().unique(),
     name: text('name').notNull(),
-    reId: text('re_id')
+    rmId: text('rm_id')
       .notNull()
       .references(() => people.id),
     /** `YYYY` or `YYYY-MM-DD`. */
@@ -126,7 +126,7 @@ export const appointments = sqliteTable(
     customerId: text('customer_id')
       .notNull()
       .references(() => customers.id),
-    reId: text('re_id')
+    rmId: text('rm_id')
       .notNull()
       .references(() => people.id),
     date: text('date').notNull(),
@@ -222,7 +222,7 @@ export const policies = sqliteTable(
     customerId: text('customer_id')
       .notNull()
       .references(() => customers.id),
-    reId: text('re_id')
+    rmId: text('rm_id')
       .notNull()
       .references(() => people.id),
     submittedDate: text('submitted_date').notNull(),

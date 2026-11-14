@@ -111,7 +111,7 @@ describe('stageBlock', () => {
   });
 
   it('draws the chart of the RE picked (S06)', () => {
-    const block = stageBlock(DATA, january, { kind: 're', reId: 're-an' }, SNAPSHOT_TODAY);
+    const block = stageBlock(DATA, january, { kind: 're', rmId: 're-an' }, SNAPSHOT_TODAY);
     expect(block.charts).toHaveLength(1);
     expect(block.tiles).toEqual(n4ToN1(golden('S06').expected));
   });
@@ -228,7 +228,7 @@ describe('stageBlock on the demo data: each column equals the snapshot of its da
     const scopes: readonly Scope[] = [
       ALL,
       { kind: 'team', teamId: data.teams[0]!.id },
-      { kind: 're', reId: data.people.find((person) => person.role === 'RM')!.id },
+      { kind: 're', rmId: data.people.find((person) => person.role === 'RM')!.id },
     ];
     const alone = (scope: Scope) =>
       chartMarks(period).map((mark) => {

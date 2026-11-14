@@ -25,7 +25,7 @@ export function resolveScope(
   if (choice.kind === 're') {
     const reps = reOptions(people, teams);
     const re = reps.find((option) => option.value === choice.id) ?? reps[0];
-    return re ? { kind: 're', reId: re.value } : { kind: 'all' };
+    return re ? { kind: 're', rmId: re.value } : { kind: 'all' };
   }
   return { kind: 'all' };
 }
@@ -49,7 +49,7 @@ export function narrowScope(
 ): Scope {
   if (scope.kind !== 'team' || reInTeam === undefined) return scope;
   const re = teamRes(people, scope.teamId).find((person) => person.id === reInTeam);
-  return re ? { kind: 're', reId: re.id } : scope;
+  return re ? { kind: 're', rmId: re.id } : scope;
 }
 
 /** The RE of one team, by name, as the RE strip of Customers and Appointments lists them. */

@@ -29,11 +29,11 @@ type Change = readonly [date: CalendarDate, to: CustomerStage];
 
 const customer = (
   id: string,
-  reId: string,
+  rmId: string,
   changes: readonly Change[],
   extra: { readonly deleted?: boolean } = {},
 ): GoldenCustomerRow => ({
-  customer: { id, name: id, reId, stage: changes.at(-1)![1] },
+  customer: { id, name: id, rmId, stage: changes.at(-1)![1] },
   transitions: changes.map(([date, to], index) => ({
     id: `${id}-t${index + 1}`,
     customerId: id,
@@ -131,14 +131,14 @@ export const SNAPSHOT_GOLDEN_CASES: readonly SnapshotGoldenCase[] = [
     id: 'S06',
     period: JANUARY,
     date: d(13, 1),
-    scope: { kind: 're', reId: 're-an' },
+    scope: { kind: 're', rmId: 're-an' },
     expected: counts(0, 1, 1, 1, 0, 0),
   },
   {
     id: 'S07',
     period: DECEMBER,
     date: d(31, 12, 2026),
-    scope: { kind: 're', reId: 're-dung' },
+    scope: { kind: 're', rmId: 're-dung' },
     expected: counts(0, 0, 0, 0, 0, 0),
   },
   {

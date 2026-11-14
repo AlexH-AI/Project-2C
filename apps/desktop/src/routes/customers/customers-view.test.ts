@@ -33,11 +33,11 @@ const people: Person[] = [
   { id: 're2', name: 'Mai Phương', role: 'RM', teamId: 't2' },
 ];
 
-const customer = (id: string, stage: CustomerRecord['stage'], reId = 're1'): CustomerRecord => ({
+const customer = (id: string, stage: CustomerRecord['stage'], rmId = 're1'): CustomerRecord => ({
   id,
   code: `K-${id}`,
   name: id,
-  reId,
+  rmId,
   stage,
   birthDate: null,
   gender: null,
@@ -54,7 +54,7 @@ const move = (
 const policy = (customerId: string): Policy => ({
   id: `p-${customerId}`,
   customerId,
-  reId: 're1',
+  rmId: 're1',
   submittedDate: day(9, 1),
   submittedFyp: 10_000_000 as Policy['submittedFyp'],
   issuedDate: null,
@@ -118,7 +118,7 @@ describe('customerBoard', () => {
     expect(team.open.N4.map((card) => card.customer.id)).toEqual(['em']);
     expect(team).toMatchObject({ openCount: 1, closedCount: 0 });
 
-    const re = customerBoard(data, { kind: 're', reId: 're1' });
+    const re = customerBoard(data, { kind: 're', rmId: 're1' });
     expect(re.open.N4.map((card) => card.customer.id)).toEqual(['binh', 'an']);
   });
 

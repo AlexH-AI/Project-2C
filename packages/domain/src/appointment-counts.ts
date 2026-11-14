@@ -51,7 +51,7 @@ export function appointmentCounts(
   const matches = scopeMatcher(people, scope);
   const counts = noCounts();
   for (const appointment of appointments) {
-    if (!matches(appointment.reId) || !isInPeriod(appointment.date, period)) continue;
+    if (!matches(appointment.rmId) || !isInPeriod(appointment.date, period)) continue;
     counts[appointmentGroup(appointment, today)] += 1;
     counts.total += 1;
   }
@@ -72,16 +72,16 @@ export function appointmentCountsByScope(
   const byRe = new Map<string, Counts>();
   for (const appointment of appointments) {
     if (!isInPeriod(appointment.date, period)) continue;
-    const counts = byRe.get(appointment.reId) ?? noCounts();
-    byRe.set(appointment.reId, counts);
+    const counts = byRe.get(appointment.rmId) ?? noCounts();
+    byRe.set(appointment.rmId, counts);
     counts[appointmentGroup(appointment, today)] += 1;
     counts.total += 1;
   }
   return (scope) => {
     const matches = scopeMatcher(people, scope);
     const total = noCounts();
-    for (const [reId, counts] of byRe) {
-      if (!matches(reId)) continue;
+    for (const [rmId, counts] of byRe) {
+      if (!matches(rmId)) continue;
       for (const key of COUNT_KEYS) total[key] += counts[key];
     }
     return total;
@@ -110,7 +110,7 @@ export function appointmentCountsByMark(
   const markOf = markIndexer(marks);
   const counts = marks.map(noCounts);
   for (const appointment of appointments) {
-    if (!matches(appointment.reId)) continue;
+    if (!matches(appointment.rmId)) continue;
     const mark = counts[markOf(appointment.date)];
     if (!mark) continue;
     mark[appointmentGroup(appointment, today)] += 1;

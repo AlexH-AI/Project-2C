@@ -6,7 +6,7 @@ import { metDraftOf } from './MetFields';
 const met: AppointmentRecord = {
   id: 'a-1',
   customerId: 'c-1',
-  reId: 'p-re',
+  rmId: 'p-re',
   coordinatorIds: [],
   date: calendarDate(2026, 9, 10),
   time: null,

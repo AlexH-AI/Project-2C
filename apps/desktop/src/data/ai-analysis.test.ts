@@ -114,11 +114,11 @@ async function withCustomer(
 ) {
   const app = await openAppData({ today: () => TODAY, seed: emptySeed, ai: options, storage });
   const { ai } = app;
-  const reId = listPeople(app.db())[0]!.id;
+  const rmId = listPeople(app.db())[0]!.id;
   const customer = app.run((d) =>
     createCustomer(d, {
       name: 'Lan',
-      reId,
+      rmId,
       stage: 'N4',
       date: calendarDate(2026, 9, 1),
       birthDate: { year: 1984 },
@@ -199,7 +199,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     const bare = app.run((d) =>
       createCustomer(d, {
         name: 'Minh',
-        reId: listPeople(d)[0]!.id,
+        rmId: listPeople(d)[0]!.id,
         stage: 'N4',
         date: calendarDate(2026, 9, 1),
       }),

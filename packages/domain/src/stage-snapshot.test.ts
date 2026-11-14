@@ -90,7 +90,7 @@ describe('chart of week 11/01 – 17/01 — golden S10–S13', () => {
 
 describe('stageSnapshot', () => {
   it('leaves out a customer with no stage transition at all', () => {
-    const extra = { id: 'K-99', name: 'K-99', reId: 're-an', stage: 'N4' } as const;
+    const extra = { id: 'K-99', name: 'K-99', rmId: 're-an', stage: 'N4' } as const;
     expect(
       stageSnapshot([...LIVE_CUSTOMERS, extra], TRANSITIONS, SNAPSHOT_TODAY, ALL, PEOPLE),
     ).toEqual(stageSnapshot(LIVE_CUSTOMERS, TRANSITIONS, SNAPSHOT_TODAY, ALL, PEOPLE));
@@ -163,7 +163,7 @@ describe('stageSnapshotSeries', () => {
   const SCOPES: readonly Scope[] = [
     ALL,
     { kind: 'team', teamId: 'team-a' },
-    { kind: 're', reId: 're-an' },
+    { kind: 're', rmId: 're-an' },
   ];
   const DATES: Readonly<Record<string, readonly CalendarDate[]>> = {
     'every day of 12/2026 – 02/2027': [
@@ -222,8 +222,8 @@ describe('stageSnapshotByScope', () => {
   const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RM', teamId: null } as const];
   const customers = [
     ...LIVE_CUSTOMERS,
-    { id: 'K-solo', name: 'K-solo', reId: 're-solo', stage: 'N2' } as const,
-    { id: 'K-x', name: 'K-x', reId: 'x', stage: 'N3' } as const,
+    { id: 'K-solo', name: 'K-solo', rmId: 're-solo', stage: 'N2' } as const,
+    { id: 'K-x', name: 'K-x', rmId: 'x', stage: 'N3' } as const,
   ];
   const transitions = [
     ...TRANSITIONS,
@@ -249,7 +249,7 @@ describe('stageSnapshotByScope', () => {
     { kind: 'team', teamId: 'team-a' },
     { kind: 'team', teamId: 'team-b' },
     { kind: 'team', teamId: 'team-none' },
-    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((reId): Scope => ({ kind: 're', reId })),
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 're', rmId })),
   ];
   const DATES = [calendarDate(2026, 11, 30), calendarDate(2026, 12, 31), TODAY];
 

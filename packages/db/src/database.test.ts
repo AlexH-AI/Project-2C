@@ -2,10 +2,13 @@ import { getTableConfig } from 'drizzle-orm/sqlite-core';
 import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
 import { describe, expect, it, vi } from 'vitest';
 import journal from '../migrations/meta/_journal.json';
+import { listAppointments } from './appointments';
+import { listCustomers } from './customers';
 import { openDatabase, type Database } from './database';
 import { DbError } from './errors';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
-import { previewPurge } from './purge';
+import { listPolicies } from './policies';
+import { previewPurge, purgeTrash } from './purge';
 import {
   aiAnalyses,
   appointmentCoordinators,
@@ -318,7 +321,7 @@ describe('schema constraints', () => {
     );
     db.sqlite.run(insertPerson('RM', 't'));
     db.sqlite.run(
-      "INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at) VALUES ('c', 'K-0001', 'B', 'p', 'N4', 'x', 'x')",
+      "INSERT INTO customers (id, code, name, rm_id, stage, created_at, updated_at) VALUES ('c', 'K-0001', 'B', 'p', 'N4', 'x', 'x')",
     );
     return db;
   }
@@ -346,7 +349,7 @@ describe('schema constraints', () => {
       nextStep: string | null,
     ) =>
       db.sqlite.run(
-        "INSERT INTO appointments (id, customer_id, re_id, date, status, trigger_type, stage_after, next_step, note, created_at, updated_at) VALUES (?, 'c', 'p', '2026-01-01', ?, 'OTHER', ?, ?, '', 'x', 'x')",
+        "INSERT INTO appointments (id, customer_id, rm_id, date, status, trigger_type, stage_after, next_step, note, created_at, updated_at) VALUES (?, 'c', 'p', '2026-01-01', ?, 'OTHER', ?, ?, '', 'x', 'x')",
         [id, status, stageAfter, nextStep],
       );
 
@@ -362,7 +365,7 @@ describe('schema constraints', () => {
     const db = await withCustomer();
     const insert = (id: string, status: string, reviewer: string) =>
       db.sqlite.run(
-        "INSERT INTO appointments (id, customer_id, re_id, date, status, trigger_type, stage_after, next_step, note, created_at, updated_at, outcome_reviewer_id) VALUES (?, 'c', 'p', '2026-01-01', ?, 'OTHER', ?, ?, '', 'x', 'x', ?)",
+        "INSERT INTO appointments (id, customer_id, rm_id, date, status, trigger_type, stage_after, next_step, note, created_at, updated_at, outcome_reviewer_id) VALUES (?, 'c', 'p', '2026-01-01', ?, 'OTHER', ?, ?, '', 'x', 'x', ?)",
         [id, status, status === 'MET' ? 'N3' : null, status === 'MET' ? 'x' : null, reviewer],
       );
 
@@ -375,7 +378,7 @@ describe('schema constraints', () => {
     const db = await withCustomer();
     const insert = (id: string, fyp: number, issuedDate: string | null, issuedFyp: number | null) =>
       db.sqlite.run(
-        "INSERT INTO policies (id, customer_id, re_id, submitted_date, submitted_fyp, issued_date, issued_fyp, created_at, updated_at) VALUES (?, 'c', 'p', '2026-03-10', ?, ?, ?, 'x', 'x')",
+        "INSERT INTO policies (id, customer_id, rm_id, submitted_date, submitted_fyp, issued_date, issued_fyp, created_at, updated_at) VALUES (?, 'c', 'p', '2026-03-10', ?, ?, ?, 'x', 'x')",
         [id, fyp, issuedDate, issuedFyp],
       );
 
@@ -571,17 +574,18 @@ describe('migrating a saved database', () => {
     const old = await savedAtVersion12();
     const tables = ['customers', 'appointments', 'stage_transitions'];
     const before = tables.map((table) => rowsOf(old.sqlite, table));
-    const purge = previewPurge(old);
 
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
-    expect(purge.kept).toEqual([expect.objectContaining({ kind: 'appointment', id: 'a1' })]);
     // What the purge keeps is looked for from the deleted appointments, then what was booked from
-    // each: two lookups by index, no scan of the appointments.
+    // each: two lookups by index, no scan of the appointments. Read on the migrated file only: the
+    // purge reads the column of the RM as rm_id, which a file of version 12 calls re_id (A3).
     const exec = vi.spyOn(db.sqlite, 'exec');
-    expect(previewPurge(db)).toEqual(purge);
+    expect(previewPurge(db).kept).toEqual([
+      expect.objectContaining({ kind: 'appointment', id: 'a1' }),
+    ]);
     const kept = exec.mock.calls.map(([sql]) => sql).find((sql) => sql.includes('WITH RECURSIVE'));
     exec.mockRestore();
     const plan = queryPlan(db, kept!);
@@ -722,6 +726,108 @@ describe('migrating a saved database', () => {
     expect(rowsOf(db.sqlite, 'kyc_notes')).toEqual([]);
   });
 
+  /** The schema version of a file saved before the column of the RM was named rm_id (A3). */
+  const beforeA3 = MIGRATIONS.find((m) => m.tag === '0015_rm_id')!.id - 1;
+
+  /**
+   * A database file saved after RE became RM but before its column was named rm_id (version 15,
+   * migration 0014), with data: two RMs, a customer of each and a deleted one, an appointment with a
+   * coordinator and a reviewer, policies, and a KYC note of a live and of the deleted customer.
+   */
+  async function savedBeforeA3() {
+    const db = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= beforeA3) });
+    db.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES
+        ('an', 'An', 'RM', 't', 'x', 'x'), ('binh', 'Bình', 'RM', 't', 'x', 'x'),
+        ('tl', 'Hà', 'TL', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at, deleted_at)
+        VALUES ('c1', 'K-0001', 'Lan', 'an', 'N2', 'x', 'x', NULL),
+          ('c2', 'K-0002', 'Minh', 'binh', 'N3', 'x', 'x', NULL),
+          ('c3', 'K-0003', 'Huệ', 'binh', 'N4', 'x', 'x', 'y');
+      INSERT INTO appointments (id, customer_id, re_id, date, time, status, trigger_type, stage_after,
+          next_step, note, outcome_reviewer_id, created_at, updated_at) VALUES
+        ('a1', 'c1', 'an', '2026-09-10', '09:30', 'MET', 'REFERRAL', 'N2', 'Gửi minh họa', '', 'tl',
+          'x', 'x'),
+        ('a2', 'c2', 'binh', '2026-09-20', NULL, 'SCHEDULED', 'OTHER', NULL, NULL, '', NULL, 'x',
+          'x');
+      INSERT INTO appointment_coordinators (appointment_id, person_id) VALUES ('a1', 'tl');
+      INSERT INTO policies (id, customer_id, re_id, submitted_date, submitted_fyp, issued_date,
+          issued_fyp, created_at, updated_at) VALUES
+        ('h1', 'c1', 'an', '2026-09-12', 24000000, '2026-09-20', 24000000, 'x', 'x'),
+        ('h2', 'c2', 'binh', '2026-09-15', 12000000, NULL, NULL, 'x', 'x');
+      INSERT INTO kyc_notes (id, customer_id, seq, text, created_date, source, created_at) VALUES
+        ('n1', 'c1', 1, 'Hai con', '2026-09-10', 'RM', 'x'),
+        ('n2', 'c3', 1, 'Bác sĩ', '2026-09-03', 'RM', 'x');
+    `);
+    return db;
+  }
+
+  /** The indexes or triggers of a database, with the SQL that made them. */
+  const schemaOf = (sqlite: SqlJsDatabase, type: 'index' | 'trigger') =>
+    sqlite.exec(`SELECT name, sql FROM sqlite_master WHERE type = '${type}' ORDER BY name`)[0]
+      ?.values ?? [];
+  const OWNED = ['customers', 'appointments', 'policies'];
+
+  it('A3: names the column of the RM rm_id, keeping every row, reference, index and trigger', async () => {
+    const old = await savedBeforeA3();
+    const tables = [...OWNED, 'appointment_coordinators', 'kyc_notes'];
+    const before = tables.map((table) => rowsOf(old.sqlite, table));
+    const columnsBefore = OWNED.map((table) => columnNames(old, table));
+    const indexes = schemaOf(old.sqlite, 'index');
+    const triggers = schemaOf(old.sqlite, 'trigger');
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    // The RM in charge, as the commands read it.
+    expect(listCustomers(db).map((c) => [c.id, c.rmId])).toEqual([
+      ['c1', 'an'],
+      ['c2', 'binh'],
+    ]);
+    expect(listAppointments(db).map((a) => [a.id, a.rmId])).toEqual([
+      ['a1', 'an'],
+      ['a2', 'binh'],
+    ]);
+    expect(listPolicies(db).map((p) => [p.id, p.rmId])).toEqual([
+      ['h1', 'an'],
+      ['h2', 'binh'],
+    ]);
+    // Only the name of the column changes, in its place: every row is the same, value for value.
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(OWNED.map((table) => columnNames(db, table))).toEqual(
+      columnsBefore.map((columns) => columns.map((c) => (c === 're_id' ? 'rm_id' : c))),
+    );
+    for (const table of OWNED) expect(foreignKeys(db, table)).toContain('rm_id->people.id');
+    expect(foreignKeys(db, 'appointments')).toEqual([
+      'customer_id->customers.id',
+      'outcome_reviewer_id->people.id',
+      'rescheduled_from_id->appointments.id',
+      'rm_id->people.id',
+    ]);
+    expect(
+      db.sqlite.exec("SELECT type, name FROM sqlite_master WHERE instr(sql, 're_id') > 0"),
+    ).toEqual([]);
+    expect(schemaOf(db.sqlite, 'index')).toEqual(indexes);
+    expect(schemaOf(db.sqlite, 'trigger')).toEqual(triggers);
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  it('A3: checks the RM of a customer, an appointment and a policy by rm_id, and purges as before', async () => {
+    const db = await openDatabase({ bytes: (await savedBeforeA3()).export() });
+
+    for (const table of OWNED) {
+      expect(() => db.sqlite.run(`UPDATE ${table} SET rm_id = 'nobody'`)).toThrow(/FOREIGN KEY/);
+      expect(() => db.sqlite.run(`UPDATE ${table} SET re_id = 'an'`)).toThrow(/no such column/);
+    }
+    db.sqlite.run("UPDATE customers SET rm_id = 'an' WHERE id = 'c2'");
+    expect(listCustomers(db).map((c) => c.rmId)).toEqual(['an', 'an']);
+    // The triggers of 0011 read customers: a live customer's note stays, the deleted one's goes.
+    expect(() => db.sqlite.run("DELETE FROM kyc_notes WHERE id = 'n1'")).toThrow(/append-only/);
+    expect(purgeTrash(db).counts).toMatchObject({ customers: 1, customerRecords: { kycNotes: 1 } });
+    expect(rowsOf(db.sqlite, 'kyc_notes').map(([id]) => id)).toEqual(['n1']);
+  });
+
   /** A database at the latest version where a team is referenced by a person, who has a customer. */
   async function savedWithReferences() {
     const db = await openDatabase();
@@ -729,7 +835,7 @@ describe('migrating a saved database', () => {
       INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
       INSERT INTO people (id, name, role, team_id, created_at, updated_at)
         VALUES ('re', 'An', 'RM', 't', 'x', 'x');
-      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
+      INSERT INTO customers (id, code, name, rm_id, stage, created_at, updated_at)
         VALUES ('c', 'K-0001', 'Lan', 're', 'N2', 'x', 'x');
     `);
     return db.export();

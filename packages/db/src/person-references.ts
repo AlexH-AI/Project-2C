@@ -48,12 +48,12 @@ const ROWS: Record<
   PersonReferenceKind,
   { readonly values: readonly [string, string, string, string]; readonly from: string }
 > = {
-  customer: { values: ['re_id', 'NULL', 'id', 'deleted_at IS NULL'], from: 'customers' },
+  customer: { values: ['rm_id', 'NULL', 'id', 'deleted_at IS NULL'], from: 'customers' },
   appointment: {
-    values: ['re_id', 'id', 'customer_id', 'deleted_at IS NULL'],
+    values: ['rm_id', 'id', 'customer_id', 'deleted_at IS NULL'],
     from: 'appointments',
   },
-  policy: { values: ['re_id', 'NULL', 'customer_id', 'deleted_at IS NULL'], from: 'policies' },
+  policy: { values: ['rm_id', 'NULL', 'customer_id', 'deleted_at IS NULL'], from: 'policies' },
   coordinator: {
     values: ['c.person_id', 'a.id', 'a.customer_id', 'a.deleted_at IS NULL'],
     from: 'appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id',

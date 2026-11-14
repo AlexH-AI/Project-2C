@@ -19,7 +19,7 @@ describe('golden appointments fixture', () => {
 
   it('assigns every appointment to an RE, with known people as coordinators', () => {
     for (const { appointment } of APPOINTMENT_ROWS) {
-      expect(reIds.has(appointment.reId)).toBe(true);
+      expect(reIds.has(appointment.rmId)).toBe(true);
       for (const id of appointment.coordinatorIds) expect(personIds.has(id)).toBe(true);
     }
   });

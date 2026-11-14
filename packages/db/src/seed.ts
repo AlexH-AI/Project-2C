@@ -144,7 +144,7 @@ const CLOSED_TEAM = 'Ánh Dương';
 
 interface SimCustomer {
   readonly id: string;
-  readonly reId: string;
+  readonly rmId: string;
   stage: CustomerStage;
   /** Has an appointment still to come. */
   busy: boolean;
@@ -272,14 +272,14 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     const given = profile(rng, born);
     const record = createCustomer(db, {
       name: personName(rng),
-      reId: re.id,
+      rmId: re.id,
       stage: rng.weighted(STARTING_STAGES),
       date: toDate(day),
       ...given,
     });
     const customer: SimCustomer = {
       id: record.id,
-      reId: re.id,
+      rmId: re.id,
       stage: record.stage,
       busy: false,
       kyc: {
@@ -305,7 +305,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     customer.busy = true;
     const appointment = scheduleAppointment(db, {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: toDate(day),
       time: rng.chance(0.9) ? rng.pick(APPOINTMENT_TIMES) : null,
       triggerType: rng.weighted(TRIGGERS),
@@ -319,7 +319,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     const fyp = rng.pick(CASE_SIZES_MILLION) * MILLION;
     const policy = submitPolicy(db, {
       customerId: customer.id,
-      reId: customer.reId,
+      rmId: customer.rmId,
       submittedDate: toDate(day),
       submittedFyp: fyp,
     });

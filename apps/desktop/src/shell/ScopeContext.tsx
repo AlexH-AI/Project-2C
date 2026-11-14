@@ -7,7 +7,7 @@ export interface ScopeState {
   /** `picked`, narrowed to the RE picked in the RE strip of a Team scope: what screens filter by. */
   readonly scope: Scope;
   /** Picks an RE of the team in the strip, or the whole team (null). */
-  readonly pickRe: (reId: string | null) => void;
+  readonly pickRe: (rmId: string | null) => void;
 }
 
 const all: Scope = { kind: 'all' };

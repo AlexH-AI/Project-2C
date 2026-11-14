@@ -45,9 +45,9 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
 
 /** The live records the member columns are counted from. */
 export interface StaffRecords {
-  readonly customers: ReadonlyArray<Pick<Customer, 'reId' | 'stage'>>;
-  readonly appointments: ReadonlyArray<Pick<AppointmentRecord, 'reId' | 'date'>>;
-  readonly policies: ReadonlyArray<Pick<Policy, 'reId' | 'issuedDate'>>;
+  readonly customers: ReadonlyArray<Pick<Customer, 'rmId' | 'stage'>>;
+  readonly appointments: ReadonlyArray<Pick<AppointmentRecord, 'rmId' | 'date'>>;
+  readonly policies: ReadonlyArray<Pick<Policy, 'rmId' | 'issuedDate'>>;
 }
 
 /** Member columns of an RE (mockup team.html); the table lists only RE (B1, 01/10/2026). */
@@ -69,8 +69,8 @@ function last30Days(today: CalendarDate): Period {
 }
 
 /** The records a person is the RE of. */
-function ownedBy<T extends { readonly reId: string }>(list: readonly T[], personId: string) {
-  return list.filter((record) => record.reId === personId);
+function ownedBy<T extends { readonly rmId: string }>(list: readonly T[], personId: string) {
+  return list.filter((record) => record.rmId === personId);
 }
 
 /** The member columns of each RE among `people`; other roles have none (G2 G). */

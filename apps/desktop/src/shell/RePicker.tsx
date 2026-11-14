@@ -27,7 +27,7 @@ export function RePicker({
   counts: ReadonlyMap<string, number>;
   /** The number beside "Cả team". */
   total: number;
-  onPick: (reId: string | null) => void;
+  onPick: (rmId: string | null) => void;
 }) {
   return (
     <section

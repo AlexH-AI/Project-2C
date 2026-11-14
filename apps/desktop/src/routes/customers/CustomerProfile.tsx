@@ -42,7 +42,7 @@ function readProfile(db: Database, id: string) {
   if (!customer) return undefined;
   const people = sortedByName(listPeople(db));
   const teams = sortedByName(listTeams(db));
-  const re = people.find((person) => person.id === customer.reId);
+  const re = people.find((person) => person.id === customer.rmId);
   const transitions = listStageTransitions(db, id);
   return {
     customer,

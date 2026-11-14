@@ -16,7 +16,7 @@ describe('readTables orders names as the screens show them', () => {
     for (const name of ['Zeta', 'đức', 'Đông', 'An']) {
       const team = createTeam(db, { name });
       const re = createPerson(db, { name, role: 'RM', teamId: team.id });
-      createCustomer(db, { name, reId: re.id, stage: 'N1', date: TODAY });
+      createCustomer(db, { name, rmId: re.id, stage: 'N1', date: TODAY });
     }
     return db;
   }

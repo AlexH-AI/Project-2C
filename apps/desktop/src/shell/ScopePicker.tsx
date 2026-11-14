@@ -54,7 +54,7 @@ export function ScopePicker({
           labelHidden
           capped
           size="md"
-          value={scope.reId}
+          value={scope.rmId}
           options={reOptions(people, teams)}
           onChange={(id) => onChange({ kind: 're', id })}
         />

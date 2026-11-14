@@ -84,7 +84,7 @@ export function openDraft(mode: PolicyMode, today: CalendarDate): OpenedDraft {
   return { draft, on: today };
 }
 
-export type PolicyValues = Omit<Policy, 'id' | 'customerId' | 'reId'>;
+export type PolicyValues = Omit<Policy, 'id' | 'customerId' | 'rmId'>;
 
 /**
  * Reads every field of the draft, and the policy when all of them are right. Days are today or
