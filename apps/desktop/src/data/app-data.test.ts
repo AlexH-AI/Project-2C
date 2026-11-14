@@ -480,11 +480,11 @@ describe('tables', () => {
     const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
     app.run((db) => {
       const team = createTeam(db, { name: 'Sao Mai' });
-      const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-      const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N4', date: TODAY });
+      const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+      const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N4', date: TODAY });
       scheduleAppointment(db, {
         customerId: lan.id,
-        rmId: re.id,
+        rmId: rm.id,
         date: TODAY,
         triggerType: 'OTHER',
       });
@@ -1028,11 +1028,11 @@ describe('purgeTrash (spec Phase 6 TR-11)', () => {
     const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
     app.run((db) => {
       const team = createTeam(db, { name: 'Sao Mai' });
-      const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-      const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N4', date: TODAY });
+      const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+      const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N4', date: TODAY });
       scheduleAppointment(db, {
         customerId: lan.id,
-        rmId: re.id,
+        rmId: rm.id,
         date: TODAY,
         triggerType: 'OTHER',
       });
@@ -1449,8 +1449,8 @@ describe('backup files', () => {
       today: () => calendarDate(2026, 9, 30),
       seed: (db, anchorDate) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-        createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: anchorDate });
+        const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+        createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: anchorDate });
       },
     });
     const text = (await source.exportBackup()).text;
@@ -1468,23 +1468,23 @@ describe('backup files', () => {
   it.each([
     ['a date that does not exist', '"date":"2026-09-27"', '"date":"2026-02-30"'],
     ['a stage its transitions never reached', '"stage":"N3"', '"stage":"N1"'],
-    ['a customer whose RE is a TL', '"role":"RM"', '"role":"TL"'],
+    ['a customer whose RM is a TL', '"role":"RM"', '"role":"TL"'],
     ['a gender other than its KYC fact', '"gender":"FEMALE"', '"gender":"MALE"'],
   ])('rejects a file with %s before counting its records', async (_, from, to) => {
     const source = await openAppData({
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+        const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
         const lan = createCustomer(db, {
           name: 'Lan',
-          rmId: re.id,
+          rmId: rm.id,
           stage: 'N3',
           date: TODAY,
           gender: 'FEMALE',
         });
         scheduleAppointment(db, {
           customerId: lan.id,
-          rmId: re.id,
+          rmId: rm.id,
           date: TODAY,
           triggerType: 'REFERRAL',
         });

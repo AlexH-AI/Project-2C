@@ -26,12 +26,12 @@ export interface PolicyMetrics {
  * the caller's lists stay untouched and a later change to them is always read.
  */
 
-/** Whether a record owned by an RE counts in the scope; built once, then checked per record. */
+/** Whether a record owned by an RM counts in the scope; built once, then checked per record. */
 export function scopeMatcher(people: readonly Person[], scope: Scope): (rmId: string) => boolean {
   switch (scope.kind) {
     case 'all':
       return () => true;
-    case 're':
+    case 'rm':
       return (rmId) => rmId === scope.rmId;
     case 'team': {
       const members = new Set(
@@ -80,8 +80,8 @@ function rfMatcher(transitions: readonly StageTransition[]): (appointment: Appoi
 }
 
 /**
- * Whether a record owned by `rmId` counts in the scope. A record counts for its RE and for that
- * RE's current team (G2 E).
+ * Whether a record owned by `rmId` counts in the scope. A record counts for its RM and for that
+ * RM's current team (G2 E).
  */
 export function inScope(people: readonly Person[], rmId: string, scope: Scope): boolean {
   return scopeMatcher(people, scope)(rmId);
@@ -120,7 +120,7 @@ export function isRfAppointment(
   return rfMatcher(transitions)(appointment);
 }
 
-/** Cuộc gặp chuyển RF with the meeting day in the period, for the RE on the appointment (G2 C). */
+/** Cuộc gặp chuyển RF with the meeting day in the period, for the RM on the appointment (G2 C). */
 export function rfCount(
   data: {
     readonly people: readonly Person[];
@@ -210,18 +210,18 @@ export function periodMetricsByMark(
 
 /**
  * `periodMetrics` of one period for any scope, after one pass over the records (So sánh team and
- * Báo cáo read every team and RE, DR-20): each policy and appointment is added to its RE, then a
- * scope adds up the RE it holds. Equal, scope by scope, to calling `periodMetrics`.
+ * Báo cáo read every team and RM, DR-20): each policy and appointment is added to its RM, then a
+ * scope adds up the RM it holds. Equal, scope by scope, to calling `periodMetrics`.
  */
 export function periodMetricsByScope(
   data: MetricsData,
   period: Period,
 ): (scope: Scope) => PeriodMetrics {
   const isRf = rfMatcher(data.transitions);
-  const byRe = new Map<string, MetricParts>();
+  const byRm = new Map<string, MetricParts>();
   const partOf = (rmId: string) => {
-    const part = byRe.get(rmId) ?? noParts();
-    byRe.set(rmId, part);
+    const part = byRm.get(rmId) ?? noParts();
+    byRm.set(rmId, part);
     return part;
   };
   for (const policy of data.policies) {
@@ -244,7 +244,7 @@ export function periodMetricsByScope(
   return (scope) => {
     const matches = scopeMatcher(data.people, scope);
     const total = noParts();
-    for (const [rmId, part] of byRe) {
+    for (const [rmId, part] of byRm) {
       if (!matches(rmId)) continue;
       total.submittedCount += part.submittedCount;
       total.caseSize = addVnd(total.caseSize, part.caseSize);

@@ -33,7 +33,7 @@ export function Overview() {
     [data, applied.period, applied.scope, today],
   );
   const compare = useMemo(
-    () => (applied.scope.kind === 're' ? null : teamCompare(data, applied.period, today)),
+    () => (applied.scope.kind === 'rm' ? null : teamCompare(data, applied.period, today)),
     [data, applied.period, applied.scope.kind, today],
   );
   const tiles = useMemo(

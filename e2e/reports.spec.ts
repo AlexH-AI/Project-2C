@@ -15,7 +15,7 @@ async function openReports(page: Page) {
   };
 }
 
-test('Toàn bộ: Tổng hợp over Theo team, and Theo RE can be chosen', async ({ page }) => {
+test('Toàn bộ: Tổng hợp over Theo team, and Theo RM can be chosen', async ({ page }) => {
   const errors = trackConsoleErrors(page);
   const { viewing, summary, tables } = await openReports(page);
 
@@ -32,15 +32,15 @@ test('Toàn bộ: Tổng hợp over Theo team, and Theo RE can be chosen', async
   await expect(byTeam.getByRole('rowheader').last()).toHaveText('Tổng');
 
   await tables.getByRole('radio', { name: 'Theo RM' }).click();
-  const byRe = page.getByRole('table', { name: 'Theo RM' });
-  await expect(byRe.getByRole('rowheader')).toHaveCount(31);
+  const byRm = page.getByRole('table', { name: 'Theo RM' });
+  await expect(byRm.getByRole('rowheader')).toHaveCount(31);
   await expect(page.getByRole('region', { name: 'Theo RM' })).toContainText(
     '30 RM · thứ tự theo team rồi tên',
   );
   expect(errors).toEqual([]);
 });
 
-test('scrolled sideways, Theo RE keeps the RE name and every figure of Tổng readable', async ({
+test('scrolled sideways, Theo RM keeps the RM name and every figure of Tổng readable', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1100, height: 800 });
@@ -49,8 +49,8 @@ test('scrolled sideways, Theo RE keeps the RE name and every figure of Tổng re
   const table = page.getByRole('table', { name: 'Theo RM' });
   await expect(table.getByRole('rowheader')).toHaveCount(31);
 
-  // Scrolled to the far right: the RE name stays at the left edge, and every cell of the first RE
-  // row and of Tổng whose middle is right of the RE column is the element seen there, not covered.
+  // Scrolled to the far right: the RM name stays at the left edge, and every cell of the first RM
+  // row and of Tổng whose middle is right of the RM column is the element seen there, not covered.
   const seen = await table.evaluate((element) => {
     const box = element.parentElement!;
     const rows = [
@@ -62,13 +62,13 @@ test('scrolled sideways, Theo RE keeps the RE name and every figure of Tổng re
       row.scrollIntoView({ block: 'center' });
       box.scrollLeft = box.scrollWidth;
       const view = box.getBoundingClientRect();
-      const reColumn = rows[0]!.querySelector('th')!.getBoundingClientRect();
-      if (reColumn.left !== view.left) covered.push('RE name moved');
+      const rmColumn = rows[0]!.querySelector('th')!.getBoundingClientRect();
+      if (rmColumn.left !== view.left) covered.push('RM name moved');
       for (const cell of row.querySelectorAll('td')) {
         const rect = cell.getBoundingClientRect();
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        if (x <= reColumn.right || x >= view.right) continue;
+        if (x <= rmColumn.right || x >= view.right) continue;
         if (document.elementFromPoint(x, y) !== cell) covered.push(cell.textContent ?? '');
       }
     }
@@ -77,7 +77,7 @@ test('scrolled sideways, Theo RE keeps the RE name and every figure of Tổng re
   expect(seen).toEqual({ scrolled: true, covered: [] });
 });
 
-test('Team Bình Minh has no Theo team, and Theo RE lists its 10 RE', async ({ page }) => {
+test('Team Bình Minh has no Theo team, and Theo RM lists its 10 RM', async ({ page }) => {
   const { scope, filter, viewing, summary, tables } = await openReports(page);
 
   await scope.getByRole('radio', { name: 'Team' }).click();
@@ -89,12 +89,12 @@ test('Team Bình Minh has no Theo team, and Theo RE lists its 10 RE', async ({ p
   await expect(viewing).toContainText('· Team Bình Minh');
   await expect(summary.getByRole('rowheader')).toHaveText(['Team Bình Minh']);
   await expect(tables.getByRole('radio')).toHaveText(['Theo RM', 'Theo mốc']);
-  const byRe = page.getByRole('table', { name: 'Theo RM' });
-  await expect(byRe.getByRole('rowheader')).toHaveCount(11);
-  await expect(byRe.getByRole('row').filter({ hasText: 'Bình Minh' })).toHaveCount(10);
+  const byRm = page.getByRole('table', { name: 'Theo RM' });
+  await expect(byRm.getByRole('rowheader')).toHaveCount(11);
+  await expect(byRm.getByRole('row').filter({ hasText: 'Bình Minh' })).toHaveCount(10);
 });
 
-test('RE · Năm: Tổng hợp and Theo mốc of 12 months, the months after today "—"', async ({
+test('RM · Năm: Tổng hợp and Theo mốc of 12 months, the months after today "—"', async ({
   page,
 }) => {
   const errors = trackConsoleErrors(page);

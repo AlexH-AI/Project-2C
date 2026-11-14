@@ -124,8 +124,10 @@ export type { Vnd, VndParseError, VndParseResult } from './money';
 export {
   APPOINTMENT_STATUSES,
   CLOSED_STAGES,
+  isRm,
   PERSON_ROLES,
   REVIEWER_ROLES,
+  RM_ROLE,
   ROLES_WITH_TEAM,
 } from './model';
 export type {

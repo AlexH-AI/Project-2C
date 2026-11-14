@@ -111,7 +111,7 @@ describe('extractionView (spec Phase 5 §8, mockup ai.html 3c–3e)', () => {
     expect(view).toMatchObject({ kind: 'proposals', hidden: 0 });
   });
 
-  it('drops the proposals the RE confirmed or dropped, and shows nothing once all are', () => {
+  it('drops the proposals the RM confirmed or dropped, and shows nothing once all are', () => {
     const outcome = { kind: 'facts', facts: [RISK, KIDS] } as const;
 
     expect(extractionView(outcome, new Set([0]), [])).toEqual({
@@ -122,7 +122,7 @@ describe('extractionView (spec Phase 5 §8, mockup ai.html 3c–3e)', () => {
     expect(extractionView(outcome, new Set([0, 1]), [])).toEqual({ kind: 'none' });
   });
 
-  it('shows nothing, not even the hidden count, once the RE dealt with every proposal not held', () => {
+  it('shows nothing, not even the hidden count, once the RM dealt with every proposal not held', () => {
     const outcome = { kind: 'facts', facts: [RISK, KIDS] } as const;
     expect(extractionView(outcome, new Set([0]), [fact('childrenCount', 2)])).toEqual({
       kind: 'none',

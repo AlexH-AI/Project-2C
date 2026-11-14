@@ -2,15 +2,15 @@ import type { Person, Scope, Team } from '@p2c/domain';
 import { Segmented, SelectField } from '@p2c/ui';
 import type { Dispatch, SetStateAction } from 'react';
 import { t } from '../i18n';
-import { chooseKind, reOptions, type ScopeChoice } from './scope';
+import { chooseKind, rmOptions, type ScopeChoice } from './scope';
 
 const KINDS = [
   { value: 'all', label: t('scope.all') },
   { value: 'team', label: t('scope.team') },
-  { value: 're', label: t('scope.re') },
+  { value: 'rm', label: t('scope.rm') },
 ] as const;
 
-/** "Góc nhìn": everyone, one team or one RE, with the team or RE picked next to it. */
+/** "Góc nhìn": everyone, one team or one RM, with the team or RM picked next to it. */
 export function ScopePicker({
   scope,
   teams,
@@ -18,7 +18,7 @@ export function ScopePicker({
   teamPicker = true,
   onChange,
 }: {
-  /** The resolved scope, so the list shows the team or RE actually used. */
+  /** The resolved scope, so the list shows the team or RM actually used. */
   scope: Scope;
   teams: readonly Team[];
   people: readonly Person[];
@@ -48,15 +48,15 @@ export function ScopePicker({
           onChange={(id) => onChange({ kind: 'team', id })}
         />
       )}
-      {scope.kind === 're' && (
+      {scope.kind === 'rm' && (
         <SelectField
-          label={t('scope.pickRe')}
+          label={t('scope.pickRm')}
           labelHidden
           capped
           size="md"
           value={scope.rmId}
-          options={reOptions(people, teams)}
-          onChange={(id) => onChange({ kind: 're', id })}
+          options={rmOptions(people, teams)}
+          onChange={(id) => onChange({ kind: 'rm', id })}
         />
       )}
     </div>

@@ -10,7 +10,7 @@ import { statusLabel, type AppointmentRow } from './appointments-view';
 
 /**
  * Mockup 6e: a scheduled appointment moves to a new day. The old one stays as rescheduled, with
- * the reason in its note; a new one takes the same RE, trigger and coordinators (D3). The outcome
+ * the reason in its note; a new one takes the same RM, trigger and coordinators (D3). The outcome
  * dialog offers the same as its "Dời lịch" status; this is the shortcut (Owner 29/09/2026).
  */
 export function RescheduleDialog({

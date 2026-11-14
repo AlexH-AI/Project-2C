@@ -23,7 +23,7 @@ export type StageCounts = Readonly<Record<CustomerStage, number>>;
 /**
  * Customers of the scope by their stage at the end of `date` (§2). Each customer counts once; one
  * with no transition up to `date` (created later) does not count. The scope follows the customer's
- * current RE, so a change of RE moves every past period too (v1 keeps no RE history, G2 E).
+ * current RM, so a change of RM moves every past period too (v1 keeps no RM history, G2 E).
  *
  * `customers` must be the live ones only, as the repository lists them: a deleted customer is left
  * out by the caller, never passed here.
@@ -57,7 +57,7 @@ const noCustomers = (): Record<CustomerStage, number> => ({
   LOST: 0,
 });
 
-/** Each customer with its RE and its transitions by day, grouped and sorted once. */
+/** Each customer with its RM and its transitions by day, grouped and sorted once. */
 function customerHistories(
   customers: readonly Customer[],
   transitions: readonly StageTransition[],
@@ -76,7 +76,7 @@ function customerHistories(
 
 /**
  * `stageSnapshot` of one day for any scope, after one pass over the customers (Báo cáo takes every
- * team and RE, DR-20): each customer is counted for its RE, then a scope adds up the RE it holds.
+ * team and RM, DR-20): each customer is counted for its RM, then a scope adds up the RM it holds.
  * Equal, scope by scope, to calling `stageSnapshot`.
  */
 export function stageSnapshotByScope(
@@ -85,18 +85,18 @@ export function stageSnapshotByScope(
   people: readonly Person[],
   date: CalendarDate,
 ): (scope: Scope) => StageCounts {
-  const byRe = new Map<string, Record<CustomerStage, number>>();
+  const byRm = new Map<string, Record<CustomerStage, number>>();
   for (const { rmId, sorted } of customerHistories(customers, transitions)) {
     const stage = stageAtEndOf(sorted, date);
     if (stage === null) continue;
-    const counts = byRe.get(rmId) ?? noCustomers();
-    byRe.set(rmId, counts);
+    const counts = byRm.get(rmId) ?? noCustomers();
+    byRm.set(rmId, counts);
     counts[stage] += 1;
   }
   return (scope) => {
     const matches = scopeMatcher(people, scope);
     const total = noCustomers();
-    for (const [rmId, counts] of byRe) {
+    for (const [rmId, counts] of byRm) {
       if (!matches(rmId)) continue;
       for (const stage of STAGES) total[stage] += counts[stage];
     }

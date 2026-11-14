@@ -29,8 +29,8 @@ describe('groupByTeam', () => {
       ['Sao Mai', ['re1', 're2']],
       ['Bình Minh', []],
     ]);
-    expect(view.teams[0]).toMatchObject({ tl: 1, re: 2 });
-    expect(view.teams[1]).toMatchObject({ tl: 0, re: 0 });
+    expect(view.teams[0]).toMatchObject({ tl: 1, rm: 2 });
+    expect(view.teams[1]).toMatchObject({ tl: 0, rm: 0 });
     expect(view.shared.map((p) => p.id)).toEqual(['is']);
   });
 
@@ -53,7 +53,7 @@ describe('groupByTeam', () => {
   it('keeps an empty team', () => {
     const view = groupByTeam([SAO_MAI], []);
 
-    expect(view.teams).toEqual([{ team: SAO_MAI, lead: undefined, reps: [], tl: 0, re: 0 }]);
+    expect(view.teams).toEqual([{ team: SAO_MAI, lead: undefined, reps: [], tl: 0, rm: 0 }]);
     expect(view.shared).toEqual([]);
   });
 });
@@ -94,7 +94,7 @@ describe('staffMetrics', () => {
 
     const metrics = staffMetrics(people, records, TODAY);
 
-    // re1 also coordinates an appointment of re2 in the fixture: only the ones as RE count.
+    // re1 also coordinates an appointment of re2 in the fixture: only the ones as RM count.
     expect(metrics.get('re1')).toEqual({ openCustomers: 2, appointments30: 2, issuedThisYear: 1 });
     expect(metrics.get('re2')).toEqual({ openCustomers: 0, appointments30: 1, issuedThisYear: 1 });
   });
@@ -119,14 +119,14 @@ describe('inUseHelp (mockup 9b)', () => {
   /** Customers in the trash of these names, each with a code of its own. */
   const trash = (...names: string[]) =>
     names.map((name, i) => ({ name, code: `K-${String(i).padStart(4, '0')}` }));
-  const RE = 'Chuyển KH sang RM khác trước (Sửa hồ sơ KH).';
+  const RM = 'Chuyển KH sang RM khác trước (Sửa hồ sơ KH).';
   const REVIEWER = 'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả)';
   // DR6-80, Q5 (a): a coordinator is changed in 6f only, never on a moved or planned appointment.
   const COORDINATOR = 'người phối hợp của lịch Dời lịch / Dự kiến không đổi được';
 
-  it('gives an RE the way of the mockup only, a coordinator too (review of PR 636)', () => {
+  it('gives an RM the way of the mockup only, a coordinator too (review of PR 636)', () => {
     const [help, ...more] = inUseHelp(usage({ customers: 38, appointments: 212, coordinating: 5 }));
-    expect(help).toContain(RE);
+    expect(help).toContain(RM);
     expect(more).toEqual([]);
     expect(inUseHelp(usage({ policies: 1 }))).toEqual([help]);
   });
@@ -145,22 +145,22 @@ describe('inUseHelp (mockup 9b)', () => {
     const [both] = inUseHelp(usage({ coordinating: 7, reviewing: 2 }));
     expect(both).toContain(REVIEWER);
     expect(both).toContain(COORDINATOR);
-    expect(both).not.toContain(RE);
+    expect(both).not.toContain(RM);
   });
 
   // DR6-115, Q3 (a): purging comes first and always works; what restoring does is narrower than it
-  // sounds. Moving a restored customer to another RE (5c) hands over the planned appointments only
+  // sounds. Moving a restored customer to another RM (5c) hands over the planned appointments only
   // (K19), and a coordinator is changed in Sửa kết quả (6f) only, which a planned or moved
   // appointment has not.
-  const reTrash = (customers: string) =>
+  const rmTrash = (customers: string) =>
     `Có cả dữ liệu của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RM khác chỉ chuyển được lịch Dự kiến.`;
   const supportTrash = (customers: string) =>
     `Có cả lịch hẹn của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.`;
 
   it('names the customers in the trash the records belong to, how they go or come back (T-250, TR-11, DR6-115)', () => {
     expect(inUseHelp(usage({ appointments: 1, inTrash: trash('Lan') }))).toEqual([
-      expect.stringContaining(RE),
-      reTrash('Lan'),
+      expect.stringContaining(RM),
+      rmTrash('Lan'),
     ]);
     expect(inUseHelp(usage({ reviewing: 1, inTrash: trash('Lan', 'Ánh Hồng') }))).toEqual([
       expect.stringContaining(REVIEWER),
@@ -169,14 +169,14 @@ describe('inUseHelp (mockup 9b)', () => {
   });
 
   it('says the same about the trash whichever records keep the person, never that restoring clears them (DR6-115)', () => {
-    // An RE: planned appointments only, a met meeting, a policy, both, and a coordinator too (C1–C4).
+    // An RM: planned appointments only, a met meeting, a policy, both, and a coordinator too (C1–C4).
     for (const counts of [
       { appointments: 2 },
       { appointments: 1, policies: 1 },
       { policies: 1 },
       { appointments: 1, coordinating: 1 },
     ]) {
-      expect(inUseHelp(usage({ ...counts, inTrash: trash('Lan') })).at(-1)).toBe(reTrash('Lan'));
+      expect(inUseHelp(usage({ ...counts, inTrash: trash('Lan') })).at(-1)).toBe(rmTrash('Lan'));
     }
     // A supporter: a coordinator of the planned appointment of NT-TM-16, a reviewer, both.
     for (const counts of [
@@ -203,7 +203,7 @@ describe('inUseHelp (mockup 9b)', () => {
   // Review of PR 669: by name alone, two customers of one name read "Lan, Lan".
   it('tells two customers of one name apart by their codes, also one of them only counted', () => {
     expect(inUseHelp(usage({ policies: 2, inTrash: trash('Lan', 'Lan', 'Mai') })).at(-1)).toBe(
-      reTrash('Lan (K-0000), Lan (K-0001), Mai'),
+      rmTrash('Lan (K-0000), Lan (K-0001), Mai'),
     );
     expect(
       inUseHelp(usage({ coordinating: 4, inTrash: trash('An', 'Bảo', 'Lan', 'Lan') })).at(-1),

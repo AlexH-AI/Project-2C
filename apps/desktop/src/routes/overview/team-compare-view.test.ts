@@ -63,18 +63,18 @@ describe('teamCompare', () => {
     expect(view.teams.map((team) => team.name)).toEqual(['Dương Quang', 'Đông Hải']);
   });
 
-  it('lists the RE of each team by name, and they add up to the team row', () => {
+  it('lists the RM of each team by name, and they add up to the team row', () => {
     const view = teamCompare(GOLDEN, JAN_2027, d(2027, 3, 15));
     const [a] = view.teams;
 
-    expect(a?.res.map((re) => re.name)).toEqual(['An', 'Bình']);
-    expect(a?.res.map((re) => re.cells)).toEqual([
+    expect(a?.rms.map((rm) => rm.name)).toEqual(['An', 'Bình']);
+    expect(a?.rms.map((rm) => rm.cells)).toEqual([
       ['1', '1', '2', '500 tr', '1', '500 tr', '100%'],
       ['4', '2', '1', '1 tỷ', '1', '1 tỷ', '50%'],
     ]);
     for (const team of view.teams) {
       for (const key of FIGURES) {
-        const sum = team.res.reduce((total, re) => total + (figures(re)[key] ?? 0), 0);
+        const sum = team.rms.reduce((total, rm) => total + (figures(rm)[key] ?? 0), 0);
         expect(sum, `${team.name} ${key}`).toBe(figures(team)[key]);
       }
     }
@@ -88,8 +88,8 @@ describe('teamCompare', () => {
     expect(view.range).toBe('01/01 – 15/01/2027');
     expect(a?.cells).toEqual(['5', '2', '0', '0 ₫', '1', '500 tr', '50%']);
     expect(b?.cells).toEqual(['4', '1', '2', '400 tr', '1', '400 tr', '100%']);
-    expect(b?.res.map((re) => re.name)).toEqual(['Chi', 'Dũng']);
-    expect(b?.res[1]?.cells).toEqual(['1', '0', '0', '0 ₫', '1', '400 tr', '—']);
+    expect(b?.rms.map((rm) => rm.name)).toEqual(['Chi', 'Dũng']);
+    expect(b?.rms[1]?.cells).toEqual(['1', '0', '0', '0 ₫', '1', '400 tr', '—']);
     expect(view.total.cells).toEqual(['9', '3', '2', '400 tr', '2', '900 tr', '66,7%']);
   });
 

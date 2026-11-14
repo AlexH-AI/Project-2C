@@ -11,7 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   APPOINTMENT_GROUPS,
   appointmentRows,
-  appointmentsByRe,
+  appointmentsByRm,
   dateTone,
   dayBoard,
   dayLabel,
@@ -116,10 +116,10 @@ describe('appointmentRows', () => {
     appointment('c', 're3', day(9, 3), { coordinatorIds: ['is1'] }),
   ]);
 
-  it('keeps the appointments of the RE in scope', () => {
+  it('keeps the appointments of the RM in scope', () => {
     expect(ids(appointmentRows(all, { kind: 'all' }, 'any'))).toEqual(['a', 'b', 'c']);
     expect(ids(appointmentRows(all, { kind: 'team', teamId: 't1' }, 'any'))).toEqual(['a', 'b']);
-    expect(ids(appointmentRows(all, { kind: 're', rmId: 're3' }, 'any'))).toEqual(['c']);
+    expect(ids(appointmentRows(all, { kind: 'rm', rmId: 're3' }, 'any'))).toEqual(['c']);
   });
 
   // DR-17: the team's members are listed once per pass, not once per appointment.
@@ -141,10 +141,10 @@ describe('appointmentRows', () => {
     expect(ids(appointmentRows(all, { kind: 'all' }, 'none'))).toEqual(['b']);
   });
 
-  it('joins the customer, RE, team and coordinators', () => {
-    const [row] = appointmentRows(all, { kind: 're', rmId: 're1' }, 'any');
+  it('joins the customer, RM, team and coordinators', () => {
+    const [row] = appointmentRows(all, { kind: 'rm', rmId: 're1' }, 'any');
     expect(row?.customer?.id).toBe('c-a');
-    expect(row?.re?.name).toBe('Hoàng Nam');
+    expect(row?.rm?.name).toBe('Hoàng Nam');
     expect(row?.team?.name).toBe('Sao Mai');
     expect(row?.coordinators.map((p) => p.name)).toEqual(['Nguyễn Thu Hà', 'Phó Đức Huy']);
   });
@@ -192,11 +192,11 @@ describe('revealCreated', () => {
     expect(revealCreated(alone, people, { kind: 'all' }, 'tl1').coordinator).toBe('any');
   });
 
-  it('says when the RE is outside the scope, which it leaves alone', () => {
+  it('says when the RM is outside the scope, which it leaves alone', () => {
     const team = { kind: 'team', teamId: 't1' } as const;
     expect(revealCreated(withCoordinator, people, team, 'any').outsideScope).toBe(false);
     expect(revealCreated(alone, people, team, 'any').outsideScope).toBe(true);
-    expect(revealCreated(alone, people, { kind: 're', rmId: 're1' }, 'any').outsideScope).toBe(
+    expect(revealCreated(alone, people, { kind: 'rm', rmId: 're1' }, 'any').outsideScope).toBe(
       true,
     );
   });
@@ -444,7 +444,7 @@ describe('pickDay', () => {
 });
 
 describe('dayBoard', () => {
-  it("groups the day's appointments by team, then RE, by name and time", () => {
+  it("groups the day's appointments by team, then RM, by name and time", () => {
     const rows = appointmentRows(
       data([
         appointment('late', 're1', day(9, 15), { time: '16:00' }),
@@ -457,7 +457,7 @@ describe('dayBoard', () => {
       'any',
     );
     const board = dayBoard(rows, day(9, 15));
-    expect(board.map((g) => [g.team?.name, g.res.map((r) => [r.re?.name, ids(r.rows)])])).toEqual([
+    expect(board.map((g) => [g.team?.name, g.rms.map((r) => [r.rm?.name, ids(r.rows)])])).toEqual([
       ['Bình Minh', [['Mai Phương', ['phuong']]]],
       [
         'Sao Mai',
@@ -491,9 +491,9 @@ describe('personLabel', () => {
   });
 });
 
-// D9 (Owner, 04/10/2026): the people who support the meeting, never an RE.
+// D9 (Owner, 04/10/2026): the people who support the meeting, never an RM.
 describe('reviewerChoices', () => {
-  it('keeps every IS, TL, BDM and BD in the given order, and no RE', () => {
+  it('keeps every IS, TL, BDM and BD in the given order, and no RM', () => {
     const others: Person[] = [
       { id: 'bdm1', name: 'Lê Khoa', role: 'BDM', teamId: null },
       { id: 'bd1', name: 'Trần Long', role: 'BD', teamId: null },
@@ -525,8 +525,8 @@ describe('rescheduleLinks', () => {
   });
 });
 
-describe('appointmentsByRe', () => {
-  it('counts the appointments in the period by the RE in charge, not by coordinator', () => {
+describe('appointmentsByRm', () => {
+  it('counts the appointments in the period by the RM in charge, not by coordinator', () => {
     const rows = appointmentRows(
       data([
         appointment('a', 're1', day(9, 1)),
@@ -538,13 +538,13 @@ describe('appointmentsByRe', () => {
       { kind: 'team', teamId: 't1' },
       'any',
     );
-    expect(appointmentsByRe(rows, periodOf('month', day(9, 15)))).toEqual(
+    expect(appointmentsByRm(rows, periodOf('month', day(9, 15)))).toEqual(
       new Map([
         ['re1', 2],
         ['re2', 1],
       ]),
     );
-    expect(appointmentsByRe(rows, periodOf('month', day(10, 15)))).toEqual(new Map([['re1', 1]]));
+    expect(appointmentsByRm(rows, periodOf('month', day(10, 15)))).toEqual(new Map([['re1', 1]]));
   });
 });
 

@@ -173,7 +173,7 @@ const GONE: readonly DbErrorCode[] = ['CUSTOMER_NOT_FOUND', 'KYC_VERSION_NOT_FOU
 
 /**
  * One click on Phân tích. The latest KYC version and its facts are read together, at once, so the
- * result is tied to the version the RE saw (§3 item 2); a change while it runs leaves it STALE.
+ * result is tied to the version the RM saw (§3 item 2); a change while it runs leaves it STALE.
  * The data replaced while it runs discards whatever the AI call gives, an error or Hủy too, as for
  * AI trích xuất (DR5-36, S2-3). `call`: the one taken at the click, which the panel shows while it
  * runs (DR5-31).
@@ -233,7 +233,7 @@ function lost(app: AnalysisApp, error: unknown) {
 }
 
 export type ExtractionOutcome =
-  /** Proposals for the RE to confirm or drop, never saved (§8 item 4). */
+  /** Proposals for the RM to confirm or drop, never saved (§8 item 4). */
   | { readonly kind: 'facts'; readonly facts: readonly ExtractedFact[] }
   /** V1 failed twice: "AI trả kết quả không đọc được" (§8 item 5). */
   | { readonly kind: 'invalid' }
@@ -255,7 +255,7 @@ export function keptFailures(
 }
 
 /**
- * One click on AI trích xuất: the note as the RE wrote it goes to the AI (§6.1), nothing is saved.
+ * One click on AI trích xuất: the note as the RM wrote it goes to the AI (§6.1), nothing is saved.
  * The data replaced while it runs (Nạp lại / Nhập backup, even with the same IDs) discards the
  * answer, which was for other data, as for an analysis (DR5-36, R2-07). `call`: the one taken at
  * the click, as for Phân tích.

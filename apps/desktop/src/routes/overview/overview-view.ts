@@ -244,8 +244,8 @@ function scopeText(scope: Scope, people: readonly Person[], teams: readonly Team
       return t('scope.all');
     case 'team':
       return t('overview.scopeTeams', { teams: teams.length });
-    case 're':
-      return t('overview.scopeRe', {
+    case 'rm':
+      return t('overview.scopeRm', {
         name: people.find((person) => person.id === scope.rmId)?.name ?? '',
       });
   }

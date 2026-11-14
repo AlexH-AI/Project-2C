@@ -362,7 +362,7 @@ test('a request running elsewhere says why the buttons of another customer are o
 const NOTE = 'Hai vợ chồng đã kết hôn, có 2 con đang học cấp 1.';
 const NOTHING = 'KH muốn tìm hiểu thêm về quỹ hưu trí cho cả gia đình.';
 
-/** A KYC note with no fact confirmed, as the RE writes it before AI trích xuất. */
+/** A KYC note with no fact confirmed, as the RM writes it before AI trích xuất. */
 async function writeNote(page: Page, name: string, text: string) {
   await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
   const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
@@ -423,7 +423,7 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   await expect(kyc).toContainText('Tình trạng hôn nhân: Đã kết hôn');
   await expect(note.getByRole('list', { name: 'Đề xuất của AI' })).toHaveCount(0);
 
-  // Again: the value now held is hidden; the RE changes the other one before saving it.
+  // Again: the value now held is hidden; the RM changes the other one before saving it.
   await note.getByRole('button', { name: 'AI trích xuất' }).click();
   await expect(proposals).toHaveText([/^AI đề xuất: Số con: 2/]);
   await expect(note).toContainText('1 đề xuất trùng dữ kiện đang có đã ẩn.');

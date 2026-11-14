@@ -7,6 +7,7 @@ import {
   formatDate,
   formatIsoDate,
   fromLocalDate,
+  isRm,
   isStorableText,
   MAX_FEE_VND,
   normalizeNote,
@@ -167,18 +168,18 @@ export function requireAmount(amount: Vnd): Vnd {
 }
 
 /**
- * The id of a live person with the RE role — the only role that owns records (G2 G). The error
- * names a deleted RE, or the person and the role they hold now (spec Phase 6 TR-1).
+ * The id of a live person with the RM role — the only role that owns records (G2 G). The error
+ * names a deleted RM, or the person and the role they hold now (spec Phase 6 TR-1).
  */
-export function requireRe(db: Database, id: string): string {
+export function requireRm(db: Database, id: string): string {
   const row = db.orm
     .select({ name: people.name, role: people.role, deletedAt: people.deletedAt })
     .from(people)
     .where(eq(people.id, id))
     .get();
   if (!row) throw new DbError('PERSON_NOT_FOUND');
-  if (row.deletedAt) throw new DbError('PERSON_NOT_FOUND', { name: row.name, as: 're' });
-  if (row.role !== 'RM') throw new DbError('RE_REQUIRED', { name: row.name, role: row.role });
+  if (row.deletedAt) throw new DbError('PERSON_NOT_FOUND', { name: row.name, as: 'rm' });
+  if (!isRm(row)) throw new DbError('RM_REQUIRED', { name: row.name, role: row.role });
   return id;
 }
 

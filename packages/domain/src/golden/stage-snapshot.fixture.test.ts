@@ -12,7 +12,7 @@ import {
 // These tests keep the golden data internally consistent. They do not count anything: the counts
 // are tested against the expected results in `stage-snapshot.test.ts` and `period.test.ts`.
 
-const reIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
+const rmIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
 const byId = (id: string) => SNAPSHOT_GOLDEN_CASES.find((golden) => golden.id === id)!.expected;
 
 describe('golden stage snapshot fixture', () => {
@@ -25,9 +25,9 @@ describe('golden stage snapshot fixture', () => {
     expect(ids(cases)).toBe(cases.length);
   });
 
-  it('gives every customer an RE and allowed transitions in date order, ending at their stage', () => {
+  it('gives every customer an RM and allowed transitions in date order, ending at their stage', () => {
     for (const { customer, transitions } of SNAPSHOT_CUSTOMERS) {
-      expect(reIds.has(customer.rmId)).toBe(true);
+      expect(rmIds.has(customer.rmId)).toBe(true);
       expect(transitions.at(-1)!.to).toBe(customer.stage);
       transitions.forEach((transition, index) => {
         expect(() => assertValidTransition(transition.from, transition.to)).not.toThrow();

@@ -21,7 +21,7 @@ async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'M
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    rmId: ctx.re.id,
+    rmId: ctx.rm.id,
     stage: 'N4',
     date: d(1, 9, 2026),
     ...profile,
@@ -37,10 +37,10 @@ async function atOneInstant() {
   // In place of the database clock, which never gives one instant twice (DR6-178).
   database.now = () => new Date(Date.UTC(2026, 8, 26, 11));
   const team = createTeam(database, { name: 'Sao Mai' });
-  const re = createPerson(database, { name: 'An', role: 'RM', teamId: team.id });
+  const rm = createPerson(database, { name: 'An', role: 'RM', teamId: team.id });
   const customer = createCustomer(database, {
     name: 'Lan',
-    rmId: re.id,
+    rmId: rm.id,
     stage: 'N4',
     date: d(1, 9),
     birthDate: { year: 1984 },
@@ -57,7 +57,7 @@ const current = (facts: readonly { field: string; value: unknown; status: string
   facts.filter((f) => f.status !== 'superseded').map((f) => [f.field, f.value, f.status]);
 
 describe('KYC notes', () => {
-  it('appends notes from the RE in recording order', async () => {
+  it('appends notes from the RM in recording order', async () => {
     const { db: database, customer, note, persist } = await withCustomer();
 
     const second = addKycNote(database, customer.id, {
@@ -180,10 +180,10 @@ describe('KYC facts', () => {
   });
 
   it('refuses a value of the wrong type, an unknown trường and a note of another customer', async () => {
-    const { db: database, customer, re, note } = await withCustomer();
+    const { db: database, customer, rm, note } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Mai',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       date: d(1, 9),
     });
@@ -295,7 +295,7 @@ describe('birth year and gender come from the customer profile (D2)', () => {
     ]);
   });
 
-  it('refuses birthYear and gender confirmed by the RE', async () => {
+  it('refuses birthYear and gender confirmed by the RM', async () => {
     const { db: database, customer, note } = await withCustomer();
     const input = { noteId: note.id, date: d(3, 9, 2026) };
 
@@ -356,7 +356,7 @@ describe('birth year and gender come from the customer profile (D2)', () => {
     );
   });
 
-  it('lets the RE flag a conflicting birth year, settled only by the profile value', async () => {
+  it('lets the RM flag a conflicting birth year, settled only by the profile value', async () => {
     const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
     const system = getKycProfile(database, customer.id).facts[0]!;
     const input = { field: 'birthYear', noteId: note.id, date: d(3, 9, 2026) } as const;
@@ -400,7 +400,7 @@ describe('birth year and gender come from the customer profile (D2)', () => {
     expect(getKycProfile(database, customer.id).facts).toHaveLength(1);
     expect(listKycVersions(database, customer.id)).toHaveLength(versions);
 
-    // The same facts on the RE's note are recorded.
+    // The same facts on the RM's note are recorded.
     const onNote = { noteId: note.id, date: d(3, 9, 2026) };
     markKycConflict(database, customer.id, { ...onNote, field: 'birthYear', value: 1974 });
     confirmKycFact(database, customer.id, { ...onNote, field: 'occupation', value: 'Bác sĩ' });
@@ -727,7 +727,7 @@ describe('KYC dates are today at the latest', () => {
   });
 });
 
-// DR-49: what the RE types is stored composed (NFC), as the names are.
+// DR-49: what the RM types is stored composed (NFC), as the names are.
 describe('KYC text is stored composed', () => {
   it('composes the note and a text value typed decomposed (NFD), and refuses a NUL', async () => {
     const { db: database, customer } = await withCustomer();

@@ -24,7 +24,7 @@ import {
 
 export interface CustomerCard {
   readonly customer: CustomerRecord;
-  readonly re: Person | undefined;
+  readonly rm: Person | undefined;
   /** Day of the latest stage change: the day the customer entered its current stage. */
   readonly since: CalendarDate;
   /** Submitted policies, issued or not ("Đã có HĐ"). */
@@ -38,8 +38,8 @@ export interface CustomerBoard {
   readonly closed: Readonly<Record<ClosedStage, readonly CustomerCard[]>>;
   readonly openCount: number;
   readonly closedCount: number;
-  /** Open customers per RE id, for the RE strip; an RE with none is not listed. */
-  readonly openByRe: ReadonlyMap<string, number>;
+  /** Open customers per RM id, for the RM strip; an RM with none is not listed. */
+  readonly openByRm: ReadonlyMap<string, number>;
 }
 
 export interface CustomerData {
@@ -96,7 +96,7 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
     .filter((customer) => matches(customer.rmId))
     .map((customer) => ({
       customer,
-      re: people.get(customer.rmId),
+      rm: people.get(customer.rmId),
       // Every customer has a first transition, written with it (spec §3.4).
       since: since.get(customer.id)!,
       policies: policies.get(customer.id) ?? 0,
@@ -105,11 +105,11 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
   const closed = byStage(CLOSED_STAGES, cards);
   const closedCount = CLOSED_STAGES.reduce((sum, s) => sum + closed[s].length, 0);
   const open = byStage(PIPELINE_STAGES, cards);
-  const openByRe = new Map<string, number>();
+  const openByRm = new Map<string, number>();
   for (const { customer } of PIPELINE_STAGES.flatMap((s) => open[s])) {
-    openByRe.set(customer.rmId, (openByRe.get(customer.rmId) ?? 0) + 1);
+    openByRm.set(customer.rmId, (openByRm.get(customer.rmId) ?? 0) + 1);
   }
-  return { open, closed, openCount: cards.length - closedCount, closedCount, openByRe };
+  return { open, closed, openCount: cards.length - closedCount, closedCount, openByRm };
 }
 
 const COLUMN_LIMIT = 6;

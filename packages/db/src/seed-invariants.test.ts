@@ -40,7 +40,7 @@ const DATA_SETS: readonly (readonly [string, SeedOptions])[] = [
     {
       anchorDate: ANCHOR,
       seed: 11,
-      scale: { teams: 4, resPerTeam: 3, customersPerRe: 20, meetingDays: [4, 4] },
+      scale: { teams: 4, rmsPerTeam: 3, customersPerRm: 20, meetingDays: [4, 4] },
       trash: true,
     },
   ],

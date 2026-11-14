@@ -15,14 +15,14 @@ import {
   type Team,
 } from '@p2c/domain';
 import { t } from '../../i18n';
-import { teamRes } from '../../shell/scope';
+import { teamRms } from '../../shell/scope';
 import { closeRateText, countedWindow } from './overview-view';
 
 export interface TeamCompareData extends MetricsData {
   readonly teams: readonly Team[];
 }
 
-/** One row of So sánh team: a team, one of its RE, or Tổng. */
+/** One row of So sánh team: a team, one of its RM, or Tổng. */
 export interface CompareRow {
   readonly key: string;
   readonly name: string;
@@ -35,8 +35,8 @@ export interface CompareRow {
 }
 
 export interface CompareTeam extends CompareRow {
-  /** The team's RE by name, shown under it when the team is opened. */
-  readonly res: readonly CompareRow[];
+  /** The team's RM by name, shown under it when the team is opened. */
+  readonly rms: readonly CompareRow[];
 }
 
 /** So sánh team of Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a). */
@@ -93,7 +93,7 @@ function sum(rows: readonly CompareRow[], counted: boolean): Pick<CompareRow, 'm
 }
 
 /**
- * Every team by name with its RE by name, and Tổng, for `period` viewed on `today` (spec Phase 4
+ * Every team by name with its RM by name, and Tổng, for `period` viewed on `today` (spec Phase 4
  * §4.1, §4.3). Results count up to today; Đã gặp counts the whole period, like the tile.
  */
 export function teamCompare(
@@ -102,7 +102,7 @@ export function teamCompare(
   today: CalendarDate,
 ): TeamCompareView {
   const counted = countedWindow(period, today);
-  // Each record is grouped by RE once; every team and RE row then adds up its RE (DR-20).
+  // Each record is grouped by RM once; every team and RM row then adds up its RM (DR-20).
   const counts = appointmentCountsByScope(data.appointments, period, data.people, today);
   const metrics = counted && periodMetricsByScope(data, counted);
   const figures = (scope: Scope) => ({
@@ -114,11 +114,11 @@ export function teamCompare(
     .sort((a, b) => byName(a.name, b.name))
     .map((team): CompareTeam => {
       const { met, metrics } = figures({ kind: 'team', teamId: team.id });
-      const res = teamRes(data.people, team.id).map((re) => {
-        const shown = figures({ kind: 're', rmId: re.id });
-        return row(re.id, re.name, shown.met, shown.metrics);
+      const rms = teamRms(data.people, team.id).map((rm) => {
+        const shown = figures({ kind: 'rm', rmId: rm.id });
+        return row(rm.id, rm.name, shown.met, shown.metrics);
       });
-      return { ...row(team.id, team.name, met, metrics), res };
+      return { ...row(team.id, team.name, met, metrics), rms };
     });
   const total = sum(teams, counted !== null);
   return {

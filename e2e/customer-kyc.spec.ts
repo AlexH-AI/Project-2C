@@ -383,7 +383,7 @@ test('by the keyboard, Bỏ a fact being drafted leaves the focus on Trường (
   await expect(dialog).toBeVisible();
 });
 
-// DR6-33: the refusal of Lưu, a frame over the fields, goes once the RE types again. A character
+// DR6-33: the refusal of Lưu, a frame over the fields, goes once the RM types again. A character
 // broken in a paste passes the dialog's empty check and is refused by the command (INVALID_TEXT).
 test('the frame of a refused save goes as soon as the note or its day is typed again (7a, DR6-33)', async ({
   page,

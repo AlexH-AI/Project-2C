@@ -6,7 +6,7 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 
 - **Không import package nào khác** (kể cả `node:*`, trình duyệt) — `dependency-cruiser` rule `domain-is-pure` (`pnpm lint:deps`). Test (`*.test.ts`) được import `vitest`.
 - Mọi package khác dùng domain qua `@p2c/domain` (`src/index.ts`); thêm export mới thì thêm vào `index.ts`. Ngoại lệ: hàm chỉ dùng chung giữa các file trong `src/` (vd. `markIndexer` của `stats.ts`, dùng ở `appointment-counts.ts`) được `export` nhưng không vào `index.ts`.
-- Lọc nhiều bản ghi theo góc nhìn: dựng `scopeMatcher(people, scope)` một lần rồi gọi cho từng bản ghi (`inScope` chỉ cho một bản ghi). Chỉ số / số lịch của nhiều góc nhìn cùng kỳ: `periodMetricsByScope`, `appointmentCountsByScope` (gom theo RE một lượt).
+- Lọc nhiều bản ghi theo góc nhìn: dựng `scopeMatcher(people, scope)` một lần rồi gọi cho từng bản ghi (`inScope` chỉ cho một bản ghi). Chỉ số / số lịch của nhiều góc nhìn cùng kỳ: `periodMetricsByScope`, `appointmentCountsByScope` (gom theo RM một lượt).
 - Coverage ≥ 95% (`pnpm test:coverage` trong `pnpm verify`).
 
 ## File hay tìm
@@ -42,7 +42,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/kyc-fact.ts` — KYC_FACT_STATUSES, type KycFactStatus, type KycValue, type KycFieldType, kycFieldType, normalizeKycValue, type KycFact
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate
 - `src/kyc.ts` — type KycNote, type KycProfile, type KycFactInput, type KycVersion, addNote, currentFacts, confirmFact, markConflict, resolveConflict, kycHash, isMaterialChange, nextKycVersion
-- `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
+- `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, RM_ROLE, isRm, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
 - `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta
 - `src/name-order.ts` — LATIN, byName
 - `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize

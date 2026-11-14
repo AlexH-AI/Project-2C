@@ -25,7 +25,7 @@ export interface ReportWorkbookMeta {
   readonly exported: string;
 }
 
-type TableKey = 'summary' | 'byTeam' | 'byRe' | 'byMark';
+type TableKey = 'summary' | 'byTeam' | 'byRm' | 'byMark';
 
 interface Sheet {
   readonly key: TableKey;
@@ -46,7 +46,7 @@ const heading = ({ label, format }: ReportColumn) =>
 const LEAD_HEADERS: Record<TableKey, readonly string[]> = {
   summary: [t('reports.col.scope')],
   byTeam: [t('reports.col.team')],
-  byRe: [t('reports.col.team'), t('reports.col.re')],
+  byRm: [t('reports.col.team'), t('reports.col.rm')],
   byMark: [t('reports.col.mark')],
 };
 
@@ -55,13 +55,13 @@ function sheetsOf(rows: ReportRows): Sheet[] {
   const sheets: (Sheet | null)[] = [
     { key: 'summary', rows: [rows.summary] },
     rows.byTeam && { key: 'byTeam', ...rows.byTeam },
-    rows.byRe && { key: 'byRe', ...rows.byRe },
+    rows.byRm && { key: 'byRm', ...rows.byRm },
     { key: 'byMark', rows: rows.byMark },
   ];
   return sheets.filter((sheet) => sheet !== null);
 }
 
-/** How many sheets the file of these rows has: 4 for Toàn bộ, 3 for a team, 2 for an RE. */
+/** How many sheets the file of these rows has: 4 for Toàn bộ, 3 for a team, 2 for an RM. */
 export const reportSheetCount = (rows: ReportRows): number => sheetsOf(rows).length;
 
 /** The first-row facts: the period and the scope as "Đang xem" gives them, and today. */
@@ -111,10 +111,10 @@ function addSheet(workbook: ExcelJS.Workbook, sheet: Sheet, meta: ReportWorkbook
     return added;
   };
   for (const row of sheet.rows) {
-    addFigures(row, sheet.key === 'byRe' ? [row.team ?? '', row.name] : [row.name]);
+    addFigures(row, sheet.key === 'byRm' ? [row.team ?? '', row.name] : [row.name]);
   }
   if (sheet.total) {
-    const names = sheet.key === 'byRe' ? ['', sheet.total.name] : [sheet.total.name];
+    const names = sheet.key === 'byRm' ? ['', sheet.total.name] : [sheet.total.name];
     addFigures(sheet.total, names).font = { bold: true };
   }
 }

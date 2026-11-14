@@ -1,5 +1,5 @@
 /**
- * Simulated data (spec §7, D8): 3 teams of 1 TL + 10 RE with a shared IS, BD and BDM; 12 months of
+ * Simulated data (spec §7, D8): 3 teams of 1 TL + 10 RM with a shared IS, BD and BDM; 12 months of
  * customers, appointments and policies up to the anchor day, and 2-4 weeks of appointments after
  * it. Everything goes through the commands (spec §4), day by day, in one transaction with seeded
  * sources — the same anchor day and seed give the same data on any machine from UTC−12 to UTC+11,
@@ -103,37 +103,37 @@ export interface SeedOptions {
 
 export interface SeedScale {
   readonly teams: number;
-  readonly resPerTeam: number;
-  readonly customersPerRe: number;
-  /** Fewest and most days a week each RE has meetings. */
+  readonly rmsPerTeam: number;
+  readonly customersPerRm: number;
+  /** Fewest and most days a week each RM has meetings. */
   readonly meetingDays: readonly [number, number];
 }
 
-/** The demo: 3 teams of 10 RE with 40 customers each, meeting 3-4 days a week. */
+/** The demo: 3 teams of 10 RM with 40 customers each, meeting 3-4 days a week. */
 const DEMO_SCALE: SeedScale = {
   teams: 3,
-  resPerTeam: 10,
-  customersPerRe: 40,
+  rmsPerTeam: 10,
+  customersPerRm: 40,
   meetingDays: [3, 4],
 };
 
 const HISTORY_DAYS = 365;
 const FUTURE_DAYS = 24;
-/** Customers each RE already has when the history starts; the rest arrive over the year. */
+/** Customers each RM already has when the history starts; the rest arrive over the year. */
 const STARTING_CUSTOMERS = 10;
 const MILLION = 1_000_000;
 /** Chance that a meeting leaving the customer in N1 ends with a submitted policy. */
 const POLICY_CHANCE = 0.8;
-/** KYC notes written by the RE per customer: one at the first contact, more after meetings. */
+/** KYC notes written by the RM per customer: one at the first contact, more after meetings. */
 const MAX_KYC_NOTES = 5;
 const KYC_NOTE_CHANCE = 0.4;
 /** Chance per met meeting that a customer who gave no birth date gives it. */
 const BIRTH_DATE_CHANCE = 0.3;
 /** Of the notes after a meeting, the share where the customer contradicts a known value. */
 const KYC_CONFLICT_CHANCE = 0.2;
-/** Chance per met meeting that the RE settles an open conflict. */
+/** Chance per met meeting that the RM settles an open conflict. */
 const KYC_SETTLE_CHANCE = 0.25;
-/** Chance per met meeting that the RE runs the Mock analysis, when the gate lets the AI run. */
+/** Chance per met meeting that the RM runs the Mock analysis, when the gate lets the AI run. */
 const AI_ANALYSIS_CHANCE = 0.02;
 /** Mixed into the seed for the AI analyses' own random stream. */
 const AI_STREAM = 0x5eed_a1;
@@ -154,14 +154,14 @@ interface SimCustomer {
 interface SimKyc {
   notes: number;
   hasBirthDate: boolean;
-  /** Topics not asked yet, roughly in the order an RE gets to them. */
+  /** Topics not asked yet, roughly in the order an RM gets to them. */
   readonly topics: (typeof KYC_TOPICS)[number][];
-  /** Facts in effect on each trường the RE confirmed: one, or several in conflict. */
+  /** Facts in effect on each trường the RM confirmed: one, or several in conflict. */
   readonly current: Map<KycField, { readonly id: string; readonly value: KycValue }[]>;
 }
 
 interface Slot {
-  readonly re: Person;
+  readonly rm: Person;
   /** A rescheduled appointment already booked for the day; otherwise one is booked then. */
   readonly booked?: Booked;
 }
@@ -200,18 +200,18 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
 }
 
 /**
- * A scale the simulation runs on: a team and an RE in each at least, as Thùng rác takes its leaver
- * to the first RE's team, and meeting days from fewest to most; every number a whole one.
+ * A scale the simulation runs on: a team and an RM in each at least, as Thùng rác takes its leaver
+ * to the first RM's team, and meeting days from fewest to most; every number a whole one.
  */
 function assertScale(scale: SeedScale): void {
-  const { teams, resPerTeam, customersPerRe, meetingDays } = scale;
+  const { teams, rmsPerTeam, customersPerRm, meetingDays } = scale;
   const [fewest, most] = meetingDays;
-  const whole = [teams, resPerTeam, customersPerRe, fewest, most].every(
+  const whole = [teams, rmsPerTeam, customersPerRm, fewest, most].every(
     (n) => Number.isSafeInteger(n) && n >= 0,
   );
-  if (!whole || teams < 1 || resPerTeam < 1 || fewest > most) {
+  if (!whole || teams < 1 || rmsPerTeam < 1 || fewest > most) {
     throw new Error(
-      `The seed needs a team of an RE at least and meeting days from fewest to most, all whole numbers: ${JSON.stringify(scale)}`,
+      `The seed needs a team of an RM at least and meeting days from fewest to most, all whole numbers: ${JSON.stringify(scale)}`,
     );
   }
 }
@@ -252,34 +252,34 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
   const shared = (['IS', 'BD', 'BDM'] as const).map((role) =>
     createPerson(db, { name: staffName(), role, teamId: null }),
   );
-  const res: Person[] = [];
+  const rms: Person[] = [];
   for (let t = 0; t < scale.teams; t++) {
     const team = createTeam(db, { name: teamName(t) });
     const tl = createPerson(db, { name: staffName(), role: 'TL', teamId: team.id });
-    for (let i = 0; i < scale.resPerTeam; i++) {
-      const re = createPerson(db, { name: staffName(), role: 'RM', teamId: team.id });
-      res.push(re);
-      coordinators.set(re.id, [tl, ...shared]);
-      customers.set(re.id, []);
-      for (let c = 0; c < scale.customersPerRe; c++) {
+    for (let i = 0; i < scale.rmsPerTeam; i++) {
+      const rm = createPerson(db, { name: staffName(), role: 'RM', teamId: team.id });
+      rms.push(rm);
+      coordinators.set(rm.id, [tl, ...shared]);
+      customers.set(rm.id, []);
+      for (let c = 0; c < scale.customersPerRm; c++) {
         const late = c >= STARTING_CUSTOMERS && anchor - 7 > start;
-        add(arrivals, late ? rng.int(start + 1, anchor - 7) : start, re);
+        add(arrivals, late ? rng.int(start + 1, anchor - 7) : start, rm);
       }
     }
   }
 
-  const arrive = (re: Person, day: number) => {
+  const arrive = (rm: Person, day: number) => {
     const given = profile(rng, born);
     const record = createCustomer(db, {
       name: personName(rng),
-      rmId: re.id,
+      rmId: rm.id,
       stage: rng.weighted(STARTING_STAGES),
       date: toDate(day),
       ...given,
     });
     const customer: SimCustomer = {
       id: record.id,
-      rmId: re.id,
+      rmId: rm.id,
       stage: record.stage,
       busy: false,
       kyc: {
@@ -289,12 +289,12 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
         current: new Map(),
       },
     };
-    customers.get(re.id)!.push(customer);
+    customers.get(rm.id)!.push(customer);
     kyc.learn(customer, day, 2);
   };
 
-  const book = (re: Person, day: number): Booked | undefined => {
-    const free = customers.get(re.id)!.filter((c) => !c.busy);
+  const book = (rm: Person, day: number): Booked | undefined => {
+    const free = customers.get(rm.id)!.filter((c) => !c.busy);
     const open = free.filter((c) => isPipelineStage(c.stage));
     const closed = free.filter((c) => !isPipelineStage(c.stage));
     const pool = closed.length > 0 && rng.chance(0.08) ? closed : open;
@@ -305,12 +305,12 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     customer.busy = true;
     const appointment = scheduleAppointment(db, {
       customerId: customer.id,
-      rmId: re.id,
+      rmId: rm.id,
       date: toDate(day),
       time: rng.chance(0.9) ? rng.pick(APPOINTMENT_TIMES) : null,
       triggerType: rng.weighted(TRIGGERS),
       triggerNote: rng.chance(0.4) ? rng.pick(TRIGGER_NOTES) : null,
-      coordinatorIds: rng.chance(0.15) ? [rng.pick(coordinators.get(re.id)!).id] : [],
+      coordinatorIds: rng.chance(0.15) ? [rng.pick(coordinators.get(rm.id)!).id] : [],
     });
     return { id: appointment.id, customer };
   };
@@ -327,7 +327,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     if (issueDay < anchor) add(issues, issueDay, { id: policy.id, fyp });
   };
 
-  const resolve = (re: Person, { id, customer }: Booked, day: number) => {
+  const resolve = (rm: Person, { id, customer }: Booked, day: number) => {
     const outcome = rng.weighted(OUTCOMES);
     if (outcome === 'RESCHEDULE') {
       const later = Math.min(day + rng.int(1, 10), end);
@@ -335,7 +335,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
         date: toDate(later),
         time: rng.pick(APPOINTMENT_TIMES),
       });
-      add(agenda, later, { re, booked: { id: moved.id, customer } });
+      add(agenda, later, { rm, booked: { id: moved.id, customer } });
       return;
     }
     customer.busy = false;
@@ -357,9 +357,9 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     if (stageAfter === 'N1' && rng.chance(POLICY_CHANCE)) submit(customer, day);
   };
 
-  /** Now and then an RE moves a customer down or on hold by hand, outside any meeting. */
-  const manualChange = (re: Person, day: number) => {
-    const open = customers.get(re.id)!.filter((c) => isPipelineStage(c.stage));
+  /** Now and then an RM moves a customer down or on hold by hand, outside any meeting. */
+  const manualChange = (rm: Person, day: number) => {
+    const open = customers.get(rm.id)!.filter((c) => isPipelineStage(c.stage));
     if (open.length === 0) return;
     const customer = rng.pick(open);
     const lower = PIPELINE_STAGES[PIPELINE_STAGES.indexOf(customer.stage as 'N4') - 1];
@@ -370,14 +370,14 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
 
   const day = (day: number) => {
     if ((day - start) % 7 === 0) {
-      for (const re of res) {
+      for (const rm of rms) {
         const weekdays = rng.shuffle([0, 1, 2, 3, 4, 5]).slice(0, rng.int(...scale.meetingDays));
         for (const offset of weekdays) {
-          if (day + offset <= end) add(agenda, day + offset, { re });
+          if (day + offset <= end) add(agenda, day + offset, { rm });
         }
       }
     }
-    for (const re of arrivals.get(day) ?? []) arrive(re, day);
+    for (const rm of arrivals.get(day) ?? []) arrive(rm, day);
     for (const { id, fyp } of issues.get(day) ?? []) {
       issuePolicy(db, id, {
         issuedDate: toDate(day),
@@ -385,17 +385,17 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
       });
     }
     for (const slot of agenda.get(day) ?? []) {
-      const booked = slot.booked ?? book(slot.re, day);
-      if (booked && day < anchor) resolve(slot.re, booked, day);
+      const booked = slot.booked ?? book(slot.rm, day);
+      if (booked && day < anchor) resolve(slot.rm, booked, day);
     }
     if (day < anchor) {
-      for (const re of res) if (rng.chance(0.01)) manualChange(re, day);
+      for (const rm of rms) if (rng.chance(0.01)) manualChange(rm, day);
     }
   };
 
   /**
    * Thùng rác of the load data (spec Phase 6 §4.2), with rows of every kind that it restores and
-   * that it blocks (TR-1, TR-2): a closed team, whose TL and RE wait for it; an RE who left before
+   * that it blocks (TR-1, TR-2): a closed team, whose TL and RM wait for it; an RM who left before
    * taking a customer; a share of the customers, appointments and policies, where the appointments
    * and policies deleted before their customer wait for the customer.
    */
@@ -405,7 +405,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
       softDeletePerson(db, createPerson(db, { name: staffName(), role, teamId: closed.id }).id);
     }
     softDeleteTeam(db, closed.id);
-    const leaver = createPerson(db, { name: staffName(), role: 'RM', teamId: res[0]!.teamId });
+    const leaver = createPerson(db, { name: staffName(), role: 'RM', teamId: rms[0]!.teamId });
     softDeletePerson(db, leaver.id);
 
     const share = <T>(items: T[]) =>
@@ -536,7 +536,7 @@ function kycSimulation(db: Database, rng: Rng, born: () => number | null) {
 }
 
 /**
- * Now and then the RE runs the Mock analysis after a meeting (spec Phase 5 §7.3): on the KYC as it
+ * Now and then the RM runs the Mock analysis after a meeting (spec Phase 5 §7.3): on the KYC as it
  * stands, at the mode of the gate, never at a gate that blocks the AI (P2). Later KYC changes leave
  * it STALE, as on screen. It writes with its own random stream and a clock that does not tick, so
  * every other record stays as it was without it.

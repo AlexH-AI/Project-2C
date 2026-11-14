@@ -23,7 +23,7 @@ import {
   prepared,
   requireChoice,
   requireName,
-  requireRe,
+  requireRm,
   requireRow,
   rowInsert,
   selectRows,
@@ -150,8 +150,8 @@ export function updateCustomerProfile(
       gender: changes.gender === undefined ? current.gender : changes.gender,
     });
     updateRow(db, customers, id, profile);
-    // The new RE takes over what is still planned (Owner 15/10/2026, T-233); what has an outcome or
-    // is past, and the policies, count for the RE recorded on them (ADR-0007).
+    // The new RM takes over what is still planned (Owner 15/10/2026, T-233); what has an outcome or
+    // is past, and the policies, count for the RM recorded on them (ADR-0007).
     if (profile.rmId !== row.rmId) {
       db.orm
         .update(appointments)
@@ -165,7 +165,7 @@ export function updateCustomerProfile(
 }
 
 /**
- * Mockup 5c: how many planned appointments `updateCustomerProfile` hands over to the RE `rmId`;
+ * Mockup 5c: how many planned appointments `updateCustomerProfile` hands over to the RM `rmId`;
  * none when the customer is theirs already.
  */
 export function previewHandover(db: Database, id: string, rmId: string): number {
@@ -227,7 +227,7 @@ export function restoreCustomer(db: Database, id: string): void {
 
 /** Why the customer cannot be restored, thrown as `restoreCustomer` throws it (TR-2). */
 export function checkRestoreCustomer(db: Database, row: CustomerRow): void {
-  requireRe(db, row.rmId);
+  requireRm(db, row.rmId);
 }
 
 // ---- transitions, shared with the appointment commands --------------------
@@ -533,7 +533,7 @@ function plannedOff(db: Database, customerId: string, rmId: string) {
 function validateProfile(db: Database, input: CustomerProfile) {
   return {
     name: requireName(input.name),
-    rmId: requireRe(db, input.rmId),
+    rmId: requireRm(db, input.rmId),
     birthDate: input.birthDate ? birthDateText(db, input.birthDate) : null,
     gender: input.gender == null ? null : requireChoice(GENDERS, input.gender),
   };

@@ -227,11 +227,11 @@ const SUGGESTION_DAYS = 60;
 /**
  * Reads a quick date `dd/mm` or `dd/mm/yyyy` (leading zeros optional). Without a year, today's year
  * is used; if that date passed more than 60 days ago, the same day next year is suggested, since
- * at year end the RE often means early next year. A day this year lacks (29/02) is an
+ * at year end the RM often means early next year. A day this year lacks (29/02) is an
  * `invalid-date` that still suggests next year's, once the end of its month passed more than 60
  * days ago (DR-39). Early in the year it is the other way: a date not yet come whose day last year
  * passed 60 days ago at most suggests that day (ADR-0007, Owner 23/10/2026). The two never come
- * together. The caller shows the result and lets the RE choose — nothing is guessed silently.
+ * together. The caller shows the result and lets the RM choose — nothing is guessed silently.
  * The text is read as `normalizeText` keeps it, as `parseVnd` reads an amount (DR6-110).
  */
 export function parseQuickDate(text: string, today: CalendarDate): QuickDateResult {

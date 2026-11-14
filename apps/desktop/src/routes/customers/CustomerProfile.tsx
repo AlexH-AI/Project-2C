@@ -42,12 +42,12 @@ function readProfile(db: Database, id: string) {
   if (!customer) return undefined;
   const people = sortedByName(listPeople(db));
   const teams = sortedByName(listTeams(db));
-  const re = people.find((person) => person.id === customer.rmId);
+  const rm = people.find((person) => person.id === customer.rmId);
   const transitions = listStageTransitions(db, id);
   return {
     customer,
-    re,
-    team: teams.find((team) => team.id === re?.teamId),
+    rm,
+    team: teams.find((team) => team.id === rm?.teamId),
     policies: listPolicies(db).filter((policy) => policy.customerId === id),
     transitions,
     kyc: getKycProfile(db, id),
@@ -125,7 +125,7 @@ export function CustomerProfile({ id }: { id: string }) {
 
   const {
     customer,
-    re,
+    rm,
     team,
     policies,
     transitions,
@@ -143,7 +143,7 @@ export function CustomerProfile({ id }: { id: string }) {
     customer.code,
     customer.gender && t(`gender.${customer.gender}`),
     birth && t('customer.birth', { date: birthLabel(birth), age: ageOn(birth, today) }),
-    re && t('customers.re', { name: re.name }),
+    rm && t('customers.rm', { name: rm.name }),
     team && t('customer.team', { name: team.name }),
     policies.length > 0
       ? t('customer.hasPolicies', { count: policies.length })

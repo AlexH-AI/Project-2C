@@ -24,8 +24,8 @@ function sameScope(a: Scope, b: Scope): boolean {
       return b.kind === 'all';
     case 'team':
       return b.kind === 'team' && a.teamId === b.teamId;
-    case 're':
-      return b.kind === 're' && a.rmId === b.rmId;
+    case 'rm':
+      return b.kind === 'rm' && a.rmId === b.rmId;
   }
 }
 

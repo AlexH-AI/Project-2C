@@ -32,7 +32,7 @@ const byKey = (tiles: readonly KpiTile[]) =>
   Object.fromEntries(tiles.map((tile) => [tile.key, tile]));
 
 let made = 0;
-/** `rf` cuộc gặp chuyển RF and `issued` issued policies of one RE, all on `day`. */
+/** `rf` cuộc gặp chuyển RF and `issued` issued policies of one RM, all on `day`. */
 function closing(day: CalendarDate, rf: number, issued: number): MetricsData {
   const appointments = Array.from(
     { length: rf },
@@ -283,10 +283,10 @@ describe('viewingText ("Đang xem")', () => {
     expect(viewing).toMatchObject({ period: 'Tháng 04/2027', mtd: true, range: '01/04/2027' });
   });
 
-  it('names the RE, or counts the teams of the Team scope; an ended year has no range', () => {
+  it('names the RM, or counts the teams of the Team scope; an ended year has no range', () => {
     const year = periodOf('year', d(2026, 1, 1));
-    const re = viewingText(
-      { period: year, scope: { kind: 're', rmId: 're-an' } },
+    const rm = viewingText(
+      { period: year, scope: { kind: 'rm', rmId: 're-an' } },
       d(2027, 1, 5),
       PEOPLE,
       TEAMS,
@@ -298,7 +298,7 @@ describe('viewingText ("Đang xem")', () => {
       TEAMS,
     );
 
-    expect(re).toEqual({ period: 'Năm 2026', mtd: false, range: null, scope: 'RM An' });
+    expect(rm).toEqual({ period: 'Năm 2026', mtd: false, range: null, scope: 'RM An' });
     expect(team.scope).toBe('Team (2 team)');
   });
 });
@@ -306,7 +306,7 @@ describe('viewingText ("Đang xem")', () => {
 describe('metricsScope', () => {
   it('the Team scope of Tổng quan counts every team together', () => {
     expect(metricsScope({ kind: 'team', teamId: 'team-a' })).toEqual(ALL);
-    expect(metricsScope({ kind: 're', rmId: 're-an' })).toEqual({ kind: 're', rmId: 're-an' });
+    expect(metricsScope({ kind: 'rm', rmId: 're-an' })).toEqual({ kind: 'rm', rmId: 're-an' });
     expect(metricsScope(ALL)).toEqual(ALL);
   });
 });

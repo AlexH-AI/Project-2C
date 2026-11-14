@@ -1,7 +1,7 @@
 /**
  * Golden KYC gate K01–K15 through the database (spec §8): each profile is loaded with the business
  * commands only, read back, and `evaluateKycGate` must give the golden result. Birth year and gender
- * enter through the customer profile (D2); a disagreeing birth year is flagged by the RE as a
+ * enter through the customer profile (D2); a disagreeing birth year is flagged by the RM as a
  * conflict (Owner, #62). The fixture is never edited to make this pass.
  */
 import { evaluateKycGate, type KycFact } from '@p2c/domain';
@@ -21,14 +21,14 @@ const entries = (facts: readonly KycFact[]) =>
 
 describe('golden KYC profiles through the database', () => {
   it.each(KYC_GOLDEN_PROFILES.map((p) => [p.id, p] as const))('%s', async (_, golden) => {
-    const { db, re } = await setup();
+    const { db, rm } = await setup();
     const fromProfile = (field: 'birthYear' | 'gender') =>
       golden.facts.find((fact) => fact.field === field);
     const birthYear = fromProfile('birthYear');
     const gender = fromProfile('gender');
     const customer = createCustomer(db, {
       name: golden.id,
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N4',
       date: d(1, 6, 2026),
       birthDate: birthYear ? { year: birthYear.value as number } : null,

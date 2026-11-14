@@ -137,7 +137,7 @@ function readIssuedDate(
 
 /** A line of "Ảnh hưởng chỉ số" (8d): what an edit does to the metrics of the months. */
 export type Effect =
-  /** The FYP the policy's RE submitted or issued in one month. */
+  /** The FYP the policy's RM submitted or issued in one month. */
   | {
       readonly kind: 'fyp';
       readonly metric: 'submitted' | 'issued';
@@ -232,11 +232,11 @@ function monthEffects(
 export const monthOf = (date: CalendarDate) => formatPeriodValue(periodOf('month', date));
 
 /**
- * A line of "Ảnh hưởng chỉ số" (8d). Without the RE's name (an RE no longer listed, e.g.
- * deleted), the sentence leaves the RE out rather than show an empty name; the line of the counts
- * names no RE (mockup 8d "dời tháng").
+ * A line of "Ảnh hưởng chỉ số" (8d). Without the RM's name (an RM no longer listed, e.g.
+ * deleted), the sentence leaves the RM out rather than show an empty name; the line of the counts
+ * names no RM (mockup 8d "dời tháng").
  */
-export function effectText(effect: Effect, reName: string | undefined): string {
+export function effectText(effect: Effect, rmName: string | undefined): string {
   if (effect.kind === 'count') {
     return t('policyForm.countMoved', {
       from: monthOf(effect.from),
@@ -247,11 +247,11 @@ export function effectText(effect: Effect, reName: string | undefined): string {
   const params = {
     label: t(`policyForm.metric.${effect.metric}`),
     month: monthOf(calendarDate(effect.year, effect.month, 1)),
-    re: reName?.trim() ?? '',
+    rm: rmName?.trim() ?? '',
     amount: formatVndCompact(Math.abs(effect.diff)),
   };
   const key = effect.diff < 0 ? 'Down' : 'Up';
-  return t(params.re ? `policyForm.effect${key}` : `policyForm.effect${key}NoRe`, params);
+  return t(params.rm ? `policyForm.effect${key}` : `policyForm.effect${key}NoRm`, params);
 }
 
 /**

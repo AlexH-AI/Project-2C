@@ -7,7 +7,7 @@ import { PEOPLE } from './metrics.fixture';
 // are tested against the expected results in `appointment-counts.test.ts`.
 
 const byId = new Map(APPOINTMENT_ROWS.map((row) => [row.appointment.id, row]));
-const reIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
+const rmIds = new Set(PEOPLE.filter((person) => person.role === 'RM').map((person) => person.id));
 const personIds = new Set(PEOPLE.map((person) => person.id));
 
 describe('golden appointments fixture', () => {
@@ -17,9 +17,9 @@ describe('golden appointments fixture', () => {
     expect(new Set(caseIds).size).toBe(caseIds.length);
   });
 
-  it('assigns every appointment to an RE, with known people as coordinators', () => {
+  it('assigns every appointment to an RM, with known people as coordinators', () => {
     for (const { appointment } of APPOINTMENT_ROWS) {
-      expect(reIds.has(appointment.rmId)).toBe(true);
+      expect(rmIds.has(appointment.rmId)).toBe(true);
       for (const id of appointment.coordinatorIds) expect(personIds.has(id)).toBe(true);
     }
   });

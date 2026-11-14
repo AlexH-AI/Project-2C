@@ -106,20 +106,20 @@ describe('customerBoard', () => {
     expect(board.open.N3.map((card) => card.customer.name)).toEqual(['An', 'Bình']);
   });
 
-  it('gives each card its RE, the day it entered the stage and its policy count', () => {
+  it('gives each card its RM, the day it entered the stage and its policy count', () => {
     const board = customerBoard(data, { kind: 'all' });
 
-    expect(board.open.N4[1]).toMatchObject({ re: people[0], since: day(9, 10), policies: 0 });
+    expect(board.open.N4[1]).toMatchObject({ rm: people[0], since: day(9, 10), policies: 0 });
     expect(board.open.N2[0]).toMatchObject({ since: day(7, 5), policies: 2 });
   });
 
-  it('keeps only the customers of the RE in scope, through their team or directly', () => {
+  it('keeps only the customers of the RM in scope, through their team or directly', () => {
     const team = customerBoard(data, { kind: 'team', teamId: 't2' });
     expect(team.open.N4.map((card) => card.customer.id)).toEqual(['em']);
     expect(team).toMatchObject({ openCount: 1, closedCount: 0 });
 
-    const re = customerBoard(data, { kind: 're', rmId: 're1' });
-    expect(re.open.N4.map((card) => card.customer.id)).toEqual(['binh', 'an']);
+    const rm = customerBoard(data, { kind: 'rm', rmId: 're1' });
+    expect(rm.open.N4.map((card) => card.customer.id)).toEqual(['binh', 'an']);
   });
 
   // DR-17: the team's members are listed once per pass, not once per customer.
@@ -131,15 +131,15 @@ describe('customerBoard', () => {
     expect(filter).toHaveBeenCalledTimes(1);
   });
 
-  it('counts the open customers of each RE in scope, leaving the closed ones out', () => {
+  it('counts the open customers of each RM in scope, leaving the closed ones out', () => {
     const board = customerBoard(data, { kind: 'all' });
-    expect(board.openByRe).toEqual(
+    expect(board.openByRm).toEqual(
       new Map([
         ['re2', 1],
         ['re1', 3],
       ]),
     );
-    expect(customerBoard(data, { kind: 'team', teamId: 't2' }).openByRe).toEqual(
+    expect(customerBoard(data, { kind: 'team', teamId: 't2' }).openByRm).toEqual(
       new Map([['re2', 1]]),
     );
   });
@@ -211,7 +211,7 @@ describe('kanbanColumn', () => {
   const cards = (count: number): CustomerCard[] =>
     Array.from({ length: count }, (_, i) => ({
       customer: customer(`c${i}`, 'N4'),
-      re: people[0],
+      rm: people[0],
       since: day(9, 1),
       policies: 0,
     }));

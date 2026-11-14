@@ -10,6 +10,7 @@ import {
   formatDayOfMonth,
   formatPeriodValue,
   isInPeriod,
+  isRm,
   periodOf,
   type AppointmentAction,
   type AppointmentGroup,
@@ -27,8 +28,8 @@ import {
 import { useTables, useToday } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { RePicker } from '../../shell/RePicker';
-import { teamRes } from '../../shell/scope';
+import { RmPicker } from '../../shell/RmPicker';
+import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { ALERT, CARD, CELL_NAME, FOCUS, HEADING, LINK } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
@@ -43,7 +44,7 @@ import { isPastOrToday, withTime } from './appointment-form';
 import {
   APPOINTMENT_GROUPS,
   appointmentRows,
-  appointmentsByRe,
+  appointmentsByRm,
   dateTone,
   dayBoard,
   dayLabel,
@@ -76,11 +77,11 @@ const coordinatorText = (row: AppointmentRow) =>
 const dayIn = (period: Period, today: CalendarDate) =>
   isInPeriod(today, period) ? today : period.start;
 
-/** Appointments (mockup appointments.html): month calendar, the day by team → RE, the list, a detail. */
+/** Appointments (mockup appointments.html): month calendar, the day by team → RM, the list, a detail. */
 export function AppointmentsScreen() {
   const today = useToday();
   const data = useTables();
-  const { picked, scope, pickRe } = useScopeState();
+  const { picked, scope, pickRm } = useScopeState();
   const [period, setPeriod] = useState(() => periodOf('month', today));
   const [day, setDay] = useState(today);
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
@@ -90,7 +91,7 @@ export function AppointmentsScreen() {
   const [recording, setRecording] = useState<AppointmentRow | null>(null);
   const [editing, setEditing] = useState<AppointmentRow | null>(null);
   const [deleting, setDeleting] = useState<AppointmentRow | null>(null);
-  // The appointment just made, or reached by "Dời từ" / "Dời sang" (`linked`), for an RE outside the
+  // The appointment just made, or reached by "Dời từ" / "Dời sang" (`linked`), for an RM outside the
   // scope, while it is the one selected.
   const [outOfSight, setOutOfSight] = useState<{
     readonly appointment: AppointmentRecord;
@@ -126,18 +127,18 @@ export function AppointmentsScreen() {
     () => rows.filter((row) => isInPeriod(row.appointment.date, period)).reverse(),
     [rows, period],
   );
-  // The RE strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B3).
+  // The RM strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B3).
   const team =
     picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
-  const re =
-    scope !== picked && scope.kind === 're'
+  const rm =
+    scope !== picked && scope.kind === 'rm'
       ? data.people.find((person) => person.id === scope.rmId)
       : undefined;
   const yearCells = useMemo(
     () => yearGrid(period.start.year, rows, today),
     [period.start.year, rows, today],
   );
-  const reCounts = useMemo(() => appointmentsByRe(pickedRows, period), [pickedRows, period]);
+  const rmCounts = useMemo(() => appointmentsByRm(pickedRows, period), [pickedRows, period]);
   const summary = summaryText({
     total: inPeriod.length,
     met: inPeriod.filter((row) => row.appointment.status === 'MET').length,
@@ -149,7 +150,7 @@ export function AppointmentsScreen() {
     { value: 'any', label: t('appointments.coordinatorAny') },
     { value: 'none', label: t('appointments.coordinatorNone') },
     ...data.people
-      .filter((person) => person.role !== 'RM')
+      .filter((person) => !isRm(person))
       .map((person) => ({ value: person.id, label: personLabel(person) })),
   ];
 
@@ -186,11 +187,11 @@ export function AppointmentsScreen() {
         ),
       },
       {
-        id: 're',
-        header: t('appointments.re'),
+        id: 'rm',
+        header: t('appointments.rm'),
         kind: 'text',
-        value: (r) => r.re?.name ?? '',
-        cell: (r) => <span className={CELL_NAME}>{r.re?.name}</span>,
+        value: (r) => r.rm?.name ?? '',
+        cell: (r) => <span className={CELL_NAME}>{r.rm?.name}</span>,
       },
       { id: 'trigger', header: t('appointments.trigger'), kind: 'text', value: triggerText },
       {
@@ -242,13 +243,13 @@ export function AppointmentsScreen() {
   return (
     <>
       {team && (
-        <RePicker
+        <RmPicker
           team={team}
-          res={teamRes(data.people, team.id)}
-          picked={re?.id ?? null}
-          counts={reCounts}
-          total={[...reCounts.values()].reduce((sum, n) => sum + n, 0)}
-          onPick={pickRe}
+          rms={teamRms(data.people, team.id)}
+          picked={rm?.id ?? null}
+          counts={rmCounts}
+          total={[...rmCounts.values()].reduce((sum, n) => sum + n, 0)}
+          onPick={pickRm}
         />
       )}
       <div className="flex flex-wrap items-end gap-3">
@@ -263,9 +264,9 @@ export function AppointmentsScreen() {
         </div>
         <div className="flex-1" />
         <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">
-          {re ? (
+          {rm ? (
             <>
-              <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
+              <b className="font-semibold text-fg">{rm.name}</b> {t('sep.dot')} {summary}
             </>
           ) : team ? (
             joinParts([t('appointments.viewingTeam', { team: team.name }), summary])
@@ -281,7 +282,7 @@ export function AppointmentsScreen() {
         <p ref={outsideLine} tabIndex={-1} role="status" className={`${ALERT} border-info text-sm`}>
           {t(outside.linked ? 'appointments.linkedOutside' : 'appointments.createdOutside', {
             date: formatDate(outside.appointment.date),
-            re: data.people.find((person) => person.id === outside.appointment.rmId)?.name ?? '',
+            rm: data.people.find((person) => person.id === outside.appointment.rmId)?.name ?? '',
           })}
         </p>
       )}
@@ -565,9 +566,9 @@ function DayTable({
           className="mb-3 last:mb-0"
         >
           <h3 className="m-0 mb-1 text-sm font-semibold wrap-anywhere">{group.team?.name}</h3>
-          {group.res.map(({ re, rows: list }) => (
-            <section key={re?.id} aria-label={re?.name} className="mb-1.5 pl-3">
-              <h4 className="m-0 text-xs font-medium wrap-anywhere text-fg-2">{re?.name}</h4>
+          {group.rms.map(({ rm, rows: list }) => (
+            <section key={rm?.id} aria-label={rm?.name} className="mb-1.5 pl-3">
+              <h4 className="m-0 text-xs font-medium wrap-anywhere text-fg-2">{rm?.name}</h4>
               <ul className="m-0 list-none p-0 text-sm">
                 {list.map((row) => (
                   <li key={row.appointment.id} className="flex gap-3 py-0.5">
@@ -647,7 +648,7 @@ function Detail({
     </button>
   );
   const facts: [string, ReactNode][] = [
-    [t('appointments.re'), joinParts([row.re?.name, row.team?.name])],
+    [t('appointments.rm'), joinParts([row.rm?.name, row.team?.name])],
     [
       t('appointments.coordinators'),
       row.coordinators.map(personLabel).join(t('sep.list')) || t('appointments.none'),

@@ -14,8 +14,8 @@ import { compareDates, formatIsoDate, fromIsoDate } from '../packages/domain/src
 /** ≈ 1 500 customers, 10 000 appointments and 50 people, as the Phase 1–4 deep review's. */
 export const LOAD_SCALE = {
   teams: 4,
-  resPerTeam: 11,
-  customersPerRe: 34,
+  rmsPerTeam: 11,
+  customersPerRm: 34,
   meetingDays: [4, 4],
 };
 

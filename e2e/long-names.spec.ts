@@ -248,18 +248,18 @@ test('a team of 160 letters keeps So sánh team of Tổng quan in the window', a
   }
 });
 
-test('an RE and a team of 160 letters leave the figures of Báo cáo readable, scrolled to the far right', async ({
+test('an RM and a team of 160 letters leave the figures of Báo cáo readable, scrolled to the far right', async ({
   page,
 }) => {
   await page.goto('/#/team');
   const team = unbroken('M', 160);
-  const re = unbroken('R', 160);
+  const rm = unbroken('R', 160);
   await renameTeam(page, 'Bình Minh', team);
   const members = page.getByRole('region', { name: `Thành viên team ${team}` });
   await renamePerson(
     page,
     members.getByRole('table').getByRole('button', { name: /^Sửa / }).first(),
-    re,
+    rm,
   );
   await page.getByRole('link', { name: 'Báo cáo' }).click();
   const tables = page.getByRole('radiogroup', { name: 'Bảng báo cáo' });
@@ -268,7 +268,7 @@ test('an RE and a team of 160 letters leave the figures of Báo cáo readable, s
     await page.setViewportSize({ width, height: 900 });
     for (const [label, name] of [
       ['Theo team', team],
-      ['Theo RM', re],
+      ['Theo RM', rm],
     ] as const) {
       await tables.getByRole('radio', { name: label }).click();
       const table = page.getByRole('table', { name: label });
@@ -308,7 +308,7 @@ test('an RE and a team of 160 letters leave the figures of Báo cáo readable, s
       });
       expect(seen.figures, `${label} at ${width}`).toBeGreaterThanOrEqual(8);
     }
-    // The Team column of Theo RE, not pinned, breaks the long team name at the cap of a name too
+    // The Team column of Theo RM, not pinned, breaks the long team name at the cap of a name too
     // (DR6-174 c).
     const teamCell = page
       .getByRole('table', { name: 'Theo RM' })
@@ -318,7 +318,7 @@ test('an RE and a team of 160 letters leave the figures of Báo cáo readable, s
   }
 });
 
-/** The scopes of the top bar: everyone, the team of 160 letters, its RE of 160 letters. */
+/** The scopes of the top bar: everyone, the team of 160 letters, its RM of 160 letters. */
 type ScopeKind = 'Toàn bộ' | 'Team' | 'RM';
 
 /** Opens `screen` from the sidebar: a page load would open the simulated data again. */
@@ -354,19 +354,19 @@ async function sweepEach(page: Page, name: string, at: string) {
 
 // DR6-170 (Q4 (a), Owner 05/11/2026): a sweep of every main screen with the longest names found
 // so far, so a screen added later that lets one push the window sideways fails here.
-test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no main screen sideways, in any scope', async ({
+test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no main screen sideways, in any scope', async ({
   page,
 }) => {
   const customer = unbroken('K', 81);
-  const re = unbroken('R', 160);
+  const rm = unbroken('R', 160);
   const team = unbroken('T', 160);
   const model = unbroken('W', 100);
   const scopes: readonly (readonly [ScopeKind, string?])[] = [
     ['Toàn bộ'],
     ['Team', team],
-    ['RM', `${re} · ${team}`],
+    ['RM', `${rm} · ${team}`],
   ];
-  /** The scope `kind`, with `pick` in its picker; the RE picked by its first letters, as by hand. */
+  /** The scope `kind`, with `pick` in its picker; the RM picked by its first letters, as by hand. */
   const setScope = async (kind: ScopeKind, pick?: string) => {
     await page
       .getByRole('radiogroup', { name: 'Góc nhìn' })
@@ -379,11 +379,11 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
     }
     if (kind === 'RM') {
       const picker = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-      // From the first RE of the list, under another team.
+      // From the first RM of the list, under another team.
       await picker.selectOption({ index: 0 });
       await expect(picker.locator('option:checked')).not.toHaveText(pick!);
       await picker.focus();
-      await page.keyboard.type(re.slice(0, 4));
+      await page.keyboard.type(rm.slice(0, 4));
       await expect(picker.locator('option:checked')).toHaveText(pick!);
       // Narrower than the name, the picker says it whole on hover.
       await expect(picker).toHaveAttribute('title', pick!);
@@ -397,7 +397,7 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   await panelOf(page).getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panelOf(page)).toContainText('CURRENT');
 
-  // The customer's RE and their team renamed, the analysis's model one no list has: as in a
+  // The customer's RM and their team renamed, the analysis's model one no list has: as in a
   // backup edited by hand, the only way to such a model.
   await open(page, 'Cài đặt');
   await settingsSection(page, 'Dữ liệu');
@@ -411,7 +411,7 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   const ours = rows('customers').find((row) => row.name === customer)!;
   const person = rows('people').find((row) => row.id === ours.rm_id)!;
   rows('teams').find((row) => row.id === person.team_id)!.name = team;
-  person.name = re;
+  person.name = rm;
   Object.assign(
     rows('ai_analyses').find((row) => row.customer_id === ours.id)!,
     {
@@ -448,10 +448,10 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
   for (const [kind, pick] of scopes) {
     await setScope(kind, pick);
-    await expect(detail).toContainText(`${re} · ${team}`);
+    await expect(detail).toContainText(`${rm} · ${team}`);
     await sweep(page, `Lịch hẹn, ${kind}`);
   }
-  // Into Thùng rác, below: its row there names the customer and the RE.
+  // Into Thùng rác, below: its row there names the customer and the RM.
   await detail.getByRole('button', { name: 'Xóa', exact: true }).click();
   const remove = page.getByRole('dialog', { name: 'Xóa lịch hẹn 16/09/2026?' });
   await remove.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
@@ -479,7 +479,7 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   await teamList(page)
     .getByRole('button', { name: new RegExp(`^${team}`) })
     .click();
-  await expect(page.getByRole('region', { name: `Thành viên team ${team}` })).toContainText(re);
+  await expect(page.getByRole('region', { name: `Thành viên team ${team}` })).toContainText(rm);
   await sweep(page, 'Team & nhân sự');
   // Into Thùng rác, below: a team of 160 letters, its name the first line of "Bản ghi".
   const gone = unbroken('G', 160);
@@ -499,7 +499,7 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   await removeTeam.getByRole('button', { name: 'Xóa', exact: true }).click();
   await expect(removeTeam).toBeHidden();
 
-  // The profile: its line under the name, Hợp đồng with a policy by the RE, the history of AI.
+  // The profile: its line under the name, Hợp đồng with a policy by the RM, the history of AI.
   await page.evaluate((hash) => (location.hash = hash), profile);
   const policies = page.getByRole('region', { name: 'Hợp đồng', exact: true });
   await policies.getByRole('button', { name: '+ Hợp đồng' }).first().click();
@@ -508,14 +508,14 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   await submit.getByRole('textbox', { name: /^FYP nộp/ }).fill('500tr');
   await submit.getByRole('button', { name: 'Lưu HĐ' }).click();
   await expect(submit).toBeHidden();
-  await expect(policies).toContainText(re);
+  await expect(policies).toContainText(rm);
   await expect(panelOf(page).getByRole('table', { name: 'Lịch sử phân tích' })).toContainText(
     model,
   );
   await sweep(page, 'hồ sơ');
 
   // The customer deleted: in Thùng rác, with the appointment and the team deleted above, its name
-  // is the first line of "Bản ghi", its RE and team are "Thuộc".
+  // is the first line of "Bản ghi", its RM and team are "Thuộc".
   await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
   await page
     .getByRole('dialog', { name: `Sửa hồ sơ · ${customer}` })
@@ -529,6 +529,6 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   await open(page, 'Cài đặt');
   await settingsSection(page, 'Thùng rác');
   const records = page.getByRole('region', { name: 'Thùng rác' }).getByRole('table');
-  for (const name of [customer, gone, `RM ${re}`]) await expect(records).toContainText(name);
+  for (const name of [customer, gone, `RM ${rm}`]) await expect(records).toContainText(name);
   await sweep(page, 'Thùng rác');
 });

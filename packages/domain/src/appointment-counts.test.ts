@@ -81,7 +81,7 @@ describe('appointmentCountsByMark', () => {
   const SCOPES: readonly Scope[] = [
     { kind: 'all' },
     { kind: 'team', teamId: 'team-a' },
-    { kind: 're', rmId: 're-an' },
+    { kind: 'rm', rmId: 're-an' },
   ];
   const MARKS: Readonly<Record<string, readonly Period[]>> = {
     'days of 12/2026 – 03/2027': [
@@ -110,12 +110,12 @@ describe('appointmentCountsByMark', () => {
   });
 });
 
-// DR-20: So sánh team and Báo cáo count every team and RE of one period; grouped once by RE.
+// DR-20: So sánh team and Báo cáo count every team and RM of one period; grouped once by RM.
 describe('appointmentCountsByScope', () => {
   const live = APPOINTMENT_ROWS.filter((row) => !row.deleted && !row.customerDeleted).map(
     (row) => row.appointment,
   );
-  // An appointment of a TL (once an RE), of an RE outside any team and of someone not listed.
+  // An appointment of a TL (once an RM), of an RM outside any team and of someone not listed.
   const appointments = [
     ...live,
     { ...appointment('MET', TODAY), id: 'ap-tl', rmId: 'tl-ha' },
@@ -128,7 +128,7 @@ describe('appointmentCountsByScope', () => {
     { kind: 'team', teamId: 'team-a' },
     { kind: 'team', teamId: 'team-b' },
     { kind: 'team', teamId: 'team-none' },
-    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 're', rmId })),
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 'rm', rmId })),
   ];
   const PERIODS: readonly Period[] = [
     periodOf('month', TODAY),

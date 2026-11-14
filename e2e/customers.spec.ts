@@ -48,7 +48,7 @@ test('the kanban shows N4 → N1 and the closed stages, adding up to the summary
   }
 });
 
-test('the scope narrows the customers to one team, then to one RE', async ({ page }) => {
+test('the scope narrows the customers to one team, then to one RM', async ({ page }) => {
   const [allOpen] = await summary(page);
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
 
@@ -59,14 +59,14 @@ test('the scope narrows the customers to one team, then to one RE', async ({ pag
   await expect.poll(async () => (await summary(page))[0]).toBeLessThan(allOpen);
 
   await scope.getByRole('radio', { name: 'RM' }).click();
-  const re = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-  await expect(re.locator('option')).toHaveCount(30);
+  const rm = page.getByRole('combobox', { name: 'RM của góc nhìn' });
+  await expect(rm.locator('option')).toHaveCount(30);
   await page.getByRole('radio', { name: 'Bảng' }).click();
-  const reName = (await re.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
+  const rmName = (await rm.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
   const rows = page.getByRole('table').getByRole('row');
-  const [reOpen, reClosed] = await summary(page);
-  await expect(rows).toHaveCount(1 + reOpen + reClosed);
-  await expect(rows.nth(1).getByRole('cell').nth(3)).toHaveText(reName);
+  const [rmOpen, rmClosed] = await summary(page);
+  await expect(rows).toHaveCount(1 + rmOpen + rmClosed);
+  await expect(rows.nth(1).getByRole('cell').nth(3)).toHaveText(rmName);
 });
 
 test('a card opens the customer profile with its code, stage and policies', async ({ page }) => {
@@ -89,7 +89,7 @@ test('an unknown customer shows a message instead of a profile', async ({ page }
   await expect(page.getByText('Không tìm thấy KH này (có thể đã bị xóa).')).toBeVisible();
 });
 
-test('the RE strip shows on the Team scope only, with the RE of the team', async ({ page }) => {
+test('the RM strip shows on the Team scope only, with the RM of the team', async ({ page }) => {
   const strip = page.getByRole('region', { name: /^RM của team/ });
   await expect(strip).toHaveCount(0);
 
@@ -109,7 +109,7 @@ test('the RE strip shows on the Team scope only, with the RE of the team', async
   await expect(strip).toHaveCount(0);
 });
 
-test('an RE picked in the strip narrows the customers to it, until picked again', async ({
+test('an RM picked in the strip narrows the customers to it, until picked again', async ({
   page,
 }) => {
   await pickTeam(page, 'Sao Mai');
@@ -121,9 +121,9 @@ test('an RE picked in the strip narrows the customers to it, until picked again'
   await chip.click();
   await expect(chip).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(/KH đang mở/)).toContainText(name);
-  const [reOpen] = await summary(page);
-  expect(reOpen).toBe(Number(await chip.locator('span').last().textContent()));
-  expect(reOpen).toBeLessThan(teamOpen);
+  const [rmOpen] = await summary(page);
+  expect(rmOpen).toBe(Number(await chip.locator('span').last().textContent()));
+  expect(rmOpen).toBeLessThan(teamOpen);
   for (const stage of OPEN) {
     for (const card of await column(page, stage).getByRole('link').all()) {
       await expect(card).toContainText(`RM ${name}`);
@@ -135,7 +135,7 @@ test('an RE picked in the strip narrows the customers to it, until picked again'
   await expect.poll(async () => (await summary(page))[0]).toBe(teamOpen);
 });
 
-test('another team drops the RE picked in the strip', async ({ page }) => {
+test('another team drops the RM picked in the strip', async ({ page }) => {
   await pickTeam(page, 'Sao Mai');
   await page
     .getByRole('region', { name: 'RM của team Sao Mai' })

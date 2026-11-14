@@ -55,7 +55,7 @@ const AMOUNT_PATTERN =
 const SPACE_GROUPED = /^[1-9]\d{0,2}(?: \d{3})+$/;
 
 /**
- * Reads an amount the way an RE types it: `500tr`, `1,2 tỷ`, `750k`, `500.000.000`, `500,000`,
+ * Reads an amount the way an RM types it: `500tr`, `1,2 tỷ`, `750k`, `500.000.000`, `500,000`,
  * `500 000 000`, `500000000 ₫`, `500.000 VNĐ`. `.` and `,` follow the same rule (see
  * `splitNumber`), so `500,000` is 500 000 đồng and `1,500 tỷ` is 1 500 tỷ; `1,5 tỷ` is 1,5 tỷ.
  * Digits after the unit are said as the next group of three below it (see `spokenTail`): `1tr5` is

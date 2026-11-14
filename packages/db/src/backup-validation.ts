@@ -14,6 +14,7 @@ import {
   normalizeKycValue,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
+  RM_ROLE,
   type CustomerStage,
   type KycFact,
   type KycField,
@@ -290,8 +291,8 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
 }
 
 /**
- * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
- * be deleted, only once their records are deleted); the RE never coordinates their own
+ * Rule 5: a live customer, appointment or policy belongs to a live RM (who may stop being one, or
+ * be deleted, only once their records are deleted); the RM never coordinates their own
  * appointment, and only a supporting role (`REVIEWER_ROLES`) coordinates a live appointment
  * (ADR-0007) or reviews a live meeting (D9), and is not deleted while it does (DR-04); an
  * appointment is rescheduled from one of the same customer (D3), which has no other new one and is
@@ -304,17 +305,17 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
   // The people some live reference of those kinds points to, to be one of those that fail.
   const pointedTo = (kinds: readonly PersonReferenceKind[]) =>
     `p.id IN (SELECT person_id FROM ${references} WHERE live AND kind IN (${quotedKinds(kinds)}))`;
-  const reKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] === 're');
+  const rmKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] === 'rm');
   // A kind POINTS_TO says nothing of is checked as one supporting the record, never left out.
-  const supportingKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] !== 're');
-  const notRe = read(
-    `SELECT 1 FROM people p WHERE (p.role <> 'RM' OR p.deleted_at IS NOT NULL) AND ${pointedTo(reKinds)}`,
+  const supportingKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] !== 'rm');
+  const notRm = read(
+    `SELECT 1 FROM people p WHERE (p.role <> ${sqlTexts([RM_ROLE])} OR p.deleted_at IS NOT NULL) AND ${pointedTo(rmKinds)}`,
   );
-  // A coordinator or reviewer may have become an RE once their appointment was deleted.
+  // A coordinator or reviewer may have become an RM once their appointment was deleted.
   const supportingRoles = `(${sqlTexts(REVIEWER_ROLES)})`;
   const misplaced = read(
     [
-      // An appointment's RE among its coordinators: one person, both kinds, on one appointment.
+      // An appointment's RM among its coordinators: one person, both kinds, on one appointment.
       `SELECT 1 FROM ${references} WHERE kind IN (${quotedKinds(['coordinator', 'appointment'])}) GROUP BY appointment_id, person_id HAVING COUNT(DISTINCT kind) = 2`,
       `SELECT 1 FROM people p WHERE (p.role NOT IN ${supportingRoles} OR p.deleted_at IS NOT NULL) AND ${pointedTo(supportingKinds)}`,
     ].join(' UNION ALL '),
@@ -324,7 +325,7 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
     const from = appointments.get(a.rescheduled_from_id)!;
     return from.customer_id === a.customer_id && from.status === 'RESCHEDULED';
   });
-  return notRe.length === 0 && misplaced.length === 0 && rescheduled && chained(appointments)
+  return notRm.length === 0 && misplaced.length === 0 && rescheduled && chained(appointments)
     ? null
     : 5;
 }
@@ -460,7 +461,7 @@ function profileOf(customer: Row): ProfileFields {
 
 /**
  * Rule 9 (staff): a live person's team is live; a team has at most one live TL (#223). A live TL
- * of a deleted team breaks the first part, so the second is counted over every team. That only RE
+ * of a deleted team breaks the first part, so the second is counted over every team. That only RM
  * and TL belong to a team, deleted or not, is a CHECK of the schema (DR6-52).
  */
 function staffRule(read: (sql: string) => Row[]): Rule | null {

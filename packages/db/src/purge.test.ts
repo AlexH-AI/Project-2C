@@ -363,14 +363,14 @@ describe('purgeTrash', () => {
     expect(countRecords(imported.db)).toEqual(counts);
   });
 
-  it('D4: an RE kept only by a customer in the trash can be deleted once it is purged', async () => {
-    const { db, team, re } = await setup(TODAY);
+  it('D4: an RM kept only by a customer in the trash can be deleted once it is purged', async () => {
+    const { db, team, rm } = await setup(TODAY);
     const { person, customer, schedule } = records(db);
     const khoa = person('Vũ Minh Khoa', 'RM', team.id);
     const chau = customer('Ngô Bảo Châu', khoa.id);
     schedule(chau.id, khoa.id, d(6, 10));
     // Handed over: the past appointment stays Vũ Minh Khoa's (T-233).
-    updateCustomerProfile(db, chau.id, { rmId: re.id });
+    updateCustomerProfile(db, chau.id, { rmId: rm.id });
     softDeleteCustomer(db, chau.id);
     expect(personUsage(db, khoa.id).inTrash).toEqual([{ name: 'Ngô Bảo Châu', code: chau.code }]);
     expect(codeOf(() => softDeletePerson(db, khoa.id))).toBe('PERSON_IN_USE');
@@ -403,11 +403,11 @@ describe('purgeTrash', () => {
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
   });
 
-  it('D6: keeps the deleted RE and coordinator of a kept appointment, and the deleted team of that RE', async () => {
+  it('D6: keeps the deleted RM and coordinator of a kept appointment, and the deleted team of that RM', async () => {
     const t = await trash11a();
     const { db, mai, huy, binhMinh } = t;
     const { moved } = rescheduledFromFile(t);
-    // From the file too: the RE it was written for left, the customer was handed over.
+    // From the file too: the RM it was written for left, the customer was handed over.
     db.sqlite.run('UPDATE appointments SET rm_id = ? WHERE id = ?', [mai.id, moved.id]);
     db.sqlite.run(
       'INSERT INTO appointment_coordinators (appointment_id, person_id) VALUES (?, ?)',
@@ -526,10 +526,10 @@ describe('the count of a customer in the trash (mockups 11b, 11i; spec Phase 6 T
   // The notes of the profile (birth year, gender) are KYC notes of the customer too: the trash row
   // and 5f, and the box of the purge, are two queries asking for one number (DR6-125).
   it('counts the KYC notes of the profile with the others, in the trash row and in the purge alike', async () => {
-    const { db, re } = await setup(TODAY);
+    const { db, rm } = await setup(TODAY);
     const lan = createCustomer(db, {
       name: 'Lan',
-      rmId: re.id,
+      rmId: rm.id,
       stage: 'N3',
       date: d(1, 9),
       birthDate: { year: 1985 },
@@ -596,12 +596,12 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
 
   async function withCustomer() {
     const base = await setup(TODAY);
-    return { ...base, lan: records(base.db).customer('Lan', base.re.id) };
+    return { ...base, lan: records(base.db).customer('Lan', base.rm.id) };
   }
 
   it('keeps each deleted Dời lịch of a chain that ends in an appointment in use, with the one booked from it', async () => {
-    const { db, re, lan } = await withCustomer();
-    const [x, y, z] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10), d(24, 10)]);
+    const { db, rm, lan } = await withCustomer();
+    const [x, y, z] = chainOf(db, lan.id, rm.id, [d(20, 10), d(22, 10), d(24, 10)]);
     deleteInFile(db, x!, y!);
     const kept = [rescheduledBy(x!, d(22, 10)), rescheduledBy(y!, d(24, 10))];
 
@@ -615,17 +615,17 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
   });
 
   it('keeps only deleted ones: an appointment in use is not kept, in the middle of the chain or at its end', async () => {
-    const { db, re, lan } = await withCustomer();
+    const { db, rm, lan } = await withCustomer();
     // p, r and s in use; q, deleted, is the one thing something in use was booked from.
-    const [, q] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10), d(24, 10), d(26, 10)]);
+    const [, q] = chainOf(db, lan.id, rm.id, [d(20, 10), d(22, 10), d(24, 10), d(26, 10)]);
     deleteInFile(db, q!);
 
     expect(previewPurge(db)).toEqual({ counts: NOTHING, kept: [rescheduledBy(q!, d(24, 10))] });
   });
 
   it('keeps nothing of a chain that is wholly in the trash: the purge takes all of it', async () => {
-    const { db, re, lan } = await withCustomer();
-    const [x, y] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10)]);
+    const { db, rm, lan } = await withCustomer();
+    const [x, y] = chainOf(db, lan.id, rm.id, [d(20, 10), d(22, 10)]);
     deleteInFile(db, x!, y!);
 
     expect(purgeTrash(db)).toEqual({ counts: { ...NOTHING, appointments: 2 }, kept: [] });
@@ -634,8 +634,8 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
   });
 
   it('keeps nothing for a deleted customer, whose own appointments go with it', async () => {
-    const { db, re, lan } = await withCustomer();
-    const [x] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10)]);
+    const { db, rm, lan } = await withCustomer();
+    const [x] = chainOf(db, lan.id, rm.id, [d(20, 10), d(22, 10)]);
     deleteInFile(db, x!);
     softDeleteCustomer(db, lan.id);
     const plan = {
@@ -656,7 +656,7 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
   });
 
   it('names a kept person once, by the earliest kept appointment, and their deleted team by its first kept member', async () => {
-    const { db, team: saoMai, re, lan } = await withCustomer();
+    const { db, team: saoMai, rm, lan } = await withCustomer();
     const { person } = records(db);
     const binhMinh = createTeam(db, { name: 'Bình Minh' });
     const phuongNam = createTeam(db, { name: 'Phương Nam' });
@@ -669,10 +669,10 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
     for (const gone of [giang, mai, huy, quang]) softDeletePerson(db, gone.id);
     softDeleteTeam(db, binhMinh.id);
     softDeleteTeam(db, phuongNam.id);
-    const [x, y, z] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10), d(24, 10)]);
+    const [x, y, z] = chainOf(db, lan.id, rm.id, [d(20, 10), d(22, 10), d(24, 10)]);
     deleteInFile(db, x!, y!);
     // From the file: whom the two kept appointments were written for, and who coordinated them.
-    const reOf = (appointment: string, who: { id: string }) =>
+    const rmOf = (appointment: string, who: { id: string }) =>
       db.sqlite.run('UPDATE appointments SET rm_id = ? WHERE id = ?', [who.id, appointment]);
     const coordinate = (appointment: string, ...who: { id: string }[]) => {
       for (const { id } of who) {
@@ -682,9 +682,9 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
         );
       }
     };
-    reOf(x!, giang);
+    rmOf(x!, giang);
     coordinate(x!, huy);
-    reOf(y!, huy);
+    rmOf(y!, huy);
     coordinate(y!, mai, quang, giang);
     const on = (date: CalendarDate): KeptBy => ({ kind: 'appointment', date, time: '10:00' });
     const kept: KeptRecord[] = [
@@ -713,9 +713,9 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
   });
 
   it('looks for nothing to keep while no appointment is deleted', async () => {
-    const { db, re, lan } = await withCustomer();
-    chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10)]);
-    softDeletePolicy(db, records(db).submit(lan.id, re.id).id);
+    const { db, rm, lan } = await withCustomer();
+    chainOf(db, lan.id, rm.id, [d(20, 10), d(22, 10)]);
+    softDeletePolicy(db, records(db).submit(lan.id, rm.id).id);
     const exec = vi.spyOn(db.sqlite, 'exec');
     const searches = () => exec.mock.calls.filter(([sql]) => sql.includes('WITH RECURSIVE'));
 
@@ -724,7 +724,7 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
     expect(searches()).toEqual([]);
 
     // Once one is deleted the search runs again: the spy sees it.
-    deleteInFile(db, chainOf(db, lan.id, re.id, [d(26, 10), d(28, 10)])[0]!);
+    deleteInFile(db, chainOf(db, lan.id, rm.id, [d(26, 10), d(28, 10)])[0]!);
     previewPurge(db);
     expect(searches()).not.toEqual([]);
   });
@@ -794,8 +794,8 @@ const replaceRow =
 
 describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ lục)', () => {
   it('refuse to edit or delete those of a live customer, as before', async () => {
-    const { db, re } = await setup(TODAY);
-    const run = statement(db, withKyc(db, re.id, 'Lan').id);
+    const { db, rm } = await setup(TODAY);
+    const run = statement(db, withKyc(db, rm.id, 'Lan').id);
 
     expect(run("UPDATE kyc_notes SET text = 'sửa'")).toThrow(/append-only/);
     expect(run('DELETE FROM kyc_notes')).toThrow(/append-only/);
@@ -808,8 +808,8 @@ describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ 
   // REPLACE deletes the row it replaces without running the delete trigger unless recursive
   // triggers are on (DR6-113): a note, a fact or an analysis was editable with it.
   it('refuse to replace those of a live customer, as the file is opened and after it was exported', async () => {
-    const { db, re } = await setup(TODAY);
-    const live = withKyc(db, re.id, 'Lan');
+    const { db, rm } = await setup(TODAY);
+    const live = withKyc(db, rm.id, 'Lan');
     const before = dump(db);
 
     for (const exported of [false, true]) {
@@ -826,9 +826,9 @@ describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ 
   });
 
   it('let those of a deleted customer go, and only those, still never edited', async () => {
-    const { db, re } = await setup(TODAY);
-    const live = withKyc(db, re.id, 'Lan');
-    const gone = withKyc(db, re.id, 'Huệ');
+    const { db, rm } = await setup(TODAY);
+    const live = withKyc(db, rm.id, 'Lan');
+    const gone = withKyc(db, rm.id, 'Huệ');
     softDeleteCustomer(db, gone.id);
     const run = statement(db, gone.id);
     const kyc = (customerId: string) =>
@@ -865,10 +865,10 @@ describe('the migration of the purge (0011)', () => {
     // (0013) refuse: past them, here. The rows go through 0013 as they are. They name the column
     // of the RM rm_id too, which such a file calls re_id (A3): runBeforeA3.
     old.sqlite.run('PRAGMA ignore_check_constraints = ON');
-    const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
+    const rm = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
     const [live, gone] = runBeforeA3(
       old,
-      () => [withKyc(old, re.id, 'Lan'), withKyc(old, re.id, 'Huệ')] as const,
+      () => [withKyc(old, rm.id, 'Lan'), withKyc(old, rm.id, 'Huệ')] as const,
     );
     old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
     runBeforeA3(old, () => softDeleteCustomer(old, gone.id));

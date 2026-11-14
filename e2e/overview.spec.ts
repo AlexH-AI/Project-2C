@@ -197,7 +197,7 @@ test('a period not started yet has "—" in the tiles and says so over the chart
   await expect(n4).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('So sánh team: a team opens its RE by name, closes again, and the RE scope has no table', async ({
+test('So sánh team: a team opens its RM by name, closes again, and the RM scope has no table', async ({
   page,
 }) => {
   const { scope, filter } = await openOverview(page);
@@ -216,8 +216,8 @@ test('So sánh team: a team opens its RE by name, closes again, and the RE scope
   await team.click();
   await expect(team).toHaveAttribute('aria-expanded', 'true');
   await expect(rows).toHaveCount(15);
-  const res = (await table.getByRole('rowheader').allInnerTexts()).slice(1, 11);
-  expect(res).toEqual([...res].sort(new Intl.Collator('vi').compare));
+  const rms = (await table.getByRole('rowheader').allInnerTexts()).slice(1, 11);
+  expect(rms).toEqual([...rms].sort(new Intl.Collator('vi').compare));
 
   await team.click();
   await expect(team).toHaveAttribute('aria-expanded', 'false');

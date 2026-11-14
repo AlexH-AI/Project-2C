@@ -34,25 +34,25 @@ interface BackupJson {
  * policy and a KYC note, and a soft-deleted customer — a row in every table a value check reads.
  */
 async function small() {
-  const { db, re } = await setup();
+  const { db, rm } = await setup();
   const date = calendarDate(2026, 9, 1);
   const lan = createCustomer(db, {
     name: 'Lan',
-    rmId: re.id,
+    rmId: rm.id,
     stage: 'N3',
     date,
     birthDate: { year: 1984 },
   });
   scheduleAppointment(db, {
     customerId: lan.id,
-    rmId: re.id,
+    rmId: rm.id,
     date: calendarDate(2026, 9, 3),
     time: '09:30',
     triggerType: 'REFERRAL',
   });
   submitPolicy(db, {
     customerId: lan.id,
-    rmId: re.id,
+    rmId: rm.id,
     submittedDate: date,
     submittedFyp: 20_000_000,
   });
@@ -63,7 +63,7 @@ async function small() {
   });
   const gone = createCustomer(db, {
     name: 'Minh',
-    rmId: re.id,
+    rmId: rm.id,
     stage: 'N4',
     date: calendarDate(2026, 9, 2),
   });
@@ -134,14 +134,14 @@ describe('exportBackup', () => {
     const db = await openDatabase();
     db.now = () => new Date((clock -= 1000));
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 9) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 9) });
     const book = (coordinatorId: string) =>
       scheduleAppointment(db, {
         customerId: lan.id,
-        rmId: re.id,
+        rmId: rm.id,
         date: d(3, 9),
         triggerType: 'REFERRAL',
         coordinatorIds: [coordinatorId],
@@ -151,8 +151,8 @@ describe('exportBackup', () => {
 
     const backup = JSON.parse(exportBackup(db)) as BackupJson;
     const inserted = db.sqlite.exec('SELECT id FROM people ORDER BY rowid')[0]!.values.flat();
-    expect(inserted).toEqual([re.id, tl.id, is.id]);
-    expect(backup.tables.people!.map((p) => p.id)).toEqual([is.id, tl.id, re.id]);
+    expect(inserted).toEqual([rm.id, tl.id, is.id]);
+    expect(backup.tables.people!.map((p) => p.id)).toEqual([is.id, tl.id, rm.id]);
     expect(
       backup.tables.appointment_coordinators!.map((c) => [c.appointment_id, c.person_id]),
     ).toEqual([
@@ -210,8 +210,8 @@ describe('importBackup', () => {
     const now = () => new Date(machine);
     const db = await openDatabase({ now });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
+    const rm = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
 
@@ -527,13 +527,13 @@ describe('importBackup', () => {
   });
 
   it('keeps an expected case size, or none, through export and import', async () => {
-    const { db, re } = await setup();
+    const { db, rm } = await setup();
     const date = calendarDate(2026, 9, 3);
-    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date });
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date });
     for (const expectedCaseSize of [100_000_000, null]) {
       const { id } = scheduleAppointment(db, {
         customerId: lan.id,
-        rmId: re.id,
+        rmId: rm.id,
         date,
         triggerType: 'REFERRAL',
       });

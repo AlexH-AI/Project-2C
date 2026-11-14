@@ -13,8 +13,8 @@ import { Button, DataTable, Segmented, type DataTableColumn } from '@p2c/ui';
 import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { RePicker } from '../../shell/RePicker';
-import { teamRes } from '../../shell/scope';
+import { RmPicker } from '../../shell/RmPicker';
+import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { ALERT, BADGE, CELL_NAME, FOCUS, LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
@@ -73,11 +73,11 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     cell: (c) => stageBadge(c.customer.stage),
   },
   {
-    id: 're',
-    header: t('customers.colRe'),
+    id: 'rm',
+    header: t('customers.colRm'),
     kind: 'text',
-    value: (c) => c.re?.name ?? '',
-    cell: (c) => <span className={CELL_NAME}>{c.re?.name}</span>,
+    value: (c) => c.rm?.name ?? '',
+    cell: (c) => <span className={CELL_NAME}>{c.rm?.name}</span>,
   },
   {
     id: 'birth',
@@ -105,17 +105,17 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
 /** Customers (mockup customers.html): kanban N4 → N1 with the closed stages beside, or a table. */
 export function CustomersScreen() {
   const data = useTables();
-  const { picked, scope, pickRe } = useScopeState();
+  const { picked, scope, pickRm } = useScopeState();
   const pickedBoard = useMemo(() => customerBoard(data, picked), [data, picked]);
   const board = useMemo(
     () => (scope === picked ? pickedBoard : customerBoard(data, scope)),
     [data, scope, picked, pickedBoard],
   );
-  // The RE strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B2).
+  // The RM strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B2).
   const team =
     picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
-  const re =
-    scope !== picked && scope.kind === 're'
+  const rm =
+    scope !== picked && scope.kind === 'rm'
       ? data.people.find((person) => person.id === scope.rmId)
       : undefined;
   const summary = t('customers.summary', { open: board.openCount, closed: board.closedCount });
@@ -140,7 +140,7 @@ export function CustomersScreen() {
   };
   const [creating, setCreating] = useState(false);
   const scopeKey = JSON.stringify(scope);
-  // The customer just made for an RE outside the scope, while the scope it was made in stays.
+  // The customer just made for an RM outside the scope, while the scope it was made in stays.
   const [created, setCreated] = useState<{ customer: CustomerRecord; scopeKey: string } | null>(
     null,
   );
@@ -152,20 +152,20 @@ export function CustomersScreen() {
   return (
     <>
       {team && (
-        <RePicker
+        <RmPicker
           team={team}
-          res={teamRes(data.people, team.id)}
-          picked={re?.id ?? null}
-          counts={pickedBoard.openByRe}
+          rms={teamRms(data.people, team.id)}
+          picked={rm?.id ?? null}
+          counts={pickedBoard.openByRm}
           total={pickedBoard.openCount}
-          onPick={pickRe}
+          onPick={pickRm}
         />
       )}
       <div className="flex items-center gap-3">
         <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">
-          {re ? (
+          {rm ? (
             <>
-              <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
+              <b className="font-semibold text-fg">{rm.name}</b> {t('sep.dot')} {summary}
             </>
           ) : team ? (
             joinParts([t('customers.viewingTeam', { team: team.name }), summary])
@@ -181,7 +181,7 @@ export function CustomersScreen() {
       </div>
       {creating && (
         <CustomerFormDialog
-          defaultReId={scope.kind === 're' ? scope.rmId : undefined}
+          defaultRmId={scope.kind === 'rm' ? scope.rmId : undefined}
           onCreated={(customer) => setCreated({ customer, scopeKey })}
           onClose={() => setCreating(false)}
         />
@@ -190,7 +190,7 @@ export function CustomersScreen() {
         <p role="status" className={`${ALERT} border-info text-sm`}>
           {t('customers.createdOutside', {
             name: outside.name,
-            re: data.people.find((person) => person.id === outside.rmId)?.name ?? '',
+            rm: data.people.find((person) => person.id === outside.rmId)?.name ?? '',
           })}{' '}
           <a href={routeToHash({ screen: 'customer', id: outside.id })} className={LINK}>
             {t('customers.createdProfile')}
@@ -280,7 +280,7 @@ function Card({ card }: { card: CustomerCard }) {
         )}
       </span>
       <span className="flex justify-between gap-1.5 text-xs whitespace-nowrap text-fg-3">
-        <span className="truncate">{t('customers.re', { name: card.re?.name ?? '' })}</span>
+        <span className="truncate">{t('customers.rm', { name: card.rm?.name ?? '' })}</span>
         <span className="tabular-nums">{personal(card)}</span>
       </span>
     </a>

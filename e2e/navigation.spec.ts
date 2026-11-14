@@ -269,7 +269,7 @@ test('an unknown address falls back to the overview', async ({ page }) => {
   await expect(page).toHaveURL(/#\/overview$/);
 });
 
-test('the scope switch selects one of All / Team / RE', async ({ page }) => {
+test('the scope switch selects one of All / Team / RM', async ({ page }) => {
   await page.goto('/#/customers');
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
 
@@ -278,11 +278,11 @@ test('the scope switch selects one of All / Team / RE', async ({ page }) => {
   await expect(scope.getByRole('radio', { checked: true })).toHaveText('Team');
 });
 
-test('Team and RE scopes pick the team or RE next to the switch', async ({ page }) => {
+test('Team and RM scopes pick the team or RM next to the switch', async ({ page }) => {
   await page.goto('/#/customers');
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
   const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
-  const re = page.getByRole('combobox', { name: 'RM của góc nhìn' });
+  const rm = page.getByRole('combobox', { name: 'RM của góc nhìn' });
   await expect(team).toHaveCount(0);
 
   await scope.getByRole('radio', { name: 'Team' }).click();
@@ -294,25 +294,25 @@ test('Team and RE scopes pick the team or RE next to the switch', async ({ page 
   await scope.getByRole('radio', { name: 'Team' }).click();
   await expect(team.locator('option:checked')).toHaveText('Sao Mai');
 
-  // Only an RE has metrics: the list holds the 30 RE of the simulated data, with their team.
+  // Only an RM has metrics: the list holds the 30 RM of the simulated data, with their team.
   await scope.getByRole('radio', { name: 'RM' }).click();
   await expect(team).toHaveCount(0);
-  await expect(re.locator('option')).toHaveCount(30);
-  await expect(re.locator('option').first()).toHaveText(/ · (Bình Minh|Hừng Đông|Sao Mai)$/);
-  // All the RE of one team come before the next team's.
-  const teamsInOrder = (await re.locator('option').allTextContents()).map(
+  await expect(rm.locator('option')).toHaveCount(30);
+  await expect(rm.locator('option').first()).toHaveText(/ · (Bình Minh|Hừng Đông|Sao Mai)$/);
+  // All the RM of one team come before the next team's.
+  const teamsInOrder = (await rm.locator('option').allTextContents()).map(
     (label) => label.split(' · ')[1] ?? '',
   );
   expect([...new Set(teamsInOrder)]).toEqual(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
   expect(teamsInOrder).toEqual([...teamsInOrder].sort(new Intl.Collator('vi').compare));
-  await expect(re.locator('option:checked')).toHaveText(/ · Bình Minh$/);
-  const secondRe = (await re.locator('option').nth(1).textContent()) ?? '';
-  await re.selectOption({ index: 1 });
+  await expect(rm.locator('option:checked')).toHaveText(/ · Bình Minh$/);
+  const secondRm = (await rm.locator('option').nth(1).textContent()) ?? '';
+  await rm.selectOption({ index: 1 });
   await scope.getByRole('radio', { name: 'RM' }).click();
-  await expect(re.locator('option:checked')).toHaveText(secondRe);
+  await expect(rm.locator('option:checked')).toHaveText(secondRm);
 
   await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
-  await expect(re).toHaveCount(0);
+  await expect(rm).toHaveCount(0);
 });
 
 test('the scope picker shows only on Overview, Customers, Appointments and Reports', async ({

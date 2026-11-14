@@ -574,18 +574,26 @@ describe('migrating a saved database', () => {
     const old = await savedAtVersion12();
     const tables = ['customers', 'appointments', 'stage_transitions'];
     const before = tables.map((table) => rowsOf(old.sqlite, table));
+    // The purge reads the column of the RM as rm_id, which a file of version 12 calls re_id (A3):
+    // so named while it reads the file, then re_id again, as the file holds it.
+    const renameRm = (from: string, to: string) => {
+      for (const table of ['customers', 'appointments', 'policies']) {
+        old.sqlite.run(`ALTER TABLE ${table} RENAME COLUMN ${from} TO ${to}`);
+      }
+    };
+    renameRm('re_id', 'rm_id');
+    const purge = previewPurge(old);
+    renameRm('rm_id', 're_id');
 
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(purge.kept).toEqual([expect.objectContaining({ kind: 'appointment', id: 'a1' })]);
     // What the purge keeps is looked for from the deleted appointments, then what was booked from
-    // each: two lookups by index, no scan of the appointments. Read on the migrated file only: the
-    // purge reads the column of the RM as rm_id, which a file of version 12 calls re_id (A3).
+    // each: two lookups by index, no scan of the appointments.
     const exec = vi.spyOn(db.sqlite, 'exec');
-    expect(previewPurge(db).kept).toEqual([
-      expect.objectContaining({ kind: 'appointment', id: 'a1' }),
-    ]);
+    expect(previewPurge(db)).toEqual(purge);
     const kept = exec.mock.calls.map(([sql]) => sql).find((sql) => sql.includes('WITH RECURSIVE'));
     exec.mockRestore();
     const plan = queryPlan(db, kept!);

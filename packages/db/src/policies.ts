@@ -5,7 +5,7 @@ import {
   liveCustomer,
   liveRow,
   requireAmount,
-  requireRe,
+  requireRm,
   requireRow,
   stampDeleted,
   storedPastDate,
@@ -114,7 +114,7 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
     throw new DbError('ISSUED_BEFORE_SUBMITTED');
   }
   return {
-    rmId: requireRe(db, policy.rmId),
+    rmId: requireRm(db, policy.rmId),
     submittedDate: storedPastDate(db, policy.submittedDate, 'submitted'),
     submittedFyp: requireAmount(policy.submittedFyp),
     issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate, 'issued'),

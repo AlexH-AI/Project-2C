@@ -67,7 +67,7 @@ export function CustomerPolicies({
           {[...policies]
             .sort((a, b) => compareDates(b.submittedDate, a.submittedDate))
             .map((p) => {
-              const re = people.find((person) => person.id === p.rmId);
+              const rm = people.find((person) => person.id === p.rmId);
               const status = policyStatusText(p);
               // The buttons' names say the FYP too, to tell two policies of one day apart (DR6-119),
               // and "Sửa" the status, as one submitted and one issued may share both: only the
@@ -86,7 +86,7 @@ export function CustomerPolicies({
                   {p.issuedDate && p.issuedFyp !== null && (
                     <span>{dayFyp('policies.issued', p.issuedDate, p.issuedFyp)}</span>
                   )}
-                  {re && <span className="min-w-0 wrap-anywhere text-fg-3">{re.name}</span>}
+                  {rm && <span className="min-w-0 wrap-anywhere text-fg-3">{rm.name}</span>}
                   <span className="flex-1" />
                   {!p.issuedDate && (
                     <button

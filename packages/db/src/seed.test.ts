@@ -93,7 +93,7 @@ const DEMO_ROW_COUNTS = {
 // The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
-// A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RE.
+// A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RM.
 const DEMO_HASH = '60333daf5821f9c283aa96cec7c63db186bac9eae4344149e9d82462f2d579fe';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
@@ -158,7 +158,7 @@ describe('seedDemoData', () => {
       expect(actual).toBeLessThanOrEqual(expected * 1.2);
     };
 
-    it('has 3 teams of 1 TL and 10 RE, and one shared IS, BD and BDM', () => {
+    it('has 3 teams of 1 TL and 10 RM, and one shared IS, BD and BDM', () => {
       const people = listPeople(db);
       const count = (role: string) => people.filter((p) => p.role === role).length;
       expect(
@@ -232,9 +232,9 @@ describe('seedDemoData', () => {
     it('gives each customer 1-5 KYC notes and covers every gate state and both kinds of conflict', () => {
       const profiles = listCustomers(db).map((c) => getKycProfile(db, c.id));
       for (const { notes } of profiles) {
-        const fromRe = notes.filter((n) => n.source === 'RM').length;
-        expect(fromRe).toBeGreaterThanOrEqual(1);
-        expect(fromRe).toBeLessThanOrEqual(5);
+        const fromRm = notes.filter((n) => n.source === 'RM').length;
+        expect(fromRm).toBeGreaterThanOrEqual(1);
+        expect(fromRm).toBeLessThanOrEqual(5);
       }
       const gates = profiles.map(({ facts }) => evaluateKycGate(facts));
       for (const state of KYC_GATE_STATES) {
@@ -306,7 +306,7 @@ describe('seedDemoData', () => {
     'scales the teams, REs, customers and meetings, and fills Thùng rác on request (T-216)',
     async () => {
       const db = await openDatabase();
-      const scale = { teams: 4, resPerTeam: 2, customersPerRe: 5, meetingDays: [1, 1] as const };
+      const scale = { teams: 4, rmsPerTeam: 2, customersPerRm: 5, meetingDays: [1, 1] as const };
       seedDemoData(db, { anchorDate: ANCHOR, seed: 1, scale, trash: true });
       expect(
         listTeams(db)
@@ -316,7 +316,7 @@ describe('seedDemoData', () => {
       const people = listPeople(db);
       expect(people.filter((p) => p.role === 'TL')).toHaveLength(4);
       expect(people.filter((p) => p.role === 'RM')).toHaveLength(8);
-      // At most one meeting booked a week for each RE (besides those moved there), most weeks one.
+      // At most one meeting booked a week for each RM (besides those moved there), most weeks one.
       const start = Date.UTC(2025, 8, 15);
       const booked = listAppointments(db).filter((a) => a.rescheduledFromId === null);
       const weeks = booked.map((a) => {
@@ -351,20 +351,20 @@ describe('seedDemoData', () => {
     SLOW,
   );
 
-  // `fillTrash` takes its leaver to the first RE's team: with none, it threw a TypeError (#566).
-  it('refuses a scale without a team or an RE, or with meeting days the wrong way round, writing nothing', async () => {
+  // `fillTrash` takes its leaver to the first RM's team: with none, it threw a TypeError (#566).
+  it('refuses a scale without a team or an RM, or with meeting days the wrong way round, writing nothing', async () => {
     const db = await openDatabase();
-    const scale = { teams: 1, resPerTeam: 1, customersPerRe: 1, meetingDays: [1, 1] as const };
+    const scale = { teams: 1, rmsPerTeam: 1, customersPerRm: 1, meetingDays: [1, 1] as const };
 
     for (const wrong of [
       { ...scale, teams: 0 },
-      { ...scale, resPerTeam: 0 },
+      { ...scale, rmsPerTeam: 0 },
       { ...scale, meetingDays: [3, 2] as const },
-      { ...scale, customersPerRe: 1.5 },
+      { ...scale, customersPerRm: 1.5 },
     ]) {
       expect(() =>
         seedDemoData(db, { anchorDate: ANCHOR, seed: 1, scale: wrong, trash: true }),
-      ).toThrow(/^The seed needs a team of an RE at least/);
+      ).toThrow(/^The seed needs a team of an RM at least/);
     }
 
     expect([...listTeams(db), ...listPeople(db)]).toEqual([]);

@@ -75,7 +75,7 @@ describe('findTokenViolations', () => {
 describe('findHardcodedSeparators', () => {
   it('flags a dot or arrow written into the markup or a string', () => {
     const source = [
-      '<b>{re.name}</b> · {summary}',
+      '<b>{rm.name}</b> · {summary}',
       "parts.join(' · ')",
       '{from} → {to}',
       "{t('sep.dot')}",
@@ -402,7 +402,7 @@ describe('findHardcodedSeparators', () => {
     const source = [
       "// it's N2 → N1",
       "/* don't · here */ const s = 'a · b';",
-      "const t = '→'; // the RE's → arrow",
+      "const t = '→'; // the RM's → arrow",
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([
       { line: 2, match: '·', rule: 'hardcoded-separator' },

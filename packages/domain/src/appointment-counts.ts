@@ -36,7 +36,7 @@ export type AppointmentCounts = Readonly<Record<AppointmentGroup | 'total', numb
 /**
  * Appointments of the period and scope by group (§1). Each appointment counts once, in the period
  * holding its own day, so every link of a reschedule chain counts on its own. The scope follows the
- * RE on the appointment; coordinators never count.
+ * RM on the appointment; coordinators never count.
  *
  * `appointments` must be the live ones only, as the repository lists them: a deleted appointment
  * or one of a deleted customer is left out by the caller, never passed here.
@@ -60,8 +60,8 @@ export function appointmentCounts(
 
 /**
  * `appointmentCounts` of one period for any scope, after one pass over the appointments (So sánh
- * team and Báo cáo count every team and RE, DR-20): each one is added to its RE, then a scope adds
- * up the RE it holds. Equal, scope by scope, to calling `appointmentCounts`.
+ * team and Báo cáo count every team and RM, DR-20): each one is added to its RM, then a scope adds
+ * up the RM it holds. Equal, scope by scope, to calling `appointmentCounts`.
  */
 export function appointmentCountsByScope(
   appointments: readonly Appointment[],
@@ -69,18 +69,18 @@ export function appointmentCountsByScope(
   people: readonly Person[],
   today: CalendarDate,
 ): (scope: Scope) => AppointmentCounts {
-  const byRe = new Map<string, Counts>();
+  const byRm = new Map<string, Counts>();
   for (const appointment of appointments) {
     if (!isInPeriod(appointment.date, period)) continue;
-    const counts = byRe.get(appointment.rmId) ?? noCounts();
-    byRe.set(appointment.rmId, counts);
+    const counts = byRm.get(appointment.rmId) ?? noCounts();
+    byRm.set(appointment.rmId, counts);
     counts[appointmentGroup(appointment, today)] += 1;
     counts.total += 1;
   }
   return (scope) => {
     const matches = scopeMatcher(people, scope);
     const total = noCounts();
-    for (const [rmId, counts] of byRe) {
+    for (const [rmId, counts] of byRm) {
       if (!matches(rmId)) continue;
       for (const key of COUNT_KEYS) total[key] += counts[key];
     }

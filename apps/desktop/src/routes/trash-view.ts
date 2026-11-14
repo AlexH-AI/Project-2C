@@ -186,18 +186,18 @@ export interface OwnerPart {
 const part = (ref: TrashRef, text: string): OwnerPart => ({ text, deleted: ref.deleted });
 
 /**
- * "Thuộc": customer and RE of an appointment or a policy, RE and team of a customer, a team. A team
+ * "Thuộc": customer and RM of an appointment or a policy, RM and team of a customer, a team. A team
  * `names` tells apart by its deletion with when that was, its text still the name the column sorts
  * and filters by.
  */
 export function ownerParts(row: TrashRow, names?: TrashNames): OwnerPart[] {
-  const { customer, re, team } = row.owner;
+  const { customer, rm, team } = row.owner;
   const parts: OwnerPart[] = [];
   if (customer) parts.push(part(customer, t('trash.owner.customer', { name: customer.name })));
-  if (re) parts.push(part(re, t('trash.owner.re', { name: re.name })));
+  if (rm) parts.push(part(rm, t('trash.owner.rm', { name: rm.name })));
   if (team) {
-    // After an RE it is the RE's team (mockup 11a "RE Đỗ Khánh Linh · Sao Mai").
-    const named = part(team, re ? team.name : t('trash.owner.team', { name: team.name }));
+    // After an RM it is the RM's team (mockup 11a "RM Đỗ Khánh Linh · Sao Mai").
+    const named = part(team, rm ? team.name : t('trash.owner.team', { name: team.name }));
     const deletedAt = teamDeletedAt(team, names);
     parts.push(deletedAt === undefined ? named : { ...named, deletedAt });
   }
@@ -360,7 +360,7 @@ function reasonSentence(
   const when = code === 'TEAM_NOT_FOUND' && row.owner.team && teamDeletedAt(row.owner.team, names);
   if (when && 'name' in params) return t('trash.blocked.teamDeletedAt', { ...params, when });
   if (code === 'PERSON_NOT_FOUND') {
-    return as === 're' || as === 'coordinator' || as === 'reviewer'
+    return as === 'rm' || as === 'coordinator' || as === 'reviewer'
       ? t(`trash.blocked.${as}`, params)
       : null;
   }
@@ -390,7 +390,7 @@ function reasonSentence(
     return 'date' in params ? t(`trash.blocked.${code}`, params) : null;
   }
   if (
-    code === 'RE_REQUIRED' ||
+    code === 'RM_REQUIRED' ||
     code === 'CUSTOMER_NOT_FOUND' ||
     code === 'INVALID_REVIEWER' ||
     code === 'INVALID_COORDINATOR' ||
@@ -433,8 +433,8 @@ export function restoreView(row: TrashRow, today: CalendarDate): RestoreView {
         facts: [
           { term: t('trash.restore.stage'), stage: row.stage },
           {
-            term: t('trash.restore.re'),
-            text: joinParts([row.owner.re?.name, row.owner.team?.name]),
+            term: t('trash.restore.rm'),
+            text: joinParts([row.owner.rm?.name, row.owner.team?.name]),
           },
           ...(row.effect.kind === 'customer'
             ? [{ term: t('trash.restore.with'), text: customerRecords(row.effect) }]
@@ -558,7 +558,7 @@ function appointmentRestore(
     effect: {
       title: t('trash.restore.change', { from: stage(effect.from), to: stage(effect.to), date }),
       body: effect.rf
-        ? t('trash.restore.changeRf', { name: row.owner.re?.name ?? '', date })
+        ? t('trash.restore.changeRf', { name: row.owner.rm?.name ?? '', date })
         : t('trash.restore.changeNoRf'),
     },
   };

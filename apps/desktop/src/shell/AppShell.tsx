@@ -57,14 +57,14 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
   const scope = useMemo(
-    () => narrowScope(picked, choice.reInTeam, people),
-    [picked, choice.reInTeam, people],
+    () => narrowScope(picked, choice.rmInTeam, people),
+    [picked, choice.rmInTeam, people],
   );
-  const pickRe = useCallback(
-    (rmId: string | null) => setChoice((current) => ({ ...current, reInTeam: rmId ?? undefined })),
+  const pickRm = useCallback(
+    (rmId: string | null) => setChoice((current) => ({ ...current, rmInTeam: rmId ?? undefined })),
     [],
   );
-  const scopeState = useMemo(() => ({ picked, scope, pickRe }), [picked, scope, pickRe]);
+  const scopeState = useMemo(() => ({ picked, scope, pickRm }), [picked, scope, pickRm]);
 
   return (
     <div className="flex min-h-screen">

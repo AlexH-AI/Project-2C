@@ -4,6 +4,7 @@
  */
 import {
   byName,
+  isRm,
   PERSON_ROLES,
   REVIEWER_ROLES,
   ROLES_WITH_TEAM,
@@ -68,7 +69,7 @@ export function listPeople(db: Database): Person[] {
 export interface PersonUsage {
   /** Live customers in their charge. */
   readonly customers: number;
-  /** Appointments and policies written for them as RE. */
+  /** Appointments and policies written for them as RM. */
   readonly appointments: number;
   readonly policies: number;
   readonly coordinating: number;
@@ -125,12 +126,12 @@ export function personUsage(db: Database, id: string): PersonUsage {
 }
 
 /**
- * Whether the person is the RE of anything live, which keeps them an RE: the records keep pointing
- * to their RE (spec §3.3). The kinds are those `POINTS_TO` gives the RE, as import rule 5 reads it.
+ * Whether the person is the RM of anything live, which keeps them an RM: the records keep pointing
+ * to their RM (spec §3.3). The kinds are those `POINTS_TO` gives the RM, as import rule 5 reads it.
  */
 export function ownsRecords(usage: PersonCounts): boolean {
   return PERSON_REFERENCE_KINDS.some(
-    (kind) => POINTS_TO[kind] === 're' && usage[USAGE_FIELDS[kind]] > 0,
+    (kind) => POINTS_TO[kind] === 'rm' && usage[USAGE_FIELDS[kind]] > 0,
   );
 }
 
@@ -223,8 +224,8 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
     const current = toPerson(livePerson(db, id));
     // `undefined` keeps the current value; `teamId: null` clears the team.
     const role = changes.role ?? current.role;
-    // Records keep pointing to their RE, who therefore has to stay an RE (spec §3.3).
-    if (current.role === 'RM' && role !== 'RM' && ownsRecords(usageCounts(db, id))) {
+    // Records keep pointing to their RM, who therefore has to stay an RM (spec §3.3).
+    if (isRm(current) && !isRm({ role }) && ownsRecords(usageCounts(db, id))) {
       throw new DbError('PERSON_IN_USE');
     }
     // A reviewer or coordinator of a live meeting stays one of the roles that may support it (D9,

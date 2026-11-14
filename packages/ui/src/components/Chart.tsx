@@ -22,7 +22,7 @@ export type ChartOption = ComposeOption<
 
 /**
  * Escapes text for the HTML of a tooltip or label formatter: every string from the database (team,
- * RE, customer names) goes through it (F-18).
+ * RM, customer names) goes through it (F-18).
  */
 export const encodeHtml: (text: string) => string = format.encodeHTML;
 

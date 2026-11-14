@@ -1,6 +1,6 @@
 /**
  * Cross-table rules of an imported backup (spec §6): a file whose every value is valid on its own
- * but whose tables disagree — a stage that is not the latest transition's, an RE that is a TL, a
+ * but whose tables disagree — a stage that is not the latest transition's, an RM that is a TL, a
  * KYC fact from another customer's note — is refused like a damaged one.
  */
 import type { AnalysisInput } from '@p2c/ai/schema';
@@ -58,10 +58,10 @@ const TOMORROW = '2026-09-27';
  * customer deleted and restored. Kiên: deleted.
  */
 async function history() {
-  const { db, persist, re, otherRe, tl } = await setup();
+  const { db, persist, rm, otherRm, tl } = await setup();
   const lan = createCustomer(db, {
     name: 'Lan',
-    rmId: re.id,
+    rmId: rm.id,
     stage: 'N4',
     date: day(1),
     birthDate: { year: 1984 },
@@ -69,7 +69,7 @@ async function history() {
   });
   const met = scheduleAppointment(db, {
     customerId: lan.id,
-    rmId: re.id,
+    rmId: rm.id,
     date: day(10),
     triggerType: 'REFERRAL',
     coordinatorIds: [tl.id],
@@ -81,7 +81,7 @@ async function history() {
   });
   const moved = scheduleAppointment(db, {
     customerId: lan.id,
-    rmId: re.id,
+    rmId: rm.id,
     date: day(12),
     triggerType: 'EVENT',
   });
@@ -89,7 +89,7 @@ async function history() {
   changeStageManually(db, lan.id, { to: 'N2', date: day(18) });
   submitPolicy(db, {
     customerId: lan.id,
-    rmId: re.id,
+    rmId: rm.id,
     submittedDate: day(19),
     submittedFyp: 20_000_000,
   });
@@ -100,10 +100,10 @@ async function history() {
   });
   markKycConflict(db, lan.id, { field: 'childrenCount', value: 3, noteId: note.id, date: day(21) });
 
-  const hoa = createCustomer(db, { name: 'Hoa', rmId: otherRe.id, stage: 'N4', date: day(2) });
+  const hoa = createCustomer(db, { name: 'Hoa', rmId: otherRm.id, stage: 'N4', date: day(2) });
   const withdrawn = scheduleAppointment(db, {
     customerId: hoa.id,
-    rmId: otherRe.id,
+    rmId: otherRm.id,
     date: day(5),
     triggerType: 'OTHER',
   });
@@ -111,10 +111,10 @@ async function history() {
   softDeleteAppointment(db, withdrawn.id);
   recordKycNote(db, hoa.id, { text: 'Độc thân', date: day(6), facts: [] });
 
-  const minh = createCustomer(db, { name: 'Minh', rmId: re.id, stage: 'N1', date: day(3) });
+  const minh = createCustomer(db, { name: 'Minh', rmId: rm.id, stage: 'N1', date: day(3) });
   const restored = scheduleAppointment(db, {
     customerId: minh.id,
-    rmId: re.id,
+    rmId: rm.id,
     date: day(7),
     triggerType: 'OCCASION',
   });
@@ -123,7 +123,7 @@ async function history() {
   restoreAppointment(db, restored.id);
   softDeleteCustomer(db, minh.id);
   restoreCustomer(db, minh.id);
-  const kien = createCustomer(db, { name: 'Kiên', rmId: re.id, stage: 'N3', date: day(4) });
+  const kien = createCustomer(db, { name: 'Kiên', rmId: rm.id, stage: 'N3', date: day(4) });
   softDeleteCustomer(db, kien.id);
   // Lan's analyses (spec Phase 5 §7): one by Mock, accepted, then one by a model, rejected, then
   // one through ChatGPT web, accepted (§3.1).
@@ -142,8 +142,8 @@ async function history() {
       kien: kien.id,
       met: met.id,
       tl: tl.id,
-      re: re.id,
-      otherRe: otherRe.id,
+      rm: rm.id,
+      otherRm: otherRm.id,
       accepted: accepted.id,
       rejected: rejected.id,
       web: web.id,
@@ -297,7 +297,7 @@ describe('importBackup — rules across tables', () => {
     ]);
   });
 
-  it('accepts a deleted customer whose RE has since become a TL (spec §3.3)', async () => {
+  it('accepts a deleted customer whose RM has since become a TL (spec §3.3)', async () => {
     const { db, ids } = await history();
     const backup = JSON.parse(exportBackup(db)) as BackupJson;
     row(backup, 'customers', (c) => c.id === ids.kien).rm_id = ids.tl;
@@ -317,22 +317,22 @@ describe('importBackup — rules across tables', () => {
       ],
     ),
     [
-      'a deleted customer of a deleted RE',
+      'a deleted customer of a deleted RM',
       (b, ids) => {
-        const gone = person(b, ids.re, { id: 'gone-re', deleted_at: DELETED });
+        const gone = person(b, ids.rm, { id: 'gone-re', deleted_at: DELETED });
         row(b, 'customers', (c) => c.id === ids.kien).rm_id = gone.id;
       },
     ],
     [
-      'a deleted appointment reviewed by someone who has since become an RE',
+      'a deleted appointment reviewed by someone who has since become an RM',
       (b, ids) =>
-        (row(b, 'appointments', (a) => a.customer_id === ids.hoa).outcome_reviewer_id = ids.re),
+        (row(b, 'appointments', (a) => a.customer_id === ids.hoa).outcome_reviewer_id = ids.rm),
     ],
     [
-      'a deleted appointment coordinated by someone who has since become an RE',
+      'a deleted appointment coordinated by someone who has since become an RM',
       (b, ids) => {
         const deleted = row(b, 'appointments', (a) => a.customer_id === ids.hoa);
-        b.tables.appointment_coordinators!.push({ appointment_id: deleted.id, person_id: ids.re });
+        b.tables.appointment_coordinators!.push({ appointment_id: deleted.id, person_id: ids.rm });
       },
     ],
     [
@@ -389,7 +389,7 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
     ],
     [
-      'a birth year in conflict between the profile and the RE’s note',
+      'a birth year in conflict between the profile and the RM’s note',
       (b, ids) => birthYearConflict(b, ids, '1984'),
     ],
     ['a conflict of three different values', (b, ids) => thirdChildrenCount(b, ids, '4')],
@@ -574,29 +574,29 @@ describe('importBackup — rules across tables', () => {
         b.tables.stage_transitions!.push({ ...transition(b, ids.hoa, 2), id: 'again', seq: 3 }),
     ],
     [
-      '5: a live customer whose RE is a TL',
+      '5: a live customer whose RM is a TL',
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).rm_id = ids.tl),
     ],
     [
-      '5: a live appointment whose RE is a TL',
+      '5: a live appointment whose RM is a TL',
       (b, ids) => (row(b, 'appointments', (a) => a.rescheduled_from_id !== null).rm_id = ids.tl),
     ],
-    ['5: a live policy whose RE is a TL', (b, ids) => (b.tables.policies![0]!.rm_id = ids.tl)],
+    ['5: a live policy whose RM is a TL', (b, ids) => (b.tables.policies![0]!.rm_id = ids.tl)],
     [
-      '5: a live customer, appointment and policy of a deleted RE',
-      (b, ids) => (row(b, 'people', (p) => p.id === ids.re).deleted_at = DELETED),
+      '5: a live customer, appointment and policy of a deleted RM',
+      (b, ids) => (row(b, 'people', (p) => p.id === ids.rm).deleted_at = DELETED),
     ],
     [
-      '5: a live met appointment reviewed by an RE (D9)',
-      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).outcome_reviewer_id = ids.re),
+      '5: a live met appointment reviewed by an RM (D9)',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).outcome_reviewer_id = ids.rm),
     ],
     [
-      '5: the RE of an appointment also coordinating it',
-      (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.re),
+      '5: the RM of an appointment also coordinating it',
+      (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.rm),
     ],
-    // A deleted appointment is asked no role of its coordinators, but never its own RE.
+    // A deleted appointment is asked no role of its coordinators, but never its own RM.
     [
-      '5: the RE of a deleted appointment also coordinating it',
+      '5: the RM of a deleted appointment also coordinating it',
       (b, ids) => {
         const deleted = row(b, 'appointments', (a) => a.customer_id === ids.hoa);
         b.tables.appointment_coordinators!.push({
@@ -606,8 +606,8 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
-      '5: a live appointment coordinated by another RE (ADR-0007)',
-      (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.otherRe),
+      '5: a live appointment coordinated by another RM (ADR-0007)',
+      (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.otherRm),
     ],
     [
       '5: a live appointment coordinated by a deleted TL',
@@ -769,7 +769,7 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (fact(b, ids.lan, 'birthYear').status = 'superseded'),
     ],
     [
-      '8: a birth year confirmed from the RE’s note, not the profile (D2)',
+      '8: a birth year confirmed from the RM’s note, not the profile (D2)',
       (b, ids) => {
         const note = row(b, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RM');
         fact(b, ids.lan, 'birthYear').note_id = note.id;
@@ -1364,7 +1364,7 @@ describe('importBackup — a file the app wrote from an imported one', () => {
     resolveKycConflict(db, conflictCustomerId!, { factId: factId!, date: day(15) });
     updatePerson(db, rmId!, { name: 'An Mới' });
     updatePerson(db, tlId!, { name: 'Hà Mới' });
-    // The RE gives another birth year; the profile's settles it (D2).
+    // The RM gives another birth year; the profile's settles it (D2).
     const flagged = recordKycNote(db, lan.id, {
       text: 'KH nói sinh năm 1985',
       date: day(15),
@@ -1375,7 +1375,7 @@ describe('importBackup — a file the app wrote from an imported one', () => {
       (f) => f.field === 'birthYear' && f.value === 1984,
     )!;
     resolveKycConflict(db, lan.id, { factId: fromProfile.id, date: day(15) });
-    // Staff: the TL leaves the team for a shared role and another takes over; an RE joins, moves
+    // Staff: the TL leaves the team for a shared role and another takes over; an RM joins, moves
     // to a shared role, is deleted and comes back (rule 9).
     const [teamId] = first(`SELECT team_id FROM people WHERE id = '${tlId}'`);
     updatePerson(db, tlId!, { role: 'BDM', teamId: null });
@@ -1413,7 +1413,7 @@ function fact(backup: BackupJson, customerId: string, field: string): Row {
   return row(backup, 'kyc_facts', (f) => f.customer_id === customerId && f.field === field);
 }
 
-/** Lan's note "Hai con", from the RE. */
+/** Lan's note "Hai con", from the RM. */
 function kycNote(backup: BackupJson, ids: Ids): Row {
   return row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.text === 'Hai con');
 }
@@ -1471,7 +1471,7 @@ function person(backup: BackupJson, copyOf: string, changes: Row): Row {
 
 /**
  * Lan's birth year from the profile turned to a conflict, with `systemValue`, against 1985 from
- * the RE's note.
+ * the RM's note.
  */
 function birthYearConflict(backup: BackupJson, ids: Ids, systemValue: string): void {
   const system = fact(backup, ids.lan, 'birthYear');
@@ -1492,7 +1492,7 @@ function birthYearConflict(backup: BackupJson, ids: Ids, systemValue: string): v
 
 /**
  * Adds Lan's occupation from the profile's `SYSTEM` note with `status`; a superseded one is
- * followed by the RE's, so the trường stays settled.
+ * followed by the RM's, so the trường stays settled.
  */
 function occupationFromProfile(backup: BackupJson, ids: Ids, status: string): void {
   const facts = backup.tables.kyc_facts!;
