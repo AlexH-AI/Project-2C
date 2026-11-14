@@ -134,7 +134,7 @@ describe('exportBackup', () => {
     const db = await openDatabase();
     db.now = () => new Date((clock -= 1000));
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 9) });
@@ -210,7 +210,7 @@ describe('importBackup', () => {
     const now = () => new Date(machine);
     const db = await openDatabase({ now });
     const team = createTeam(db, { name: 'Sao Mai' });
-    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });

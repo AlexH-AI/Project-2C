@@ -42,7 +42,7 @@ test('lists the seeded teams, their members and the shared support staff', async
   const table = members(page, 'Sao Mai').getByRole('table');
   await expect(table.getByRole('row')).toHaveCount(1 + 10);
   await expect(table.getByRole('cell', { name: 'TL', exact: true })).toHaveCount(0);
-  await expect(table.getByRole('cell', { name: 'RE', exact: true })).toHaveCount(10);
+  await expect(table.getByRole('cell', { name: 'RM', exact: true })).toHaveCount(10);
   // DR6-100: the column of the "Sửa" buttons has a header for screen readers only, empty on screen
   // as in the mockup: the name is a pixel wide.
   const actions = table.getByRole('columnheader', { name: 'Thao tác' });
@@ -163,7 +163,7 @@ test('another team shows its first 100 RE again after "Hiện thêm" (table-more
   const { teams, people } = data.tables;
   for (const [index, name] of ['Bình Minh', 'Sao Mai'].entries()) {
     const team = teams.find((row) => row.name === name)!;
-    const re = people.find((row) => row.team_id === team.id && row.role === 'RE')!;
+    const re = people.find((row) => row.team_id === team.id && row.role === 'RM')!;
     for (let n = 1; n <= 101; n++) {
       const suffix = `${index}-${String(n).padStart(3, '0')}`;
       people.push({ ...re, id: `E2E-RE-${suffix}`, name: `RE Thêm ${suffix}` });
@@ -201,7 +201,7 @@ async function openPersonDialog(page: Page) {
 async function addRe(page: Page, name: string, team: string) {
   const dialog = await openPersonDialog(page);
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
-  await dialog.getByRole('radio', { name: 'RE', exact: true }).check();
+  await dialog.getByRole('radio', { name: 'RM', exact: true }).check();
   await dialog.getByRole('combobox', { name: 'Team' }).selectOption({ label: team });
   await dialog.getByRole('button', { name: 'Thêm' }).click();
   await expect(dialog).toBeHidden();
@@ -216,7 +216,7 @@ test('adds an RE to a team, renames them, then deletes them', async ({ page }) =
   // A new RE: role, then no open customers, no appointments, no policies issued.
   await expect(table.getByRole('row', { name: /Trần Hải Yến/ }).getByRole('cell')).toHaveText([
     /Trần Hải Yến/,
-    'RE',
+    'RM',
     '0',
     '0',
     '0',
@@ -235,7 +235,7 @@ test('adds an RE to a team, renames them, then deletes them', async ({ page }) =
   await table.getByRole('button', { name: 'Sửa Trần Hải Âu' }).click();
   await edit.getByRole('button', { name: 'Xóa nhân sự' }).click();
   const remove = page.getByRole('dialog', { name: 'Xóa Trần Hải Âu?' });
-  await expect(remove).toContainText('RE · Hừng Đông');
+  await expect(remove).toContainText('RM · Hừng Đông');
   await remove.getByRole('button', { name: 'Xóa', exact: true }).click();
   await expect(remove).toBeHidden();
   await expect(table.getByRole('row', { name: /Trần Hải Âu/ })).toHaveCount(0);
@@ -272,7 +272,7 @@ test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', a
   await name.fill('Trần Hải Âu');
   await name.fill('Trần Hải Yến');
   await edit.getByRole('radio', { name: 'IS', exact: true }).check();
-  await edit.getByRole('radio', { name: 'RE', exact: true }).check();
+  await edit.getByRole('radio', { name: 'RM', exact: true }).check();
   await remove.click();
   await expect(confirm).toBeVisible();
 });
@@ -280,14 +280,14 @@ test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', a
 test('refuses an RE without a team, with the reason on the field', async ({ page }) => {
   const dialog = await openPersonDialog(page);
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Trần Hải Yến');
-  await dialog.getByRole('radio', { name: 'RE', exact: true }).check();
+  await dialog.getByRole('radio', { name: 'RM', exact: true }).check();
   // The dialog starts on the selected team; clear it.
   const team = dialog.getByRole('combobox', { name: 'Team' });
   await team.selectOption('');
   await dialog.getByRole('button', { name: 'Thêm' }).click();
 
   await expect(team).toHaveAttribute('aria-invalid', 'true');
-  await expect(team).toHaveAccessibleDescription('RE phải thuộc một team.');
+  await expect(team).toHaveAccessibleDescription('RM phải thuộc một team.');
 
   // IS / BD / BDM are shared by every team and need none.
   await dialog.getByRole('radio', { name: 'IS', exact: true }).check();
@@ -347,7 +347,7 @@ test('an RE changed to BDM leaves their team; a team picked for them is refused 
   await edit.getByRole('radio', { name: 'BDM', exact: true }).check();
   await expect(team).toHaveValue('');
   // Back to RE: their own team returns.
-  await edit.getByRole('radio', { name: 'RE', exact: true }).check();
+  await edit.getByRole('radio', { name: 'RM', exact: true }).check();
   await expect(team).toHaveValue(own);
   await edit.getByRole('radio', { name: 'BDM', exact: true }).check();
   await team.selectOption({ label: 'Sao Mai' });
@@ -377,7 +377,7 @@ test('refuses to delete an RE who still has records, and says how many (9b)', as
   await teamButton(page, 'Sao Mai').click();
   const row = members(page, 'Sao Mai')
     .getByRole('row')
-    .filter({ has: page.getByRole('cell', { name: 'RE', exact: true }) })
+    .filter({ has: page.getByRole('cell', { name: 'RM', exact: true }) })
     .first();
   const name = (await row.getByRole('button', { name: /^Sửa / }).getAttribute('aria-label'))!.slice(
     'Sửa '.length,
@@ -390,7 +390,7 @@ test('refuses to delete an RE who still has records, and says how many (9b)', as
 
   const dialog = page.getByRole('dialog', { name: `Xóa ${name}?` });
   const alert = dialog.getByRole('alert');
-  await expect(alert).toContainText('Chưa xóa được — RE còn dữ liệu');
+  await expect(alert).toContainText('Chưa xóa được — RM còn dữ liệu');
   await expect(alert).toContainText(/\d+ KH đang phụ trách/);
   await expect(alert).toContainText(/\d+ lịch hẹn, \d+ HĐ ghi cho RM này/);
   await expect(dialog).toContainText(RE_HELP);
@@ -679,7 +679,7 @@ test('by the keyboard, deleting a person or changing their role leaves the focus
 
   const support = shared(page);
   await support.getByRole('button', { name: 'Sửa Lê Thu Hà' }).press('Enter');
-  await edit.getByRole('radio', { name: 'RE', exact: true }).check();
+  await edit.getByRole('radio', { name: 'RM', exact: true }).check();
   await edit.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Hừng Đông' });
   await edit.getByRole('button', { name: 'Lưu' }).press('Enter');
   await expect(edit).toBeHidden();

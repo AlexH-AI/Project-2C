@@ -19,11 +19,11 @@ export const TEAMS: readonly Team[] = [
 ];
 
 export const PEOPLE: readonly Person[] = [
-  { id: 're-an', name: 'An', role: 'RE', teamId: 'team-a' },
-  { id: 're-binh', name: 'Bình', role: 'RE', teamId: 'team-a' },
+  { id: 're-an', name: 'An', role: 'RM', teamId: 'team-a' },
+  { id: 're-binh', name: 'Bình', role: 'RM', teamId: 'team-a' },
   { id: 'tl-ha', name: 'Hà', role: 'TL', teamId: 'team-a' },
-  { id: 're-chi', name: 'Chi', role: 'RE', teamId: 'team-b' },
-  { id: 're-dung', name: 'Dũng', role: 'RE', teamId: 'team-b' },
+  { id: 're-chi', name: 'Chi', role: 'RM', teamId: 'team-b' },
+  { id: 're-dung', name: 'Dũng', role: 'RM', teamId: 'team-b' },
   { id: 'is-khoa', name: 'Khoa', role: 'IS', teamId: null },
 ];
 

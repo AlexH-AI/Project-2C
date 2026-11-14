@@ -15,8 +15,8 @@ const teams: Team[] = [
 ];
 const people: Person[] = [
   { id: 'tl1', name: 'An', role: 'TL', teamId: 't1' },
-  { id: 're1', name: 'Bình', role: 'RE', teamId: 't1' },
-  { id: 're2', name: 'Chi', role: 'RE', teamId: 't2' },
+  { id: 're1', name: 'Bình', role: 'RM', teamId: 't1' },
+  { id: 're2', name: 'Chi', role: 'RM', teamId: 't2' },
 ];
 
 describe('resolveScope', () => {
@@ -85,16 +85,16 @@ describe('reOptions', () => {
     { id: 'hd', name: 'Hừng Đông' },
   ];
   const staff: Person[] = [
-    { id: 'r1', name: 'Yến', role: 'RE', teamId: 'sm' },
-    { id: 'r2', name: 'Đạt', role: 'RE', teamId: 'bm' },
+    { id: 'r1', name: 'Yến', role: 'RM', teamId: 'sm' },
+    { id: 'r2', name: 'Đạt', role: 'RM', teamId: 'bm' },
     { id: 'tl', name: 'Ánh', role: 'TL', teamId: 'bm' },
-    { id: 'r3', name: 'Dung', role: 'RE', teamId: 'bm' },
+    { id: 'r3', name: 'Dung', role: 'RM', teamId: 'bm' },
     { id: 'is', name: 'Bảo', role: 'IS', teamId: 'hd' },
-    { id: 'r4', name: 'Hà', role: 'RE', teamId: 'hd' },
+    { id: 'r4', name: 'Hà', role: 'RM', teamId: 'hd' },
     { id: 'bd', name: 'Cường', role: 'BD', teamId: 'sm' },
-    { id: 'r5', name: 'An', role: 'RE', teamId: 'sm' },
+    { id: 'r5', name: 'An', role: 'RM', teamId: 'sm' },
     { id: 'bdm', name: 'Duy', role: 'BDM', teamId: 'hd' },
-    { id: 'r6', name: 'Em', role: 'RE', teamId: 'bm' },
+    { id: 'r6', name: 'Em', role: 'RM', teamId: 'bm' },
   ];
 
   it('orders the RE by team, then by name, with Vietnamese letters in place', () => {
@@ -146,11 +146,11 @@ describe('narrowScope', () => {
 describe('teamRes', () => {
   it('lists the RE of one team by name, with Vietnamese letters in place', () => {
     const staff: Person[] = [
-      { id: 'r1', name: 'Em', role: 'RE', teamId: 'bm' },
+      { id: 'r1', name: 'Em', role: 'RM', teamId: 'bm' },
       { id: 'tl', name: 'Ánh', role: 'TL', teamId: 'bm' },
-      { id: 'r2', name: 'Đạt', role: 'RE', teamId: 'bm' },
-      { id: 'r3', name: 'An', role: 'RE', teamId: 'sm' },
-      { id: 'r4', name: 'Dung', role: 'RE', teamId: 'bm' },
+      { id: 'r2', name: 'Đạt', role: 'RM', teamId: 'bm' },
+      { id: 'r3', name: 'An', role: 'RM', teamId: 'sm' },
+      { id: 'r4', name: 'Dung', role: 'RM', teamId: 'bm' },
     ];
     expect(teamRes(staff, 'bm').map((re) => re.name)).toEqual(['Dung', 'Đạt', 'Em']);
   });

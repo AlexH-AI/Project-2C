@@ -771,7 +771,7 @@ describe('importBackup — rules across tables', () => {
     [
       '8: a birth year confirmed from the RE’s note, not the profile (D2)',
       (b, ids) => {
-        const note = row(b, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RE');
+        const note = row(b, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RM');
         fact(b, ids.lan, 'birthYear').note_id = note.id;
       },
     ],
@@ -1329,7 +1329,7 @@ describe('importBackup — a file the app wrote from an imported one', () => {
     seedDemoData(seeded, { anchorDate: day(15), seed: 2 });
     const { db } = await importBackup(exportBackup(seeded), { now });
     const first = (sql: string) => db.sqlite.exec(`${sql} LIMIT 1`)[0]!.values[0]!.map(String);
-    const [reId] = first("SELECT id FROM people WHERE role = 'RE' AND deleted_at IS NULL");
+    const [reId] = first("SELECT id FROM people WHERE role = 'RM' AND deleted_at IS NULL");
     const [tlId] = first("SELECT id FROM people WHERE role = 'TL' AND deleted_at IS NULL");
     // A meeting whose transition is still its customer's latest, so deleting it withdraws it.
     const [metId] = first(
@@ -1380,7 +1380,7 @@ describe('importBackup — a file the app wrote from an imported one', () => {
     const [teamId] = first(`SELECT team_id FROM people WHERE id = '${tlId}'`);
     updatePerson(db, tlId!, { role: 'BDM', teamId: null });
     createPerson(db, { name: 'Hải', role: 'TL', teamId: teamId! });
-    const newcomer = createPerson(db, { name: 'Bảo', role: 'RE', teamId: teamId! });
+    const newcomer = createPerson(db, { name: 'Bảo', role: 'RM', teamId: teamId! });
     updatePerson(db, newcomer.id, { role: 'IS', teamId: null });
     softDeletePerson(db, newcomer.id);
     restorePerson(db, newcomer.id);
@@ -1476,7 +1476,7 @@ function person(backup: BackupJson, copyOf: string, changes: Row): Row {
 function birthYearConflict(backup: BackupJson, ids: Ids, systemValue: string): void {
   const system = fact(backup, ids.lan, 'birthYear');
   Object.assign(system, { status: 'conflict', value_json: systemValue });
-  const note = row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RE');
+  const note = row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RM');
   const seq = Math.max(
     ...backup.tables.kyc_facts!.filter((f) => f.customer_id === ids.lan).map((f) => Number(f.seq)),
   );
@@ -1501,7 +1501,7 @@ function occupationFromProfile(backup: BackupJson, ids: Ids, status: string): vo
   const occupation = { ...base, field: 'occupation', value_json: '"Bác sĩ"' };
   facts.push({ ...occupation, id: 'from-profile', seq: seq + 1, status });
   if (status === 'superseded') {
-    const note = row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RE');
+    const note = row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RM');
     facts.push({
       ...occupation,
       id: 'from-note',

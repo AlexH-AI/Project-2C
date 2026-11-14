@@ -336,7 +336,7 @@ describe('reportRows on the demo data', () => {
     const scopes = (): readonly Scope[] => [
       { kind: 'all' },
       { kind: 'team', teamId: data.teams[0]!.id },
-      { kind: 're', reId: data.people.find((person) => person.role === 'RE')!.id },
+      { kind: 're', reId: data.people.find((person) => person.role === 'RM')!.id },
     ];
 
     it.each(Object.entries(PERIODS))('%s, every scope', (_, period) => {

@@ -36,7 +36,7 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
     teams: teams.map((team) => {
       const members = people.filter((person) => person.teamId === team.id);
       const leads = members.filter((p) => p.role === 'TL');
-      const reps = members.filter((p) => p.role === 'RE');
+      const reps = members.filter((p) => p.role === 'RM');
       return { team, lead: leads[0], reps, tl: leads.length, re: reps.length };
     }),
     shared: people.filter((person) => person.teamId === null),
@@ -83,7 +83,7 @@ export function staffMetrics(
   const year = periodOf('year', today);
   return new Map(
     people
-      .filter((person) => person.role === 'RE')
+      .filter((person) => person.role === 'RM')
       .map((person) => {
         const metrics: StaffMetrics = {
           openCustomers: ownedBy(records.customers, person.id).filter((c) =>

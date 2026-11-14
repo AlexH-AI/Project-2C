@@ -831,7 +831,7 @@ describe('the ai_analyses migration', () => {
     const before = MIGRATIONS.findIndex((m) => m.tag === '0006_ai_analyses_append_only') + 1;
     const old = await openDatabase({ migrations: MIGRATIONS.slice(0, before), now });
     const team = createTeam(old, { name: 'Sao Mai' });
-    const re = createPerson(old, { name: 'An', role: 'RE', teamId: team.id });
+    const re = createPerson(old, { name: 'An', role: 'RM', teamId: team.id });
     const customer = createCustomer(old, {
       name: 'Lan',
       reId: re.id,

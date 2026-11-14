@@ -192,7 +192,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
     await page.getByRole('button', { name: '+ Nhân sự' }).click();
     const person = page.getByRole('dialog', { name: 'Nhân sự mới' });
     await person.getByRole('textbox', { name: 'Họ tên' }).fill(RE);
-    await person.getByRole('radio', { name: 'RE', exact: true }).check();
+    await person.getByRole('radio', { name: 'RM', exact: true }).check();
     await person.getByRole('combobox', { name: 'Team' }).selectOption({ label: TEAM });
     await person.getByRole('button', { name: 'Thêm' }).click();
     await expect(person).toBeHidden();

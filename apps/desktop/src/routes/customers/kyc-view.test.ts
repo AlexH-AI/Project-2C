@@ -196,7 +196,7 @@ describe('kycTimeline', () => {
     id,
     text: id,
     createdDate: date,
-    source: 'RE',
+    source: 'RM',
   });
   const version = (
     id: string,
@@ -577,7 +577,7 @@ describe('resolveKycOptions', () => {
 
   it('offers every value of a trường in conflict between two ghi chú', () => {
     const profile: KycProfileRecord = {
-      notes: [noteRecord('n1', 'RE', day(9, 1)), noteRecord('n2', 'RE', day(9, 10))],
+      notes: [noteRecord('n1', 'RM', day(9, 1)), noteRecord('n2', 'RM', day(9, 10))],
       facts: [
         conflicting('f1', 'childrenCount', 2, 'n1', day(9, 1), 'FAMILY'),
         conflicting('f2', 'childrenCount', 3, 'n2', day(9, 10), 'FAMILY'),
@@ -606,7 +606,7 @@ describe('resolveKycOptions', () => {
 
   it('keeps birth year to the hồ sơ KH value: the one from a ghi chú is locked (D2)', () => {
     const profile: KycProfileRecord = {
-      notes: [noteRecord('s1', 'SYSTEM', day(9, 1)), noteRecord('n1', 'RE', day(9, 5))],
+      notes: [noteRecord('s1', 'SYSTEM', day(9, 1)), noteRecord('n1', 'RM', day(9, 5))],
       facts: [
         conflicting('f1', 'birthYear', 1984, 's1', day(9, 1), 'IDENTITY'),
         conflicting('f2', 'birthYear', 1985, 'n1', day(9, 5), 'IDENTITY'),
@@ -635,7 +635,7 @@ describe('resolveKycOptions', () => {
 
   it('offers nothing for a trường not in conflict', () => {
     const profile: KycProfileRecord = {
-      notes: [noteRecord('n1', 'RE', day(9, 1))],
+      notes: [noteRecord('n1', 'RM', day(9, 1))],
       facts: [
         { ...fact('residence', 'Huế'), noteId: 'n1', seq: 1 },
         { ...fact('residence', 'Hà Nội', 'superseded'), noteId: 'n1', seq: 2 },

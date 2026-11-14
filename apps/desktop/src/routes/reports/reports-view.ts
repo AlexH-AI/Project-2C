@@ -163,7 +163,7 @@ export function summaryMeta(
     return joinParts([name, teams.find((team) => team.id === teamId)?.name ?? '']);
   }
   const res = people.filter(
-    (person) => person.role === 'RE' && (scope.kind === 'all' || person.teamId === scope.teamId),
+    (person) => person.role === 'RM' && (scope.kind === 'all' || person.teamId === scope.teamId),
   );
   return t('reports.summaryMeta', { name, re: res.length });
 }

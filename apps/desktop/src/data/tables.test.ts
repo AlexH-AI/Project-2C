@@ -15,7 +15,7 @@ describe('readTables orders names as the screens show them', () => {
     const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 9, 7, 11)) });
     for (const name of ['Zeta', 'đức', 'Đông', 'An']) {
       const team = createTeam(db, { name });
-      const re = createPerson(db, { name, role: 'RE', teamId: team.id });
+      const re = createPerson(db, { name, role: 'RM', teamId: team.id });
       createCustomer(db, { name, reId: re.id, stage: 'N1', date: TODAY });
     }
     return db;
