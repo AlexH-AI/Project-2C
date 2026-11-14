@@ -88,7 +88,7 @@ Lỗi khi gọi AI hiện trong thẻ KYC Intelligence (hoặc dưới ghi chú 
 | "Trả lời của OpenCode không đọc được." | Thử lại |
 | "Đang có một yêu cầu AI khác — chờ xong rồi thử lại." | Mỗi lúc chỉ một yêu cầu AI; chờ yêu cầu đang chạy (có thể ở KH khác) |
 | "Không đọc / ghi được key trong Windows Credential Manager." | Mở lại app; vẫn lỗi thì kiểm tra Credential Manager của Windows |
-| "Dữ liệu gửi AI quá lớn (quá 200.000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại." | Thường gặp ở AI trích xuất với ghi chú rất dài |
+| "Dữ liệu gửi AI quá lớn (quá 200,000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại." | Thường gặp ở AI trích xuất với ghi chú rất dài |
 | "Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ." | Thử lại; lặp lại thì báo người hỗ trợ |
 
 Lần phân tích **bị loại** (AI trả lời nhưng không đạt kiểm tra) không phải lỗi kết nối: xem [6. KYC Intelligence → Lần phân tích bị loại](06-ai.md#lần-phân-tích-bị-loại).

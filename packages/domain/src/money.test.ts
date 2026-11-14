@@ -18,9 +18,7 @@ import {
   formatMoney,
   formatMoneyCompact,
   formatMoneyDelta,
-  formatVnd,
-  formatVndCompact,
-  formatVndDelta,
+  languageFor,
   MAX_FEE_VND,
   maxFee,
   parseMoney,
@@ -28,18 +26,6 @@ import {
   type VndParseResult,
 } from './money';
 import { normalizeText } from './text';
-
-describe('formatVndDelta', () => {
-  it('signs a difference with − or +, in the compact form', () => {
-    expect(formatVndDelta(-14_500_000)).toBe('−14,5 tr');
-    expect(formatVndDelta(2_000_000_000)).toBe('+2 tỷ');
-    expect(formatVndDelta(500_000)).toBe('+500.000 ₫');
-  });
-
-  it('shows no sign when there is no difference', () => {
-    expect(formatVndDelta(0)).toBe('0 ₫');
-  });
-});
 
 const amountOf = (result: VndParseResult) => (result.ok ? result.amount : result.error);
 
@@ -262,58 +248,29 @@ describe('parseVnd', () => {
   });
 });
 
-describe('formatVnd', () => {
-  it.each([
-    [500_000_000, '500.000.000 ₫'],
-    [0, '0 ₫'],
-    [999, '999 ₫'],
-    [1_000, '1.000 ₫'],
-    [1_234_567, '1.234.567 ₫'],
-    [-1_500_000, '-1.500.000 ₫'],
-  ])('%d → %s', (amount, text) => {
-    expect(formatVnd(amount)).toBe(text);
-  });
-
-  it('refuses amounts that are not whole đồng', () => {
-    expect(() => formatVnd(1.5)).toThrow(RangeError);
-    expect(() => formatVnd(Number.MAX_SAFE_INTEGER + 1)).toThrow(RangeError);
-  });
-});
-
-describe('formatVndCompact', () => {
-  it.each([
-    [1_200_000_000, '1,2 tỷ'],
-    [500_000_000, '500 tr'],
-    [1_000_000_000, '1 tỷ'],
-    [1_000_000, '1 tr'],
-    [1_500_000, '1,5 tr'],
-    [1_250_000_000, '1,25 tỷ'],
-    [1_234_567_890, '1,23 tỷ'],
-    [1_500_000_000_000, '1.500 tỷ'],
-    [999_999_999, '1 tỷ'],
-    [-1_200_000_000, '-1,2 tỷ'],
-  ])('%d → %s', (amount, text) => {
-    expect(formatVndCompact(amount)).toBe(text);
-  });
-
-  it('shows amounts under 1 million in full', () => {
-    expect(formatVndCompact(750_000)).toBe('750.000 ₫');
-    expect(formatVndCompact(0)).toBe('0 ₫');
-  });
-
-  it('refuses amounts that are not whole đồng', () => {
-    expect(() => formatVndCompact(0.5)).toThrow(RangeError);
-  });
-
+// A form fills its money field with the amount as shown (`policy-form.ts`, `MetFields.tsx`), and
+// `parseVnd` reads the field until G-03b: what the app writes must read back as the same amount.
+describe('parseVnd reads back VND as the app shows it', () => {
   it.each([1_200_000_000, 500_000_000, 1_000_000_000, 1_500_000, 1_500_000_000_000, 750_000, 0])(
     'reads back %d from its compact form',
     (amount) => {
-      expect(amountOf(parseVnd(formatVndCompact(amount)))).toBe(amount);
+      expect(amountOf(parseVnd(formatMoneyCompact(amount, 'VND', 'vi')))).toBe(amount);
     },
   );
 
   it('reads back the full form', () => {
-    expect(amountOf(parseVnd(formatVnd(1_234_567)))).toBe(1_234_567);
+    expect(amountOf(parseVnd(formatMoney(1_234_567, 'VND')))).toBe(1_234_567);
+    expect(amountOf(parseVnd(formatMoney(500_000_000, 'VND')))).toBe(500_000_000);
+  });
+});
+
+describe('languageFor', () => {
+  it('keeps the language chosen for VND, and is English for money with cents (ADR-0018 §1, §2)', () => {
+    expect(languageFor('VND', 'vi')).toBe('vi');
+    expect(languageFor('VND', 'en')).toBe('en');
+    for (const currency of CURRENCY_CODES.filter((code) => code !== 'VND')) {
+      expect(languageFor(currency, 'vi')).toBe('en');
+    }
   });
 });
 

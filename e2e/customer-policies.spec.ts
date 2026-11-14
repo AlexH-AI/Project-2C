@@ -28,11 +28,11 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
   await expect(dialog).toContainText('Thứ Năm 10/09/2026');
   const fyp = dialog.getByRole('textbox', { name: /^FYP nộp/ });
-  // Under a million the short form is the full one, said once (review of PR 838).
-  await fyp.fill('500k');
-  await expect(fyp).toHaveAccessibleDescription('500.000 ₫');
+  // Under 1,000 the short form is the full one, said once (review of PR 838).
+  await fyp.fill('950');
+  await expect(fyp).toHaveAccessibleDescription('950 VNĐ');
   await fyp.fill('500tr');
-  await expect(dialog).toContainText('500.000.000 ₫ (500 tr)');
+  await expect(dialog).toContainText('500,000,000 VNĐ (500 tr)');
   await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
   await expect(dialog).toBeHidden();
 
@@ -46,7 +46,7 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await row.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026' }).click();
   dialog = page.getByRole('dialog', { name: 'Phát hành HĐ' });
   await expect(dialog.getByRole('textbox', { name: /^FYP phát hành/ })).toHaveValue(
-    '500.000.000 ₫',
+    '500,000,000 VNĐ',
   );
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('5/9');
   await dialog.getByRole('button', { name: 'Phát hành' }).click();
@@ -58,11 +58,11 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await expect(dialog).toContainText('2 ngày sau khi nộp');
   // The issued FYP may differ from the submitted one (G2 D).
   await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('485,5tr');
-  await expect(dialog).toContainText('485.500.000 ₫ (485,5 tr)');
+  await expect(dialog).toContainText('485,500,000 VNĐ (485.5 tr)');
   await dialog.getByRole('button', { name: 'Phát hành' }).click();
   await expect(dialog).toBeHidden();
   await expect(row).toContainText('Đã phát hành');
-  await expect(row).toContainText('Phát hành 12/09 · 485,5 tr');
+  await expect(row).toContainText('Phát hành 12/09 · 485.5 tr');
   await expect(row.getByRole('button', { name: /^Phát hành HĐ/ })).toHaveCount(0);
   await expect(header).toContainText(`Đã có HĐ (${before + 1})`);
   await expect(header.locator('span.rounded-full').first()).toHaveText(stage ?? '');
@@ -109,7 +109,7 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
   await expect(dialog).toBeHidden();
 
-  const row = card.getByRole('listitem').filter({ hasText: 'Nộp 14/09 · 1,2 tỷ' });
+  const row = card.getByRole('listitem').filter({ hasText: 'Nộp 14/09 · 1.2 tỷ' });
   await expect(row).toContainText('Đã nộp');
   expect(await policyCount(page)).toBe(before + 1);
 });
@@ -229,12 +229,12 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await expect(dialog).toContainText('Đã phát hành 15/09/2026');
   // Mockup 8d: once issued, the issued FYP is a hand correction.
   await dialog.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385,5tr');
-  await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −14,5 tr');
+  await expect(dialog).toContainText('385,500,000 VNĐ (385.5 tr) · khác FYP nộp −14.5 tr');
   await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RM');
-  await expect(dialog).toContainText('giảm 14,5 tr');
+  await expect(dialog).toContainText('giảm 14.5 tr');
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(dialog).toBeHidden();
-  await expect(row).toContainText('Phát hành 15/09 · 385,5 tr');
+  await expect(row).toContainText('Phát hành 15/09 · 385.5 tr');
 
   // The FYP is compared as typed (DR6-40); moving a day to another month takes the FYP out of the
   // old month and into the new one (DR6-41), and the policy from the count of the old month to that
@@ -243,13 +243,13 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('25/8');
   await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('390tr');
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('31/8');
-  await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −4,5 tr');
+  await expect(dialog).toContainText('385,500,000 VNĐ (385.5 tr) · khác FYP nộp −4.5 tr');
   await expect(dialog.getByRole('definition').locator('span')).toHaveText([
     /^FYP nộp tháng 09\/2026 của RM .+ giảm 400 tr$/,
     /^FYP nộp tháng 08\/2026 của RM .+ tăng 390 tr$/,
     'tháng 09/2026: −1 HĐ nộp · tháng 08/2026: +1 HĐ nộp',
-    /^FYP phát hành tháng 09\/2026 của RM .+ giảm 385,5 tr$/,
-    /^FYP phát hành tháng 08\/2026 của RM .+ tăng 385,5 tr$/,
+    /^FYP phát hành tháng 09\/2026 của RM .+ giảm 385\.5 tr$/,
+    /^FYP phát hành tháng 08\/2026 của RM .+ tăng 385\.5 tr$/,
     'tháng 09/2026: −1 HĐ phát hành · tháng 08/2026: +1 HĐ phát hành',
   ]);
   // Back within the month the policy was in, only the FYP lines are left.
@@ -284,7 +284,7 @@ test('two policies submitted the same day have four buttons of four different na
   }
   await expect(card.getByRole('listitem')).toHaveCount(2);
 
-  for (const fyp of ['24.000.000 ₫', '48.000.000 ₫']) {
+  for (const fyp of ['24,000,000 VNĐ', '48,000,000 VNĐ']) {
     for (const name of [
       `Phát hành HĐ nộp 10/09/2026 · ${fyp}`,
       `Sửa HĐ nộp 10/09/2026 · ${fyp} · Đã nộp`,
@@ -310,7 +310,7 @@ test('a policy submitted and one issued, of one day and one FYP, have two "Sửa
     await expect(dialog).toBeHidden();
   };
   await submit();
-  await card.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026 · 24.000.000 ₫' }).click();
+  await card.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026 · 24,000,000 VNĐ' }).click();
   const issue = page.getByRole('dialog', { name: 'Phát hành HĐ' });
   await issue.getByRole('button', { name: 'Phát hành', exact: true }).click();
   await expect(issue).toBeHidden();
@@ -319,7 +319,7 @@ test('a policy submitted and one issued, of one day and one FYP, have two "Sửa
   await expect(card.getByRole('listitem')).toHaveCount(2);
   for (const status of ['Đã nộp', 'Đã phát hành']) {
     const edit = card.getByRole('button', {
-      name: `Sửa HĐ nộp 10/09/2026 · 24.000.000 ₫ · ${status}`,
+      name: `Sửa HĐ nộp 10/09/2026 · 24,000,000 VNĐ · ${status}`,
       exact: true,
     });
     await expect(edit).toHaveCount(1);

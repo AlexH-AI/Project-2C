@@ -1,4 +1,4 @@
-import { formatCount, type AppointmentCounts, type PeriodKind } from '@p2c/domain';
+import { formatNumber, type AppointmentCounts, type PeriodKind } from '@p2c/domain';
 import { t } from '../../i18n';
 import { APPOINTMENT_GROUPS } from '../appointments/appointments-view';
 import type { KpiTile } from './overview-view';
@@ -23,7 +23,7 @@ export function AppointmentsTile({
     <section aria-label={label} className={TILE}>
       <h2 className={`m-0 font-normal ${LABEL}`}>{label}</h2>
       <p className={`m-0 ${VALUE}`}>
-        {formatCount(counts.met)}{' '}
+        {formatNumber(counts.met)}{' '}
         <small className={UNIT}>{t('overview.ofTotal', { total: counts.total })}</small>
       </p>
       <p className={`m-0 -mt-1.5 ${FOOT}`}>{t('overview.appointments.foot')}</p>
@@ -47,7 +47,7 @@ export function AppointmentsTile({
           <li key={group.key} className="flex items-center gap-2 text-fg-2">
             <i aria-hidden="true" className={`inline-block size-2 rounded-full ${group.dot}`} />
             {t(group.label)}
-            <b className="ml-auto font-semibold text-fg">{formatCount(counts[group.key])}</b>
+            <b className="ml-auto font-semibold text-fg">{formatNumber(counts[group.key])}</b>
           </li>
         ))}
       </ul>

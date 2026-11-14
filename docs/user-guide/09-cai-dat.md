@@ -172,7 +172,7 @@ Lý do được tính trước khi bấm; nếu dữ liệu vừa đổi, hộp 
 
 ### Dọn sạch Thùng rác
 
-Nút **Dọn sạch Thùng rác…** ở đầu thẻ xóa hẳn mọi bản ghi trong Thùng rác, không theo loại hay ô tìm đang chọn. App không có xóa hẳn từng dòng và không bao giờ tự dọn. Thùng rác từ 1.000 bản ghi trở lên mở chậm dần, nên dưới câu giới thiệu có câu nhắc dọn.
+Nút **Dọn sạch Thùng rác…** ở đầu thẻ xóa hẳn mọi bản ghi trong Thùng rác, không theo loại hay ô tìm đang chọn. App không có xóa hẳn từng dòng và không bao giờ tự dọn. Thùng rác từ 1,000 bản ghi trở lên mở chậm dần, nên dưới câu giới thiệu có câu nhắc dọn.
 
 1. Bấm **Dọn sạch Thùng rác…**.
 2. Hộp **Dọn sạch Thùng rác?** đếm những gì sẽ bị xóa hẳn:

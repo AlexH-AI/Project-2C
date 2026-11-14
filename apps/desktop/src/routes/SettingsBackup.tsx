@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { DbError, LATEST_SCHEMA_VERSION, MAX_BACKUP_BYTES } from '@p2c/db';
-import { formatFileSize, formatLocalDateTime } from '@p2c/domain';
+import { formatBytes, formatLocalDateTime } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
@@ -165,7 +165,7 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
           <p role="status" className="m-0 min-w-0 flex-1 break-all text-ok tabular-nums">
             {t('settings.backup.exported', {
               where: notice.where,
-              size: formatFileSize(notice.size),
+              size: formatBytes(notice.size),
             })}
           </p>
           {notice.inFolder && <OpenFolderButton folder="exports" />}

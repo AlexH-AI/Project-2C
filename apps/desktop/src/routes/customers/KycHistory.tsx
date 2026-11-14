@@ -1,6 +1,6 @@
 import { MAX_AI_RAW_OUTPUT } from '@p2c/ai';
 import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
-import { formatCount, formatDayMonth } from '@p2c/domain';
+import { formatDayMonth } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { ALERT, BADGE, CELL_NAME, FOCUS } from '../classes';
@@ -125,7 +125,7 @@ export function RejectedReportDialog({
         report.prompt,
         sourceName(report.source),
         t('aiPanel.report.attempts', { count: report.attempts }),
-        report.tokens !== null && t('aiPanel.report.tokens', { count: formatCount(report.tokens) }),
+        report.tokens !== null && t('aiPanel.report.tokens', { count: report.tokens }),
       ])}
       onClose={onClose}
       actions={

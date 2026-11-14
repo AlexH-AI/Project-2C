@@ -9,7 +9,7 @@ import {
 import type { Person, Policy, Scope } from './model';
 import { calendarDate, chartMarks, customPeriod, periodOf, reportMarks } from './period';
 import type { Period } from './period';
-import { formatVndCompact, MAX_FEE_VND } from './money';
+import { formatMoneyCompact, MAX_FEE_VND } from './money';
 import {
   inScope,
   periodMetrics,
@@ -335,7 +335,7 @@ describe('totals of large fees', () => {
     const metrics = periodMetrics(atCap, month, { kind: 'all' });
     expect(metrics.caseSize).toBe(200_000_000_000);
     expect(metrics.revenue).toBe(200_000_000_000);
-    expect(formatVndCompact(metrics.caseSize)).toBe('200 tỷ');
+    expect(formatMoneyCompact(metrics.caseSize, 'VND', 'vi')).toBe('200 tỷ');
     expect(periodMetricsByMark(atCap, [month], { kind: 'all' })[0]?.caseSize).toBe(200_000_000_000);
   });
 

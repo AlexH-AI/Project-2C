@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { LATEST_SCHEMA_VERSION } from '@p2c/db';
-import { formatCount, formatFileSize, formatLocalDateTime } from '@p2c/domain';
+import { formatBytes, formatLocalDateTime } from '@p2c/domain';
 import { Button } from '@p2c/ui';
 import { useAppData, useQuery, useSaveStatus } from '../data/AppDataContext';
 import { countRecords, type DataFolder, type RecordCounts } from '../data/app-data';
@@ -8,14 +8,14 @@ import { t } from '../i18n';
 import { WEB_MODE } from '../shell/Sidebar';
 import { HEADING, SETTINGS_SECTION } from './classes';
 
-/** `3 team · 36 nhân sự · 1.204 KH · …`, the same sentence in the card and in dialog 10a. */
+/** `3 team · 36 nhân sự · 1,204 KH · …`, the same sentence in the card and in dialog 10a. */
 export const countsText = (counts: RecordCounts) =>
   t('settings.backup.counts', {
-    teams: formatCount(counts.teams),
-    people: formatCount(counts.people),
-    customers: formatCount(counts.customers),
-    appointments: formatCount(counts.appointments),
-    policies: formatCount(counts.policies),
+    teams: counts.teams,
+    people: counts.people,
+    customers: counts.customers,
+    appointments: counts.appointments,
+    policies: counts.policies,
   });
 
 const PATH = 'font-mono text-fg-2';
@@ -78,7 +78,7 @@ function FileFacts() {
         {lastSave
           ? t('settings.file.lastSaveValue', {
               time: formatLocalDateTime(lastSave.at, { seconds: true }),
-              size: formatFileSize(lastSave.size),
+              size: formatBytes(lastSave.size),
             })
           : t('settings.file.notSaved')}
       </Fact>

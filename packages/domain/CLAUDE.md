@@ -12,7 +12,7 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 ## File hay tìm
 
 - Ngày / kỳ: `src/period.ts` (`CalendarDate` không giờ, không múi giờ; tuần Thứ Hai → Chủ Nhật; `parseQuickDate`, `formatDate`, `isInPeriod`, `shift`). Không có `date.ts`.
-- Tiền: `src/money.ts` (VND là số nguyên đồng, `formatVnd`, `parseVnd`) · số: `src/number.ts`.
+- Tiền: `src/money.ts` (số nguyên đơn vị nhỏ nhất của tiền tệ; `formatMoney*` theo dấu kiểu Excel, ADR-0018 §4; ô nhập `parseVnd` tới G-03b) · số: `src/number.ts` (`formatNumber`, `formatPercentage`, `formatBytes`).
 - Chỉ số: `src/stats.ts` (`periodMetrics`, `closeRate`, `rfCount`, ADR-0007) · thực thể: `src/model.ts`.
 - Vòng đời KH: `src/customer-lifecycle.ts`, `src/pipeline-stage.ts` (N4 → N1).
 - KYC: `src/kyc-catalog.ts` (danh mục, ngưỡng cổng), `src/kyc.ts`, `src/kyc-fact.ts`, `src/kyc-gate.ts` (ADR-0008).
@@ -45,9 +45,9 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/kyc.ts` — type KycNote, type KycProfile, type KycFactInput, type KycVersion, addNote, currentFacts, confirmFact, markConflict, resolveConflict, kycHash, isMaterialChange, nextKycVersion
 - `src/language.ts` — LANGUAGES, type Language
 - `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, RM_ROLE, isRm, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
-- `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta, CURRENCY_CODES, type CurrencyCode, type Money, type Currency, CURRENCIES, maxFee, addMoney, formatMoney, formatMoneyCompact, formatMoneyDelta, type MoneyParseError, type MoneyParseResult, parseMoney
+- `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, CURRENCY_CODES, type CurrencyCode, type Money, type Currency, CURRENCIES, maxFee, languageFor, addMoney, formatMoney, formatMoneyCompact, formatMoneyDelta, type MoneyParseError, type MoneyParseResult, parseMoney
 - `src/name-order.ts` — LATIN, byName
-- `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize, groupDigits, formatNumber, formatPercentage, formatBytes
+- `src/number.ts` — groupDigits, formatNumber, formatPercentage, formatBytes
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatLocalDayMonthTime, formatLocalTime, formatIsoDate, fromIsoDate, isIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, sameDayYearBefore, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage
 - `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotByScope, stageSnapshotSeries

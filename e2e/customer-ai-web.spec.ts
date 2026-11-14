@@ -72,7 +72,7 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   await box.fill(' '.repeat(40_001));
   await expect(save).toBeEnabled();
   await save.click();
-  await expect(panel).toContainText('Câu trả lời dài quá 20.000 ký tự');
+  await expect(panel).toContainText('Câu trả lời dài quá 20,000 ký tự');
   await expect(panel).toContainText('Lần thử 1 / 2');
 
   await box.fill(GOOD);
@@ -153,7 +153,7 @@ test("the app's own message pasted back counts no attempt; AI trích xuất wait
   await page.keyboard.press('Enter');
   await expect(box).toBeFocused();
   await expect(box).toHaveAccessibleDescription(
-    'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
+    'Câu trả lời dài quá 20,000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
   );
   await expect(panel).toContainText('Lần thử 1 / 2');
 
@@ -303,7 +303,7 @@ test('Hủy and leaving the profile save nothing; a failed copy shows the messag
   const box = panel.getByRole('textbox', { name: 'Dán kết quả' });
   await box.fill('x'.repeat(20_001));
   await panel.getByRole('button', { name: 'Kiểm tra và lưu' }).click();
-  await expect(panel).toContainText('Câu trả lời dài quá 20.000 ký tự');
+  await expect(panel).toContainText('Câu trả lời dài quá 20,000 ký tự');
   await expect(panel).toContainText('Lần thử 1 / 2');
 
   await panel.getByRole('button', { name: 'Hủy' }).click();

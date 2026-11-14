@@ -7,6 +7,7 @@ import {
   type Period,
 } from '@p2c/domain';
 import { t } from '../../i18n';
+import { moneySymbol } from '../money-view';
 import type { ViewingText } from '../overview/overview-view';
 import {
   REPORT_COLUMNS,
@@ -39,9 +40,9 @@ const NUM_FMT: Partial<Record<ReportColumn['format'], string>> = {
   percent: '0.0%',
 };
 
-/** The screen's heading of a column (`REPORT_COLUMNS`); money says it is in đồng. */
+/** The screen's heading of a column (`REPORT_COLUMNS`); money names its currency: `(VNĐ)`. */
 const heading = ({ label, format }: ReportColumn) =>
-  format === 'money' ? t('reports.excel.money', { label }) : label;
+  format === 'money' ? t('reports.excel.money', { label, currency: moneySymbol() }) : label;
 
 const LEAD_HEADERS: Record<TableKey, readonly string[]> = {
   summary: [t('reports.col.scope')],

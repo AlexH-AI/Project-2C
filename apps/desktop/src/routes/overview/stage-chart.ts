@@ -1,4 +1,4 @@
-import { formatCount } from '@p2c/domain';
+import { formatNumber } from '@p2c/domain';
 import { encodeHtml, type ChartOption } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { CHART_STAGES, type ChartStage, type StageChart, type StageValues } from './stage-view';
@@ -54,7 +54,7 @@ interface TooltipParam {
 
 const row = (marker: string, name: string, value: number) =>
   `<div style="display:flex;justify-content:space-between">` +
-  `<span>${marker}${encodeHtml(name)}</span>&emsp;<b>${formatCount(value)}</b></div>`;
+  `<span>${marker}${encodeHtml(name)}</span>&emsp;<b>${formatNumber(value)}</b></div>`;
 
 /**
  * The stacked column chart of customers by stage (spec Phase 4 §2.8, mockup overview.html 1a–1c)
@@ -103,7 +103,7 @@ export function stageChartOption(chart: StageChart, shown: readonly ChartStage[]
     yAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { formatter: (value: number) => formatCount(value) },
+      axisLabel: { formatter: (value: number) => formatNumber(value) },
     },
     series: [
       ...stages.map((stage) => ({
@@ -154,8 +154,8 @@ export function stageChartTable(chart: StageChart, shown: readonly ChartStage[])
       title,
       cells: values
         ? [
-            ...stages.map((stage) => formatCount(values[stage])),
-            formatCount(totalOf(values, stages)),
+            ...stages.map((stage) => formatNumber(values[stage])),
+            formatNumber(totalOf(values, stages)),
           ]
         : Array<string>(stages.length + 1).fill(t('overview.none')),
     })),
@@ -164,7 +164,7 @@ export function stageChartTable(chart: StageChart, shown: readonly ChartStage[])
 
 /**
  * The last mark of `chart` with numbers, as its row of `stageChartTable` says it: its title, then
- * "N4 1.200" for each stage shown, top first, and "Tổng 1.206" last. Null while no mark has numbers.
+ * "N4 1,200" for each stage shown, top first, and "Tổng 1,206" last. Null while no mark has numbers.
  */
 function lastNumbers(
   chart: StageChart,

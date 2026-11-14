@@ -1,11 +1,11 @@
 /**
  * VND money (PROJECT-PLAN §4.4). An amount is a whole number of đồng — never a float — so sums
- * and comparisons are exact up to `Number.MAX_SAFE_INTEGER` (≈ 9 triệu tỷ). Vietnamese
- * conventions for output: `.` groups thousands, `,` marks decimals. Input accepts either mark
- * for either role, told apart by the digits that follow (`parseVnd`).
+ * and comparisons are exact up to `Number.MAX_SAFE_INTEGER` (≈ 9 triệu tỷ). Output is written in
+ * the currency of the data, the Excel way (`formatMoney` below). Until G-03b a field is read by
+ * `parseVnd`, which accepts either mark for either role, told apart by the digits that follow.
  */
 import type { Language } from './language';
-import { groupDigits, groupThousands } from './number';
+import { groupDigits } from './number';
 import { normalizeText } from './text';
 
 export type Vnd = number;
@@ -147,54 +147,11 @@ function splitNumber(text: string): { integer: string; fraction: string } | null
   return { integer: integerGroups.join(''), fraction };
 }
 
-function assertVnd(amount: Vnd): void {
-  if (!Number.isSafeInteger(amount)) throw new RangeError(`Not a whole đồng amount: ${amount}`);
-}
-
-/** Full form: `500.000.000 ₫`. */
-export function formatVnd(amount: Vnd): string {
-  assertVnd(amount);
-  const sign = amount < 0 ? '-' : '';
-  return `${sign}${groupThousands(Math.abs(amount))} ₫`;
-}
-
-const MILLION = 1_000_000;
-const BILLION = 1_000_000_000;
-
-/**
- * Compact form for KPIs and charts: `500 tr`, `1,2 tỷ`, `1.500 tỷ`, with up to 2 decimals.
- * Under 1 triệu the full form is shown. Rounding that reaches 1 000 tr shows `1 tỷ` instead.
- */
-export function formatVndCompact(amount: Vnd): string {
-  assertVnd(amount);
-  const magnitude = Math.abs(amount);
-  if (magnitude < MILLION) return formatVnd(amount);
-
-  const sign = amount < 0 ? '-' : '';
-  const millionHundredths = Math.round(magnitude / (MILLION / 100));
-  const [unit, hundredths] =
-    magnitude >= BILLION || millionHundredths >= 1000 * 100
-      ? ['tỷ', Math.round(magnitude / (BILLION / 100))]
-      : ['tr', millionHundredths];
-  const whole = groupThousands(Math.floor(hundredths / 100));
-  const decimals = String(hundredths % 100)
-    .padStart(2, '0')
-    .replace(/0+$/, '');
-  return `${sign}${whole}${decimals ? `,${decimals}` : ''} ${unit}`;
-}
-
-/** A difference in the compact form, always signed with `−` (U+2212) or `+`; no sign for 0. */
-export function formatVndDelta(amount: Vnd): string {
-  const magnitude = formatVndCompact(Math.abs(amount));
-  if (amount === 0) return magnitude;
-  return `${amount < 0 ? '−' : '+'}${magnitude}`;
-}
-
 /*
  * Money in the currency of the data (ADR-0018 §2–§4; golden `docs/golden/so-va-tien-te.md`
  * §1–§4), written the Excel way in every language: `,` groups thousands, `.` marks decimals. The
- * VND functions above stay until the app moves over (G-03a, G-03b, G-04). No `Intl`: the table
- * below writes the same on every webview (ADR-0018 §4, option 5).
+ * VND functions above stay until the app moves over (G-03b, G-04). No `Intl`: the table below
+ * writes the same on every webview (ADR-0018 §4, option 5).
  */
 
 /** The seven currencies a data set may use, chosen once at set-up (ADR-0018 §2). */
@@ -249,6 +206,14 @@ export const CURRENCIES: Readonly<Record<CurrencyCode, Currency>> = {
  */
 export function maxFee(currency: CurrencyCode): Money {
   return CURRENCIES[currency].maxFee;
+}
+
+/**
+ * The language data in `currency` is shown in (ADR-0018 §1, §2): the one chosen for VND; English
+ * for money with cents, since Vietnamese goes with VND only.
+ */
+export function languageFor(currency: CurrencyCode, chosen: Language): Language {
+  return currency === 'VND' ? chosen : 'en';
 }
 
 /** `total + amount`, or a `RangeError` when the sum is past a safe integer and so not exact. */
@@ -333,7 +298,7 @@ export function formatMoneyCompact(
   const magnitude = Math.abs(amount);
   if (magnitude < 1000 * major) return formatMoney(amount, currency);
 
-  const [smallest, ...larger] = COMPACT_UNITS[currency === 'VND' ? language : 'en'];
+  const [smallest, ...larger] = COMPACT_UNITS[languageFor(currency, language)];
   const shownIn = ({ exponent, word }: CompactUnit) => ({
     hundredths: hundredthsOf(magnitude, 10 ** exponent * major),
     word,

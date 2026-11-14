@@ -19,7 +19,7 @@ import {
 import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
-  formatCount,
+  formatNumber,
   formatDate,
   isPipelineStage,
   normalizeText,
@@ -306,7 +306,7 @@ export function CustomerFormDialog({
       />
       {handover > 0 && (
         <p role="status" className={`${ALERT} border-info`}>
-          {t('customerForm.handover', { count: formatCount(handover) })}
+          {t('customerForm.handover', { count: handover })}
         </p>
       )}
       <TextField
@@ -387,9 +387,9 @@ function DeleteCustomerDialog({
         n: counts.rf,
       }),
     ],
-    [t('customerDelete.policies'), formatCount(counts.policies)],
+    [t('customerDelete.policies'), formatNumber(counts.policies)],
     // A number only: a purge of the trash deletes them for good (TR-9, TR-11; mockup 11f).
-    [t('customerDelete.kyc'), formatCount(counts.kycNotes)],
+    [t('customerDelete.kyc'), formatNumber(counts.kycNotes)],
   ] as const;
   return (
     <Dialog

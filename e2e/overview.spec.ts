@@ -154,7 +154,7 @@ test('customers by stage: four tiles over the chart, a stage hidden and shown ag
   // Each team's chart is headed by its last column of the stages shown (mockup 1b).
   const headings = block.getByRole('heading', { name: /^Team / });
   await expect(headings).toHaveText(
-    Array(3).fill(/^Team [^·]+N4 [\d.]+ · N3 [\d.]+ · N2 [\d.]+ · N1 [\d.]+$/),
+    Array(3).fill(/^Team [^·]+N4 [\d,]+ · N3 [\d,]+ · N2 [\d,]+ · N1 [\d,]+$/),
   );
   // Hiding N4 drops its series, not only its colour: fewer parts are drawn.
   const n4Colour = await page.evaluate(() =>
@@ -171,7 +171,7 @@ test('customers by stage: four tiles over the chart, a stage hidden and shown ag
   await expect(charts.locator('svg')).toHaveCount(3);
   await expect(n4Drawn).toHaveCount(0);
   expect(await drawn.count()).toBeLessThan(allDrawn);
-  await expect(headings).toHaveText(Array(3).fill(/^Team [^·]+N3 [\d.]+ · N2 [\d.]+ · N1 [\d.]+$/));
+  await expect(headings).toHaveText(Array(3).fill(/^Team [^·]+N3 [\d,]+ · N2 [\d,]+ · N1 [\d,]+$/));
 
   await n4.click();
   await expect(n4).toHaveAttribute('aria-pressed', 'true');

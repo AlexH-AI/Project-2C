@@ -97,7 +97,7 @@ describe('kpiTiles', () => {
     expect(tiles.issued).toMatchObject({ value: '2', delta: { text: '▲ 2' } });
     expect(tiles.revenue).toMatchObject({ value: '900', unit: 'tr', delta: { text: '▲ 900 tr' } });
     expect(tiles.closeRate).toMatchObject({
-      value: '66,7',
+      value: '66.7',
       unit: '%',
       unitSpaced: false,
       delta: null,
@@ -114,7 +114,7 @@ describe('kpiTiles', () => {
       delta: { tone: 'down', text: '▼ 5' },
       note: 'so với 01/01 – 31/01',
     });
-    expect(tiles.caseSize).toMatchObject({ value: '0', unit: '₫', delta: { text: '▼ 1,9 tỷ' } });
+    expect(tiles.caseSize).toMatchObject({ value: '0', unit: 'VNĐ', delta: { text: '▼ 1.9 tỷ' } });
     expect(tiles.issued).toMatchObject({ value: '1', delta: { text: '▼ 4' } });
     expect(tiles.closeRate).toMatchObject({
       value: '—',
@@ -146,6 +146,37 @@ describe('kpiTiles', () => {
 
     expect(tiles.submitted).toMatchObject({ value: '0', delta: { text: '=' }, note: compared });
     expect(tiles.caseSize).toMatchObject({ value: '0', delta: { text: '=' }, note: compared });
+  });
+
+  it('sets K beside the number, a longer unit after a space (ADR-0018 §4, Q5)', () => {
+    const today = d(2027, 3, 15);
+    const submitted = (id: string, submittedFyp: number) => ({
+      id,
+      customerId: 'kh-01',
+      rmId: 're-an',
+      submittedDate: today,
+      submittedFyp,
+      issuedDate: null,
+      issuedFyp: null,
+    });
+    const tiles = (fyp: number) =>
+      byKey(
+        kpiTiles(
+          { ...EMPTY, policies: [submitted('hd', fyp)] },
+          periodOf('month', today),
+          ALL,
+          today,
+        ),
+      );
+
+    expect(tiles(500_000).caseSize).toMatchObject({
+      value: '500',
+      unit: 'K',
+      unitSpaced: false,
+      delta: { text: '▲ 500K' },
+    });
+    expect(tiles(950).caseSize).toMatchObject({ value: '950', unit: 'VNĐ', unitSpaced: true });
+    expect(tiles(1_250_000_000).caseSize).toMatchObject({ value: '1.25', unit: 'tỷ' });
   });
 
   it('the close rate changes in percentage points (G20 vs G19)', () => {
@@ -185,18 +216,18 @@ describe('kpiTiles', () => {
     );
   });
 
-  it('a close rate that moved less than 0,05 point reads "=", not "▲ 0 điểm %"', () => {
-    // 1 ÷ 46 RF = 2,17% against 1 ÷ 45 RF = 2,22%: -0,048 point.
+  it('a close rate that moved less than 0.05 point reads "=", not "▲ 0 điểm %"', () => {
+    // 1 ÷ 46 RF = 2.17% against 1 ÷ 45 RF = 2.22%: -0.048 point.
     const data = together(closing(d(2027, 1, 10), 45, 1), closing(d(2027, 2, 10), 46, 1));
     const tiles = byKey(kpiTiles(data, periodOf('month', d(2027, 2, 1)), ALL, d(2027, 3, 15)));
-    expect(tiles.closeRate).toMatchObject({ value: '2,2', delta: { tone: 'same', text: '=' } });
+    expect(tiles.closeRate).toMatchObject({ value: '2.2', delta: { tone: 'same', text: '=' } });
   });
 
   it('no change reads "="', () => {
     const tiles = byKey(kpiTiles(EMPTY, periodOf('year', d(2000, 1, 1)), ALL, d(2026, 10, 15)));
 
     expect(tiles.submitted).toMatchObject({ value: '0', delta: { tone: 'same', text: '=' } });
-    expect(tiles.caseSize).toMatchObject({ value: '0', unit: '₫', delta: { text: '=' } });
+    expect(tiles.caseSize).toMatchObject({ value: '0', unit: 'VNĐ', delta: { text: '=' } });
   });
 
   it('gives the reason a KPI is not compared', () => {

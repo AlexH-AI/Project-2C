@@ -408,7 +408,7 @@ test('deletes a customer from the profile, counting its records first (5f, TR-9)
   // "884 KH đang mở · 316 đã đóng" → 884.
   const open = async () =>
     Number(
-      (await page.getByText(/KH đang mở/).textContent())?.match(/^[\d.]+/)?.[0].replace(/\./g, ''),
+      (await page.getByText(/KH đang mở/).textContent())?.match(/^[\d,]+/)?.[0].replace(/,/g, ''),
     );
   const before = await open();
   const card = column(page, 'N2').getByRole('link').first();

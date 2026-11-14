@@ -474,10 +474,10 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Thu nhập năm' });
   const income = dialog.getByRole('textbox', { name: 'Giá trị' });
   await income.fill('6 tỷ');
-  await expect(income).toHaveAccessibleDescription('6.000.000.000 ₫ (6 tỷ)');
+  await expect(income).toHaveAccessibleDescription('6,000,000,000 VNĐ (6 tỷ)');
   await income.fill('Khoảng 12 tỷ');
   await expect(income).toHaveAccessibleDescription('');
-  await expect(dialog).not.toContainText('₫');
+  await expect(dialog).not.toContainText('VNĐ');
   // DR-21: a value typed for one trường is not carried over to the next one picked.
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
   await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('Huế');

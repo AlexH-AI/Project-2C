@@ -4,8 +4,6 @@ import {
   compareDates,
   daysBetween,
   formatPeriodValue,
-  formatVnd,
-  formatVndCompact,
   parseVnd,
   periodOf,
   type CalendarDate,
@@ -16,6 +14,7 @@ import {
 import { t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
 import { parseRecordDate, type RecordDateResult } from './customers-view';
+import { formatAmount, formatAmountCompact } from '../money-view';
 
 export type FypResult =
   | { readonly ok: true; readonly amount: Vnd }
@@ -72,13 +71,16 @@ export function openDraft(mode: PolicyMode, today: CalendarDate): OpenedDraft {
   const { policy } = mode;
   const draft = {
     submittedDate: dayText(policy.submittedDate, today),
-    submittedFyp: formatVnd(policy.submittedFyp),
+    submittedFyp: formatAmount(policy.submittedFyp),
     issued:
       mode.kind === 'issue'
         ? // The issued FYP starts as the submitted one (G2 D).
-          { date: dayText(today, today), fyp: formatVnd(policy.issuedFyp ?? policy.submittedFyp) }
+          {
+            date: dayText(today, today),
+            fyp: formatAmount(policy.issuedFyp ?? policy.submittedFyp),
+          }
         : policy.issuedDate && policy.issuedFyp !== null
-          ? { date: dayText(policy.issuedDate, today), fyp: formatVnd(policy.issuedFyp) }
+          ? { date: dayText(policy.issuedDate, today), fyp: formatAmount(policy.issuedFyp) }
           : null,
   };
   return { draft, on: today };
@@ -248,7 +250,7 @@ export function effectText(effect: Effect, rmName: string | undefined): string {
     label: t(`policyForm.metric.${effect.metric}`),
     month: monthOf(calendarDate(effect.year, effect.month, 1)),
     rm: rmName?.trim() ?? '',
-    amount: formatVndCompact(Math.abs(effect.diff)),
+    amount: formatAmountCompact(Math.abs(effect.diff)),
   };
   const key = effect.diff < 0 ? 'Down' : 'Up';
   return t(params.rm ? `policyForm.effect${key}` : `policyForm.effect${key}NoRm`, params);

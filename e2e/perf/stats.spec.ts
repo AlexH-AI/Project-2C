@@ -190,14 +190,14 @@ test('markdownTable checks the limit on the median before it was rounded', () =>
 
 test('loadDataError passes the load data and names what the exe holds otherwise', () => {
   const content = (customers: string, appointments: string) =>
-    `4 team · 51 nhân sự · ${customers} KH · ${appointments} lịch hẹn · 1.674 HĐ`;
-  expect(loadDataError(content('1.481', '10.252'))).toBeNull();
+    `4 team · 51 nhân sự · ${customers} KH · ${appointments} lịch hẹn · 1,674 HĐ`;
+  expect(loadDataError(content('1,481', '10,252'))).toBeNull();
   // The demo seed: 1 200 customers.
-  expect(loadDataError(content('1.200', '6.229'))).toBe(
+  expect(loadDataError(content('1,200', '6,229'))).toBe(
     'The exe holds 1200 customers and 6229 appointments, not the load data (at least 1400 and ' +
       '9000): import the load data first (e2e/perf/README.md, step 3).',
   );
-  expect(loadDataError(content('1.481', '6.229'))).toContain('not the load data');
+  expect(loadDataError(content('1,481', '6,229'))).toContain('not the load data');
   expect(loadDataError('Đang mở dữ liệu…')).toBe(
     'Cannot read the counts of Cài đặt → Dữ liệu → Nội dung: "Đang mở dữ liệu…".',
   );

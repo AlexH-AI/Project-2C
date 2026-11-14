@@ -1,4 +1,4 @@
-import { formatCount, type Person, type Team } from '@p2c/domain';
+import { formatNumber, type Person, type Team } from '@p2c/domain';
 import { t } from '../i18n';
 
 const CHIP =
@@ -82,7 +82,7 @@ function Chip({
     >
       <span className="truncate">{name}</span>
       <span className={`ml-auto tabular-nums ${on ? 'text-accent' : 'text-fg-3'}`}>
-        {formatCount(count)}
+        {formatNumber(count)}
       </span>
     </button>
   );

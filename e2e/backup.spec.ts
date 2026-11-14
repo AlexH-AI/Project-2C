@@ -44,7 +44,7 @@ test('exports, then imports the file back after confirming: later changes are go
   const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
   await expect(dialog).toContainText(exported.name);
   await expect(dialog).toContainText(/schema v\d+ \(bằng app\)/);
-  await expect(dialog).toContainText(/Trong file\s*3 team · 36 nhân sự · 1\.\d{3} KH/);
+  await expect(dialog).toContainText(/Trong file\s*3 team · 36 nhân sự · 1,\d{3} KH/);
   await expect(dialog).toContainText(/Hiện tại\s*4 team/);
   await expect(dialog).toContainText('Bản web không lưu file');
   await dialog.getByRole('button', { name: 'Thay dữ liệu', exact: true }).click();
@@ -170,9 +170,7 @@ test('the data file card shows what the simulated data holds, and that web mode 
 
   const card = page.getByRole('region', { name: 'File dữ liệu' });
   await expect(card).toContainText(/schema v\d+/);
-  await expect(card).toContainText(
-    /Nội dung\s*3 team · 36 nhân sự · 1\.\d{3} KH · [\d.]+ lịch hẹn/,
-  );
+  await expect(card).toContainText(/Nội dung\s*3 team · 36 nhân sự · 1,\d{3} KH · [\d,]+ lịch hẹn/);
   await expect(card).toContainText(
     'Bản web — dữ liệu chỉ trong trình duyệt, mất khi tải lại trang',
   );

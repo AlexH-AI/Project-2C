@@ -20,9 +20,9 @@ const CUSTOMER = 'Khải Trọn Vòng';
 
 // What the round records for the team in September: one meeting met on 15/09 moving N4 → N2 (an
 // RF), one appointment planned on 22/09, one deleted; a policy submitted 500 tr on 10/09 and issued
-// 485,5 tr on 12/09, another submitted 120 tr on 14/09 and not issued.
+// 485.5 tr on 12/09, another submitted 120 tr on 14/09 and not issued.
 /** So sánh team: Đã gặp · Chuyển RF · HĐ nộp · Case size · HĐ phát hành · Doanh số · Tỉ lệ chốt. */
-const COMPARED = ['1', '1', '2', '620 tr', '1', '485,5 tr', '100%'];
+const COMPARED = ['1', '1', '2', '620 tr', '1', '485.5 tr', '100%'];
 /**
  * Tổng hợp: Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến · Tổng, then the columns of
  * COMPARED from Chuyển RF, then the customers at the end of the day N4 · N3 · N2 · N1 · Tạm hoãn ·
@@ -250,7 +250,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
     const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
     await expect(card.getByRole('listitem')).toHaveText([
       /^Đã nộpNộp 14\/09 · 120 tr/,
-      /^Đã phát hànhNộp 10\/09 · 500 trPhát hành 12\/09 · 485,5 tr/,
+      /^Đã phát hànhNộp 10\/09 · 500 trPhát hành 12\/09 · 485\.5 tr/,
     ]);
     await expect(page.getByRole('region', { name: CUSTOMER })).toContainText('Đã có HĐ (2)');
   });

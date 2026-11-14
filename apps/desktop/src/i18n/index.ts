@@ -1,5 +1,5 @@
 import { DbError } from '@p2c/db';
-import { formatCount } from '@p2c/domain';
+import { formatNumber } from '@p2c/domain';
 import type { DataTableMoreLabels } from '@p2c/ui';
 import { en, type PluralMessage } from './en';
 import { LANGUAGE } from './language';
@@ -7,7 +7,10 @@ import { vi, type MessageKey } from './vi';
 
 export type MessageParams = Readonly<Record<string, string | number>>;
 
-/** Slots that hold a count: a number there reads with its thousands grouped (`1.234 lịch`). */
+/**
+ * Slots that hold a count: a number there reads with its thousands grouped (`1,234 lịch`). Callers
+ * pass the number, which also picks the plural form.
+ */
 export const COUNT_SLOTS: ReadonlySet<string> = new Set([
   'count',
   'total',
@@ -36,7 +39,7 @@ export function fillSlots(text: string, params: MessageParams): string {
   return text.replace(SLOT, (slot, name: string) => {
     if (!Object.hasOwn(params, name)) return slot;
     const value = params[name];
-    return typeof value === 'number' && COUNT_SLOTS.has(name) ? formatCount(value) : String(value);
+    return typeof value === 'number' && COUNT_SLOTS.has(name) ? formatNumber(value) : String(value);
   });
 }
 

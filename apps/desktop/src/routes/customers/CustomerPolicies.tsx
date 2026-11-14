@@ -1,8 +1,6 @@
 import {
   compareDates,
   formatDate,
-  formatVnd,
-  formatVndCompact,
   type CalendarDate,
   type Person,
   type Policy,
@@ -14,6 +12,7 @@ import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
 import { CARD, HEADING, LINK } from '../classes';
 import { policyStatusText } from './policy-form';
+import { formatAmount, formatAmountCompact } from '../money-view';
 
 /**
  * Mockup customer.html "Hợp đồng": the customer's policies, newest submission first, each
@@ -41,10 +40,10 @@ export function CustomerPolicies({
   onEdit: (policy: Policy) => void;
 }) {
   const dayFyp = (key: 'policies.submitted' | 'policies.issued', date: CalendarDate, fyp: Vnd) =>
-    t(key, { date: dayText(date, today), fyp: formatVndCompact(fyp) });
+    t(key, { date: dayText(date, today), fyp: formatAmountCompact(fyp) });
   const meta = [
     t('policies.count', { count: policies.length }),
-    caseSize !== null && t('policies.caseSize', { amount: formatVndCompact(caseSize) }),
+    caseSize !== null && t('policies.caseSize', { amount: formatAmountCompact(caseSize) }),
   ].filter(Boolean);
 
   return (
@@ -74,7 +73,7 @@ export function CustomerPolicies({
               // first has "Phát hành".
               const nameParams = {
                 date: formatDate(p.submittedDate),
-                fyp: formatVnd(p.submittedFyp),
+                fyp: formatAmount(p.submittedFyp),
               };
               return (
                 <li

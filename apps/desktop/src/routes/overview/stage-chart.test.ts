@@ -128,9 +128,9 @@ describe('stageChartOption', () => {
 
     expect(tooltip).toContain('12/10/2026 · cuối ngày');
     expect(tooltip.indexOf('[N4]')).toBeLessThan(tooltip.indexOf('[N1]'));
-    expect(tooltip).toContain('1.200');
+    expect(tooltip).toContain('1,200');
     expect(tooltip).toContain('Tổng');
-    expect(tooltip).toContain('1.206');
+    expect(tooltip).toContain('1,206');
   });
 
   it('adds up only the stages shown', () => {
@@ -161,7 +161,7 @@ describe('stageChartTable', () => {
 
     expect(table.head).toEqual(['Ngày', 'N4', 'N3', 'N2', 'N1', 'Tổng']);
     expect(table.rows).toEqual([
-      { title: '12/10/2026 · cuối ngày', cells: ['1.200', '3', '2', '1', '1.206'] },
+      { title: '12/10/2026 · cuối ngày', cells: ['1,200', '3', '2', '1', '1,206'] },
       { title: '13/10/2026 · cuối ngày', cells: ['—', '—', '—', '—', '—'] },
     ]);
   });
@@ -178,11 +178,11 @@ describe('stageChartTable', () => {
 describe('stageChartSummary', () => {
   it('says the last mark with numbers as its row of the table does, then where the table is', () => {
     expect(stageChartSummary(CHART, ALL_SHOWN)).toBe(
-      '12/10/2026 · cuối ngày: N4 1.200 · N3 3 · N2 2 · N1 1 · Tổng 1.206. Số liệu từng mốc ở bảng ngay sau.',
+      '12/10/2026 · cuối ngày: N4 1,200 · N3 3 · N2 2 · N1 1 · Tổng 1,206. Số liệu từng mốc ở bảng ngay sau.',
     );
     const [first, second] = CHART.columns;
     const later = { ...CHART, columns: [second!, { ...first!, title: '14/10/2026 · cuối ngày' }] };
-    expect(stageChartSummary(later, ALL_SHOWN)).toMatch(/^14\/10\/2026 · cuối ngày: N4 1\.200 /);
+    expect(stageChartSummary(later, ALL_SHOWN)).toMatch(/^14\/10\/2026 · cuối ngày: N4 1,200 /);
   });
 
   it('says the stages shown only, as the table does', () => {
@@ -200,7 +200,7 @@ describe('stageChartSummary', () => {
 // (review of PR 846).
 describe('stageChartLastText', () => {
   it('says the stages shown of the last mark with numbers, top first, without the total', () => {
-    expect(stageChartLastText(CHART, ALL_SHOWN)).toBe('N4 1.200 · N3 3 · N2 2 · N1 1');
+    expect(stageChartLastText(CHART, ALL_SHOWN)).toBe('N4 1,200 · N3 3 · N2 2 · N1 1');
     expect(stageChartLastText(CHART, ['N3', 'N1'])).toBe('N3 3 · N1 1');
     const [first, after] = CHART.columns;
     const later = { ...first!, values: { N4: 5, N3: 4, N2: 3, N1: 2 } };

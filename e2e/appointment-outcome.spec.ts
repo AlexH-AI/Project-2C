@@ -94,12 +94,12 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   await expect(o.dialog).toContainText(`ngày ${TODAY} · tính RF`);
   await o.nextStep.fill('Gửi bảng minh họa');
   await o.caseSize.fill('800tr');
-  await expect(o.dialog).toContainText('800.000.000 ₫ (800 tr)');
-  // Under a million the short form is the full one: read once (review of PR 758). The help under
-  // the field is part of what a screen reader says of it (review of PR 838).
+  await expect(o.dialog).toContainText('800,000,000 VNĐ (800 tr)');
+  // The amount read, then the help under the field: both are what a screen reader says of it
+  // (review of PR 838).
   await o.caseSize.fill('0,500 tr');
   await expect(o.caseSize).toHaveAccessibleDescription(
-    /^500\.000 ₫ Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,
+    /^500,000 VNĐ \(500K\) Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,
   );
   // Mockup 6d: how the marks read, under the field.
   const help = o.dialog.getByText(

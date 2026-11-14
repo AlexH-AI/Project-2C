@@ -127,22 +127,13 @@ export {
   formatMoney,
   formatMoneyCompact,
   formatMoneyDelta,
-  formatVnd,
-  formatVndCompact,
-  formatVndDelta,
+  languageFor,
   MAX_FEE_VND,
   maxFee,
   parseMoney,
   parseVnd,
 } from './money';
-export {
-  formatBytes,
-  formatCount,
-  formatFileSize,
-  formatNumber,
-  formatPercent,
-  formatPercentage,
-} from './number';
+export { formatBytes, formatNumber, formatPercentage } from './number';
 export type {
   Currency,
   CurrencyCode,

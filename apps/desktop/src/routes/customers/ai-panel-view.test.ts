@@ -436,7 +436,7 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
 
   it('words a paste too long with the limit of `@p2c/ai`, as a count (mockup 4h)', () => {
     expect(t('aiPanel.web.refused.TOO_LONG', { count: MAX_AI_RAW_OUTPUT })).toBe(
-      'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
+      'Câu trả lời dài quá 20,000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
     );
   });
 
@@ -590,7 +590,7 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
     expect(run).toEqual({ phase: 'error', error: { code: 'AI_TOO_LARGE' } });
     if (run.phase !== 'error') throw new Error('no error');
     expect(errorText(run.error)).toBe(
-      'Dữ liệu gửi AI quá lớn (quá 200.000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
+      'Dữ liệu gửi AI quá lớn (quá 200,000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
     );
   });
 
@@ -1121,7 +1121,7 @@ describe('rejectedReport (mockup ai.html 2k)', () => {
     expect(report.outputTooLarge).toBe(true);
     // The line 2k adds under them (spec Phase 5 §9.1), the limit of `raw_output` as a count.
     expect(t('aiPanel.report.tooLarge', { count: MAX_AI_RAW_OUTPUT })).toBe(
-      'Output quá lớn (trên 20.000 ký tự), app không lưu.',
+      'Output quá lớn (trên 20,000 ký tự), app không lưu.',
     );
     // The review of PR 824: the last of 30 issues, on the whole output, reads as it is written.
     expect(report.reports[1]!.issues.at(-1)).toEqual({

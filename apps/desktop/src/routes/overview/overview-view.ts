@@ -5,12 +5,11 @@ import {
   compareDates,
   comparisonWindows,
   customPeriod,
-  formatCount,
+  formatNumber,
   formatDate,
   formatDayMonth,
-  formatPercent,
+  formatPercentage,
   formatPeriodValue,
-  formatVndCompact,
   metricDeltas,
   periodMetrics,
   type CalendarDate,
@@ -25,6 +24,7 @@ import {
 } from '@p2c/domain';
 import { t } from '../../i18n';
 import type { FilterSelection } from '../applied-filter';
+import { formatAmountCompact } from '../money-view';
 
 export type KpiKey = 'rf' | 'submitted' | 'caseSize' | 'issued' | 'revenue' | 'closeRate';
 
@@ -37,10 +37,10 @@ export interface KpiDelta {
 export interface KpiTile {
   readonly key: KpiKey;
   readonly label: string;
-  /** The number, `—` when there is none; its unit (`tr`, `₫`, `%`) apart, or empty. */
+  /** The number, `—` when there is none; its unit (`tr`, `K`, `VNĐ`, `%`) apart, or empty. */
   readonly value: string;
   readonly unit: string;
-  /** A space between the number and its unit: `400 tr`, but `66,7%`. */
+  /** A space between the number and its unit: `400 tr`, but `500K`, `66.7%`. */
   readonly unitSpaced: boolean;
   /** Change against the previous window; null when not compared. */
   readonly delta: KpiDelta | null;
@@ -61,10 +61,10 @@ const METRIC = {
   revenue: 'revenue',
 } as const satisfies Record<Exclude<KpiKey, 'closeRate'>, keyof PeriodMetrics & keyof MetricDeltas>;
 
-/** A close rate in a table cell: `66,7%`, or "—" without RF (§4.1). */
+/** A close rate in a table cell: `66.7%`, or "—" without RF (§4.1). */
 export const closeRateText = (rate: CloseRate | null): string =>
   rate
-    ? `${formatPercent(closeRatePercent(rate))}${t('overview.percentUnit')}`
+    ? `${formatPercentage(closeRatePercent(rate))}${t('overview.percentUnit')}`
     : t('overview.none');
 
 interface Shown {
@@ -73,10 +73,14 @@ interface Shown {
   readonly unitSpaced: boolean;
 }
 
-/** `400 tr` → `400` + `tr`, so the unit can be set smaller beside the number. */
+/**
+ * `400 tr` → `400` + `tr`, `500K` → `500` + `K`, `0 VNĐ` → `0` + `VNĐ`: the unit is what follows
+ * the last digit, set smaller beside the number.
+ */
 function splitUnit(text: string): Shown {
-  const space = text.lastIndexOf(' ');
-  return { value: text.slice(0, space), unit: text.slice(space + 1), unitSpaced: true };
+  const end = text.search(/\d\D*$/) + 1;
+  const after = text.slice(end);
+  return { value: text.slice(0, end), unit: after.trimStart(), unitSpaced: after.startsWith(' ') };
 }
 
 function delta(change: number, text: (magnitude: number) => string): KpiDelta {
@@ -141,15 +145,15 @@ export function kpiTiles(
   const counts = COUNTS.map((key) =>
     tile(
       key,
-      current ? { value: formatCount(current[METRIC[key]]), unit: '', unitSpaced: false } : none,
-      deltas && delta(deltas[METRIC[key]], formatCount),
+      current ? { value: formatNumber(current[METRIC[key]]), unit: '', unitSpaced: false } : none,
+      deltas && delta(deltas[METRIC[key]], formatNumber),
     ),
   );
   const amounts = AMOUNTS.map((key) =>
     tile(
       key,
-      current ? splitUnit(formatVndCompact(current[METRIC[key]])) : none,
-      deltas && delta(deltas[METRIC[key]], formatVndCompact),
+      current ? splitUnit(formatAmountCompact(current[METRIC[key]])) : none,
+      deltas && delta(deltas[METRIC[key]], formatAmountCompact),
     ),
   );
   const [rf, submitted, issued] = counts as [KpiTile, KpiTile, KpiTile];
@@ -178,21 +182,21 @@ function closeRateTile(
     };
   }
   const points = deltas?.closeRatePoints ?? null;
-  const roundsToZero = points !== null && formatPercent(points) === '0';
+  const roundsToZero = points !== null && formatPercentage(points) === '0';
   return {
     ...base,
-    value: formatPercent(closeRatePercent(rate)),
+    value: formatPercentage(closeRatePercent(rate)),
     unit: t('overview.percentUnit'),
     unitSpaced: false,
     delta:
       points === null
         ? null
         : delta(roundsToZero ? 0 : points, (magnitude) =>
-            t('overview.points', { value: formatPercent(magnitude) }),
+            t('overview.points', { value: formatPercentage(magnitude) }),
           ),
     note: previous && !previous.closeRate ? t('overview.previousNoRf') : comparedNote,
     formula: t('overview.formula', {
-      issued: formatCount(rate.numerator),
+      issued: formatNumber(rate.numerator),
       count: rate.denominator,
     }),
   };

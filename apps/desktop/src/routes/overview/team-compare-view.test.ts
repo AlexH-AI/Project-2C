@@ -37,7 +37,7 @@ describe('teamCompare', () => {
     const [a, b] = view.teams;
 
     expect(view.teams.map((team) => team.name)).toEqual(['Team A', 'Team B']);
-    expect(a?.cells).toEqual(['5', '3', '3', '1,5 tỷ', '2', '1,5 tỷ', '66,7%']);
+    expect(a?.cells).toEqual(['5', '3', '3', '1.5 tỷ', '2', '1.5 tỷ', '66.7%']);
     expect(b?.cells).toEqual(['4', '2', '2', '400 tr', '3', '800 tr', '150%']);
     expect(view.total.name).toBe('Tổng');
     expect(figures(view.total)).toEqual({
@@ -49,7 +49,7 @@ describe('teamCompare', () => {
       revenue: 2_300 * MILLION,
     });
     expect(view.total.metrics?.closeRate).toEqual({ numerator: 5, denominator: 5 });
-    expect(view.total.cells).toEqual(['9', '5', '5', '1,9 tỷ', '5', '2,3 tỷ', '100%']);
+    expect(view.total.cells).toEqual(['9', '5', '5', '1.9 tỷ', '5', '2.3 tỷ', '100%']);
   });
 
   it('lists the teams by Vietnamese name: D before Đ, whatever order they were made in', () => {
@@ -80,17 +80,17 @@ describe('teamCompare', () => {
     }
   });
 
-  it('counts results up to today (G18), "—" for 0 RF and "0 ₫" for no money', () => {
+  it('counts results up to today (G18), "—" for 0 RF and "0 VNĐ" for no money', () => {
     // 01/01 – 15/01: RF ap-03, ap-04, ap-09; submitted hd-05, hd-06; issued hd-01, hd-07.
     const view = teamCompare(GOLDEN, JAN_2027, d(2027, 1, 15));
     const [a, b] = view.teams;
 
     expect(view.range).toBe('01/01 – 15/01/2027');
-    expect(a?.cells).toEqual(['5', '2', '0', '0 ₫', '1', '500 tr', '50%']);
+    expect(a?.cells).toEqual(['5', '2', '0', '0 VNĐ', '1', '500 tr', '50%']);
     expect(b?.cells).toEqual(['4', '1', '2', '400 tr', '1', '400 tr', '100%']);
     expect(b?.rms.map((rm) => rm.name)).toEqual(['Chi', 'Dũng']);
-    expect(b?.rms[1]?.cells).toEqual(['1', '0', '0', '0 ₫', '1', '400 tr', '—']);
-    expect(view.total.cells).toEqual(['9', '3', '2', '400 tr', '2', '900 tr', '66,7%']);
+    expect(b?.rms[1]?.cells).toEqual(['1', '0', '0', '0 VNĐ', '1', '400 tr', '—']);
+    expect(view.total.cells).toEqual(['9', '3', '2', '400 tr', '2', '900 tr', '66.7%']);
   });
 
   it('a period not started yet has "—" for every result', () => {
@@ -116,7 +116,7 @@ describe('teamCompare', () => {
       '—',
     ]);
     for (const period of [periodOf('month', today), periodOf('month', d(2026, 12, 1))]) {
-      expect(total(period).cells).toEqual(['0', '0', '0', '0 ₫', '0', '0 ₫', '—']);
+      expect(total(period).cells).toEqual(['0', '0', '0', '0 VNĐ', '0', '0 VNĐ', '—']);
     }
   });
 

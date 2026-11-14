@@ -418,7 +418,7 @@ test('refuses to delete the IS who still joins appointments, and says how many (
   const dialog = page.getByRole('dialog', { name: `Xóa ${name}?` });
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Chưa xóa được — IS còn dữ liệu');
-  await expect(alert).toContainText(/[1-9][\d.]* lịch hẹn là người phối hợp/);
+  await expect(alert).toContainText(/[1-9][\d,]* lịch hẹn là người phối hợp/);
   // The way out of an IS, not of an RM (DR6-26); no way to take a coordinator off (DR6-80).
   await expect(dialog).toContainText(COORDINATOR_HELP);
   await expect(dialog).not.toContainText('khỏi người phối hợp');

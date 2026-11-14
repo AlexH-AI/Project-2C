@@ -10,7 +10,7 @@ import {
   type CalendarDate,
   type Period,
 } from './period';
-import { closeRatePercent, type PeriodMetrics } from './stats';
+import type { CloseRate, PeriodMetrics } from './stats';
 
 const earlier = (a: CalendarDate, b: CalendarDate) => (compareDates(a, b) <= 0 ? a : b);
 
@@ -59,6 +59,17 @@ export interface MetricDeltas {
   readonly closeRatePoints: number | null;
 }
 
+/**
+ * `current − previous` in percentage points, in one division of whole numbers, so a change at half
+ * a tenth is exact and rounds up: 1/3 against 31/48 is −31.25, where two `closeRatePercent` taken
+ * apart give −31.249999999999993.
+ */
+function pointsBetween(current: CloseRate, previous: CloseRate): number {
+  const numerator =
+    current.numerator * previous.denominator - previous.numerator * current.denominator;
+  return (numerator * 100) / (current.denominator * previous.denominator);
+}
+
 export function metricDeltas(current: PeriodMetrics, previous: PeriodMetrics): MetricDeltas {
   return {
     rfCount: current.rfCount - previous.rfCount,
@@ -68,7 +79,7 @@ export function metricDeltas(current: PeriodMetrics, previous: PeriodMetrics): M
     revenue: current.revenue - previous.revenue,
     closeRatePoints:
       current.closeRate && previous.closeRate
-        ? closeRatePercent(current.closeRate) - closeRatePercent(previous.closeRate)
+        ? pointsBetween(current.closeRate, previous.closeRate)
         : null,
   };
 }

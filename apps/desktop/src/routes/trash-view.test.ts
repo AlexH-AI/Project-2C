@@ -266,7 +266,7 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
     expect(recordDetail(minhAnh)).toBe('khôi phục kèm 7 lịch hẹn · 0 HĐ · 5 ghi chú KYC');
     const many = { kind: 'customer', appointments: 1204, policies: 0, kycNotes: 3470 } as const;
     expect(recordDetail({ ...minhAnh, effect: { ...minhAnh.effect, ...many } } as TrashRow)).toBe(
-      'khôi phục kèm 1.204 lịch hẹn · 0 HĐ · 3.470 ghi chú KYC',
+      'khôi phục kèm 1,204 lịch hẹn · 0 HĐ · 3,470 ghi chú KYC',
     );
   });
 
@@ -330,7 +330,7 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
   });
 
   it('a policy: submission day and FYP, its status shown as a badge', () => {
-    expect(recordTitle(policy, TODAY)).toBe('Nộp 15/09/2026 · 24.000.000 ₫');
+    expect(recordTitle(policy, TODAY)).toBe('Nộp 15/09/2026 · 24,000,000 VNĐ');
     expect(recordDetail(policy)).toBeNull();
   });
 
@@ -501,7 +501,7 @@ describe('restoreLabel (DR6-43)', () => {
       'Khôi phục lịch hẹn 06/10/2026 14:00 · Dự kiến của KH Trịnh Minh Anh',
     );
     expect(label(policy)).toBe(
-      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24,000,000 VNĐ · Đã nộp của KH Hoàng Ngọc Lan',
     );
   });
 
@@ -544,15 +544,15 @@ describe('restoreLabel (DR6-43)', () => {
     const rows = [...ROWS, ...ha, ...otherHa];
     expect([...ha, ...otherHa].map((row) => label(row, rows))).toEqual([
       'Khôi phục lịch hẹn 20/10/2026 09:00 · Dự kiến của KH Trần Thu Hà (K-GBYX)',
-      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Trần Thu Hà (K-GBYX)',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24,000,000 VNĐ · Đã nộp của KH Trần Thu Hà (K-GBYX)',
       'Khôi phục lịch hẹn 20/10/2026 09:00 · Dự kiến của KH Trần Thu Hà (K-5R8A)',
-      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Trần Thu Hà (K-5R8A)',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24,000,000 VNĐ · Đã nộp của KH Trần Thu Hà (K-5R8A)',
     ]);
     // The records of one customer only, a customer row of theirs among them, keep the name alone.
     for (const row of ROWS) expect(label(row, rows)).toBe(label(row));
     expect(ha.map((row) => label(row, [...ROWS, ...ha]))).toEqual([
       'Khôi phục lịch hẹn 20/10/2026 09:00 · Dự kiến của KH Trần Thu Hà',
-      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Trần Thu Hà',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24,000,000 VNĐ · Đã nộp của KH Trần Thu Hà',
     ]);
   });
 
@@ -628,7 +628,7 @@ describe('restoreLabel (DR6-43)', () => {
   it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
     const other = { ...policy, id: 'p2', submittedFyp: 100_000_000 } as TrashRow;
     expect(label(other)).toBe(
-      'Khôi phục HĐ Nộp 15/09/2026 · 100.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ Nộp 15/09/2026 · 100,000,000 VNĐ · Đã nộp của KH Hoàng Ngọc Lan',
     );
     expect(label(other)).not.toBe(label(policy));
   });
@@ -645,7 +645,7 @@ describe('restoreLabel (DR6-43)', () => {
 
   it('tells apart a policy submitted and one issued, the same day, the same FYP (DR6-119)', () => {
     expect(label(issuedPolicy)).toBe(
-      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã phát hành của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24,000,000 VNĐ · Đã phát hành của KH Hoàng Ngọc Lan',
     );
     expect(label(issuedPolicy)).not.toBe(label(policy));
   });
@@ -655,16 +655,16 @@ describe('restoreLabel (DR6-43)', () => {
       'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp',
     );
     expect(label({ ...policy, owner: {} } as TrashRow)).toBe(
-      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24,000,000 VNĐ · Đã nộp',
     );
   });
 });
 
 describe('TRASH_MORE', () => {
   it('words the foot of a trash over a hundred records, thousands grouped (DR-03)', () => {
-    expect(TRASH_MORE.shown(100, 1240)).toBe('Đang hiện 100 / 1.240 bản ghi');
+    expect(TRASH_MORE.shown(100, 1240)).toBe('Đang hiện 100 / 1,240 bản ghi');
     expect(TRASH_MORE.more(100)).toBe('Hiện thêm 100 bản ghi');
-    expect(TRASH_MORE.all(1240)).toBe('Đã hiện hết 1.240 bản ghi');
+    expect(TRASH_MORE.all(1240)).toBe('Đã hiện hết 1,240 bản ghi');
   });
 });
 
@@ -867,7 +867,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
       'KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi.',
     );
     expect(body(0, 2)).toContain('vẫn ở Thùng rác (2 HĐ), khôi phục riêng sau.');
-    expect(body(1_200, 1)).toContain('vẫn ở Thùng rác (1.200 lịch hẹn · 1 HĐ)');
+    expect(body(1_200, 1)).toContain('vẫn ở Thùng rác (1,200 lịch hẹn · 1 HĐ)');
   });
 
   it('E5: a met appointment records its stage change again, with its RF', () => {
@@ -960,7 +960,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
       title: 'Khôi phục HĐ nộp 15/09/2026?',
       subtitle: 'KH Hoàng Ngọc Lan · RM Hoàng Nhật Minh',
       facts: [
-        { term: 'FYP nộp', text: '24.000.000 ₫' },
+        { term: 'FYP nộp', text: '24,000,000 VNĐ' },
         { term: 'Trạng thái', text: 'Đã nộp' },
       ],
       effect: { body: 'HĐ vào lại hồ sơ KH và chỉ số theo ngày nộp / phát hành.' },
@@ -971,8 +971,8 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
       issuedFyp: 20_000_000,
     } as TrashRow;
     expect(restoreView(issued, TODAY).facts).toEqual([
-      { term: 'FYP nộp', text: '24.000.000 ₫' },
-      { term: 'Trạng thái', text: 'Đã phát hành 30/09/2026 · 20.000.000 ₫' },
+      { term: 'FYP nộp', text: '24,000,000 VNĐ' },
+      { term: 'Trạng thái', text: 'Đã phát hành 30/09/2026 · 20,000,000 VNĐ' },
     ]);
     const lan = { ...mai, owner: { team: ref('Bình Minh') }, blocked: undefined } as TrashRow;
     expect(restoreView(lan, TODAY)).toEqual({
@@ -1215,9 +1215,9 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
 
   it('D12: reminds to purge from 1 000 records, not under', () => {
     expect(purgeReminder(1_000)).toBe(
-      'Thùng rác có 1.000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.',
+      'Thùng rác có 1,000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.',
     );
-    expect(purgeReminder(1_313)).toContain('Thùng rác có 1.313 bản ghi');
+    expect(purgeReminder(1_313)).toContain('Thùng rác có 1,313 bản ghi');
     expect(purgeReminder(999)).toBeNull();
     expect(purgeReminder(0)).toBeNull();
   });

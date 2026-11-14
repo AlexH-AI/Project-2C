@@ -488,7 +488,7 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
   const restore = table(page).getByRole('button', {
-    name: `Khôi phục HĐ Nộp 16/09/2026 · 24.000.000 ₫ · Đã nộp của KH ${customer.name}`,
+    name: `Khôi phục HĐ Nộp 16/09/2026 · 24,000,000 VNĐ · Đã nộp của KH ${customer.name}`,
   });
   await expect(restore).toBeDisabled();
   await expect(restore).toHaveAccessibleDescription('Ngày nộp 16/09/2026 sau hôm nay.');
@@ -612,9 +612,9 @@ test('reminds from 1 000 records, and keeps a record still pointed to, saying wh
   const kept = `Giữ lại khi dọn: lịch ${when} dời từ lịch này.`;
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
-  await expect(trash(page)).toContainText('1.000 bản ghi');
+  await expect(trash(page)).toContainText('1,000 bản ghi');
   const reminder =
-    'Thùng rác có 1.000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.';
+    'Thùng rác có 1,000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.';
   await expect(trash(page)).toContainText(reminder);
   // Deleted last, the Dời lịch heads the table, its reason shown before the purge.
   const rows = table(page).getByRole('row');
@@ -634,7 +634,7 @@ test('reminds from 1 000 records, and keeps a record still pointed to, saying wh
 
   await purgeButton(page).click();
   const dialog = purgeDialog(page);
-  await expect(dialog).toContainText('1.000 bản ghi · mọi loại, không theo bộ lọc');
+  await expect(dialog).toContainText('1,000 bản ghi · mọi loại, không theo bộ lọc');
   await expect(dialog).toContainText('KH0Lịch hẹn0HĐ999Nhân sự0Team0');
   await expect(dialog).toContainText(
     'Giữ lại 1 bản ghi còn được dùngLý do ghi ở dòng của nó trong Thùng rác.',
