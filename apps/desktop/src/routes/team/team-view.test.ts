@@ -63,24 +63,24 @@ const day = (month: number, date: number, year = 2026) => ({ year, month, day: d
 
 const records = {
   customers: [
-    { id: 'c1', reId: 're1', stage: 'N4' as const },
-    { id: 'c2', reId: 're1', stage: 'N1' as const },
-    { id: 'c3', reId: 're1', stage: 'LOST' as const },
-    { id: 'c4', reId: 're2', stage: 'ON_HOLD' as const },
+    { id: 'c1', rmId: 're1', stage: 'N4' as const },
+    { id: 'c2', rmId: 're1', stage: 'N1' as const },
+    { id: 'c3', rmId: 're1', stage: 'LOST' as const },
+    { id: 'c4', rmId: 're2', stage: 'ON_HOLD' as const },
   ],
   appointments: [
     // 30 days back from 28/09 start on 30/08; later dates are still to come.
-    { reId: 're1', coordinatorIds: ['tl1'], date: day(8, 30), outcomeReviewerId: null },
-    { reId: 're1', coordinatorIds: [], date: day(9, 28), outcomeReviewerId: null },
-    { reId: 're1', coordinatorIds: ['tl1', 'is'], date: day(8, 29), outcomeReviewerId: null },
-    { reId: 're1', coordinatorIds: [], date: day(9, 29), outcomeReviewerId: null },
-    { reId: 're2', coordinatorIds: ['re1'], date: day(9, 1), outcomeReviewerId: null },
+    { rmId: 're1', coordinatorIds: ['tl1'], date: day(8, 30), outcomeReviewerId: null },
+    { rmId: 're1', coordinatorIds: [], date: day(9, 28), outcomeReviewerId: null },
+    { rmId: 're1', coordinatorIds: ['tl1', 'is'], date: day(8, 29), outcomeReviewerId: null },
+    { rmId: 're1', coordinatorIds: [], date: day(9, 29), outcomeReviewerId: null },
+    { rmId: 're2', coordinatorIds: ['re1'], date: day(9, 1), outcomeReviewerId: null },
   ],
   policies: [
-    { reId: 're1', issuedDate: day(1, 1) },
-    { reId: 're1', issuedDate: day(12, 31, 2025) },
-    { reId: 're1', issuedDate: null },
-    { reId: 're2', issuedDate: day(6, 15) },
+    { rmId: 're1', issuedDate: day(1, 1) },
+    { rmId: 're1', issuedDate: day(12, 31, 2025) },
+    { rmId: 're1', issuedDate: null },
+    { rmId: 're2', issuedDate: day(6, 15) },
   ],
 };
 

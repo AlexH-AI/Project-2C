@@ -163,18 +163,18 @@ const SECRET = 'Ghi chú riêng của Trịnh Minh Anh';
 function records(db: Database) {
   const person = (name: string, role: PersonRole, teamId: string | null) =>
     createPerson(db, { name, role, teamId });
-  const customer = (name: string, reId: string, stage: CustomerStage = 'N3') =>
-    createCustomer(db, { name, reId, stage, date: d(1, 9) });
+  const customer = (name: string, rmId: string, stage: CustomerStage = 'N3') =>
+    createCustomer(db, { name, rmId, stage, date: d(1, 9) });
   const schedule = (
     customerId: string,
-    reId: string,
+    rmId: string,
     date: CalendarDate,
     time: string | null = null,
     coordinatorIds: string[] = [],
   ) =>
     scheduleAppointment(db, {
       customerId,
-      reId,
+      rmId,
       date,
       time,
       triggerType: 'REFERRAL',
@@ -184,8 +184,8 @@ function records(db: Database) {
     recordMeetingOutcome(db, id, { status: 'MET', stageAfter, nextStep: 'Gửi giải pháp' });
   const notes = (customerId: string, texts: string[]) =>
     texts.map((text) => addKycNote(db, customerId, { text, date: d(2, 9) }));
-  const submit = (customerId: string, reId: string) =>
-    submitPolicy(db, { customerId, reId, submittedDate: d(15, 9), submittedFyp: 24_000_000 });
+  const submit = (customerId: string, rmId: string) =>
+    submitPolicy(db, { customerId, rmId, submittedDate: d(15, 9), submittedFyp: 24_000_000 });
   return { person, customer, schedule, met, notes, submit };
 }
 
@@ -370,7 +370,7 @@ describe('purgeTrash', () => {
     const chau = customer('Ngô Bảo Châu', khoa.id);
     schedule(chau.id, khoa.id, d(6, 10));
     // Handed over: the past appointment stays Vũ Minh Khoa's (T-233).
-    updateCustomerProfile(db, chau.id, { reId: re.id });
+    updateCustomerProfile(db, chau.id, { rmId: re.id });
     softDeleteCustomer(db, chau.id);
     expect(personUsage(db, khoa.id).inTrash).toEqual([{ name: 'Ngô Bảo Châu', code: chau.code }]);
     expect(codeOf(() => softDeletePerson(db, khoa.id))).toBe('PERSON_IN_USE');
@@ -408,7 +408,7 @@ describe('purgeTrash', () => {
     const { db, mai, huy, binhMinh } = t;
     const { moved } = rescheduledFromFile(t);
     // From the file too: the RE it was written for left, the customer was handed over.
-    db.sqlite.run('UPDATE appointments SET re_id = ? WHERE id = ?', [mai.id, moved.id]);
+    db.sqlite.run('UPDATE appointments SET rm_id = ? WHERE id = ?', [mai.id, moved.id]);
     db.sqlite.run(
       'INSERT INTO appointment_coordinators (appointment_id, person_id) VALUES (?, ?)',
       [moved.id, huy.id],
@@ -529,7 +529,7 @@ describe('the count of a customer in the trash (mockups 11b, 11i; spec Phase 6 T
     const { db, re } = await setup(TODAY);
     const lan = createCustomer(db, {
       name: 'Lan',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N3',
       date: d(1, 9),
       birthDate: { year: 1985 },
@@ -567,9 +567,9 @@ describe('the count of a customer in the trash (mockups 11b, 11i; spec Phase 6 T
 });
 
 /** `days` as a chain of Dời lịch of a customer, each booked from the one before it (D3). */
-function chainOf(db: Database, customerId: string, reId: string, days: CalendarDate[]): string[] {
+function chainOf(db: Database, customerId: string, rmId: string, days: CalendarDate[]): string[] {
   const { schedule } = records(db);
-  const ids = [schedule(customerId, reId, days[0]!, '10:00').id];
+  const ids = [schedule(customerId, rmId, days[0]!, '10:00').id];
   for (const day of days.slice(1)) {
     ids.push(rescheduleAppointment(db, ids.at(-1)!, { date: day, time: '10:00' }).id);
   }
@@ -673,7 +673,7 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
     deleteInFile(db, x!, y!);
     // From the file: whom the two kept appointments were written for, and who coordinated them.
     const reOf = (appointment: string, who: { id: string }) =>
-      db.sqlite.run('UPDATE appointments SET re_id = ? WHERE id = ?', [who.id, appointment]);
+      db.sqlite.run('UPDATE appointments SET rm_id = ? WHERE id = ?', [who.id, appointment]);
     const coordinate = (appointment: string, ...who: { id: string }[]) => {
       for (const { id } of who) {
         db.sqlite.run(
@@ -731,8 +731,8 @@ describe('the records the purge keeps (TR-12): chains of Dời lịch, and what 
 });
 
 /** A customer with a KYC note, a fact confirmed from it, the version it made and an analysis. */
-function withKyc(db: Database, reId: string, name: string) {
-  const customer = createCustomer(db, { name, reId, stage: 'N3', date: d(1, 9) });
+function withKyc(db: Database, rmId: string, name: string) {
+  const customer = createCustomer(db, { name, rmId, stage: 'N3', date: d(1, 9) });
   const note = addKycNote(db, customer.id, { text: 'Làm luật sư', date: d(2, 9) });
   const { version } = confirmKycFact(db, customer.id, {
     field: 'occupation',

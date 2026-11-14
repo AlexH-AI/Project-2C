@@ -31,7 +31,7 @@ describe('resolveScope', () => {
     });
     expect(resolveScope({ kind: 're', id: 're2' }, teams, people)).toEqual({
       kind: 're',
-      reId: 're2',
+      rmId: 're2',
     });
   });
 
@@ -44,7 +44,7 @@ describe('resolveScope', () => {
     // A TL has no metrics, so only an RE can be the scope.
     expect(resolveScope({ kind: 're', id: 'tl1' }, teams, people)).toEqual({
       kind: 're',
-      reId: 're1',
+      rmId: 're1',
     });
   });
 
@@ -109,7 +109,7 @@ describe('reOptions', () => {
   });
 
   it('is where the RE scope falls back to its first RE', () => {
-    expect(resolveScope({ kind: 're' }, threeTeams, staff)).toEqual({ kind: 're', reId: 'r3' });
+    expect(resolveScope({ kind: 're' }, threeTeams, staff)).toEqual({ kind: 're', rmId: 'r3' });
   });
 
   it('leaves out TL, IS, BD and BDM', () => {
@@ -122,7 +122,7 @@ describe('narrowScope', () => {
   const team = { kind: 'team', teamId: 't1' } as const;
 
   it('narrows a team to the RE picked within it', () => {
-    expect(narrowScope(team, 're1', people)).toEqual({ kind: 're', reId: 're1' });
+    expect(narrowScope(team, 're1', people)).toEqual({ kind: 're', rmId: 're1' });
   });
 
   it('keeps the team when the RE picked is not one of its RE', () => {
@@ -136,9 +136,9 @@ describe('narrowScope', () => {
 
   it('leaves the Everyone and RE scopes as they are', () => {
     expect(narrowScope({ kind: 'all' }, 're1', people)).toEqual({ kind: 'all' });
-    expect(narrowScope({ kind: 're', reId: 're2' }, 're1', people)).toEqual({
+    expect(narrowScope({ kind: 're', rmId: 're2' }, 're1', people)).toEqual({
       kind: 're',
-      reId: 're2',
+      rmId: 're2',
     });
   });
 });

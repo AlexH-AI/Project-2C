@@ -28,7 +28,7 @@ describe('golden KYC profiles through the database', () => {
     const gender = fromProfile('gender');
     const customer = createCustomer(db, {
       name: golden.id,
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(1, 6, 2026),
       birthDate: birthYear ? { year: birthYear.value as number } : null,

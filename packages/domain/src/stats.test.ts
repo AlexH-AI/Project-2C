@@ -38,13 +38,13 @@ describe('policyMetrics', () => {
   ];
   const policy = (
     id: string,
-    reId: string,
+    rmId: string,
     submittedDate: Policy['submittedDate'],
     issuedDate: Policy['issuedDate'],
   ): Policy => ({
     id,
     customerId: 'kh',
-    reId,
+    rmId,
     submittedDate,
     submittedFyp: 100,
     issuedDate,
@@ -97,7 +97,7 @@ describe('policyMetrics', () => {
       policyMetrics({ people, policies }, month, { kind: 'team', teamId: 'team-1' }).submittedCount,
     ).toBe(1);
     expect(
-      policyMetrics({ people, policies }, month, { kind: 're', reId: 're-2' }).submittedCount,
+      policyMetrics({ people, policies }, month, { kind: 're', rmId: 're-2' }).submittedCount,
     ).toBe(1);
     expect(policyMetrics({ people, policies }, month, { kind: 'all' }).submittedCount).toBe(2);
   });
@@ -149,7 +149,7 @@ describe('periodMetricsByMark', () => {
   const SCOPES: readonly Scope[] = [
     { kind: 'all' },
     { kind: 'team', teamId: 'team-b' },
-    { kind: 're', reId: 're-an' },
+    { kind: 're', rmId: 're-an' },
   ];
   const months = [d(1, 12, 2026), d(1, 1, 2027), d(1, 2, 2027)].map((day) =>
     periodOf('month', day),
@@ -182,7 +182,7 @@ describe('periodMetricsByMark', () => {
     const issued: Policy = {
       id: 'p-issued',
       customerId: 'kh',
-      reId: 're-an',
+      rmId: 're-an',
       submittedDate: d(4, 1, 2027),
       submittedFyp: 100,
       issuedDate: d(12, 1, 2027),
@@ -231,10 +231,10 @@ describe('periodMetricsByMark', () => {
 
 // DR-20: So sánh team and Báo cáo read every team and RE of one period; grouped once by RE.
 describe('periodMetricsByScope', () => {
-  const extra = (id: string, reId: string): Policy => ({
+  const extra = (id: string, rmId: string): Policy => ({
     ...POLICIES[0]!,
     id,
-    reId,
+    rmId,
   });
   const people: readonly Person[] = [
     ...PEOPLE,
@@ -259,7 +259,7 @@ describe('periodMetricsByScope', () => {
     { kind: 'team', teamId: 'team-a' },
     { kind: 'team', teamId: 'team-b' },
     { kind: 'team', teamId: 'team-none' },
-    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((reId): Scope => ({ kind: 're', reId })),
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((rmId): Scope => ({ kind: 're', rmId })),
   ];
   const PERIODS: readonly Period[] = [
     periodOf('month', d(1, 1, 2027)),
@@ -295,15 +295,15 @@ describe('periodMetricsByScope', () => {
   });
 
   it('refuses a total past the largest safe integer rather than round it', () => {
-    const big = (id: string, reId: string): Policy => ({
-      ...extra(id, reId),
+    const big = (id: string, rmId: string): Policy => ({
+      ...extra(id, rmId),
       submittedDate: d(5, 1, 2027),
       submittedFyp: Number.MAX_SAFE_INTEGER - 1,
       issuedDate: null,
     });
     const past = { ...data, policies: [big('p1', 're-an'), big('p2', 're-binh')] };
     const byScope = periodMetricsByScope(past, periodOf('month', d(1, 1, 2027)));
-    expect(byScope({ kind: 're', reId: 're-an' }).caseSize).toBe(Number.MAX_SAFE_INTEGER - 1);
+    expect(byScope({ kind: 're', rmId: 're-an' }).caseSize).toBe(Number.MAX_SAFE_INTEGER - 1);
     expect(() => byScope({ kind: 'team', teamId: 'team-a' })).toThrow(RangeError);
     expect(() => byScope({ kind: 'all' })).toThrow(RangeError);
   });
@@ -316,7 +316,7 @@ describe('totals of large fees', () => {
   const policy = (id: string, fyp: number): Policy => ({
     id,
     customerId: 'kh',
-    reId: 're-1',
+    rmId: 're-1',
     submittedDate: d(5, 10, 2026),
     submittedFyp: fyp,
     issuedDate: d(5, 10, 2026),

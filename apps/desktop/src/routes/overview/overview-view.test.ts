@@ -40,7 +40,7 @@ function closing(day: CalendarDate, rf: number, issued: number): MetricsData {
       ({
         id: `rf-${++made}`,
         customerId: 'kh',
-        reId: 're-an',
+        rmId: 're-an',
         date: day,
         status: 'MET',
       }) as Appointment,
@@ -59,7 +59,7 @@ function closing(day: CalendarDate, rf: number, issued: number): MetricsData {
     policies: Array.from({ length: issued }, () => ({
       id: `hd-${++made}`,
       customerId: 'kh',
-      reId: 're-an',
+      rmId: 're-an',
       submittedDate: day,
       submittedFyp: 1_000_000,
       issuedDate: day,
@@ -132,7 +132,7 @@ describe('kpiTiles', () => {
         {
           id: 'hd-31-03',
           customerId: 'kh-01',
-          reId: 're-an',
+          rmId: 're-an',
           submittedDate: d(2027, 3, 31),
           submittedFyp: 100_000_000,
           issuedDate: null,
@@ -286,7 +286,7 @@ describe('viewingText ("Đang xem")', () => {
   it('names the RE, or counts the teams of the Team scope; an ended year has no range', () => {
     const year = periodOf('year', d(2026, 1, 1));
     const re = viewingText(
-      { period: year, scope: { kind: 're', reId: 're-an' } },
+      { period: year, scope: { kind: 're', rmId: 're-an' } },
       d(2027, 1, 5),
       PEOPLE,
       TEAMS,
@@ -306,7 +306,7 @@ describe('viewingText ("Đang xem")', () => {
 describe('metricsScope', () => {
   it('the Team scope of Tổng quan counts every team together', () => {
     expect(metricsScope({ kind: 'team', teamId: 'team-a' })).toEqual(ALL);
-    expect(metricsScope({ kind: 're', reId: 're-an' })).toEqual({ kind: 're', reId: 're-an' });
+    expect(metricsScope({ kind: 're', rmId: 're-an' })).toEqual({ kind: 're', rmId: 're-an' });
     expect(metricsScope(ALL)).toEqual(ALL);
   });
 });

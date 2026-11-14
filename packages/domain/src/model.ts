@@ -41,7 +41,7 @@ export interface Customer {
   readonly id: string;
   readonly name: string;
   /** The RE in charge; the customer's metrics count for this RE and their team (G2 E). */
-  readonly reId: string;
+  readonly rmId: string;
   /** Always equal to the `to` of the customer's latest stage transition. */
   readonly stage: CustomerStage;
 }
@@ -75,7 +75,7 @@ export interface Appointment {
   readonly id: string;
   readonly customerId: string;
   /** The RE in charge of the appointment. */
-  readonly reId: string;
+  readonly rmId: string;
   /** TL/IS/BD/BDM joining the meeting, never an RE (DR-47); they get no metrics from it. */
   readonly coordinatorIds: readonly string[];
   /** The meeting day; an RF counts on this day (G2 C). */
@@ -96,7 +96,7 @@ export interface Policy {
   readonly id: string;
   readonly customerId: string;
   /** The RE in charge written on the policy; the policy counts for this RE and their team (G2 E). */
-  readonly reId: string;
+  readonly rmId: string;
   /** Day the customer paid and the policy was submitted. */
   readonly submittedDate: CalendarDate;
   readonly submittedFyp: Vnd;
@@ -110,4 +110,4 @@ export interface Policy {
 export type Scope =
   | { readonly kind: 'all' }
   | { readonly kind: 'team'; readonly teamId: string }
-  | { readonly kind: 're'; readonly reId: string };
+  | { readonly kind: 're'; readonly rmId: string };

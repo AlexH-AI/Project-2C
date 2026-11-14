@@ -135,11 +135,11 @@ function useKycPreview(
 }
 
 /** Mockup 5c: how many planned appointments saving hands over to the RE picked (T-233). */
-function useHandover(customer: CustomerRecord | undefined, reId: string): number {
+function useHandover(customer: CustomerRecord | undefined, rmId: string): number {
   const db = useDatabase();
-  if (!customer || !reId) return 0;
+  if (!customer || !rmId) return 0;
   try {
-    return previewHandover(db, customer.id, reId);
+    return previewHandover(db, customer.id, rmId);
   } catch (error) {
     // The customer deleted from this dialog (5f) is read once more before it closes.
     if (error instanceof DbError) return 0;
@@ -185,7 +185,7 @@ export function CustomerFormDialog({
   const today = data.today();
   const res = useQuery(readRes);
   const [name, setName] = useState(customer?.name ?? '');
-  const [reId, setReId] = useState(customer?.reId ?? defaultReId ?? '');
+  const [rmId, setReId] = useState(customer?.rmId ?? defaultReId ?? '');
   const [birthText, setBirthText] = useState(
     customer?.birthDate ? birthLabel(customer.birthDate) : '',
   );
@@ -204,7 +204,7 @@ export function CustomerFormDialog({
   const birth = parseBirthDate(birthText, today);
   const profileGender = gender === 'UNKNOWN' ? null : gender;
   const kyc = useKycPreview(customer, birth.ok ? birth.birth : undefined, profileGender);
-  const handover = useHandover(customer, reId);
+  const handover = useHandover(customer, rmId);
   const invalid = (['name', 're', 'birth', 'date'] as const).filter((f) => errors[f]).length;
   const birthHint =
     birth.ok && birth.birth
@@ -225,14 +225,14 @@ export function CustomerFormDialog({
     // The command gets the name as typed: it checks it can be stored first (DR6-109).
     const found: Errors = {};
     if (!normalizeText(name)) found.name = t('error.NAME_REQUIRED');
-    if (!reId) found.re = t('error.RE_REQUIRED');
+    if (!rmId) found.re = t('error.RE_REQUIRED');
     if (!birth.ok) found.birth = t(`birth.error.${birth.error}`);
     if (!customer && !date.parsed.ok) found.date = date.error;
     setErrors(found);
     if (Object.keys(found).length > 0 || !birth.ok) return;
     const profile = {
       name,
-      reId,
+      rmId,
       birthDate: birth.birth,
       gender: profileGender,
     };
@@ -296,7 +296,7 @@ export function CustomerFormDialog({
       />
       <SelectField
         label={t('customerForm.re')}
-        value={reId}
+        value={rmId}
         options={res}
         placeholder={t('customerForm.rePick')}
         onChange={edit('re', setReId)}

@@ -146,7 +146,7 @@ export function reportScopeName(
       });
     case 're':
       return t('overview.scopeRe', {
-        name: people.find((person) => person.id === scope.reId)?.name ?? '',
+        name: people.find((person) => person.id === scope.rmId)?.name ?? '',
       });
   }
 }
@@ -159,7 +159,7 @@ export function summaryMeta(
 ): string {
   const name = reportScopeName(scope, people, teams);
   if (scope.kind === 're') {
-    const teamId = people.find((person) => person.id === scope.reId)?.teamId;
+    const teamId = people.find((person) => person.id === scope.rmId)?.teamId;
     return joinParts([name, teams.find((team) => team.id === teamId)?.name ?? '']);
   }
   const res = people.filter(
@@ -288,7 +288,7 @@ export function reportRows(
       key: re.id,
       name: re.name,
       team: (re.teamId && teamName.get(re.teamId)) ?? '',
-      ...figures({ kind: 're', reId: re.id }),
+      ...figures({ kind: 're', rmId: re.id }),
     }));
   if (scope.kind === 'team') return { summary, byTeam: null, byRe: table(res), byMark };
 

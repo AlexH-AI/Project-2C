@@ -29,7 +29,7 @@ const row = (
   id: string,
   customerId: string,
   date: CalendarDate,
-  reId: string,
+  rmId: string,
   status: Appointment['status'],
   extra: {
     readonly coordinatorIds?: readonly string[];
@@ -41,7 +41,7 @@ const row = (
   appointment: {
     id,
     customerId,
-    reId,
+    rmId,
     coordinatorIds: extra.coordinatorIds ?? [],
     date,
     status,
@@ -123,9 +123,9 @@ export const APPOINTMENT_GOLDEN_CASES: readonly AppointmentGoldenCase[] = [
   golden('A04', periodOf('month', d(1, 12, 2026)), ALL, counts(0, 1, 0, 0, 1)),
   golden('A05', periodOf('day', d(13, 1)), ALL, counts(0, 0, 0, 1, 1)),
   golden('A06', periodOf('year', d(1, 1)), ALL, counts(2, 5, 1, 2, 10)),
-  golden('A07', JANUARY, { kind: 're', reId: 're-an' }, counts(1, 3, 0, 1, 5)),
-  golden('A08', JANUARY, { kind: 're', reId: 're-chi' }, counts(1, 0, 1, 1, 3)),
-  golden('A09', JANUARY, { kind: 're', reId: 're-dung' }, counts(0, 0, 0, 0, 0)),
+  golden('A07', JANUARY, { kind: 're', rmId: 're-an' }, counts(1, 3, 0, 1, 5)),
+  golden('A08', JANUARY, { kind: 're', rmId: 're-chi' }, counts(1, 0, 1, 1, 3)),
+  golden('A09', JANUARY, { kind: 're', rmId: 're-dung' }, counts(0, 0, 0, 0, 0)),
   golden('A10', JANUARY, { kind: 'team', teamId: 'team-a' }, counts(1, 5, 0, 1, 7)),
   golden('A11', JANUARY, { kind: 'team', teamId: 'team-b' }, counts(1, 0, 1, 1, 3)),
   golden('A12', JANUARY, ALL, counts(2, 5, 3, 0, 10), { today: d(21, 1) }),

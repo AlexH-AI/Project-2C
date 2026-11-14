@@ -40,14 +40,14 @@ async function withCustomer() {
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    reId: ctx.re.id,
+    rmId: ctx.re.id,
     stage: 'N3',
     date: d(1, 1),
   });
   const schedule = (day = 10, coordinatorIds: string[] = []) =>
     scheduleAppointment(ctx.db, {
       customerId: customer.id,
-      reId: ctx.re.id,
+      rmId: ctx.re.id,
       date: d(day, 1),
       triggerType: 'REFERRAL',
       coordinatorIds,
@@ -64,7 +64,7 @@ describe('scheduleAppointment', () => {
 
     const appointment = scheduleAppointment(db, {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(10, 1),
       time: '09:30',
       triggerType: 'EVENT',
@@ -75,7 +75,7 @@ describe('scheduleAppointment', () => {
     expect(appointment).toEqual({
       id: expect.any(String),
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       coordinatorIds: [tl.id],
       date: d(10, 1),
       time: '09:30',
@@ -100,7 +100,7 @@ describe('scheduleAppointment', () => {
     );
     const base = {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(10, 1),
       triggerType: 'OTHER' as const,
     };
@@ -119,7 +119,7 @@ describe('scheduleAppointment', () => {
     const { db, re, tl, customer } = await withCustomer();
     const base = {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(10, 1),
       triggerType: 'OTHER' as const,
     };
@@ -135,7 +135,7 @@ describe('scheduleAppointment', () => {
     expect(codeOf(() => scheduleAppointment(db, { ...base, triggerType: 'X' as never }))).toBe(
       'INVALID_TRIGGER',
     );
-    expect(codeOf(() => scheduleAppointment(db, { ...base, reId: tl.id }))).toBe('RE_REQUIRED');
+    expect(codeOf(() => scheduleAppointment(db, { ...base, rmId: tl.id }))).toBe('RE_REQUIRED');
     expect(codeOf(() => scheduleAppointment(db, { ...base, customerId: 'x' }))).toBe(
       'CUSTOMER_NOT_FOUND',
     );
@@ -148,7 +148,7 @@ describe('listAppointments', () => {
     const { db, re, otherRe, tl, customer, schedule } = await withCustomer();
     const other = createCustomer(db, {
       name: 'Minh',
-      reId: otherRe.id,
+      rmId: otherRe.id,
       stage: 'N2',
       date: d(1, 1),
     });
@@ -163,14 +163,14 @@ describe('listAppointments', () => {
     const one = queries();
     const both = scheduleAppointment(db, {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(11, 1),
       triggerType: 'EVENT',
       coordinatorIds: [tl.id, is.id],
     });
     const theirs = scheduleAppointment(db, {
       customerId: other.id,
-      reId: otherRe.id,
+      rmId: otherRe.id,
       date: d(12, 1),
       triggerType: 'OTHER',
       coordinatorIds: [tl.id],
@@ -188,7 +188,7 @@ describe('listAppointments', () => {
     const at = (time: string | null) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        reId: re.id,
+        rmId: re.id,
         date: d(10, 1),
         time,
         triggerType: 'REFERRAL',
@@ -367,7 +367,7 @@ describe('recordMeetingOutcome', () => {
     const book = (date: CalendarDate) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        reId: customer.reId,
+        rmId: customer.rmId,
         date,
         triggerType: 'OTHER',
       }).id;
@@ -494,7 +494,7 @@ describe('recordOutcomeWithNext', () => {
     const { db, re, tl, customer, stage } = await withCustomer();
     const { id } = scheduleAppointment(db, {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(10, 1),
       time: '09:00',
       triggerType: 'EVENT',
@@ -508,7 +508,7 @@ describe('recordOutcomeWithNext', () => {
     expect(saved.next).toEqual({
       id: expect.any(String),
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       coordinatorIds: [tl.id],
       date: d(20, 10),
       time: '14:00',
@@ -568,10 +568,10 @@ describe('recordOutcomeWithNext', () => {
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(5, 11),
       triggerType: 'OTHER',
     });
@@ -586,13 +586,13 @@ describe('recordOutcomeWithNext', () => {
     const book = (date: CalendarDate) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        reId: re.id,
+        rmId: re.id,
         date,
         triggerType: 'REFERRAL',
       });
     const unrecorded = book(d(25, 9));
     const planned = book(d(26, 9));
-    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+    updateCustomerProfile(db, customer.id, { rmId: otherRe.id });
 
     const missed = recordOutcomeWithNext(
       db,
@@ -602,8 +602,8 @@ describe('recordOutcomeWithNext', () => {
     );
     const met = recordOutcomeWithNext(db, planned.id, MET_N2, { date: d(20, 10) });
 
-    expect([missed.recorded.reId, missed.next.reId]).toEqual([re.id, otherRe.id]);
-    expect([met.recorded.reId, met.next.reId]).toEqual([otherRe.id, otherRe.id]);
+    expect([missed.recorded.rmId, missed.next.rmId]).toEqual([re.id, otherRe.id]);
+    expect([met.recorded.rmId, met.next.rmId]).toEqual([otherRe.id, otherRe.id]);
     const metrics = periodMetricsByScope(
       {
         people: listPeople(db),
@@ -613,8 +613,8 @@ describe('recordOutcomeWithNext', () => {
       },
       periodOf('month', d(26, 9)),
     );
-    expect(metrics({ kind: 're', reId: otherRe.id }).rfCount).toBe(1);
-    expect(metrics({ kind: 're', reId: re.id }).rfCount).toBe(0);
+    expect(metrics({ kind: 're', rmId: otherRe.id }).rfCount).toBe(1);
+    expect(metrics({ kind: 're', rmId: re.id }).rfCount).toBe(0);
   });
 
   it('books nothing for an appointment whose outcome is already recorded', async () => {
@@ -819,7 +819,7 @@ describe('editMeetingOutcome', () => {
     const { db, re, customer, stage } = await withCustomer();
     const { id } = scheduleAppointment(db, {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(30, 9),
       triggerType: 'OTHER',
     });
@@ -1116,10 +1116,10 @@ describe('the stage on the meeting day', () => {
     const db = await openDatabase({ now: () => new Date(machine) });
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
     const kept = scheduleAppointment(db, {
       customerId: lan.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(8, 11),
       triggerType: 'OTHER',
     });
@@ -1143,14 +1143,14 @@ describe('the stage on the meeting day', () => {
       const { db, re } = await setup();
       const customer = createCustomer(db, {
         name: 'Lan',
-        reId: re.id,
+        rmId: re.id,
         stage: 'N3',
         date: d(10, 9),
       });
       for (const change of changes) changeStageManually(db, customer.id, change);
       const { id } = scheduleAppointment(db, {
         customerId: customer.id,
-        reId: re.id,
+        rmId: re.id,
         date: d(5, 9),
         triggerType: 'REFERRAL',
       });
@@ -1201,7 +1201,7 @@ describe('rescheduleAppointment', () => {
     const { db, tl, customer, re } = await withCustomer();
     const old = scheduleAppointment(db, {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(8, 1),
       triggerType: 'OCCASION',
       coordinatorIds: [tl.id],
@@ -1240,7 +1240,7 @@ describe('rescheduleAppointment', () => {
   // DR-66 T7: the rule of the dialog (mockup 6e) is the command's, so nothing else can break it.
   it('refuses the same day and time as the old appointment, and takes another time that day', async () => {
     const { db, customer, re, persist } = await withCustomer();
-    const input = { customerId: customer.id, reId: re.id, triggerType: 'REFERRAL' } as const;
+    const input = { customerId: customer.id, rmId: re.id, triggerType: 'REFERRAL' } as const;
     const timed = scheduleAppointment(db, { ...input, date: d(8, 1), time: '09:00' });
     const untimed = scheduleAppointment(db, { ...input, date: d(9, 1) });
     const before = db.export();
@@ -1278,7 +1278,7 @@ describe('text with a NUL', () => {
       () =>
         scheduleAppointment(db, {
           customerId: customer.id,
-          reId: re.id,
+          rmId: re.id,
           date: d(12, 1),
           triggerType: 'REFERRAL',
           triggerNote: nul,
@@ -1315,7 +1315,7 @@ describe('optional text with nothing to see', () => {
     for (const text of NOTHING) {
       const booked = scheduleAppointment(db, {
         customerId: customer.id,
-        reId: re.id,
+        rmId: re.id,
         date: d(12, 1),
         triggerType: 'REFERRAL',
         triggerNote: text,
@@ -1366,7 +1366,7 @@ describe('deleting appointments', () => {
 
   it('DR6-71: gives back no withdrawn transition of another customer’s', async () => {
     const { db, re, schedule, stage } = await withCustomer();
-    const other = createCustomer(db, { name: 'Hoa', reId: re.id, stage: 'N3', date: d(1, 1) });
+    const other = createCustomer(db, { name: 'Hoa', rmId: re.id, stage: 'N3', date: d(1, 1) });
     const { id } = schedule();
     recordMeetingOutcome(db, id, MET_N2);
     softDeleteAppointment(db, id);
@@ -1384,10 +1384,10 @@ describe('deleting appointments', () => {
 
   it('restores no appointment whose RE or coordinator left while it was deleted', async () => {
     const { db, re, otherRe, tl, customer } = await withCustomer();
-    const book = (reId: string, coordinatorIds: string[]) =>
+    const book = (rmId: string, coordinatorIds: string[]) =>
       scheduleAppointment(db, {
         customerId: customer.id,
-        reId,
+        rmId,
         date: d(10, 1),
         triggerType: 'OTHER',
         coordinatorIds,
@@ -1442,10 +1442,10 @@ describe('deleting appointments', () => {
     const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 10, 7, 5)) });
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
     const { id } = scheduleAppointment(db, {
       customerId: lan.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(5, 10),
       triggerType: 'OTHER',
     });

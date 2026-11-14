@@ -67,7 +67,7 @@ export interface AppointmentRecord extends Appointment {
 
 export interface NewAppointment {
   readonly customerId: string;
-  readonly reId: string;
+  readonly rmId: string;
   readonly date: CalendarDate;
   readonly time?: string | null;
   readonly triggerType: AppointmentTrigger;
@@ -106,7 +106,7 @@ export function listAppointments(db: Database, customerId?: string): Appointment
   const one = customerId === undefined ? '' : 'AND a.customer_id = ?';
   const rows = selectRows(
     db,
-    `SELECT a.id, a.customer_id, a.re_id, a.date, a.time, a.status, a.trigger_type,
+    `SELECT a.id, a.customer_id, a.rm_id, a.date, a.time, a.status, a.trigger_type,
        a.trigger_note, a.stage_after, a.expected_case_size, a.next_step, a.note,
        a.rescheduled_from_id, a.outcome_reviewer_id
      FROM appointments a JOIN customers c ON c.id = a.customer_id
@@ -120,7 +120,7 @@ export function listAppointments(db: Database, customerId?: string): Appointment
     return {
       id,
       customerId: row[1] as string,
-      reId: row[2] as string,
+      rmId: row[2] as string,
       coordinatorIds: coordinators.get(id) ?? [],
       date: fromIsoDate(row[3] as string),
       time: row[4] as string | null,
@@ -187,10 +187,10 @@ export function recordOutcomeWithNext(
       throw new DbError('NEXT_APPOINTMENT_PAST');
     }
     const recorded = recordMeetingOutcome(db, id, outcome);
-    const { reId } = liveCustomer(db, recorded.customerId);
+    const { rmId } = liveCustomer(db, recorded.customerId);
     const booked = insertScheduled(
       db,
-      { ...recorded, reId, date: next.date, time: next.time },
+      { ...recorded, rmId, date: next.date, time: next.time },
       null,
     );
     return { recorded, next: booked };
@@ -293,7 +293,7 @@ export function restoreAppointment(db: Database, id: string): void {
 export function checkRestoreAppointment(db: Database, row: AppointmentRow) {
   const { stage } = liveCustomer(db, row.customerId);
   // The people were free to leave while the appointment was deleted.
-  requirePeople(db, row.reId, coordinatorsOf(db, row.id));
+  requirePeople(db, row.rmId, coordinatorsOf(db, row.id));
   if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
   requireOutcomeDay(db, row.status, row.date);
   const move = restoreStageMove(db, row, stage);
@@ -389,7 +389,7 @@ function replaceCoordinators(
 ): void {
   if (ids === undefined) return;
   const coordinatorIds = [...new Set(ids)];
-  requirePeople(db, row.reId, coordinatorIds);
+  requirePeople(db, row.rmId, coordinatorIds);
   db.orm
     .delete(appointmentCoordinators)
     .where(eq(appointmentCoordinators.appointmentId, row.id))
@@ -415,14 +415,14 @@ function insertScheduled(
   rescheduledFromId: string | null,
 ): AppointmentRecord {
   liveCustomer(db, input.customerId);
-  const reId = input.reId;
+  const rmId = input.rmId;
   const coordinatorIds = [...new Set(input.coordinatorIds ?? [])];
-  requirePeople(db, reId, coordinatorIds);
+  requirePeople(db, rmId, coordinatorIds);
   const at = db.now().toISOString();
   const row: AppointmentRow = {
     id: ulid(db.now(), db.random),
     customerId: input.customerId,
-    reId,
+    rmId,
     date: storedDate(input.date),
     time: requireTime(input.time ?? null),
     status: 'SCHEDULED',
@@ -454,8 +454,8 @@ function insertCoordinators(db: Database, appointmentId: string, ids: readonly s
  * A live RE and live coordinators of a supporting role (`REVIEWER_ROLES`), never an RE, the
  * appointment's own included (ADR-0007) — checked again on restore (spec §4).
  */
-function requirePeople(db: Database, reId: string, coordinatorIds: readonly string[]): void {
-  requireRe(db, reId);
+function requirePeople(db: Database, rmId: string, coordinatorIds: readonly string[]): void {
+  requireRe(db, rmId);
   for (const personId of coordinatorIds) {
     const { name, role } = requirePerson(db, personId, 'coordinator');
     if (!REVIEWER_ROLES.includes(role)) throw new DbError('INVALID_COORDINATOR', { name, role });
@@ -552,7 +552,7 @@ function toAppointment(
   return {
     id: row.id,
     customerId: row.customerId,
-    reId: row.reId,
+    rmId: row.rmId,
     coordinatorIds,
     date: fromIsoDate(row.date),
     time: row.time,

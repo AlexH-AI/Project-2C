@@ -65,7 +65,7 @@ function loadFixture(db: Database): Map<string, string> {
     if (!ids.has(a.id)) {
       const scheduled = scheduleAppointment(db, {
         customerId: id(a.customerId),
-        reId: id(a.reId),
+        rmId: id(a.rmId),
         date: a.date,
         triggerType: 'OTHER',
         coordinatorIds: a.coordinatorIds.map(id),
@@ -93,7 +93,7 @@ function loadFixture(db: Database): Map<string, string> {
           if (t.from === null) {
             const created = createCustomer(db, {
               ...customer,
-              reId: id(customer.reId),
+              rmId: id(customer.rmId),
               stage: t.to,
               date: t.date,
             });
@@ -124,7 +124,7 @@ function loadFixture(db: Database): Map<string, string> {
   }
 
   for (const p of POLICIES) {
-    const submitted = submitPolicy(db, { ...p, customerId: id(p.customerId), reId: id(p.reId) });
+    const submitted = submitPolicy(db, { ...p, customerId: id(p.customerId), rmId: id(p.rmId) });
     if (p.issuedDate !== null) {
       issuePolicy(db, submitted.id, { issuedDate: p.issuedDate, issuedFyp: p.issuedFyp! });
     }
@@ -150,7 +150,7 @@ describe('golden metrics through the database', () => {
       case 'team':
         return { kind: 'team', teamId: ids.get(scope.teamId)! };
       case 're':
-        return { kind: 're', reId: ids.get(scope.reId)! };
+        return { kind: 're', rmId: ids.get(scope.rmId)! };
     }
   };
 

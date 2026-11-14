@@ -18,20 +18,20 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     const { db, re } = await setup(d(11, 10));
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const other = createCustomer(db, {
       name: 'Lê Văn Cường',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const schedule = (customerId: string, day: number) =>
       scheduleAppointment(db, {
         customerId,
-        reId: re.id,
+        rmId: re.id,
         date: d(day, 10),
         triggerType: 'REFERRAL',
         coordinatorIds: [],
@@ -50,13 +50,13 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     met(schedule(other.id, 1).id, 'N2');
     submitPolicy(db, {
       customerId: anh.id,
-      reId: re.id,
+      rmId: re.id,
       submittedDate: d(3, 10),
       submittedFyp: 24_000_000,
     });
     const dropped = submitPolicy(db, {
       customerId: anh.id,
-      reId: re.id,
+      rmId: re.id,
       submittedDate: d(4, 10),
       submittedFyp: 12_000_000,
     });
@@ -88,13 +88,13 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     const { db, re } = await setup(d(11, 10));
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const meeting = scheduleAppointment(db, {
       customerId: anh.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(1, 10),
       triggerType: 'REFERRAL',
       coordinatorIds: [],
@@ -112,13 +112,13 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     const { db, re } = await setup(d(11, 10));
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N3',
       date: d(1, 9),
     });
     const meeting = scheduleAppointment(db, {
       customerId: anh.id,
-      reId: re.id,
+      rmId: re.id,
       date: d(1, 10),
       triggerType: 'REFERRAL',
       coordinatorIds: [],
@@ -150,7 +150,7 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     const { db, re } = await setup(d(11, 10));
     const lan = createCustomer(db, {
       name: 'Lan',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N3',
       date: d(1, 9),
       birthDate: { year: 1985 },
@@ -166,7 +166,7 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     const { db, re } = await setup();
     const anh = createCustomer(db, {
       name: 'Trịnh Minh Anh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(1, 9),
     });

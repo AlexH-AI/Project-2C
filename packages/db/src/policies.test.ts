@@ -18,14 +18,14 @@ async function withCustomer() {
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    reId: ctx.re.id,
+    rmId: ctx.re.id,
     stage: 'N1',
     date: d(1, 1),
   });
   const submit = () =>
     submitPolicy(ctx.db, {
       customerId: customer.id,
-      reId: ctx.re.id,
+      rmId: ctx.re.id,
       submittedDate: d(31, 1),
       submittedFyp: 300 * MILLION,
     });
@@ -40,7 +40,7 @@ describe('policies', () => {
     expect(policy).toEqual({
       id: expect.any(String),
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       submittedDate: d(31, 1),
       submittedFyp: 300 * MILLION,
       issuedDate: null,
@@ -66,14 +66,14 @@ describe('policies', () => {
     const { db, re, customer, tl, submit } = await withCustomer();
     const base = {
       customerId: customer.id,
-      reId: re.id,
+      rmId: re.id,
       submittedDate: d(31, 1),
       submittedFyp: MILLION,
     };
 
     expect(codeOf(() => submitPolicy(db, { ...base, submittedFyp: 0 }))).toBe('INVALID_AMOUNT');
     expect(codeOf(() => submitPolicy(db, { ...base, submittedFyp: 1.5 }))).toBe('INVALID_AMOUNT');
-    expect(codeOf(() => submitPolicy(db, { ...base, reId: tl.id }))).toBe('RE_REQUIRED');
+    expect(codeOf(() => submitPolicy(db, { ...base, rmId: tl.id }))).toBe('RE_REQUIRED');
     expect(codeOf(() => submitPolicy(db, { ...base, customerId: 'x' }))).toBe('CUSTOMER_NOT_FOUND');
     const { id } = submit();
     expect(codeOf(() => issuePolicy(db, id, { issuedDate: d(30, 1) }))).toBe(
@@ -88,7 +88,7 @@ describe('policies', () => {
   // DR-23: a FYP is at most 100 tỷ đồng, so no total of them can lose a đồng.
   it('takes a FYP up to the cap and refuses one past it, on every command', async () => {
     const { db, re, customer, persist, submit } = await withCustomer();
-    const base = { customerId: customer.id, reId: re.id, submittedDate: d(31, 1) };
+    const base = { customerId: customer.id, rmId: re.id, submittedDate: d(31, 1) };
     const { id } = submit();
     persist.mockClear();
 
@@ -120,14 +120,14 @@ describe('policies', () => {
     expect(codeOf(() => updatePolicy(db, id, { issuedFyp: MILLION }))).toBe('ISSUE_INCOMPLETE');
 
     const updated = updatePolicy(db, id, {
-      reId: otherRe.id,
+      rmId: otherRe.id,
       submittedDate: d(30, 1),
       submittedFyp: 2 * MILLION,
       issuedDate: d(3, 2),
       issuedFyp: MILLION,
     });
     expect(updated).toMatchObject({
-      reId: otherRe.id,
+      rmId: otherRe.id,
       submittedDate: d(30, 1),
       submittedFyp: 2 * MILLION,
       issuedDate: d(3, 2),
@@ -145,7 +145,7 @@ describe('policies', () => {
     const { db, re, customer, persist } = await withCustomer();
     const today = d(26, 9);
     const tomorrow = d(27, 9);
-    const base = { customerId: customer.id, reId: re.id, submittedFyp: MILLION };
+    const base = { customerId: customer.id, rmId: re.id, submittedFyp: MILLION };
     persist.mockClear();
 
     expect(codeOf(() => submitPolicy(db, { ...base, submittedDate: tomorrow }))).toBe(
@@ -185,7 +185,7 @@ describe('policies', () => {
   it('keeps an RE whose only live record is a policy from leaving the role or being deleted', async () => {
     const { db, re, otherRe, customer, submit } = await withCustomer();
     const { id } = submit();
-    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+    updateCustomerProfile(db, customer.id, { rmId: otherRe.id });
 
     expect(codeOf(() => updatePerson(db, re.id, { role: 'IS', teamId: null }))).toBe(
       'PERSON_IN_USE',
@@ -199,7 +199,7 @@ describe('policies', () => {
     const { db, re, otherRe, customer, submit, persist } = await withCustomer();
     const { id } = submit();
     softDeletePolicy(db, id);
-    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+    updateCustomerProfile(db, customer.id, { rmId: otherRe.id });
     softDeletePerson(db, re.id);
     persist.mockClear();
 

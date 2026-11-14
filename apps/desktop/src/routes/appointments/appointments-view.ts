@@ -215,9 +215,9 @@ export function appointmentRows(
   const matches = scopeMatcher(data.people, scope);
 
   return data.appointments
-    .filter((a) => matches(a.reId) && matchesCoordinator(a, coordinator))
+    .filter((a) => matches(a.rmId) && matchesCoordinator(a, coordinator))
     .map((a) => {
-      const re = people.get(a.reId);
+      const re = people.get(a.rmId);
       return {
         appointment: a,
         customer: customers.get(a.customerId),
@@ -230,7 +230,7 @@ export function appointmentRows(
 }
 
 /**
- * The appointments in `period` per RE in charge (`re_id`; a coordinator counts nothing), for the
+ * The appointments in `period` per RE in charge (`rm_id`; a coordinator counts nothing), for the
  * RE strip; an RE with none is not listed.
  */
 export function appointmentsByRe(
@@ -239,7 +239,7 @@ export function appointmentsByRe(
 ): ReadonlyMap<string, number> {
   const counts = new Map<string, number>();
   for (const { appointment: a } of rows) {
-    if (isInPeriod(a.date, period)) counts.set(a.reId, (counts.get(a.reId) ?? 0) + 1);
+    if (isInPeriod(a.date, period)) counts.set(a.rmId, (counts.get(a.rmId) ?? 0) + 1);
   }
   return counts;
 }
@@ -256,7 +256,7 @@ export function revealCreated(
 ): { readonly coordinator: CoordinatorFilter; readonly outsideScope: boolean } {
   return {
     coordinator: matchesCoordinator(created, coordinator) ? coordinator : 'any',
-    outsideScope: !inScope(people, created.reId, scope),
+    outsideScope: !inScope(people, created.rmId, scope),
   };
 }
 
@@ -454,7 +454,7 @@ export function dayBoard(rows: readonly AppointmentRow[], date: CalendarDate): D
     const teamKey = row.team?.id ?? '';
     const group = groups.get(teamKey) ?? { team: row.team, res: new Map() };
     groups.set(teamKey, group);
-    group.res.set(row.appointment.reId, [...(group.res.get(row.appointment.reId) ?? []), row]);
+    group.res.set(row.appointment.rmId, [...(group.res.get(row.appointment.rmId) ?? []), row]);
   }
   return [...groups.values()]
     .sort((a, b) => byName(a.team?.name ?? '', b.team?.name ?? ''))

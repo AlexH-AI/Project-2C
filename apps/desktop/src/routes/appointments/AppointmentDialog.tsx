@@ -79,7 +79,7 @@ export function AppointmentDialog({
   const [customer, setCustomer] = useState(fixed);
   const [query, setQuery] = useState('');
   // The customer's RE, who may have taken over since `from` was booked (T-233).
-  const [reId, setReId] = useState(fixed?.reId ?? from?.reId ?? '');
+  const [rmId, setReId] = useState(fixed?.rmId ?? from?.rmId ?? '');
   const [filled] = useState(() => from && prefill(from.date, today));
   const [dateText, setDateText] = useState(filled?.text ?? '');
   const [timeText, setTimeText] = useState(from?.time ?? '');
@@ -105,12 +105,12 @@ export function AppointmentDialog({
 
   const save = () => {
     setAttempted(true);
-    if (!customer || !reId || !trigger || !date.ok || !time.ok) return;
+    if (!customer || !rmId || !trigger || !date.ok || !time.ok) return;
     try {
       const created = app.run((db) =>
         scheduleAppointment(db, {
           customerId: customer.id,
-          reId,
+          rmId,
           date: date.date,
           time: time.time,
           triggerType: trigger,
@@ -149,7 +149,7 @@ export function AppointmentDialog({
         onQuery={setQuery}
         onPick={(picked) => {
           setCustomer(picked);
-          setReId(picked?.reId ?? '');
+          setReId(picked?.rmId ?? '');
         }}
         error={attempted && !customer ? t('appointmentForm.customerRequired') : undefined}
         history={history}
@@ -160,11 +160,11 @@ export function AppointmentDialog({
       )}
       <SelectField
         label={t('appointmentForm.re')}
-        value={reId}
+        value={rmId}
         options={reChoices}
         placeholder={t('customerForm.rePick')}
         onChange={edit(setReId)}
-        error={attempted && !reId ? t('error.RE_REQUIRED') : undefined}
+        error={attempted && !rmId ? t('error.RE_REQUIRED') : undefined}
         required
       />
       <div className="grid grid-cols-2 gap-3">

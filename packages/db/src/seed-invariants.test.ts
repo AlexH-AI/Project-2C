@@ -107,7 +107,7 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
         } else {
           expect(a.stageAfter).toBeNull();
         }
-        expect(a.coordinatorIds).not.toContain(a.reId);
+        expect(a.coordinatorIds).not.toContain(a.rmId);
       }
     });
 

@@ -67,7 +67,7 @@ export function CustomerPolicies({
           {[...policies]
             .sort((a, b) => compareDates(b.submittedDate, a.submittedDate))
             .map((p) => {
-              const re = people.find((person) => person.id === p.reId);
+              const re = people.find((person) => person.id === p.rmId);
               const status = policyStatusText(p);
               // The buttons' names say the FYP too, to tell two policies of one day apart (DR6-119),
               // and "Sửa" the status, as one submitted and one issued may share both: only the

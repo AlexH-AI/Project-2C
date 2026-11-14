@@ -128,7 +128,7 @@ describe('reportRows', () => {
   });
 
   it('the RE scope has Tổng hợp only', () => {
-    const rows = reportRows(GOLDEN, JAN_2027, { kind: 're', reId: 're-binh' }, d(2027, 3, 15));
+    const rows = reportRows(GOLDEN, JAN_2027, { kind: 're', rmId: 're-binh' }, d(2027, 3, 15));
 
     expect(rows.summary.name).toBe('RM Bình');
     expect(results(reportCells(rows.summary))).toEqual(['2', '1', '1 tỷ', '1', '1 tỷ', '50%']);
@@ -253,7 +253,7 @@ describe('summaryMeta', () => {
     expect(summaryMeta({ kind: 'team', teamId: 'team-a' }, PEOPLE, TEAMS)).toBe(
       'Team Team A · 2 RM',
     );
-    expect(summaryMeta({ kind: 're', reId: 're-chi' }, PEOPLE, TEAMS)).toBe('RM Chi · Team B');
+    expect(summaryMeta({ kind: 're', rmId: 're-chi' }, PEOPLE, TEAMS)).toBe('RM Chi · Team B');
   });
 });
 
@@ -336,7 +336,7 @@ describe('reportRows on the demo data', () => {
     const scopes = (): readonly Scope[] => [
       { kind: 'all' },
       { kind: 'team', teamId: data.teams[0]!.id },
-      { kind: 're', reId: data.people.find((person) => person.role === 'RM')!.id },
+      { kind: 're', rmId: data.people.find((person) => person.role === 'RM')!.id },
     ];
 
     it.each(Object.entries(PERIODS))('%s, every scope', (_, period) => {

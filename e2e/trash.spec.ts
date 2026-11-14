@@ -416,7 +416,7 @@ test('restores a meeting that kept the stage though the stage changed after it (
 interface BackupRow {
   readonly id: string;
   readonly name: string;
-  readonly re_id: string;
+  readonly rm_id: string;
   readonly deleted_at: string | null;
 }
 
@@ -459,7 +459,7 @@ async function importChanged(page: Page, change: (tables: Tables) => void) {
 const deletedPolicy = (id: string, customer: BackupRow, submitted: string, deletedAt: string) => ({
   id,
   customer_id: customer.id,
-  re_id: customer.re_id,
+  rm_id: customer.rm_id,
   submitted_date: submitted,
   submitted_fyp: 24_000_000,
   issued_date: null,

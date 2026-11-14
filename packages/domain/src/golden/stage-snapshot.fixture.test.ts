@@ -27,7 +27,7 @@ describe('golden stage snapshot fixture', () => {
 
   it('gives every customer an RE and allowed transitions in date order, ending at their stage', () => {
     for (const { customer, transitions } of SNAPSHOT_CUSTOMERS) {
-      expect(reIds.has(customer.reId)).toBe(true);
+      expect(reIds.has(customer.rmId)).toBe(true);
       expect(transitions.at(-1)!.to).toBe(customer.stage);
       transitions.forEach((transition, index) => {
         expect(() => assertValidTransition(transition.from, transition.to)).not.toThrow();

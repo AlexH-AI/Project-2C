@@ -134,7 +134,7 @@ describe('openDraft and readPolicy across New Year', () => {
   const policy: Policy = {
     id: 'p',
     customerId: 'c',
-    reId: 're',
+    rmId: 're',
     submittedDate: d(20, 12),
     submittedFyp: 400 * MILLION,
     issuedDate: null,
@@ -187,7 +187,7 @@ describe('policyChange', () => {
   const policy: Policy = {
     id: 'p',
     customerId: 'c',
-    reId: 're',
+    rmId: 're',
     submittedDate: d(20, 8),
     submittedFyp: 400 * MILLION,
     issuedDate: d(18, 9),

@@ -409,7 +409,7 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   };
   const rows = (table: string) => file.tables[table]!;
   const ours = rows('customers').find((row) => row.name === customer)!;
-  const person = rows('people').find((row) => row.id === ours.re_id)!;
+  const person = rows('people').find((row) => row.id === ours.rm_id)!;
   rows('teams').find((row) => row.id === person.team_id)!.name = team;
   person.name = re;
   Object.assign(

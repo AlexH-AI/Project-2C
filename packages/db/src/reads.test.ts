@@ -62,7 +62,7 @@ function drizzleAppointments(db: Database, customerId?: string) {
   return rows.map(({ a }) => ({
     id: a.id,
     customerId: a.customerId,
-    reId: a.reId,
+    rmId: a.rmId,
     coordinatorIds: coordinators.filter((c) => c.appointmentId === a.id).map((c) => c.personId),
     date: fromIsoDate(a.date),
     time: a.time,
@@ -112,10 +112,10 @@ function drizzleTransitions(db: Database, customerId?: string) {
 async function history() {
   const { db, team, re, otherRe, tl } = await setup();
   const is = createPerson(db, { name: 'Ý', role: 'IS', teamId: null });
-  const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: day(1) });
+  const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N4', date: day(1) });
   const met = scheduleAppointment(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     date: day(10),
     time: '09:30',
     triggerType: 'REFERRAL',
@@ -130,10 +130,10 @@ async function history() {
     note: 'Quan tâm hưu trí',
     outcomeReviewerId: tl.id,
   });
-  scheduleAppointment(db, { customerId: lan.id, reId: re.id, date: day(10), triggerType: 'EVENT' });
+  scheduleAppointment(db, { customerId: lan.id, rmId: re.id, date: day(10), triggerType: 'EVENT' });
   const moved = scheduleAppointment(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     date: day(12),
     time: '14:00',
     triggerType: 'EVENT',
@@ -143,15 +143,15 @@ async function history() {
   changeStageManually(db, lan.id, { to: 'N2', date: day(18) });
   submitPolicy(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     submittedDate: day(19),
     submittedFyp: 20_000_000,
   });
 
-  const hoa = createCustomer(db, { name: 'Hoa', reId: otherRe.id, stage: 'N4', date: day(2) });
+  const hoa = createCustomer(db, { name: 'Hoa', rmId: otherRe.id, stage: 'N4', date: day(2) });
   const withdrawn = scheduleAppointment(db, {
     customerId: hoa.id,
-    reId: otherRe.id,
+    rmId: otherRe.id,
     date: day(5),
     triggerType: 'OTHER',
   });
@@ -159,23 +159,23 @@ async function history() {
   softDeleteAppointment(db, withdrawn.id);
   scheduleAppointment(db, {
     customerId: hoa.id,
-    reId: otherRe.id,
+    rmId: otherRe.id,
     date: day(5),
     time: '08:00',
     triggerType: 'OTHER',
   });
 
-  const kien = createCustomer(db, { name: 'Kiên', reId: re.id, stage: 'N3', date: day(4) });
+  const kien = createCustomer(db, { name: 'Kiên', rmId: re.id, stage: 'N3', date: day(4) });
   const kienMet = scheduleAppointment(db, {
     customerId: kien.id,
-    reId: re.id,
+    rmId: re.id,
     date: day(6),
     triggerType: 'OTHER',
   });
   recordMeetingOutcome(db, kienMet.id, { status: 'MET', stageAfter: 'N1', nextStep: 'Nộp HĐ' });
   submitPolicy(db, {
     customerId: kien.id,
-    reId: re.id,
+    rmId: re.id,
     submittedDate: day(8),
     submittedFyp: 10_000_000,
   });

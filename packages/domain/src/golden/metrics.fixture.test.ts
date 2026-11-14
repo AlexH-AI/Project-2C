@@ -37,9 +37,9 @@ describe('golden metrics fixture', () => {
   });
 
   it('assigns customers, appointments and policies to an RE and an existing customer', () => {
-    for (const customer of CUSTOMERS) expect(reIds.has(customer.reId)).toBe(true);
+    for (const customer of CUSTOMERS) expect(reIds.has(customer.rmId)).toBe(true);
     for (const item of [...APPOINTMENTS, ...POLICIES]) {
-      expect(reIds.has(item.reId)).toBe(true);
+      expect(reIds.has(item.rmId)).toBe(true);
       expect(customerIds.has(item.customerId)).toBe(true);
     }
   });

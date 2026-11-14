@@ -50,11 +50,11 @@ async function trash() {
   const { db, team } = base;
   const linh = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id });
   const customer = (name = 'Trịnh Minh Anh', stage: CustomerStage = 'N3') =>
-    createCustomer(db, { name, reId: linh.id, stage, date: d(1, 9) });
+    createCustomer(db, { name, rmId: linh.id, stage, date: d(1, 9) });
   const schedule = (customerId: string, date: CalendarDate, coordinatorIds: string[] = []) =>
     scheduleAppointment(db, {
       customerId,
-      reId: linh.id,
+      rmId: linh.id,
       date,
       triggerType: 'REFERRAL',
       coordinatorIds,
@@ -576,8 +576,8 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
 });
 
 describe('listTrash: policies (TR-2, TR-5)', () => {
-  const submit = (db: Parameters<typeof submitPolicy>[0], customerId: string, reId: string) =>
-    submitPolicy(db, { customerId, reId, submittedDate: d(15, 9), submittedFyp: 24_000_000 });
+  const submit = (db: Parameters<typeof submitPolicy>[0], customerId: string, rmId: string) =>
+    submitPolicy(db, { customerId, rmId, submittedDate: d(15, 9), submittedFyp: 24_000_000 });
 
   it('E12: restores a policy whose customer and RE are live', async () => {
     const { db, linh, customer, row, restored } = await trash();
@@ -691,14 +691,14 @@ describe('listTrash', () => {
     const anh = customer();
     const lan = createCustomer(db, {
       name: 'Hoàng Ngọc Lan',
-      reId: mai.id,
+      rmId: mai.id,
       stage: 'N4',
       date: d(1, 9),
     });
     const planned = schedule(anh.id, d(6, 10));
     const policy = submitPolicy(db, {
       customerId: anh.id,
-      reId: linh.id,
+      rmId: linh.id,
       submittedDate: d(15, 9),
       submittedFyp: 24_000_000,
     });

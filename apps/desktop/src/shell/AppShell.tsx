@@ -61,7 +61,7 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
     [picked, choice.reInTeam, people],
   );
   const pickRe = useCallback(
-    (reId: string | null) => setChoice((current) => ({ ...current, reInTeam: reId ?? undefined })),
+    (rmId: string | null) => setChoice((current) => ({ ...current, reInTeam: rmId ?? undefined })),
     [],
   );
   const scopeState = useMemo(() => ({ picked, scope, pickRe }), [picked, scope, pickRe]);

@@ -21,7 +21,7 @@ async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'M
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    reId: ctx.re.id,
+    rmId: ctx.re.id,
     stage: 'N4',
     date: d(1, 9, 2026),
     ...profile,
@@ -40,7 +40,7 @@ async function atOneInstant() {
   const re = createPerson(database, { name: 'An', role: 'RM', teamId: team.id });
   const customer = createCustomer(database, {
     name: 'Lan',
-    reId: re.id,
+    rmId: re.id,
     stage: 'N4',
     date: d(1, 9),
     birthDate: { year: 1984 },
@@ -183,7 +183,7 @@ describe('KYC facts', () => {
     const { db: database, customer, re, note } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Mai',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(1, 9),
     });

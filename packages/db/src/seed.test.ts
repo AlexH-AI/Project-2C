@@ -321,7 +321,7 @@ describe('seedDemoData', () => {
       const booked = listAppointments(db).filter((a) => a.rescheduledFromId === null);
       const weeks = booked.map((a) => {
         const day = Date.UTC(a.date.year, a.date.month - 1, a.date.day);
-        return `${a.reId} ${Math.floor((day - start) / (7 * 86_400_000))}`;
+        return `${a.rmId} ${Math.floor((day - start) / (7 * 86_400_000))}`;
       });
       expect(new Set(weeks).size).toBe(weeks.length);
       expect(booked.length).toBeGreaterThan((8 * 56) / 2);

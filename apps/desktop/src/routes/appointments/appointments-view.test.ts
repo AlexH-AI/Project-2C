@@ -53,11 +53,11 @@ const people: Person[] = [
   { id: 'is1', name: 'Phó Đức Huy', role: 'IS', teamId: null },
 ];
 
-const customer = (id: string, reId: string): CustomerRecord => ({
+const customer = (id: string, rmId: string): CustomerRecord => ({
   id,
   code: `K-${id}`,
   name: id,
-  reId,
+  rmId,
   stage: 'N3',
   birthDate: null,
   gender: null,
@@ -65,13 +65,13 @@ const customer = (id: string, reId: string): CustomerRecord => ({
 
 const appointment = (
   id: string,
-  reId: string,
+  rmId: string,
   date: CalendarDate,
   extra: Partial<AppointmentRecord> = {},
 ): AppointmentRecord => ({
   id,
   customerId: `c-${id}`,
-  reId,
+  rmId,
   coordinatorIds: [],
   date,
   time: null,
@@ -99,7 +99,7 @@ const move = (appointmentId: string, from: StageTransition['from'], to: StageTra
 function data(appointments: AppointmentRecord[], transitions: StageTransition[] = []) {
   return {
     appointments,
-    customers: appointments.map((a) => customer(a.customerId, a.reId)),
+    customers: appointments.map((a) => customer(a.customerId, a.rmId)),
     people,
     teams,
     transitions,
@@ -119,7 +119,7 @@ describe('appointmentRows', () => {
   it('keeps the appointments of the RE in scope', () => {
     expect(ids(appointmentRows(all, { kind: 'all' }, 'any'))).toEqual(['a', 'b', 'c']);
     expect(ids(appointmentRows(all, { kind: 'team', teamId: 't1' }, 'any'))).toEqual(['a', 'b']);
-    expect(ids(appointmentRows(all, { kind: 're', reId: 're3' }, 'any'))).toEqual(['c']);
+    expect(ids(appointmentRows(all, { kind: 're', rmId: 're3' }, 'any'))).toEqual(['c']);
   });
 
   // DR-17: the team's members are listed once per pass, not once per appointment.
@@ -142,7 +142,7 @@ describe('appointmentRows', () => {
   });
 
   it('joins the customer, RE, team and coordinators', () => {
-    const [row] = appointmentRows(all, { kind: 're', reId: 're1' }, 'any');
+    const [row] = appointmentRows(all, { kind: 're', rmId: 're1' }, 'any');
     expect(row?.customer?.id).toBe('c-a');
     expect(row?.re?.name).toBe('Hoàng Nam');
     expect(row?.team?.name).toBe('Sao Mai');
@@ -196,7 +196,7 @@ describe('revealCreated', () => {
     const team = { kind: 'team', teamId: 't1' } as const;
     expect(revealCreated(withCoordinator, people, team, 'any').outsideScope).toBe(false);
     expect(revealCreated(alone, people, team, 'any').outsideScope).toBe(true);
-    expect(revealCreated(alone, people, { kind: 're', reId: 're1' }, 'any').outsideScope).toBe(
+    expect(revealCreated(alone, people, { kind: 're', rmId: 're1' }, 'any').outsideScope).toBe(
       true,
     );
   });

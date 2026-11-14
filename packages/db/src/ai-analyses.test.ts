@@ -23,7 +23,7 @@ async function withCustomer() {
   const ctx = await setup();
   const customer = createCustomer(ctx.db, {
     name: 'Lan',
-    reId: ctx.re.id,
+    rmId: ctx.re.id,
     stage: 'N4',
     date: d(1, 9),
     birthDate: { year: 1980 },
@@ -145,7 +145,7 @@ describe('recordAiAnalysis', () => {
     const { db: database, customer, re, persist } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Minh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(2, 9),
       birthDate: { year: 1975 },
@@ -326,7 +326,7 @@ describe('recordAiAnalysis', () => {
     const { db: database, customer, re, persist } = await withCustomer();
     const other = createCustomer(database, {
       name: 'Minh',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(2, 9),
       birthDate: { year: 1975 },
@@ -849,7 +849,7 @@ describe('the ai_analyses migration', () => {
     old.sqlite.run('PRAGMA ignore_check_constraints = OFF');
     const customer = createCustomer(old, {
       name: 'Lan',
-      reId: re.id,
+      rmId: re.id,
       stage: 'N4',
       date: d(1, 9),
       birthDate: { year: 1980 },

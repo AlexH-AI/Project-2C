@@ -115,7 +115,7 @@ export function teamCompare(
     .map((team): CompareTeam => {
       const { met, metrics } = figures({ kind: 'team', teamId: team.id });
       const res = teamRes(data.people, team.id).map((re) => {
-        const shown = figures({ kind: 're', reId: re.id });
+        const shown = figures({ kind: 're', rmId: re.id });
         return row(re.id, re.name, shown.met, shown.metrics);
       });
       return { ...row(team.id, team.name, met, metrics), res };

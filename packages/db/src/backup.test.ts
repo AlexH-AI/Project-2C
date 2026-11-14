@@ -38,21 +38,21 @@ async function small() {
   const date = calendarDate(2026, 9, 1);
   const lan = createCustomer(db, {
     name: 'Lan',
-    reId: re.id,
+    rmId: re.id,
     stage: 'N3',
     date,
     birthDate: { year: 1984 },
   });
   scheduleAppointment(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     date: calendarDate(2026, 9, 3),
     time: '09:30',
     triggerType: 'REFERRAL',
   });
   submitPolicy(db, {
     customerId: lan.id,
-    reId: re.id,
+    rmId: re.id,
     submittedDate: date,
     submittedFyp: 20_000_000,
   });
@@ -63,7 +63,7 @@ async function small() {
   });
   const gone = createCustomer(db, {
     name: 'Minh',
-    reId: re.id,
+    rmId: re.id,
     stage: 'N4',
     date: calendarDate(2026, 9, 2),
   });
@@ -116,7 +116,7 @@ describe('exportBackup', () => {
       'id',
       'code',
       'name',
-      're_id',
+      'rm_id',
       'birth_date',
       'gender',
       'stage',
@@ -137,11 +137,11 @@ describe('exportBackup', () => {
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
     const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 9) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 9) });
     const book = (coordinatorId: string) =>
       scheduleAppointment(db, {
         customerId: lan.id,
-        reId: re.id,
+        rmId: re.id,
         date: d(3, 9),
         triggerType: 'REFERRAL',
         coordinatorIds: [coordinatorId],
@@ -211,7 +211,7 @@ describe('importBackup', () => {
     const db = await openDatabase({ now });
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: d(1, 10) });
     machine = new Date(2026, 10, 7, 23, 55).getTime();
     updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
 
@@ -351,7 +351,7 @@ describe('importBackup', () => {
       (b) => withRow(b, 'stage_transitions', (row) => ({ ...row, seq: 1.5 })),
     ],
     ['a number in a text column', (b) => withRow(b, 'teams', (row) => ({ ...row, name: 7 }))],
-    ['a broken reference', (b) => withRow(b, 'customers', (row) => ({ ...row, re_id: 'nobody' }))],
+    ['a broken reference', (b) => withRow(b, 'customers', (row) => ({ ...row, rm_id: 'nobody' }))],
     ['a failed check', (b) => withRow(b, 'customers', (row) => ({ ...row, stage: 'N9' }))],
     [
       'a duplicate id',
@@ -481,11 +481,11 @@ describe('importBackup', () => {
   it('keeps an expected case size, or none, through export and import', async () => {
     const { db, re } = await setup();
     const date = calendarDate(2026, 9, 3);
-    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date });
+    const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date });
     for (const expectedCaseSize of [100_000_000, null]) {
       const { id } = scheduleAppointment(db, {
         customerId: lan.id,
-        reId: re.id,
+        rmId: re.id,
         date,
         triggerType: 'REFERRAL',
       });

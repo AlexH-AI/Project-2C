@@ -733,11 +733,11 @@ describe('blockedReason (mockup 11d)', () => {
       today: () => calendarDate(2026, 10, 11),
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RM', teamId: team.id }).id;
-        const customer = createCustomer(db, { name: 'Phạm Gia Bảo', reId, stage: 'N3', date: day });
+        const rmId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RM', teamId: team.id }).id;
+        const customer = createCustomer(db, { name: 'Phạm Gia Bảo', rmId, stage: 'N3', date: day });
         const meeting = scheduleAppointment(db, {
           customerId: customer.id,
-          reId,
+          rmId,
           date: day,
           triggerType: 'REFERRAL',
         });
@@ -1046,15 +1046,15 @@ describe('restoredNotice (mockup 11e)', () => {
 describe('restoreRow', () => {
   /** Trịnh Minh Anh deleted, her RE Đỗ Khánh Linh of Sao Mai still there. */
   async function deletedCustomer() {
-    let reId = '';
+    let rmId = '';
     const app = await openAppData({
       today: () => TODAY,
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
+        rmId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
         const customer = createCustomer(db, {
           name: 'Trịnh Minh Anh',
-          reId,
+          rmId,
           stage: 'N3',
           date: TODAY,
         });
@@ -1062,7 +1062,7 @@ describe('restoreRow', () => {
       },
     });
     const [row] = listTrash(app.db());
-    return { app, row: row!, reId };
+    return { app, row: row!, rmId };
   }
 
   it('runs the restore command of its kind: the record leaves the trash', async () => {
@@ -1078,24 +1078,24 @@ describe('restoreRow', () => {
       today: () => TODAY,
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
+        const rmId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
         softDeleteTeam(db, createTeam(db, { name: 'Bình Minh' }).id);
         const ha = createPerson(db, { name: 'Lê Thu Hà', role: 'RM', teamId: team.id });
         softDeletePerson(db, ha.id);
         const customer = (name: string) =>
-          createCustomer(db, { name, reId, stage: 'N3', date: TODAY });
+          createCustomer(db, { name, rmId, stage: 'N3', date: TODAY });
         softDeleteCustomer(db, customer('Phạm Gia Bảo').id);
         const anh = customer('Trịnh Minh Anh');
         const meeting = scheduleAppointment(db, {
           customerId: anh.id,
-          reId,
+          rmId,
           date: TODAY,
           triggerType: 'REFERRAL',
         });
         softDeleteAppointment(db, meeting.id);
         const policy = submitPolicy(db, {
           customerId: anh.id,
-          reId,
+          rmId,
           submittedDate: TODAY,
           submittedFyp: 24_000_000,
         });
@@ -1131,16 +1131,16 @@ describe('restoreRow', () => {
       today: () => TODAY,
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
-        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
+        const rmId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RM', teamId: team.id }).id;
         const customer = createCustomer(db, {
           name: 'Trịnh Minh Anh',
-          reId,
+          rmId,
           stage: 'N3',
           date: calendarDate(2026, 10, 1),
         });
         const meeting = scheduleAppointment(db, {
           customerId: customer.id,
-          reId,
+          rmId,
           date: calendarDate(2026, 10, 8),
           time: '10:00',
           triggerType: 'REFERRAL',
@@ -1161,9 +1161,9 @@ describe('restoreRow', () => {
   });
 
   it('refuses with the blocked reason when the data changed after the dialog opened', async () => {
-    const { app, row, reId } = await deletedCustomer();
+    const { app, row, rmId } = await deletedCustomer();
     expect(row.blocked).toBeUndefined();
-    app.run((db) => softDeletePerson(db, reId));
+    app.run((db) => softDeletePerson(db, rmId));
 
     const failure = restoreRow(app, row);
     expect(failure).toBe('RM Đỗ Khánh Linh đã xóa — khôi phục RM trước.');
@@ -1312,14 +1312,14 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
         const day = calendarDate(2026, 10, 2);
         const team = createTeam(db, { name: 'Sao Mai' });
         const binhMinh = createTeam(db, { name: 'Bình Minh' });
-        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RM', teamId: team.id }).id;
+        const rmId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RM', teamId: team.id }).id;
         const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RM', teamId: binhMinh.id });
-        const lan = createCustomer(db, { name: 'Hoàng Ngọc Lan', reId, stage: 'N3', date: day });
-        const bao = createCustomer(db, { name: 'Phạm Gia Bảo', reId, stage: 'N3', date: day });
+        const lan = createCustomer(db, { name: 'Hoàng Ngọc Lan', rmId, stage: 'N3', date: day });
+        const bao = createCustomer(db, { name: 'Phạm Gia Bảo', rmId, stage: 'N3', date: day });
         const book = (customerId: string) =>
-          scheduleAppointment(db, { customerId, reId, date: day, triggerType: 'REFERRAL' });
+          scheduleAppointment(db, { customerId, rmId, date: day, triggerType: 'REFERRAL' });
         const submit = (customerId: string) =>
-          submitPolicy(db, { customerId, reId, submittedDate: day, submittedFyp: 24_000_000 });
+          submitPolicy(db, { customerId, rmId, submittedDate: day, submittedFyp: 24_000_000 });
         softDeleteAppointment(db, book(lan.id).id);
         book(lan.id);
         submit(lan.id);

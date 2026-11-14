@@ -481,10 +481,10 @@ describe('tables', () => {
     app.run((db) => {
       const team = createTeam(db, { name: 'Sao Mai' });
       const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-      const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: TODAY });
+      const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N4', date: TODAY });
       scheduleAppointment(db, {
         customerId: lan.id,
-        reId: re.id,
+        rmId: re.id,
         date: TODAY,
         triggerType: 'OTHER',
       });
@@ -1029,10 +1029,10 @@ describe('purgeTrash (spec Phase 6 TR-11)', () => {
     app.run((db) => {
       const team = createTeam(db, { name: 'Sao Mai' });
       const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-      const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: TODAY });
+      const lan = createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N4', date: TODAY });
       scheduleAppointment(db, {
         customerId: lan.id,
-        reId: re.id,
+        rmId: re.id,
         date: TODAY,
         triggerType: 'OTHER',
       });
@@ -1450,7 +1450,7 @@ describe('backup files', () => {
       seed: (db, anchorDate) => {
         const team = createTeam(db, { name: 'Sao Mai' });
         const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
-        createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: anchorDate });
+        createCustomer(db, { name: 'Lan', rmId: re.id, stage: 'N3', date: anchorDate });
       },
     });
     const text = (await source.exportBackup()).text;
@@ -1477,14 +1477,14 @@ describe('backup files', () => {
         const re = createPerson(db, { name: 'An', role: 'RM', teamId: team.id });
         const lan = createCustomer(db, {
           name: 'Lan',
-          reId: re.id,
+          rmId: re.id,
           stage: 'N3',
           date: TODAY,
           gender: 'FEMALE',
         });
         scheduleAppointment(db, {
           customerId: lan.id,
-          reId: re.id,
+          rmId: re.id,
           date: TODAY,
           triggerType: 'REFERRAL',
         });

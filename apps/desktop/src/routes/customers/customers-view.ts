@@ -93,10 +93,10 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
   const people = new Map(data.people.map((person) => [person.id, person]));
 
   const cards = data.customers
-    .filter((customer) => matches(customer.reId))
+    .filter((customer) => matches(customer.rmId))
     .map((customer) => ({
       customer,
-      re: people.get(customer.reId),
+      re: people.get(customer.rmId),
       // Every customer has a first transition, written with it (spec §3.4).
       since: since.get(customer.id)!,
       policies: policies.get(customer.id) ?? 0,
@@ -107,7 +107,7 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
   const open = byStage(PIPELINE_STAGES, cards);
   const openByRe = new Map<string, number>();
   for (const { customer } of PIPELINE_STAGES.flatMap((s) => open[s])) {
-    openByRe.set(customer.reId, (openByRe.get(customer.reId) ?? 0) + 1);
+    openByRe.set(customer.rmId, (openByRe.get(customer.rmId) ?? 0) + 1);
   }
   return { open, closed, openCount: cards.length - closedCount, closedCount, openByRe };
 }

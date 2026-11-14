@@ -18,7 +18,7 @@ import { customers, policies } from './schema';
 
 type PolicyRow = typeof policies.$inferSelect;
 
-export type NewPolicy = Pick<Policy, 'customerId' | 'reId' | 'submittedDate' | 'submittedFyp'>;
+export type NewPolicy = Pick<Policy, 'customerId' | 'rmId' | 'submittedDate' | 'submittedFyp'>;
 export type PolicyChanges = Partial<Omit<Policy, 'id' | 'customerId'>>;
 
 // ---- reads ----------------------------------------------------------------
@@ -114,7 +114,7 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
     throw new DbError('ISSUED_BEFORE_SUBMITTED');
   }
   return {
-    reId: requireRe(db, policy.reId),
+    rmId: requireRe(db, policy.rmId),
     submittedDate: storedPastDate(db, policy.submittedDate, 'submitted'),
     submittedFyp: requireAmount(policy.submittedFyp),
     issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate, 'issued'),
@@ -132,7 +132,7 @@ function toPolicy(row: PolicyRow): Policy {
   return {
     id: row.id,
     customerId: row.customerId,
-    reId: row.reId,
+    rmId: row.rmId,
     submittedDate: fromIsoDate(row.submittedDate),
     submittedFyp: row.submittedFyp,
     issuedDate: row.issuedDate === null ? null : fromIsoDate(row.issuedDate),

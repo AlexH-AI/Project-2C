@@ -126,8 +126,8 @@ export function listTrash(db: Database): TrashRow[] {
     );
   }
   for (const row of deleted.customers) {
-    const re = ref.person(row.reId);
-    const teamId = ref.teamOf(row.reId);
+    const re = ref.person(row.rmId);
+    const teamId = ref.teamOf(row.rmId);
     rows.push(
       entry(row, () => checkRestoreCustomer(db, row), {
         kind: 'customer',
@@ -149,7 +149,7 @@ export function listTrash(db: Database): TrashRow[] {
         time: row.time,
         status: row.status,
         stageAfter: row.stageAfter,
-        owner: { customer: ref.customer(row.customerId), re: ref.person(row.reId) },
+        owner: { customer: ref.customer(row.customerId), re: ref.person(row.rmId) },
         effect:
           move === null
             ? NONE
@@ -173,7 +173,7 @@ export function listTrash(db: Database): TrashRow[] {
         submittedFyp: row.submittedFyp,
         issuedDate: row.issuedDate === null ? null : fromIsoDate(row.issuedDate),
         issuedFyp: row.issuedFyp,
-        owner: { customer: ref.customer(row.customerId), re: ref.person(row.reId) },
+        owner: { customer: ref.customer(row.customerId), re: ref.person(row.rmId) },
         effect: NONE,
       }),
     );
@@ -248,11 +248,11 @@ function refs(db: Database, deleted: ReturnType<typeof deletedRows>) {
   const peopleRows = rowsById(
     db,
     people,
-    [...deleted.customers, ...records].map((row) => row.reId),
+    [...deleted.customers, ...records].map((row) => row.rmId),
   );
   const teamRows = rowsById(db, teams, [
     ...deleted.people.map((person) => person.teamId),
-    ...deleted.customers.map((customer) => peopleRows.get(customer.reId)!.teamId),
+    ...deleted.customers.map((customer) => peopleRows.get(customer.rmId)!.teamId),
   ]);
   const toRef = (id: string, row: { name: string; deletedAt: string | null }): TrashRef => ({
     id,
