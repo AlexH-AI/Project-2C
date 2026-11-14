@@ -110,10 +110,10 @@ test('the Team scope has no team to pick and counts every team', async ({ page }
   await expect(viewing).toContainText('· Team (3 team)');
   expect(await appointmentsTile(page)).toEqual(all);
 
-  await scope.getByRole('radio', { name: 'RE' }).click();
-  await expect(page.getByRole('combobox', { name: 'RE của góc nhìn' })).toBeVisible();
+  await scope.getByRole('radio', { name: 'RM' }).click();
+  await expect(page.getByRole('combobox', { name: 'RM của góc nhìn' })).toBeVisible();
   await filter.click();
-  await expect(viewing).toContainText('· RE ');
+  await expect(viewing).toContainText('· RM ');
 });
 
 test('a period without appointments shows "0 / 0" and "chưa có lịch" in the bar', async ({
@@ -227,7 +227,7 @@ test('So sánh team: a team opens its RE by name, closes again, and the RE scope
   await filter.click();
   await expect(table).toBeVisible();
 
-  await scope.getByRole('radio', { name: 'RE' }).click();
+  await scope.getByRole('radio', { name: 'RM' }).click();
   await filter.click();
   await expect(page.getByRole('region', { name: 'Khách hàng theo nhóm' })).toBeVisible();
   await expect(table).toHaveCount(0);

@@ -493,7 +493,7 @@ async function filters() {
     await click(`${screen}.filter-month`, filter);
   }
   const tables = page.getByRole('radiogroup', { name: 'Bảng báo cáo' });
-  await click('reports.table-re', tables.getByRole('radio', { name: 'Theo RE' }));
+  await click('reports.table-re', tables.getByRole('radio', { name: 'Theo RM' }));
   await tables.getByRole('radio', { name: 'Theo team' }).click();
 }
 

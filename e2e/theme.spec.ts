@@ -170,16 +170,16 @@ test('fields and the arrows of unsorted columns stand out 3:1 from what is next 
   // A list of the bar.
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RE' })
+    .getByRole('radio', { name: 'RM' })
     .click();
-  await expectBorderStandsOut(page.getByRole('combobox', { name: 'RE của góc nhìn' }));
+  await expectBorderStandsOut(page.getByRole('combobox', { name: 'RM của góc nhìn' }));
 
   // A text field and a list of a dialog.
   await page.goto('/#/customers');
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await expectBorderStandsOut(dialog.getByRole('textbox', { name: 'Họ tên' }));
-  await expectBorderStandsOut(dialog.getByRole('combobox', { name: 'RE phụ trách' }));
+  await expectBorderStandsOut(dialog.getByRole('combobox', { name: 'RM phụ trách' }));
 });
 
 test('the two fields of the app outside packages/ui stand out 3:1 from their card too', async ({

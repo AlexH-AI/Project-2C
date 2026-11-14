@@ -21,9 +21,9 @@ describe('effectText', () => {
 
   it('names the metric, the month and the RE of the policy', () => {
     expect(effectText(down, 'Đỗ Khánh Linh')).toBe(
-      'FYP phát hành tháng 09/2026 của RE Đỗ Khánh Linh giảm 14,5 tr',
+      'FYP phát hành tháng 09/2026 của RM Đỗ Khánh Linh giảm 14,5 tr',
     );
-    expect(effectText({ ...down, diff: 2 * MILLION }, 'Linh')).toMatch(/của RE Linh tăng 2 tr$/);
+    expect(effectText({ ...down, diff: 2 * MILLION }, 'Linh')).toMatch(/của RM Linh tăng 2 tr$/);
     expect(effectText({ ...down, metric: 'submitted' }, 'Linh')).toMatch(/^FYP nộp tháng 09\/2026/);
   });
 

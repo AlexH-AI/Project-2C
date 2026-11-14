@@ -188,7 +188,7 @@ test('a team and an IS of 160 letters keep Team & nhân sự in the window, each
     expect(await right(teamButton), `team button at ${width}`).toBeLessThanOrEqual(
       await right(list),
     );
-    await expectByFirstLine(teamButton, team, teamButton.getByText(/RE$/), `count at ${width}`);
+    await expectByFirstLine(teamButton, team, teamButton.getByText(/RM$/), `count at ${width}`);
     for (const label of ['Đổi tên team', 'Xóa team']) {
       const button = card.getByRole('button', { name: label });
       expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(await right(card));
@@ -268,7 +268,7 @@ test('an RE and a team of 160 letters leave the figures of Báo cáo readable, s
     await page.setViewportSize({ width, height: 900 });
     for (const [label, name] of [
       ['Theo team', team],
-      ['Theo RE', re],
+      ['Theo RM', re],
     ] as const) {
       await tables.getByRole('radio', { name: label }).click();
       const table = page.getByRole('table', { name: label });
@@ -311,15 +311,15 @@ test('an RE and a team of 160 letters leave the figures of Báo cáo readable, s
     // The Team column of Theo RE, not pinned, breaks the long team name at the cap of a name too
     // (DR6-174 c).
     const teamCell = page
-      .getByRole('table', { name: 'Theo RE' })
+      .getByRole('table', { name: 'Theo RM' })
       .getByRole('cell', { name: team, exact: true })
       .first();
-    expect(await contentWidth(teamCell), `Team of Theo RE at ${width}`).toBeLessThanOrEqual(240);
+    expect(await contentWidth(teamCell), `Team of Theo RM at ${width}`).toBeLessThanOrEqual(240);
   }
 });
 
 /** The scopes of the top bar: everyone, the team of 160 letters, its RE of 160 letters. */
-type ScopeKind = 'Toàn bộ' | 'Team' | 'RE';
+type ScopeKind = 'Toàn bộ' | 'Team' | 'RM';
 
 /** Opens `screen` from the sidebar: a page load would open the simulated data again. */
 const open = (page: Page, screen: string) =>
@@ -364,7 +364,7 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   const scopes: readonly (readonly [ScopeKind, string?])[] = [
     ['Toàn bộ'],
     ['Team', team],
-    ['RE', `${re} · ${team}`],
+    ['RM', `${re} · ${team}`],
   ];
   /** The scope `kind`, with `pick` in its picker; the RE picked by its first letters, as by hand. */
   const setScope = async (kind: ScopeKind, pick?: string) => {
@@ -377,8 +377,8 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
         .getByRole('combobox', { name: 'Team của góc nhìn' })
         .selectOption({ label: pick! });
     }
-    if (kind === 'RE') {
-      const picker = page.getByRole('combobox', { name: 'RE của góc nhìn' });
+    if (kind === 'RM') {
+      const picker = page.getByRole('combobox', { name: 'RM của góc nhìn' });
       // From the first RE of the list, under another team.
       await picker.selectOption({ index: 0 });
       await expect(picker.locator('option:checked')).not.toHaveText(pick!);
@@ -529,6 +529,6 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
   await open(page, 'Cài đặt');
   await settingsSection(page, 'Thùng rác');
   const records = page.getByRole('region', { name: 'Thùng rác' }).getByRole('table');
-  for (const name of [customer, gone, `RE ${re}`]) await expect(records).toContainText(name);
+  for (const name of [customer, gone, `RM ${re}`]) await expect(records).toContainText(name);
   await sweep(page, 'Thùng rác');
 });

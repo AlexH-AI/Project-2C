@@ -387,7 +387,7 @@ test('a meeting held before the customer was entered keeps the stage it was crea
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await create.getByRole('textbox', { name: 'Họ tên' }).fill(name);
-  await create.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await create.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await create
     .getByRole('radiogroup', { name: 'Nhóm ban đầu' })
     .getByRole('radio', { name: 'N3', exact: true })

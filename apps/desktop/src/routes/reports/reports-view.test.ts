@@ -130,7 +130,7 @@ describe('reportRows', () => {
   it('the RE scope has Tổng hợp only', () => {
     const rows = reportRows(GOLDEN, JAN_2027, { kind: 're', reId: 're-binh' }, d(2027, 3, 15));
 
-    expect(rows.summary.name).toBe('RE Bình');
+    expect(rows.summary.name).toBe('RM Bình');
     expect(results(reportCells(rows.summary))).toEqual(['2', '1', '1 tỷ', '1', '1 tỷ', '50%']);
     expect(rows.byTeam).toBeNull();
     expect(rows.byRe).toBeNull();
@@ -249,11 +249,11 @@ describe('reportRows Theo mốc', () => {
 
 describe('summaryMeta', () => {
   it('counts the RE of the scope, or names the team of the RE (mockup 2a, 2d, 2e)', () => {
-    expect(summaryMeta({ kind: 'all' }, PEOPLE, TEAMS)).toBe('Toàn bộ · 4 RE');
+    expect(summaryMeta({ kind: 'all' }, PEOPLE, TEAMS)).toBe('Toàn bộ · 4 RM');
     expect(summaryMeta({ kind: 'team', teamId: 'team-a' }, PEOPLE, TEAMS)).toBe(
-      'Team Team A · 2 RE',
+      'Team Team A · 2 RM',
     );
-    expect(summaryMeta({ kind: 're', reId: 're-chi' }, PEOPLE, TEAMS)).toBe('RE Chi · Team B');
+    expect(summaryMeta({ kind: 're', reId: 're-chi' }, PEOPLE, TEAMS)).toBe('RM Chi · Team B');
   });
 });
 

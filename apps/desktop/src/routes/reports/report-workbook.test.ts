@@ -61,10 +61,10 @@ const sheetNames = (workbook: ExcelJS.Workbook) => workbook.worksheets.map((shee
 
 describe('buildReportWorkbook', () => {
   it('has one sheet per table the scope shows: 4 for Toàn bộ, 3 for a team, 2 for an RE', async () => {
-    expect(sheetNames(await read(ALL))).toEqual(['Tổng hợp', 'Theo team', 'Theo RE', 'Theo mốc']);
+    expect(sheetNames(await read(ALL))).toEqual(['Tổng hợp', 'Theo team', 'Theo RM', 'Theo mốc']);
     expect(sheetNames(await read({ ...ALL, byTeam: null }))).toEqual([
       'Tổng hợp',
-      'Theo RE',
+      'Theo RM',
       'Theo mốc',
     ]);
     expect(sheetNames(await read({ ...ALL, byTeam: null, byRe: null }))).toEqual([
@@ -94,7 +94,7 @@ describe('buildReportWorkbook', () => {
       xSplit: 1,
       ySplit: 3,
     });
-    expect(workbook.getWorksheet('Theo RE')?.views[0]).toMatchObject({ xSplit: 2, ySplit: 3 });
+    expect(workbook.getWorksheet('Theo RM')?.views[0]).toMatchObject({ xSplit: 2, ySplit: 3 });
   });
 
   it('heads the columns as the screen does, money in đồng', async () => {
@@ -201,7 +201,7 @@ describe('buildReportWorkbook', () => {
     };
     const workbook = await read(rows);
     const byTeam = workbook.getWorksheet('Theo team')!;
-    const byRe = workbook.getWorksheet('Theo RE')!;
+    const byRe = workbook.getWorksheet('Theo RM')!;
     const cells = [
       ...names.map((_, index) => byTeam.getCell(4 + index, 1)),
       byRe.getCell('A4'),
@@ -213,9 +213,9 @@ describe('buildReportWorkbook', () => {
   });
 
   it('puts Team before RE on Theo RE', async () => {
-    const sheet = (await read(ALL)).getWorksheet('Theo RE')!;
+    const sheet = (await read(ALL)).getWorksheet('Theo RM')!;
 
-    expect((sheet.getRow(3).values as unknown[]).slice(1, 4)).toEqual(['Team', 'RE', 'Đã gặp']);
+    expect((sheet.getRow(3).values as unknown[]).slice(1, 4)).toEqual(['Team', 'RM', 'Đã gặp']);
     expect((sheet.getRow(4).values as unknown[]).slice(1, 4)).toEqual([
       'Bình Minh',
       'Bùi Ngọc Trâm',
@@ -282,7 +282,7 @@ describe('exportReport', () => {
     });
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(write.mock.calls[0]![1].buffer);
-    expect(sheetNames(workbook)).toEqual(['Tổng hợp', 'Theo team', 'Theo RE', 'Theo mốc']);
+    expect(sheetNames(workbook)).toEqual(['Tổng hợp', 'Theo team', 'Theo RM', 'Theo mốc']);
   });
 
   it('fails at writing when the file cannot be written', async () => {
@@ -337,8 +337,8 @@ describe('reportFileName', () => {
     expect(reportFileName(periodOf('year', today), 'Team Đông Á', today)).toBe(
       'bao-cao_2026_team-dong-a_2026-10-15.xlsx',
     );
-    expect(reportFileName(periodOf('day', d(2026, 10, 9)), 'RE Bùi Ngọc Trâm', today)).toBe(
-      'bao-cao_2026-10-09_re-bui-ngoc-tram_2026-10-15.xlsx',
+    expect(reportFileName(periodOf('day', d(2026, 10, 9)), 'RM Bùi Ngọc Trâm', today)).toBe(
+      'bao-cao_2026-10-09_rm-bui-ngoc-tram_2026-10-15.xlsx',
     );
   });
 
@@ -359,11 +359,11 @@ describe('reportFileName', () => {
 
   it('cuts a long scope to 60 characters, so the exe can always write the file', () => {
     // An RE name as long as the db takes; its 60th character is a `-`, which is dropped too.
-    const name = `RE ${'Lê '.repeat(85)}Lê`;
+    const name = `RM ${'Lê '.repeat(85)}Lê`;
     const file = reportFileName(customPeriod(d(2026, 9, 20), d(2026, 10, 5)), name, today);
 
     expect(name).toHaveLength(260);
-    expect(file).toBe(`bao-cao_2026-09-20-den-2026-10-05_re-${'le-'.repeat(18)}le_2026-10-15.xlsx`);
+    expect(file).toBe(`bao-cao_2026-09-20-den-2026-10-05_rm-${'le-'.repeat(18)}le_2026-10-15.xlsx`);
     expect(file.length).toBeLessThanOrEqual(120);
     expect(file).toMatch(/^[a-z0-9_-]+\.xlsx$/);
   });

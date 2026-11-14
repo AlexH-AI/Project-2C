@@ -34,10 +34,10 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
   // One RE's board, so the new card is among the few shown per column.
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RE' })
+    .getByRole('radio', { name: 'RM' })
     .click();
   const re = await page
-    .getByRole('combobox', { name: 'RE của góc nhìn' })
+    .getByRole('combobox', { name: 'RM của góc nhìn' })
     .locator('option:checked')
     .textContent();
 
@@ -51,7 +51,7 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
 
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
   await expect(
-    dialog.getByRole('combobox', { name: 'RE phụ trách' }).locator('option:checked'),
+    dialog.getByRole('combobox', { name: 'RM phụ trách' }).locator('option:checked'),
   ).toHaveText(re ?? '');
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
   // Screen readers hear what the app understood, not only sighted users.
@@ -83,17 +83,17 @@ test('a customer made for an RE outside the scope is said to be, with a link to 
 }) => {
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RE' })
+    .getByRole('radio', { name: 'RM' })
     .click();
   const scopeRe = await page
-    .getByRole('combobox', { name: 'RE của góc nhìn' })
+    .getByRole('combobox', { name: 'RM của góc nhìn' })
     .locator('option:checked')
     .textContent();
   const summary = page.getByText(/KH đang mở/);
   const before = await summary.textContent();
 
   const dialog = await openCreate(page);
-  const re = dialog.getByRole('combobox', { name: 'RE phụ trách' });
+  const re = dialog.getByRole('combobox', { name: 'RM phụ trách' });
   // The scope's RE to begin with, as the new customer most likely is theirs.
   await expect(re.locator('option:checked')).toHaveText(scopeRe ?? '');
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
@@ -105,7 +105,7 @@ test('a customer made for an RE outside the scope is said to be, with a link to 
   await expect(dialog).toBeHidden();
   const created = page.getByRole('status').filter({ hasText: 'ngoài góc nhìn' });
   await expect(created).toContainText(
-    `Đã tạo KH ${NAME} cho ${other.split(' · ')[0]}. RE này nằm ngoài góc nhìn hiện tại nên KH không hiện ở đây; đổi góc nhìn để xem.`,
+    `Đã tạo KH ${NAME} cho ${other.split(' · ')[0]}. RM này nằm ngoài góc nhìn hiện tại nên KH không hiện ở đây; đổi góc nhìn để xem.`,
   );
   await expect(summary).toHaveText(before ?? '');
   await created.getByRole('link', { name: 'Hồ sơ KH →' }).click();
@@ -179,9 +179,9 @@ test('sums up the fields to fix above the form, and reads the record day with it
   const recorded = dialog.getByRole('textbox', { name: 'Ngày ghi nhận KH' });
   await recorded.fill('10/9');
   await expect(recorded).toHaveAccessibleDescription('Thứ Năm 10/09/2026');
-  await expect(dialog.getByText(/^Đổi RE:/)).toHaveCount(0);
+  await expect(dialog.getByText(/^Đổi RM:/)).toHaveCount(0);
 
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('31/02/1984');
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(alert).toHaveText('Chưa lưu được — 2 ô cần sửaKhông có gì được ghi vào dữ liệu.');
@@ -203,8 +203,8 @@ test('editing the profile says what saving records in KYC (5c)', async ({ page }
   const dialog = page.getByRole('dialog', { name: `Sửa hồ sơ · ${name}` });
   const birth = dialog.getByRole('textbox', { name: /^Ngày sinh/ });
   const kyc = dialog.getByRole('status');
-  await expect(dialog.getByRole('combobox', { name: 'RE phụ trách' })).toHaveAccessibleDescription(
-    'Đổi RE: lịch hẹn Dự kiến chuyển sang RE mới; lịch hẹn khác và HĐ vẫn tính cho RE đã ghi trên từng bản ghi.',
+  await expect(dialog.getByRole('combobox', { name: 'RM phụ trách' })).toHaveAccessibleDescription(
+    'Đổi RM: lịch hẹn Dự kiến chuyển sang RM mới; lịch hẹn khác và HĐ vẫn tính cho RM đã ghi trên từng bản ghi.',
   );
 
   // Start from a year alone, saved, so the preview below does not depend on the seed.
@@ -241,7 +241,7 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
   const name = 'Bàn Giao Thử';
   const created = await openCreate(page);
   await created.getByRole('textbox', { name: 'Họ tên' }).fill(name);
-  const picker = created.getByRole('combobox', { name: 'RE phụ trách' });
+  const picker = created.getByRole('combobox', { name: 'RM phụ trách' });
   const [, oldRe = '', newRe = ''] = await picker.locator('option').allTextContents();
   await picker.selectOption({ label: oldRe });
   await created.getByRole('button', { name: 'Lưu KH' }).click();
@@ -260,11 +260,11 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
   }
 
   await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
-  const re = dialog.getByRole('combobox', { name: 'RE phụ trách' });
+  const re = dialog.getByRole('combobox', { name: 'RM phụ trách' });
   const handover = dialog.getByRole('status');
   await expect(handover).toHaveCount(0);
   await re.selectOption({ label: newRe });
-  await expect(handover).toHaveText('Khi lưu: 1 lịch hẹn Dự kiến chuyển sang RE mới.');
+  await expect(handover).toHaveText('Khi lưu: 1 lịch hẹn Dự kiến chuyển sang RM mới.');
   await re.selectOption({ label: oldRe });
   await expect(handover).toHaveCount(0);
   await re.selectOption({ label: newRe });
@@ -278,7 +278,7 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
     .click();
   await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Lịch hẹn tiếp theo');
   await expect(
-    dialog.getByRole('combobox', { name: 'RE', exact: true }).locator('option:checked'),
+    dialog.getByRole('combobox', { name: 'RM', exact: true }).locator('option:checked'),
   ).toHaveText(newRe);
   await dialog.getByRole('button', { name: 'Hủy' }).click();
 
@@ -310,7 +310,7 @@ test('picking the gender again clears the failure of the last save (5c, DR6-33)'
 }) => {
   const dialog = await openCreate(page);
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await dialog.getByRole('radio', { name: 'Nữ' }).check();
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(dialog).toBeHidden();
@@ -339,8 +339,8 @@ test('refuses a customer with wrong fields and saves nothing', async ({ page }) 
   await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveAccessibleDescription(
     'Chưa nhập tên.',
   );
-  await expect(dialog.getByRole('combobox', { name: 'RE phụ trách' })).toHaveAccessibleDescription(
-    'Chọn RE phụ trách.',
+  await expect(dialog.getByRole('combobox', { name: 'RM phụ trách' })).toHaveAccessibleDescription(
+    'Chọn RM phụ trách.',
   );
   await expect(birth).toHaveAccessibleDescription('Ngày này không tồn tại.');
 
@@ -368,7 +368,7 @@ test('refuses a name broken in a paste as the command does, then saves one as ty
 }) => {
   const dialog = await openCreate(page);
   const name = dialog.getByRole('textbox', { name: 'Họ tên' });
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('combobox', { name: 'RM phụ trách' }).selectOption({ index: 1 });
   await pasteAsIs(name, '\uD83D\u{200B}\uDE00 Lan');
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Chữ có ký tự không lưu được');

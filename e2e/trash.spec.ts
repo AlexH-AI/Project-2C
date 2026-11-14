@@ -158,7 +158,7 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
   await expect(actions).toHaveCount(1);
   // An empty header on screen as in mockup 11a: the name is a pixel wide (R43e, DR6-91).
   expect((await actions.getByText('Thao tác').boundingBox())?.width).toBeLessThanOrEqual(1);
-  const re = /RE (.+)$/.exec((await row.getByRole('cell').nth(2).textContent()) ?? '')?.[1] ?? '';
+  const re = /RM (.+)$/.exec((await row.getByRole('cell').nth(2).textContent()) ?? '')?.[1] ?? '';
   expect(re).not.toBe('');
   // The restore button is named by the words of the cell, read as the screen shows them.
   const title = await row.getByRole('cell').nth(1).locator('b').innerText();
@@ -182,9 +182,9 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
   await sidebar(page).getByRole('link', { name: 'Lịch hẹn' }).click();
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RE' })
+    .getByRole('radio', { name: 'RM' })
     .click();
-  const picker = page.getByRole('combobox', { name: 'RE của góc nhìn' });
+  const picker = page.getByRole('combobox', { name: 'RM của góc nhìn' });
   const others = (await picker.locator('option').allTextContents()).filter(
     (label) => label.split(' · ')[0] !== re,
   );

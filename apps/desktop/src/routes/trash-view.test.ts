@@ -361,7 +361,7 @@ describe('recordBadge (spec Phase 6 §4.2 "Bản ghi")', () => {
 describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
   it('a customer: its RE and team', () => {
     expect(ownerParts(minhAnh)).toEqual([
-      { text: 'RE Đỗ Khánh Linh', deleted: false },
+      { text: 'RM Đỗ Khánh Linh', deleted: false },
       { text: 'Sao Mai', deleted: false },
     ]);
   });
@@ -369,11 +369,11 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
   it('an appointment or a policy: customer and RE, a deleted one marked', () => {
     expect(ownerParts(planned)).toEqual([
       { text: 'KH Trịnh Minh Anh', deleted: true },
-      { text: 'RE Đỗ Khánh Linh', deleted: false },
+      { text: 'RM Đỗ Khánh Linh', deleted: false },
     ]);
     expect(ownerParts(policy)).toEqual([
       { text: 'KH Hoàng Ngọc Lan', deleted: false },
-      { text: 'RE Hoàng Nhật Minh', deleted: false },
+      { text: 'RM Hoàng Nhật Minh', deleted: false },
     ]);
   });
 
@@ -430,7 +430,7 @@ describe('trashNames: teams of one name (review of PR 1072, PR 1088)', () => {
     const gone = when ? `(đã xóa lúc ${when})` : '(đã xóa)';
     expect(owner(maiOf(id), names)).toEqual([['Team Bình Minh', gone]]);
     expect(owner(customerOf(id), names)).toEqual([
-      ['RE Đỗ Khánh Linh', '(đã xóa)'],
+      ['RM Đỗ Khánh Linh', '(đã xóa)'],
       ['Bình Minh', gone],
     ]);
     expect(blockedReason(maiOf(id), mai.blocked!)).toBe('Khôi phục team Bình Minh trước.');
@@ -686,13 +686,13 @@ describe('blockedReason (mockup 11d)', () => {
   it('E2: the RE deleted', () => {
     expect(
       reason(minhAnh, { code: 'PERSON_NOT_FOUND', params: { name: 'Đỗ Khánh Linh', as: 're' } }),
-    ).toBe('RE Đỗ Khánh Linh đã xóa — khôi phục RE trước.');
+    ).toBe('RM Đỗ Khánh Linh đã xóa — khôi phục RM trước.');
   });
 
   it('E3: the RE now a TL', () => {
     expect(
       reason(minhAnh, { code: 'RE_REQUIRED', params: { name: 'Đỗ Khánh Linh', role: 'TL' } }),
-    ).toBe('Đỗ Khánh Linh nay là TL, không phụ trách KH được — đổi lại vai trò RE trước.');
+    ).toBe('Đỗ Khánh Linh nay là TL, không phụ trách KH được — đổi lại vai trò RM trước.');
   });
 
   it('E4: the customer deleted', () => {
@@ -843,7 +843,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
     expect(view.subtitle).toBe('KH · xóa lúc 10/10/2026 16:42');
     expect(view.facts).toEqual([
       { term: 'Nhóm', stage: 'N3' },
-      { term: 'RE', text: 'Đỗ Khánh Linh · Sao Mai' },
+      { term: 'RM', text: 'Đỗ Khánh Linh · Sao Mai' },
       {
         term: 'Hiện lại cùng KH',
         text: '7 lịch hẹn (3 đã gặp · 1 lần tính RF) · 0 HĐ · 5 ghi chú KYC · 2 phân tích AI',
@@ -873,7 +873,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
   it('E5: a met appointment records its stage change again, with its RF', () => {
     const view = restoreView(met, TODAY);
     expect(view.title).toBe('Khôi phục lịch hẹn 02/10/2026 09:30?');
-    expect(view.subtitle).toBe('KH Phạm Gia Bảo · RE Bùi Anh Tuấn');
+    expect(view.subtitle).toBe('KH Phạm Gia Bảo · RM Bùi Anh Tuấn');
     expect(view.facts).toEqual([
       { term: 'Kết quả', text: 'Đã gặp · nhóm sau', stage: 'N2' },
       { term: 'Nhóm KH hiện tại', stage: 'N3' },
@@ -958,7 +958,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
   it('a policy, a person and a team', () => {
     expect(restoreView(policy, TODAY)).toEqual({
       title: 'Khôi phục HĐ nộp 15/09/2026?',
-      subtitle: 'KH Hoàng Ngọc Lan · RE Hoàng Nhật Minh',
+      subtitle: 'KH Hoàng Ngọc Lan · RM Hoàng Nhật Minh',
       facts: [
         { term: 'FYP nộp', text: '24.000.000 ₫' },
         { term: 'Trạng thái', text: 'Đã nộp' },
@@ -1166,7 +1166,7 @@ describe('restoreRow', () => {
     app.run((db) => softDeletePerson(db, reId));
 
     const failure = restoreRow(app, row);
-    expect(failure).toBe('RE Đỗ Khánh Linh đã xóa — khôi phục RE trước.');
+    expect(failure).toBe('RM Đỗ Khánh Linh đã xóa — khôi phục RM trước.');
     const now = listTrash(app.db()).find((r) => r.id === row.id)!;
     expect(failure).toBe(blockedReason(now, now.blocked!));
     expect(listCustomers(app.db())).toEqual([]);
