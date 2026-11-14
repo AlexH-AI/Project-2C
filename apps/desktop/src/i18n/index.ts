@@ -1,6 +1,8 @@
 import { DbError } from '@p2c/db';
 import { formatCount } from '@p2c/domain';
 import type { DataTableMoreLabels } from '@p2c/ui';
+import { en, type PluralMessage } from './en';
+import { LANGUAGE } from './language';
 import { vi, type MessageKey } from './vi';
 
 export type MessageParams = Readonly<Record<string, string | number>>;
@@ -27,19 +29,40 @@ export const COUNT_SLOTS: ReadonlySet<string> = new Set([
   'sheets',
 ]);
 
+const SLOT = /\{(\w+)\}/g;
+
 /** Fills the `{name}` slots of `text` from the params' own names; a slot without one stays. */
 export function fillSlots(text: string, params: MessageParams): string {
-  return text.replace(/\{(\w+)\}/g, (slot, name: string) => {
+  return text.replace(SLOT, (slot, name: string) => {
     if (!Object.hasOwn(params, name)) return slot;
     const value = params[name];
     return typeof value === 'number' && COUNT_SLOTS.has(name) ? formatCount(value) : String(value);
   });
 }
 
-/** Look up a UI string and fill its `{name}` slots. Keys are typed, so a missing key fails typecheck. */
-export function t(key: MessageKey, params?: MessageParams): string {
-  const text: string = vi[key];
+/**
+ * The form of a plural message (ADR-0018 §9): `one` when its count slot holds the number 1,
+ * `other` for any other number, or with no count to go by.
+ */
+function pluralForm(message: PluralMessage, params: MessageParams | undefined): string {
+  const slot = [...message.other.matchAll(SLOT)]
+    .map((match) => String(match[1]))
+    .find((name) => COUNT_SLOTS.has(name));
+  return slot !== undefined && params?.[slot] === 1 ? message.one : message.other;
+}
+
+/** One message as shown: its plural form picked by the count, then its slots filled. */
+export function formatMessage(message: string | PluralMessage, params?: MessageParams): string {
+  const text = typeof message === 'string' ? message : pluralForm(message, params);
   return params ? fillSlots(text, params) : text;
+}
+
+/**
+ * Look up a UI string in the language of this run and fill its `{name}` slots; English shows the
+ * Vietnamese of a key it lacks. Keys are typed, so a missing key fails typecheck.
+ */
+export function t(key: MessageKey, params?: MessageParams): string {
+  return formatMessage((LANGUAGE === 'en' ? en[key] : undefined) ?? vi[key], params);
 }
 
 /** The known parts of one line, apart by the `sep.*` mark: `Nữ · 1991`, `N2 → N1`. */

@@ -10,6 +10,7 @@ import { openAppData } from './data/app-data';
 import { fetchDemoSnapshot } from './data/demo-snapshot';
 import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
+import { LANGUAGE } from './i18n/language';
 import { blockReload } from './shell/block-reload';
 import { StartupError } from './shell/StartupError';
 import './index.css';
@@ -21,6 +22,9 @@ const render = (node: ReactNode) => root.render(<StrictMode>{node}</StrictMode>)
 
 // A new database gets simulated data anchored today; e2e builds pin the day (spec §7).
 const pinnedDay = parseDate(String(import.meta.env.VITE_DEMO_ANCHOR ?? ''));
+
+// The language of this run, set as the i18n loaded (ADR-0018 §1); `index.html` says `vi`.
+document.documentElement.lang = LANGUAGE;
 
 render(<p className="px-6 py-8 text-sm text-fg-2">{t('startup.loading')}</p>);
 

@@ -68,3 +68,249 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **Xóa mềm** (`deleted_at`) — KH, cuộc hẹn, HĐ, nhân sự, team khi xóa chỉ bị ẩn khỏi danh sách và chỉ số, khôi phục được ở Thùng rác (spec Phase 3 D4).
 - **Thùng rác** — Cài đặt → Thùng rác: liệt kê mọi bản ghi xóa mềm để khôi phục; không theo góc nhìn, không tự dọn (spec Phase 6 §4.2).
 - **Dọn sạch Thùng rác** — nút xóa hẳn mọi bản ghi trong Thùng rác (trừ bản ghi còn được dữ liệu khác dùng tới, TR-12); hỏi trước, backup trước (bản exe), một transaction. Là cách duy nhất xóa hẳn bản ghi nghiệp vụ, kể cả ghi chú KYC, dữ kiện và phân tích AI của KH đã xóa (spec Phase 6 TR-11, phụ lục ADR-0008).
+
+## Ngôn ngữ và thuật ngữ tiếng Anh (Phase 6 phần G; Owner duyệt G1 / G2 12/11/2026)
+
+- **Ngôn ngữ** (`Language`: `vi` / `en`) — Tiếng Việt / English của giao diện. Lưu theo máy (bộ nhớ WebView, khóa `p2c.language`), không vào DB và backup; chưa lưu gì thì theo tiền tệ của dữ liệu: VND → Tiếng Việt, tiền tệ khác → English. Tiếng Việt chỉ dùng được với dữ liệu VND. Đổi ngôn ngữ = app lưu nốt rồi tải lại giao diện (ADR-0018 §1).
+- **Bảng thuật ngữ tiếng Anh** — chữ English của giao diện, Owner duyệt 12/11/2026 (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.6, chép vào đây ở G-01). Cột Tiếng Việt là chữ của app (`apps/desktop/src/i18n/vi.ts`), cộng chữ của các phần B–G chưa code. Câu chữ dài (câu hướng dẫn, câu lỗi) dịch ở các lượt dịch (G-12 … G-16), theo đúng các từ dưới đây, vào `apps/desktop/src/i18n/en.ts`. Khác bảng spec ở một dòng: "Ngôn ngữ / Language" giữ cả hai ngôn ngữ ở cả hai giao diện (G3 đợt f).
+
+**Giữ nguyên ở cả hai ngôn ngữ:** Heritas L-CRM, FYP, KYC, KYC Intelligence, N1–N4, RM, TL, IS, BD, BDM, MTD, KPI, AUM, AI, Forecast, Case size, Team, Kanban, Trigger, Excel, ChatGPT, OpenCode, WorkBuddy.
+
+**RF:** tiếng Việt vẫn viết "RF"; English viết "Referral" (Owner 12/11). Owner giải thích: "RF là chỉ đích danh chỉ số chuyển RF: nghĩa là IS got referred from RM. RM đã khơi gợi nhu cầu thành công, phối hợp với IS để trình bày giải pháp (tương ứng với chuyển lên N2)". Định nghĩa chỉ số không đổi (ADR-0007). Trigger "Giới thiệu từ KH" ("Customer referral") là nghĩa khác: KH giới thiệu một KH mới.
+
+**Chữ "Hủy" có ba nghĩa, tiếng Anh tách ra:** nút đóng hộp thoại "Cancel"; lịch hẹn bị hủy "Cancelled"; hủy hợp đồng "Cancel policy", HĐ đã hủy "Cancelled".
+
+**Chữ "Dự kiến" có hai nghĩa:** trạng thái lịch hẹn "Scheduled"; số tiền dự kiến của Forecast "Forecast" / "Expected".
+
+Điều hướng và vỏ app:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Tổng quan | Overview | |
+| Forecast | Forecast | phần D |
+| Báo cáo | Reports | |
+| Lịch hẹn | Appointments | tên màn |
+| Khách hàng | Customers | tên màn |
+| Hồ sơ khách hàng | Customer profile | |
+| Team & nhân sự | Team management | Owner 12/11 |
+| Cài đặt | Settings | |
+| Quản lý | Manage | nhóm trên thanh bên |
+| Ô lệnh (⌘K / Ctrl+K) | Command bar | đợt b |
+| Lưu ý | Heads-up | đợt b, ý 11; Owner đổi tên từ "Lúc này" ở G3 đợt b (§8, điểm 3) |
+| Che tên KH | Hide names | đợt a |
+| Đã lưu / Đang lưu | Saved / Saving | trạng thái lưu ở chân thanh bên |
+
+Góc nhìn và kỳ:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Góc nhìn | View | |
+| Toàn bộ | All | |
+| Cả team {team} | All of {team} | |
+| Kỳ thống kê | Period | |
+| Loại kỳ | Period type | |
+| Ngày / Tuần / Tháng / Năm / Tùy chọn | Day / Week / Month / Year / Custom | |
+| Kỳ trước / Kỳ sau | Previous period / Next period | |
+| Hôm nay | Today | |
+| Từ ngày / Đến ngày | From / To | |
+| So với kỳ trước | vs. previous period | |
+| T2 … CN | Mon … Sun | tên thứ ngắn |
+| Thứ Hai … Chủ nhật | Monday … Sunday | tên thứ dài |
+| Tháng 11/2026 | November 2026 | golden Y10 |
+
+Người và team:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Nhân sự | Staff | Owner 12/11 |
+| Vai trò | Role | |
+| RM phụ trách | Assigned RM | |
+| Người phối hợp | Coordinator | TL / IS / BD / BDM |
+| Người đánh giá kết quả | Outcome reviewer | |
+| + Team / + Thêm TL | + Team / + Add TL | |
+| Màu, icon của team | Team colour, team icon | ý 33 |
+| Thao tác | Actions | cột bảng |
+| Tìm RM | Find RM | phần C |
+| KH của RM | RM's customers | phần C |
+
+Khách hàng:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Khách hàng (KH) | Customer | |
+| Mã KH | Customer ID | |
+| Họ tên | Full name | |
+| Ngày sinh | Date of birth | |
+| Giới tính: Nam / Nữ | Gender: Male / Female | |
+| Nhóm | Stage | N4 → N1 |
+| Tạm hoãn | On hold | |
+| Mất cơ hội | Lost opportunity | Owner 12/11 |
+| Mở lại | Reopen | |
+| KH đang mở / đã đóng | Open / closed customers | |
+| Đã có HĐ | Has policy | nhãn KH |
+| Từ ngày | Since | cột bảng KH |
+| Cách xem: Kanban / Bảng | View as: Kanban / Table | |
+| Chuyển nhóm | Stage change | |
+| Sửa tay | Manual change | đổi nhóm ngoài cuộc gặp |
+| Lần gặp gần nhất | Last met | |
+| Lịch hẹn sắp tới | Upcoming appointments | |
+| Tìm KH | Find customer | phần C |
+
+Lịch hẹn:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Lịch hẹn | Appointment | |
+| Lịch hẹn mới / Tạo lịch hẹn | New appointment / Create appointment | |
+| Dự kiến | Scheduled | trạng thái |
+| Đã gặp | Met | trạng thái |
+| Dời lịch | Rescheduled | trạng thái; nút "Reschedule" |
+| Hủy | Cancelled | trạng thái |
+| Không đến | No-show | trạng thái |
+| Giới thiệu từ KH | Customer referral | loại trigger |
+| Đáo hạn tài sản | Asset maturity | loại trigger |
+| Hội thảo / sự kiện | Seminar / event | loại trigger |
+| Sinh nhật, dịp đặc biệt | Birthday / special occasion | loại trigger |
+| Khác | Other | loại trigger |
+| Mô tả trigger | Trigger note | |
+| Kết quả cuộc gặp | Meeting outcome | |
+| Nhóm sau cuộc gặp | Stage after meeting | |
+| Giữ nguyên | Keep | |
+| Việc tiếp theo | Next step | |
+| Ghi chú cuộc gặp | Meeting note | |
+| Hẹn lần tiếp theo | Book next appointment | |
+| Các lần hẹn trước | Past appointments | |
+| Lần gặp thứ {n} | Meeting {n} | |
+| Chưa ghi kết quả | Outcome not recorded | |
+| Tính RF / Không tính RF | Counts as referral / Not a referral | Owner 12/11: "RF: referal" |
+
+Hợp đồng và chỉ số:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Hợp đồng (HĐ) | Policy | |
+| Đã nộp / Đã phát hành / Đã hủy | Submitted / Issued / Cancelled | trạng thái HĐ |
+| Hủy HĐ / Bỏ hủy | Cancel policy / Undo cancellation | phần B |
+| Ngày nộp / Ngày phát hành / Ngày hủy | Submission date / Issue date / Cancellation date | |
+| FYP nộp / FYP phát hành / FYP hủy | Submitted FYP / Issued FYP / Cancelled FYP | |
+| HĐ nộp / HĐ phát hành / HĐ hủy | Policies submitted / Policies issued / Policies cancelled | |
+| Tổng số HĐ | Total policies | Owner 10/11 |
+| Doanh số | Total FYP | Owner 10/11 |
+| Case size | Case size | |
+| Case size dự kiến | Expected case size | |
+| Chuyển RF | Referrals | Owner 12/11; Tỷ lệ chốt = HĐ phát hành ÷ Referrals |
+| Tỷ lệ chốt | Close rate | |
+| Tỷ lệ hủy | Cancellation rate | phần B |
+| Chỉ số của kỳ | Period metrics | |
+
+Forecast và mục tiêu (phần D):
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Forecast tuần / Forecast tháng | Weekly forecast / Monthly forecast | |
+| Dự kiến | Forecast | số tiền |
+| Đã đạt | Achieved | |
+| KPI tháng (mục tiêu doanh số) | Monthly target (KPI) | |
+| Về đích | Progress to target | |
+| Còn thiếu | Remaining | |
+| Nhịp cần mỗi tuần | Needed per week | |
+| Thiếu case size | Missing case size | |
+
+Báo cáo (phần E):
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Bản tin | Briefing | |
+| Điểm nhấn | Highlights | |
+| Xu hướng | Trends | ý 35 |
+| Bảng báo cáo | Report tables | |
+| Theo team / Theo RM | By team / By RM | |
+| Mốc | Interval | cột: ngày / tuần trong kỳ |
+| Tổng | Total | |
+| Xuất Excel | Export to Excel | |
+| In | Print | |
+
+KYC:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Dữ kiện KYC | KYC facts | |
+| Ghi chú KYC | KYC note | |
+| Hạng mục | Category | |
+| Trường / Trường chính / Trường cốt lõi | Field / Key field / Core field | |
+| Cổng KYC | KYC gate | |
+| Phiên bản KYC | KYC version | |
+| Thay đổi quan trọng | Material change | |
+| Mâu thuẫn / Đánh dấu mâu thuẫn | Conflict / Mark as conflict | |
+| Còn hiệu lực / Đã bị thay thế | Active / Superseded | trạng thái dữ kiện |
+| Cần chăm sóc, KYC thêm thông tin khách hàng | Needs care: gather more KYC | thông điệp của cổng |
+| Danh tính / tuổi | Identity / age | hạng mục |
+| Gia đình | Family | hạng mục |
+| Nghề nghiệp / nguồn thu | Occupation / income | hạng mục |
+| Tài sản / AUM | Assets / AUM | hạng mục |
+| Mục tiêu & mốc thời gian | Goals & timeline | hạng mục |
+| Khẩu vị rủi ro | Risk appetite | hạng mục |
+| Bảo vệ hiện có | Existing protection | hạng mục |
+| Mối quan tâm | Concerns | hạng mục |
+| Năm sinh | Birth year | trường |
+| Giới tính | Gender | trường |
+| Nơi sinh sống | Residence | trường |
+| Tình trạng hôn nhân | Marital status | trường |
+| Số con | Number of children | trường |
+| Người phụ thuộc | Dependents | trường |
+| Nghề nghiệp | Occupation | trường |
+| Thu nhập năm | Annual income | trường |
+| Nguồn thu | Income sources | trường |
+| Tổng tài sản | Total assets | trường |
+| Phân bổ tài sản | Asset allocation | trường |
+| Nợ phải trả | Liabilities | trường |
+| Mục tiêu chính | Primary goal | trường |
+| Mốc thời gian mục tiêu | Goal horizon | trường |
+| Mục tiêu khác | Other goals | trường |
+| Khẩu vị rủi ro | Risk appetite | trường |
+| Kinh nghiệm đầu tư | Investment experience | trường |
+| Đã có bảo vệ | Has protection | trường |
+| Chi tiết bảo vệ | Protection details | trường |
+| Mối quan tâm chính | Main concern | trường |
+| Mối quan tâm khác | Other concerns | trường |
+
+AI:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Phân tích / Phân tích lại | Analyze / Re-analyze | |
+| Lịch sử phân tích | Analysis history | |
+| Lần phân tích bị loại | Rejected analysis | |
+| AI trích xuất | AI extraction | |
+| Nhà cung cấp | Provider | |
+| Model | Model | |
+| Mức suy luận: Mặc định / Thấp / Vừa / Cao | Reasoning: Default / Low / Medium / High | |
+| Key AI | API key | |
+| Chép prompt / Dán câu trả lời | Copy prompt / Paste answer | ChatGPT web, WorkBuddy |
+
+Cài đặt, dữ liệu, Thùng rác:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Dữ liệu | Data | |
+| Xuất backup / Nhập backup | Export backup / Import backup | |
+| Nạp lại dữ liệu giả lập | Reload sample data | |
+| Thư mục dữ liệu | Data folder | |
+| Thùng rác | Trash | |
+| Khôi phục | Restore | |
+| Dọn sạch Thùng rác | Empty Trash | |
+| Ngôn ngữ / Language | Ngôn ngữ / Language | phần G; tên mục viết bằng cả hai ngôn ngữ ở cả hai giao diện, để người chọn nhầm ngôn ngữ vẫn tìm thấy (G3 đợt f 13/11/2026, phụ lục ADR-0018; bảng spec §11.6 ghi "Language") |
+| Tiền tệ | Currency | phần G |
+| Thiết lập ban đầu | Setup | phần G |
+| Thiết lập lại từ đầu | Start over | phần G |
+| Trắng / Dữ liệu mẫu / File backup | Start empty / Sample data / From a backup file | nguồn dữ liệu của wizard |
+
+Nút và chữ chung:
+
+| Tiếng Việt | English | Ghi chú |
+|---|---|---|
+| Lưu / Sửa / Xóa / Đóng | Save / Edit / Delete / Close | |
+| Hủy | Cancel | nút đóng hộp thoại |
+| Thêm | Add | |
+| Không bắt buộc | Optional | |
+| Hiện thêm / Đã hiện hết | Show more / All shown | chân bảng dài |

@@ -15,7 +15,7 @@ Thư mục dữ liệu của app: Windows `Project2C-data\` cạnh exe; macOS (b
 - Logic thuần của màn (có unit test): `*-view.ts`, `*-form.ts` cạnh component.
 - Vỏ: `src/shell/` (`AppShell`, `Sidebar`, góc nhìn `scope.ts` + `ScopeContext`, `ErrorBoundary`, `CloseGuard`).
 - Dữ liệu: `src/data/app-data.ts` (mở DB lúc khởi động), `AppDataContext.tsx`, `persist-queue.ts` (hàng đợi ghi), `tauri-storage.ts`. AI: `ai-analysis.ts` (`AppAi`: runner chung, cấu hình `ai` trong bảng `settings`, adapter theo provider / gói), `ai-tauri.ts` (lệnh Rust `ai_complete`, `ai_key_*`; bản web không có).
-- i18n: `src/i18n/vi.ts` (mọi chuỗi UI) + `src/i18n/index.ts` (`t()`, dịch `DbError`).
+- i18n: `src/i18n/vi.ts` (mọi chuỗi UI) + `src/i18n/index.ts` (`t()`, dịch `DbError`); `src/i18n/en.ts` (English dịch dần, `en.test.ts` đếm khóa thiếu), `src/i18n/language.ts` (ngôn ngữ của lần chạy, `changeLanguage`; ADR-0018 §1).
 - E2E: `e2e/*.spec.ts` ở gốc repo (Playwright trên bản build web).
 
 ## Quy ước
@@ -45,7 +45,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 - `src/` — App.tsx, main.tsx
 - `src/data/` — AppDataContext.tsx, ai-analysis.ts, ai-jobs.ts, ai-tauri.ts, app-data.ts, demo-snapshot.ts, listeners.ts, persist-queue.ts, tables.ts, tauri-storage.ts, today.ts
-- `src/i18n/` — index.ts, vi.ts
+- `src/i18n/` — en.ts, index.ts, language.ts, vi.ts
 - `src/routes/` — ConfirmWordDialog.tsx, FilterBar.tsx, Overview.tsx, RestoreDialog.tsx, Screen.tsx, Settings.tsx, SettingsAi.tsx, SettingsBackup.tsx, SettingsDataFile.tsx, SettingsTrash.tsx, ai-error-view.ts, applied-filter.ts, classes.ts, money-view.ts, period-labels.ts, settings-ai-view.ts, stage-badge.tsx, trash-view.ts
 - `src/routes/appointments/` — AppointmentAi.tsx, AppointmentDialog.tsx, AppointmentsScreen.tsx, DeleteAppointmentDialog.tsx, EditOutcomeDialog.tsx, MetFields.tsx, OutcomeDialog.tsx, RescheduleDialog.tsx, RescheduleFields.tsx, YearGrid.tsx, appointment-ai-view.ts, appointment-form.ts, appointments-view.ts, outcome-form.ts
 - `src/routes/customers/` — CustomerAppointments.tsx, CustomerDialogs.tsx, CustomerKyc.tsx, CustomerPolicies.tsx, CustomerProfile.tsx, CustomersScreen.tsx, KycDialogs.tsx, KycExtraction.tsx, KycHistory.tsx, KycIntelligence.tsx, KycWebSession.tsx, PolicyDialogs.tsx, ai-panel-view.ts, customers-view.ts, extraction-view.ts, kyc-view.ts, policy-form.ts, use-ai-job.ts
