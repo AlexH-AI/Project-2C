@@ -62,7 +62,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['*.config.{js,ts}', '.dependency-cruiser.cjs', '{apps,packages}/*/*.config.ts'],
+    files: ['*.config.{js,ts}', '.dependency-cruiser.cjs'],
     languageOptions: { globals: globals.node },
   },
   {

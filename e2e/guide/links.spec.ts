@@ -98,6 +98,8 @@ test('headingIds takes each heading in order, ATX or setext, from the text GitHu
     '===',
     '- Không phải tiêu đề',
     '---',
+    '**Lưu ý**',
+    '---',
     '',
     '---',
   ].join('\n');
@@ -107,5 +109,6 @@ test('headingIds takes each heading in order, ATX or setext, from the text GitHu
     'cài-đặt',
     'cài-đặt-1',
     'báo-cáo',
+    'lưu-ý',
   ]);
 });

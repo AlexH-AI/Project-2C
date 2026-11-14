@@ -25,8 +25,11 @@ export function linkTargets(markdown: string): string[] {
 
 const ATX = /^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/;
 const UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/;
-/** A line of text an underline makes a setext heading: no list item, quote, table row, heading. */
-const TEXT_LINE = /^ {0,3}(?![-*+>#|]|\d+[.)])\S/;
+/**
+ * A line of text an underline makes a setext heading: no list item, quote, table row or heading
+ * ("**Lưu ý**" is text, "* Lưu ý" an item).
+ */
+const TEXT_LINE = /^ {0,3}(?!(?:[-*+]|\d+[.)]|#{1,6})(?:[ \t]|$)|[>|])\S/;
 /** Named entities read; another stays as written, so a link to its heading shows as broken. */
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
