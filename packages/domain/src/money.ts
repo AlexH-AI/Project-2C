@@ -4,7 +4,8 @@
  * conventions for output: `.` groups thousands, `,` marks decimals. Input accepts either mark
  * for either role, told apart by the digits that follow (`parseVnd`).
  */
-import { groupThousands } from './number';
+import type { Language } from './language';
+import { groupDigits, groupThousands } from './number';
 import { normalizeText } from './text';
 
 export type Vnd = number;
@@ -185,6 +186,179 @@ export function formatVndCompact(amount: Vnd): string {
 /** A difference in the compact form, always signed with `−` (U+2212) or `+`; no sign for 0. */
 export function formatVndDelta(amount: Vnd): string {
   const magnitude = formatVndCompact(Math.abs(amount));
+  if (amount === 0) return magnitude;
+  return `${amount < 0 ? '−' : '+'}${magnitude}`;
+}
+
+/*
+ * Money in the currency of the data (ADR-0018 §2–§4; golden `docs/golden/so-va-tien-te.md`
+ * §1–§4), written the Excel way in every language: `,` groups thousands, `.` marks decimals. The
+ * VND functions above stay until the app moves over (G-03a, G-03b, G-04). No `Intl`: the table
+ * below writes the same on every webview (ADR-0018 §4, option 5).
+ */
+
+/** The seven currencies a data set may use, chosen once at set-up (ADR-0018 §2). */
+export const CURRENCY_CODES = ['VND', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'] as const;
+
+export type CurrencyCode = (typeof CURRENCY_CODES)[number];
+
+/**
+ * An amount as a whole number of the currency's smallest unit — đồng for VND, cents for the
+ * others — never a float, so sums are exact up to `Number.MAX_SAFE_INTEGER`. An amount carries no
+ * currency of its own: the currency is the data set's, passed to each function.
+ */
+export type Money = number;
+
+export interface Currency {
+  /** Digits after the decimal mark: 0 for VND, 2 for money with cents. */
+  readonly decimals: 0 | 2;
+  /** `VNĐ`, `$`, `€`, `£`. */
+  readonly symbol: string;
+  /**
+   * VND writes its symbol after the number, a space between (`3,000,000 VNĐ`); the others before
+   * it, joined (`$1,250.50`).
+   */
+  readonly symbolPosition: 'before' | 'after';
+  /** The dollars other than USD add their code to the full form, `$1,250.50 AUD` (Q1). */
+  readonly codeAfter: boolean;
+  /** The largest fee: 100 Billions major units, as stored (DR-23 for VND). */
+  readonly maxFee: Money;
+}
+
+const CENTS_CAP: Money = 10_000_000_000_000;
+
+export const CURRENCIES: Readonly<Record<CurrencyCode, Currency>> = {
+  VND: {
+    decimals: 0,
+    symbol: 'VNĐ',
+    symbolPosition: 'after',
+    codeAfter: false,
+    maxFee: 100_000_000_000,
+  },
+  USD: { decimals: 2, symbol: '$', symbolPosition: 'before', codeAfter: false, maxFee: CENTS_CAP },
+  EUR: { decimals: 2, symbol: '€', symbolPosition: 'before', codeAfter: false, maxFee: CENTS_CAP },
+  GBP: { decimals: 2, symbol: '£', symbolPosition: 'before', codeAfter: false, maxFee: CENTS_CAP },
+  AUD: { decimals: 2, symbol: '$', symbolPosition: 'before', codeAfter: true, maxFee: CENTS_CAP },
+  CAD: { decimals: 2, symbol: '$', symbolPosition: 'before', codeAfter: true, maxFee: CENTS_CAP },
+  SGD: { decimals: 2, symbol: '$', symbolPosition: 'before', codeAfter: true, maxFee: CENTS_CAP },
+};
+
+/**
+ * The largest fee — FYP nộp, FYP phát hành, case size dự kiến — in `currency`: 100 Billions of its
+ * major unit (ADR-0018 §3). Totals stay exact up to 90,071 such fees in VND and 900 in cents.
+ */
+export function maxFee(currency: CurrencyCode): Money {
+  return CURRENCIES[currency].maxFee;
+}
+
+/** `total + amount`, or a `RangeError` when the sum is past a safe integer and so not exact. */
+export function addMoney(total: Money, amount: Money): Money {
+  const sum = total + amount;
+  if (!Number.isSafeInteger(sum)) throw new RangeError(`Total past a safe integer: ${sum}`);
+  return sum;
+}
+
+function assertMoney(amount: Money): void {
+  if (!Number.isSafeInteger(amount)) throw new RangeError(`Not a whole amount: ${amount}`);
+}
+
+/**
+ * Full form, the same in both languages (ADR-0018 §4): `3,000,000 VNĐ`, `$1,250.50`,
+ * `$1,250.50 AUD`; money with cents always has two decimals (Q2). A negative amount has `-` in
+ * front, before the symbol: `-$1,250.50` (Q4).
+ */
+export function formatMoney(amount: Money, currency: CurrencyCode): string {
+  assertMoney(amount);
+  const { decimals, symbol, symbolPosition, codeAfter } = CURRENCIES[currency];
+  const major = 10 ** decimals;
+  const magnitude = Math.abs(amount);
+  // Whole numbers only, so the cents of an amount near the safe limit stay exact.
+  const minor = magnitude % major;
+  const whole = groupDigits((magnitude - minor) / major);
+  const number = decimals === 0 ? whole : `${whole}.${String(minor).padStart(decimals, '0')}`;
+  const before = symbolPosition === 'before' ? symbol : '';
+  const after = `${symbolPosition === 'after' ? ` ${symbol}` : ''}${codeAfter ? ` ${currency}` : ''}`;
+  return `${amount < 0 ? '-' : ''}${before}${number}${after}`;
+}
+
+/** A unit of the compact form: a power of ten of the major unit, and its word (ADR-0018 §9). */
+interface CompactUnit {
+  readonly exponent: number;
+  readonly word: string;
+}
+
+/**
+ * The compact form's units, smallest first (ADR-0018 §4). Vietnamese stops at tỷ (Q3): a larger
+ * amount is still counted in tỷ, `1,500 tỷ`. English goes on to T.
+ */
+const COMPACT_UNITS: Readonly<Record<Language, readonly [CompactUnit, ...CompactUnit[]]>> = {
+  vi: [
+    { exponent: 3, word: 'K' },
+    { exponent: 6, word: 'tr' },
+    { exponent: 9, word: 'tỷ' },
+  ],
+  en: [
+    { exponent: 3, word: 'K' },
+    { exponent: 6, word: 'Mil' },
+    { exponent: 9, word: 'Bil' },
+    { exponent: 12, word: 'T' },
+  ],
+};
+
+/**
+ * `magnitude ÷ size` in hundredths, rounded half away from zero. Whole numbers only: `size` is a
+ * power of ten of at least 1,000, so the step is a whole number and the result is exact.
+ */
+function hundredthsOf(magnitude: Money, size: number): number {
+  const step = size / 100;
+  const rest = magnitude % step;
+  return (magnitude - rest) / step + (rest * 2 >= step ? 1 : 0);
+}
+
+/**
+ * Compact form for KPIs, charts and narrow columns (ADR-0018 §4): `750K`, `1.9 tỷ` / `1.9 Bil`,
+ * `$1.25K`, `$1.2 Mil`, up to two decimals. Under 1,000 major units the full form is shown. VND
+ * drops `VNĐ`; money with cents keeps its symbol but not its code, `$250K` (Q1). A one-letter unit
+ * is joined to the number, a longer one stands after a space (Q5). Money with cents goes with
+ * English only: `language` does not change its text.
+ */
+export function formatMoneyCompact(
+  amount: Money,
+  currency: CurrencyCode,
+  language: Language,
+): string {
+  assertMoney(amount);
+  const { decimals, symbol, symbolPosition } = CURRENCIES[currency];
+  const major = 10 ** decimals;
+  const magnitude = Math.abs(amount);
+  if (magnitude < 1000 * major) return formatMoney(amount, currency);
+
+  const [smallest, ...larger] = COMPACT_UNITS[currency === 'VND' ? language : 'en'];
+  const shownIn = ({ exponent, word }: CompactUnit) => ({
+    hundredths: hundredthsOf(magnitude, 10 ** exponent * major),
+    word,
+  });
+  let shown = shownIn(smallest);
+  // Rounding that reaches 1,000 of a unit shows the next one: 999,995 đồng is `1 tr`, not `1,000K`.
+  for (const unit of larger) {
+    if (shown.hundredths < 100_000) break;
+    shown = shownIn(unit);
+  }
+  const fraction = shown.hundredths % 100;
+  const whole = groupDigits((shown.hundredths - fraction) / 100);
+  const decimal = String(fraction).padStart(2, '0').replace(/0+$/, '');
+  const before = symbolPosition === 'before' ? symbol : '';
+  const space = shown.word.length === 1 ? '' : ' ';
+  return `${amount < 0 ? '-' : ''}${before}${whole}${decimal ? `.${decimal}` : ''}${space}${shown.word}`;
+}
+
+/** A difference in the compact form, signed with `−` (U+2212) or `+`; no sign for 0 (ADR-0018 §4). */
+export function formatMoneyDelta(
+  amount: Money,
+  currency: CurrencyCode,
+  language: Language,
+): string {
+  const magnitude = formatMoneyCompact(Math.abs(amount), currency, language);
   if (amount === 0) return magnitude;
   return `${amount < 0 ? '−' : '+'}${magnitude}`;
 }
