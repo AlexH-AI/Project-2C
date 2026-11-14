@@ -20,7 +20,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { rmOptions } from '../../shell/scope';
 import { ALERT } from '../classes';
-import { amountRead } from '../money-view';
+import { amountRead, formatAmountCompact, formatAmountDelta } from '../money-view';
 import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
@@ -34,7 +34,6 @@ import {
   type PolicyDraft,
   type PolicyMode,
 } from './policy-form';
-import { formatAmountCompact, formatAmountDelta } from '../money-view';
 
 export type { PolicyMode } from './policy-form';
 

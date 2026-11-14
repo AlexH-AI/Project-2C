@@ -3,11 +3,10 @@ import type { AppointmentRecord } from '@p2c/db';
 import { formatDate, isRfTransition, type CustomerStage, type Person } from '@p2c/domain';
 import { Choices, SelectField, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
-import { amountRead } from '../money-view';
+import { amountRead, formatAmount } from '../money-view';
 import { stageBadge } from '../stage-badge';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
-import { formatAmount } from '../money-view';
 
 const FIELD_ERROR = 'm-0 text-sm text-danger';
 

@@ -7,6 +7,7 @@ import {
   POLICIES,
   STAGE_TRANSITIONS,
 } from './golden/metrics.fixture';
+import { formatPercentage } from './number';
 import {
   calendarDate,
   customPeriod,
@@ -221,6 +222,17 @@ describe('metricDeltas (spec Phase 4 §4.2)', () => {
   // CLR6-A3: the two rates are taken apart unrounded, not rounded each and then taken apart (34).
   it('gives the change of rates that are not whole: 2/3 after 1/3 is ▲ 33.33… points', () => {
     expect(metricDeltas(metrics(3, 2), metrics(3, 1)).closeRatePoints).toBeCloseTo(100 / 3, 10);
+  });
+
+  // The change is exact at half a tenth, so the tile rounds it half up (golden so-va-tien-te.md §5
+  // N09). Two rates taken apart after each division miss it either way.
+  it('gives a change at half a tenth exactly: 1/3 against 31/48 is ▼ 31.25, shown 31.3', () => {
+    const fall = metricDeltas(metrics(3, 1), metrics(48, 31)).closeRatePoints as number;
+    expect(fall).toBe(-31.25);
+    expect(formatPercentage(Math.abs(fall))).toBe('31.3');
+    const rise = metricDeltas(metrics(3, 1), metrics(48, 1)).closeRatePoints as number;
+    expect(rise).toBe(31.25);
+    expect(formatPercentage(rise)).toBe('31.3');
   });
 
   it('gives no close-rate change when the current window has no RF', () => {
