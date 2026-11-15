@@ -2,22 +2,13 @@
 //!
 //! Layout next to the exe: `Project2C-data\project2c.db`, `project2c.lock`, `backups\`, `exports\`.
 //! On macOS the same files are in `~/Library/Application Support/dev.alexh.project2c/` (see
-//! `app_support_dir`).
+//! `platform::data_dir`).
 
-use std::ffi::OsString;
 use std::fs;
 use std::io::{self, ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
-#[cfg(windows)]
-pub const DATA_DIR: &str = "Project2C-data";
-/// The identifier of the build (`tauri.conf.json`), which names the data folder on macOS.
-#[cfg(any(not(windows), test))]
-const APP_ID: &str = "dev.alexh.project2c";
-/// macOS `open`, by its full path (see [`open_command`]).
-#[cfg(any(not(windows), test))]
-const OPEN: &str = "/usr/bin/open";
 /// Error message when another process holds the data folder; the app matches it exactly.
 pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
 /// Error message of a save from a page that a webview reload replaced.
@@ -642,64 +633,6 @@ pub fn folder(dir: &Path, kind: &str) -> io::Result<PathBuf> {
     let path = dir.join(name);
     fs::create_dir_all(&path)?;
     Ok(path)
-}
-
-/// The command-line argument that makes Explorer show `path`. Always quoted and passed raw:
-/// `std` quotes an argument only when it has a space or tab, and Explorer splits an unquoted one
-/// at commas (`/select,…`), so `D:\Apps\P2C,v2\…` opened Documents instead. A Windows path
-/// never contains `"`, so nothing inside needs escaping.
-#[cfg(any(windows, test))]
-pub fn explorer_arg(path: &Path) -> OsString {
-    let mut arg = OsString::from("\"");
-    arg.push(path);
-    arg.push("\"");
-    arg
-}
-
-/// Explorer by its full path in `system_root` (`%SystemRoot%`): a bare name is looked up in the
-/// exe's folder first, so an `explorer.exe` put next to the portable exe would run instead (DR-54).
-#[cfg(any(windows, test))]
-pub fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
-    system_root
-        .map(PathBuf::from)
-        .filter(|root| root.is_absolute())
-        .map(|root| root.join("explorer.exe"))
-        .ok_or_else(|| {
-            io::Error::new(
-                ErrorKind::NotFound,
-                "SystemRoot is missing or not an absolute path",
-            )
-        })
-}
-
-/// macOS `open` on `target`: Finder shows a folder, the default browser opens a page. By its full
-/// path, never looked up in `PATH` (as Explorer, DR-54).
-#[cfg(any(not(windows), test))]
-pub fn open_command(target: impl AsRef<std::ffi::OsStr>) -> std::process::Command {
-    let mut command = std::process::Command::new(OPEN);
-    command.arg(target);
-    command
-}
-
-/// The data folder on macOS, `$HOME/Library/Application Support/dev.alexh.project2c/` (M2): not
-/// next to the app, whose `.app` may run from a read-only place (App Translocation) and whose
-/// signature a write inside would break. `home` (`$HOME`) missing or not an absolute path is an
-/// error: the data never goes anywhere else.
-#[cfg(any(not(windows), test))]
-pub fn app_support_dir(home: Option<OsString>) -> io::Result<PathBuf> {
-    home.map(PathBuf::from)
-        .filter(|home| home.is_absolute())
-        .map(|home| {
-            home.join("Library")
-                .join("Application Support")
-                .join(APP_ID)
-        })
-        .ok_or_else(|| {
-            io::Error::new(
-                ErrorKind::NotFound,
-                "HOME is missing or not an absolute path",
-            )
-        })
 }
 
 /// The newest backup with the same bytes. An unchanged file matches the newest, so it is tried
@@ -2372,74 +2305,6 @@ mod tests {
             let error = folder(&dir, kind).unwrap_err();
             assert_eq!(error.kind(), ErrorKind::InvalidInput);
         }
-    }
-
-    #[test]
-    fn explorer_arg_quotes_the_path_and_keeps_it_verbatim() {
-        for path in [
-            r"D:\Apps\P2C,v2\Project2C-data\exports",
-            r"D:\My Apps\P2C, v2\Project2C-data\backups",
-            r"D:\Apps\Project-2C\Project2C-data\exports",
-            r"C:\Program Files\Project-2C\Project2C-data\backups",
-        ] {
-            assert_eq!(
-                explorer_arg(Path::new(path)),
-                OsString::from(format!("\"{path}\""))
-            );
-        }
-    }
-
-    #[test]
-    fn explorer_is_named_by_its_full_path_in_the_windows_folder() {
-        // A bare name would run an `explorer.exe` put next to the portable exe (DR-54).
-        let root = std::env::temp_dir();
-        assert_eq!(
-            explorer(Some(root.clone().into_os_string())).unwrap(),
-            root.join("explorer.exe")
-        );
-        for root in [None, Some(OsString::new()), Some(OsString::from("Windows"))] {
-            assert_eq!(explorer(root).unwrap_err().kind(), ErrorKind::NotFound);
-        }
-    }
-
-    #[test]
-    fn the_macos_data_folder_is_the_app_s_own_under_application_support() {
-        // Not inside the `.app`, which may run from a read-only place and whose signature a write
-        // would break (M2). A `HOME` missing or relative is an error, never another folder.
-        let home = std::env::temp_dir();
-        assert_eq!(
-            app_support_dir(Some(home.clone().into_os_string())).unwrap(),
-            home.join("Library")
-                .join("Application Support")
-                .join("dev.alexh.project2c")
-        );
-        for home in [
-            None,
-            Some(OsString::new()),
-            Some(OsString::from("Users/me")),
-        ] {
-            assert_eq!(
-                app_support_dir(home).unwrap_err().kind(),
-                ErrorKind::NotFound
-            );
-        }
-    }
-
-    #[test]
-    fn the_macos_data_folder_is_named_by_the_identifier_of_the_build() {
-        // A new identifier would leave the data in the old folder.
-        let config: serde_json::Value =
-            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
-        assert_eq!(config["identifier"], APP_ID);
-    }
-
-    #[test]
-    fn open_command_runs_the_macos_open_by_its_full_path_on_the_target_only() {
-        // Never looked up in `PATH` (DR-54); Finder for a folder, the default browser for a page.
-        let folder = Path::new("/Users/me/Library/Application Support/dev.alexh.project2c/exports");
-        let command = open_command(folder);
-        assert_eq!(command.get_program(), "/usr/bin/open");
-        assert_eq!(command.get_args().collect::<Vec<_>>(), [folder.as_os_str()]);
     }
 
     #[test]
