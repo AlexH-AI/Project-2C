@@ -126,9 +126,9 @@ Cột: **Nộp** = HĐ đã nộp · **Case size** (tr) · **PH** = HĐ phát h�
 
 ## 3. Owner duyệt
 
-- [ ] Dữ liệu kịch bản đúng ý (mục 1)
-- [ ] Kết quả G01–G22 đúng (mục 2)
-- [ ] Mô hình dữ liệu (`packages/domain/src/model.ts`, tóm tắt trong PR)
+- [x] Dữ liệu kịch bản đúng ý (mục 1): Owner duyệt G2 26/09/2026, PR #34
+- [x] Kết quả G01–G22 đúng (mục 2): Owner duyệt G2 26/09/2026, PR #34
+- [x] Mô hình dữ liệu (`packages/domain/src/model.ts`, tóm tắt trong PR): Owner duyệt G2 26/09/2026, PR #34
 
 ## 4. Golden B — HĐ hủy, tỷ lệ hủy (Phase 6 phần B, Owner duyệt G2 13/11/2026)
 
