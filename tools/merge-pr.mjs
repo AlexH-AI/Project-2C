@@ -12,7 +12,9 @@
 // It refuses to merge (exit 1) when the PR is not open or is a draft, not every file of it was
 // read, the latest REVIEW is not PASS for the current head SHA (P-1; a PR that only writes the
 // review notes ledger needs none, T-215), a code PR's CI is not all green or did not note the
-// base it tested, its files need the exe build without the build-exe label, the base got code
+// base it tested, its files need the exe build without the build-exe label or the macOS build
+// without the build-mac label, a build-mac PR has no macOS build that passed on its head (only
+// skipped runs of macos.yml, or none yet; Mac-6, ADR-0019 §8), the base got code
 // since the base its CI tested (a re-run tests the old one, DR6-57) or not every commit it got
 // since was read (DR6-85), the risk is not low without --owner, the base is not main, or a PR is
 // stacked on it without --merge. The merge itself pins the head (`gh pr merge --match-head-commit`).

@@ -184,7 +184,7 @@ Mỗi brief việc mở đầu bằng thẻ của việc đó. Phiên điều ph
 Làm Issue #<I> theo CLAUDE.md "Quy trình một task", ở checkout chính `C:\workspace\Project-2C`:
 1. `git switch main`, `git pull --ff-only`, tạo nhánh `task/T-<số>-<slug>`; gắn nhãn `status:in-progress` cho Issue.
 2. `node tools/notes-for.mjs <I>`; đọc "Tài liệu cần đọc"; TDD; `pnpm verify` xanh (chạy pnpm từ PowerShell); commit theo pathspec; push.
-3. Mở PR theo mẫu: `Closes #<I>`; mục "Ghi chú OPEN liên quan" theo `node tools/notes-for.mjs --diff`; nhãn risk của Issue; nhãn `build-exe` khi CLAUDE.md đòi (gắn lúc tạo). Thân PR có dòng `Phiên code: <tên> (auto-issues)`.
+3. Mở PR theo mẫu: `Closes #<I>`; mục "Ghi chú OPEN liên quan" theo `node tools/notes-for.mjs --diff`; nhãn risk của Issue; nhãn `build-exe` và `build-mac` khi CLAUDE.md đòi (gắn lúc tạo). Thân PR có dòng `Phiên code: <tên> (auto-issues)`.
 4. Không chờ CI, không review.
 Dòng cuối: `AUTO-CHILD: [Issue #<I>] PR #<N> @<sha7>` hoặc `AUTO-CHILD: [Issue #<I>] CẦN OWNER — …`.
 ```
@@ -271,6 +271,8 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - **`merge-pr` từ chối:**
   - `main` có commit code sau bản CI đã test: gửi §3.8 cho phiên code của PR, lệnh chờ `ci <N> --not <H> --timeout 15`. Head đổi, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
   - Thiếu nhãn `build-exe`: `gh pr edit <N> --add-label build-exe`, rồi đóng, mở lại PR và chờ CI như dưới. Head không đổi nên PASS vẫn còn giá trị.
+  - Thiếu nhãn `build-mac`: `gh pr edit <N> --add-label build-mac`. Gắn nhãn là `macos.yml` build ngay, không đóng / mở lại PR. Chờ run Mac của head xong: lệnh nền `node tools/auto-wait.mjs sleep --timeout 1 && node tools/auto-wait.mjs ci <N> --timeout 15`, rồi chạy lại `merge-pr`. `ci` không `--since` chờ mọi run của head xong, kể cả run `macos.yml`; phút đầu để GitHub kịp tạo run của nhãn, vì chạy `ci` ngay có thể báo xanh theo các check cũ. Không dùng `--since`: nó chỉ nhận run của `ci.yml`. Head không đổi nên PASS vẫn còn giá trị. Thiếu cả hai nhãn: gắn cả hai, rồi làm như dòng `build-exe` (`ci --since` vẫn chờ run `macos.yml` đang chạy).
+  - Run Mac của head chỉ có bản bị bỏ qua (`was only skipped`): `gh pr edit <N> --remove-label build-mac`, rồi `gh pr edit <N> --add-label build-mac`, và chờ như dòng trên. Đóng / mở lại PR không build bản Mac.
   - CI không ghi notice `Tested base`: đóng, mở lại PR và chờ CI như dưới.
   - Đóng, mở lại PR và chờ CI: `gh pr close <N>`; `gh pr view <N> --json closedAt --jq .closedAt` cho mốc `T`, giờ của GitHub (đọc trước khi mở lại); `gh pr reopen <N>`; rồi lệnh nền `node tools/auto-wait.mjs ci <N> --since <T> --timeout 15`. PR mở lại vẫn giữ các check cũ đã xong tới khi GitHub tạo workflow run mới; `--since` chờ một run tạo từ mốc `T` trở đi, nên `ci` không báo xong theo run cũ.
   - Lý do khác: hỏi Owner.

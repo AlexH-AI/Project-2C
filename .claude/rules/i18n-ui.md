@@ -13,7 +13,7 @@ paths:
   - Thuật ngữ ngành (KPI, FYP, KYC, RM, TL…) giữ nguyên ở cả hai ngôn ngữ theo danh sách "Giữ nguyên ở cả hai ngôn ngữ" của `CONTEXT.md`; chữ khác dịch theo bảng đó.
   - Câu English chỉ dùng các ô `{…}` mà câu tiếng Việt của khóa có.
   - Số nhiều: câu English có số đếm viết `{ one, other }`, chỉ khi câu có đúng một ô đếm (`COUNT_SLOTS` của `apps/desktop/src/i18n/index.ts`). Nơi gọi truyền số, không truyền chuỗi đã định dạng: ô đếm tự nhóm hàng nghìn và chọn dạng. Tiếng Việt chỉ một dạng.
-  - Ngôn ngữ lưu theo máy (khóa `p2c.language`), không vào DB hay backup. Đổi bằng `changeLanguage` (lưu nốt rồi tải lại giao diện), không đổi giữa chừng một lần chạy.
+  - Ngôn ngữ của lần chạy là lựa chọn của máy (khóa `p2c.language` trong bộ nhớ WebView, không vào DB hay backup), trừ dữ liệu khác VND luôn English; máy chưa lưu gì thì theo tiền tệ (`resolveLanguage` → `languageFor`, ADR-0018 §1). `main.tsx` chốt ngôn ngữ một lần khi dữ liệu mở (`setDataCurrency`; trước đó, như dòng "đang mở", là ngôn ngữ của máy), rồi mới nạp màn bằng `import('./App')`: module dựng nhãn lúc nạp (`PERIOD_LABELS`) chỉ được nạp sau chỗ đó, không import tĩnh từ `main.tsx`. Đổi bằng `changeLanguage` (lưu nốt rồi tải lại giao diện), không đổi giữa chừng một lần chạy.
 - Tiền, số, ngày, kỳ, chỉ số: chỉ dùng hàm của `packages/domain` (`money.ts`, `number.ts`, `period.ts`, `stats.ts`…). Không tự `toLocaleString`, `new Date(...)` để parse / format rải rác.
 - Chỉ dùng component và token của `packages/ui`; không màu / khoảng cách tùy tiện (`pnpm lint:tokens` kiểm). Số liệu dùng `tabular-nums`; tương phản đạt WCAG AA.
 - Logic thuần của màn hình nằm ở `*-view.ts` cạnh màn hình (có unit test); component chỉ ghép dữ liệu và render.
