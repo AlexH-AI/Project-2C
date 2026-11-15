@@ -22,6 +22,7 @@ export default defineConfig({
         'apps/desktop/src/routes/reports/report-workbook.ts',
         'apps/desktop/src/routes/**/stage-chart.ts',
         'apps/desktop/src/i18n/index.ts',
+        'apps/desktop/src/i18n/language.ts',
         'packages/ui/src/**/*.ts',
         'packages/ui/scripts/token-guard.ts',
       ],
@@ -74,6 +75,14 @@ export default defineConfig({
           branches: 100,
           functions: 100,
           lines: 100,
+        },
+        // The language of the run (ADR-0018 §1); the default `reload` of changeLanguage, the
+        // browser's, runs in no unit test.
+        'apps/desktop/src/i18n/language.ts': {
+          statements: 95,
+          branches: 90,
+          functions: 87,
+          lines: 94,
         },
         // The .ts helpers of the UI kit (DR6-62); its components (.tsx) are covered by e2e.
         'packages/ui/src/**': {

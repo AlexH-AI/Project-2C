@@ -7,7 +7,7 @@ Thư mục dữ liệu của app (`platform::data_dir`, module `src-tauri/src/pl
 ## Ranh giới
 
 - Dùng `@p2c/domain`, `@p2c/db`, `@p2c/ui` qua `index.ts` của từng package; package không được import app.
-- Sửa `src-tauri/**`, `vite.config.ts`, `tauri.conf.json`, `package.json` → PR gắn nhãn `build-exe` lúc tạo; sửa Rust thì chạy `pnpm verify:rust`.
+- Sửa `src-tauri/**`, `vite.config.ts`, `tauri.conf.json`, `package.json` → PR gắn cả hai nhãn `build-exe` và `build-mac` lúc tạo (`merge-pr` chặn khi thiếu nhãn nào); sửa Rust thì chạy `pnpm verify:rust`.
 
 ## File hay tìm
 

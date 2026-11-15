@@ -112,3 +112,28 @@ test('headingIds takes each heading in order, ATX or setext, from the text GitHu
     'lưu-ý',
   ]);
 });
+
+// One form a line (L116, L117 of the review notes): the id GitHub gives it, or none where GitHub
+// makes no heading of it.
+test('headingIds reads each form as GitHub does', () => {
+  const forms: [string, string[]][] = [
+    ['## Lệnh [`pnpm verify`](x.md) chạy gì', ['lệnh-pnpm-verify-chạy-gì']],
+    [
+      '## Xem <https://example.com/a_b> hay <ho.tro@example.com>',
+      ['xem-httpsexamplecoma_b-hay-hotroexamplecom'],
+    ],
+    // Past U+10FFFF, U+FFFD (CommonMark); with 8 digits, no entity.
+    ['## Ký tự &#1114112; lạ\n## Số &#12345678; dài', ['ký-tự--lạ', 'số-12345678-dài']],
+    ['## file__name__v2', ['file__name__v2']],
+    ['## Mục một\r\n## Mục hai\r\n', ['mục-một', 'mục-hai']],
+    ['<!-- ghi chú -->\n---', []],
+    ['***\n---', []],
+    ['- mục\nnối tiếp\n---', []],
+    ['---\ntitle: x\n---\n# Tiêu đề', ['tiêu-đề']],
+    ['Dòng một\nDòng hai\n===', []],
+    ['## Lỗi &constructor; lạ', ['lỗi-constructor-lạ']],
+  ];
+  for (const [markdown, ids] of forms) {
+    expect([...headingIds(markdown)], markdown).toEqual(ids);
+  }
+});

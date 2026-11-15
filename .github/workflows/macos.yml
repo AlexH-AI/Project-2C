@@ -63,6 +63,10 @@ jobs:
         run: cargo test --lib --locked
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @p2c/desktop build:mac
+      # What the app grants the webview, as this build compiled it in (with tauri.macos.conf.json),
+      # against capabilities/default.json (DR6-204), as ci.yml does for the exe.
+      - name: Check the capabilities of the webview
+        run: node tools/check-capabilities.mjs apps/desktop/src-tauri/gen/schemas/capabilities.json apps/desktop/src-tauri/capabilities/default.json apps/desktop/src-tauri/target/release
       # `ditto` keeps the signature, the symlinks and the execute bits that a plain zip may lose.
       - name: Check and zip the app
         working-directory: apps/desktop/src-tauri/target/release/bundle/macos

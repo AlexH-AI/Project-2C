@@ -1,6 +1,6 @@
 // The contract between `tauri-storage.ts` and the Rust commands (DR-55): each side is otherwise
 // tested only against its own copy, and a renamed command or argument shows only in the exe.
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { AI_MODELS } from '@p2c/ai';
 import { describe, expect, it, vi } from 'vitest';
 import { t } from '../i18n';
@@ -279,28 +279,35 @@ const tauriConf = () =>
     productName: string;
     version: string;
     identifier: string;
-    app: { windows: { title: string }[]; security: { csp: string } };
+    app: { windows: { label: string; title: string }[]; security: { csp: string } };
   };
 
-/** Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside. */
+/**
+ * Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside.
+ * Each mention of `@tauri-apps/` is such an import, a type one too: `import * as`, a default or
+ * dynamic import, double quotes, another package of Tauri would be one this does not read (WBR6-B2).
+ */
 function tauriImports(): string[] {
   const src = new URL('../', import.meta.url);
   const files = readdirSync(src, { recursive: true, encoding: 'utf8' }).filter(
     (file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file),
   );
-  return files.flatMap((file) =>
-    [
-      ...readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8').matchAll(
-        /^import \{([^}]*)\} from '@tauri-apps\/api\/(\w+)';/gm,
-      ),
-    ].flatMap(([, names, module]) =>
-      names!
-        .split(',')
-        .map((name) => name.trim())
-        .filter((name) => name && !name.startsWith('type '))
-        .map((name) => `${module}: ${name}`),
-    ),
-  );
+  return files.flatMap((file) => {
+    const code = readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8');
+    const imports = [
+      ...code.matchAll(/^import (type )?\{([^}]*)\} from '@tauri-apps\/api\/(\w+)';/gm),
+    ];
+    expect(code.split('@tauri-apps/').length - 1, file).toBe(imports.length);
+    return imports
+      .filter(([, type]) => !type)
+      .flatMap(([, , names, module]) =>
+        names!
+          .split(',')
+          .map((name) => name.trim())
+          .filter((name) => name && !name.startsWith('type '))
+          .map((name) => `${module}: ${name}`),
+      );
+  });
 }
 
 /** A release version, 1.0.0 or later; a pre-release (`-rc.1`) or build (`+…`) suffix is semver too. */
@@ -340,6 +347,11 @@ describe('the release configuration (DR6-12…14)', () => {
     expect(desktop('src-tauri/Cargo.toml')).toMatch(/^crate-type = \["rlib"\]$/m);
   });
 
+  // What the exe grants the webview is checked on the build itself, in CI right after the build of
+  // each platform (tools/check-capabilities.mjs in ci.yml and macos.yml): the capability files
+  // tauri-build read, and the config the build ran with, which a file of the platform or
+  // `tauri build --config` can patch with capabilities of its own (DR6-204). This case keeps what no
+  // build shows: the imports that need a permission, the files a build reads, the Rust code.
   it('allows the webview only the Tauri commands it uses', () => {
     // A new import may need a new permission in capabilities/default.json.
     expect([...new Set(tauriImports())].sort()).toEqual([
@@ -347,113 +359,30 @@ describe('the release configuration (DR6-12…14)', () => {
       'core: isTauri',
       'window: getCurrentWindow',
     ]);
-    // The exe grants the webview every capability: each file under capabilities/, or instead those
-    // `app.security.capabilities` lists, written inline there too; Tauri merges a platform's
-    // tauri.windows.conf.json into the config. The web build e2e runs has no ACL, so this is the
-    // one check of them all (DR6-161). The platform files only pack the app: the `.app` on macOS
-    // (T-413), the NSIS installer on Windows (ADR-0019 §5).
+    // The exe grants the webview each capability file under capabilities/, or instead those
+    // `app.security.capabilities` lists. The web build e2e runs has no ACL (DR6-161).
     const src = new URL('../../src-tauri/', import.meta.url);
-    const files = (dir: URL, recursive = false) =>
-      readdirSync(dir, { recursive, encoding: 'utf8' });
-    expect(files(new URL('capabilities/', src), true)).toEqual(['default.json']);
-    expect(
-      files(src)
-        .filter((file) => /^tauri\b/i.test(file))
-        .sort(),
-    ).toEqual(['tauri.conf.json', 'tauri.macos.conf.json', 'tauri.windows.conf.json']);
-    for (const platform of ['macos', 'windows']) {
-      expect(
-        Object.keys(JSON.parse(desktop(`src-tauri/tauri.${platform}.conf.json`))),
-        platform,
-      ).toEqual(['$schema', 'bundle']);
-    }
+    const files = (dir: URL) => readdirSync(dir, { recursive: true, encoding: 'utf8' });
+    expect(files(new URL('capabilities/', src))).toEqual(['default.json']);
     expect(tauriConf().app.security).not.toHaveProperty('capabilities');
     // Nor does the build script (build.rs: Cargo.toml names no other) read them from another
-    // folder, `capabilities_path_pattern` of tauri-build, nor does the app add one while it runs,
+    // folder, `capabilities_path_pattern` of tauri-build, nor does the app take them from another
+    // config or list, `generate_context!` with an argument, nor add one while it runs,
     // `Manager::add_capability` (feature `dynamic-acl`, on by default).
     expect(desktop('src-tauri/Cargo.toml')).not.toMatch(/^build\s*=/m);
     expect(desktop('src-tauri/build.rs')).not.toContain('capabilities_path_pattern');
-    const code = files(new URL('src/', src), true).filter((file) => file.endsWith('.rs'));
-    expect(code).toContain('lib.rs');
-    for (const file of code) {
-      expect(rust(file.replaceAll('\\', '/')), file).not.toContain('add_capability');
-    }
-    // Nor does `tauri build` patch the config with one (JSON merge patch of tauri-build): from
-    // `-c` / `--config`, JSON or a file, alone or among other short flags, or from `TAURI_CONFIG`.
-    // No script of the app or the root nor `run:` of a workflow passes either, no workflow nor
-    // `[env]` of a Cargo config sets it (reviews of PR 1090, PR 1099).
-    const repo = new URL('../../../../', import.meta.url);
-    const read = (file: string) => readFileSync(new URL(file, repo), 'utf8');
-    // Each command of a script, a line ending in `\` (bash) or `` ` `` (PowerShell) going on.
-    const commands = (script: string) =>
-      script
-        .replace(/[\\`]\r?\n/g, ' ')
-        .split(/&&|\|\||[;|]|\r?\n/)
-        .map((command) => command.trim());
-    // The CLI as the program a command runs, first or after a runner (`pnpm`, `npx`, `cargo`…):
-    // `tauri` as a word of its own or the last part of a path, maybe the Windows shim `tauri.cmd`,
-    // or the package `@tauri-apps/cli`, maybe with a version. Not the cargo commands of
-    // `verify:rust`, whose path of src-tauri's Cargo.toml goes on after `tauri`, and whose flags
-    // `-D…` the config regex would read as `-c` (reviews of PR 1099, PR 1109).
-    const cli = [
-      /(?:^|[\s/\\])tauri(?:\.cmd)?(?:\s|$)/,
-      /(?:^|\s)@tauri-apps\/cli(?:@\S+)?(?:\s|$)/,
-    ];
-    const tauriCalls = (scripts: readonly string[]) =>
-      scripts.flatMap(commands).filter((command) => cli.some((name) => name.test(command)));
-    const samples = [
-      'tauri build --no-bundle',
-      'pnpm --filter @p2c/desktop tauri dev',
-      'cargo tauri build',
-      'node_modules/.bin/tauri build -c x.json',
-      'node_modules\\.bin\\tauri.cmd build',
-      'tauri.cmd build',
-      'npx @tauri-apps/cli build --config x.json',
-      'pnpm dlx @tauri-apps/cli@2 build',
-    ];
-    const verifyRust = (JSON.parse(read('package.json')) as { scripts: Record<string, string> })
-      .scripts['verify:rust'];
-    expect(verifyRust).toContain('src-tauri/Cargo.toml');
-    expect(tauriCalls([...samples, verifyRust ?? ''])).toEqual(samples);
-    const noConfig = (calls: readonly string[]) => {
-      for (const command of calls) {
-        expect(command).not.toMatch(/(?:^|\s)(?:-[A-Za-z]*c|--config\b)/);
-      }
-    };
-    const manifests = ['apps/desktop/package.json', 'package.json'];
-    const scripts = manifests.flatMap((file) =>
-      Object.values((JSON.parse(read(file)) as { scripts: Record<string, string> }).scripts),
+    const code = files(new URL('src/', src))
+      .filter((file) => file.endsWith('.rs'))
+      .map((file) => rust(file.replaceAll('\\', '/')));
+    const contexts = code.flatMap((file) =>
+      [...file.matchAll(/generate_context!\s*\(([^)]*)\)/g)].map(([, args]) => args),
     );
-    expect(tauriCalls(scripts)).toContain('tauri build --no-bundle');
-    noConfig(tauriCalls(scripts));
-    const workflows = files(new URL('.github/workflows/', repo))
-      .filter((file) => /\.ya?ml$/.test(file))
-      .map((file) => `.github/workflows/${file}`);
-    expect(workflows).toContain('.github/workflows/ci.yml');
-    // Each step's `run:`, on its line or as the block below it (`|` keeps its lines, `>` folds them),
-    // every line more indented than the key.
-    const runs = workflows.flatMap((file) => {
-      const lines = read(file).split(/\r?\n/);
-      return lines.flatMap((line, at) => {
-        const run = /^(\s*(?:-\s+)?)run:\s*(.*)$/.exec(line);
-        if (!run) return [];
-        const [, key = '', value = ''] = run;
-        if (!/^[|>]/.test(value)) return [value.replace(/^(["'])(.*)\1$/, '$2')];
-        const end = lines.findIndex(
-          (next, after) => after > at && next.trim() !== '' && next.search(/\S/) <= key.length,
-        );
-        const block = lines.slice(at + 1, end === -1 ? undefined : end);
-        return [block.join(value.startsWith('>') ? ' ' : '\n')];
-      });
-    });
-    expect(runs.flatMap(commands)).toContain('pnpm build:installer');
-    noConfig(tauriCalls(runs));
-    const cargoConfigs = ['apps/desktop/src-tauri/', 'apps/desktop/', 'apps/', '']
-      .flatMap((dir) => [`${dir}.cargo/config.toml`, `${dir}.cargo/config`])
-      .filter((file) => existsSync(new URL(file, repo)));
-    for (const file of [...manifests, ...workflows, ...cargoConfigs]) {
-      expect(read(file), file).not.toContain('TAURI_CONFIG');
+    expect(contexts).toEqual(['']);
+    for (const file of code) {
+      expect(file).not.toContain('add_capability');
     }
+    // Tauri gives a capability to the windows it names, by label: the one window of the app.
+    expect(tauriConf().app.windows.map(({ label }) => label)).toEqual(['main']);
     // Its whole object: `remote` would open it to web pages, another window would get it too.
     // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
     // AppShell: `setTitle` names the window after the screen. The app's own commands need none.
