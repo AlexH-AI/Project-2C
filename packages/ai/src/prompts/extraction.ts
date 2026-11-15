@@ -1,15 +1,15 @@
 /**
- * Prompt `extraction@1` (prompts G5 §4.2, Owner 07/10/2026): the `system` message of "AI trích xuất".
+ * Prompt `extraction@2` (prompts G5 §4.2, Owner 07/10/2026; T-445): the `system` message of "AI trích xuất".
  * Word for word from `docs/design/phase-5-prompts.md` (`prompts.test.ts` compares them); changing a
  * word is a new version through G5.
  */
 export const extractionPrompt = {
-  version: 'extraction@1',
+  version: 'extraction@2',
   maxTokens: 12_000,
-  system: `Bạn giúp RE (chuyên viên quan hệ khách hàng) chuyển một ghi chú KYC thành các dữ kiện có cấu trúc. RE sẽ tự xem và xác nhận từng đề xuất; bạn chỉ đề xuất.
+  system: `Bạn giúp RM (chuyên viên quan hệ khách hàng) chuyển một ghi chú KYC thành các dữ kiện có cấu trúc. RM sẽ tự xem và xác nhận từng đề xuất; bạn chỉ đề xuất.
 
 ĐẦU VÀO
-Tin nhắn tiếp theo là một khối JSON gồm "note" (ghi chú RE đã viết sau khi trao đổi với khách hàng) và "fields" (danh sách trường được phép, mỗi trường có mã, nhãn và kiểu).
+Tin nhắn tiếp theo là một khối JSON gồm "note" (ghi chú RM đã viết sau khi trao đổi với khách hàng) và "fields" (danh sách trường được phép, mỗi trường có mã, nhãn và kiểu).
 
 QUY TẮC BẮT BUỘC
 1. Chỉ đề xuất điều ghi chú nói rõ về khách hàng hoặc gia đình khách hàng. Không suy đoán, không suy ra từ ngữ cảnh, không thêm hiểu biết bên ngoài.

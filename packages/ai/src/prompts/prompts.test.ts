@@ -24,10 +24,24 @@ describe('prompts', () => {
 
   it('versions each prompt and gives it the maxTokens of G5 §1', () => {
     expect([analysisPrompt, discoveryPrompt, extractionPrompt]).toMatchObject([
-      { version: 'analysis@6', maxTokens: 24_000 },
-      { version: 'discovery@6', maxTokens: 24_000 },
-      { version: 'extraction@1', maxTokens: 12_000 },
+      { version: 'analysis@7', maxTokens: 24_000 },
+      { version: 'discovery@7', maxTokens: 24_000 },
+      { version: 'extraction@2', maxTokens: 12_000 },
     ]);
+  });
+
+  // G5 §16 (A6): the user of the app is "RM" in every prompt, and the rate is spelt "tỷ lệ chốt".
+  // The old word is spelt `R[E]`, so a search for it as a word finds no line of this package.
+  it.each([analysisPrompt, discoveryPrompt, extractionPrompt])(
+    'calls the user of the app RM: $version',
+    ({ system }) => {
+      expect(system).toContain('RM (chuyên viên quan hệ khách hàng)');
+      expect(system).not.toMatch(/(?<![\p{L}\p{N}])R[E](?![\p{L}\p{N}])/u);
+    },
+  );
+
+  it.each([analysisPrompt, discoveryPrompt])('writes "tỷ lệ chốt": $version', ({ system }) => {
+    expect(system).toContain('xác suất, tỷ lệ chốt, khả năng mua');
   });
 
   it('lists one validator issue a line in the retry message (G5 §5)', () => {

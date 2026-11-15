@@ -298,9 +298,9 @@ function sentValue(fact: KycFact, today: CalendarDate): string {
 }
 
 /**
- * The input of an analysis, taken when the RE clicks (spec §6.1): only the facts in effect (`active`,
+ * The input of an analysis, taken when the RM clicks (spec §6.1): only the facts in effect (`active`,
  * `conflict`) with their code `F{seq}`, in catalog order then by seq, the birth year as an age, and
- * the gate; never the name, codes, RE, notes, appointments or contracts of the KH. `null` when the
+ * the gate; never the name, codes, RM, notes, appointments or contracts of the KH. `null` when the
  * gate lets no AI through (`CONFLICT_RESOLUTION`, `KYC_INSUFFICIENT` — P2, the panel offers no
  * analysis then).
  */
@@ -340,9 +340,9 @@ export function buildAnalysisInput(
  * the same.
  */
 export const PROMPT_VERSIONS = {
-  analysis: 'analysis@6',
-  discovery: 'discovery@6',
-  extraction: 'extraction@1',
+  analysis: 'analysis@7',
+  discovery: 'discovery@7',
+  extraction: 'extraction@2',
 } as const satisfies Record<AiMode, string>;
 
 /** `count` distinct codes from position `start`, wrapping round. */
