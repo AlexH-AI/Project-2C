@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14) · Đợt lượt 6 `analysis@6` / `discovery@6` **Owner duyệt G5 ở PR của T-392** (#1136, §15; câu duyệt và ngày ở thân PR) · Đợt A6 `analysis@7` / `discovery@7` / `extraction@2` ("RE" thành "RM") **chờ Owner duyệt G5** (T-445 #1310, §16)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14) · Đợt lượt 6 `analysis@6` / `discovery@6` **Owner duyệt G5 ở PR của T-392** (#1136, §15; câu duyệt và ngày ở thân PR) · Đợt A6 `analysis@7` / `discovery@7` / `extraction@2` ("RE" thành "RM") **Owner duyệt G5 15/11/2026 (PR #1315)** (T-445 #1310, §16)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -1089,9 +1089,9 @@ Owner duyệt ở thân PR của T-392 (câu trích và ngày ở đó); PR khô
 - V6 "luật <Tên>": một cặp ngoặc đơn và một ngoặc kép mở trước tên; chữ mới của mục §8.4; tác dụng phụ và phần "Mất" (§15.3)
 - Ca kiểm C84–C86 (§15.4)
 
-## 16. Đợt A6: "RE" thành "RM" (T-445 #1310) — chờ Owner duyệt G5
+## 16. Đợt A6: "RE" thành "RM" (T-445 #1310) — Owner duyệt G5 15/11/2026
 
-**Trạng thái:** đề xuất trong PR code của T-445: một PR gồm code và chữ G5, như §15. **Chờ Owner duyệt G5 trên PR**; PR không merge khi chưa có câu duyệt. Các thay đổi đã chép vào §1 (ký hiệu), §2–§4 (chữ prompt, version), §6a (ví dụ version), §8.4, §8.5; mục này giữ lý do và số đo.
+**Trạng thái:** đề xuất trong PR code của T-445: một PR gồm code và chữ G5, như §15. **Owner duyệt G5 15/11/2026 (PR #1315)**; câu duyệt ở comment "Quyết định Owner (15/11/2026)" của PR. Các thay đổi đã chép vào §1 (ký hiệu), §2–§4 (chữ prompt, version), §6a (ví dụ version), §8.4, §8.5; mục này giữ lý do và số đo.
 
 **Nền:** spec `phase-6-phan-hoi-dung-thu.md` §3 (phần A, Owner duyệt 10/11/2026): "RE" thành "RM" ở mọi nơi, kể cả prompt AI (§3.2 dòng "AI (G5)"). Owner 15/11/2026 (`docs/PROJECT-STATE.md`; ADR-0018 phụ lục 15/11/2026): A6 chỉ làm prompt tiếng Việt, AI tiếng Anh là A8; prompt viết "tỷ lệ chốt". Đợt này gộp ba ghi chú review mang nhãn A6: DR6-199 (V7, §16.4) và hai ghi chú của review PR #1149 về §15.2, §15.3 (§16.3).
 
@@ -1178,10 +1178,10 @@ Owner duyệt ở thân PR của T-392 (câu trích và ngày ở đó); PR khô
 
 ### 16.7 Owner duyệt
 
-Chờ Owner duyệt G5 trên PR của T-445; PR không merge khi chưa có câu duyệt. Các mục duyệt:
+**Owner duyệt G5 15/11/2026 (PR #1315).** Owner trả lời nguyên văn "Duyệt (Recommended)" cho câu hỏi G5 của phiên điều phối `auto-issues`, ở head `fd35889`; câu hỏi và câu trả lời ở comment "Quyết định Owner (15/11/2026)" của PR. Các mục duyệt:
 
-- Version `analysis@7`, `discovery@7`, `extraction@2`; `web@1` giữ (§16.1)
-- Chữ prompt: "RE" thành "RM" ở ba prompt; "tỷ lệ chốt" ở analysis, discovery (§16.2)
-- V6 "luật <Tên>": miễn "RM" thay "RE"; tác dụng phụ và phần "Mất", gồm phần ghi thêm cho §15.2, §15.3 (§16.3)
-- V7: trích dẫn và ghi chú đọc như app lưu chữ; tác dụng phụ và phần nới (§16.4)
-- Ca kiểm C87–C88 (§16.5)
+- [x] Version `analysis@7`, `discovery@7`, `extraction@2`; `web@1` giữ (§16.1)
+- [x] Chữ prompt: "RE" thành "RM" ở ba prompt; "tỷ lệ chốt" ở analysis, discovery (§16.2)
+- [x] V6 "luật <Tên>": miễn "RM" thay "RE"; tác dụng phụ và phần "Mất", gồm phần ghi thêm cho §15.2, §15.3 (§16.3)
+- [x] V7: trích dẫn và ghi chú đọc như app lưu chữ; tác dụng phụ (U+FEFF thay dấu cách nay bị bỏ) và phần nới (khoảng trắng hai đầu trích dẫn) (§16.4)
+- [x] Ca kiểm C87–C88 (§16.5)
