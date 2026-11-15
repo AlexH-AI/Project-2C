@@ -4,6 +4,7 @@
 //! On macOS the same files are in `~/Library/Application Support/dev.alexh.project2c/` (see
 //! `platform::data_dir`).
 
+use crate::platform;
 use std::fs;
 use std::io::{self, ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
@@ -17,19 +18,22 @@ pub const STALE_PAGE: &str = "STALE_PAGE";
 pub const DISK_FULL: &str = "DISK_FULL";
 /// Error message when another program holds the database file (or its `.tmp`) without sharing:
 /// the file is whole, only out of reach for now. The app matches it exactly. Windows only: macOS
-/// lets every program open a file.
-#[cfg(windows)]
+/// lets every program open a file (see `platform::held_by_another_program`).
 pub const FILE_IN_USE: &str = "FILE_IN_USE";
-/// Error message when Windows refuses the app the data folder (read-only, no rights), or the right
-/// to replace the database file: the file is whole. The app matches it exactly.
+/// Error message when the system refuses the app the data folder (read-only, no rights), or the
+/// right to replace the database file: the file is whole. The app matches it exactly. Windows
+/// decides by the read-only attribute and the access lists, macOS by the write bits of the folder
+/// and the file and the file's lock flags (Finder's "Locked").
 pub const ACCESS_DENIED: &str = "ACCESS_DENIED";
-/// Error message of a save Windows refused because the database file can no longer be replaced
-/// (read-only, or no right to delete it): not another program holding it. The app matches it
-/// exactly.
+/// Error message of a save refused because the database file can no longer be replaced (read-only
+/// or locked, or no right to delete it): not another program holding it. The app matches it
+/// exactly. Windows refuses such a save itself; macOS would replace the file all the same, so the
+/// save refuses itself first (see [`save`]).
 pub const READ_ONLY: &str = "READ_ONLY";
-/// Error message of a save Windows refused because the data folder no longer lets the app add a
+/// Error message of a save the system refused because the data folder no longer lets the app add a
 /// file, which every save does first (its `.tmp`): neither another program nor the database file
-/// itself is the cause. The app matches it exactly.
+/// itself is the cause. The app matches it exactly. Windows decides by the folder's access list,
+/// macOS by its write bits.
 pub const FOLDER_READ_ONLY: &str = "FOLDER_READ_ONLY";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
@@ -46,17 +50,11 @@ const SEQ_WIDTH: usize = 8;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 /// How much of a backup [`find_copy`] reads at a time.
 const COMPARE_BLOCK: usize = 64 * 1024;
-/// Windows `ERROR_SHARING_VIOLATION`: another process holds the file without sharing.
-#[cfg(windows)]
-const SHARING_VIOLATION: i32 = 32;
-/// Windows `ERROR_LOCK_VIOLATION`: another process locked a part of the file.
-#[cfg(windows)]
-const LOCK_VIOLATION: i32 = 33;
 
 /// Keeps the data folder to one process, and the file commands of this process to one at a time.
-/// The first [`open`] holds `project2c.lock` open without sharing (on macOS: locked, see
-/// `lock_file`) until the process ends; the system releases it when the app closes or crashes,
-/// so the file is never removed. [`open`], [`save`]
+/// The first [`open`] holds `project2c.lock` (see `platform::lock_data_folder`: without sharing
+/// on Windows, locked on macOS) until the process ends; the system releases it when the app closes
+/// or crashes, so the file is never removed. [`open`], [`save`]
 /// and [`backup`] each hold the lock while they run: after a webview reload, the new page's
 /// `open` waits for a save the old page started, and two saves or backups never share a `.tmp`.
 /// A save of the old page that arrives after the new page's `open` is refused (see [`save`]).
@@ -85,51 +83,6 @@ impl DataLock {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
-}
-
-/// Opens the lock file without sharing; another process holding it → `ResourceBusy` with the
-/// message [`ALREADY_OPEN`].
-#[cfg(windows)]
-fn open_lock_file(path: &Path) -> io::Result<fs::File> {
-    use std::os::windows::fs::OpenOptionsExt;
-    lock_file_options()
-        .share_mode(0)
-        .open(path)
-        .map_err(|error| {
-            if error.raw_os_error() == Some(SHARING_VIOLATION) {
-                io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN)
-            } else {
-                error
-            }
-        })
-}
-
-#[cfg(not(windows))]
-fn open_lock_file(path: &Path) -> io::Result<fs::File> {
-    lock_file(path)
-}
-
-/// Opens the lock file and locks it for this process (`flock` on macOS: two opens of the file
-/// never share it, so `open -n` or the binary run from inside the `.app` cannot write the data at
-/// the same time, L137); another process holding it → `ResourceBusy` with the message
-/// [`ALREADY_OPEN`]. `std` only: no crate (ADR-0016).
-#[cfg(any(not(windows), test))]
-fn lock_file(path: &Path) -> io::Result<fs::File> {
-    let file = lock_file_options().open(path)?;
-    match file.try_lock() {
-        Ok(()) => Ok(file),
-        Err(fs::TryLockError::WouldBlock) => {
-            Err(io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN))
-        }
-        Err(fs::TryLockError::Error(error)) => Err(error),
-    }
-}
-
-/// The lock file is made by the first start and never cut.
-fn lock_file_options() -> fs::OpenOptions {
-    let mut options = fs::OpenOptions::new();
-    options.read(true).write(true).create(true).truncate(false);
-    options
 }
 
 /// Reads the database at startup; `None` on a first start (no file and no backups). The data
@@ -161,7 +114,7 @@ fn open_with(
     let mut held = lock.hold();
     create_dir(dir).map_err(out_of_reach)?;
     if held.file.is_none() {
-        held.file = Some(open_lock_file(&dir.join(LOCK_FILE)).map_err(out_of_reach)?);
+        held.file = Some(platform::lock_data_folder(&dir.join(LOCK_FILE)).map_err(out_of_reach)?);
         // What a crash left, cleaned by the first open of the process only: a reload's open must
         // keep an export still running, and never finds a save of the old page half done (it
         // waited for the lock). Cleaned before anything below can fail, since a retry holds the
@@ -213,75 +166,23 @@ fn without_file(dir: &Path) -> io::Result<Option<Vec<u8>>> {
     Ok(None)
 }
 
-/// Whether the app may no longer replace the database file, which is what every save does: it
-/// carries the read-only attribute, or Windows refuses the app the right to delete it, which
-/// renaming a new file over it asks (DR6-74, DR6-120). Only what a save asks is asked: refusing
-/// the right to write into the file does not stop the rename, so it does not count. A program
+/// Whether the app may no longer replace the database file, which is what every save does: it is
+/// read-only (Windows' attribute, macOS's write bits), or the system refuses the app the right to
+/// delete it, which renaming a new file over it asks (DR6-74, DR6-120; see
+/// `platform::delete_refused`). Only what a save asks is asked: refusing the right to write into
+/// the file (a Windows access list) does not stop the rename, so it does not count. A program
 /// holding the file is no refusal either (see [`open`]).
 fn replace_refused(path: &Path) -> bool {
-    fs::metadata(path).is_ok_and(|meta| meta.permissions().readonly()) || delete_refused(path)
+    fs::metadata(path).is_ok_and(|meta| meta.permissions().readonly())
+        || platform::delete_refused(path)
 }
 
-/// Whether Windows refuses the app the right to delete the file at `path`. A folder that lets the
-/// app delete in it stands in for the file's own right, as it does for a save, so the answer is
-/// the one a save would get.
-#[cfg(windows)]
-fn delete_refused(path: &Path) -> bool {
-    // Windows `DELETE`.
-    const DELETE: u32 = 0x0001_0000;
-    refuses(path, DELETE, 0)
-}
-
-/// On macOS only the folder decides whether a file in it may be replaced, and [`add_refused`]
-/// asks it before this is asked (see [`open`], [`refused`]).
-#[cfg(not(windows))]
-fn delete_refused(_path: &Path) -> bool {
-    false
-}
-
-/// Whether Windows refuses the app the right to add a file in the folder `dir`, which every save
-/// asks first to write its `.tmp`. Asking makes no file that a crash could leave behind.
-#[cfg(windows)]
+/// Whether the system refuses the app a new file in the folder `dir`, which every save asks first
+/// to write its `.tmp` (see `platform::add_refused`). On macOS the database's `.tmp` is what is
+/// tried: every caller holds the data lock, so no save writes it meanwhile, and one a crash leaves
+/// is removed by the next start, like a save's.
 fn add_refused(dir: &Path) -> bool {
-    // Windows `FILE_ADD_FILE`, and `FILE_FLAG_BACKUP_SEMANTICS`, without which no folder opens.
-    const FILE_ADD_FILE: u32 = 0x0002;
-    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
-    refuses(dir, FILE_ADD_FILE, FILE_FLAG_BACKUP_SEMANTICS)
-}
-
-/// Opens `path` with the right `access` alone (and the `flags` of the open), which changes
-/// nothing, and tells a refusal from a program that holds the file: that one fails with a sharing
-/// violation, not with `PermissionDenied`.
-#[cfg(windows)]
-fn refuses(path: &Path, access: u32, flags: u32) -> bool {
-    use std::os::windows::fs::OpenOptionsExt;
-    fs::OpenOptions::new()
-        .access_mode(access)
-        .custom_flags(flags)
-        .open(path)
-        .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
-}
-
-/// Whether macOS refuses the app a new file in the folder `dir`, which every save asks first to
-/// write its `.tmp` (L137). `std` cannot ask without trying, so this makes the database's `.tmp`
-/// and removes it at once: every caller holds the data lock, so no save writes that `.tmp`
-/// meanwhile, and one a crash leaves is removed by the next start, like a save's. A `.tmp` already
-/// there answers nothing, so no.
-#[cfg(not(windows))]
-fn add_refused(dir: &Path) -> bool {
-    let probe = dir.join(tmp_name(DB_FILE));
-    match fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&probe)
-    {
-        Ok(file) => {
-            drop(file);
-            let _ = fs::remove_file(&probe);
-            false
-        }
-        Err(error) => error.kind() == ErrorKind::PermissionDenied,
-    }
+    platform::add_refused(dir, &tmp_name(DB_FILE))
 }
 
 /// Copies the saved database file into `backups\` (at startup once the app opened it, and before
@@ -315,28 +216,24 @@ fn disk_full(error: io::Error) -> io::Error {
 
 /// Gives a database file that is whole but out of reach the messages the app tells apart, so it
 /// never tells to copy a backup over a good file (DR6-07): another program holds the file or its
-/// `.tmp` ([`FILE_IN_USE`]), or Windows refuses the app the data folder ([`ACCESS_DENIED`]). Any
-/// other error stays as it is.
+/// `.tmp` ([`FILE_IN_USE`], Windows only), or the system refuses the app the data folder
+/// ([`ACCESS_DENIED`]). Any other error stays as it is.
 fn out_of_reach(error: io::Error) -> io::Error {
-    #[cfg(windows)]
-    if matches!(
-        error.raw_os_error(),
-        Some(SHARING_VIOLATION | LOCK_VIOLATION)
-    ) {
-        return io::Error::new(ErrorKind::ResourceBusy, FILE_IN_USE);
-    }
-    if error.kind() == ErrorKind::PermissionDenied {
+    if platform::held_by_another_program(&error) {
+        io::Error::new(ErrorKind::ResourceBusy, FILE_IN_USE)
+    } else if error.kind() == ErrorKind::PermissionDenied {
         io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED)
     } else {
         error
     }
 }
 
-/// Gives a save Windows refused because the data folder no longer lets the app add a file
-/// ([`FOLDER_READ_ONLY`]) or the database file can no longer be replaced ([`READ_ONLY`]) the
-/// message the app tells apart, so it never sends the user looking for a program that is not
-/// there (DR6-120). The folder is asked first, as a save writes its `.tmp` before it replaces the
-/// file. Any other error stays as it is, a file another program holds included.
+/// Gives a save the system refused, or that refused itself (macOS, see [`save`]), because the
+/// data folder no longer lets the app add a file ([`FOLDER_READ_ONLY`]) or the database file can no
+/// longer be replaced ([`READ_ONLY`]) the message the app tells apart, so it never sends the user
+/// looking for a program that is not there (DR6-120). The folder is asked first, as a save writes
+/// its `.tmp` before it replaces the file. Any other error stays as it is, a file another program
+/// holds included.
 fn refused(error: io::Error, dir: &Path) -> io::Error {
     if error.kind() != ErrorKind::PermissionDenied {
         error
@@ -374,8 +271,11 @@ fn copy_to_backups(
 /// still on its way from before a webview reload) is refused with [`STALE_PAGE`]: the new page
 /// read the file without it, and its next save would write over it unseen. A full disk →
 /// `StorageFull` with the message [`DISK_FULL`]; a file the app may no longer replace (it turned
-/// read-only, or its access list changed) → `PermissionDenied` with the message [`READ_ONLY`], and
-/// a data folder that no longer lets the app add a file → [`FOLDER_READ_ONLY`] (see [`refused`]).
+/// read-only or locked, or its access list changed) → `PermissionDenied` with the message
+/// [`READ_ONLY`], and a data folder that no longer lets the app add a file → [`FOLDER_READ_ONLY`]
+/// (see [`refused`]). macOS would replace a read-only or locked file all the same, so there the
+/// save refuses itself before it writes anything (`platform::must_refuse_replacing`, L76): the file
+/// keeps its data and its mark, as on Windows.
 pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
     save_with(dir, bytes, page, lock, fs::File::sync_all)
 }
@@ -392,7 +292,12 @@ fn save_with(
     if held.page.as_deref().is_some_and(|opened| opened != page) {
         return Err(io::Error::other(STALE_PAGE));
     }
-    write_atomic_with(dir, DB_FILE, bytes, flush)
+    let written = if platform::must_refuse_replacing(&dir.join(DB_FILE)) {
+        Err(io::Error::from(ErrorKind::PermissionDenied))
+    } else {
+        write_atomic_with(dir, DB_FILE, bytes, flush)
+    };
+    written
         .map_err(disk_full)
         .map_err(|error| refused(error, dir))
 }
@@ -1046,9 +951,9 @@ mod tests {
 
     #[test]
     fn a_whole_file_out_of_reach_is_reported_by_its_cause() {
-        // Another program holds it.
+        // Another program holds it: Windows `ERROR_SHARING_VIOLATION`, `ERROR_LOCK_VIOLATION`.
         #[cfg(windows)]
-        for code in [SHARING_VIOLATION, LOCK_VIOLATION] {
+        for code in [32, 33] {
             let held = out_of_reach(io::Error::from_raw_os_error(code));
             assert_eq!(held.to_string(), FILE_IN_USE, "os error {code}");
         }
@@ -1832,21 +1737,6 @@ mod tests {
     }
 
     #[test]
-    fn a_second_lock_of_the_lock_file_is_refused_until_the_first_is_released() {
-        // The lock of macOS (`flock`, L137); on Windows the same `std` lock, though the exe locks
-        // by sharing there.
-        let dir = temp_dir();
-        fs::create_dir_all(&dir).unwrap();
-        let path = dir.join(LOCK_FILE);
-        let first = lock_file(&path).unwrap();
-        let error = lock_file(&path).unwrap_err();
-        assert_eq!(error.kind(), ErrorKind::ResourceBusy);
-        assert_eq!(error.to_string(), ALREADY_OPEN);
-        drop(first);
-        lock_file(&path).unwrap();
-    }
-
-    #[test]
     fn open_while_another_process_holds_the_data_folder_touches_nothing_on_every_platform() {
         // Windows refuses the second process by sharing, macOS by its lock (L137).
         let dir = temp_dir();
@@ -1951,6 +1841,100 @@ mod tests {
         assert_eq!(fs::read(&file).unwrap(), db("old"));
         assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
 
+        super::save(&dir, &db("new"), PAGE, &lock).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn a_save_after_the_file_turned_read_only_is_reported_as_read_only_on_macos() {
+        // As on Windows: macOS would rename over the file all the same, so its data and its mark
+        // would go unseen (L76). With the folder read-only too, the folder is named first.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let file = dir.join(DB_FILE);
+        super::save(&dir, &db("old"), PAGE, &lock).unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("old")));
+        let read_only = ReadOnly::new(&file);
+        let error = super::save(&dir, &db("new"), PAGE, &lock).unwrap_err();
+        let folder = ReadOnly::new(&dir);
+        let both = super::save(&dir, &db("new"), PAGE, &lock).unwrap_err();
+        drop(folder);
+        let kept_read_only = fs::metadata(&file).unwrap().permissions().readonly();
+        drop(read_only);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), READ_ONLY);
+        assert_eq!(both.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(both.to_string(), FOLDER_READ_ONLY);
+        assert!(kept_read_only);
+        assert_eq!(fs::read(&file).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        super::save(&dir, &db("new"), PAGE, &lock).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
+    /// Finder's "Locked" (`uchg`, user immutable) on `path` until this drops: its write bits stay,
+    /// yet the system refuses to delete or replace it.
+    #[cfg(not(windows))]
+    struct Locked<'a>(&'a Path);
+
+    #[cfg(not(windows))]
+    impl<'a> Locked<'a> {
+        fn new(path: &'a Path) -> Self {
+            let output = std::process::Command::new("/usr/bin/chflags")
+                .arg("uchg")
+                .arg(path)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "chflags: {output:?}");
+            Self(path)
+        }
+
+        /// Whether `path` still carries the flag (`UF_IMMUTABLE`).
+        fn is_set(path: &Path) -> bool {
+            let meta = fs::metadata(path).unwrap();
+            std::os::macos::fs::MetadataExt::st_flags(&meta) & 0x2 != 0
+        }
+    }
+
+    #[cfg(not(windows))]
+    impl Drop for Locked<'_> {
+        fn drop(&mut self) {
+            // Never panics: a test that already failed would abort instead of reporting.
+            let _ = std::process::Command::new("/usr/bin/chflags")
+                .arg("nouchg")
+                .arg(self.0)
+                .output();
+        }
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn a_locked_database_file_is_refused_at_open_and_at_save_on_macos() {
+        // The codes of a read-only file, never the bare "Operation not permitted" (L76): the file
+        // keeps its data and its flag.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let file = dir.join(DB_FILE);
+        super::save(&dir, &db("old"), PAGE, &lock).unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("old")));
+        let locked = Locked::new(&file);
+        let writable = !fs::metadata(&file).unwrap().permissions().readonly();
+        let saved = super::save(&dir, &db("new"), PAGE, &lock).unwrap_err();
+        let opened = super::open(&dir, PAGE, &lock).unwrap_err();
+        let kept_locked = Locked::is_set(&file);
+        drop(locked);
+        assert!(writable);
+        assert_eq!(saved.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(saved.to_string(), READ_ONLY);
+        assert_eq!(opened.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(opened.to_string(), ACCESS_DENIED);
+        assert!(kept_locked);
+        assert_eq!(fs::read(&file).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("old")));
         super::save(&dir, &db("new"), PAGE, &lock).unwrap();
         assert_eq!(fs::read(&file).unwrap(), db("new"));
     }
