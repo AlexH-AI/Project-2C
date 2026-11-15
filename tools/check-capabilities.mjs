@@ -1,22 +1,17 @@
 /* global process */
 // The capabilities a Tauri build compiled into the app, against capabilities/default.json
-// (DR6-204, T-452). CI runs it right after the build of each platform (ci.yml, macos.yml):
-//   node tools/check-capabilities.mjs <gen/schemas/capabilities.json> <capabilities/default.json>
-//     <target/release>
-// Prints OK and exits 0, or prints what differs and exits 1.
-//
-// tauri-build writes gen/schemas/capabilities.json from the capability files it read; the app gets
-// those, unless the config the build read lists capabilities of its own
-// (`app.security.capabilities`), which tauri::generate_context! then takes in their place, from
-// tauri.conf.json, tauri.<platform>.conf.json or `tauri build --config` (handed on as
-// TAURI_CONFIG). That config reaches no file of the build but Cargo's record of the build script
-// run: the files it read, and TAURI_CONFIG. Rust code that adds one (`generate_context!` with an
-// argument, `add_capability`) is tauri-contract.test.ts's to check.
+// (DR6-204, T-452), right after the build of each platform in CI (ci.yml, macos.yml). The app gets
+// those tauri-build wrote to gen/schemas/capabilities.json from capabilities/, unless the config of
+// the build lists its own (`app.security.capabilities`): tauri.conf.json, the platform's file, or
+// `tauri build --config`, handed on as TAURI_CONFIG. Only Cargo's record of the build script run
+// keeps that config: the files read, TAURI_CONFIG. The Rust code is tauri-contract.test.ts's.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const USAGE = `Usage: node tools/check-capabilities.mjs <gen/schemas/capabilities.json> \
+<capabilities/default.json> <target/release>: OK and exit 0, or what differs and exit 1`;
 const RUN = 'run-build-script-build-script-build.json';
 /** A file of the config tauri-build reads: tauri.conf.json or tauri.<platform>.conf.json, or TOML. */
 const CONFIG = /^(?:tauri(?:\.\w+)?\.conf\.json5?|Tauri(?:\.\w+)?\.toml)$/;
@@ -71,9 +66,7 @@ export function checkCapabilities(builtFile, defaultFile, profile) {
   const app = resolve(dirname(builtFile), '../..');
   const runs = buildScriptRuns(profile);
   if (runs.length === 0) {
-    problems.push(
-      `no run of a Tauri build script in ${join(profile, '.fingerprint')}: build first`,
-    );
+    problems.push(`no Tauri build script run in ${join(profile, '.fingerprint')}: build first`);
   }
   const configs = new Set();
   for (const { tauriConfig, configs: read } of runs) {
@@ -93,29 +86,22 @@ export function checkCapabilities(builtFile, defaultFile, profile) {
     }
   }
   const { identifier, windows, permissions } = readJson(defaultFile);
-  const read =
-    `${identifier}: ${permissions.length} permissions, window ${windows.join(', ')}; ` +
-    `${runs.length} build script run${runs.length === 1 ? '' : 's'}, ` +
-    `TAURI_CONFIG ${runs.every(({ tauriConfig }) => tauriConfig.val === null) ? 'unset' : 'set'}, ` +
-    `configs ${[...configs].join(', ')}`;
+  const read = `${identifier}: ${permissions.length} permissions, window ${windows.join(', ')}; configs ${[...configs].join(', ')} in ${runs.length} build script run(s)`;
   return { problems, read };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const paths = process.argv.slice(2);
   if (paths.length !== 3) {
-    process.stderr.write(
-      'Usage: node tools/check-capabilities.mjs <gen/schemas/capabilities.json> <capabilities/default.json> <target/release>\n',
-    );
+    process.stderr.write(`${USAGE}\n`);
     process.exit(2);
   }
   const { problems, read } = checkCapabilities(...paths);
   if (problems.length === 0) {
-    process.stdout.write(`OK: ${read}\n`);
+    process.stdout.write(`OK: ${read}, no TAURI_CONFIG\n`);
   } else {
-    process.stderr.write(
-      `The capabilities of the build differ from capabilities/default.json:\n${problems.map((problem) => `- ${problem}`).join('\n')}\n`,
-    );
+    const list = problems.map((problem) => `- ${problem}`).join('\n');
+    process.stderr.write(`The capabilities of the build differ from default.json:\n${list}\n`);
     process.exitCode = 1;
   }
 }
