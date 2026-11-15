@@ -1,30 +1,91 @@
 //! macOS (the only other platform the app is built for): the data folder under Application
-//! Support, `open`, no key store yet. Built on macOS, and in tests elsewhere for its pure parts;
-//! the parts that call the system are `cfg(not(windows))`.
+//! Support and its `flock`, the write bits and lock flags, `open`, no key store yet. Built on
+//! macOS, and in tests elsewhere for its pure parts; the parts that call the system are
+//! `cfg(not(windows))`.
 
 use std::ffi::{OsStr, OsString};
+use std::fs;
 use std::io::{self, ErrorKind};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// The identifier of the build (`tauri.conf.json`), which names the data folder on macOS.
 const APP_ID: &str = "dev.alexh.project2c";
 /// macOS `open`, by its full path (see [`open_command`]).
 const OPEN: &str = "/usr/bin/open";
+/// The file flags (`chflags`) under which the system refuses to delete or rename a file whatever
+/// its folder's bits: `uchg` (user immutable, Finder's "Locked"), `uappnd`, `schg`, `sappnd`. The
+/// values of `<sys/stat.h>` (`UF_IMMUTABLE`, `UF_APPEND`, `SF_IMMUTABLE`, `SF_APPEND`).
+const LOCK_FLAGS: u32 = 0x0000_0002 | 0x0000_0004 | 0x0002_0000 | 0x0004_0000;
 
 #[cfg(not(windows))]
 pub fn data_dir() -> io::Result<PathBuf> {
     app_support_dir(std::env::var_os("HOME"))
 }
 
+/// Opens the lock file and locks it for this process (`flock`): two opens of the file never share
+/// the lock, in one process or two. Also built on Windows, where its test runs too.
+pub fn open_lock_file(path: &Path) -> io::Result<fs::File> {
+    let file = super::lock_file_options().open(path)?;
+    match file.try_lock() {
+        Ok(()) => Ok(file),
+        Err(fs::TryLockError::WouldBlock) => Err(super::already_open()),
+        Err(fs::TryLockError::Error(error)) => Err(error),
+    }
+}
+
+/// macOS lets every program open a file.
 #[cfg(not(windows))]
-pub fn open_folder(path: &std::path::Path) -> io::Result<()> {
-    super::spawn_unwaited(&mut open_command(path)).map(drop)
+pub fn held_by_another_program(_error: &io::Error) -> bool {
+    false
+}
+
+/// Makes the file `probe` in `dir` and removes it at once (see `platform::add_refused`).
+#[cfg(not(windows))]
+pub fn add_refused(dir: &Path, probe: &str) -> bool {
+    let probe = dir.join(probe);
+    match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&probe)
+    {
+        Ok(file) => {
+            drop(file);
+            let _ = fs::remove_file(&probe);
+            false
+        }
+        Err(error) => error.kind() == ErrorKind::PermissionDenied,
+    }
+}
+
+/// A lock flag on the file: its folder's bits are asked by `add_refused`, which every caller asks
+/// first.
+#[cfg(not(windows))]
+pub fn delete_refused(path: &Path) -> bool {
+    fs::metadata(path).is_ok_and(|meta| locked(std::os::macos::fs::MetadataExt::st_flags(&meta)))
+}
+
+/// No write bit on the file, or a lock flag (see `platform::must_refuse_replacing`).
+#[cfg(not(windows))]
+pub fn must_refuse_replacing(path: &Path) -> bool {
+    fs::metadata(path).is_ok_and(|meta| {
+        meta.permissions().readonly() || locked(std::os::macos::fs::MetadataExt::st_flags(&meta))
+    })
+}
+
+/// Whether the file flags `flags` hold one of [`LOCK_FLAGS`].
+fn locked(flags: u32) -> bool {
+    flags & LOCK_FLAGS != 0
 }
 
 #[cfg(not(windows))]
-pub fn open_url(url: &str) -> io::Result<()> {
-    super::spawn_unwaited(&mut open_command(url)).map(drop)
+pub fn folder_command(path: &Path) -> io::Result<Command> {
+    Ok(open_command(path))
+}
+
+#[cfg(not(windows))]
+pub fn url_command(url: &str) -> io::Result<Command> {
+    Ok(open_command(url))
 }
 
 /// macOS has no key store yet (Keychain, M1 of the macOS trial, Mac-4): every key command fails,
@@ -66,7 +127,6 @@ fn app_support_dir(home: Option<OsString>) -> io::Result<PathBuf> {
 mod tests {
     use super::*;
     use crate::ai::CHATGPT_URL;
-    use std::path::Path;
 
     #[test]
     fn the_macos_data_folder_is_the_app_s_own_under_application_support() {
@@ -106,6 +166,32 @@ mod tests {
         let command = open_command(folder);
         assert_eq!(command.get_program(), "/usr/bin/open");
         assert_eq!(command.get_args().collect::<Vec<_>>(), [folder.as_os_str()]);
+    }
+
+    #[test]
+    fn a_second_lock_of_the_lock_file_is_refused_until_the_first_is_released() {
+        // The lock of macOS (`flock`, L137); on Windows the same `std` lock, though the exe locks
+        // by sharing there.
+        let path = std::env::temp_dir().join(format!("p2c-lock-{}.lock", std::process::id()));
+        let first = open_lock_file(&path).unwrap();
+        let error = open_lock_file(&path).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::ResourceBusy);
+        assert_eq!(error.to_string(), crate::storage::ALREADY_OPEN);
+        drop(first);
+        drop(open_lock_file(&path).unwrap());
+        fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn the_lock_flags_of_finder_and_the_system_refuse_deleting_the_file() {
+        // `uchg` (Finder's "Locked"), `uappnd`, `schg`, `sappnd`: the values of `<sys/stat.h>`.
+        for flags in [0x2, 0x4, 0x2_0000, 0x4_0000, 0x2 | 0x8000] {
+            assert!(locked(flags), "flags {flags:#x}");
+        }
+        // None, `nodump`, `opaque`, `hidden`: the file may be deleted.
+        for flags in [0, 0x1, 0x8, 0x8000] {
+            assert!(!locked(flags), "flags {flags:#x}");
+        }
     }
 
     #[test]
