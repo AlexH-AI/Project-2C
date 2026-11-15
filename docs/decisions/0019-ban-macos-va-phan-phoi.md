@@ -93,16 +93,16 @@ Vì vậy ADR này:
     - `%APPDATA%` (Roaming) có thể được chép lên máy chủ khi đăng nhập / đăng xuất trên máy công ty (roaming profile). File SQLite trên thư mục đồng bộ dễ hỏng: cùng lý do ADR-0010 loại phương án C.
     - WebView2 của app đã để dữ liệu ở `%LOCALAPPDATA%\dev.alexh.project2c\EBWebView` (Tauri đặt; kiểm trên Home PC 12/11/2026). `localStorage`, nơi ADR-0018 lưu ngôn ngữ, nằm ở đó. Dữ liệu app vào cùng thư mục: một app, một thư mục.
     - Trình gỡ cài NSIS của Tauri có ô "xóa dữ liệu ứng dụng", mặc định không tích. Tích thì xóa cả `%APPDATA%\<mã>` lẫn `%LOCALAPPDATA%\<mã>` (mẫu `installer.nsi` của Tauri, tra 12/11/2026). Gỡ cài thường giữ dữ liệu.
-  - Hôm nay exe portable cũng không hoàn toàn portable: ngôn ngữ (ADR-0018) và lựa chọn "che tên KH" nhớ theo máy nằm trong `%LOCALAPPDATA%`, theo người dùng Windows, không đi theo thư mục exe.
+  - Exe portable cũng không hoàn toàn portable: bộ nhớ WebView2 nằm trong `%LOCALAPPDATA%`, theo người dùng Windows, không đi theo thư mục exe. Ngày 12/11/2026 bộ nhớ đó chỉ giữ trang đang mở; từ G-01 (ADR-0018 §1, T-437, 14/11/2026) giữ cả ngôn ngữ; lựa chọn "che tên KH" (đợt a) vào đó khi làm.
 - **Bản debug** (`pnpm dev`; Claude đề xuất, đi cùng Q1): luôn dùng thư mục `Project2C-data` cạnh file chạy, trên cả hai nền tảng. Dữ liệu thử của máy dev không lẫn với dữ liệu đang dùng. Cần nhất trên MacBook, máy vừa dev vừa dùng app: hôm nay bản debug macOS ghi vào cùng `~/Library/Application Support/…` với bản phát hành.
 - **Bên trong thư mục** giữ nguyên trên cả hai nền tảng: `project2c.db`, `project2c.lock`, `backups/`, `exports/`.
 - **Mã định danh** (`identifier` của `tauri.conf.json`, hôm nay `dev.alexh.project2c`; Claude đề xuất, Q4):
   - Mã này đặt tên thư mục dữ liệu macOS, thư mục dữ liệu Windows của bản cài, thư mục WebView2, và là mã gói (bundle ID) khi lên Mac App Store.
-  - Đổi sau khi phát hành thì dữ liệu người dùng nằm lại ở thư mục cũ. Test `the_macos_data_folder_is_named_by_the_identifier_of_the_build` của `storage.rs` giữ mã và tên thư mục khớp nhau.
+  - Đổi sau khi phát hành thì dữ liệu người dùng nằm lại ở thư mục cũ. Test `the_data_folder_is_named_by_the_identifier_of_the_build` của module `platform` (`apps/desktop/src-tauri/src/platform/mod.rs`) giữ mã và tên thư mục khớp nhau.
   - Đề xuất: đổi một lần trước G7 sang mã theo tên sản phẩm. **Owner chốt 12/11/2026: `com.heritas.lcrm`** (Issue Mac-2 đổi; tới lúc đó code vẫn là `dev.alexh.project2c`). Mã thường viết theo tên miền đảo ngược, nhưng chỉ cần không trùng app khác, không cần sở hữu tên miền đó (Apple Developer Forums, "Code Signing Identifiers Explained"; tra 12/11/2026).
   - Lúc này đổi gần như không tốn gì: dữ liệu còn giả lập, máy đã có dữ liệu thì nhập lại backup. Key AI giữ nguyên, vì tên dịch vụ trong kho key là `Project-2C` (`KEY_SERVICE` của `ai.rs`), không theo mã định danh.
   - Giữ `dev.alexh.project2c` cũng chạy được; mã đó mang tên nội bộ "project2c" mãi mãi.
-- **Sửa ADR khác (khi Accepted):** ADR-0006 dòng "Portable" và ADR-0016 §2 dòng "Thư mục" chỉ còn đúng cho chế độ portable của Windows; nơi để dữ liệu theo điểm này.
+- **Sửa ADR khác:** ADR-0006 dòng "Portable" và ADR-0016 §2 dòng "Thư mục" chỉ còn đúng cho chế độ portable của Windows; nơi để dữ liệu theo điểm này.
 - **Chỗ chạm với ADR lưu trữ (chưa có):** ADR này chỉ chốt thư mục. Engine, cách ghi khi dữ liệu lớn, giới hạn cỡ file backup thuộc ADR lưu trữ. Nếu ADR đó thêm file vào thư mục dữ liệu (vd. file nhật ký của SQLite), file mới vẫn ở thư mục của điểm này.
 
 ### 3. Dữ liệu chung giữa các máy
@@ -296,3 +296,11 @@ Vì vậy ADR này:
 - Tauri updater (chữ ký bắt buộc; Windows dùng bản cài NSIS / MSI): <https://v2.tauri.app/plugin/updater/>
 - Tauri, bản cài Windows (NSIS `currentUser` mặc định, cài vào `%LOCALAPPDATA%`, không cần admin): <https://v2.tauri.app/distribute/windows-installer/>; mẫu trình gỡ cài: <https://github.com/tauri-apps/tauri/blob/dev/crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi>
 - GitHub Actions, hệ số phút macOS ×10, Windows ×2: <https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions>
+
+## Phụ lục — đính chính chỗ đặt ba việc của §4, §6 (15/11/2026, T-451 #1326)
+
+Khi ra Issue đợt 3, Owner chốt ngày 15/11/2026 ("Dừng ở review (Recommended)", "Viết ngay (Recommended)"; `docs/PROJECT-STATE.md` mục 2026-11-15; spec `docs/design/phase-6-phan-hoi-dung-thu.md` §9.3, dòng Mac-3, Mac-4, Mac-5b) chỗ làm ba việc mà thân ADR đặt chỗ khác. Thân ADR giữ nguyên, đọc theo phụ lục này:
+
+- **§4, câu cuối** ("Test chấp nhận của Issue Mac-4 có bước này; hướng dẫn sử dụng (Mac-5) có một câu"): bước Keychain hỏi lại mật khẩu sau một bản build khác cần hai bản build, nên nằm ở dòng nghiệm thu `NT-MAC` của Mac-7 (#1332), không ở test chấp nhận của Mac-4 (#1329). Câu trong hướng dẫn sử dụng là việc của Mac-5b (#1331).
+- **§6, gạch "Hướng dẫn sử dụng cần phần này"** (Issue Mac-5; "Mac-5 chép lại lúc Owner tải bằng trình duyệt lần đầu"): Owner chép chữ hộp chặn của macOS 27 ở review Mac-3 (#1328), lúc tải `.dmg` bằng Safari; phần "Vẫn mở" của hướng dẫn sử dụng là việc của Mac-5b (#1331).
+- Không đổi quyết định hay cổng: chỉ đính chính chỗ làm.

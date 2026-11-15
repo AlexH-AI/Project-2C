@@ -1,12 +1,11 @@
-//! Windows: the data folder next to the exe and its lock by sharing, the access lists, Explorer,
-//! the Credential Manager. Built on Windows, and in tests elsewhere for its pure parts; the parts
-//! that call Windows are `cfg(windows)`.
+//! Windows: the lock of the data folder by sharing, the access lists, Explorer, the Credential
+//! Manager. Built on Windows, and in tests elsewhere for its pure parts; the parts that call
+//! Windows are `cfg(windows)`.
 
 use std::ffi::OsString;
 use std::io::{self, ErrorKind};
 use std::path::{Path, PathBuf};
 
-const DATA_DIR: &str = "Project2C-data";
 /// Windows `ERROR_SHARING_VIOLATION`: another process holds the file without sharing.
 const SHARING_VIOLATION: i32 = 32;
 /// Windows `ERROR_LOCK_VIOLATION`: another process locked a part of the file.
@@ -15,19 +14,6 @@ const LOCK_VIOLATION: i32 = 33;
 /// Stored `Local`: on this machine only, never carried to another one by a roaming profile, as
 /// `Enterprise` (the store's default) would be (ADR-0009 D-1 item 4: one key per machine).
 const KEY_MODIFIERS: [(&str, &str); 1] = [("persistence", "Local")];
-
-#[cfg(windows)]
-pub fn data_dir() -> io::Result<PathBuf> {
-    data_dir_beside(&std::env::current_exe()?)
-}
-
-/// `Project2C-data\` next to `exe` (portable, ADR-0006).
-fn data_dir_beside(exe: &Path) -> io::Result<PathBuf> {
-    let dir = exe
-        .parent()
-        .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "exe has no parent folder"))?;
-    Ok(dir.join(DATA_DIR))
-}
 
 /// Opens the lock file without sharing: a second exe on the same data folder fails with a sharing
 /// violation, told apart as [`super::already_open`].
@@ -72,11 +58,10 @@ pub fn delete_refused(path: &Path) -> bool {
     refuses(path, DELETE, 0)
 }
 
-/// Windows refuses itself to rename a file over a read-only one: nothing to ask first.
+/// Windows refuses itself to rename a file over a read-only one (see
+/// `platform::REFUSES_REPLACING_READ_ONLY`).
 #[cfg(windows)]
-pub fn must_refuse_replacing(_path: &Path) -> bool {
-    false
-}
+pub const REFUSES_REPLACING_READ_ONLY: bool = true;
 
 /// Opens `path` with the right `access` alone (and the `flags` of the open), which changes
 /// nothing, and tells a refusal from a program that holds the file: that one fails with a sharing
@@ -163,18 +148,6 @@ mod tests {
     use super::*;
     #[cfg(windows)]
     use crate::ai::{CHATGPT_URL, KEY_SERVICE, KEY_USER};
-
-    #[test]
-    fn the_windows_data_folder_is_project2c_data_next_to_the_exe() {
-        let folder = std::env::temp_dir();
-        assert_eq!(
-            data_dir_beside(&folder.join("Heritas L-CRM.exe")).unwrap(),
-            folder.join("Project2C-data")
-        );
-        let error = data_dir_beside(Path::new("")).unwrap_err();
-        assert_eq!(error.kind(), ErrorKind::NotFound);
-        assert_eq!(error.to_string(), "exe has no parent folder");
-    }
 
     #[test]
     fn explorer_arg_quotes_the_path_and_keeps_it_verbatim() {

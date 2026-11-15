@@ -1,8 +1,7 @@
 //! Database file storage for the exe (ADR-0016): `std` only, no extra crates.
 //!
-//! Layout next to the exe: `Project2C-data\project2c.db`, `project2c.lock`, `backups\`, `exports\`.
-//! On macOS the same files are in `~/Library/Application Support/dev.alexh.project2c/` (see
-//! `platform::data_dir`).
+//! Layout of the data folder (see `platform::data_dir`): `project2c.db`, `project2c.lock`,
+//! `backups\`, `exports\`, on both platforms.
 
 use crate::platform;
 use std::fs;
@@ -27,8 +26,8 @@ pub const FILE_IN_USE: &str = "FILE_IN_USE";
 pub const ACCESS_DENIED: &str = "ACCESS_DENIED";
 /// Error message of a save refused because the database file can no longer be replaced (read-only
 /// or locked, or no right to delete it): not another program holding it. The app matches it
-/// exactly. Windows refuses such a save itself; macOS would replace the file all the same, so the
-/// save refuses itself first (see [`save`]).
+/// exactly. Windows refuses such a save itself. macOS replaces a read-only file all the same and
+/// refuses a locked one with a bare error, so there the save refuses itself first (see [`save`]).
 pub const READ_ONLY: &str = "READ_ONLY";
 /// Error message of a save the system refused because the data folder no longer lets the app add a
 /// file, which every save does first (its `.tmp`): neither another program nor the database file
@@ -273,9 +272,10 @@ fn copy_to_backups(
 /// `StorageFull` with the message [`DISK_FULL`]; a file the app may no longer replace (it turned
 /// read-only or locked, or its access list changed) → `PermissionDenied` with the message
 /// [`READ_ONLY`], and a data folder that no longer lets the app add a file → [`FOLDER_READ_ONLY`]
-/// (see [`refused`]). macOS would replace a read-only or locked file all the same, so there the
-/// save refuses itself before it writes anything (`platform::must_refuse_replacing`, L76): the file
-/// keeps its data and its mark, as on Windows.
+/// (see [`refused`]). macOS replaces a read-only file all the same and refuses a locked one only
+/// with a bare error once the `.tmp` is written, so there the save asks [`replace_refused`] before
+/// it writes anything (`platform::REFUSES_REPLACING_READ_ONLY`, L76): the file keeps its data and
+/// its mark, as on Windows.
 pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
     save_with(dir, bytes, page, lock, fs::File::sync_all)
 }
@@ -292,7 +292,10 @@ fn save_with(
     if held.page.as_deref().is_some_and(|opened| opened != page) {
         return Err(io::Error::other(STALE_PAGE));
     }
-    let written = if platform::must_refuse_replacing(&dir.join(DB_FILE)) {
+    // Where the system does not refuse itself what `replace_refused` names (macOS), the save asks
+    // first: it would replace a read-only file, and refuse a locked one only once the whole `.tmp`
+    // is written, with a bare error.
+    let written = if !platform::REFUSES_REPLACING_READ_ONLY && replace_refused(&dir.join(DB_FILE)) {
         Err(io::Error::from(ErrorKind::PermissionDenied))
     } else {
         write_atomic_with(dir, DB_FILE, bytes, flush)
