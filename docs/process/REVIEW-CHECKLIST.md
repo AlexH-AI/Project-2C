@@ -32,7 +32,7 @@ Quy trình đầy đủ nằm ở skill `review-pr` (ADR-0017): xác định m�
 - [ ] Không chuỗi UI cứng; mọi chuỗi qua i18n.
 - [ ] Chỉ dùng component/tokens của `packages/ui`; không màu/khoảng cách tùy tiện.
 - [ ] Số liệu `tabular-nums`; tương phản đạt WCAG AA.
-- [ ] Chart ECharts: chuỗi từ DB (tên team, RE, KH…) trong `tooltip.formatter`, `label.formatter` hoặc chỗ khác ECharts render thành HTML phải escape bằng `echarts.format.encodeHTML`, hoặc chỉ dùng tooltip mặc định. Không tự ghép HTML từ dữ liệu — DB có thể đến từ file backup (F-18, review đóng Phase 3).
+- [ ] Chart ECharts: chuỗi từ DB (tên team, RM, KH…) trong `tooltip.formatter`, `label.formatter` hoặc chỗ khác ECharts render thành HTML phải escape bằng `echarts.format.encodeHTML`, hoặc chỉ dùng tooltip mặc định. Không tự ghép HTML từ dữ liệu — DB có thể đến từ file backup (F-18, review đóng Phase 3).
 
 ## 5. AI (khi chạm `packages/ai`)
 
