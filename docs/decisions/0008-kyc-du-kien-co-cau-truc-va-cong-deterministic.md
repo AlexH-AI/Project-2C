@@ -57,3 +57,11 @@ Bối cảnh: deep review lượt 2 thấy Thùng rác mở chậm dần theo s�
 - **Trigger:** migration tự viết mới tạo lại `kyc_notes_no_delete`, `kyc_facts_no_delete`, `ai_analyses_no_delete`, chỉ cho xóa khi dòng thuộc KH có `deleted_at`; xóa dòng của KH chưa xóa vẫn bị chặn. Trigger chặn sửa (`kyc_notes_no_update`, `kyc_facts_status_only`, `ai_analyses_no_update`) không đổi: dòng của KH đã xóa cũng không sửa được.
 - **Lý do:** KH đã xóa không vào danh sách và chỉ số, nên xóa hẳn dữ liệu của nó không đổi cổng KYC, phiên bản hay phân tích nào của KH khác. Giữ mãi dữ liệu con của KH đã xóa làm Thùng rác chậm dần và file chỉ lớn lên (≈ 9–10 KB mỗi KH). Dọn có hỏi trước và tự backup trước, nên phần đã dọn còn trong bản backup đó và trong các backup / file xuất cũ hơn.
 - **Phương án loại:** tắt trigger trong lúc dọn (xóa trigger rồi tạo lại trong cùng transaction). SQLite hoàn tác được cả hai, nhưng trong lúc đó mọi dòng của mọi KH đều xóa được, và DDL nằm trong code của app thay vì migration.
+
+## Phụ lục — đính chính chữ "trường cốt lõi" của Quyết định 5 (15/11/2026, DR6-212 · T-444 #1309)
+
+Deep review lượt 6 (WBR6-A4, vấn đề DR6-212) thấy thân ADR tự lệch: Quyết định 5, gạch `CONFLICT_RESOLUTION`, ghi "mâu thuẫn trường cốt lõi (năm sinh, gia đình, tài sản, mục tiêu)", tức bốn hạng mục; Quyết định 6 (G2, 26/09/2026) chốt năm trường. Owner chốt cách ghi ngày 15/11/2026, nhãn nguyên văn "Đính chính có ngày (Recommended)": thêm phụ lục này, thân ADR giữ nguyên.
+
+- **Đọc đúng:** chữ trong ngoặc của Quyết định 5 viết ở G1, trước khi G2 chốt danh mục. Trường cốt lõi là đúng năm trường của Quyết định 6: năm sinh; tình trạng hôn nhân; số con; tổng tài sản/AUM; mục tiêu chính. `docs/golden/kyc.md` mục 1 và `CONTEXT.md` ghi cùng năm trường; code là cờ `core` của `packages/domain/src/kyc-catalog.ts` (`birthYear`, `maritalStatus`, `childrenCount`, `totalAssets`, `primaryGoal`).
+- **Hệ quả cho cách đọc:** chỉ mâu thuẫn ở một trong năm trường đó mới ra `CONFLICT_RESOLUTION`. Mâu thuẫn ở trường khác của các hạng mục gia đình, tài sản, mục tiêu (vd. người phụ thuộc, phân bổ tài sản, mốc thời gian của mục tiêu) là mâu thuẫn trường phụ: vẫn gọi AI kèm cảnh báo.
+- Không đổi quyết định, cổng hay code: chỉ đính chính chữ.

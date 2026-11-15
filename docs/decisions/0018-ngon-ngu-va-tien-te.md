@@ -294,3 +294,14 @@ Mockup `docs/design/mockups/ngon-ngu-tien-te.html` vẽ những chỗ ADR này �
 - **Chỗ rộng dùng tên tháng tiếng Anh (§6):** dòng dưới tên màn (kỳ đang xem), đầu bảng "Lưu ý", dòng đọc dưới ô ngày. Viên kỳ dùng dạng hẹp ("Nov 2026"); ô ngày và bảng giữ dd/mm/yyyy.
 - **Mockup đợt a:** `components.html` và `app-shell.html` viết lại số theo luật mới trong cùng PR (chỉ đổi cách viết, không đổi giá trị), như mục "Hệ quả" đã ghi.
 - **Kiểm:** ô gõ thử của mockup đọc đúng mọi dòng I01–I40, X01–X34, M01–M07 và hiện đúng mọi dòng F, C, D, N của golden (199 ca từ 155 dòng, script đọc thẳng file golden). Hàm trong mockup không phải code của app: Issue G-02 viết lại trong `packages/domain` và kiểm bằng fixture của golden.
+
+## Phụ lục — AI tiếng Anh tách thành việc A8 (Owner chốt 15/11/2026; T-444 #1309)
+
+§10, gạch **AI**, ghi "G5, gộp vào A6: AI trả lời theo ngôn ngữ của app", và để A6 xem lại câu "tại Việt Nam" cùng việc báo tiền tệ cho AI. Khi ra Issue đợt 2 (spec `phase-6-phan-hoi-dung-thu.md` §10.1), Claude hỏi trong hộp câu hỏi ở chat Home PC; **Owner chọn phương án đề xuất ngày 15/11/2026**, nhãn nguyên văn "Tách ra A8 (Recommended)". Từ đó gạch AI của §10 đọc như sau; thân ADR giữ nguyên.
+
+- **A6 chỉ làm prompt tiếng Việt:** RE → RM và các mục sổ ghi chú của A6. Prompt giữ câu "tại Việt Nam" và không báo tiền tệ cho AI: giao diện tiếng Việt chỉ đi với VND (§1), nên prompt tiếng Việt chỉ chạy với dữ liệu VND.
+- **Việc mới A8:** AI trả lời tiếng Anh khi app ở English. Bộ lọc chặn V3–V6 hôm nay chỉ bắt chữ Việt ("Article 5", "likely to buy", "Law on …" đều lọt), nên A8 cần prompt tiếng Anh riêng, bộ lọc chặn tiếng Anh và eval tiếng Anh. Viết thiết kế G5 trước (tài liệu, Owner duyệt G5), rồi Issue code. Nơi chốn và tiền tệ trong prompt tiếng Anh chốt ở thiết kế đó.
+- **Eval:** A8 không đổi chữ prompt tiếng Việt, nên eval của A7 vẫn là eval cuối của prompt tiếng Việt (G7 đòi NT-EV-01 với version cuối). A8 tốn thêm một eval tiếng Anh.
+- **Thứ tự:** A8 xếp trước G-16, Issue mở lựa chọn English (spec §11.7).
+
+Dòng A8 và phần Claude đề xuất cho nó (rủi ro, model, Issue chặn): spec §3.6.
