@@ -157,6 +157,11 @@ jobs:
       # One build gives both (ADR-0019 §5): project2c.exe, which runs as is (portable mode when a
       # Project2C-data\ is next to it), and the NSIS installer, per user, with no admin rights.
       - run: pnpm build:installer
+      # What the exe grants the webview, as this build compiled it in: the capability files
+      # tauri-build read and the config the build ran with, against capabilities/default.json
+      # (DR6-204). The web build e2e runs has no ACL.
+      - name: Check the capabilities of the webview
+        run: node tools/check-capabilities.mjs apps/desktop/src-tauri/gen/schemas/capabilities.json apps/desktop/src-tauri/capabilities/default.json apps/desktop/src-tauri/target/release
       # `if-no-files-found` fails only when no path matches at all: an installer gone missing would
       # leave an artifact with the exe alone.
       - name: Check the exe and the installer

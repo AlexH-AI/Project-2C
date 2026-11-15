@@ -36,7 +36,7 @@ export default tseslint.config(
     rules: reactHooks.configs.recommended.rules,
   },
   {
-    files: ['apps/desktop/src/**/*.{ts,tsx}'],
+    files: ['apps/desktop/src/**/*.{ts,tsx}', 'packages/ui/src/**/*.tsx'],
     languageOptions: { globals: globals.browser },
   },
   {
@@ -104,8 +104,10 @@ export default tseslint.config(
             'Take `test` from e2e/fixtures.ts, any other name by a static import: lint cannot tell what a dynamic import takes.',
         },
         {
-          // A .cjs spec takes it by require(), which no-restricted-imports does not read either.
-          selector: "CallExpression[callee.name='require'][arguments.0.value='@playwright/test']",
+          // A .cjs spec takes it by require(), which no-restricted-imports does not read either; in
+          // quotes or in backticks.
+          selector:
+            "CallExpression[callee.name='require'][arguments.0.value='@playwright/test'], CallExpression[callee.name='require'][arguments.0.quasis.0.value.cooked='@playwright/test']",
           message:
             'Write the spec in TypeScript and take `test` from e2e/fixtures.ts: lint does not tell what a require() takes.',
         },

@@ -69,8 +69,12 @@ test("lint refuses Playwright's own test to every e2e file but fixtures.ts", asy
     const code = "import { expect, test } from '@playwright/test';";
     expect(await refusals(code, `e2e/probe.spec.${extension}`), extension).toBe(1);
   }
-  const required = "const { test } = require('@playwright/test');";
-  expect(await refusals(required, 'e2e/probe.spec.cjs')).toBe(1);
+  for (const required of [
+    "const { test } = require('@playwright/test');",
+    'const { test } = require(`@playwright/test`);',
+  ]) {
+    expect(await refusals(required, 'e2e/probe.spec.cjs'), required).toBe(1);
+  }
   // A dynamic import, whatever it takes: lint cannot tell its names.
   for (const code of [
     "const { test } = await import('@playwright/test');",

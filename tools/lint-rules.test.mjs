@@ -69,10 +69,11 @@ describe('ESLint (eslint.config.js): no-global-assign reads the globals of each 
   };
 
   it(
-    'refuses window in the app, crypto in packages/db, process in a config at the root',
+    'refuses window in the app and packages/ui, crypto in packages/db, process in a root config',
     async () => {
       expect(await assigns('window = undefined;', 'apps/desktop/src/x.ts')).toBe(1);
       expect(await assigns('window = undefined;', 'apps/desktop/src/x.tsx')).toBe(1);
+      expect(await assigns('window = undefined;', 'packages/ui/src/x.tsx')).toBe(1);
       expect(await assigns('crypto = undefined;', 'packages/db/src/x.ts')).toBe(1);
       expect(await assigns('process = undefined;', 'x.config.ts')).toBe(1);
     },
