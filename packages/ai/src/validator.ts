@@ -5,9 +5,9 @@
  * retry message (prompts §5) and is stored in `validator_json`.
  */
 import {
-  collapseSpaces,
   KYC_FIELDS,
   normalizeKycValue,
+  normalizeText,
   type KycCategory,
   type KycField,
   type KycValue,
@@ -48,7 +48,7 @@ const NO_JSON: ValidationIssue = { code: 'V1', path: '$', detail: 'không có kh
 
 /**
  * The answer was cut by `maxTokens` before its JSON block ended (DR5-05): said instead of `NO_JSON`,
- * so neither the RE nor the retry message reads it as an answer without JSON (spec §6.1).
+ * so neither the RM nor the retry message reads it as an answer without JSON (spec §6.1).
  */
 export const CUT_ANSWER: ValidationIssue = {
   code: 'V1',
@@ -153,7 +153,7 @@ export const EXTRACTION_FIELDS: readonly KycField[] = (
 ).filter((field) => !KYC_FIELDS[field].fromProfile);
 
 export interface ExtractionCheckInput {
-  /** The KYC note sent to the model, as the RE wrote it. */
+  /** The KYC note sent to the model, as the RM wrote it. */
   readonly note: string;
   readonly fields: readonly KycField[];
 }
@@ -166,15 +166,16 @@ export interface ExtractedFact {
 
 /**
  * V7 on an extraction that passed V1: drops each fact whose trường is not allowed (never
- * `birthYear` / `gender`), whose value its trường cannot hold, or whose quote is not in the note
- * once white space is collapsed. Kept facts carry the value taken to the type of their trường
+ * `birthYear` / `gender`), whose value its trường cannot hold, or whose quote is not in the note,
+ * both read as the app stores text (`normalizeText`: no invisible character, each run of white space
+ * one space; DR6-199, G5 §16.4). Kept facts carry the value taken to the type of their trường
  * (`normalizeKycValue`). No V3–V6: a value is the KH's own words (spec §6.4).
  */
 export function filterExtraction(
   output: ExtractionOutput,
   input: ExtractionCheckInput,
 ): { kept: ExtractedFact[]; dropped: ValidationIssue[] } {
-  const note = collapseSpaces(input.note);
+  const note = normalizeText(input.note);
   const kept: ExtractedFact[] = [];
   const dropped: ValidationIssue[] = [];
   output.facts.forEach(({ field, value, quote }, i) => {
@@ -187,7 +188,7 @@ export function filterExtraction(
     const normalized = valueOf(field, value);
     if (normalized === null) {
       drop('value', `giá trị không hợp với trường "${field}"`);
-    } else if (!note.includes(collapseSpaces(quote))) {
+    } else if (!note.includes(normalizeText(quote))) {
       drop('quote', 'trích dẫn không có trong ghi chú');
     } else {
       kept.push({ field, value: normalized, quote });

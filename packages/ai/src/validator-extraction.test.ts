@@ -1,6 +1,7 @@
 /** V7 (spec §6.4, §8): wrong extraction facts are dropped one by one. */
 import { describe, expect, it } from 'vitest';
 import { extractionOutputSchema } from './schema';
+import { ZWSP } from './test-support';
 import { EXTRACTION_FIELDS, filterExtraction, validateOutput } from './validator';
 
 const note =
@@ -8,6 +9,9 @@ const note =
   'Nhà chị đang có hợp đồng Prudential PRU-Hành Trang.';
 
 const input = { note, fields: EXTRACTION_FIELDS };
+
+/** U+0085, next line: white space, and the end of a line of a note (K25). */
+const NEL = String.fromCodePoint(0x85);
 
 const fact = (field: string, value: string | number | boolean, quote: string) => ({
   field,
@@ -114,6 +118,35 @@ describe('filterExtraction — V7', () => {
     const nfdNote = { note: note.normalize('NFD'), fields: EXTRACTION_FIELDS };
     const output = extractionOutputSchema.parse({ facts: [fact('childrenCount', '2', 'có 2 bé')] });
     expect(filterExtraction(output, nfdNote).kept).toHaveLength(1);
+  });
+
+  // DR6-199 (G5 §16.4): both are read as the app stores a note (K20, K25): a character that shows
+  // nothing is dropped, and every Unicode white space, U+0085 too, is a space.
+  it.each([
+    ['U+200B inside a word', `Chị si${ZWSP}nh năm 1984`],
+    ['U+200B next to a space', `Chị sinh${ZWSP} năm 1984`],
+    ['U+0085 for a space', `Chị sinh${NEL}năm 1984`],
+    ['U+0085 where the note breaks its line', `có 2 bé,${NEL}bé lớn`],
+  ])('keeps a quote with %s that reads as the note does', (_, quote) => {
+    expect(filter(fact('occupation', 'x', quote))).toEqual({
+      kept: [fact('occupation', 'x', quote)],
+      dropped: [],
+    });
+  });
+
+  it('reads the note the same way: U+200B and U+0085 typed in it', () => {
+    const typed = { note: `Chị si${ZWSP}nh${NEL}năm 1984`, fields: EXTRACTION_FIELDS };
+    const output = extractionOutputSchema.parse({
+      facts: [fact('occupation', 'x', 'Chị sinh năm 1984')],
+    });
+    expect(filterExtraction(output, typed).kept).toHaveLength(1);
+  });
+
+  // A dropped character puts no space: the words then run together, as they would in the note.
+  it('drops a quote with U+200B in place of a space', () => {
+    expect(filter(fact('occupation', 'x', `Chị sinh${ZWSP}năm 1984`)).dropped).toEqual([
+      { code: 'V7', path: 'facts[0].quote', detail: 'trích dẫn không có trong ghi chú' },
+    ]);
   });
 
   it('runs no V3–V6: the name of a contract the KH holds is a fact', () => {

@@ -72,7 +72,7 @@ export function fact(
   };
 }
 
-/** Never sent: the name, codes, the RE, the note, appointments and contracts of the KH. */
+/** Never sent: the name, codes, the RM, the note, appointments and contracts of the KH. */
 export const PRIVATE = {
   name: 'Nguyễn Thị Lan',
   code: 'KH-00042',

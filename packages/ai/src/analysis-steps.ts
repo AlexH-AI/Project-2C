@@ -20,7 +20,7 @@ import { validateOutput, type ValidationIssue } from './validator';
 /** What an analysis is of: the customer, at the KYC version its result stays tied to (§3). */
 export interface AnalysisSubject {
   readonly customerId: string;
-  /** The KYC version the profile is at when the RE clicks (§3 item 2, §3.1 item 6). */
+  /** The KYC version the profile is at when the RM clicks (§3 item 2, §3.1 item 6). */
   readonly kycVersionId: string;
 }
 

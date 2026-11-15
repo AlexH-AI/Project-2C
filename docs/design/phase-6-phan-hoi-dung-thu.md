@@ -193,6 +193,7 @@ B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm ch�
 
 - **B3:** chuỗi `overview.kpi.closeRate` (`apps/desktop/src/i18n/vi.ts:987`; Tổng quan, Báo cáo, Excel lấy chữ từ đây), hai test đang so chữ (`e2e/overview.spec.ts:36`, `apps/desktop/src/routes/reports/report-workbook.test.ts:122`) và chú thích code.
 - **A5**, cùng script đổi chữ của tài liệu: mockup, golden (cả chữ "Tỉ lệ > 100%" ở ô G11, G20 của `chi-so.md`), bảng thuật ngữ §11.6. `CONTEXT.md` và golden B đã viết "Tỷ" từ T-421. Tài liệu lịch sử (§3.4) và lời Owner nguyên văn giữ nguyên.
+- **A6:** chữ prompt đổi theo (Owner 15/11/2026): hai prompt analysis, discovery viết "tỷ lệ chốt" ở luật cấm số phần trăm (`analysis@7`, `discovery@7`, G5 §16.2); danh sách chặn V3 giữ cả hai cách viết.
 
 ## 5. Phần C — Tìm KH, tìm RM, danh sách KH của RM (nội dung chốt 10/11/2026)
 

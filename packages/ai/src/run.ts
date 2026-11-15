@@ -288,12 +288,12 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
 // ---- extraction ---------------------------------------------------------------
 
 export interface ExtractionRequest extends AiCall {
-  /** One KYC note as the RE wrote it (spec §8). */
+  /** One KYC note as the RM wrote it (spec §8). */
   readonly note: string;
 }
 
 export type ExtractionResult =
-  /** Proposals for the RE to confirm, never saved (§8); `dropped` failed V7. */
+  /** Proposals for the RM to confirm, never saved (§8); `dropped` failed V7. */
   | {
       readonly kind: 'facts';
       readonly facts: readonly ExtractedFact[];

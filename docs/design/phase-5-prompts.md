@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14) · Đợt lượt 6 `analysis@6` / `discovery@6` **Owner duyệt G5 ở PR của T-392** (#1136, §15; câu duyệt và ngày ở thân PR)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14) · Đợt lượt 6 `analysis@6` / `discovery@6` **Owner duyệt G5 ở PR của T-392** (#1136, §15; câu duyệt và ngày ở thân PR) · Đợt A6 `analysis@7` / `discovery@7` / `extraction@2` ("RE" thành "RM") **chờ Owner duyệt G5** (T-445 #1310, §16)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -19,7 +19,7 @@ Mỗi lần gọi gồm đúng hai message, cộng thêm hai message khi phải 
 - Trần 200 000 ký tự của cả bốn message (spec §5.1): khi message 1 + 2 + 4 cộng nguyên câu trả lời sai vượt trần, message 3 là **phần đầu** câu trả lời đó, cắt theo code point vừa đủ để tổng = trần; câu trả lời vừa trần thì gửi nguyên văn như cũ. Message 1 + 2 + 4 đã vượt trần → không thử lại, báo `AI_TOO_LARGE` (spec §5.3). Owner duyệt G5 11/10/2026 (T-199, CX-A6); chữ prompt không đổi nên không tăng version.
 - Không gửi `response_format` (spec §5.1). Prompt yêu cầu chỉ trả một khối JSON; app lấy khối JSON đầu tiên (spec §6.1).
 - `maxTokens`: analysis / discovery **24 000**, extraction **12 000**, Kiểm tra kết nối **1 024** (Owner 11/10/2026, §10.5, §10.7; ban đầu 8 000 / 4 000 / 64). Model có reasoning tính token suy luận vào trần này; trần x3 xấp xỉ số token model viết được trong hạn 120 s của một lần gọi.
-- Ký hiệu trong prompt: "KH" = khách hàng, "RE" = chuyên viên quan hệ khách hàng (người dùng app).
+- Ký hiệu trong prompt: "KH" = khách hàng, "RM" = chuyên viên quan hệ khách hàng (người dùng app).
 
 ### 1.1 Đầu vào phân tích (message `user`, analysis và discovery)
 
@@ -47,24 +47,24 @@ Khóa JSON tiếng Anh, giá trị tiếng Việt. Ví dụ:
 - `missingCategories`: hạng mục đang thiếu của cổng (`code` là giá trị hợp lệ cho `missingCategory` — V2).
 - `conflictWarnings`: nhãn các trường mâu thuẫn phụ (không phải cốt lõi). Rỗng → `[]`.
 
-## 2. Prompt `analysis@6` (chế độ `PAIN_POINT_ANALYSIS`)
+## 2. Prompt `analysis@7` (chế độ `PAIN_POINT_ANALYSIS`)
 
 Chép nguyên văn khối dưới làm message `system`:
 
 ````text
-Bạn là trợ lý phân tích hồ sơ KYC cho RE (chuyên viên quan hệ khách hàng) tư vấn tài chính và bảo vệ cho khách hàng cá nhân cao cấp tại Việt Nam. Kết quả chỉ để RE đọc nội bộ khi chuẩn bị buổi gặp; không gửi cho khách hàng.
+Bạn là trợ lý phân tích hồ sơ KYC cho RM (chuyên viên quan hệ khách hàng) tư vấn tài chính và bảo vệ cho khách hàng cá nhân cao cấp tại Việt Nam. Kết quả chỉ để RM đọc nội bộ khi chuẩn bị buổi gặp; không gửi cho khách hàng.
 
 ĐẦU VÀO
-Tin nhắn tiếp theo là một khối JSON: ngày phân tích, danh sách dữ kiện KYC đã được RE xác nhận (mỗi dữ kiện có mã dạng F12), các hạng mục còn thiếu và các trường đang mâu thuẫn. Đó là toàn bộ thông tin bạn có.
+Tin nhắn tiếp theo là một khối JSON: ngày phân tích, danh sách dữ kiện KYC đã được RM xác nhận (mỗi dữ kiện có mã dạng F12), các hạng mục còn thiếu và các trường đang mâu thuẫn. Đó là toàn bộ thông tin bạn có.
 
 NHIỆM VỤ
 Lập bản phân tích gồm 7 phần:
 1. hypotheses — giả thuyết hành vi (1–5): điều KH có thể ưu tiên, lo ngại hoặc cân nhắc khi ra quyết định tài chính.
 2. needs — nhu cầu (1–5).
 3. painPoints — điểm vướng hiện tại (1–5).
-4. themes — chủ đề cơ hội để RE tìm hiểu sâu (1–5).
-5. discoveryStrategy — hướng tìm hiểu ở buổi gặp tới (1–6): RE nên hỏi hoặc làm rõ điều gì.
-6. nextBestActions — việc RE nên tự làm tiếp (1–5), ví dụ chuẩn bị nội dung trao đổi, xin gặp cả vợ/chồng KH, kiểm tra lại một dữ kiện.
+4. themes — chủ đề cơ hội để RM tìm hiểu sâu (1–5).
+5. discoveryStrategy — hướng tìm hiểu ở buổi gặp tới (1–6): RM nên hỏi hoặc làm rõ điều gì.
+6. nextBestActions — việc RM nên tự làm tiếp (1–5), ví dụ chuẩn bị nội dung trao đổi, xin gặp cả vợ/chồng KH, kiểm tra lại một dữ kiện.
 7. personalityNotes — thông tin tham khảo về tính cách (0–4), theo quy tắc 8.
 
 QUY TẮC BẮT BUỘC
@@ -73,11 +73,11 @@ QUY TẮC BẮT BUỘC
 3. Mỗi phần tử của discoveryStrategy và nextBestActions phải có "evidence" trỏ tới dữ kiện, hoặc "missingCategory" là mã một hạng mục trong missingCategories (khi phần tử nhằm bổ sung hạng mục đó), hoặc cả hai. Không có căn cứ thì để "evidence": [].
 4. Giả thuyết là giả thuyết: viết "KH có thể…", "có dấu hiệu…", không khẳng định chắc chắn.
 5. Nếu conflictWarnings không rỗng, discoveryStrategy phải có ít nhất một phần tử làm rõ từng trường mâu thuẫn, trích các mã dữ kiện mâu thuẫn.
-6. Không viết bất kỳ con số phần trăm, ký hiệu %, xác suất, tỉ lệ chốt, khả năng mua / ký / chốt hợp đồng, mức độ "nóng / lạnh" của KH hay điểm số chấm KH. Không dùng cách nói mức khả năng như "nhiều khả năng", "khả năng cao"; viết "có thể".
-7. Không nêu tên sản phẩm, gói, dòng sản phẩm hay tên công ty bảo hiểm nào, kể cả khi tên đó có trong dữ kiện. Khi cần nhắc giải pháp bảo vệ mà dữ kiện cho thấy KH đã có, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện. Không đề xuất mua hay chuyển đổi sản phẩm. Không khuyên phân bổ hay cơ cấu lại tài sản (tăng / giảm một loại tài sản); nếu đáng bàn, đưa vào discoveryStrategy thành điều RE cần tìm hiểu.
-8. Nhãn tính cách chỉ được viết trong personalityNotes, không viết ở phần nào khác. Các phần khác không khái quát dữ kiện thành nét tính cách; KH tự mô tả mình thì chỉ nhắc lại điều KH nói và trích mã. Mỗi phần tử ghi "system": "PSYCHOLOGY" (tâm lý học: MBTI, DISC, Enneagram, Big Five, hướng nội / hướng ngoại) hoặc "ESOTERIC" (tử vi / huyền học: cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học). Đây là suy đoán để RE tham khảo — ngoại lệ duy nhất của quy tắc 1: viết "KH có thể…", phải có "evidence" trỏ tới dữ kiện làm căn cứ (vd. tuổi cho con giáp), không có căn cứ thì để personalityNotes là []. Đầu vào chỉ có tuổi: năm sinh là năm phân tích trừ tuổi, hoặc trước đó một năm; khi hai năm đó khác con giáp / mệnh thì nêu cả hai. Không dùng nhãn này làm căn cứ cho phần khác. Phần tử ESOTERIC chỉ nêu con giáp hoặc mệnh ngũ hành suy từ tuổi, hoặc nhãn có sẵn trong dữ kiện; không suy cung hoàng đạo, thần số học (cần ngày sinh) và không gán ý nghĩa huyền học cho nghề nghiệp, nơi ở hay thời điểm.
+6. Không viết bất kỳ con số phần trăm, ký hiệu %, xác suất, tỷ lệ chốt, khả năng mua / ký / chốt hợp đồng, mức độ "nóng / lạnh" của KH hay điểm số chấm KH. Không dùng cách nói mức khả năng như "nhiều khả năng", "khả năng cao"; viết "có thể".
+7. Không nêu tên sản phẩm, gói, dòng sản phẩm hay tên công ty bảo hiểm nào, kể cả khi tên đó có trong dữ kiện. Khi cần nhắc giải pháp bảo vệ mà dữ kiện cho thấy KH đã có, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện. Không đề xuất mua hay chuyển đổi sản phẩm. Không khuyên phân bổ hay cơ cấu lại tài sản (tăng / giảm một loại tài sản); nếu đáng bàn, đưa vào discoveryStrategy thành điều RM cần tìm hiểu.
+8. Nhãn tính cách chỉ được viết trong personalityNotes, không viết ở phần nào khác. Các phần khác không khái quát dữ kiện thành nét tính cách; KH tự mô tả mình thì chỉ nhắc lại điều KH nói và trích mã. Mỗi phần tử ghi "system": "PSYCHOLOGY" (tâm lý học: MBTI, DISC, Enneagram, Big Five, hướng nội / hướng ngoại) hoặc "ESOTERIC" (tử vi / huyền học: cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học). Đây là suy đoán để RM tham khảo — ngoại lệ duy nhất của quy tắc 1: viết "KH có thể…", phải có "evidence" trỏ tới dữ kiện làm căn cứ (vd. tuổi cho con giáp), không có căn cứ thì để personalityNotes là []. Đầu vào chỉ có tuổi: năm sinh là năm phân tích trừ tuổi, hoặc trước đó một năm; khi hai năm đó khác con giáp / mệnh thì nêu cả hai. Không dùng nhãn này làm căn cứ cho phần khác. Phần tử ESOTERIC chỉ nêu con giáp hoặc mệnh ngũ hành suy từ tuổi, hoặc nhãn có sẵn trong dữ kiện; không suy cung hoàng đạo, thần số học (cần ngày sinh) và không gán ý nghĩa huyền học cho nghề nghiệp, nơi ở hay thời điểm.
 9. Không trích dẫn điều, khoản, luật, nghị định, thông tư hay số hiệu văn bản pháp lý. Nếu một ý có yếu tố pháp lý hoặc thuế, viết "cần chuyên gia pháp lý xác nhận".
-10. Không đề xuất việc tự động như gửi tin, gửi email hay đặt lịch thay RE; mọi việc trong nextBestActions là việc RE tự quyết và tự làm.
+10. Không đề xuất việc tự động như gửi tin, gửi email hay đặt lịch thay RM; mọi việc trong nextBestActions là việc RM tự quyết và tự làm.
 11. Viết tiếng Việt có dấu, gọn, gọi khách hàng là "KH". Mỗi chuỗi "text" từ 1 đến 300 ký tự, nên dưới 200.
 
 ĐỊNH DẠNG TRẢ LỜI
@@ -93,21 +93,21 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
 }
 ````
 
-## 3. Prompt `discovery@6` (chế độ `PROFILE_DISCOVERY`)
+## 3. Prompt `discovery@7` (chế độ `PROFILE_DISCOVERY`)
 
-Hồ sơ đủ tối thiểu nhưng chưa đủ để phân tích nhu cầu: trọng tâm là RE cần tìm hiểu gì thêm. Chép nguyên văn khối dưới làm message `system`:
+Hồ sơ đủ tối thiểu nhưng chưa đủ để phân tích nhu cầu: trọng tâm là RM cần tìm hiểu gì thêm. Chép nguyên văn khối dưới làm message `system`:
 
 ````text
-Bạn là trợ lý phân tích hồ sơ KYC cho RE (chuyên viên quan hệ khách hàng) tư vấn tài chính và bảo vệ cho khách hàng cá nhân cao cấp tại Việt Nam. Kết quả chỉ để RE đọc nội bộ khi chuẩn bị buổi gặp; không gửi cho khách hàng.
+Bạn là trợ lý phân tích hồ sơ KYC cho RM (chuyên viên quan hệ khách hàng) tư vấn tài chính và bảo vệ cho khách hàng cá nhân cao cấp tại Việt Nam. Kết quả chỉ để RM đọc nội bộ khi chuẩn bị buổi gặp; không gửi cho khách hàng.
 
 ĐẦU VÀO
-Tin nhắn tiếp theo là một khối JSON: ngày phân tích, danh sách dữ kiện KYC đã được RE xác nhận (mỗi dữ kiện có mã dạng F12), các hạng mục còn thiếu và các trường đang mâu thuẫn. Đó là toàn bộ thông tin bạn có. Hồ sơ này chưa đủ thông tin để phân tích nhu cầu; nhiệm vụ chính là giúp RE tìm hiểu KH thêm.
+Tin nhắn tiếp theo là một khối JSON: ngày phân tích, danh sách dữ kiện KYC đã được RM xác nhận (mỗi dữ kiện có mã dạng F12), các hạng mục còn thiếu và các trường đang mâu thuẫn. Đó là toàn bộ thông tin bạn có. Hồ sơ này chưa đủ thông tin để phân tích nhu cầu; nhiệm vụ chính là giúp RM tìm hiểu KH thêm.
 
 NHIỆM VỤ
 Lập bản định hướng tìm hiểu gồm 4 phần:
 1. hypotheses — giả thuyết hành vi ban đầu (0–3), chỉ khi dữ kiện đủ căn cứ; không có thì để [].
 2. discoveryStrategy — hướng tìm hiểu ở buổi gặp tới (2–6), ưu tiên các hạng mục còn thiếu.
-3. nextBestActions — việc RE nên tự làm tiếp (1–5), ví dụ chuẩn bị câu hỏi, xin gặp cả vợ/chồng KH, kiểm tra lại một dữ kiện.
+3. nextBestActions — việc RM nên tự làm tiếp (1–5), ví dụ chuẩn bị câu hỏi, xin gặp cả vợ/chồng KH, kiểm tra lại một dữ kiện.
 4. personalityNotes — thông tin tham khảo về tính cách (0–4), theo quy tắc 9.
 
 QUY TẮC BẮT BUỘC
@@ -117,11 +117,11 @@ QUY TẮC BẮT BUỘC
 4. Mỗi hạng mục trong missingCategories nên có ít nhất một phần tử discoveryStrategy với "missingCategory" tương ứng, trong giới hạn 6 phần tử.
 5. Giả thuyết là giả thuyết: viết "KH có thể…", "có dấu hiệu…", không khẳng định chắc chắn.
 6. Nếu conflictWarnings không rỗng, discoveryStrategy phải có ít nhất một phần tử làm rõ từng trường mâu thuẫn, trích các mã dữ kiện mâu thuẫn.
-7. Không viết bất kỳ con số phần trăm, ký hiệu %, xác suất, tỉ lệ chốt, khả năng mua / ký / chốt hợp đồng, mức độ "nóng / lạnh" của KH hay điểm số chấm KH. Không dùng cách nói mức khả năng như "nhiều khả năng", "khả năng cao"; viết "có thể".
-8. Không nêu tên sản phẩm, gói, dòng sản phẩm hay tên công ty bảo hiểm nào, kể cả khi tên đó có trong dữ kiện. Khi cần nhắc giải pháp bảo vệ mà dữ kiện cho thấy KH đã có, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện. Không đề xuất mua hay chuyển đổi sản phẩm. Không khuyên phân bổ hay cơ cấu lại tài sản (tăng / giảm một loại tài sản); nếu đáng bàn, đưa vào discoveryStrategy thành điều RE cần tìm hiểu.
-9. Nhãn tính cách chỉ được viết trong personalityNotes, không viết ở phần nào khác. Các phần khác không khái quát dữ kiện thành nét tính cách; KH tự mô tả mình thì chỉ nhắc lại điều KH nói và trích mã. Mỗi phần tử ghi "system": "PSYCHOLOGY" (tâm lý học: MBTI, DISC, Enneagram, Big Five, hướng nội / hướng ngoại) hoặc "ESOTERIC" (tử vi / huyền học: cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học). Đây là suy đoán để RE tham khảo — ngoại lệ duy nhất của quy tắc 1: viết "KH có thể…", phải có "evidence" trỏ tới dữ kiện làm căn cứ (vd. tuổi cho con giáp), không có căn cứ thì để personalityNotes là []. Đầu vào chỉ có tuổi: năm sinh là năm phân tích trừ tuổi, hoặc trước đó một năm; khi hai năm đó khác con giáp / mệnh thì nêu cả hai. Không dùng nhãn này làm căn cứ cho phần khác. Phần tử ESOTERIC chỉ nêu con giáp hoặc mệnh ngũ hành suy từ tuổi, hoặc nhãn có sẵn trong dữ kiện; không suy cung hoàng đạo, thần số học (cần ngày sinh) và không gán ý nghĩa huyền học cho nghề nghiệp, nơi ở hay thời điểm.
+7. Không viết bất kỳ con số phần trăm, ký hiệu %, xác suất, tỷ lệ chốt, khả năng mua / ký / chốt hợp đồng, mức độ "nóng / lạnh" của KH hay điểm số chấm KH. Không dùng cách nói mức khả năng như "nhiều khả năng", "khả năng cao"; viết "có thể".
+8. Không nêu tên sản phẩm, gói, dòng sản phẩm hay tên công ty bảo hiểm nào, kể cả khi tên đó có trong dữ kiện. Khi cần nhắc giải pháp bảo vệ mà dữ kiện cho thấy KH đã có, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện. Không đề xuất mua hay chuyển đổi sản phẩm. Không khuyên phân bổ hay cơ cấu lại tài sản (tăng / giảm một loại tài sản); nếu đáng bàn, đưa vào discoveryStrategy thành điều RM cần tìm hiểu.
+9. Nhãn tính cách chỉ được viết trong personalityNotes, không viết ở phần nào khác. Các phần khác không khái quát dữ kiện thành nét tính cách; KH tự mô tả mình thì chỉ nhắc lại điều KH nói và trích mã. Mỗi phần tử ghi "system": "PSYCHOLOGY" (tâm lý học: MBTI, DISC, Enneagram, Big Five, hướng nội / hướng ngoại) hoặc "ESOTERIC" (tử vi / huyền học: cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học). Đây là suy đoán để RM tham khảo — ngoại lệ duy nhất của quy tắc 1: viết "KH có thể…", phải có "evidence" trỏ tới dữ kiện làm căn cứ (vd. tuổi cho con giáp), không có căn cứ thì để personalityNotes là []. Đầu vào chỉ có tuổi: năm sinh là năm phân tích trừ tuổi, hoặc trước đó một năm; khi hai năm đó khác con giáp / mệnh thì nêu cả hai. Không dùng nhãn này làm căn cứ cho phần khác. Phần tử ESOTERIC chỉ nêu con giáp hoặc mệnh ngũ hành suy từ tuổi, hoặc nhãn có sẵn trong dữ kiện; không suy cung hoàng đạo, thần số học (cần ngày sinh) và không gán ý nghĩa huyền học cho nghề nghiệp, nơi ở hay thời điểm.
 10. Không trích dẫn điều, khoản, luật, nghị định, thông tư hay số hiệu văn bản pháp lý. Nếu một ý có yếu tố pháp lý hoặc thuế, viết "cần chuyên gia pháp lý xác nhận".
-11. Không đề xuất việc tự động như gửi tin, gửi email hay đặt lịch thay RE; mọi việc trong nextBestActions là việc RE tự quyết và tự làm.
+11. Không đề xuất việc tự động như gửi tin, gửi email hay đặt lịch thay RM; mọi việc trong nextBestActions là việc RM tự quyết và tự làm.
 12. Viết tiếng Việt có dấu, gọn, gọi khách hàng là "KH". Mỗi chuỗi "text" từ 1 đến 300 ký tự, nên dưới 200.
 
 ĐỊNH DẠNG TRẢ LỜI
@@ -134,7 +134,7 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
 }
 ````
 
-## 4. Prompt `extraction@1` (AI trích xuất)
+## 4. Prompt `extraction@2` (AI trích xuất)
 
 ### 4.1 Đầu vào (message `user`)
 
@@ -149,7 +149,7 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
 }
 ```
 
-- `note`: nguyên văn một ghi chú KYC do RE ghi (spec §6.1, §8).
+- `note`: nguyên văn một ghi chú KYC do RM ghi (spec §6.1, §8).
 - `fields`: mọi trường của danh mục **trừ** `birthYear`, `gender` (lấy từ hồ sơ KH, D2), theo thứ tự danh mục; `type` = `integer` cho `childrenCount`, `boolean` cho `hasProtection`, còn lại `text`.
 
 ### 4.2 Prompt
@@ -157,10 +157,10 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
 Chép nguyên văn khối dưới làm message `system`:
 
 ````text
-Bạn giúp RE (chuyên viên quan hệ khách hàng) chuyển một ghi chú KYC thành các dữ kiện có cấu trúc. RE sẽ tự xem và xác nhận từng đề xuất; bạn chỉ đề xuất.
+Bạn giúp RM (chuyên viên quan hệ khách hàng) chuyển một ghi chú KYC thành các dữ kiện có cấu trúc. RM sẽ tự xem và xác nhận từng đề xuất; bạn chỉ đề xuất.
 
 ĐẦU VÀO
-Tin nhắn tiếp theo là một khối JSON gồm "note" (ghi chú RE đã viết sau khi trao đổi với khách hàng) và "fields" (danh sách trường được phép, mỗi trường có mã, nhãn và kiểu).
+Tin nhắn tiếp theo là một khối JSON gồm "note" (ghi chú RM đã viết sau khi trao đổi với khách hàng) và "fields" (danh sách trường được phép, mỗi trường có mã, nhãn và kiểu).
 
 QUY TẮC BẮT BUỘC
 1. Chỉ đề xuất điều ghi chú nói rõ về khách hàng hoặc gia đình khách hàng. Không suy đoán, không suy ra từ ngữ cảnh, không thêm hiểu biết bên ngoài.
@@ -198,7 +198,7 @@ Không lưu, không qua validator (spec §4.3). `system`: `Trả lời đúng m�
 
 ## 6a. Tin nhắn ChatGPT web `web@1` (spec §3.1, W-1 — Owner duyệt G5 08/10/2026)
 
-ChatGPT web không có message `system`: app ghép **một** tin nhắn để người dùng dán. Chữ prompt của chế độ (§2 hoặc §3) giữ **nguyên văn**; phần bọc dưới có version riêng `web@1`, và `prompt_version` lưu dạng `analysis@6+web@1` (spec §7.1). Thay `{prompt}` bằng chữ prompt của chế độ, `{input}` bằng khối JSON đầu vào §1.1 (đúng như message `user` khi gọi OpenCode):
+ChatGPT web không có message `system`: app ghép **một** tin nhắn để người dùng dán. Chữ prompt của chế độ (§2 hoặc §3) giữ **nguyên văn**; phần bọc dưới có version riêng `web@1`, và `prompt_version` lưu dạng `analysis@7+web@1` (spec §7.1). Thay `{prompt}` bằng chữ prompt của chế độ, `{input}` bằng khối JSON đầu vào §1.1 (đúng như message `user` khi gọi OpenCode):
 
 ````plaintext
 Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn bộ cuộc trò chuyện; phần ĐẦU VÀO chính là khối JSON mà hướng dẫn gọi là "tin nhắn tiếp theo". Chỉ dùng thông tin trong ĐẦU VÀO: không tìm kiếm web, không dùng nguồn bên ngoài, không dùng thông tin từ các cuộc trò chuyện khác. Chỉ trả lời bằng đúng một khối JSON theo định dạng trong hướng dẫn, không thêm lời giải thích.
@@ -214,7 +214,7 @@ Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn 
 - **Câu dán là tin nhắn của app** (spec §3.1 mục 3; R2-03, R2-04 — Owner 11/10/2026, §10.6; tách dòng Owner 23/10/2026, §12.3, §13.4; NUL Owner 31/10/2026, §14.2): mỗi dòng (tách ở CR, LF, VT, FF, U+0085, U+2028, U+2029, như ghi chú KYC — K25) của câu dán và các dòng mốc chuẩn hóa như bước 0 của §7 (bỏ ký tự vô hình theo tập K20 và NUL, gộp khoảng trắng, NFKC — §11.2, §14.2; dấu tổ hợp lạc đọc như một dấu cách — §12.2), rồi bỏ tiền tố trích dẫn đầu dòng (một hay nhiều `>`, kèm khoảng trắng), gộp mọi khoảng trắng thành một dấu cách, cắt hai đầu. Một dòng trùng dòng mốc → `OWN_MESSAGE`: báo tại khung, không tính lần thử, không lưu. Dòng mốc: hai dòng khung `=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`, và dòng đầu, dòng cuối của message thử lại §5. Chỉ app viết dòng mốc, nên chấp nhận (§12.3): một chuỗi JSON của câu trả lời có U+0085, U+2028 hay U+2029 ngay trước và ngay sau dòng mốc thì dòng mốc thành một dòng riêng, và câu dán bị coi là tin nhắn của app.
 - Câu trả lời dán vào được xử lý như `content` của model: lấy khối JSON đầu tiên, bỏ rào ```` ```json ```` (spec §6.1); V1–V6 như §7–§8. Không có `maxTokens`, `reasoning` — người dùng tự chọn model và mức suy luận trên web.
 - Khối trên dùng rào `plaintext` để `prompts.test.ts` (đang so đúng bốn khối `text` §2–§5) còn xanh cho tới task cài `web@1` (spec §13 #13); task đó so khối này với hằng số trong code.
-- Đổi chữ phần bọc = `web@2` + qua G5; đổi prompt chế độ thì `prompt_version` đổi theo (vd. `analysis@6+web@1`).
+- Đổi chữ phần bọc = `web@2` + qua G5; đổi prompt chế độ thì `prompt_version` đổi theo (vd. `analysis@7+web@1`).
 
 ## 7. Cách so khớp chung cho V3–V6
 
@@ -299,7 +299,7 @@ Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (d�
 | `\b(Điều\|ĐIỀU)\s*\p{Nd}+` trên **bản gốc, giữ hoa thường** (vd. "Điều 35", "Điều" + U+200B + "35"; "điều 2 vợ chồng" không khớp) | regex | — |
 | `\bkhoản\s*\p{Nd}+[,]?\s*điều\s*\p{Nd}+` (vd. "khoản 2 Điều 35"; "khoản 2 điều kiện" không khớp) | regex, cả bản bỏ dấu | — |
 | `\bđiểm\s*[a-zđ]\s*khoản\b` | regex, cả bản bỏ dấu | — |
-| "luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có), **một cặp ngoặc đơn** rồi khoảng trắng (có thể không có; vd. "(sửa đổi)"), **một ngoặc kép mở** `"` hay `“` (có thể không có), rồi một từ mở đầu bằng chữ hoa (`\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm", "Luật “Kinh doanh bảo hiểm”", "Luật (sửa đổi) Đất đai"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo", "luật (F12)" | regex | — |
+| "luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có), **một cặp ngoặc đơn** rồi khoảng trắng (có thể không có; vd. "(sửa đổi)"), **một ngoặc kép mở** `"` hay `“` (có thể không có), rồi một từ mở đầu bằng chữ hoa (`\p{Lu}`) mà **không** phải "KH", "RM" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm", "Luật “Kinh doanh bảo hiểm”", "Luật (sửa đổi) Đất đai"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo", "luật (F12)" | regex | — |
 | bộ luật · nghị định · thông tư · văn bản hợp nhất | cụm | có |
 | nghị quyết | cụm | **không** |
 | `\b(quyết định\|công văn) số\s*\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp) | regex, cả bản bỏ dấu | — |
@@ -308,7 +308,7 @@ Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (d�
 
 Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ** chặn khi đi kèm "Điều <số>" vì "khoản 500 triệu" là cách nói tiền thường gặp. "Pháp luật", "pháp lý", "cần chuyên gia pháp lý xác nhận" không bị chặn, kể cả "pháp luật" đứng trước tên riêng (vd. "pháp luật Việt Nam", Owner 07/10/2026 — §9 Q6). "Điều <số>" chỉ chặn khi viết hoa "Điều" (Owner 11/10/2026): điều luật luôn viết hoa; "Điều 2 vợ chồng…" ở **đầu câu** vẫn bị chặn, "theo điều 35" viết thường đứng riêng không bị chặn.
 
-### 8.5 Ca kiểm bắt buộc (T-165; C20–C54 đợt Phase 6, T-197; C55–C72 đợt lượt 2, T-257; C73–C79 đợt lượt 3, T-277; C80–C83 đợt lượt 4, T-323; C84–C86 đợt lượt 6, T-392)
+### 8.5 Ca kiểm bắt buộc (T-165; C20–C54 đợt Phase 6, T-197; C55–C72 đợt lượt 2, T-257; C73–C79 đợt lượt 3, T-277; C80–C83 đợt lượt 4, T-323; C84–C86 đợt lượt 6, T-392; C87–C88 đợt A6, T-445)
 
 | # | Chuỗi trong output | Kết quả |
 |---|---|---|
@@ -352,7 +352,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C35 | "KH có thể sẵn sàng mua nhà trong năm 2027 (F1)" | đạt |
 | C36 | "Con KH cần cải thiện điểm số để du học" | đạt |
 | C37 | "Hỏi tài khoản liên kết chung của hai vợ chồng" | đạt |
-| C38 | "RE bảo viết lại mục tiêu cho rõ" | đạt |
+| C38 | "RM bảo viết lại mục tiêu cho rõ" | đạt |
 | C39 | "KH sẵn sàng mua bảo hiểm" | V3 |
 | C40 | "Chấm điểm KH 8/10" | V3 |
 | C41 | "KH có thể chốt được trong tháng này" | V3 |
@@ -368,7 +368,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C51 | "Lu" + U+200B + "ật Kinh doanh bảo hiểm" | V6 |
 | C52 | `text` "…" · `text` chỉ có U+200B | V1 |
 | C53 | `text` 250 ký tự viết NFD | đạt |
-| C54 | Ví dụ JSON của `analysis@6` / `discovery@6` dán nguyên, với đầu vào có đủ mã ví dụ | V1, không ACCEPTED |
+| C54 | Ví dụ JSON của `analysis@7` / `discovery@7` dán nguyên, với đầu vào có đủ mã ví dụ | V1, không ACCEPTED |
 | C55 | Viết NFD, U+200B trước mỗi dấu tổ hợp: "KH dễ chốt" · "Bảo Việt" · "KH tuổi Tý" ở `needs` · "Theo Điều 35" · "Nghị quyết 12" | V3 · V4 · V5 · V6 · V6 |
 | C56 | "Theo Điều" + U+200B + "35" · "Theo Điều" + U+2060 + "35" · "Luật" + U+200B + "Kinh doanh bảo hiểm" · "Luật" + U+2060 + "BHXH" | V6 |
 | C57 | "khoản 2" + U+200B + "Điều" + U+200B + "35" · "khoản" + U+2060 + "2 điều 35" · "điểm" + U+200B + "a" + U+200B + "khoản 2" | V6 |
@@ -376,7 +376,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C59 | "xác" + U+3164 + "suất" · "xác" + U+0085 + "suất" | V3 |
 | C60 | "Bảo" + U+034F + "Minh" | V4 |
 | C61 | `text` chỉ U+3164 · U+3164 + "…" | V1 |
-| C62 | "Định hướng nơi ở sau khi nghỉ hưu" · "Định hướng ngoài giờ làm việc" · "Định hướng nối nghiệp cho con" ở `needs` · "RE chuyển hướng nói sang mục tiêu học phí" ở `nextBestActions` | đạt |
+| C62 | "Định hướng nơi ở sau khi nghỉ hưu" · "Định hướng ngoài giờ làm việc" · "Định hướng nối nghiệp cho con" ở `needs` · "RM chuyển hướng nói sang mục tiêu học phí" ở `nextBestActions` | đạt |
 | C63 | "KH cần suy nghĩ định hướng đầu tư" · "KH nghĩ định cư ở Úc" · "KH nghỉ định kỳ hằng năm" | đạt |
 | C64 | "Phần lớn là khách nông thôn" · "KH thuộc nhóm khách lãnh đạo cấp cao" · "Ngân hàng xếp hàng khách ưu tiên riêng" | đạt |
 | C65 | "KH sẵn sàng kỹ lưỡng xem xét" · "KH muốn chắc chắn kỳ hạn gửi tiền" · "Khả năng múa của con KH" · "KH có khả năng mưa gió vẫn đến" | đạt |
@@ -401,6 +401,8 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C84 | "KH sẵn sàng mua (F12)" · "KH tiềm năng mua [F12]" · "KH sẵn sàng mua “F12”" · "KH sẵn sàng mua " + U+0022 + "F12" + U+0022 · "KH nói “sẵn sàng mua”" | V3 |
 | C85 | "Theo Luật “Kinh doanh bảo hiểm”" · "Theo Luật " + U+0022 + "Đất đai" + U+0022 · "Theo Luật (sửa đổi) Đất đai" | V6 |
 | C86 | "KH cần tìm hiểu luật (F12)" · "Hỏi KH đã có Luật “Sư” riêng chưa" ở `discoveryStrategy` | đạt |
+| C87 | "Theo luật RM đặt cho buổi gặp" · "Hỏi KH về Luật “RM” của buổi gặp" ở `nextBestActions` | đạt |
+| C88 | "Theo luật Re đặt cho buổi gặp" ở `nextBestActions` | V6 |
 
 ## 9. Owner duyệt
 
@@ -1086,3 +1088,100 @@ Owner duyệt ở thân PR của T-392 (câu trích và ngày ở đó); PR khô
 - V3: lớp dấu câu sau "sẵn sàng / tiềm năng mua" thêm `(`, `[`, `"`, `“`, `”`; chữ mới của mục và ghi chú §8.1; tác dụng phụ và phần "Mất" (§15.2)
 - V6 "luật <Tên>": một cặp ngoặc đơn và một ngoặc kép mở trước tên; chữ mới của mục §8.4; tác dụng phụ và phần "Mất" (§15.3)
 - Ca kiểm C84–C86 (§15.4)
+
+## 16. Đợt A6: "RE" thành "RM" (T-445 #1310) — chờ Owner duyệt G5
+
+**Trạng thái:** đề xuất trong PR code của T-445: một PR gồm code và chữ G5, như §15. **Chờ Owner duyệt G5 trên PR**; PR không merge khi chưa có câu duyệt. Các thay đổi đã chép vào §1 (ký hiệu), §2–§4 (chữ prompt, version), §6a (ví dụ version), §8.4, §8.5; mục này giữ lý do và số đo.
+
+**Nền:** spec `phase-6-phan-hoi-dung-thu.md` §3 (phần A, Owner duyệt 10/11/2026): "RE" thành "RM" ở mọi nơi, kể cả prompt AI (§3.2 dòng "AI (G5)"). Owner 15/11/2026 (`docs/PROJECT-STATE.md`; ADR-0018 phụ lục 15/11/2026): A6 chỉ làm prompt tiếng Việt, AI tiếng Anh là A8; prompt viết "tỷ lệ chốt". Đợt này gộp ba ghi chú review mang nhãn A6: DR6-199 (V7, §16.4) và hai ghi chú của review PR #1149 về §15.2, §15.3 (§16.3).
+
+**Đã thử trước khi đề xuất** (script tạm so kết quả V3, V6 của từng chuỗi ở `main` `40aab60` và ở nhánh T-445; kho chữ như §15):
+
+- **1 722** test của `packages/ai` (1 708 test cũ, gồm C1–C86 và test đọc bảng §8, cộng 14 ca mới): xanh.
+- **1 640** chuỗi `"text"` của ba lần eval (`docs/metrics/ai-eval-2026-10-10.md`, `-10-11.md`, `-11-09.md`): 0 chuỗi đổi kết quả.
+- **2 330** chuỗi của `vi.ts`, **770** chuỗi của seed (`seed.ts`, `seed-data.ts`) và câu Mock (`schema.ts`, `mock-extraction.ts`): 0 chuỗi đổi kết quả.
+- **76 796** dòng khác nhau của `docs/**/*.md` (đo trước khi viết mục này): 4 dòng đổi kết quả (§16.3).
+
+### 16.1 Version
+
+| Prompt | Đổi | Version mới |
+|---|---|---|
+| analysis | chữ prompt: "RE" thành "RM" (10 chỗ), "tỉ lệ chốt" thành "tỷ lệ chốt" (quy tắc 6), §16.2; danh sách chặn: mục "luật <Tên>" của §8.4, §16.3 | `analysis@7` |
+| discovery | như analysis ("RE" 9 chỗ; "tỷ lệ chốt" ở quy tắc 7) | `discovery@7` |
+| extraction | chữ prompt: "RE" thành "RM" (3 chỗ); V7 (§16.4) | `extraction@2` |
+| tin nhắn ChatGPT web | chữ bọc không đổi (không có "RE") | giữ `web@1` → lưu `analysis@7+web@1` |
+
+- Đổi chữ prompt hay danh sách chặn = tăng version (đầu file). `maxTokens` không đổi.
+- **Dữ liệu cũ không đổi:** phân tích đã lưu với `@6` vẫn hiện như đã ghi (`db` chỉ kiểm dạng `<mode>@<n>`); JSON đầu vào / đầu ra đã lưu là lịch sử, không sửa (spec Phase 6 phản hồi §3.4), nên output cũ có chữ "RE" vẫn hiện "RE". Seed lấy version từ `PROMPT_VERSIONS`; mốc hash seed không đổi (T-288).
+- **Eval AI thật** trên prompt mới là A7 (#1311, NT-EV-01), không chạy ở đây. A8 (AI tiếng Anh) không đổi chữ prompt tiếng Việt, nên eval của A7 là eval cuối của prompt tiếng Việt.
+- **Chỉ prompt tiếng Việt** (Owner 15/11/2026): giữ câu "tại Việt Nam", không báo tiền tệ cho AI; giao diện tiếng Việt chỉ đi với VND (ADR-0018 §1).
+- Ảnh hướng dẫn có chip version (`docs/user-guide/img/06-ai-phan-tich.png`): chụp lại ở HD1 (spec Phase 6 phản hồi §8.1).
+- File ghi version hiện hành đổi theo (Issue #1310): `docs/golden/ai-eval.md`, `docs/README.md`, `docs/user-guide/06-ai.md`, `docs/user-guide/11-thuat-ngu.md`.
+
+### 16.2 Chữ prompt: "RM", "tỷ lệ chốt"
+
+- **"RE" thành "RM"** ở cả ba prompt: câu mở đầu thành "RM (chuyên viên quan hệ khách hàng)", phần giải nghĩa trong ngoặc giữ nguyên; mọi chữ "RE" khác thành "RM". Không đổi chữ nào khác ngoài gạch dưới. Cùng đổi: ký hiệu ở §1, câu dẫn của §3, dòng `note` của §4.1.
+- **"tỉ lệ chốt" thành "tỷ lệ chốt"** ở luật cấm số phần trăm (analysis quy tắc 6, discovery quy tắc 7), theo chữ "Tỷ lệ chốt" Owner chọn cho app (13/11/2026; Owner 15/11/2026 cho prompt). Danh sách chặn V3 (§8.1) vẫn có cả "tỉ lệ chốt" và "tỷ lệ chốt".
+- Chữ prompt không hiện trên giao diện. Output mới gọi người dùng app là "RM", như giao diện từ A1.
+- "RE" trong §9–§15 là chữ của các đợt trước, giữ nguyên; nghĩa là RM (`CONTEXT.md`).
+
+### 16.3 V6 "luật <Tên>": miễn "RM" thay "RE"
+
+**Vì sao đổi:** mục "luật <Tên>" của §8.4 miễn chữ của chính prompt đứng sau "luật" ("luật KH tự đặt", "luật RE đặt": không phải tên luật; DR6-16). Prompt nay viết "RM", nên chữ được miễn là "KH", "RM", "sư" (mọi kiểu chữ); "RE" không còn được miễn. Mục §8.4 đã chép vào bảng; so với trước chỉ đổi "RE" thành "RM".
+
+- Code: `LAW_NAME` của `blocklists.ts`, phần miễn sau "luật": `(?!(kh|rm|sư)\b)` (mọi kiểu chữ, như trước).
+- Kết quả đo: C87 đạt ("Theo luật RM đặt cho buổi gặp", "Hỏi KH về Luật “RM” của buổi gặp"; cả hai bị V6 ở `main`), C88 bị V6 (`có "luật R"`; đạt ở `main`). "Theo luật Rm đặt…" đạt; "Theo Luật RMS Titanic" vẫn bị V6 (chỉ miễn nguyên từ "RM"). Kho chữ thật: 0 chuỗi đổi. Docs: 4 dòng đổi từ đạt sang V6, đều là dòng của báo cáo review nhắc cụm "luật RE".
+- **Tác dụng phụ:** output còn viết "RE" ngay sau "luật" ("Theo luật RE đặt cho buổi gặp") nay bị V6, đổi lại là một lần thử lại. Prompt mới không còn chữ "RE"; 1 640 chuỗi eval thật không có câu nào như vậy.
+- **Mất:** tên luật là đúng từ "RM" thì đạt ("Theo Luật RM"); không có luật nào tên như vậy.
+
+**Ghi thêm cho §15.2, §15.3** (hai ghi chú review PR #1149; cả ba dạng dưới có từ trước đợt này, đợt này không đổi kết quả của chúng):
+
+- **Tác dụng phụ của §15.3, dạng " - ":** "KH tìm hiểu luật (F12) - Cần chuyên gia pháp lý xác nhận" bị V6 (`có "luật (F12) - C"`). Bước 0 của §7 đọc `-` (và `_`) là dấu cách, nên sau cặp ngoặc đơn là chữ hoa. §15.3 gọi "luật (F12)" rồi chữ hoa là "chữ hoa giữa câu, hiếm"; nhưng " - " rồi chữ hoa là chỗ mở ý tự nhiên, và câu theo sau đúng là câu prompt bảo viết (analysis quy tắc 9, discovery quy tắc 10). Viết "–" hay "." thay " - " thì đạt. Đây là chặn thừa (một lần thử lại; REJECTED nếu lặp), không phải lọt; 1 640 chuỗi eval thật không có câu nào như vậy.
+- **Mất của §15.2, ngoặc vuông đóng:** "KH [sẵn sàng mua] nhà" đạt, trong khi "KH (sẵn sàng mua) nhà" và "KH nói “sẵn sàng mua”" bị V3: lớp dấu câu sau cụm có `)`, `”` nhưng không có `]`.
+- **Mất của §15.2, §15.3, dấu nhấn Markdown `*`:** "KH sẵn sàng mua \*\*(F12)\*\*", "Theo Luật \*\*Đất đai\*\*" đạt. Dấu nhấn viết bằng `_` thì không lọt, vì bước 0 đọc `_` là dấu cách: "KH sẵn sàng mua \_\_(F12)\_\_" bị V3, "Theo Luật \_\_Đất đai\_\_" bị V6.
+- **Không đổi regex ở đợt này.** Đổi bộ lọc của đợt chỉ là "RE" thành "RM". Lớp Unicode cho ngoặc (`\p{Ps}`, `\p{Pe}`, `\p{Pi}`, `\p{Pf}`) thay cho danh sách từng ký tự sẽ đóng phần lớn "Mất" về ngoặc, nhưng mỗi ngoặc thêm vào cũng thêm chặn thừa như tác dụng phụ của §15.2, nên cần đo lại trên kho chữ và có ca kiểm riêng cho từng nhánh. Các dạng trên nằm ngoài dạng mà regex đã duyệt định nghĩa và kho eval thật không có dạng nào; để một đợt G5 sau, khi có output thật lọt.
+
+### 16.4 V7: trích dẫn đọc như app lưu chữ (DR6-199)
+
+**Lỗi hiện tại:** V7 so `quote` với ghi chú sau `collapseSpaces` của `domain` (NFC, gộp `\s` của JavaScript): không bỏ ký tự vô hình và không coi U+0085 là khoảng trắng. App thì lưu ghi chú qua `normalizeNote` (K20, K25): ký tự vô hình bị bỏ, U+0085 là chỗ xuống dòng. Một trích dẫn đúng chữ nhưng có U+200B trong hay cạnh một chữ, hoặc U+0085 thay dấu cách, bị bỏ dù app đọc nó thành đúng câu của ghi chú (WBR6-A2). Chiều an toàn: mất một đề xuất đúng, không lọt đề xuất sai.
+
+**Sửa:** V7 đọc cả ghi chú lẫn trích dẫn bằng `normalizeText` của `domain`, như app lưu chữ: bỏ ký tự vô hình theo tập K20, gộp mọi khoảng trắng Unicode (kể cả xuống dòng và U+0085) thành một dấu cách, NFC, cắt hai đầu. Luật giữ nguyên: trích dẫn phải là chuỗi con của ghi chú. Dòng V7 của spec `phase-5-ai.md` §6.4 đổi chữ theo.
+
+- Code: `filterExtraction` của `validator.ts`.
+- Kết quả đo, với ghi chú "… Chị sinh năm 1984. …":
+
+  | Trích dẫn | Trước | Nay |
+  |---|---|---|
+  | "Chị si" + U+200B + "nh năm 1984" (trong một chữ) | bỏ | giữ |
+  | "Chị sinh" + U+200B + " năm 1984" (cạnh dấu cách) | bỏ | giữ |
+  | "Chị sinh" + U+0085 + "năm 1984" | bỏ | giữ |
+  | "năm 1984 " (dấu cách thừa ở cuối, ghi chú có "1984.") | bỏ | giữ |
+  | "Chị sinh" + U+200B + "năm 1984" (thay dấu cách) | bỏ | bỏ |
+  | "Chị sinh" + U+FEFF + "năm 1984" (thay dấu cách) | giữ | bỏ |
+  | NBSP thay dấu cách · viết NFD · "Chị sinh năm 1985" | giữ · giữ · bỏ | như trước |
+
+  Ghi chú gõ có U+200B / U+0085 cũng được đọc như vậy (ghi chú gửi đi là chữ RM gõ, spec §6.1).
+- **Tác dụng phụ:** U+FEFF đứng thay dấu cách trước được giữ (`\s` của JavaScript tính U+FEFF là khoảng trắng), nay bị bỏ như U+200B: ký tự vô hình không tạo dấu cách, hai chữ dính nhau ("sinhnăm"), đúng như app lưu một ghi chú gõ như vậy. Chiều an toàn (mất một đề xuất của output suy biến).
+- **Nới:** khoảng trắng ở hai đầu trích dẫn không còn phải có trong ghi chú. Phần chữ thấy được vẫn phải có nguyên trong ghi chú.
+- Báo cáo eval không lưu `quote`, nên không đo được trên output thật; mọi test V7 cũ vẫn xanh. A7 chạy lại eval.
+
+### 16.5 Ca kiểm mới (thêm vào §8.5)
+
+Đã chép vào bảng §8.5 (C87–C88): bỏ "RM" khỏi phần miễn thì C87 đỏ, để lại "RE" thì C88 đỏ. Ca V7 của §16.4 ở `validator-extraction.test.ts` (V7 không thuộc bảng §8.5). Test đọc bảng §8 (`blocklists.test.ts`) đọc chữ mới của mục §8.4; `prompts.test.ts` so chữ §2–§4 và ba version.
+
+### 16.6 Không làm trong đợt này
+
+- AI trả lời tiếng Anh: A8 (thiết kế G5 riêng).
+- Các dạng "Mất" và tác dụng phụ ghi thêm ở §16.3 (lớp Unicode cho ngoặc, dạng " - ").
+- Eval AI thật: A7.
+- Phần chấm của script eval (`fold` của `tools/eval-ai-core.mjs`) vẫn gộp chữ bằng `collapseSpaces`, và chú thích của `collapseSpaces` (`packages/domain/src/text.ts`) còn ghi V7 dùng nó: ngoài file được phép của Issue #1310, ghi vào sổ ghi chú review.
+
+### 16.7 Owner duyệt
+
+Chờ Owner duyệt G5 trên PR của T-445; PR không merge khi chưa có câu duyệt. Các mục duyệt:
+
+- Version `analysis@7`, `discovery@7`, `extraction@2`; `web@1` giữ (§16.1)
+- Chữ prompt: "RE" thành "RM" ở ba prompt; "tỷ lệ chốt" ở analysis, discovery (§16.2)
+- V6 "luật <Tên>": miễn "RM" thay "RE"; tác dụng phụ và phần "Mất", gồm phần ghi thêm cho §15.2, §15.3 (§16.3)
+- V7: trích dẫn và ghi chú đọc như app lưu chữ; tác dụng phụ và phần nới (§16.4)
+- Ca kiểm C87–C88 (§16.5)

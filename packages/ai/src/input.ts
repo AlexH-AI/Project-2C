@@ -16,7 +16,7 @@ export interface ExtractionInput {
   }[];
 }
 
-/** One KYC note as the RE wrote it, and every trường but those from the hồ sơ KH (D2). */
+/** One KYC note as the RM wrote it, and every trường but those from the hồ sơ KH (D2). */
 export function buildExtractionInput(note: string): ExtractionInput {
   return {
     note,

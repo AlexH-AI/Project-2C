@@ -2,12 +2,12 @@
 
 Hồ sơ cho lần đo AI thật đầu tiên (spec `docs/design/phase-5-ai.md` §11, chạy bằng `pnpm eval:ai` ở T-171 #413). Owner duyệt (G2) trước khi chạy; chạy tốn tiền → Owner bấm (G4). Sau khi duyệt, **không sửa hồ sơ để "cho xanh"** — muốn đổi phải qua Owner. Fixture của script do T-171 chép **1–1** từ file này (cùng mã `E…`, `X…`).
 
-Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@6` / `discovery@6` / `extraction@1` (đợt G5 Phase 6 lượt 6, T-392, `phase-5-prompts.md` §15; eval 10/10 chạy với `@1`, 11/10 với `@2`) và danh sách chặn V3–V6 (`docs/design/phase-5-prompts.md`, G5).
+Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@7` / `discovery@7` / `extraction@2` (đợt A6, T-445, `phase-5-prompts.md` §16; eval 10/10 chạy với `@1`, 11/10 với `@2`, 09/11 với `@6`) và danh sách chặn V3–V6 (`docs/design/phase-5-prompts.md`, G5).
 
 ## 1. Quy ước chung
 
 - **Ngày phân tích cố định 01/10/2026.** Dữ kiện xác nhận 01/09/2026, bản cũ (đã bị thay thế) 01/06/2026 — như `kyc.fixture.ts`.
-- **Mã F** = thứ tự dữ kiện trong hồ sơ (seq), đếm cả bản cũ; bản cũ không được gửi (vd. E09 bắt đầu từ F3). Mọi dữ kiện đã được RE xác nhận.
+- **Mã F** = thứ tự dữ kiện trong hồ sơ (seq), đếm cả bản cũ; bản cũ không được gửi (vd. E09 bắt đầu từ F3). Mọi dữ kiện đã được RM xác nhận.
 - **Đầu vào** dựng bằng chính `buildAnalysisInput` của app (G5 §1.1): năm sinh gửi thành tuổi, "Đã có bảo vệ" gửi Có / Không, sắp theo thứ tự trường. Chế độ, hạng mục thiếu và cảnh báo trong bảng dưới là kết quả của `evaluateKycGate` (đã chạy kiểm khi soạn file này).
 - **Cấu hình:** model mặc định `deepseek-v4.1-flash`, reasoning **`HIGH`** (mức cao nhất app có, spec §4.1; Owner chốt 08/10/2026); mỗi hồ sơ / ghi chú chạy **một lần** (tối đa 2 lần thử như app). Model khác chạy thêm khi Owner muốn, ghi riêng.
   - Eval gửi `reasoning_effort: high`; lần gọi thật 09/10/2026 (T-179) xác nhận model này nhận tham số đó, `models.ts` để `reasoningEffort: true` (spec §4.2).
@@ -37,7 +37,7 @@ Cách ghi file (T-198 #488): đầu lượt, script tạo file kết quả và `
 | R4 | Có cảnh báo mâu thuẫn phụ → Discovery Strategy có phần tử làm rõ **từng** trường, trích đủ mã đang mâu thuẫn | ghi nhận |
 | R5 | Discovery: mỗi hạng mục thiếu có ≥ 1 phần tử `missingCategory` (trong giới hạn 6) | ghi nhận |
 | R6 | `personalityNotes`: `system` khớp nội dung (MBTI / DISC → `PSYCHOLOGY`; con giáp, mệnh… → `ESOTERIC`), có bằng chứng hợp lý (vd. tuổi cho con giáp); nhãn không lọt sang khối khác | ghi nhận |
-| R7 | Không đề xuất mua / chuyển đổi sản phẩm, không việc tự động (gửi tin, đặt lịch thay RE); ý pháp lý / thuế → "cần chuyên gia pháp lý xác nhận" | ghi nhận |
+| R7 | Không đề xuất mua / chuyển đổi sản phẩm, không việc tự động (gửi tin, đặt lịch thay RM); ý pháp lý / thuế → "cần chuyên gia pháp lý xác nhận" | ghi nhận |
 
 R2–R7 không chặn đạt / trượt của lần chạy, nhưng mỗi vi phạm ghi vào file metrics kèm mã hồ sơ — làm căn cứ sửa prompt (G5) ở task sau.
 
@@ -92,7 +92,7 @@ Phân bổ: 14 analysis (E04, E05, E07–E09, E11–E14, E16–E20) · 6 discove
 
 ## 5. Ghi chú trích xuất X01–X05
 
-Mỗi ghi chú chạy `extraction@1` (đầu vào G5 §4.1: ghi chú + mọi trường trừ năm sinh / giới tính). Chấm trên các đề xuất **còn lại sau lọc V7**. Số đề xuất bị V7 bỏ chỉ ghi nhận riêng; V7 luôn bỏ `birthYear` / `gender`, nên hai trường này không phải phép kiểm.
+Mỗi ghi chú chạy `extraction@2` (đầu vào G5 §4.1: ghi chú + mọi trường trừ năm sinh / giới tính). Chấm trên các đề xuất **còn lại sau lọc V7**. Số đề xuất bị V7 bỏ chỉ ghi nhận riêng; V7 luôn bỏ `birthYear` / `gender`, nên hai trường này không phải phép kiểm.
 
 Một ghi chú **đạt** khi đủ cả ba:
 
@@ -109,13 +109,13 @@ Từ khóa chỉ là phần tối thiểu của căn cứ. Prompt quy tắc 4 ch
 | X01 | Anh Hùng năm nay nghỉ hưu sớm sau khi bán phần lớn cổ phần công ty logistics. Hiện sống ở Đà Nẵng cùng vợ, hai con đã đi làm. Anh muốn dành một phần tiền lập quỹ từ thiện của gia đình. | `residence` — "Đà Nẵng": Đà Nẵng · `maritalStatus` — "vợ": đã kết hôn · `childrenCount` — "hai con": `2` · `primaryGoal` **hoặc** `otherGoals` — "quỹ từ thiện": lập quỹ từ thiện gia đình | — | Số viết bằng chữ → `2`; ghi chú có tên người |
 | X02 | Chị Mai sinh năm 1979, làm trưởng phòng tại một ngân hàng nước ngoài, thu nhập khoảng 5 tỷ mỗi năm. Chồng chị là bác sĩ. | `occupation` — "trưởng phòng": trưởng phòng ngân hàng nước ngoài · `annualIncome` — "5 tỷ": khoảng 5 tỷ · `maritalStatus` — "chồng": đã kết hôn | `occupation` có giá trị chứa "bác sĩ" (nghề của chồng) | Năm sinh có trong ghi chú; prompt quy tắc 2 cấm đề xuất, lọt thì V7 bỏ → chỉ ghi nhận |
 | X03 | Gọi điện hỏi thăm sau chuyến công tác, hẹn gặp lại tuần sau tại văn phòng. | — (`facts: []`) | mọi đề xuất | App hiện "AI không tìm thấy dữ kiện mới trong ghi chú này" |
-| X04 | Lần trước chị nói khẩu vị cân bằng, hôm nay chị bảo giờ chỉ muốn giữ tiền an toàn, không chấp nhận lỗ. | `riskProfile` — "giữ tiền an toàn" / "không chấp nhận lỗ": thận trọng / chỉ giữ tiền an toàn | đề xuất có `field` khác `riskProfile` | Có thể kèm đề xuất thứ hai "cân bằng" (quy tắc 5: ghi chú nêu hai giá trị) — chấp nhận; RE chọn ở hộp mâu thuẫn |
+| X04 | Lần trước chị nói khẩu vị cân bằng, hôm nay chị bảo giờ chỉ muốn giữ tiền an toàn, không chấp nhận lỗ. | `riskProfile` — "giữ tiền an toàn" / "không chấp nhận lỗ": thận trọng / chỉ giữ tiền an toàn | đề xuất có `field` khác `riskProfile` | Có thể kèm đề xuất thứ hai "cân bằng" (quy tắc 5: ghi chú nêu hai giá trị) — chấp nhận; RM chọn ở hộp mâu thuẫn |
 | X05 | Anh đang có hợp đồng AIA Vitality từ 2019, phí 150 triệu/năm, và khoản vay 20 tỷ mua nhà đáo hạn 2030. Tổng tài sản khoảng 300 tỷ, phần lớn là đất ở Thủ Đức. | `hasProtection` — "hợp đồng" / "AIA Vitality": `true` · `protectionDetails` — "AIA Vitality": hợp đồng AIA Vitality từ 2019 · `liabilities` — "20 tỷ": vay 20 tỷ mua nhà, đáo hạn 2030 · `totalAssets` — "300 tỷ": khoảng 300 tỷ | — | Tên sản phẩm **được** giữ (trích xuất không qua V3–V6); `assetAllocation` "phần lớn là đất ở Thủ Đức" có hoặc không đều đạt |
 
 ## 6. Owner duyệt (G2)
 
-- [ ] Quy ước chung: ngày cố định, mã F, đầu vào dựng bằng code app, model / reasoning (mục 1)
-- [ ] Tiêu chí tự động A1–A4 và đọc tay R1–R7; chỉ A1, R1 là ngưỡng đạt (mục 2)
-- [ ] E01–E10 lấy từ K04–K10, K12, K13, K15 (mục 3)
-- [ ] E11–E20: dữ kiện, chế độ, bẫy, kỳ vọng (mục 4)
-- [ ] X01–X05: ghi chú, phải có (từ khóa tối thiểu) / không được có, phần script chấm và phần Owner đọc tay, ngưỡng ≥ 4/5 (mục 5)
+- [x] Quy ước chung: ngày cố định, mã F, đầu vào dựng bằng code app, model / reasoning (mục 1): Owner duyệt G2 08/10/2026, PR #428 (reasoning `HIGH`)
+- [x] Tiêu chí tự động A1–A4 và đọc tay R1–R7; chỉ A1, R1 là ngưỡng đạt (mục 2): Owner duyệt G2 08/10/2026, PR #428
+- [x] E01–E10 lấy từ K04–K10, K12, K13, K15 (mục 3): Owner duyệt G2 08/10/2026, PR #428
+- [x] E11–E20: dữ kiện, chế độ, bẫy, kỳ vọng (mục 4): Owner duyệt G2 08/10/2026, PR #428
+- [x] X01–X05: ghi chú, phải có (từ khóa tối thiểu) / không được có, phần script chấm và phần Owner đọc tay, ngưỡng ≥ 4/5 (mục 5): Owner duyệt G2 08/10/2026, PR #428

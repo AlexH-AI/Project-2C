@@ -1,8 +1,8 @@
 /**
  * Blocklists of V3–V6, taken as they are from prompts G5 §8 (Owner G5 07/10/2026, Phase 6 rounds
- * 11/10, 18/10, 23/10 and 31/10/2026): one `row` per table row, its entries separated by " · " as
- * in the file. Changing an entry means a new prompt version and G5 again; a typo against that file
- * is a bug.
+ * 11/10, 18/10, 23/10 and 31/10/2026, round 6 in §15 with T-392, "RM" in §16 with T-445): one `row`
+ * per table row, its entries separated by " · " as in the file. Changing an entry means a new
+ * prompt version and G5 again; a typo against that file is a bug.
  */
 import { char, pattern, phrase, WORD_END as E, WORD_START as B, type Matcher } from './text-match';
 
@@ -101,12 +101,12 @@ const unlessAfter = (word: string, before: string) =>
  * "luật <Tên>" (G5 §8.4): "luật" in any case, not after "pháp" (Owner Q6), "kỷ", "kỉ", "quy",
  * "qui" (DR6-102), "giới" that is not the "giới" of "môi / ranh / biên / thế giới" ("giới luật
  * Phật giáo", DR6-124, DR6-143), or "định" that is not the "định" of "quy định" ("định luật
- * Pareto", DR6-124), before a word starting with a capital that is not "KH", "RE" or "sư" in any
+ * Pareto", DR6-124), before a word starting with a capital that is not "KH", "RM" or "sư" in any
  * case (the prompt's own words, a lawyer; DR6-16). The two may touch: an invisible character
  * between them is dropped (DR6-17).
  * One pair of brackets, then an opening double quote, may come between them too (DR6-180).
  */
-const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(\([^()]*\)\s*)?["“]?(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
+const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(\([^()]*\)\s*)?["“]?(?!(${ci('kh')}|${ci('rm')}|${ci('sư')})${E})\p{Lu}`;
 
 /**
  * V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). `\s*`: the parts may

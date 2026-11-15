@@ -476,7 +476,7 @@ describe('runAnalysis', () => {
     expect(requests).toEqual([]);
   });
 
-  it('sends no name, code, RE, birth year, note, appointment or contract', async () => {
+  it('sends no name, code, RM, birth year, note, appointment or contract', async () => {
     const { adapter, requests } = scripted(BAD, GOOD);
     await runAnalysis(analysis(OPENCODE, adapter));
     const sent = JSON.stringify(requests.map((request) => request.messages));
@@ -694,7 +694,7 @@ describe('runExtraction', () => {
       ],
     });
     expect(requests[0]).toMatchObject({ maxTokens: 12_000 });
-    expect(requests[0]!.messages[0]!.content).toMatch(/^Bạn giúp RE/);
+    expect(requests[0]!.messages[0]!.content).toMatch(/^Bạn giúp RM/);
     expect(JSON.parse(requests[0]!.messages[1]!.content)).toMatchObject({ note: NOTE });
   });
 

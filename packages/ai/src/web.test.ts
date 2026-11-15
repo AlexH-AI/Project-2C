@@ -284,7 +284,7 @@ describe('checkWebAnswer', () => {
     ['empty', '', 'EMPTY'],
     ['blank', ' \n\t ', 'EMPTY'],
     // Blank as every other box of the app reads it (K20, DR6-168; its cases: `normalizeText`).
-    ['invisible characters and white space', ` ${ZWSP}\n\u{3164}\t `, 'EMPTY'],
+    ['invisible characters and white space', ` ${ZWSP}\n${FILLER}\t `, 'EMPTY'],
     ['longer than 20 000 characters', `${JSON.stringify(GOOD)}${' '.repeat(20_000)}`, 'TOO_LONG'],
     // Too long to be read, so never read as blank (DR5-09, review #1066).
     ['white space past 40 000 code units', ' '.repeat(2 * MAX_AI_RAW_OUTPUT + 1), 'TOO_LONG'],

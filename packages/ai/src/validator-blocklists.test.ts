@@ -86,7 +86,7 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C35', 'hypotheses', 'KH có thể sẵn sàng mua nhà trong năm 2027 (F1)', []],
     ['C36', 'painPoints', 'Con KH cần cải thiện điểm số để du học', []],
     ['C37', 'discoveryStrategy', 'Hỏi tài khoản liên kết chung của hai vợ chồng', []],
-    ['C38', 'nextBestActions', 'RE bảo viết lại mục tiêu cho rõ', []],
+    ['C38', 'nextBestActions', 'RM bảo viết lại mục tiêu cho rõ', []],
     ['C39', 'hypotheses', 'KH sẵn sàng mua bảo hiểm', ['V3']],
     ['C40', 'hypotheses', 'Chấm điểm KH 8/10', ['V3']],
     ['C41', 'hypotheses', 'KH có thể chốt được trong tháng này', ['V3']],
@@ -130,7 +130,7 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C62', 'needs', 'Định hướng nơi ở sau khi nghỉ hưu', []],
     ['C62', 'needs', 'Định hướng ngoài giờ làm việc', []],
     ['C62', 'needs', 'Định hướng nối nghiệp cho con', []],
-    ['C62', 'nextBestActions', 'RE chuyển hướng nói sang mục tiêu học phí', []],
+    ['C62', 'nextBestActions', 'RM chuyển hướng nói sang mục tiêu học phí', []],
     ['C63', 'hypotheses', 'KH cần suy nghĩ định hướng đầu tư', []],
     ['C63', 'hypotheses', 'KH nghĩ định cư ở Úc', []],
     ['C63', 'hypotheses', 'KH nghỉ định kỳ hằng năm', []],
@@ -220,6 +220,10 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C85', 'themes', 'Theo Luật (sửa đổi) Đất đai', ['V6']],
     ['C86', 'hypotheses', 'KH cần tìm hiểu luật (F12)', []],
     ['C86', 'discoveryStrategy', 'Hỏi KH đã có Luật “Sư” riêng chưa', []],
+    // G5 §16.3 (A6): the prompts say RM, so the old word for the app's user is a name like any other.
+    ['C87', 'nextBestActions', 'Theo luật RM đặt cho buổi gặp', []],
+    ['C87', 'nextBestActions', 'Hỏi KH về Luật “RM” của buổi gặp', []],
+    ['C88', 'nextBestActions', 'Theo luật Re đặt cho buổi gặp', ['V6']],
   ] as const)('%s: %s "%s" → %j', (_, block, text, codes) => {
     expect(codesOf(block, text)).toEqual(codes);
   });
@@ -328,16 +332,16 @@ describe('validateOutput — V3 to V6', () => {
     expect(codesOf('needs', 'Hỏi KH về Luật sư')).toEqual([]);
   });
 
-  // G5 §8.4: "KH", "RE" and "sư" in any case, "kỷ", "kỉ", "quy" and "qui" each on its own (DR6-16,
+  // G5 §8.4: "KH", "RM" and "sư" in any case, "kỷ", "kỉ", "quy" and "qui" each on its own (DR6-16,
   // DR6-61, DR6-102).
   it.each([
     'Giữ luật Kh tự đặt khi chi tiêu',
-    'Theo luật Re đặt cho buổi gặp',
+    'Theo luật Rm đặt cho buổi gặp',
     'KH tin vào quy luật Thị trường',
     'Giữ kỷ luật Thép của KH',
     'KH tin vào Qui luật Thị trường',
     'Giữ Kỉ luật Thép của KH',
-  ])('V6 lets "luật" through before KH / RE or after kỷ / kỉ / quy / qui: "%s"', (text) => {
+  ])('V6 lets "luật" through before KH / RM or after kỷ / kỉ / quy / qui: "%s"', (text) => {
     expect(codesOf('needs', text)).toEqual([]);
   });
 
