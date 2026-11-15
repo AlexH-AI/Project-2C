@@ -73,7 +73,7 @@ export function checkCapabilities(builtFile, defaultFile, profile) {
     if (tauriConfig.val !== null) {
       problems.push(`TAURI_CONFIG (tauri build --config): ${tauriConfig.val}`);
     }
-    if (read.length === 0) problems.push('a run of the build script read no Tauri config');
+    if (read.length === 0) problems.push('a build script run read no Tauri config');
     for (const config of read) configs.add(config);
   }
   for (const config of configs) {

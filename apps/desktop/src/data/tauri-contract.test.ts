@@ -282,32 +282,30 @@ const tauriConf = () =>
     app: { windows: { label: string; title: string }[]; security: { csp: string } };
   };
 
-/**
- * Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside.
- * Each mention of `@tauri-apps/` is such an import, a type one too: `import * as`, a default or
- * dynamic import, double quotes, another package of Tauri would be one this does not read (WBR6-B2).
- */
+/** Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside. */
 function tauriImports(): string[] {
   const src = new URL('../', import.meta.url);
   const files = readdirSync(src, { recursive: true, encoding: 'utf8' }).filter(
     (file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file),
   );
-  return files.flatMap((file) => {
-    const code = readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8');
-    const imports = [
-      ...code.matchAll(/^import (type )?\{([^}]*)\} from '@tauri-apps\/api\/(\w+)';/gm),
-    ];
-    expect(code.split('@tauri-apps/').length - 1, file).toBe(imports.length);
-    return imports
-      .filter(([, type]) => !type)
-      .flatMap(([, , names, module]) =>
+  // Each mention of `@tauri-apps/` is an import of that form, a type one too: `import * as`, a
+  // default or dynamic import, double quotes would be one this does not read (WBR6-B2).
+  const code = (file: string) => {
+    const text = readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8');
+    const read = text.match(/^import (?:type )?\{[^}]*\} from '@tauri-apps\/api\/\w+';/gm);
+    expect(text.split('@tauri-apps/').length - 1, file).toBe(read?.length ?? 0);
+    return text;
+  };
+  return files.flatMap((file) =>
+    [...code(file).matchAll(/^import \{([^}]*)\} from '@tauri-apps\/api\/(\w+)';/gm)].flatMap(
+      ([, names, module]) =>
         names!
           .split(',')
           .map((name) => name.trim())
           .filter((name) => name && !name.startsWith('type '))
           .map((name) => `${module}: ${name}`),
-      );
-  });
+    ),
+  );
 }
 
 /** A release version, 1.0.0 or later; a pre-release (`-rc.1`) or build (`+…`) suffix is semver too. */
@@ -347,11 +345,9 @@ describe('the release configuration (DR6-12…14)', () => {
     expect(desktop('src-tauri/Cargo.toml')).toMatch(/^crate-type = \["rlib"\]$/m);
   });
 
-  // What the exe grants the webview is checked on the build itself, in CI right after the build of
-  // each platform (tools/check-capabilities.mjs in ci.yml and macos.yml): the capability files
-  // tauri-build read, and the config the build ran with, which a file of the platform or
-  // `tauri build --config` can patch with capabilities of its own (DR6-204). This case keeps what no
-  // build shows: the imports that need a permission, the files a build reads, the Rust code.
+  // What the exe grants the webview is checked on the build itself, in CI after the build of each
+  // platform (tools/check-capabilities.mjs; DR6-204). This case keeps what no build shows: the
+  // imports that need a permission, the files a build reads, the Rust code.
   it('allows the webview only the Tauri commands it uses', () => {
     // A new import may need a new permission in capabilities/default.json.
     expect([...new Set(tauriImports())].sort()).toEqual([

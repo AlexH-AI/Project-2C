@@ -52,7 +52,7 @@ const shown = (markdown: string) =>
       }
       const code = parseInt(dec ?? hex, dec ? 10 : 16);
       // Past Unicode, U+FFFD (CommonMark); more digits make no entity.
-      return code > 0x10ffff ? '�' : String.fromCodePoint(code);
+      return code > 0x10ffff ? '\u{FFFD}' : String.fromCodePoint(code);
     });
 
 /** The text of a heading as GitHub shows it; a code span as it is written, a link's too. */
