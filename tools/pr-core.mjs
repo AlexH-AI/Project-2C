@@ -82,6 +82,17 @@ const EXE_PATHS = [
 /** True when a change to `path` must go through the exe job (label build-exe). */
 export const needsExe = (path) => EXE_PATHS.some((re) => re.test(path));
 
+// Files whose change needs the macOS build, so the build-mac label (ADR-0019 §8, Q6): v1.0 ships
+// both, and the code of macOS only (`cfg(not(windows))`) builds on the macOS runner alone. Those of
+// the exe, plus the macOS workflow itself.
+const MAC_PATHS = [...EXE_PATHS, /^\.github\/workflows\/macos\.yml$/];
+
+/** True when a change to `path` must go through the macOS build (label build-mac). */
+export const needsMac = (path) => MAC_PATHS.some((re) => re.test(path));
+
+// Job name in .github/workflows/macos.yml, built only for PRs labelled build-mac.
+export const MAC_CHECK = 'Build macOS app (Apple chip)';
+
 /** The check run id of the head's Verify job, from its link (`…/job/<id>`); null when none. */
 export function verifyRunId(rollup) {
   const verify = rollup.find((c) => c.name === VERIFY_CHECK);
@@ -205,6 +216,28 @@ export function mergeBlockers(
       else if (exe.conclusion === 'SKIPPED')
         blockers.push(
           `${EXE_CHECK} was skipped: push again, or gh pr close + gh pr reopen, so CI builds it.`,
+        );
+    }
+
+    // macos.yml builds on a push to a build-mac PR and on adding that label, never on a reopen.
+    // Every other push or label of every PR makes a run of it with the job skipped, so the head may
+    // hold skipped checks of it next to the build: one build that passed is enough, and a build red
+    // or still running is CI not green above.
+    const macLabelled = pr.labels.some((l) => l.name === 'build-mac');
+    const macPaths = paths.filter(needsMac);
+    if (macPaths.length && !macLabelled)
+      blockers.push(
+        `${macPaths.join(', ')} need the build-mac label: gh pr edit ${pr.number} --add-label build-mac (adding it builds the macOS app: no close / reopen needed).`,
+      );
+    if (macLabelled) {
+      const macs = rollup.filter((c) => c.name === MAC_CHECK);
+      const built = checkCounts(macs);
+      const n = pr.number;
+      if (!macs.length)
+        blockers.push(`Label build-mac but no ${MAC_CHECK} check on head ${head} yet.`);
+      else if (built.pass + built.fail + built.pending === 0)
+        blockers.push(
+          `${MAC_CHECK} was only skipped on head ${head}: push again, or gh pr edit ${n} --remove-label build-mac then gh pr edit ${n} --add-label build-mac, so macos.yml builds it (gh pr close + gh pr reopen does not).`,
         );
     }
   }

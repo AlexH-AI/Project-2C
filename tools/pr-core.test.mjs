@@ -10,6 +10,7 @@ import { CODEMAP_PACKAGES } from './codemap-core.mjs';
 import {
   CODEMAP_DOCS,
   CODE_DOCS,
+  MAC_CHECK,
   TESTED_BASE,
   VERIFY_CHECK,
   alreadyDone,
@@ -17,6 +18,7 @@ import {
   isDocsOnly,
   isNotesOnly,
   needsExe,
+  needsMac,
   isReviewWorktree,
   mergeBlockers,
   mergeSteps,
@@ -83,6 +85,16 @@ const exe = (over = {}) => ({
   conclusion: 'SUCCESS',
   ...over,
 });
+// A check of macos.yml on the head; GitHub lists every one of the same name (PR #1261: two
+// skipped, one built).
+const mac = (over = {}) => ({
+  name: 'Build macOS app (Apple chip)',
+  status: 'COMPLETED',
+  conclusion: 'SUCCESS',
+  ...over,
+});
+const needMac = (paths) =>
+  `${paths} need the build-mac label: gh pr edit 9 --add-label build-mac (adding it builds the macOS app: no close / reopen needed).`;
 
 // The main that CI merged the head with, as the Verify job notes it (DR6-57).
 const TESTED = 'feed0000feed0000feed0000feed0000feed0000';
@@ -460,10 +472,67 @@ describe('mergeBlockers', () => {
     const files = [{ path: 'tools/a.mjs' }, { path: 'pnpm-lock.yaml' }, { path: 'package.json' }];
     expect(mergeBlockers(pr({ files }), ctx())).toEqual([
       'pnpm-lock.yaml, package.json need the build-exe label: gh pr edit 9 --add-label build-exe, then gh pr close 9 + gh pr reopen 9 so CI builds it.',
+      needMac('pnpm-lock.yaml, package.json'),
     ]);
+    const labels = [{ name: 'risk:low' }, { name: 'build-exe' }, { name: 'build-mac' }];
+    const built = [...green, exe(), mac()];
+    expect(mergeBlockers(pr({ files, labels, statusCheckRollup: built }), ctx())).toEqual([]);
+  });
+
+  it('stops a PR whose files need the exe build until it has the build-mac label too (Mac-6)', () => {
     const labels = [{ name: 'risk:low' }, { name: 'build-exe' }];
     const built = [...green, exe()];
+    for (const path of [
+      'apps/desktop/src-tauri/src/storage.rs',
+      'apps/desktop/src-tauri/Cargo.lock',
+      'package.json',
+      'pnpm-lock.yaml',
+      'apps/desktop/vite.config.ts',
+      'apps/desktop/src-tauri/tauri.conf.json',
+    ]) {
+      const files = [{ path: 'tools/a.mjs' }, { path }];
+      expect(mergeBlockers(pr({ files, labels, statusCheckRollup: built }), ctx()), path).toEqual([
+        needMac(path),
+      ]);
+    }
+  });
+
+  it('asks a PR that only changes macos.yml for build-mac, not build-exe (Mac-6)', () => {
+    const files = [{ path: '.github/workflows/macos.yml' }];
+    expect(mergeBlockers(pr({ files }), ctx())).toEqual([needMac('.github/workflows/macos.yml')]);
+    const labels = [{ name: 'risk:low' }, { name: 'build-mac' }];
+    const built = [...green, mac()];
     expect(mergeBlockers(pr({ files, labels, statusCheckRollup: built }), ctx())).toEqual([]);
+  });
+
+  it('with build-mac, waits for the macOS build of the head and refuses it only skipped', () => {
+    const labels = [{ name: 'risk:low' }, { name: 'build-mac' }];
+    const at = (...checks) =>
+      mergeBlockers(pr({ labels, statusCheckRollup: [...green, ...checks] }), ctx());
+    expect(at()).toEqual([
+      'Label build-mac but no Build macOS app (Apple chip) check on head abc1234 yet.',
+    ]);
+    // Every push and every other label of a PR makes a run of macos.yml, skipped without build-mac.
+    const skipped = mac({ conclusion: 'SKIPPED' });
+    const rebuild =
+      'Build macOS app (Apple chip) was only skipped on head abc1234: push again, or gh pr edit 9 --remove-label build-mac then gh pr edit 9 --add-label build-mac, so macos.yml builds it (gh pr close + gh pr reopen does not).';
+    expect(at(skipped)).toEqual([rebuild]);
+    expect(at(skipped, skipped)).toEqual([rebuild]);
+    expect(at(skipped, mac(), skipped)).toEqual([]);
+    // A build still running or red next to a skipped run: CI is not green, nothing to rebuild.
+    expect(at(skipped, mac({ status: 'IN_PROGRESS', conclusion: '' }))).toEqual([
+      expect.stringMatching(/^CI not green on head abc1234: 0 failed, 1 pending\.$/),
+    ]);
+    expect(at(skipped, mac({ conclusion: 'FAILURE' }))).toEqual([
+      expect.stringMatching(/^CI not green on head abc1234: 1 failed, 0 pending\.$/),
+    ]);
+  });
+
+  it('asks no build-mac of a PR whose files need no build, code or docs', () => {
+    const app = [{ path: 'apps/desktop/src/App.tsx' }, { path: 'tools/a.mjs' }];
+    expect(mergeBlockers(pr({ files: app }), ctx())).toEqual([]);
+    const docs = [{ path: 'docs/x.md' }, { path: 'CLAUDE.md' }];
+    expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), ctx())).toEqual([]);
   });
 
   it('stops a code PR when main got code since the main its CI tested (DR-80)', () => {
@@ -579,6 +648,7 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr({ files: rust, statusCheckRollup: [] }), ctx())).toEqual([
       'Code PR with no CI check on head abc1234.',
       'apps/desktop/src-tauri/src/x.rs need the build-exe label: gh pr edit 9 --add-label build-exe, then gh pr close 9 + gh pr reopen 9 so CI builds it.',
+      needMac('apps/desktop/src-tauri/src/x.rs'),
     ]);
     const docs = [{ path: 'docs/b.md', previousPath: 'docs/a.md' }];
     expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), ctx())).toEqual([]);
@@ -678,6 +748,53 @@ describe('needsExe', () => {
       'x/tauri.conf.json',
     ])
       expect(needsExe(path), path).toBe(true);
+  });
+});
+
+describe('needsMac', () => {
+  it('is true wherever the exe build is, and for the macOS workflow itself (ADR-0019 §8)', () => {
+    for (const path of [
+      'apps/desktop/src-tauri/src/storage.rs',
+      'apps/desktop/src-tauri/tauri.macos.conf.json',
+      'apps/desktop/src-tauri/Cargo.toml',
+      'Cargo.lock',
+      'rust-toolchain.toml',
+      'package.json',
+      'packages/db/package.json',
+      'pnpm-lock.yaml',
+      'apps/desktop/vite.config.ts',
+      'x/tauri.conf.json',
+    ]) {
+      expect(needsExe(path), path).toBe(true);
+      expect(needsMac(path), path).toBe(true);
+    }
+    expect(needsMac('.github/workflows/macos.yml')).toBe(true);
+    expect(needsExe('.github/workflows/macos.yml')).toBe(false);
+  });
+
+  it('is false for app code, other workflows, docs and look-alike names', () => {
+    for (const path of [
+      'apps/desktop/src/App.tsx',
+      'tools/pr-core.mjs',
+      '.github/workflows/ci.yml',
+      '.github/workflows/macos.yml.bak',
+      '.github/workflows/old-macos.yml',
+      'docs/macos.yml',
+      'docs/x.md',
+    ])
+      expect(needsMac(path), path).toBe(false);
+  });
+});
+
+describe('the macOS build (Mac-6)', () => {
+  const yml = readFileSync(new URL('../.github/workflows/macos.yml', import.meta.url), 'utf8');
+
+  it('is the job of macos.yml that the merge rules wait for', () => {
+    expect(yml.match(/^ {2}build-mac:\n {4}name: (.+)$/m)?.[1]).toBe(MAC_CHECK);
+  });
+
+  it('runs again on a push or on adding the label, not on a reopen, as the blockers say', () => {
+    expect(yml).toMatch(/^ {4}types: \[synchronize, labeled\]$/m);
   });
 });
 
