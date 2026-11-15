@@ -33,6 +33,7 @@ Bootstrap cài/kiểm tra Git, Node 24, pnpm (corepack), Rust (theo `rust-toolch
 | `pnpm verify` | Format, lint, ranh giới module, typecheck, unit test + coverage |
 | `pnpm e2e` | E2E Playwright trên bản build web (Microsoft Edge) |
 | `pnpm build:exe` | Build `apps/desktop/src-tauri/target/release/project2c.exe` |
+| `pnpm build:installer` | Build `project2c.exe` như trên và bản cài NSIS theo người dùng ở `apps/desktop/src-tauri/target/release/bundle/nsis/` (ADR-0019 §5) |
 
 ## Tài liệu
 

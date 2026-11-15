@@ -207,6 +207,11 @@ describe('the JS ↔ Rust AI contract', () => {
     expect(sent.sort()).toEqual([...known, 'AI_OPEN_BROWSER'].sort());
   });
 
+  // The URL is picked here only: the Rust cases of each platform pass `CHATGPT_URL` in themselves.
+  it('opens chatgpt.com, the fixed URL of open_chatgpt', () => {
+    expect(commandSource('open_chatgpt')).toContain('platform::open_url(ai::CHATGPT_URL)');
+  });
+
   // A ceiling moved on one side only shows in the exe: `AI_BAD_REQUEST` for every call (DR6-61).
   it('asks no more max_tokens than Rust takes, and counts the messages to the ceiling Rust has', () => {
     const number = (source: string, pattern: RegExp) =>
@@ -345,7 +350,8 @@ describe('the release configuration (DR6-12…14)', () => {
     // The exe grants the webview every capability: each file under capabilities/, or instead those
     // `app.security.capabilities` lists, written inline there too; Tauri merges a platform's
     // tauri.windows.conf.json into the config. The web build e2e runs has no ACL, so this is the
-    // one check of them all (DR6-161). The one platform file, macOS's, only packs the app (T-413).
+    // one check of them all (DR6-161). The platform files only pack the app: the `.app` on macOS
+    // (T-413), the NSIS installer on Windows (ADR-0019 §5).
     const src = new URL('../../src-tauri/', import.meta.url);
     const files = (dir: URL, recursive = false) =>
       readdirSync(dir, { recursive, encoding: 'utf8' });
@@ -354,11 +360,13 @@ describe('the release configuration (DR6-12…14)', () => {
       files(src)
         .filter((file) => /^tauri\b/i.test(file))
         .sort(),
-    ).toEqual(['tauri.conf.json', 'tauri.macos.conf.json']);
-    expect(Object.keys(JSON.parse(desktop('src-tauri/tauri.macos.conf.json')))).toEqual([
-      '$schema',
-      'bundle',
-    ]);
+    ).toEqual(['tauri.conf.json', 'tauri.macos.conf.json', 'tauri.windows.conf.json']);
+    for (const platform of ['macos', 'windows']) {
+      expect(
+        Object.keys(JSON.parse(desktop(`src-tauri/tauri.${platform}.conf.json`))),
+        platform,
+      ).toEqual(['$schema', 'bundle']);
+    }
     expect(tauriConf().app.security).not.toHaveProperty('capabilities');
     // Nor does the build script (build.rs: Cargo.toml names no other) read them from another
     // folder, `capabilities_path_pattern` of tauri-build, nor does the app add one while it runs,
@@ -438,7 +446,7 @@ describe('the release configuration (DR6-12…14)', () => {
         return [block.join(value.startsWith('>') ? ' ' : '\n')];
       });
     });
-    expect(runs.flatMap(commands)).toContain('pnpm build:exe');
+    expect(runs.flatMap(commands)).toContain('pnpm build:installer');
     noConfig(tauriCalls(runs));
     const cargoConfigs = ['apps/desktop/src-tauri/', 'apps/desktop/', 'apps/', '']
       .flatMap((dir) => [`${dir}.cargo/config.toml`, `${dir}.cargo/config`])
@@ -482,9 +490,10 @@ describe('the release configuration (DR6-12…14)', () => {
     ]);
   });
 
-  // The code name stays here (K39): WebView2 names the exe's profile folder after it, and a new
-  // one would start without what the webview kept in the old (DR6-138).
+  // `com.heritas.lcrm` since Mac-2 (ADR-0019 §2): it names the data folder of the installed app and
+  // of the macOS app, and WebView2's profile folder. A new one would start without what the webview
+  // kept in the old, and leave the data in the old folder (DR6-138).
   it('keeps the identifier of the build', () => {
-    expect(tauriConf().identifier).toBe('dev.alexh.project2c');
+    expect(tauriConf().identifier).toBe('com.heritas.lcrm');
   });
 });

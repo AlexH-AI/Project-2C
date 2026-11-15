@@ -2,7 +2,7 @@
 
 Vỏ Tauri (`src-tauri/`, Rust: lệnh đọc / ghi file, ADR-0016; lệnh AI `ai_complete`, `ai_key_*` giữ key và gọi OpenCode, ADR-0009 D-1) và UI React (`src/`). Chạy web không cần Tauri: `pnpm dev:web` (DB trong bộ nhớ, seed mỗi lần mở).
 
-Thư mục dữ liệu của app (`platform::data_dir`, module `src-tauri/src/platform/`): Windows `Project2C-data\` cạnh exe; macOS (bản thử T-413) `~/Library/Application Support/dev.alexh.project2c/`, cùng tên file và thư mục con.
+Thư mục dữ liệu của app (`platform::data_dir`, module `src-tauri/src/platform/`; ADR-0019 §2), chọn một lần mỗi lần chạy: bản debug (`pnpm dev`) `Project2C-data` cạnh file chạy, trên cả hai nền tảng; Windows bản cài `%LOCALAPPDATA%\com.heritas.lcrm\`, chế độ portable khi có thư mục `Project2C-data\` cạnh exe thì dùng nó; macOS `~/Library/Application Support/com.heritas.lcrm/`. Cùng tên file và thư mục con.
 
 ## Ranh giới
 

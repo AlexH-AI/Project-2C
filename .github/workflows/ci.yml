@@ -154,9 +154,22 @@ jobs:
         working-directory: apps/desktop/src-tauri
         run: cargo test --lib --locked
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:exe
+      # One build gives both (ADR-0019 §5): project2c.exe, which runs as is (portable mode when a
+      # Project2C-data\ is next to it), and the NSIS installer, per user, with no admin rights.
+      - run: pnpm build:installer
+      # `if-no-files-found` fails only when no path matches at all: an installer gone missing would
+      # leave an artifact with the exe alone.
+      - name: Check the exe and the installer
+        working-directory: apps/desktop/src-tauri/target/release
+        run: |
+          if (-not (Test-Path project2c.exe)) { throw "project2c.exe is missing" }
+          $setup = @(Get-ChildItem bundle/nsis -Filter *-setup.exe)
+          if ($setup.Count -ne 1) { throw "expected one NSIS installer, found $($setup.Count)" }
+          "Installer: $($setup[0].Name)"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Project-2C-${{ github.sha }}
-          path: apps/desktop/src-tauri/target/release/project2c.exe
+          path: |
+            apps/desktop/src-tauri/target/release/project2c.exe
+            apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error

@@ -39,3 +39,14 @@ Exe nhỏ, khởi động nhanh, hệ sinh thái React/TS mạnh cho UI và AI v
 - **ExcelJS 4.4.0** (G4 Owner xác nhận 04/10/2026, T-114 #277): chỉ ở `apps/desktop`, ghim đúng phiên bản. Màn Báo cáo nạp thư viện khi bấm "Xuất Excel" lần đầu (`import()` động), nên nó nằm ở chunk riêng (~908 KB min, ~256 KB gzip) và không làm nặng lúc mở app.
 - **Crate Rust `keyring` 4.x (chỉ kho Windows) + `ureq` 3.x** (G4 Owner chốt 07/10/2026, D-1): chỉ cho lệnh AI trong `apps/desktop/src-tauri`, ghim đúng phiên bản ở task đầu tiên dùng chúng. Chi tiết: phụ lục D-1 của ADR-0009.
   - **Ghim ở T-164 (#405), Owner chốt 08/10/2026:** `ureq` **3.4.2** (feature mặc định: rustls + webpki roots, gzip). Kho key dùng **`keyring-core` 1.0.0 + `windows-native-keyring-store` 1.1.0** (chỉ target Windows, tắt feature `search`) thay cho crate `keyring` 4.x: bản 4.x không biên dịch với `default-features = false` (bắt buộc feature `v1` hoặc `cli`), và tài liệu của nó khuyên app dùng thẳng `keyring-core` + crate kho. Cùng hệ sinh thái, cùng mục Credential Manager. Thêm **`serde` 1.0.229 (derive) + `serde_json` 1.0.151** làm dependency trực tiếp (G4): đọc JSON trả lời và trả lỗi `{ code, httpStatus?, message? }`; hai crate đã có sẵn trong bản build qua Tauri, ghim đúng bản Tauri đang kéo về.
+
+## Phụ lục — bản cài Windows và bản macOS (12/11/2026, ADR-0019; T-451 #1326)
+
+ADR-0019 (Accepted 12/11/2026, G1 / G4 / G6) thay một phần ADR này:
+
+- **"Build ra 1 file `.exe` portable"** (Quyết định) và bối cảnh "app desktop Windows x64 portable": bản Windows phát hành là **bản cài NSIS theo người dùng** (`installMode` `currentUser`, không cần quyền admin; NSIS qua G4, Q9). Dữ liệu ở `%LOCALAPPDATA%\com.heritas.lcrm\`.
+  - Giữ **chế độ portable**: exe chạy thẳng thấy thư mục `Project2C-data\` cạnh nó thì dùng thư mục đó.
+  - CI vẫn build trên `windows-latest`: artifact `Project-2C-<sha>` có cả `project2c.exe` chạy thẳng lẫn file cài (`pnpm build:installer`, T-451).
+- **Thêm bản macOS** cùng mã Tauri, phát hành cùng lúc: `.app` cho chip Apple, ký ad-hoc, đóng `.dmg` (Mac-3; dựng trên runner hỏng thì giữ zip) (ADR-0019 §1, §5, §7).
+- **Phụ lục "phiên bản đã ghim", dòng kho key "(chỉ kho Windows)":** macOS dùng Keychain qua `apple-native-keyring-store` (ADR-0019 §4, G4 / G6). Mac-4 (#1329) ghim crate và thêm phụ lục vào D-1 của ADR-0009.
+- Mã định danh của bản build đổi thành `com.heritas.lcrm` (ADR-0019 §2).
