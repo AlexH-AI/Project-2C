@@ -21,14 +21,8 @@ pub const CREDIT_URL: &str = "https://opencode.ai/zen/v1/chat/completions";
 pub const CHATGPT_URL: &str = "https://chatgpt.com/";
 
 /// The Credential Manager entry of the key, one for both plans. macOS has no key store yet (M1).
-#[cfg(any(windows, test))]
 pub const KEY_SERVICE: &str = "Project-2C";
-#[cfg(any(windows, test))]
 pub const KEY_USER: &str = "opencode-go";
-/// Stored `Local`: on this machine only, never carried to another one by a roaming profile, as
-/// `Enterprise` (the store's default) would be (ADR-0009 D-1 item 4: one key per machine).
-#[cfg(any(windows, test))]
-pub const KEY_MODIFIERS: [(&str, &str); 1] = [("persistence", "Local")];
 
 pub const TIMEOUT: Duration = Duration::from_secs(120);
 /// For each of finding the server's address and opening the connection (TCP and TLS).
@@ -485,22 +479,10 @@ fn keyring_error(_: KeyringError) -> AiError {
     AiError::new(AI_KEYRING)
 }
 
-/// The key's entry in the Windows Credential Manager. The store applies [`KEY_MODIFIERS`] when the
-/// key is saved, so a key saved before keeps its kind until it is saved again.
-#[cfg(windows)]
+/// The key's entry in the system's key store (`platform::key_entry`); a failure is
+/// [`AI_KEYRING`], as on macOS, which has no key store yet.
 pub fn key_entry() -> Result<Entry, AiError> {
-    use keyring_core::api::CredentialStoreApi;
-    let modifiers = std::collections::HashMap::from(KEY_MODIFIERS);
-    windows_native_keyring_store::Store::new()
-        .and_then(|store| store.build(KEY_SERVICE, KEY_USER, Some(&modifiers)))
-        .map_err(keyring_error)
-}
-
-/// macOS has no key store yet (Keychain, M1 of the macOS trial, G4): every key command fails with
-/// [`AI_KEYRING`].
-#[cfg(not(windows))]
-pub fn key_entry() -> Result<Entry, AiError> {
-    Err(AiError::new(AI_KEYRING))
+    crate::platform::key_entry(KEY_SERVICE, KEY_USER).map_err(keyring_error)
 }
 
 /// The HTTP call of [`complete`], with the app's [`agent`].
@@ -568,24 +550,6 @@ fn post_with(
         Err(_) if !(200..300).contains(&status) => Ok((status, Vec::new())),
         Err(e) => Err(transport_error(&e.into())),
     }
-}
-
-/// Opens [`CHATGPT_URL`] in the default browser through Explorer, named by its full path like
-/// `open_folder` does (DR-54). The webview passes nothing.
-#[cfg(windows)]
-pub fn chatgpt_command(
-    system_root: Option<std::ffi::OsString>,
-) -> std::io::Result<std::process::Command> {
-    let mut command = std::process::Command::new(crate::storage::explorer(system_root)?);
-    command.arg(CHATGPT_URL);
-    Ok(command)
-}
-
-/// macOS: opens [`CHATGPT_URL`] in the default browser through `open`, named by its full path like
-/// `open_folder` does (DR-54). The webview passes nothing.
-#[cfg(not(windows))]
-pub fn chatgpt_command() -> std::io::Result<std::process::Command> {
-    Ok(crate::storage::open_command(CHATGPT_URL))
 }
 
 #[cfg(test)]
@@ -1591,26 +1555,11 @@ mod tests {
         assert_eq!((KEY_SERVICE, KEY_USER), ("Project-2C", "opencode-go"));
     }
 
+    // Keychain comes with Mac-4; until then every key command on macOS fails the same way.
+    #[cfg(not(windows))]
     #[test]
-    fn the_key_is_stored_local_to_this_machine() {
-        assert_eq!(KEY_MODIFIERS, [("persistence", "Local")]);
-        #[cfg(windows)]
-        {
-            let modifiers = std::collections::HashMap::from(KEY_MODIFIERS);
-            let store = windows_native_keyring_store::Store::new().unwrap();
-            assert!(store.build(KEY_SERVICE, KEY_USER, Some(&modifiers)).is_ok());
-            // The store reads the value: a wrong one would fail here rather than store `Enterprise`.
-            let wrong = std::collections::HashMap::from([("persistence", "Locale")]);
-            assert!(store.build(KEY_SERVICE, KEY_USER, Some(&wrong)).is_err());
-            // The entry the app uses, read without touching the Credential Manager: its `Debug`
-            // shows the store's own credential (`windows-native-keyring-store` 1.1.0, pinned).
-            let app = format!("{:?}", key_entry().unwrap());
-            assert!(app.contains("persistence: Local"), "{app}");
-            assert!(
-                app.contains(r#"Some(("Project-2C", "opencode-go"))"#),
-                "{app}"
-            );
-        }
+    fn macos_has_no_key_store_yet_so_every_key_command_is_keyring() {
+        assert_eq!(key_entry().unwrap_err(), AiError::new(AI_KEYRING));
     }
 
     #[test]
@@ -2048,28 +1997,5 @@ mod tests {
             (timeouts.global, timeouts.resolve, timeouts.connect),
             (Some(TIMEOUT), Some(CONNECT_TIMEOUT), Some(CONNECT_TIMEOUT))
         );
-    }
-
-    #[cfg(not(windows))]
-    #[test]
-    fn open_chatgpt_runs_the_macos_open_by_its_full_path_on_the_fixed_url_only() {
-        let command = chatgpt_command().unwrap();
-        assert_eq!(command.get_program(), "/usr/bin/open");
-        assert_eq!(command.get_args().collect::<Vec<_>>(), [CHATGPT_URL]);
-        assert_eq!(CHATGPT_URL, "https://chatgpt.com/");
-    }
-
-    // `C:\Windows` is a path of Windows only: elsewhere it is not absolute.
-    #[cfg(windows)]
-    #[test]
-    fn open_chatgpt_runs_explorer_by_its_full_path_on_the_fixed_url_only() {
-        let command = chatgpt_command(Some(r"C:\Windows".into())).unwrap();
-        assert_eq!(
-            command.get_program(),
-            std::path::Path::new(r"C:\Windows").join("explorer.exe")
-        );
-        assert_eq!(command.get_args().collect::<Vec<_>>(), [CHATGPT_URL]);
-        assert_eq!(CHATGPT_URL, "https://chatgpt.com/");
-        assert!(chatgpt_command(None).is_err());
     }
 }

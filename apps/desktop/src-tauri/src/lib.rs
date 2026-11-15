@@ -6,6 +6,7 @@
 // (`async`).
 
 mod ai;
+mod platform;
 mod storage;
 
 use std::path::PathBuf;
@@ -25,18 +26,9 @@ static DATA_LOCK: storage::DataLock = storage::DataLock::new();
 /// take [`DATA_LOCK`], so a running request does not hold up saving.
 static AI_RUNNING: ai::Busy = ai::Busy::new();
 
-/// `Project2C-data\` next to the exe (portable, ADR-0006).
-#[cfg(windows)]
+/// The data folder of this platform (see `platform::data_dir`).
 fn data_dir() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let dir = exe.parent().ok_or("exe has no parent folder")?;
-    Ok(dir.join(storage::DATA_DIR))
-}
-
-/// macOS: `~/Library/Application Support/dev.alexh.project2c/` (see `storage::app_support_dir`).
-#[cfg(not(windows))]
-fn data_dir() -> Result<PathBuf, String> {
-    storage::app_support_dir(std::env::var_os("HOME")).map_err(|e| e.to_string())
+    platform::data_dir().map_err(|e| e.to_string())
 }
 
 fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
@@ -127,18 +119,7 @@ fn db_latest_backup() -> Result<Option<String>, String> {
 #[tauri::command(async)]
 fn open_folder(kind: String) -> Result<(), String> {
     let path = storage::folder(&data_dir()?, &kind).map_err(|e| e.to_string())?;
-    #[cfg(windows)]
-    let mut explorer = {
-        let explorer =
-            storage::explorer(std::env::var_os("SystemRoot")).map_err(|e| e.to_string())?;
-        let mut explorer = std::process::Command::new(explorer);
-        std::os::windows::process::CommandExt::raw_arg(&mut explorer, storage::explorer_arg(&path));
-        explorer
-    };
-    #[cfg(not(windows))]
-    let mut explorer = storage::open_command(path);
-    // Not waited on: Explorer reports exit code 1 even when it opened the folder.
-    explorer.spawn().map(drop).map_err(|e| e.to_string())
+    platform::open_folder(&path).map_err(|e| e.to_string())
 }
 
 /// Sends `messages` to OpenCode under `plan` (`GO` / `CREDIT`) with the stored key and returns the
@@ -190,15 +171,7 @@ fn ai_key_status() -> Result<bool, ai::AiError> {
 /// Opens chatgpt.com in the default browser for the manual ChatGPT web path (spec Phase 5 §5.4).
 #[tauri::command(async)]
 fn open_chatgpt() -> Result<(), ai::AiError> {
-    #[cfg(windows)]
-    let browser = ai::chatgpt_command(std::env::var_os("SystemRoot"));
-    #[cfg(not(windows))]
-    let browser = ai::chatgpt_command();
-    browser
-        .and_then(|mut browser| browser.spawn())
-        // Not waited on, like `open_folder`.
-        .map(drop)
-        .map_err(|_| ai::AiError::new(ai::AI_OPEN_BROWSER))
+    platform::open_url(ai::CHATGPT_URL).map_err(|_| ai::AiError::new(ai::AI_OPEN_BROWSER))
 }
 
 pub fn run() {
