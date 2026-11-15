@@ -15,12 +15,12 @@ Thư mục dữ liệu của app: Windows `Project2C-data\` cạnh exe; macOS (b
 - Logic thuần của màn (có unit test): `*-view.ts`, `*-form.ts` cạnh component.
 - Vỏ: `src/shell/` (`AppShell`, `Sidebar`, góc nhìn `scope.ts` + `ScopeContext`, `ErrorBoundary`, `CloseGuard`).
 - Dữ liệu: `src/data/app-data.ts` (mở DB lúc khởi động), `AppDataContext.tsx`, `persist-queue.ts` (hàng đợi ghi), `tauri-storage.ts`. AI: `ai-analysis.ts` (`AppAi`: runner chung, cấu hình `ai` trong bảng `settings`, adapter theo provider / gói), `ai-tauri.ts` (lệnh Rust `ai_complete`, `ai_key_*`; bản web không có).
-- i18n: `src/i18n/vi.ts` (mọi chuỗi UI) + `src/i18n/index.ts` (`t()`, dịch `DbError`); `src/i18n/en.ts` (English dịch dần, `en.test.ts` đếm khóa thiếu), `src/i18n/language.ts` (ngôn ngữ của lần chạy, `changeLanguage`; ADR-0018 §1).
+- i18n: `src/i18n/vi.ts` (mọi khóa, chữ tiếng Việt) + `src/i18n/index.ts` (`t()`, dịch `DbError`); `src/i18n/en.ts` (English của từng khóa, dịch dần; `en.test.ts` đếm khóa thiếu), `src/i18n/language.ts` (ngôn ngữ của lần chạy, `changeLanguage`; ADR-0018 §1).
 - E2E: `e2e/*.spec.ts` ở gốc repo (Playwright trên bản build web).
 
 ## Quy ước
 
-- Không chuỗi UI cứng: thêm key vào `vi.ts`, gọi `t()`. Tiền / ngày / chỉ số format bằng `@p2c/domain`.
+- Không chuỗi UI cứng: thêm key vào `vi.ts` kèm English ở `en.ts` theo bảng thuật ngữ của `CONTEXT.md` (`MISSING_EN` của `en.test.ts` chỉ giảm), gọi `t()`; luật đủ ở `.claude/rules/i18n-ui.md`. Tiền / ngày / chỉ số format bằng `@p2c/domain`.
 - Style chỉ qua token của `@p2c/ui` (`pnpm lint:tokens` quét `src/`).
 - Màn mới theo mockup đã duyệt ở `docs/design/mockups/` (G3).
 

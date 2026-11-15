@@ -87,7 +87,7 @@ e2e/               Playwright (chạy trên bản build web)
 
 - Ranh giới module kiểm tra bằng `dependency-cruiser` (`pnpm lint:deps`). `domain` không phụ thuộc gì.
 - Tiền, ngày, chỉ số: chỉ dùng hàm chuẩn trong `packages/domain`. Không tự parse/format rải rác.
-- Mọi chuỗi UI qua i18n (tiếng Việt, thuật ngữ ngành giữ tiếng Anh). Không chuỗi UI cứng.
+- Mọi chuỗi UI qua i18n, hai ngôn ngữ (ADR-0018): khóa ở `vi.ts` kèm English ở `en.ts` theo bảng thuật ngữ của `CONTEXT.md` (thuật ngữ ngành giữ nguyên theo bảng đó). Không chuỗi UI cứng. Chi tiết: `.claude/rules/i18n-ui.md`.
 - Không thêm dependency ngoài danh sách đã duyệt trong ADR-0005 mà không qua G4.
 
 ## Lệnh

@@ -11,7 +11,7 @@ paths:
 - TDD (skill `tdd`): test đỏ → code → test xanh. Test chấp nhận trong Issue là seam đã thống nhất, không hỏi lại.
 - Test kiểm hành vi bên ngoài, không kiểm chi tiết cài đặt. Có test cho nhánh lỗi / biên (ngày không hợp lệ, 29/02, số âm, danh sách rỗng, biên năm…).
 - **Golden fixtures** (`packages/domain/src/golden/`, spec ở `docs/golden/`) là test bắt buộc: không sửa để "cho xanh"; muốn đổi phải qua Owner (G2).
-- DB trong test: `setup()` ở `packages/db/src/test-support.ts` (DB trong bộ nhớ, đồng hồ ghim, sẵn một team + RE + TL) và `codeOf()` để bắt mã `DbError`; không tự dựng schema.
+- DB trong test: `setup()` ở `packages/db/src/test-support.ts` (DB trong bộ nhớ, đồng hồ ghim, sẵn một team + RM + TL) và `codeOf()` để bắt mã `DbError`; không tự dựng schema.
 - `packages/domain` giữ coverage ≥ 95% (`pnpm test:coverage` nằm trong `pnpm verify`).
 - E2E: Playwright chạy trên bản build web (`pnpm e2e`, Microsoft Edge có sẵn), dữ liệu từ seed giả lập. Chọn phần tử theo role / nhãn i18n, không theo class CSS.
 - `tools/*.mjs`: logic thuần tách ra file `*-core.mjs` có test; phần I/O (`gh`, `git`) không bắt buộc unit test. Khi cần (phân trang REST, cách đọc kết quả `gh`…) thì giả `run` của `tools/session-io.mjs` bằng `vi.mock`, như `tools/pr-status.test.mjs`.
