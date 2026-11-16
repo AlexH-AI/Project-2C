@@ -230,6 +230,8 @@ export async function asExe(page: Page) {
         return 'project2c-20260915-0930.db';
       },
       db_latest_backup: () => null,
+      // The folder of a portable exe, as export_write's path below.
+      data_folder: () => 'C:\\Project2C-data',
       export_write: (args) => {
         exe.exports.push(new TextDecoder().decode(args as unknown as Uint8Array));
         return 'C:\\Project2C-data\\exports\\export.p2cbackup';

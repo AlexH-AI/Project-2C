@@ -4,6 +4,7 @@ import { formatBytes, formatLocalDateTime } from '@p2c/domain';
 import { Button } from '@p2c/ui';
 import { useAppData, useQuery, useSaveStatus } from '../data/AppDataContext';
 import { countRecords, type DataFolder, type RecordCounts } from '../data/app-data';
+import { dataPaths } from '../data/tauri-storage';
 import { t } from '../i18n';
 import { WEB_MODE } from '../shell/Sidebar';
 import { HEADING, SETTINGS_SECTION } from './classes';
@@ -36,7 +37,7 @@ export function DataFileSection() {
         </span>
       </div>
       <dl className="m-0 flex flex-col gap-1.5 py-2 text-sm tabular-nums">
-        {data.hasFile && <FileFacts />}
+        {data.folder !== undefined && <FileFacts folder={data.folder} />}
         <Fact term={t('settings.file.content')}>{countsText(counts)}</Fact>
       </dl>
       {!data.hasFile && (
@@ -49,12 +50,16 @@ export function DataFileSection() {
   );
 }
 
-/** What only the exe has: the file, its last save and the automatic backups. */
-function FileFacts() {
+/**
+ * What only the exe has: the file, its last save and the automatic backups, where they really are
+ * (Mac-5a): the data folder depends on the platform and the mode (ADR-0019 §2).
+ */
+function FileFacts({ folder }: { folder: string }) {
   const data = useAppData();
   const { lastSave } = useSaveStatus();
-  const revision = useSyncExternalStore(data.subscribe, data.revision);
+  const revision = useSyncExternalStore(data.subscribe, data.revision, data.revision);
   const [latest, setLatest] = useState<string>();
+  const paths = dataPaths(folder);
 
   // Asked again after every change: a reload or an import backs the file up first.
   useEffect(() => {
@@ -71,8 +76,7 @@ function FileFacts() {
   return (
     <>
       <Fact term={t('settings.file.location')}>
-        <span className={PATH}>{t('settings.file.path')}</span>{' '}
-        <span className="text-fg-3">{t('settings.file.pathHint')}</span>
+        <span className={PATH}>{paths.file}</span>
       </Fact>
       <Fact term={t('settings.file.lastSave')}>
         {lastSave
@@ -85,8 +89,7 @@ function FileFacts() {
       <Fact term={t('settings.file.autoBackup')}>
         <span className="flex flex-wrap items-center gap-2">
           <span>
-            {t('settings.file.autoBackupValue')}{' '}
-            <span className={PATH}>{t('settings.file.backupPath')}</span>{' '}
+            {t('settings.file.autoBackupValue')} <span className={PATH}>{paths.backups}</span>{' '}
             {latest && t('settings.file.latest', { file: latest })}
           </span>
           <OpenFolderButton folder="backups" />
@@ -105,7 +108,7 @@ function Fact({ term, children }: { term: string; children: ReactNode }) {
   );
 }
 
-/** Shows `exports\` or `backups\` in Explorer (exe only). */
+/** Shows `exports\` or `backups\` in Explorer, in Finder on macOS (exe only). */
 export function OpenFolderButton({ folder }: { folder: DataFolder }) {
   const data = useAppData();
   const [failed, setFailed] = useState(false);

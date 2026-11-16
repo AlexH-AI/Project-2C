@@ -34,16 +34,30 @@ pub fn data_dir() -> io::Result<PathBuf> {
     static CHOSEN: OnceLock<PathBuf> = OnceLock::new();
     chosen_once(&CHOSEN, || {
         let exe = std::env::current_exe()?;
-        let portable = beside(&exe).is_ok_and(|dir| dir.is_dir());
+        let (windows, debug) = (cfg!(windows), cfg!(debug_assertions));
+        // Only a release exe on Windows has a portable mode: elsewhere a `Project2C-data` it cannot
+        // read is no reason to fail.
+        let portable = windows && !debug && portable(&exe)?;
         choose_data_dir(Launch {
-            windows: cfg!(windows),
-            debug: cfg!(debug_assertions),
+            windows,
+            debug,
             exe,
             portable,
             local_app_data: std::env::var_os("LOCALAPPDATA"),
             home: std::env::var_os("HOME"),
         })
     })
+}
+
+/// Whether a folder `Project2C-data` is next to `exe`: the portable mode of the exe on Windows.
+/// None there, or anything else by that name, is no; one the system cannot read is an error, as a
+/// missing variable is, so the data never goes silently to the installed app's folder (L176).
+fn portable(exe: &Path) -> io::Result<bool> {
+    match fs::metadata(beside(exe)?) {
+        Ok(found) => Ok(found.is_dir()),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error),
+    }
 }
 
 /// The folder kept in `chosen`, or the one `choose` gives, kept there for the rest of the run: a
@@ -67,11 +81,12 @@ struct Launch {
     debug: bool,
     /// The running executable.
     exe: PathBuf,
-    /// Whether a folder `Project2C-data` is next to the executable.
+    /// Whether a folder `Project2C-data` is next to the executable ([`portable`]); looked for by the
+    /// release exe on Windows only, false elsewhere.
     portable: bool,
-    /// `%LOCALAPPDATA%`, read on Windows only.
+    /// `%LOCALAPPDATA%`: read on every platform, used by the installed app on Windows only.
     local_app_data: Option<OsString>,
-    /// `$HOME`, read on macOS only.
+    /// `$HOME`: read on every platform, used on macOS only.
     home: Option<OsString>,
 }
 
@@ -352,6 +367,46 @@ mod tests {
             .unwrap_err();
             assert_eq!(error.kind(), ErrorKind::NotFound);
             assert_eq!(error.to_string(), "HOME is missing or not an absolute path");
+        }
+    }
+
+    /// A folder in the system's temporary folder, removed with what it holds when this drops.
+    struct TempDir(PathBuf);
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn only_a_project2c_data_folder_next_to_the_exe_is_the_portable_mode() {
+        let root =
+            TempDir(std::env::temp_dir().join(format!("p2c-portable-{}", std::process::id())));
+        fs::create_dir_all(&root.0).unwrap();
+        let exe = root.0.join("project2c.exe");
+        assert!(!portable(&exe).unwrap());
+        // Anything else by that name is no folder: the installed app's data, as before.
+        fs::write(root.0.join("Project2C-data"), b"").unwrap();
+        assert!(!portable(&exe).unwrap());
+        fs::remove_file(root.0.join("Project2C-data")).unwrap();
+        fs::create_dir(root.0.join("Project2C-data")).unwrap();
+        assert!(portable(&exe).unwrap());
+        // No folder above the exe either: not found, so no portable folder.
+        assert!(!portable(&root.0.join("gone").join("project2c.exe")).unwrap());
+        assert_eq!(
+            portable(Path::new("")).unwrap_err().to_string(),
+            "exe has no parent folder"
+        );
+        // A `Project2C-data` the system cannot read is an error, never the installed app's folder
+        // in its place (L176): here a path through a file, `ENOTDIR` on macOS. Windows reports that
+        // path as not found, hence macOS only.
+        #[cfg(not(windows))]
+        {
+            let file = root.0.join("file");
+            fs::write(&file, b"").unwrap();
+            let error = portable(&file.join("project2c.exe")).unwrap_err();
+            assert_ne!(error.kind(), ErrorKind::NotFound);
         }
     }
 

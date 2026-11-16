@@ -18,7 +18,7 @@ describe('CloseDialog', () => {
   it('tells to free some room when the disk is full, not to close a program (DR6-07)', () => {
     const html = body('DISK_FULL');
     expect(html).toContain(
-      'Các thay đổi gần nhất chưa ghi được vào file vì ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
+      'Các thay đổi gần nhất chưa ghi được vào file vì ổ đĩa chứa thư mục dữ liệu đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu, đường dẫn ở Cài đặt → Dữ liệu) rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
     );
     expect(html).not.toContain('chương trình khác');
   });
@@ -26,7 +26,7 @@ describe('CloseDialog', () => {
   it('tells to lift the read-only state or the refusal when the file can no longer be replaced, not to close a program (DR6-120)', () => {
     const html = body('READ_ONLY');
     expect(html).toContain(
-      'Các thay đổi gần nhất chưa ghi được vào file vì file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền, rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
+      'Các thay đổi gần nhất chưa ghi được vào file vì file dữ liệu (Cài đặt → Dữ liệu → Vị trí) đang ở chế độ chỉ đọc hay bị khóa, hoặc tài khoản người dùng của máy đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (Windows: chuột phải file → Properties → bỏ chọn Read-only; macOS: chọn file trong Finder → Get Info → bỏ chọn Locked, cho quyền Read &amp; Write) hoặc nhờ người quản trị máy cấp lại quyền, rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
     );
     expect(html).not.toContain('chương trình khác');
   });
@@ -34,7 +34,7 @@ describe('CloseDialog', () => {
   it('tells to have the right to write in the data folder given back when it lets no new file in, not to close a program nor to look at the file (DR6-120)', () => {
     const html = body('FOLDER_READ_ONLY');
     expect(html).toContain(
-      'Các thay đổi gần nhất chưa ghi được vào file vì thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
+      'Các thay đổi gần nhất chưa ghi được vào file vì thư mục dữ liệu (đường dẫn ở Cài đặt → Dữ liệu) không cho tài khoản người dùng của máy đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
     );
     expect(html).not.toContain('chương trình khác');
     expect(html).not.toContain('chỉ đọc');

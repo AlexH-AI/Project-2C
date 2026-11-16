@@ -34,10 +34,10 @@ test('web mode: only the Mock, OpenCode and the key are for the exe (1c, 4b)', a
 
   await expect(provider(page).getByRole('radio', { name: 'Mock' })).toBeChecked();
   await expect(provider(page).getByRole('radio', { name: 'OpenCode' })).toBeDisabled();
-  await expect(provider(page)).toContainText('OpenCode chỉ có trong app exe.');
+  await expect(provider(page)).toContainText('OpenCode chỉ có trong app trên máy tính.');
   await expect(plan(page)).toHaveCount(0);
   await expect(model(page)).toBeDisabled();
-  await expect(keyCard(page)).toContainText('Chỉ có trong app exe.');
+  await expect(keyCard(page)).toContainText('Chỉ có trong app trên máy tính.');
   await expect(checkCard(page)).toContainText('Mock chạy trong app, không cần kết nối.');
   await expect(checkCard(page).getByRole('button')).toHaveCount(0);
   const sent = page.getByRole('region', { name: 'Dữ liệu gửi đi' });
@@ -394,7 +394,7 @@ test('exe: a save that failed keeps the key status, read late or not (R2-14)', a
   await card.getByLabel('Key', { exact: true }).fill(KEY);
   await card.getByRole('button', { name: 'Lưu key' }).click();
   await expect(card.getByRole('alert')).toContainText(
-    'Không đọc / ghi được key trong Windows Credential Manager.',
+    'Không đọc / ghi được key trong kho key của máy (Windows Credential Manager, hay Keychain của macOS).',
   );
 
   await page.evaluate(() => (window as unknown as { releaseKeyStatus(): void }).releaseKeyStatus());

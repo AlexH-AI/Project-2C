@@ -16,7 +16,7 @@ describe('SaveFailed', () => {
     const html = warning('DISK_FULL');
     expect(html).toContain('role="alert"');
     expect(html).toContain(
-      'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+      'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục dữ liệu đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu, đường dẫn ở Cài đặt → Dữ liệu). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
     );
     expect(html).not.toContain('chương trình khác');
   });
@@ -25,7 +25,7 @@ describe('SaveFailed', () => {
     const html = warning('READ_ONLY');
     expect(html).toContain('role="alert"');
     expect(html).toContain(
-      'Chưa lưu được dữ liệu vào file: file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+      'Chưa lưu được dữ liệu vào file: file dữ liệu (Cài đặt → Dữ liệu → Vị trí) đang ở chế độ chỉ đọc hay bị khóa, hoặc tài khoản người dùng của máy đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (Windows: chuột phải file → Properties → bỏ chọn Read-only; macOS: chọn file trong Finder → Get Info → bỏ chọn Locked, cho quyền Read &amp; Write) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
     );
     expect(html).not.toContain('chương trình khác');
   });
@@ -34,7 +34,7 @@ describe('SaveFailed', () => {
     const html = warning('FOLDER_READ_ONLY');
     expect(html).toContain('role="alert"');
     expect(html).toContain(
-      'Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+      'Chưa lưu được dữ liệu vào file: thư mục dữ liệu (đường dẫn ở Cài đặt → Dữ liệu) không cho tài khoản người dùng của máy đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
     );
     expect(html).not.toContain('chương trình khác');
     expect(html).not.toContain('chỉ đọc');

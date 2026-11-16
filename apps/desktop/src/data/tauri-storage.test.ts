@@ -1,5 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { DISK_FULL, FOLDER_READ_ONLY, READ_ONLY, saveFailure, tauriStorage } from './tauri-storage';
+import {
+  dataPaths,
+  DISK_FULL,
+  FOLDER_READ_ONLY,
+  READ_ONLY,
+  saveFailure,
+  tauriStorage,
+} from './tauri-storage';
 
 describe('tauriStorage', () => {
   it('loads the file bytes for this page; the app backs them up afterwards with db_backup', async () => {
@@ -65,12 +73,52 @@ describe('tauriStorage', () => {
     expect(await storage.latestBackup()).toBeUndefined();
   });
 
+  it('asks Rust for the data folder of this run, which depends on the platform and the mode', async () => {
+    const invoke = vi.fn().mockResolvedValue('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm');
+
+    expect(await tauriStorage(invoke, () => 0).dataFolder()).toBe(
+      'C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm',
+    );
+    expect(invoke).toHaveBeenCalledWith('data_folder');
+  });
+
   it('opens a folder by its kind, never by a path', async () => {
     const invoke = vi.fn().mockResolvedValue(null);
 
     await tauriStorage(invoke, () => 0).openFolder('backups');
 
     expect(invoke).toHaveBeenCalledWith('open_folder', { kind: 'backups' });
+  });
+});
+
+describe('dataPaths', () => {
+  it('names the file, the backups and the exports in the data folder, by the separator of its path', () => {
+    // The three folders of ADR-0019 §2: installed and portable on Windows, macOS.
+    expect(dataPaths('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm')).toEqual({
+      file: 'C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm\\project2c.db',
+      backups: 'C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm\\backups\\',
+      exports: 'C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm\\exports\\',
+    });
+    expect(dataPaths('D:\\Heritas L-CRM\\Project2C-data')).toEqual({
+      file: 'D:\\Heritas L-CRM\\Project2C-data\\project2c.db',
+      backups: 'D:\\Heritas L-CRM\\Project2C-data\\backups\\',
+      exports: 'D:\\Heritas L-CRM\\Project2C-data\\exports\\',
+    });
+    expect(dataPaths('/Users/an/Library/Application Support/com.heritas.lcrm')).toEqual({
+      file: '/Users/an/Library/Application Support/com.heritas.lcrm/project2c.db',
+      backups: '/Users/an/Library/Application Support/com.heritas.lcrm/backups/',
+      exports: '/Users/an/Library/Application Support/com.heritas.lcrm/exports/',
+    });
+  });
+
+  it('names them as Rust does', () => {
+    const storage = readFileSync(
+      new URL('../../src-tauri/src/storage.rs', import.meta.url),
+      'utf8',
+    );
+    expect(storage).toContain('const DB_FILE: &str = "project2c.db";');
+    expect(storage).toContain('const BACKUP_DIR: &str = "backups";');
+    expect(storage).toContain('const EXPORT_DIR: &str = "exports";');
   });
 });
 

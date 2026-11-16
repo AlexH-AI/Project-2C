@@ -36,6 +36,8 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'mark',
   'max',
   'message',
+  // ⌘ or Ctrl+ before a key (Mac-5a).
+  'mod',
   'month',
   'model',
   'models',
@@ -60,6 +62,8 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'stage',
   'status',
   'step',
+  // The key store of the platform (Mac-5a).
+  'store',
   'submitted',
   'supported',
   'table',

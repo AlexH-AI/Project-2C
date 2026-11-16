@@ -318,7 +318,7 @@ describe('exportFailedHelp', () => {
 
   it('names the exports folder when writing failed in the exe', () => {
     expect(exportFailedHelp('write', true)).toBe(
-      'Không ghi được vào thư mục exports\\ (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.',
+      'Không ghi được vào thư mục exports của thư mục dữ liệu (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.',
     );
     expect(exportFailedHelp('write', false)).toBe(
       'Không tạo được file. Dữ liệu trong app không bị ảnh hưởng.',

@@ -69,6 +69,7 @@ function memoryStorage(initial?: Uint8Array) {
       events.push(`open ${kind}`);
       return Promise.resolve();
     },
+    dataFolder: () => Promise.resolve('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm'),
   };
   const exports: { name: string; text: string }[] = [];
   return { storage, saves, events, exports, failSave: () => (failNextSave = true) };
@@ -1319,6 +1320,25 @@ describe('the data file card', () => {
 
     const web = await openAppData({ today: () => TODAY, seed: fakeSeed });
     expect(await web.latestBackup()).toBeUndefined();
+  });
+
+  it('keeps the data folder Rust chose for the run, asked once the file opened; web mode has none (Mac-5a)', async () => {
+    const { storage } = memoryStorage();
+    const dataFolder = vi.spyOn(storage, 'dataFolder');
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    expect(app.folder).toBe('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm');
+    await app.reloadDemoData();
+    expect(dataFolder).toHaveBeenCalledTimes(1);
+
+    // Another exe holds the folder: nothing to show, nothing asked.
+    const held = memoryStorage().storage;
+    const asked = vi.spyOn(held, 'dataFolder');
+    vi.spyOn(held, 'load').mockRejectedValue('ALREADY_OPEN');
+    await expect(openAppData({ storage: held, seed: fakeSeed })).rejects.toBe('ALREADY_OPEN');
+    expect(asked).not.toHaveBeenCalled();
+
+    const web = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    expect(web.folder).toBeUndefined();
   });
 });
 

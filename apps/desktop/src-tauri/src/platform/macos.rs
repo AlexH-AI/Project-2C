@@ -121,8 +121,7 @@ mod tests {
     #[test]
     fn a_second_lock_of_the_lock_file_is_refused_until_the_first_is_released() {
         // The lock of macOS (`flock`, L137); on Windows the same `std` lock, though the exe locks
-        // by sharing there. Made before the locks, the file drops after them: Windows would not
-        // remove a file still open.
+        // by sharing there. Made before the locks, the file drops after them.
         let path =
             TempFile(std::env::temp_dir().join(format!("p2c-lock-{}.lock", std::process::id())));
         let first = open_lock_file(&path.0).unwrap();

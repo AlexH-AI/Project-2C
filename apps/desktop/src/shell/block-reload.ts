@@ -1,23 +1,34 @@
-/** The parts of a key press that decide whether WebView2 reloads the page, or goes back, on it. */
-type KeyPress = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'altKey'>;
+/** The parts of a key press that decide whether the webview reloads the page, or steps back. */
+type KeyPress = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'altKey' | 'metaKey' | 'target'>;
 
-/** F5 with any modifier, Ctrl+R, Ctrl+Shift+R, and a keyboard's own Refresh key. */
+const isArrow = (key: string) => key === 'ArrowLeft' || key === 'ArrowRight';
+
+/**
+ * F5 with any modifier, Ctrl+R, Ctrl+Shift+R, a keyboard's own Refresh key, and ⌘R, ⌘⇧R on macOS
+ * (Mac-5a).
+ */
 const isReloadKey = (press: KeyPress): boolean =>
   press.key === 'F5' ||
   press.key === 'BrowserRefresh' ||
   // Ctrl+Alt is AltGr on Windows keyboards: it types a character, it does not reload.
-  (press.ctrlKey && !press.altKey && press.key.toLowerCase() === 'r');
+  (((press.ctrlKey && !press.altKey) || press.metaKey) && press.key.toLowerCase() === 'r');
 
-/** Alt+← / Alt+→ and a keyboard's own Back and Forward keys: a step through the history. */
+/**
+ * A step through the history: Alt+← / Alt+→, a keyboard's own Back and Forward keys, and on macOS
+ * ⌘[ / ⌘], and ⌘← / ⌘→ outside a text field, where they move the caret to the start or end of the
+ * line instead (Mac-5a).
+ */
 const isHistoryKey = (press: KeyPress): boolean =>
   press.key === 'BrowserBack' ||
   press.key === 'BrowserForward' ||
-  (press.altKey && !press.ctrlKey && (press.key === 'ArrowLeft' || press.key === 'ArrowRight'));
+  (press.altKey && !press.ctrlKey && isArrow(press.key)) ||
+  (press.metaKey && (press.key === '[' || press.key === ']')) ||
+  (press.metaKey && isArrow(press.key) && !inTextField(press.target));
 
 /** The mouse's own Back (4th) and Forward (5th) buttons. */
 const HISTORY_BUTTONS: readonly number[] = [3, 4];
 
-/** Text fields, whose menu (cut, copy, paste) has no Refresh. */
+/** Text fields, whose menu (cut, copy, paste) has no Refresh, and where ⌘← / ⌘→ move the caret. */
 const TEXT_FIELD =
   'textarea, [contenteditable]:not([contenteditable="false"]), ' +
   'input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="file"], [type="range"], [type="color"])';
@@ -27,9 +38,10 @@ const inTextField = (target: EventTarget | null): boolean =>
   (target as Element).closest(TEXT_FIELD) !== null;
 
 /**
- * Exe only (DR-60): reloading the webview would drop, without asking, the changes still waiting
- * to be saved or kept after a failed save; closing the window asks first (`CloseGuard`). Blocks
- * the reload keys, and the webview's own right-click menu with its Refresh outside text fields.
+ * Exe only (DR-60), on Windows and macOS: reloading the webview would drop, without asking, the
+ * changes still waiting to be saved or kept after a failed save; closing the window asks first
+ * (`CloseGuard`). Blocks the reload keys, and the webview's own right-click menu with its Refresh
+ * outside text fields.
  * Back and Forward too (DR6-34): a step through the history changes the screen, which drops the
  * dialog open and what it holds, or leaves a screen in the middle of a reload or an import; the
  * sidebar is the way between screens. Chromium does not step when the page blocks the key or the

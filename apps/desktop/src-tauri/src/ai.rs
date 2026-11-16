@@ -1554,17 +1554,16 @@ mod tests {
         assert_eq!((KEY_SERVICE, KEY_USER), ("Project-2C", "opencode-go"));
     }
 
-    // The Keychain store (Mac-4): an error of the store is `AI_KEYRING` alone, as the Credential
-    // Manager's is (an error may hold the stored bytes). Keychain takes an empty attribute for
-    // "any", so the store refuses one before it reads anything.
+    // The Keychain store (Mac-4): Keychain takes an empty attribute for "any", so the store refuses
+    // one before it reads anything, and the key's own entry builds. That an error of the store is
+    // `AI_KEYRING` alone is the case below, the same on both platforms (`keyring_error`).
     #[cfg(not(windows))]
     #[test]
-    fn a_keychain_store_error_is_keyring_without_its_details() {
+    fn the_keychain_store_refuses_an_empty_service_or_user_before_reading() {
         assert!(key_entry().is_ok());
         for (service, user) in [("", KEY_USER), (KEY_SERVICE, "")] {
             let error = crate::platform::key_entry(service, user).unwrap_err();
             assert!(matches!(error, KeyringError::Invalid(..)), "{error:?}");
-            assert_eq!(keyring_error(error), AiError::new(AI_KEYRING));
         }
     }
 

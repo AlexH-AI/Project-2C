@@ -225,15 +225,15 @@ export const vi = {
   'aiPanel.web.chip': 'kyc v{version} · {label} · chụp {when}',
   'aiPanel.web.attempt': 'Lần thử {n} / 2',
   'aiPanel.web.copyFailed':
-    'Không copy được — chọn hết đoạn dưới (Ctrl+A trong ô) rồi Ctrl+C. ChatGPT đã được mở.',
+    'Không copy được — chọn hết đoạn dưới ({mod}A trong ô) rồi {mod}C. ChatGPT đã được mở.',
   'aiPanel.web.bothFailed':
-    'Không copy được và không mở được trình duyệt — chọn hết đoạn dưới (Ctrl+A trong ô), Ctrl+C, rồi mở chatgpt.com bằng tay.',
+    'Không copy được và không mở được trình duyệt — chọn hết đoạn dưới ({mod}A trong ô), {mod}C, rồi mở chatgpt.com bằng tay.',
   'aiPanel.web.manual': 'Tin nhắn để copy',
   'aiPanel.web.openFailed':
     'Không mở được trình duyệt — mở chatgpt.com bằng tay; tin nhắn đã được copy.',
   'aiPanel.web.paste': 'Dán kết quả',
   'aiPanel.web.pasteRetry': 'Dán kết quả (lần thử 2 / 2)',
-  'aiPanel.web.pastePlaceholder': 'Dán câu trả lời của ChatGPT (Ctrl+V)',
+  'aiPanel.web.pastePlaceholder': 'Dán câu trả lời của ChatGPT ({mod}V)',
   'aiPanel.web.pasteRetryPlaceholder': 'Dán câu trả lời mới',
   'aiPanel.web.refused.TOO_LONG':
     'Câu trả lời dài quá {count} ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
@@ -256,7 +256,8 @@ export const vi = {
   'aiError.AI_HTTP': 'OpenCode báo lỗi.',
   'aiError.AI_BAD_RESPONSE': 'Trả lời của OpenCode không đọc được.',
   'aiError.AI_BUSY': 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.',
-  'aiError.AI_KEYRING': 'Không đọc / ghi được key trong Windows Credential Manager.',
+  'aiError.AI_KEYRING':
+    'Không đọc / ghi được key trong kho key của máy (Windows Credential Manager, hay Keychain của macOS).',
   'aiError.AI_TOO_LARGE':
     'Dữ liệu gửi AI quá lớn (quá 200,000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
   'aiError.GENERAL': 'Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ.',
@@ -366,7 +367,7 @@ export const vi = {
   'trash.purge.finalHelp':
     'Bản ghi đã dọn không còn trong Thùng rác, không khôi phục được trong app. Dữ liệu đang dùng và chỉ số không đổi.',
   'trash.purge.backup':
-    'App backup file dữ liệu trước vào Project2C-data\\backups\\. Muốn lấy lại dữ liệu như trước lúc dọn: chép bản backup thành Project2C-data\\project2c.db khi app đã đóng (mất các thay đổi sau lúc dọn).',
+    'App backup file dữ liệu trước vào thư mục backups của thư mục dữ liệu (đường dẫn ở Cài đặt → Dữ liệu). Muốn lấy lại dữ liệu như trước lúc dọn: chép bản backup thành project2c.db của thư mục dữ liệu khi app đã đóng (mất các thay đổi sau lúc dọn).',
   'trash.purge.word': 'DỌN SẠCH',
   'trash.purge.confirm': 'Dọn sạch',
   'trash.purge.confirmWithBackup': 'Backup rồi dọn sạch',
@@ -448,7 +449,7 @@ export const vi = {
   'settingsAi.providerHelp.OPENCODE_GO':
     'OpenCode: gọi model thật qua tài khoản OpenCode. Mock: câu mẫu cố định, không gọi mạng — chỉ để thử app.',
   'settingsAi.providerHelp.MOCK': 'Kết quả Mock luôn gắn nhãn Mock ở panel và lịch sử.',
-  'settingsAi.providerWeb': 'OpenCode chỉ có trong app exe.',
+  'settingsAi.providerWeb': 'OpenCode chỉ có trong app trên máy tính.',
   'settingsAi.plan': 'Gói OpenCode',
   'settingsAi.plan.GO': 'Gói Go',
   'settingsAi.plan.CREDIT': 'Credit',
@@ -468,21 +469,23 @@ export const vi = {
   'settingsAi.keyTitle': 'API key OpenCode',
   'settingsAi.keyStored': 'Đã có key',
   'settingsAi.keyMissing': 'Chưa có key',
-  'settingsAi.keyWeb': 'Chỉ có trong app exe.',
+  'settingsAi.keyWeb': 'Chỉ có trong app trên máy tính.',
   'settingsAi.keyNew': 'Key mới',
   'settingsAi.key': 'Key',
   'settingsAi.keyNewPlaceholder': 'Dán key mới để thay key đang có',
   'settingsAi.keyPlaceholder': 'Dán key OpenCode',
   'settingsAi.keySave': 'Lưu key',
   'settingsAi.keyHelp':
-    'Key lưu trong Windows Credential Manager của máy này — không vào file dữ liệu, không vào backup, không bao giờ hiện lại. Mỗi máy nhập key riêng.',
+    'Key lưu trong {store} trên máy này — không vào file dữ liệu, không vào backup, không bao giờ hiện lại. Mỗi máy nhập key riêng.',
   'settingsAi.keyError.EMPTY': 'Chưa nhập key.',
   'settingsAi.keyError.TOO_LONG': 'Key dài quá 512 ký tự — kiểm tra lại đoạn đã dán.',
   'settingsAi.keyError.NOT_ASCII':
     'Key chỉ gồm chữ, số và ký hiệu ASCII — kiểm tra lại đoạn đã dán.',
   'settingsAi.keySaved': 'Đã lưu key.',
-  'settingsAi.keyNotSaved':
-    'Key chưa được lưu. Thử lại; nếu vẫn lỗi, kiểm tra Credential Manager của Windows.',
+  'settingsAi.keyNotSaved': 'Key chưa được lưu. Thử lại; nếu vẫn lỗi, kiểm tra {store}.',
+  // The key store of the platform, the {store} of settingsAi.keyHelp / keyNotSaved (ADR-0019 §4).
+  'settingsAi.keyStore.windows': 'Windows Credential Manager',
+  'settingsAi.keyStore.mac': 'Keychain của macOS',
   'settingsAi.keyDelete': 'Xóa key',
   'settingsAi.keyDeleteOpen': 'Xóa key…',
   'settingsAi.keyDeleteTitle': 'Xóa API key OpenCode?',
@@ -1079,7 +1082,7 @@ export const vi = {
   'reports.exported': 'Đã xuất báo cáo · {sheets} sheet: {where}',
   'reports.exportFailed': 'Không xuất được báo cáo',
   'reports.exportFailedHelp':
-    'Không ghi được vào thư mục exports\\ (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.',
+    'Không ghi được vào thư mục exports của thư mục dữ liệu (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.',
   'reports.exportFailedHelpWeb': 'Không tạo được file. Dữ liệu trong app không bị ảnh hưởng.',
   'reports.exportBuildFailedHelp':
     'Không tạo được file Excel. Thử lại; nếu vẫn lỗi, mở lại app. Dữ liệu trong app không bị ảnh hưởng.',
@@ -1091,20 +1094,20 @@ export const vi = {
   'reports.excel.fileRange': '{from}-den-{to}',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
-    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục, rồi đóng cửa sổ này và mở lại app. Không mở được thư mục backups thì nhờ người quản trị máy cấp lại quyền đọc thư mục đó trước. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
+    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục backups của thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm): chép bản mới nhất thành project2c.db của thư mục dữ liệu để khôi phục, rồi đóng cửa sổ này và mở lại app. Không mở được thư mục backups thì nhờ người quản trị máy cấp lại quyền đọc thư mục đó trước. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
   'storage.backupFailed': 'Không sao lưu được file dữ liệu',
   'storage.backupFailedHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản Windows đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản người dùng của máy đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.diskFull': 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
   'storage.diskFullHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports), rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu trước khi mở nhưng ổ đĩa chứa thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu), rồi đóng cửa sổ này và mở lại app.',
   'storage.damaged': 'File dữ liệu bị hỏng',
   'storage.fileInUse': 'File dữ liệu đang bị chương trình khác giữ',
   'storage.fileInUseHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục dữ liệu của app: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.accessDenied': 'App không có quyền ghi vào thư mục dữ liệu',
   'storage.accessDeniedHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi và xóa file trong đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) và các file trong đó không chỉ đọc hay bị khóa (macOS: mục Locked ở Get Info của Finder), tài khoản người dùng của máy đang dùng được quyền ghi và xóa file trong đó (exe portable chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục của exe sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':
@@ -1119,15 +1122,12 @@ export const vi = {
   'settings.file.title': 'File dữ liệu',
   'settings.file.schema': 'schema v{version}',
   'settings.file.location': 'Vị trí',
-  'settings.file.path': 'Project2C-data\\project2c.db',
-  'settings.file.pathHint': '(cạnh file exe)',
   'settings.file.lastSave': 'Lưu lần cuối',
   'settings.file.lastSaveValue': '{time} · {size}',
   'settings.file.notSaved': '—',
   'settings.file.content': 'Nội dung',
   'settings.file.autoBackup': 'Backup tự động',
   'settings.file.autoBackupValue': 'Mỗi lần mở app · giữ 10 bản mới nhất ở',
-  'settings.file.backupPath': 'Project2C-data\\backups\\',
   'settings.file.latest': '· mới nhất {file}',
   'settings.file.web': 'Bản web — dữ liệu chỉ trong trình duyệt, mất khi tải lại trang',
   'settings.file.openFolder': 'Mở thư mục',
@@ -1135,15 +1135,14 @@ export const vi = {
   'settings.backup.title': 'Xuất / nhập backup',
   'settings.backup.meta': 'file .p2cbackup',
   'settings.backup.export': 'Xuất backup',
-  'settings.backup.exportHelp':
-    'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào Project2C-data\\exports\\',
+  'settings.backup.exportHelp': 'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào {where}',
   'settings.backup.exportHelpWeb': 'Tải về toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm).',
   'settings.backup.exporting': 'Đang xuất…',
   'settings.backup.exported': 'Đã xuất backup: {where} · {size}',
   'settings.backup.exportFailed':
-    'Chưa xuất được backup. Kiểm tra ổ đĩa và quyền ghi thư mục Project2C-data\\exports\\ rồi thử lại.',
+    'Chưa xuất được backup. Kiểm tra ổ đĩa và quyền ghi thư mục exports của thư mục dữ liệu rồi thử lại.',
   'settings.backup.exportTooLarge':
-    'Chưa xuất backup: dữ liệu lớn hơn {limitMb} MB nên file sẽ không nhập lại được. Dùng bản .db trong Project2C-data\\backups\\ thay cho file này: chép bản đó thành Project2C-data\\project2c.db khi app đã đóng.',
+    'Chưa xuất backup: dữ liệu lớn hơn {limitMb} MB nên file sẽ không nhập lại được. Dùng bản .db trong thư mục backups của thư mục dữ liệu thay cho file này: chép bản đó thành project2c.db khi app đã đóng.',
   'settings.backup.import': 'Nhập backup',
   'settings.backup.importHelp': 'Thay toàn bộ dữ liệu hiện tại bằng dữ liệu trong file.',
   'settings.backup.importHelpBackup': 'App tự backup dữ liệu hiện tại trước.',
@@ -1161,7 +1160,7 @@ export const vi = {
     '{teams} team · {people} nhân sự · {customers} KH · {appointments} lịch hẹn · {policies} HĐ',
   'settings.backup.lossWarning': 'Mọi thay đổi sau {date} sẽ mất khỏi app',
   'settings.backup.confirmBackup':
-    'Dữ liệu hiện tại được backup trước vào Project2C-data\\backups\\. Nhập không gộp dữ liệu.',
+    'Dữ liệu hiện tại được backup trước vào {where}. Nhập không gộp dữ liệu.',
   'settings.backup.confirmWeb':
     'Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt. Nhập không gộp dữ liệu.',
   'settings.backup.cancel': 'Hủy',
@@ -1197,7 +1196,7 @@ export const vi = {
   'settings.demo.confirmBody':
     'Toàn bộ dữ liệu hiện tại ({customers} KH, {appointments} lịch hẹn, {policies} HĐ) được thay bằng dữ liệu giả lập mới, neo ở ngày {date}.',
   'settings.demo.confirmBackup':
-    'App backup file dữ liệu trước vào Project2C-data\\backups\\; khôi phục bằng cách chép bản backup thành Project2C-data\\project2c.db khi app đã đóng.',
+    'App backup file dữ liệu trước vào thư mục backups của thư mục dữ liệu (đường dẫn ở Cài đặt → Dữ liệu); khôi phục bằng cách chép bản backup thành project2c.db của thư mục dữ liệu khi app đã đóng.',
   'settings.demo.confirmWeb': 'Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt.',
   'settings.demo.confirmWordLabel': 'Gõ {word} để xác nhận',
   'settings.demo.confirmWord': 'NẠP LẠI',
@@ -1206,18 +1205,18 @@ export const vi = {
   'settings.demo.confirmWithBackup': 'Backup rồi nạp lại',
   'settings.demo.running': 'Đang nạp lại…',
   'settings.demo.done': 'Đã nạp lại dữ liệu giả lập, neo ở ngày {date}.',
-  'settings.demo.doneBackup': 'Backup: Project2C-data\\backups\\{file}',
+  'settings.demo.doneBackup': 'Backup: {file} (thư mục backups)',
   'settings.demo.failed': 'Chưa nạp lại được dữ liệu giả lập. Dữ liệu hiện tại không bị đổi.',
   'settings.demo.failedUnsaved':
     'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì nạp lại. Dữ liệu hiện tại không bị đổi.',
   'storage.saveFailed':
     'Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveDiskFull':
-    'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+    'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục dữ liệu đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu, đường dẫn ở Cài đặt → Dữ liệu). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveReadOnly':
-    'Chưa lưu được dữ liệu vào file: file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+    'Chưa lưu được dữ liệu vào file: file dữ liệu (Cài đặt → Dữ liệu → Vị trí) đang ở chế độ chỉ đọc hay bị khóa, hoặc tài khoản người dùng của máy đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (Windows: chuột phải file → Properties → bỏ chọn Read-only; macOS: chọn file trong Finder → Get Info → bỏ chọn Locked, cho quyền Read & Write) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveFolderReadOnly':
-    'Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+    'Chưa lưu được dữ liệu vào file: thư mục dữ liệu (đường dẫn ở Cài đặt → Dữ liệu) không cho tài khoản người dùng của máy đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveRetry': 'Thử lại',
   // The save state at the foot of the sidebar, on every screen (mockup settings-data 10d); web mode
   // says `settings.file.web` there.
@@ -1229,11 +1228,11 @@ export const vi = {
   'close.unsavedBody':
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.unsavedBodyDiskFull':
-    'Các thay đổi gần nhất chưa ghi được vào file vì ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
+    'Các thay đổi gần nhất chưa ghi được vào file vì ổ đĩa chứa thư mục dữ liệu đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu, đường dẫn ở Cài đặt → Dữ liệu) rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.unsavedBodyReadOnly':
-    'Các thay đổi gần nhất chưa ghi được vào file vì file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền, rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
+    'Các thay đổi gần nhất chưa ghi được vào file vì file dữ liệu (Cài đặt → Dữ liệu → Vị trí) đang ở chế độ chỉ đọc hay bị khóa, hoặc tài khoản người dùng của máy đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (Windows: chuột phải file → Properties → bỏ chọn Read-only; macOS: chọn file trong Finder → Get Info → bỏ chọn Locked, cho quyền Read & Write) hoặc nhờ người quản trị máy cấp lại quyền, rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.unsavedBodyFolderReadOnly':
-    'Các thay đổi gần nhất chưa ghi được vào file vì thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
+    'Các thay đổi gần nhất chưa ghi được vào file vì thư mục dữ liệu (đường dẫn ở Cài đặt → Dữ liệu) không cho tài khoản người dùng của máy đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.retry': 'Thử lại',
   'close.discard': 'Đóng và bỏ thay đổi chưa lưu',
   'team.summary': '{teams} team · {tl} TL · {rm} RM · {shared} người hỗ trợ',

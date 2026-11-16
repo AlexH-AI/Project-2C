@@ -98,7 +98,10 @@ describe('a connection check (mockup 1f, 2l, 4a, 4c)', () => {
     ['AI_BAD_RESPONSE', 'Trả lời của OpenCode không đọc được.'],
     ['AI_BUSY', 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.'],
     ['AI_BAD_REQUEST', 'Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ.'],
-    ['AI_KEYRING', 'Không đọc / ghi được key trong Windows Credential Manager.'],
+    [
+      'AI_KEYRING',
+      'Không đọc / ghi được key trong kho key của máy (Windows Credential Manager, hay Keychain của macOS).',
+    ],
   ] as const)('shows the message of %s', (code, text) => {
     expect(checkShown({ kind: 'error', code }, CREDIT)).toEqual({ phase: 'error', text });
   });
