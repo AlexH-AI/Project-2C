@@ -2,7 +2,15 @@
 
 Heritas L-CRM là app quản lý khách hàng (KH), lịch hẹn, hợp đồng (HĐ) và chỉ số cho đội tư vấn bảo hiểm: RM ghi lịch hẹn và kết quả cuộc gặp, ghi KYC của KH, ghi HĐ nộp / phát hành; TL và Owner xem chỉ số theo team, theo RM, theo kỳ. App có phần AI (KYC Intelligence) gợi ý hướng khám phá nhu cầu KH từ dữ kiện KYC đã xác nhận.
 
-Tên mã của app là Project-2C, nên tên file và vài câu báo vẫn dùng tên này: file exe `project2c.exe`, thư mục dữ liệu `Project2C-data\`, file backup `.p2cbackup`, câu báo như "Project-2C đang mở ở một cửa sổ khác".
+Tên mã của app là Project-2C, nên vài tên file và câu báo vẫn dùng tên này: file chạy `project2c.exe` của bản Windows, thư mục dữ liệu `Project2C-data\` của chế độ portable, file dữ liệu `project2c.db`, file backup `.p2cbackup`, câu báo như "Project-2C đang mở ở một cửa sổ khác".
+
+Tên file theo nền tảng:
+
+| Nền tảng | File tải về | Sau khi cài |
+|---|---|---|
+| Windows | File cài `Heritas L-CRM_<phiên bản>_x64-setup.exe` | App `project2c.exe` trong `%LOCALAPPDATA%\Heritas L-CRM\`, lối tắt **Heritas L-CRM** ở menu Start |
+| Windows, chế độ portable | Exe chạy thẳng `project2c.exe` | Không cài: chạy thẳng, dữ liệu trong `Project2C-data\` cạnh exe |
+| macOS (chip Apple) | `Heritas L-CRM_<phiên bản>_aarch64.dmg` | App **Heritas L-CRM** trong thư mục Applications |
 
 Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **in đậm** là nhãn đúng như trên màn. Thuật ngữ ngành (RM, TL, KYC, FYP, RF…) giữ tiếng Anh, giải thích ở [11. Thuật ngữ](11-thuat-ngu.md).
 
@@ -10,7 +18,7 @@ Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **
 
 | Mục | Nội dung |
 |---|---|
-| [1. Bắt đầu](01-bat-dau.md) | Chạy exe, thư mục `Project2C-data\`, dữ liệu giả lập lúc mở lần đầu, báo lỗi lưu, góc nhìn Toàn bộ / Team / RM |
+| [1. Bắt đầu](01-bat-dau.md) | Cài, gỡ trên Windows, chế độ portable, cài trên macOS (Open Anyway, Keychain), nơi để dữ liệu, phím ⌘ / Ctrl, dữ liệu giả lập lúc mở lần đầu, báo lỗi lưu, góc nhìn Toàn bộ / Team / RM |
 | [2. Tổng quan](02-tong-quan.md) | Chọn kỳ, Lọc, ô Lịch hẹn, 6 chỉ số + so kỳ trước, KH theo nhóm, So sánh team |
 | [3. Lịch hẹn](03-lich-hen.md) | Lịch tháng / năm, đặt lịch, ghi kết quả, hẹn tiếp, dời lịch, sửa / xóa |
 | [4. Khách hàng](04-khach-hang.md) | Kanban / Bảng, tạo / sửa / xóa KH, chuyển nhóm tay |
@@ -22,20 +30,23 @@ Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **
 | [10. Khi có lỗi](10-su-co.md) | Lỗi lúc mở app, mở lại từ backup, lỗi lưu, lỗi xuất file, lỗi AI thường gặp |
 | [11. Thuật ngữ](11-thuat-ngu.md) | RM, TL, IS, BD, BDM, KH N4–N1, RF, FYP, KYC, CURRENT / STALE… |
 
-## Bản exe và bản web
+## Bản máy tính và bản web
 
-- **Bản exe** (dùng hằng ngày): một file exe chạy thẳng, không cần cài. Dữ liệu lưu vào file trong thư mục `Project2C-data\` cạnh file exe, tự backup mỗi lần mở app. Chỉ bản exe gọi được AI qua OpenCode và giữ API key. Các phần chỉ có ở bản exe ghi "(bản exe)".
+- **Bản máy tính** (dùng hằng ngày): app trên Windows hay macOS. Dữ liệu lưu vào file trong thư mục dữ liệu của máy, tự backup mỗi lần mở app. Chỉ bản máy tính gọi được AI qua OpenCode và giữ API key. Các phần chỉ có ở bản máy tính ghi "(bản máy tính)". Có ba dạng (xem [1. Bắt đầu](01-bat-dau.md)):
+  - **Bản cài Windows**: cài bằng file cài, mở từ menu Start; dữ liệu ở `%LOCALAPPDATA%\com.heritas.lcrm\`.
+  - **Chế độ portable** (Windows): exe `project2c.exe` chạy thẳng, dữ liệu trong thư mục `Project2C-data\` cạnh exe.
+  - **Bản macOS**: app cài từ file `.dmg`; dữ liệu ở `~/Library/Application Support/com.heritas.lcrm/`.
 - **Bản web**: cùng giao diện, chạy trong trình duyệt để thử app. Dữ liệu chỉ nằm trong trình duyệt và **mất khi tải lại trang**; mỗi lần mở là dữ liệu giả lập mới. Không có OpenCode, không lưu key. Ảnh trong hướng dẫn chụp từ bản web, ngày 15/09/2026.
 
 ## Làm trên hai máy
 
-App chưa đồng bộ giữa hai máy. Dữ liệu chuyển bằng file backup `.p2cbackup`:
+App chưa đồng bộ giữa hai máy. Dữ liệu chuyển bằng file backup `.p2cbackup`, dùng được giữa Windows và macOS theo cả hai chiều:
 
-1. Trước khi rời máy A: **Cài đặt → Dữ liệu → Xuất backup**. File nằm trong `Project2C-data\exports\` (bản exe). Chép file sang máy B (USB, OneDrive…).
+1. Trước khi rời máy A: **Cài đặt → Dữ liệu → Xuất backup**. File nằm trong thư mục `exports` của thư mục dữ liệu (xem [1. Bắt đầu → Nơi để dữ liệu](01-bat-dau.md#nơi-để-dữ-liệu-bản-máy-tính)). Chép file sang máy B (USB, OneDrive, iCloud Drive, thư mục chia sẻ…).
 2. Ở máy B: **Cài đặt → Dữ liệu → Nhập backup → Chọn file…**, xem hộp "Thay toàn bộ dữ liệu?" rồi bấm **Backup rồi thay dữ liệu**.
 3. Làm ở máy B. Khi quay lại máy A, làm ngược lại.
 
-**Bản nhập sau thắng.** Nhập backup *thay toàn bộ* dữ liệu, không gộp. Nếu đã sửa ở cả hai máy mà chưa xuất / nhập, phần sửa ở máy bị nhập đè sẽ mất khỏi app (bản trước khi nhập vẫn còn trong `Project2C-data\backups\`). Vì vậy mỗi lúc chỉ làm trên một máy, và luôn xuất trước khi đổi máy. Chi tiết ở [9. Cài đặt → Nhập backup](09-cai-dat.md#nhập-backup).
+**Bản nhập sau thắng.** Nhập backup *thay toàn bộ* dữ liệu, không gộp. Nếu đã sửa ở cả hai máy mà chưa xuất / nhập, phần sửa ở máy bị nhập đè sẽ mất khỏi app (bản trước khi nhập vẫn còn trong thư mục `backups` của thư mục dữ liệu). Vì vậy mỗi lúc chỉ làm trên một máy, và luôn xuất trước khi đổi máy. Chi tiết ở [9. Cài đặt → Nhập backup](09-cai-dat.md#nhập-backup).
 
 API key OpenCode không đi theo backup: mỗi máy nhập key riêng.
 
@@ -83,14 +94,14 @@ Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có tron
 | AI trích xuất | `ai.html` §3 | [6. AI trích xuất](06-ai.md#ai-trích-xuất) | |
 | Luồng ChatGPT web | `ai.html` §4 | [6. Phân tích bằng ChatGPT web](06-ai.md#phân-tích-bằng-chatgpt-web) | |
 | Lần phân tích bị loại | `ai.html` §2 | [6. Lần phân tích bị loại](06-ai.md#lần-phân-tích-bị-loại) | |
-| Xóa API key OpenCode | `ai.html` §1 | [9. API key OpenCode](09-cai-dat.md#api-key-opencode-bản-exe) | |
+| Xóa API key OpenCode | `ai.html` §1 | [9. API key OpenCode](09-cai-dat.md#api-key-opencode-bản-máy-tính) | |
 | Team mới / Đổi tên team / Xóa team | `team.html` | [8. Tạo, đổi tên, xóa team](08-team.md#tạo-đổi-tên-xóa-team) | |
 | Nhân sự mới / Sửa nhân sự / Xóa nhân sự | `team.html` | [8. Thêm người](08-team.md#thêm-người), [Sửa người](08-team.md#sửa-người), [Xóa người](08-team.md#xóa-người) | [08-nhan-su-moi](img/08-nhan-su-moi.png) |
 | Thay toàn bộ dữ liệu? | `settings-data.html` | [9. Nhập backup](09-cai-dat.md#nhập-backup) | |
 | Không nhập được file | `settings-data.html` | [9. Nhập backup](09-cai-dat.md#nhập-backup) | |
 | Nạp lại dữ liệu giả lập? | `settings-data.html` | [9. Nạp lại dữ liệu giả lập](09-cai-dat.md#nạp-lại-dữ-liệu-giả-lập) | [09-nap-lai](img/09-nap-lai.png) |
-| Chưa lưu được thay đổi (bản exe) | `settings-data.html` | [1. Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe) | |
-| Trạng thái lưu, không mở được file lúc khởi động (bản exe) | `settings-data.html` | [1. App tự lưu](01-bat-dau.md#app-tự-lưu), [10. Lỗi lúc mở app](10-su-co.md#lỗi-lúc-mở-app-bản-exe) | |
+| Chưa lưu được thay đổi (bản máy tính) | `settings-data.html` | [1. Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-máy-tính) | |
+| Trạng thái lưu, không mở được file lúc khởi động (bản máy tính) | `settings-data.html` | [1. App tự lưu](01-bat-dau.md#app-tự-lưu), [10. Lỗi lúc mở app](10-su-co.md#lỗi-lúc-mở-app-bản-máy-tính) | |
 | Khôi phục bản ghi | `trash.html` 11b–11d | [9. Khôi phục](09-cai-dat.md#khôi-phục), [Khi không khôi phục được](09-cai-dat.md#khi-không-khôi-phục-được) | |
 | Dọn sạch Thùng rác? | `trash.html` 11i | [9. Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác) | |
 | Xuất Excel | `reports.html` 2f | [7. Xuất Excel](07-bao-cao.md#xuất-excel) | |
