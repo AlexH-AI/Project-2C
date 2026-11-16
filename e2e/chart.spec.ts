@@ -47,7 +47,12 @@ test('the stage chart marks today and draws the days after it as dashed lines', 
 // from the same columns, has every day.
 test('the stage chart is described by its numbers of today, a hidden table after it has every day', async ({
   page,
+  browserName,
 }) => {
+  test.skip(
+    browserName === 'webkit',
+    'reads the accessibility tree through CDP (Accessibility.getFullAXTree), which only Chromium has',
+  );
   await page.goto('/#/overview');
   const chart = page.getByRole('img', { name: CHART, exact: true });
   await expect(chart.locator('svg')).toHaveCount(1);

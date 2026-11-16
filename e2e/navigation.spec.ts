@@ -219,7 +219,12 @@ const middleOf = async (locator: Locator): Promise<[number, number]> => {
 
 test('the exe keeps Back and Forward, as F5, from dropping a dialog half written (DR6-34)', async ({
   page,
+  browserName,
 }) => {
+  test.skip(
+    browserName === 'webkit',
+    "presses the mouse's Back and Forward buttons through CDP (Input.dispatchMouseEvent), which only Chromium has",
+  );
   await asExe(page);
   await page.goto('/#/customers');
   await page.locator('main a[href^="#/customers/"]').first().click();

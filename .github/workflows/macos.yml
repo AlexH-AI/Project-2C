@@ -2,8 +2,9 @@ name: macOS
 
 # The macOS app (T-413, Mac-3): the Rust checks on macOS, then `Heritas L-CRM.app` for Apple chips
 # and macOS 26 or later, ad-hoc signed (no Developer ID yet), in the `.dmg` users download
-# (ADR-0019 §5–§7). Only on PRs labelled build-mac, and by hand from main (GitHub runs a workflow
-# by hand only once its file is on main).
+# (ADR-0019 §5–§7); beside it, the e2e on Playwright's WebKit (Mac-7, ADR-0019 §9). Only on PRs
+# labelled build-mac, and by hand from main (GitHub runs a workflow by hand only once its file is on
+# main).
 on:
   pull_request:
     # No `opened`: a PR opened with build-mac also gets that label's `labeled` event, and both
@@ -86,6 +87,13 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$plist")" = 26.0
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleLocalizations:0' "$plist")" = vi
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleLocalizations:1' "$plist")" = en
+          # Tauri merges src-tauri/Info.plist last, so a key added there would give the app another
+          # identifier or version than tauri.conf.json: the identifier names the data of the
+          # webview, the language with it (ADR-0019 §2).
+          conf="$GITHUB_WORKSPACE/apps/desktop/src-tauri/tauri.conf.json"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' -c 'Print :CFBundleShortVersionString' "$plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")" = "$(node -p 'require(process.argv[1]).identifier' "$conf")"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" = "$(node -p 'require(process.argv[1]).version' "$conf")"
       # The `.dmg` users download: the app and a link to Applications to drag it onto (ADR-0019 §5).
       - name: Check the dmg
         working-directory: apps/desktop/src-tauri/target/release/bundle/dmg
@@ -106,3 +114,56 @@ jobs:
           name: Heritas-L-CRM-macos-${{ env.HEAD_SHA }}
           path: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
+
+  # The e2e of the web build on Playwright's WebKit, the engine nearest to the app's WKWebView
+  # (ADR-0019 §9, Mac-7); not WKWebView itself, so the Owner still tries the app on a Mac (NT-MAC).
+  # A job of its own: it runs beside the build, needs no Rust, and its result is a check of its own,
+  # which tools/merge-pr.mjs counts with every other check of the head.
+  e2e-webkit:
+    name: E2E (WebKit, macOS)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'build-mac') ||
+      (github.event.action == 'synchronize' &&
+       contains(github.event.pull_request.labels.*.name, 'build-mac'))
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The WebKit of the Playwright version pnpm-lock.yaml pins (G4 Q10).
+      - name: Install Playwright's WebKit
+        run: pnpm exec playwright install webkit
+      # e2e/serve.mjs builds the web app first, as for Edge on Windows.
+      - name: E2E (web build, WebKit)
+        env:
+          PW_WEBKIT: '1'
+        run: pnpm exec playwright test --project webkit
+      # As ci.yml: retries turn a flaky test green, so count them where the run shows them (DR-78).
+      - name: E2E summary
+        id: e2e-summary
+        if: ${{ !cancelled() }}
+        run: |
+          file=test-results/e2e.json
+          if [ ! -f "$file" ]; then echo 'No e2e results (e2e did not run).' >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          stats="$(jq -r '.stats | "\(.expected) passed, \(.flaky) flaky, \(.unexpected) failed, \(.skipped) skipped"' "$file")"
+          printf '### E2E (WebKit)\n\n%s\n' "$stats" >> "$GITHUB_STEP_SUMMARY"
+          flaky="$(jq -r '.stats.flaky' "$file")"
+          echo "flaky=$flaky" >> "$GITHUB_OUTPUT"
+          if [ "$flaky" -gt 0 ]; then echo "::warning title=E2E flaky::$flaky test(s) passed only on retry: see the e2e-report-webkit artifact."; fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        # Flaky runs keep the failed attempt's trace (retain-on-failure): upload it as well.
+        if: failure() || steps.e2e-summary.outputs.flaky > 0
+        with:
+          name: e2e-report-webkit-${{ env.HEAD_SHA }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore

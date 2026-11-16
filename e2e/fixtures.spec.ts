@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import { ANCHOR_MORNING, toNewYearsEve } from './anchor';
 import { expect, test, type Page } from './fixtures';
+import { trackConsoleErrors } from './support';
 
 /** The page's date and time by its own wall clock: year, month, day, hours, minutes. */
 const wallClock = (page: Page) =>
@@ -93,4 +94,33 @@ test("lint refuses Playwright's own test to every e2e file but fixtures.ts", asy
   expect(await refusals(type)).toBe(0);
   const fixtures = readFileSync(new URL('./fixtures.ts', import.meta.url), 'utf8');
   expect(await refusals(fixtures, 'e2e/fixtures.ts')).toBe(0);
+});
+
+// L154: on the Windows runner the e2e server now and then refuses one connection of the burst a
+// page load makes, and Edge logs it (CI run 43639871899).
+test('trackConsoleErrors leaves out a file of the e2e server refused, and keeps every other error', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName === 'webkit', "the words of the refusal are Chromium's, as Edge logs them");
+  await page.route(/\/refused\.js$/, (route) => route.abort('connectionrefused'));
+  const errors = trackConsoleErrors(page);
+  await page.goto('/');
+  await page.evaluate(async () => {
+    const load = (src: string) =>
+      new Promise((done) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = script.onerror = done;
+        document.head.append(script);
+      });
+    await load('/assets/refused.js');
+    // The same refusal from a server other than the e2e server's.
+    await load('http://127.0.0.1:9/refused.js');
+    console.error('another error');
+  });
+
+  await expect
+    .poll(() => errors)
+    .toEqual(['Failed to load resource: net::ERR_CONNECTION_REFUSED', 'another error']);
 });

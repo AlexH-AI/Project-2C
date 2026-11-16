@@ -1,5 +1,11 @@
 import { createRequire } from 'node:module';
-import { expect, type Download, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  type ConsoleMessage,
+  type Download,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import type ExcelJS from '../apps/desktop/node_modules/exceljs';
 
 // ExcelJS is a dependency of the app only; read it from there rather than add it to the root.
@@ -156,11 +162,25 @@ export async function pickTeam(page: Page, name: string) {
   await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
 }
 
-/** Collects console errors and uncaught page errors; the returned array fills as they happen. */
+/**
+ * A file of the e2e server that the server refused to connect for, as Edge logs it. On the Windows
+ * runner the server now and then refuses one connection of the burst a page load makes, on the
+ * address it answers the others on (L154: CI runs 43639871899, 43599601497). Only that line of the
+ * server's own files is left out: a file of another server refused, or any other error, still is.
+ */
+const refusedByServer = (message: ConsoleMessage, page: Page) =>
+  message.text() === 'Failed to load resource: net::ERR_CONNECTION_REFUSED' &&
+  URL.canParse(message.location().url) &&
+  new URL(message.location().url).origin === new URL(page.url()).origin;
+
+/**
+ * Collects console errors and uncaught page errors; the returned array fills as they happen. A file
+ * of the e2e server refused once is not one (`refusedByServer`).
+ */
 export function trackConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
+    if (message.type() === 'error' && !refusedByServer(message, page)) errors.push(message.text());
   });
   page.on('pageerror', (error) => errors.push(error.message));
   return errors;
