@@ -90,8 +90,10 @@ jobs:
       - name: Check the dmg
         working-directory: apps/desktop/src-tauri/target/release/bundle/dmg
         run: |
+          # One test a line: `bash -e` does not stop on a failed test before `&&`.
           dmgs=(*.dmg)
-          test "${#dmgs[@]}" -eq 1 && test -f "${dmgs[0]}"
+          test "${#dmgs[@]}" -eq 1
+          test -f "${dmgs[0]}"
           hdiutil verify "${dmgs[0]}"
           volume="$RUNNER_TEMP/dmg"
           hdiutil attach -nobrowse -readonly -mountpoint "$volume" "${dmgs[0]}"
