@@ -1,8 +1,9 @@
 name: macOS
 
-# The macOS trial (T-413): the Rust checks on macOS, then `Heritas L-CRM.app` for Apple chips,
-# ad-hoc signed (no Developer ID yet), zipped for the Owner to try. Only on PRs labelled
-# build-mac, and by hand from main (GitHub runs a workflow by hand only once its file is on main).
+# The macOS app (T-413, Mac-3): the Rust checks on macOS, then `Heritas L-CRM.app` for Apple chips
+# and macOS 26 or later, ad-hoc signed (no Developer ID yet), in the `.dmg` users download
+# (ADR-0019 §5–§7). Only on PRs labelled build-mac, and by hand from main (GitHub runs a workflow
+# by hand only once its file is on main).
 on:
   pull_request:
     # No `opened`: a PR opened with build-mac also gets that label's `labeled` event, and both
@@ -67,18 +68,39 @@ jobs:
       # against capabilities/default.json (DR6-204), as ci.yml does for the exe.
       - name: Check the capabilities of the webview
         run: node tools/check-capabilities.mjs apps/desktop/src-tauri/gen/schemas/capabilities.json apps/desktop/src-tauri/capabilities/default.json apps/desktop/src-tauri/target/release
-      # `ditto` keeps the signature, the symlinks and the execute bits that a plain zip may lose.
-      - name: Check and zip the app
+      # Ad-hoc signed, for Apple chips only, macOS 26 at least (ADR-0019 §6, §7), and in Vietnamese
+      # and English, so that the menus and file dialogs macOS draws follow the app (ADR-0018 §10):
+      # src-tauri/Info.plist, which Tauri merges into the app's.
+      - name: Check the app
         working-directory: apps/desktop/src-tauri/target/release/bundle/macos
         run: |
           app='Heritas L-CRM.app'
+          plist="$app/Contents/Info.plist"
           codesign --verify --deep --strict --verbose=2 "$app"
-          codesign --display --verbose=2 "$app" 2>&1 | grep -E '^(Identifier|Signature)='
-          exe="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+          signature="$(codesign --display --verbose=2 "$app" 2>&1)"
+          printf '%s\n' "$signature" | grep -E '^(Identifier|Signature)='
+          printf '%s\n' "$signature" | grep -qx 'Signature=adhoc'
+          exe="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")"
           test "$(lipo -archs "$app/Contents/MacOS/$exe")" = arm64
-          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/Heritas-L-CRM-macos-$HEAD_SHA.zip"
+          /usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' -c 'Print :CFBundleLocalizations' "$plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$plist")" = 26.0
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleLocalizations:0' "$plist")" = vi
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleLocalizations:1' "$plist")" = en
+      # The `.dmg` users download: the app and a link to Applications to drag it onto (ADR-0019 §5).
+      - name: Check the dmg
+        working-directory: apps/desktop/src-tauri/target/release/bundle/dmg
+        run: |
+          dmgs=(*.dmg)
+          test "${#dmgs[@]}" -eq 1 && test -f "${dmgs[0]}"
+          hdiutil verify "${dmgs[0]}"
+          volume="$RUNNER_TEMP/dmg"
+          hdiutil attach -nobrowse -readonly -mountpoint "$volume" "${dmgs[0]}"
+          ls -la "$volume"
+          codesign --verify --deep --strict "$volume/Heritas L-CRM.app"
+          test "$(readlink "$volume/Applications")" = /Applications
+          hdiutil detach "$volume"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Heritas-L-CRM-macos-${{ env.HEAD_SHA }}
-          path: ${{ runner.temp }}/Heritas-L-CRM-macos-${{ env.HEAD_SHA }}.zip
+          path: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error

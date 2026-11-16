@@ -1,6 +1,6 @@
 // The contract between `tauri-storage.ts` and the Rust commands (DR-55): each side is otherwise
 // tested only against its own copy, and a renamed command or argument shows only in the exe.
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { AI_MODELS } from '@p2c/ai';
 import { describe, expect, it, vi } from 'vitest';
 import { t } from '../i18n';
@@ -367,6 +367,27 @@ describe('the release configuration (DR6-12…14)', () => {
     // `Manager::add_capability` (feature `dynamic-acl`, on by default).
     expect(desktop('src-tauri/Cargo.toml')).not.toMatch(/^build\s*=/m);
     expect(desktop('src-tauri/build.rs')).not.toContain('capabilities_path_pattern');
+    // Nor does a Cargo config hand the build a config to merge, `TAURI_CONFIG` in `[env]`. Cargo
+    // reads `.cargo/config.toml` and `.cargo/config` from where it runs (src-tauri for `tauri
+    // build`) up, and on Windows records a lower-case `tauri_config` with no value, so the CI
+    // check reads none though the build takes it (review of PR 1342). Any case, the whole file.
+    const repo = new URL('../../../../', import.meta.url);
+    const folders: URL[] = [];
+    for (let dir = src; dir.href.startsWith(repo.href); dir = new URL('../', dir))
+      folders.push(dir);
+    expect(folders.map(({ href }) => href.slice(repo.href.length))).toEqual([
+      'apps/desktop/src-tauri/',
+      'apps/desktop/',
+      'apps/',
+      '',
+    ]);
+    for (const config of folders.flatMap((dir) =>
+      ['config.toml', 'config'].map((file) => new URL(`.cargo/${file}`, dir)),
+    )) {
+      if (existsSync(config)) {
+        expect(readFileSync(config, 'utf8'), config.href).not.toMatch(/tauri_config/i);
+      }
+    }
     const code = files(new URL('src/', src))
       .filter((file) => file.endsWith('.rs'))
       .map((file) => rust(file.replaceAll('\\', '/')));
@@ -394,6 +415,27 @@ describe('the release configuration (DR6-12…14)', () => {
         'core:window:allow-set-title',
       ],
     });
+  });
+
+  // Tauri merges the platform's file into tauri.conf.json (JSON merge patch), and the cases here
+  // read tauri.conf.json alone: `app` (CSP, windows, capabilities), `identifier` or `version` in a
+  // platform file would give that platform another app while they stay green (review of PR 1342).
+  // So each file named like a Tauri config, in any case or format, is a platform's JSON that only
+  // packs the app: the `.dmg` on macOS, the NSIS installer on Windows (ADR-0019 §5).
+  it('lets the config of a platform only pack the app', () => {
+    const platforms = readdirSync(new URL('../../src-tauri/', import.meta.url)).filter(
+      (file) => /^tauri\b.*\.(?:json5?|toml)$/i.test(file) && file !== 'tauri.conf.json',
+    );
+    expect(platforms).toEqual(
+      expect.arrayContaining(['tauri.macos.conf.json', 'tauri.windows.conf.json']),
+    );
+    for (const file of platforms) {
+      expect(file).toMatch(/^tauri\.[a-z]+\.conf\.json$/);
+      expect(Object.keys(JSON.parse(desktop(`src-tauri/${file}`))), file).toEqual([
+        '$schema',
+        'bundle',
+      ]);
+    }
   });
 
   // Tauri puts the CSP in the exe only: the web build e2e runs has none, so this is its one check.
