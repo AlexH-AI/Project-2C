@@ -87,7 +87,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 |---|---|
 | **KYC Intelligence** | Phần AI của app, ở cột phải hồ sơ KH (cửa sổ hẹp hơn 1 440 px: ở cuối hồ sơ) |
 | **Mock** | Câu mẫu cố định, không gọi AI, để thử app |
-| **OpenCode** | Dịch vụ app gọi để chạy model AI thật (bản exe). **Gói Go**: trả theo tháng; **Credit**: trừ số dư |
+| **OpenCode** | Dịch vụ app gọi để chạy model AI thật (bản máy tính). **Gói Go**: trả theo tháng; **Credit**: trừ số dư |
 | **ChatGPT web** | Phân tích làm tay qua tài khoản ChatGPT của bạn |
 | `analysis`, `discovery` | Hai chế độ phân tích, theo cổng KYC: `PAIN_POINT_ANALYSIS` → analysis, `PROFILE_DISCOVERY` → discovery |
 | **Prompt** | Câu lệnh app gửi AI, có phiên bản (ví dụ `analysis@7`, `discovery@7`) |
@@ -106,13 +106,18 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| **Bản exe** | App chạy trên Windows, dữ liệu lưu trong file `Project2C-data\project2c.db` |
+| **Bản máy tính** | App chạy trên Windows hay macOS: bản cài Windows, chế độ portable hoặc bản macOS. Dữ liệu lưu trong file `project2c.db` của thư mục dữ liệu |
+| **Bản cài Windows** | App cài bằng file cài `Heritas L-CRM_<phiên bản>_x64-setup.exe`, mở từ menu Start, gỡ ở Cài đặt → Ứng dụng của Windows. Dữ liệu ở `%LOCALAPPDATA%\com.heritas.lcrm\` |
+| **Chế độ portable** | Exe `project2c.exe` chạy thẳng trên Windows, không cài, có thư mục `Project2C-data\` ngay cạnh: dữ liệu ở thư mục đó. Exe không có thư mục này cạnh nó thì dùng dữ liệu của bản cài |
+| **Bản macOS** | App cài từ file `.dmg` vào thư mục Applications, cho máy Mac chip Apple, macOS 26 trở lên. Dữ liệu ở `~/Library/Application Support/com.heritas.lcrm/` |
+| **Thư mục dữ liệu** | Thư mục chứa `project2c.db`, `backups`, `exports` của bản máy tính, theo nền tảng và chế độ ([1. Bắt đầu → Nơi để dữ liệu](01-bat-dau.md#nơi-để-dữ-liệu-bản-máy-tính)); đường dẫn thật ở Cài đặt → Dữ liệu |
+| **Kho key** | Nơi hệ điều hành giữ API key OpenCode: Windows Credential Manager trên Windows, Keychain trên macOS. Key không vào file dữ liệu hay backup |
 | **Bản web** | App chạy trong trình duyệt để thử; dữ liệu mất khi tải lại trang |
 | **Dữ liệu giả lập** | Dữ liệu mẫu app tạo (3 team × 10 RM, ~12 tháng), tên và số liệu đều giả |
 | **Xóa mềm** | Bản ghi ẩn khỏi danh sách và chỉ số nhưng vẫn còn, khôi phục được ở Thùng rác |
 | **Thùng rác** | Nơi liệt kê bản ghi đã xóa mềm để khôi phục (Cài đặt → Thùng rác) |
-| **Backup tự động** | Bản sao file dữ liệu app tạo mỗi lần mở (bản exe), giữ 10 bản mới nhất trong `backups\` |
-| **Backup** (`.p2cbackup`) | File chứa toàn bộ dữ liệu, xuất / nhập ở Cài đặt → Dữ liệu; dùng để chuyển dữ liệu giữa hai máy |
+| **Backup tự động** | Bản sao file dữ liệu app tạo mỗi lần mở (bản máy tính), giữ 10 bản mới nhất trong thư mục `backups` của thư mục dữ liệu |
+| **Backup** (`.p2cbackup`) | File chứa toàn bộ dữ liệu, xuất / nhập ở Cài đặt → Dữ liệu; dùng để chuyển dữ liệu giữa hai máy, kể cả giữa Windows và macOS |
 | **Schema** | Phiên bản cấu trúc file dữ liệu. App đọc được file schema cũ hơn, không đọc file của bản app mới hơn |
 
 [← 10. Khi có lỗi](10-su-co.md) · [Mục lục](README.md)

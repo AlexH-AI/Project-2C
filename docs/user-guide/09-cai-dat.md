@@ -8,25 +8,25 @@ Màn **Cài đặt** (nhóm Quản lý ở sidebar) có ba mục ở khung trái
 
 ![Cài đặt → Dữ liệu, bản web](img/09-cai-dat-du-lieu.png)
 
-Ảnh chụp từ bản web. Bản exe có thêm vài dòng về file, ghi ở dưới.
+Ảnh chụp từ bản web. Bản máy tính có thêm vài dòng về file, ghi ở dưới.
 
 ### File dữ liệu
 
 Thẻ **File dữ liệu** (kèm phiên bản schema của app):
 
 - **Nội dung**: số team, nhân sự, KH, lịch hẹn, HĐ đang có (không tính bản ghi đã xóa).
-- (bản exe) **Vị trí**: `Project2C-data\project2c.db` (cạnh file exe).
-- (bản exe) **Lưu lần cuối**: giờ và cỡ file của lần lưu gần nhất ("—" khi chưa lưu lần nào từ lúc mở app).
-- (bản exe) **Backup tự động**: "Mỗi lần mở app · giữ 10 bản mới nhất ở `Project2C-data\backups\`", kèm tên bản mới nhất và nút **Mở thư mục**.
+- (bản máy tính) **Vị trí**: đường dẫn thật của file dữ liệu `project2c.db` trên máy này, theo nền tảng và chế độ. Ví dụ bản cài Windows: `C:\Users\<tên người dùng>\AppData\Local\com.heritas.lcrm\project2c.db`; chế độ portable: `…\Project2C-data\project2c.db` cạnh exe; macOS: `/Users/<tên người dùng>/Library/Application Support/com.heritas.lcrm/project2c.db`.
+- (bản máy tính) **Lưu lần cuối**: giờ và cỡ file của lần lưu gần nhất ("—" khi chưa lưu lần nào từ lúc mở app).
+- (bản máy tính) **Backup tự động**: "Mỗi lần mở app · giữ 10 bản mới nhất ở" kèm đường dẫn thật của thư mục `backups`, tên bản mới nhất và nút **Mở thư mục** (mở thư mục đó trong File Explorer trên Windows, Finder trên macOS).
 - Bản web ghi "Bản web — dữ liệu chỉ trong trình duyệt, mất khi tải lại trang".
 
-Thư mục `Project2C-data\` giải thích ở [1. Bắt đầu](01-bat-dau.md#thư-mục-project2c-data-bản-exe).
+Thư mục dữ liệu theo từng nền tảng và chế độ giải thích ở [1. Bắt đầu → Nơi để dữ liệu](01-bat-dau.md#nơi-để-dữ-liệu-bản-máy-tính).
 
 ### Xuất backup
 
 Bấm **Xuất backup**. App ghi toàn bộ dữ liệu, kể cả bản ghi đã xóa mềm (Thùng rác) và cài đặt AI, vào một file `.p2cbackup`:
 
-- (bản exe) File nằm trong `Project2C-data\exports\`. App báo "Đã xuất backup: … · …" (đường dẫn, cỡ file) kèm nút **Mở thư mục**.
+- (bản máy tính) File nằm trong thư mục `exports` của thư mục dữ liệu. App báo "Đã xuất backup: … · …" (đường dẫn, cỡ file) kèm nút **Mở thư mục**.
 - Bản web: file tải về thư mục tải xuống của trình duyệt.
 
 API key OpenCode không nằm trong backup.
@@ -41,8 +41,8 @@ Nhập backup **thay toàn bộ** dữ liệu hiện tại bằng dữ liệu tr
    - **Phiên bản**: schema của file. File từ bản app cũ hơn vẫn nhập được: "app tự nâng cấp dữ liệu sau khi nhập".
    - **Trong file** và **Hiện tại**: số team, nhân sự, KH, lịch hẹn, HĐ.
    - Cảnh báo "Mọi thay đổi sau … sẽ mất khỏi app" (ngày giờ xuất của file).
-3. (bản exe) Bấm **Backup rồi thay dữ liệu**: app chép dữ liệu hiện tại vào `Project2C-data\backups\` trước, rồi mới thay. Bản web bấm **Thay dữ liệu**.
-4. Xong, app báo "Đã nhập backup xuất lúc …", bản exe kèm tên file backup vừa tạo.
+3. (bản máy tính) Bấm **Backup rồi thay dữ liệu**: app chép dữ liệu hiện tại vào thư mục `backups` của thư mục dữ liệu trước, rồi mới thay. Bản web bấm **Thay dữ liệu**.
+4. Xong, app báo "Đã nhập backup xuất lúc …", bản máy tính kèm tên file backup vừa tạo.
 
 Bấm **Hủy** để thôi, dữ liệu không đổi.
 
@@ -56,7 +56,7 @@ App từ chối file không đúng, hộp **Không nhập được file** nêu l
 
 Trong lúc đang nhập, app không nhận thay đổi khác (xem [10. Khi có lỗi](10-su-co.md#đang-thay-toàn-bộ-dữ-liệu)).
 
-*Làm trên hai máy:* xuất ở máy đang dùng trước khi rời máy, nhập ở máy kia. *Bản nhập sau thắng*: nhập đè mất các thay đổi chưa xuất của máy bị nhập (bản exe vẫn còn bản trước khi nhập trong `backups\`). Xem [Làm trên hai máy](README.md#làm-trên-hai-máy).
+*Làm trên hai máy:* xuất ở máy đang dùng trước khi rời máy, nhập ở máy kia. *Bản nhập sau thắng*: nhập đè mất các thay đổi chưa xuất của máy bị nhập (bản máy tính vẫn còn bản trước khi nhập trong thư mục `backups`). Xem [Làm trên hai máy](README.md#làm-trên-hai-máy).
 
 ### Nạp lại dữ liệu giả lập
 
@@ -65,13 +65,13 @@ Trong lúc đang nhập, app không nhận thay đổi khác (xem [10. Khi có l
 Xóa dữ liệu hiện tại và tạo lại dữ liệu giả lập: 3 team × 10 RM, khoảng 12 tháng tính tới hôm nay.
 
 1. Bấm **Nạp lại…**.
-2. Hộp **Nạp lại dữ liệu giả lập?** ghi số KH, lịch hẹn, HĐ sắp bị thay và ngày neo của dữ liệu mới. (bản exe) App backup file dữ liệu vào `Project2C-data\backups\` trước.
+2. Hộp **Nạp lại dữ liệu giả lập?** ghi số KH, lịch hẹn, HĐ sắp bị thay và ngày neo của dữ liệu mới. (bản máy tính) App backup file dữ liệu vào thư mục `backups` của thư mục dữ liệu trước.
 3. Gõ đúng `NẠP LẠI` vào ô "Gõ NẠP LẠI để xác nhận".
-4. (bản exe) Bấm **Backup rồi nạp lại**; bản web bấm **Nạp lại**.
+4. (bản máy tính) Bấm **Backup rồi nạp lại**; bản web bấm **Nạp lại**.
 
-Muốn lấy lại dữ liệu trước khi nạp lại (bản exe): đóng app, chép bản backup trong `Project2C-data\backups\` thành `Project2C-data\project2c.db`.
+Muốn lấy lại dữ liệu trước khi nạp lại (bản máy tính): đóng app, chép bản backup trong thư mục `backups` thành `project2c.db` của thư mục dữ liệu (cách làm ở [10. Khi có lỗi → Mở lại từ backup](10-su-co.md#mở-lại-từ-backup)).
 
-Lần lưu gần nhất bị lỗi thì app không nhập backup, không nạp lại ("…backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn…"). Xử lý lỗi lưu, bấm **Thử lại** ở dải cảnh báo, lưu được rồi thì làm lại (xem [1. Bắt đầu](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe)).
+Lần lưu gần nhất bị lỗi thì app không nhập backup, không nạp lại ("…backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn…"). Xử lý lỗi lưu, bấm **Thử lại** ở dải cảnh báo, lưu được rồi thì làm lại (xem [1. Bắt đầu](01-bat-dau.md#khi-app-chưa-lưu-được-bản-máy-tính)).
 
 ## Cài đặt → AI
 
@@ -81,22 +81,27 @@ Lần lưu gần nhất bị lỗi thì app không nhập backup, không nạp l
 
 Thẻ **Provider & model** lưu ngay khi đổi và đi theo backup.
 
-- **Provider**: **Mock** (câu mẫu cố định, không gọi mạng, chỉ để thử app) hoặc **OpenCode** (gọi model thật, chỉ có trong bản exe). Cách dùng AI ở [6. KYC Intelligence](06-ai.md).
-- (bản exe) **Gói OpenCode** (chỉ hiện khi chọn OpenCode): **Gói Go** (trả theo tháng, có giới hạn dùng) hoặc **Credit** (trừ vào số dư credit, xem số dư trên dashboard OpenCode). Cùng một API key, cùng danh sách model.
+- **Provider**: **Mock** (câu mẫu cố định, không gọi mạng, chỉ để thử app) hoặc **OpenCode** (gọi model thật, chỉ có trong bản máy tính). Cách dùng AI ở [6. KYC Intelligence](06-ai.md).
+- (bản máy tính) **Gói OpenCode** (chỉ hiện khi chọn OpenCode): **Gói Go** (trả theo tháng, có giới hạn dùng) hoặc **Credit** (trừ vào số dư credit, xem số dư trên dashboard OpenCode). Cùng một API key, cùng danh sách model.
 - **Model**: chọn trong danh sách cố định của app; model mặc định ghi "· mặc định". Chỉ dùng khi chọn OpenCode.
 - **Mức suy luận**: **Mặc định**, **Thấp**, **Vừa**, **Cao**. Model chưa được kiểm với mức suy luận thì app dùng Mặc định.
 
 Cài đặt đã lưu không hợp lệ (ví dụ nhập backup có model không còn trong danh sách) thì thẻ báo đang dùng mặc định; chọn lại để lưu, kể cả bấm lại lựa chọn đang chọn (bản web chỉ có Mock).
 
-### API key OpenCode (bản exe)
+### API key OpenCode (bản máy tính)
 
-Bản web ghi "Chỉ có trong app exe."
+Bản web ghi "Chỉ có trong app trên máy tính."
 
 1. Lấy key trên trang OpenCode.
 2. Dán vào ô **Key** (đã có key thì ô **Key mới**, để thay key cũ).
-3. Bấm **Lưu key**. App báo "Đã lưu key."
+3. Bấm **Lưu key**. App báo "Đã lưu key." Lưu không được thì app báo "Key chưa được lưu. Thử lại; nếu vẫn lỗi, kiểm tra …", với tên kho key của máy.
 
-Key lưu trong Windows Credential Manager của máy này: không vào file dữ liệu, không vào backup, không bao giờ hiện lại. Mỗi máy nhập key riêng. Đầu thẻ ghi **Đã có key** hoặc **Chưa có key**.
+Key lưu trong kho key của hệ điều hành trên máy này: không vào file dữ liệu, không vào backup, không bao giờ hiện lại. Mỗi máy nhập key riêng. Đầu thẻ ghi **Đã có key** hoặc **Chưa có key**. Câu dưới ô key ghi tên kho theo nền tảng:
+
+| Nền tảng | Kho key | Ghi chú |
+|---|---|---|
+| Windows | Windows Credential Manager | Theo người dùng Windows |
+| macOS | Keychain của macOS: Keychain đăng nhập (login), mục `Project-2C`, tài khoản `opencode-go` | Sau mỗi bản app mới, lần đầu app đọc key thì macOS hỏi mật khẩu đăng nhập của máy (xem [1. Bắt đầu → Keychain hỏi mật khẩu sau mỗi bản mới](01-bat-dau.md#keychain-hỏi-mật-khẩu-sau-mỗi-bản-mới)). Ô tìm của Keychain Access trên macOS 27.2 không ra mục này; muốn xem mục có trong Keychain không, chạy trong Terminal `security find-generic-password -s "Project-2C"` (lệnh không in key) |
 
 **Xóa key:** bấm **Xóa key…**. Hộp **Xóa API key OpenCode?** ("chỉ trên máy này") cho biết sau khi xóa, Phân tích và AI trích xuất với OpenCode báo chưa có key tới khi nhập key mới; lịch sử phân tích không đổi. Bấm **Xóa key**, hoặc **Hủy**.
 
@@ -181,11 +186,11 @@ Nút **Dọn sạch Thùng rác…** ở đầu thẻ xóa hẳn mọi bản ghi
    - nhân sự, team.
 
    Hộp nói rõ việc này không hoàn tác được, còn dữ liệu đang dùng và chỉ số không đổi.
-3. Gõ **DỌN SẠCH** vào ô xác nhận, rồi bấm **Backup rồi dọn sạch** (bản exe) hoặc **Dọn sạch** (bản web). Trong lúc dọn, nút ghi "Đang dọn…" và hộp không đóng được.
+3. Gõ **DỌN SẠCH** vào ô xác nhận, rồi bấm **Backup rồi dọn sạch** (bản máy tính) hoặc **Dọn sạch** (bản web). Trong lúc dọn, nút ghi "Đang dọn…" và hộp không đóng được.
 
-Dọn xong, app báo "Đã dọn sạch Thùng rác", kèm số bản ghi đã xóa hẳn theo loại và tên file backup (bản exe).
+Dọn xong, app báo "Đã dọn sạch Thùng rác", kèm số bản ghi đã xóa hẳn theo loại và tên file backup (bản máy tính).
 
-- **Backup trước (bản exe):** app chờ lưu xong, rồi chép file dữ liệu vào `Project2C-data\backups\` trước khi dọn. Muốn lấy lại dữ liệu như trước lúc dọn: đóng app, chép bản backup đó thành `Project2C-data\project2c.db`; các thay đổi sau lúc dọn sẽ mất. Bản web không lưu file nên không có backup.
+- **Backup trước (bản máy tính):** app chờ lưu xong, rồi chép file dữ liệu vào thư mục `backups` của thư mục dữ liệu trước khi dọn. Muốn lấy lại dữ liệu như trước lúc dọn: đóng app, chép bản backup đó thành `project2c.db` của thư mục dữ liệu; các thay đổi sau lúc dọn sẽ mất. Bản web không lưu file nên không có backup.
 - **Không dọn được:** có ba trường hợp, và cả ba đều để dữ liệu không đổi:
   - lần lưu gần nhất bị lỗi: app báo "Chưa dọn: lần lưu gần nhất bị lỗi…" kèm cách làm: bấm **Thử lại** ở dải cảnh báo đầu màn, lưu được rồi thì dọn lại;
   - backup lỗi;
