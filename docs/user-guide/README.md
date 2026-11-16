@@ -9,7 +9,7 @@ Tên file theo nền tảng:
 | Nền tảng | File tải về | Sau khi cài |
 |---|---|---|
 | Windows | File cài `Heritas L-CRM_<phiên bản>_x64-setup.exe` | App `project2c.exe` trong `%LOCALAPPDATA%\Heritas L-CRM\`, lối tắt **Heritas L-CRM** ở menu Start |
-| Windows, chế độ portable | Exe chạy thẳng `project2c.exe` | Không cài: chạy thẳng, dữ liệu trong `Project2C-data\` cạnh exe |
+| Windows, chế độ portable | Exe chạy thẳng `project2c.exe`, đi kèm bản build dùng để thử (bản phát hành chỉ có file cài) | Không cài: chạy thẳng, dữ liệu trong `Project2C-data\` cạnh exe |
 | macOS (chip Apple) | `Heritas L-CRM_<phiên bản>_aarch64.dmg` | App **Heritas L-CRM** trong thư mục Applications |
 
 Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **in đậm** là nhãn đúng như trên màn. Thuật ngữ ngành (RM, TL, KYC, FYP, RF…) giữ tiếng Anh, giải thích ở [11. Thuật ngữ](11-thuat-ngu.md).

@@ -28,7 +28,7 @@ Gỡ cài không đụng thư mục `Project2C-data\` của chế độ portable
 
 ### Chế độ portable
 
-Chế độ portable dùng file `project2c.exe` chạy thẳng, không qua trình cài, và để dữ liệu ngay cạnh exe: tiện để thử app ở một thư mục riêng hay chạy từ USB.
+Chế độ portable dùng file `project2c.exe` chạy thẳng, không qua trình cài, và để dữ liệu ngay cạnh exe: tiện để thử app ở một thư mục riêng hay chạy từ USB. Bản phát hành chỉ có file cài; exe chạy thẳng đi kèm bản build của mỗi lần sửa app, dùng để thử và nghiệm thu.
 
 1. Chép `project2c.exe` vào một thư mục bạn có quyền ghi, ví dụ `D:\Apps\Heritas\`.
 2. Tạo một thư mục trống tên `Project2C-data` ngay cạnh exe, **trước** lần chạy đầu.
