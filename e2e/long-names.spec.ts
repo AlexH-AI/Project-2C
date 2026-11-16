@@ -12,21 +12,24 @@ const WIDTHS = [1100, 1440] as const;
 const unbroken = (first: string, length: number) => first + 'x'.repeat(length - 1);
 
 /**
- * What pushes the page sideways: when it scrolls sideways, the elements whose box ends past the
- * window, with that right edge (WebKit, Mac-7); nothing when it does not.
+ * What pushes the page sideways: when it scrolls sideways, the elements whose box, or what shows
+ * out of it (a word that does not break), ends past the window, with that right edge, the deepest
+ * last (WebKit, Mac-7); nothing when it does not.
  */
 const pastTheWindow = (page: Page) =>
   page.evaluate(() => {
     const width = document.documentElement.scrollWidth;
     if (width <= window.innerWidth) return [];
     const past = [...document.body.querySelectorAll('*')].flatMap((node) => {
-      const edge = Math.round(node.getBoundingClientRect().right);
+      const box = node.getBoundingClientRect();
+      const shows = getComputedStyle(node).overflowX === 'visible';
+      const edge = Math.round(shows ? Math.max(box.right, box.left + node.scrollWidth) : box.right);
       if (edge <= window.innerWidth) return [];
       const text = (node.getAttribute('aria-label') ?? node.textContent ?? '').slice(0, 40);
       const kind = `${node.tagName.toLowerCase()}.${node.getAttribute('class') ?? ''}`;
       return [`${kind} "${text}" ends at ${edge}px`];
     });
-    return past.length > 0 ? past.slice(0, 12) : [`the page, ${width}px wide`];
+    return past.length > 0 ? past.slice(-12) : [`the page, ${width}px wide`];
   });
 
 /**
