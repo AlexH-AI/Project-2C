@@ -8,6 +8,7 @@ import {
   panelOf,
   pickTeam,
   stubChatGptWeb,
+  tabKey,
 } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -421,7 +422,10 @@ function form(page: Page) {
 }
 
 // DR6-181: "Thêm" adds the one picked, by keyboard or mouse, and says so (6f; 6a / 6b / 6h alike).
-test('a coordinator is added by "Thêm", not by arrows on the list', async ({ page }) => {
+test('a coordinator is added by "Thêm", not by arrows on the list', async ({
+  page,
+  browserName,
+}) => {
   const { kinds, rows, detail } = screen(page);
   await kinds.getByRole('radio', { name: 'Ngày' }).click();
   await page.getByRole('button', { name: 'Kỳ trước' }).click();
@@ -431,11 +435,17 @@ test('a coordinator is added by "Thêm", not by arrows on the list', async ({ pa
   const pick = dialog.getByRole('combobox', { name: 'Thêm người phối hợp' });
   const chips = dialog.getByRole('button', { name: /^Bỏ / });
   const before = await chips.count();
-  await pick.press('ArrowDown');
-  await pick.press('ArrowDown');
+  if (browserName === 'webkit') {
+    // On macOS an arrow opens the list rather than moving the choice (WebKit, as Safari): the
+    // choice changes as a pick from it does.
+    await pick.selectOption({ index: 2 });
+  } else {
+    await pick.press('ArrowDown');
+    await pick.press('ArrowDown');
+  }
   await expect(chips).toHaveCount(before);
   const name = (await pick.locator('option:checked').textContent()) ?? '';
-  await pick.press('Tab');
+  await pick.press(tabKey(page));
   await page.keyboard.press('Enter');
   await expect(dialog.getByRole('button', { name: `Bỏ ${name}` })).toBeVisible();
   await expect(pick).toHaveValue('');

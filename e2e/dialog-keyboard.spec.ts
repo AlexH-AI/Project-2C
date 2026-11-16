@@ -1,5 +1,5 @@
 import { expect, test, type Page } from './fixtures';
-import { asExe, openProfile } from './support';
+import { asExe, openProfile, pressButton, tabKey } from './support';
 
 // Keyboard paths of the shared dialog and segmented control (DR-58, 59, 02, 76). The e2e build pins
 // today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -57,7 +57,7 @@ test('dialogs open on the field they ask for first, not on the first one', async
     .getByRole('table', { name: 'Lịch hẹn' })
     .getByRole('button', { name: /^Hẹn tiếp sau lịch/ })
     .first();
-  await next.click();
+  await pressButton(next);
   let dialog = page.getByRole('dialog', { name: 'Lịch hẹn tiếp theo' });
   await expect(dialog.getByRole('textbox', { name: /^Ngày/ })).toBeFocused();
   await page.keyboard.press('Escape');
@@ -128,12 +128,19 @@ test('arrow keys move the choice around a segmented control, wrapping at both en
   await expect(radios.nth(count - 1)).toBeFocused();
 });
 
-test('a second Escape does not close the dialog of a running reload', async ({ page }) => {
+test('a second Escape does not close the dialog of a running reload', async ({
+  page,
+  browserName,
+}) => {
+  test.fixme(
+    browserName === 'webkit',
+    'Option+Tab twice takes the focus out of the dialog, not back to "Đang nạp lại…" (Mac-7b)',
+  );
   await asExe(page);
   await page.goto('/#/settings');
   await page.evaluate(() => window.exe.holdBackup());
 
-  await page.getByRole('button', { name: 'Nạp lại…' }).click();
+  await pressButton(page.getByRole('button', { name: 'Nạp lại…' }));
   const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
   await dialog.getByRole('textbox', { name: /^Gõ NẠP LẠI/ }).fill('NẠP LẠI');
   await page.keyboard.press('Enter');
@@ -154,8 +161,8 @@ test('a second Escape does not close the dialog of a running reload', async ({ p
   expect(await dialog.evaluate((node) => node.matches(':modal'))).toBe(true);
   // Opened again by the second Escape (DR-58), it still holds the focus; Tab comes back to it.
   await expect(running).toBeFocused();
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tabKey(page));
+  await page.keyboard.press(tabKey(page));
   await expect(running).toBeFocused();
 
   await page.evaluate(() => window.exe.releaseBackup());
@@ -166,7 +173,12 @@ test('a second Escape does not close the dialog of a running reload', async ({ p
 
 test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)', async ({
   page,
+  browserName,
 }) => {
+  test.fixme(
+    browserName === 'webkit',
+    'a click on the dimmed "Đang nhập…" takes the focus off it (Mac-7b)',
+  );
   await asExe(page);
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
@@ -177,13 +189,13 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
   await page.evaluate(() => window.exe.holdBackup());
   const open = backup.getByRole('button', { name: 'Chọn file…' });
   const chooser = page.waitForEvent('filechooser');
-  await open.click();
+  await pressButton(open);
   await (
     await chooser
   ).setFiles({ name: 'export.p2cbackup', mimeType: 'application/json', buffer: Buffer.from(file) });
   const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
   await expect(dialog.getByRole('button', { name: 'Hủy' })).toBeFocused();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tabKey(page));
   await page.keyboard.press('Enter');
   const running = dialog.getByRole('button', { name: 'Đang nhập…' });
   await expect(running).toBeFocused();
@@ -213,7 +225,12 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
 // the read opens gives it back as it goes (10a, 10b); pressed meanwhile, it opens no other chooser.
 test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10a, 10b)', async ({
   page,
+  browserName,
 }) => {
+  test.fixme(
+    browserName === 'webkit',
+    'a click on the dimmed "Đang đọc file…" takes the focus off it, so 10a does not give it back (Mac-7b)',
+  );
   await asExe(page);
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
@@ -228,7 +245,7 @@ test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10
   // Through the button, as a person chooses a file: the button has the focus.
   const choose = async (text: string) => {
     const chooser = page.waitForEvent('filechooser');
-    await open.click();
+    await pressButton(open);
     await (
       await chooser
     ).setFiles({

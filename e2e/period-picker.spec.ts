@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from './fixtures';
 
 import { ANCHOR_MORNING } from './anchor';
+import { trackConsoleErrors } from './support';
 
 // The clock stays on the pinned day so the app's today cannot move during a test.
 const TODAY = ANCHOR_MORNING;
@@ -187,9 +188,7 @@ test('the appointments screen refuses a custom range longer than 3 months too', 
 });
 
 test('disables ‹ at year 1900 and › at year 2100 without console errors', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('console', (message) => message.type() === 'error' && errors.push(message.text()));
-  page.on('pageerror', (error) => errors.push(error.message));
+  const errors = trackConsoleErrors(page);
   const { kinds, label, picker, previous, next } = await openPicker(page);
 
   await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
@@ -224,9 +223,7 @@ test('disables ‹ at year 1900 and › at year 2100 without console errors', as
 test('the appointments calendar shows December 2100 with blank cells after it', async ({
   page,
 }) => {
-  const errors: string[] = [];
-  page.on('console', (message) => message.type() === 'error' && errors.push(message.text()));
-  page.on('pageerror', (error) => errors.push(error.message));
+  const errors = trackConsoleErrors(page);
   await page.clock.setFixedTime(TODAY);
   await page.goto('/#/appointments');
   const picker = page.getByRole('group', { name: 'Kỳ thống kê' });

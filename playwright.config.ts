@@ -4,6 +4,10 @@ import { DEMO_ANCHOR } from './e2e/anchor';
 
 const port = 4173;
 const EDGE = { ...devices['Desktop Edge'], channel: 'msedge' };
+// Playwright's WebKit, the engine nearest to the macOS app's WKWebView (ADR-0019 §9, Mac-7): only
+// with PW_WEBKIT=1, as macos.yml sets on a Mac. `pnpm e2e` and ci.yml never run it, and its build
+// for Windows is further from WKWebView.
+const WEBKIT = process.env.PW_WEBKIT === '1';
 
 // E2E runs against the production web build (ADR-0006 web mode). Microsoft Edge ships with
 // Windows and shares its engine with the WebView2 runtime Tauri uses, so no browser download.
@@ -34,6 +38,11 @@ export default defineConfig({
     // time would measure CPU contention, not the seed.
     { name: 'seed-timing', testMatch: 'seed-timing.spec.ts', use: EDGE },
     { name: 'edge', testIgnore: 'seed-timing.spec.ts', dependencies: ['seed-timing'], use: EDGE },
+    // No seed timing first: its limit is the one of the Owner's Windows machines (#64). The locale
+    // is vi-VN of `use` above, as for Edge.
+    ...(WEBKIT
+      ? [{ name: 'webkit', testIgnore: 'seed-timing.spec.ts', use: devices['Desktop Safari'] }]
+      : []),
   ],
   webServer: {
     command: 'node e2e/serve.mjs',

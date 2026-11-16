@@ -9,6 +9,7 @@ import {
   panelOf,
   seededCustomer,
   stubChatGptWeb,
+  tabKey,
   useOpenCode,
 } from './support';
 
@@ -24,8 +25,8 @@ const ACCENT = 'rgb(217, 178, 106)';
  */
 async function expectAppFocusRing(link: Locator) {
   await link.focus();
-  await link.page().keyboard.press('Shift+Tab');
-  await link.page().keyboard.press('Tab');
+  await link.page().keyboard.press(`Shift+${tabKey(link.page())}`);
+  await link.page().keyboard.press(tabKey(link.page()));
   await expect(link).toBeFocused();
   await expect(link).toHaveCSS('outline-style', 'solid');
   await expect(link).toHaveCSS('outline-color', ACCENT);

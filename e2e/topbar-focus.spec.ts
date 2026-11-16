@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { addKycNote, createKycCustomer, discoveryFacts, panelOf } from './support';
+import { addKycNote, createKycCustomer, discoveryFacts, panelOf, tabKey } from './support';
 
 // The topbar stays at the top of the page as it scrolls: what the focus or `scrollIntoView` brings
 // into view must come out from under it, a card brought to the top from its own top (WCAG 2.4.11),
@@ -93,10 +93,10 @@ test('Shift+Tab to a link of the customers table under the bar brings it out', a
   await page.getByRole('radio', { name: 'Bảng' }).click();
   const link = page.getByRole('main').getByRole('table').getByRole('link').nth(8);
   await link.focus();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tabKey(page));
   await hideUnderBar(page, link);
 
-  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press(`Shift+${tabKey(page)}`);
   await expect(link).toBeFocused();
   expect(await top(link)).toBeGreaterThanOrEqual(await barBottom(page));
 });
@@ -236,7 +236,7 @@ test('Shift+Tab to a field cut by the top edge of a scrolled dialog stops it rig
   expect(box.y).toBeLessThan(edge);
   expect(box.y + box.height).toBeGreaterThan(edge);
 
-  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press(`Shift+${tabKey(page)}`);
   await expect(stage).toBeFocused();
   expect(Math.abs((await top(stage)) - edge)).toBeLessThan(1);
 });

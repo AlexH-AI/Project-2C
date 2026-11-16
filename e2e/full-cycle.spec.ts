@@ -4,6 +4,7 @@ import {
   asExe,
   createKycCustomer,
   discoveryFacts,
+  gotoScreen,
   trackConsoleErrors,
 } from './support';
 
@@ -65,7 +66,7 @@ async function openSettings(page: Page, section: 'Dữ liệu' | 'Thùng rác') 
 
 /** Books an appointment of the customer on `day` from Lịch hẹn, which opens it in the detail. */
 async function book(page: Page, day: string, time?: string) {
-  await page.goto('/#/appointments');
+  await gotoScreen(page, '/#/appointments');
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(CUSTOMER);
@@ -99,7 +100,7 @@ async function addPolicy(page: Page, day: string, fyp: string, issued?: [string,
 
 /** The figures of the team and its RM on Tổng quan and Báo cáo, for September to date. */
 async function figures(page: Page) {
-  await page.goto('/#/overview');
+  await gotoScreen(page, '/#/overview');
   await scope(page).getByRole('radio', { name: 'Team' }).click();
   await filter(page).click();
   await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(
@@ -143,7 +144,7 @@ async function snapshot(page: Page, profile: string) {
     await expect(locator, name).toBeVisible();
     return (await locator.innerText()).trim();
   };
-  await page.goto('/#/customers');
+  await gotoScreen(page, '/#/customers');
   await scopeOnRm(page);
   const customers = {
     summary: await text('the customers of the RM', page.getByText(/KH đang mở/)),
@@ -153,7 +154,7 @@ async function snapshot(page: Page, profile: string) {
     ),
   };
 
-  await page.goto(profile);
+  await gotoScreen(page, profile);
   const region = (name: string) => page.getByRole('region', { name, exact: true });
   const shown = {
     head: await text('the profile', region(CUSTOMER)),
@@ -183,7 +184,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
   const errors = trackConsoleErrors(page);
 
   await test.step('a new team and its RM', async () => {
-    await page.goto('/#/team');
+    await gotoScreen(page, '/#/team');
     await page.getByRole('button', { name: '+ Team' }).click();
     const team = page.getByRole('dialog', { name: 'Team mới' });
     await team.getByRole('textbox', { name: 'Tên team' }).fill(TEAM);
@@ -244,7 +245,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
   });
 
   await test.step('policies: one issued, one only submitted', async () => {
-    await page.goto(profile);
+    await gotoScreen(page, profile);
     await addPolicy(page, '10/09', '500tr', ['12/9', '485.5tr']);
     await addPolicy(page, '14/09', '120tr');
     const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
@@ -267,7 +268,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
   });
 
   await test.step('an AI analysis with the Mock', async () => {
-    await page.goto(profile);
+    await gotoScreen(page, profile);
     const panel = page.getByRole('region', { name: 'KYC Intelligence' });
     await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
     await expect(panel.getByRole('status')).toHaveText('Phân tích xong: đã lưu kết quả.');

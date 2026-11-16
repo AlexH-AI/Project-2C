@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from './fixtures';
 import { toNewYearsEve } from './anchor';
+import { endKey } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -289,7 +290,7 @@ test('the note keeps its lines when 6f / 6c leave met (DR6-182)', async ({ page 
   await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
   const edit = editDialog(page);
   await edit.getByRole('radio', { name: 'Hủy', exact: true }).check();
-  await edit.getByRole('textbox', { name: 'Ghi chú', exact: true }).press('Control+End');
+  await edit.getByRole('textbox', { name: 'Ghi chú', exact: true }).press(endKey(page));
   await page.keyboard.type(' (sửa)');
   await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(shown).toHaveText(/^Dòng một\nDòng hai \(sửa\)$/);
@@ -305,7 +306,7 @@ test('the note keeps its lines when 6f / 6c leave met (DR6-182)', async ({ page 
   await o.status.getByRole('radio', { name: 'Đã gặp' }).check();
   await note.fill('Dòng một\nDòng hai');
   await o.status.getByRole('radio', { name: 'Không đến' }).check();
-  await note.press('Control+End');
+  await note.press(endKey(page));
   await page.keyboard.type(' gấp');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
   await expect(shown).toHaveText(/^Dòng một\nDòng hai gấp$/);
