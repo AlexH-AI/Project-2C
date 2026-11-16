@@ -48,6 +48,24 @@ Bối cảnh: review đóng Phase 1–3 (`docs/reviews/2026-09-30-phase-1-3-tong
 
 Còn chờ: **G5** (prompt + guardrail, danh sách chặn) và spec Phase 5 (timeout, Settings, lược đồ `ai_analyses`). → Spec Phase 5 duyệt G1 / G2 07/10/2026 (`docs/design/phase-5-ai.md`); G5 xem phụ lục dưới.
 
+### Phụ lục của D-1 — kho key trên macOS (Owner duyệt G4 / G6 12/11/2026, ADR-0019 §4; T-454 #1329)
+
+ADR-0019 (Accepted 12/11/2026) thêm bản macOS và thay một phần D-1 (cùng Quyết định 8). Phần còn lại của D-1 giữ nguyên, đọc theo phụ lục này:
+
+- **Mục 4, chỗ lưu key (G6):** "chỉ Windows Credential Manager" thành kho key của hệ điều hành: Windows Credential Manager trên Windows, **Keychain** trên macOS. Quyết định 8 và câu "đọc key từ Windows Credential Manager" của mục 1 đọc theo nghĩa đó.
+  - macOS dùng Keychain dạng file của người dùng (Keychain "login"): một mục mật khẩu (generic password) cùng tên dịch vụ `Project-2C`, cùng tên người dùng `opencode-go` như bản Windows. Mỗi máy một key, nhập ở Cài đặt → AI như cũ.
+  - Không đổi: key không vào DB, bảng `settings`, `.p2cbackup`, log hay thông báo lỗi; không lệnh nào đọc key ra webview; lỗi của kho chỉ thành mã `AI_KEYRING`, không chép nội dung lỗi.
+  - `persistence = Local` (key không theo hồ sơ roaming của Windows, mục 4) chỉ có nghĩa ở kho Windows. App dựng mục Keychain không kèm tham số nào.
+- **Mục 3, crate (G4, Q8 của ADR-0019):** thêm `apple-native-keyring-store` **1.0.2**, chỉ target macOS, `default-features = false`, feature `keychain`.
+  - Không bật `protected`: Keychain bảo vệ dữ liệu cần app ký bằng provisioning profile.
+  - `Cargo.lock` thêm đúng ba gói: `apple-native-keyring-store` 1.0.2, `security-framework` 3.7.0, `security-framework-sys` 2.17.0.
+  - Ngoại lệ cho quy tắc "Rust chỉ dùng `std`" (ADR-0016) vẫn chỉ cho lệnh AI; crate khác vẫn qua G4.
+- **Hệ quả của ký ad-hoc** (ADR-0019 §4, §6): Keychain nhận ra app theo "yêu cầu chỉ định" của chữ ký, mà chữ ký ad-hoc gắn với đúng một bản build (Apple TN3127).
+  - Mỗi bản app mới là "app khác" với Keychain: lần đầu đọc key sau khi cập nhật, macOS hỏi mật khẩu đăng nhập ("Cho phép" / "Luôn cho phép"); "Luôn cho phép" giữ tới bản sau.
+  - Hết hỏi khi app ký Developer ID (ADR-0019 §6, G4).
+  - Bước này cần hai bản build nên kiểm ở dòng nghiệm thu `NT-MAC` của Mac-7 (#1332); câu trong hướng dẫn sử dụng là việc của Mac-5b (#1331) (phụ lục của ADR-0019).
+- Chữ giao diện còn nói "Windows Credential Manager" (`aiError.AI_KEYRING`, `settingsAi.*`): đổi theo nền tảng ở Mac-5a (#1330).
+
 ## Phụ lục G5 — prompt và guardrail (Owner duyệt 07/10/2026, PR #414)
 
 Chữ prompt, danh sách chặn và ca kiểm ở `docs/design/phase-5-prompts.md`; quyết định Owner ở §9 của file đó.

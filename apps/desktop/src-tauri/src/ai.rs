@@ -1,8 +1,8 @@
 // The AI commands (spec Phase 5 §5, ADR-0009 D-1 / W-1): OpenCode's chat endpoint called from Rust
-// with the key kept in the Windows Credential Manager, so the webview never sees the key and never
-// talks to the network (the CSP stays `'self'`). One AI request runs at a time ([`Busy`]). The
-// logic here takes the key store and the HTTP call as arguments, so tests run on sample data and
-// a local HTTP server only.
+// with the key kept in the system's key store (the Windows Credential Manager, macOS's Keychain:
+// `platform::key_entry`), so the webview never sees the key and never talks to the network (the
+// CSP stays `'self'`). One AI request runs at a time ([`Busy`]). The logic here takes the key
+// store and the HTTP call as arguments, so tests run on sample data and a local HTTP server only.
 
 use keyring_core::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ pub const CREDIT_URL: &str = "https://opencode.ai/zen/v1/chat/completions";
 /// The only page `open_chatgpt` opens (P7, §5.4).
 pub const CHATGPT_URL: &str = "https://chatgpt.com/";
 
-/// The Credential Manager entry of the key, one for both plans. macOS has no key store yet (M1).
+/// The key's entry in the system's key store, one for both plans and both platforms (M1).
 pub const KEY_SERVICE: &str = "Project-2C";
 pub const KEY_USER: &str = "opencode-go";
 
@@ -210,8 +210,7 @@ pub fn headers(request: &Request) -> [(&'static str, &str); 2] {
 
 /// One `ai_complete`: checks the arguments, takes [`Busy`], reads the key, posts the body to the
 /// plan's URL and reads the reply. `read_key` and `post` (URL, key, [`headers`], body) are the
-/// Credential Manager and the HTTP call; neither runs for wrong arguments or while another request
-/// runs.
+/// key store and the HTTP call; neither runs for wrong arguments or while another request runs.
 pub fn complete(
     request: &Request,
     busy: &Busy,
@@ -479,8 +478,8 @@ fn keyring_error(_: KeyringError) -> AiError {
     AiError::new(AI_KEYRING)
 }
 
-/// The key's entry in the system's key store (`platform::key_entry`); a failure is
-/// [`AI_KEYRING`], as on macOS, which has no key store yet.
+/// The key's entry in the system's key store (`platform::key_entry`); a failure of the store is
+/// [`AI_KEYRING`], without its details.
 pub fn key_entry() -> Result<Entry, AiError> {
     crate::platform::key_entry(KEY_SERVICE, KEY_USER).map_err(keyring_error)
 }
@@ -1555,11 +1554,18 @@ mod tests {
         assert_eq!((KEY_SERVICE, KEY_USER), ("Project-2C", "opencode-go"));
     }
 
-    // Keychain comes with Mac-4; until then every key command on macOS fails the same way.
+    // The Keychain store (Mac-4): an error of the store is `AI_KEYRING` alone, as the Credential
+    // Manager's is (an error may hold the stored bytes). Keychain takes an empty attribute for
+    // "any", so the store refuses one before it reads anything.
     #[cfg(not(windows))]
     #[test]
-    fn macos_has_no_key_store_yet_so_every_key_command_is_keyring() {
-        assert_eq!(key_entry().unwrap_err(), AiError::new(AI_KEYRING));
+    fn a_keychain_store_error_is_keyring_without_its_details() {
+        assert!(key_entry().is_ok());
+        for (service, user) in [("", KEY_USER), (KEY_SERVICE, "")] {
+            let error = crate::platform::key_entry(service, user).unwrap_err();
+            assert!(matches!(error, KeyringError::Invalid(..)), "{error:?}");
+            assert_eq!(keyring_error(error), AiError::new(AI_KEYRING));
+        }
     }
 
     #[test]

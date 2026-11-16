@@ -121,16 +121,7 @@ fn explorer_arg(path: &Path) -> OsString {
 /// Explorer by its full path in `system_root` (`%SystemRoot%`): a bare name is looked up in the
 /// exe's folder first, so an `explorer.exe` put next to the portable exe would run instead (DR-54).
 fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
-    system_root
-        .map(PathBuf::from)
-        .filter(|root| root.is_absolute())
-        .map(|root| root.join("explorer.exe"))
-        .ok_or_else(|| {
-            io::Error::new(
-                ErrorKind::NotFound,
-                "SystemRoot is missing or not an absolute path",
-            )
-        })
+    super::absolute(system_root, "SystemRoot").map(|root| root.join("explorer.exe"))
 }
 
 /// The entry in the Windows Credential Manager. The store applies [`KEY_MODIFIERS`] when the
