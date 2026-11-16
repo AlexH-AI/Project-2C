@@ -1135,7 +1135,8 @@ export const vi = {
   'settings.backup.title': 'Xuất / nhập backup',
   'settings.backup.meta': 'file .p2cbackup',
   'settings.backup.export': 'Xuất backup',
-  'settings.backup.exportHelp': 'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào {where}',
+  'settings.backup.exportHelp':
+    'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào thư mục exports của thư mục dữ liệu.',
   'settings.backup.exportHelpWeb': 'Tải về toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm).',
   'settings.backup.exporting': 'Đang xuất…',
   'settings.backup.exported': 'Đã xuất backup: {where} · {size}',
@@ -1160,7 +1161,7 @@ export const vi = {
     '{teams} team · {people} nhân sự · {customers} KH · {appointments} lịch hẹn · {policies} HĐ',
   'settings.backup.lossWarning': 'Mọi thay đổi sau {date} sẽ mất khỏi app',
   'settings.backup.confirmBackup':
-    'Dữ liệu hiện tại được backup trước vào {where}. Nhập không gộp dữ liệu.',
+    'Dữ liệu hiện tại được backup trước vào thư mục backups của thư mục dữ liệu. Nhập không gộp dữ liệu.',
   'settings.backup.confirmWeb':
     'Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt. Nhập không gộp dữ liệu.',
   'settings.backup.cancel': 'Hủy',

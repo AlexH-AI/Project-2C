@@ -4,7 +4,6 @@ import { formatBytes, formatLocalDateTime, type CurrencyCode } from '@p2c/domain
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
-import { dataPaths } from '../data/tauri-storage';
 import { t } from '../i18n';
 import { ALERT, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmButton } from './ConfirmWordDialog';
@@ -121,9 +120,7 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
         <div className="flex-1">
           <b className="block text-base">{t('settings.backup.export')}</b>
           <span className="text-fg-2">
-            {data.folder === undefined
-              ? t('settings.backup.exportHelpWeb')
-              : t('settings.backup.exportHelp', { where: dataPaths(data.folder).exports })}
+            {t(data.hasFile ? 'settings.backup.exportHelp' : 'settings.backup.exportHelpWeb')}
           </span>
         </div>
         <Button disabled={busy !== null} onClick={() => void exportFile()}>
@@ -290,9 +287,7 @@ function ImportDialog({
       <div role="note" className={`${ALERT} flex flex-col gap-1 border-warn`}>
         <b>{t('settings.backup.lossWarning', { date: exportedAt })}</b>
         <span className="text-fg-2">
-          {data.folder === undefined
-            ? t('settings.backup.confirmWeb')
-            : t('settings.backup.confirmBackup', { where: dataPaths(data.folder).backups })}
+          {t(data.hasFile ? 'settings.backup.confirmBackup' : 'settings.backup.confirmWeb')}
         </span>
       </div>
     </Dialog>

@@ -83,13 +83,14 @@ export const en: EnglishMessages = {
     "The data file is not damaged; there is nothing to restore. Another program (a backup, sync or antivirus tool, or one that opens SQLite files) has a file of the app's data folder open: close that program, then close this window and open the app again.",
   'storage.accessDeniedHelp':
     "The data file is not damaged; there is nothing to restore. Check that the data folder (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, or Project2C-data next to the exe in portable mode; macOS: ~/Library/Application Support/com.heritas.lcrm) and its files are not read-only or locked (macOS: Locked in Finder's Get Info), and that the user account in use may write and delete files in it (a portable exe run from a read-only drive, or from a folder that needs administrator rights such as Program Files: copy the exe's whole folder elsewhere), then close this window and open the app again.",
-  'settings.backup.exportHelp': 'Writes all the data (soft-deleted records included) to {where}',
+  'settings.backup.exportHelp':
+    'Writes all the data (soft-deleted records included) to the exports folder of the data folder.',
   'settings.backup.exportFailed':
     'The backup was not exported. Check the disk and the right to write to the exports folder of the data folder, then try again.',
   'settings.backup.exportTooLarge':
     'The backup was not exported: the data is over {limitMb} MB, so the file could not be imported again. Use a .db copy in the backups folder of the data folder instead: copy it over project2c.db while the app is closed.',
   'settings.backup.confirmBackup':
-    'The current data is backed up to {where} first. Importing does not merge data.',
+    'The current data is backed up first to the backups folder of the data folder. Importing does not merge data.',
   'settings.demo.confirmBackup':
     'The app first backs up the data file to the backups folder of the data folder (its path is in Settings → Data); to restore, copy that backup over project2c.db in the data folder while the app is closed.',
   'settings.demo.doneBackup': 'Backup: {file} (backups folder)',

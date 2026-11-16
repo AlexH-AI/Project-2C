@@ -47,16 +47,17 @@ export function saveFailure(error: unknown): SaveFailure {
   return 'other';
 }
 
-/** The database file and its folders, in the data folder (`storage.rs`). */
+/** The database file and the backups folder, in the data folder (`storage.rs`). */
 const DB_FILE = 'project2c.db';
 const BACKUP_DIR = 'backups';
-const EXPORT_DIR = 'exports';
 
-/** Where Settings → Data says the database file, the automatic backups and the exports are. */
+/**
+ * Where Settings → Data says the database file and the automatic backups are: the only two places
+ * the app shows a real path (Mac-5a); every message says "the data folder" instead.
+ */
 export interface DataPaths {
   readonly file: string;
   readonly backups: string;
-  readonly exports: string;
 }
 
 /**
@@ -66,11 +67,7 @@ export interface DataPaths {
 export function dataPaths(folder: string): DataPaths {
   const separator = folder.startsWith('/') ? '/' : '\\';
   const under = (name: string) => `${folder}${separator}${name}`;
-  return {
-    file: under(DB_FILE),
-    backups: `${under(BACKUP_DIR)}${separator}`,
-    exports: `${under(EXPORT_DIR)}${separator}`,
-  };
+  return { file: under(DB_FILE), backups: `${under(BACKUP_DIR)}${separator}` };
 }
 
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
