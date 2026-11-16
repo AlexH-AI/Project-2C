@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "build:exe": "tauri build --no-bundle",
     "build:installer": "tauri build --bundles nsis",
-    "build:mac": "tauri build --bundles app",
+    "build:mac": "tauri build --bundles app,dmg",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
