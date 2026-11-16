@@ -1277,7 +1277,7 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
       deleted:
         'Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team.',
       kept: null,
-      backup: 'Backup: Project2C-data\\backups\\project2c-s00000013-20261011-164512.db',
+      backup: 'Backup: project2c-s00000013-20261011-164512.db (thư mục backups)',
     });
     expect(purgedNotice({ ...D1, backup: undefined })).toMatchObject({ kept: null, backup: null });
   });

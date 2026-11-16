@@ -65,7 +65,7 @@ test('the sidebar says when the data was saved, while it saves, and when it coul
   await page.evaluate(() => (window.exe.failSaves = 'DISK_FULL'));
   await addTeam(page, 'Bình Minh 3');
   await expect(state).toHaveText('Chưa lưu được vào file');
-  await expect(warning(page)).toContainText('ổ đĩa chứa thư mục app đã đầy');
+  await expect(warning(page)).toContainText('ổ đĩa chứa thư mục dữ liệu đã đầy');
   expect(await lowestContrast(state)).toBeGreaterThanOrEqual(4.5);
   // On every screen.
   await page.getByRole('link', { name: 'Khách hàng' }).click();
@@ -127,9 +127,9 @@ test('"Thử lại" on the save warning saves at once; Nạp lại, refused befo
   // the try ran (review of PR 817).
   await page.evaluate(() => (window.exe.failSaves = 'DISK_FULL'));
   const retry = warning(page).getByRole('button', { name: 'Thử lại' });
-  await expect(warning(page)).not.toContainText('ổ đĩa chứa thư mục app đã đầy');
+  await expect(warning(page)).not.toContainText('ổ đĩa chứa thư mục dữ liệu đã đầy');
   await retry.click();
-  await expect(warning(page)).toContainText('ổ đĩa chứa thư mục app đã đầy');
+  await expect(warning(page)).toContainText('ổ đĩa chứa thư mục dữ liệu đã đầy');
   await expect(saveState(page)).toHaveText('Chưa lưu được vào file');
 
   // The file can be written again: one click saves, and the warning goes, its focus to the heading.

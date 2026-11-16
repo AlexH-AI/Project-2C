@@ -48,6 +48,7 @@ async function calls(): Promise<Call[]> {
   await port.writeExport('a.xlsx', new Uint8Array([1]));
   await port.latestBackup();
   await port.openFolder('exports');
+  await port.dataFolder();
   return invoke.mock.calls.map(([command, args, options]) => ({
     command: command as string,
     args,
@@ -100,7 +101,7 @@ describe('the JS ↔ Rust storage contract', () => {
   it('invokes exactly the commands Rust registers', async () => {
     const invoked = (await calls()).map(({ command }) => command);
     const fileCommands = handlers().filter((command) => !(command in AI_COMMANDS));
-    expect(fileCommands).toHaveLength(6);
+    expect(fileCommands).toHaveLength(7);
     expect([...invoked].sort()).toEqual([...fileCommands].sort());
     for (const command of invoked) {
       expect(lib, command).toMatch(
@@ -372,15 +373,10 @@ describe('the release configuration (DR6-12…14)', () => {
     // build`) up, and on Windows records a lower-case `tauri_config` with no value, so the CI
     // check reads none though the build takes it (review of PR 1342). Any case, the whole file.
     const repo = new URL('../../../../', import.meta.url);
-    const folders: URL[] = [];
-    for (let dir = src; dir.href.startsWith(repo.href); dir = new URL('../', dir))
-      folders.push(dir);
-    expect(folders.map(({ href }) => href.slice(repo.href.length))).toEqual([
-      'apps/desktop/src-tauri/',
-      'apps/desktop/',
-      'apps/',
-      '',
-    ]);
+    const folders = ['apps/desktop/src-tauri/', 'apps/desktop/', 'apps/', ''].map(
+      (path) => new URL(path, repo),
+    );
+    expect(folders[0]!.href).toBe(src.href);
     for (const config of folders.flatMap((dir) =>
       ['config.toml', 'config'].map((file) => new URL(`.cargo/${file}`, dir)),
     )) {

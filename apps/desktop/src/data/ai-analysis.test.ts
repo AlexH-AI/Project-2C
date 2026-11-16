@@ -97,6 +97,7 @@ function heldBackupStorage() {
     writeExport: (name) => Promise.resolve(name),
     latestBackup: () => Promise.resolve(undefined),
     openFolder: () => Promise.resolve(),
+    dataFolder: () => Promise.resolve('C:\\P2C\\Project2C-data'),
   };
   return { storage, release, fail };
 }
@@ -365,6 +366,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
       writeExport: (name) => Promise.resolve(name),
       latestBackup: () => Promise.resolve(undefined),
       openFolder: () => Promise.resolve(),
+      dataFolder: () => Promise.resolve('C:\\P2C\\Project2C-data'),
     };
     const { app, customer, rows } = await withCustomer(
       { reportError: vi.fn(), adapter: held.adapter },

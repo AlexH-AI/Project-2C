@@ -316,9 +316,9 @@ test('the save warning and the close question name the cause of a failed save th
   await expect(warning).toContainText('chương trình khác');
   // Each close saves again first, and that save fails with the cause set here.
   for (const [error, cause] of [
-    ['DISK_FULL', 'ổ đĩa chứa thư mục app đã đầy'],
+    ['DISK_FULL', 'ổ đĩa chứa thư mục dữ liệu đã đầy'],
     ['READ_ONLY', 'đang ở chế độ chỉ đọc'],
-    ['FOLDER_READ_ONLY', 'không cho tài khoản Windows đang dùng tạo file mới'],
+    ['FOLDER_READ_ONLY', 'không cho tài khoản người dùng của máy đang dùng tạo file mới'],
     [true, 'chương trình khác'],
   ] as const) {
     await page.evaluate((error) => (window.exe.failSaves = error), error);

@@ -47,6 +47,29 @@ export function saveFailure(error: unknown): SaveFailure {
   return 'other';
 }
 
+/** The database file and the backups folder, in the data folder (`storage.rs`). */
+const DB_FILE = 'project2c.db';
+const BACKUP_DIR = 'backups';
+
+/**
+ * Where Settings → Data says the database file and the automatic backups are: the only two places
+ * the app shows a real path (Mac-5a); every message says "the data folder" instead.
+ */
+export interface DataPaths {
+  readonly file: string;
+  readonly backups: string;
+}
+
+/**
+ * The paths under the data folder Rust gave (`data_folder`), with `/` on macOS, whose paths start
+ * with it, `\` on Windows; a folder ends with its separator.
+ */
+export function dataPaths(folder: string): DataPaths {
+  const separator = folder.startsWith('/') ? '/' : '\\';
+  const under = (name: string) => `${folder}${separator}${name}`;
+  return { file: under(DB_FILE), backups: `${under(BACKUP_DIR)}${separator}` };
+}
+
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
 const newPage = () => toHex(crypto.getRandomValues(new Uint8Array(16)));
 
@@ -83,6 +106,9 @@ export function tauriStorage(
     },
     async latestBackup() {
       return ((await invoke('db_latest_backup')) as string | null) ?? undefined;
+    },
+    async dataFolder() {
+      return (await invoke('data_folder')) as string;
     },
     async openFolder(kind) {
       await invoke('open_folder', { kind });

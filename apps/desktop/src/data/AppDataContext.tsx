@@ -27,7 +27,8 @@ export function useDatabase(): Database {
  */
 export function useQuery<T>(read: (db: Database) => T): T {
   const data = useAppData();
-  const revision = useSyncExternalStore(data.subscribe, data.revision);
+  // The same snapshot without a DOM, so a test can render a screen to markup.
+  const revision = useSyncExternalStore(data.subscribe, data.revision, data.revision);
   // `revision` is the point: the database object stays the same while its rows change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => read(data.db()), [data, read, revision]);
@@ -50,7 +51,7 @@ export function useTables(): Tables {
  */
 export function useSaveStatus(): SaveStatus {
   const { saves } = useAppData();
-  return useSyncExternalStore(saves.subscribe, saves.status);
+  return useSyncExternalStore(saves.subscribe, saves.status, saves.status);
 }
 
 /**

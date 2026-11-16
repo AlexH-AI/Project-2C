@@ -34,16 +34,44 @@ pub fn data_dir() -> io::Result<PathBuf> {
     static CHOSEN: OnceLock<PathBuf> = OnceLock::new();
     chosen_once(&CHOSEN, || {
         let exe = std::env::current_exe()?;
-        let portable = beside(&exe).is_ok_and(|dir| dir.is_dir());
-        choose_data_dir(Launch {
-            windows: cfg!(windows),
-            debug: cfg!(debug_assertions),
-            exe,
-            portable,
-            local_app_data: std::env::var_os("LOCALAPPDATA"),
-            home: std::env::var_os("HOME"),
-        })
+        choose_data_dir(launch(cfg!(windows), cfg!(debug_assertions), exe)?)
     })
+}
+
+/// What the data folder of a run of `exe` depends on, read from the system. Only a release exe on
+/// Windows has a portable mode, so only it looks for `Project2C-data` ([`portable`]), and its error
+/// is the data folder's: elsewhere a `Project2C-data` it cannot read is no reason to fail.
+fn launch(windows: bool, debug: bool, exe: PathBuf) -> io::Result<Launch> {
+    let portable = windows && !debug && portable(&exe)?;
+    Ok(Launch {
+        windows,
+        debug,
+        exe,
+        portable,
+        local_app_data: std::env::var_os("LOCALAPPDATA"),
+        home: std::env::var_os("HOME"),
+    })
+}
+
+/// Whether a folder `Project2C-data` is next to `exe`: the portable mode of the exe on Windows.
+/// Nothing there, or anything else by that name, is no. One the system cannot read is an error, as
+/// a missing variable is, so the data never goes silently to the installed app's folder (L176): a
+/// link that leads nowhere too (a junction to a deleted folder, or to a drive pulled out), which
+/// the system reports as not found.
+fn portable(exe: &Path) -> io::Result<bool> {
+    let dir = beside(exe)?;
+    match fs::metadata(&dir) {
+        Ok(found) => Ok(found.is_dir()),
+        Err(error) if error.kind() == ErrorKind::NotFound => match fs::symlink_metadata(&dir) {
+            Ok(_) => Err(io::Error::new(
+                ErrorKind::NotFound,
+                format!("{DATA_DIR_BESIDE} next to the exe leads nowhere: {error}"),
+            )),
+            Err(none) if none.kind() == ErrorKind::NotFound => Ok(false),
+            Err(other) => Err(other),
+        },
+        Err(error) => Err(error),
+    }
 }
 
 /// The folder kept in `chosen`, or the one `choose` gives, kept there for the rest of the run: a
@@ -60,18 +88,19 @@ fn chosen_once(
     Ok(chosen.get_or_init(|| dir).clone())
 }
 
-/// What the data folder depends on, read from the system by [`data_dir`]: passed in, so every
+/// What the data folder depends on, read from the system by [`launch`]: passed in, so every
 /// branch of [`choose_data_dir`] is tested on both platforms.
 struct Launch {
     windows: bool,
     debug: bool,
     /// The running executable.
     exe: PathBuf,
-    /// Whether a folder `Project2C-data` is next to the executable.
+    /// Whether a folder `Project2C-data` is next to the executable ([`portable`]); looked for by the
+    /// release exe on Windows only, false elsewhere.
     portable: bool,
-    /// `%LOCALAPPDATA%`, read on Windows only.
+    /// `%LOCALAPPDATA%`: read on every platform, used by the installed app on Windows only.
     local_app_data: Option<OsString>,
-    /// `$HOME`, read on macOS only.
+    /// `$HOME`: read on every platform, used on macOS only.
     home: Option<OsString>,
 }
 
@@ -353,6 +382,122 @@ mod tests {
             assert_eq!(error.kind(), ErrorKind::NotFound);
             assert_eq!(error.to_string(), "HOME is missing or not an absolute path");
         }
+    }
+
+    /// A folder in the system's temporary folder, removed with what it holds when this drops.
+    struct TempDir(PathBuf);
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn only_a_project2c_data_folder_next_to_the_exe_is_the_portable_mode() {
+        let root =
+            TempDir(std::env::temp_dir().join(format!("p2c-portable-{}", std::process::id())));
+        fs::create_dir_all(&root.0).unwrap();
+        let exe = root.0.join("project2c.exe");
+        assert!(!portable(&exe).unwrap());
+        // Anything else by that name is no folder: the installed app's data, as before.
+        fs::write(root.0.join("Project2C-data"), b"").unwrap();
+        assert!(!portable(&exe).unwrap());
+        fs::remove_file(root.0.join("Project2C-data")).unwrap();
+        fs::create_dir(root.0.join("Project2C-data")).unwrap();
+        assert!(portable(&exe).unwrap());
+        // No folder above the exe either: not found, so no portable folder.
+        assert!(!portable(&root.0.join("gone").join("project2c.exe")).unwrap());
+        assert_eq!(
+            portable(Path::new("")).unwrap_err().to_string(),
+            "exe has no parent folder"
+        );
+        // A `Project2C-data` the system cannot read is an error, never the installed app's folder
+        // in its place (L176): here a path through a file, `ENOTDIR` on macOS. Windows reports that
+        // path as not found, hence macOS only.
+        #[cfg(not(windows))]
+        {
+            let file = root.0.join("file");
+            fs::write(&file, b"").unwrap();
+            let error = portable(&file.join("project2c.exe")).unwrap_err();
+            assert_ne!(error.kind(), ErrorKind::NotFound);
+        }
+    }
+
+    /// A link at `link` to the folder `target`: a junction on Windows (`mklink /J` needs no
+    /// privilege, unlike a symbolic link), a symbolic link on macOS.
+    fn link_folder(target: &Path, link: &Path) {
+        #[cfg(windows)]
+        {
+            let cmd = PathBuf::from(std::env::var_os("SystemRoot").unwrap())
+                .join("System32")
+                .join("cmd.exe");
+            let made = Command::new(cmd)
+                .args(["/D", "/C", "mklink", "/J"])
+                .arg(link)
+                .arg(target)
+                .stdout(Stdio::null())
+                .status()
+                .unwrap();
+            assert!(made.success());
+        }
+        #[cfg(not(windows))]
+        std::os::unix::fs::symlink(target, link).unwrap();
+    }
+
+    /// `root` with a `Project2C-data` link to a folder already removed (a junction to a deleted
+    /// folder, or to the drive of a USB stick pulled out); returns the exe next to it.
+    fn beside_a_link_to_nowhere(root: &Path) -> PathBuf {
+        let target = root.join("target");
+        fs::create_dir_all(&target).unwrap();
+        link_folder(&target, &root.join("Project2C-data"));
+        let exe = root.join("project2c.exe");
+        assert!(portable(&exe).unwrap());
+        fs::remove_dir(&target).unwrap();
+        exe
+    }
+
+    #[test]
+    fn a_project2c_data_link_that_leads_nowhere_is_an_error_not_no_folder() {
+        // The system says "not found" for what the link leads to, though the link is there: the
+        // data must not go silently to the installed app's folder (L176, review of PR 1348).
+        let root = TempDir(std::env::temp_dir().join(format!("p2c-link-{}", std::process::id())));
+        let exe = beside_a_link_to_nowhere(&root.0);
+        let error = portable(&exe).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::NotFound);
+        assert!(
+            error
+                .to_string()
+                .starts_with("Project2C-data next to the exe leads nowhere: "),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn only_a_release_exe_on_windows_looks_for_its_portable_folder() {
+        // Its error is the data folder's, so the app does not start (L176); a debug build and
+        // macOS never look, so the same link is no reason for them to fail.
+        let root = TempDir(std::env::temp_dir().join(format!("p2c-launch-{}", std::process::id())));
+        let exe = beside_a_link_to_nowhere(&root.0);
+        let failed = launch(true, false, exe.clone())
+            .err()
+            .map(|error| error.kind());
+        assert_eq!(failed, Some(ErrorKind::NotFound));
+        for (windows, debug) in [(true, true), (false, false), (false, true)] {
+            assert!(!launch(windows, debug, exe.clone()).unwrap().portable);
+        }
+        let folder = root.0.join("exe");
+        fs::create_dir_all(folder.join("Project2C-data")).unwrap();
+        assert!(
+            launch(true, false, folder.join("project2c.exe"))
+                .unwrap()
+                .portable
+        );
+        assert!(
+            !launch(false, false, folder.join("project2c.exe"))
+                .unwrap()
+                .portable
+        );
     }
 
     #[test]

@@ -52,11 +52,16 @@ export interface StoragePort {
   writeExport(name: string, bytes: Uint8Array): Promise<string>;
   /** The name of the newest file in `backups\`; `undefined` when there is none. */
   latestBackup(): Promise<string | undefined>;
-  /** Shows `exports\` or `backups\` in Explorer. */
+  /** Shows `exports\` or `backups\` in Explorer, in Finder on macOS. */
   openFolder(kind: DataFolder): Promise<void>;
+  /**
+   * The data folder of this run, which depends on the platform and the mode (ADR-0019 §2): asked
+   * once the file opened, so Rust has chosen it already.
+   */
+  dataFolder(): Promise<string>;
 }
 
-/** The folders of `Project2C-data\` that Settings → Data opens. */
+/** The folders of the data folder that Settings → Data opens. */
 export type DataFolder = 'exports' | 'backups';
 
 export interface ExportedBackup {
@@ -128,6 +133,11 @@ export interface AppData {
   run<T>(command: (db: Database) => T): T;
   /** True in the exe (saved to a file, backed up); false in web mode (in memory only). */
   readonly hasFile: boolean;
+  /**
+   * The data folder of the exe (`StoragePort.dataFolder`), the same for the whole run; `undefined`
+   * in web mode.
+   */
+  readonly folder: string | undefined;
   /**
    * The saves of the database file, and the one store of the save state (`status()`). A replace
    * counts as saving from its call until it ends, the new data saved or the replace refused. Web
@@ -375,6 +385,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   ): Promise<Database> => openFrom(await demoData(anchor, aiSettings, currency));
 
   const stored = await storage?.load();
+  const folder = await storage?.dataFolder();
   let db: Database;
   if (stored && storage) {
     let release!: () => void;
@@ -465,6 +476,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     tables: () => (tables ??= readTables(db)),
     run,
     hasFile: storage !== undefined,
+    folder,
     saves,
     today,
     async reloadDemoData() {

@@ -6,18 +6,25 @@ interface Press {
   ctrlKey?: boolean;
   shiftKey?: boolean;
   altKey?: boolean;
+  /** ⌘ on macOS (the Windows key on Windows). */
+  metaKey?: boolean;
 }
 
-/** Presses `press` on a page that blocks the reload keys; true when the page kept the key. */
-function blocked(press: Press): boolean {
+/**
+ * Presses `press` on a page that blocks the reload keys, in `node` when given (else on the page
+ * itself, no text field); true when the page kept the key.
+ */
+function blocked(press: Press, node?: Node): boolean {
   const page = new EventTarget();
   blockReload(page);
   const event = Object.assign(new Event('keydown', { cancelable: true }), {
     ctrlKey: false,
     shiftKey: false,
     altKey: false,
+    metaKey: false,
     ...press,
   });
+  if (node) Object.defineProperty(event, 'target', { value: inPage(node) });
   page.dispatchEvent(event);
   return event.defaultPrevented;
 }
@@ -59,17 +66,19 @@ function matches(node: Node, list: string): boolean {
 function menuBlocked(node: Node): boolean {
   const page = new EventTarget();
   blockReload(page);
-  const target = {
-    closest: (list: string) => {
-      for (let at: Node | undefined = node; at; at = at.parent) if (matches(at, list)) return at;
-      return null;
-    },
-  };
   const event = new Event('contextmenu', { cancelable: true });
-  Object.defineProperty(event, 'target', { value: target });
+  Object.defineProperty(event, 'target', { value: inPage(node) });
   page.dispatchEvent(event);
   return event.defaultPrevented;
 }
+
+/** `node` as the target of an event: the page reads it with `closest`, as in a browser. */
+const inPage = (node: Node) => ({
+  closest: (list: string) => {
+    for (let at: Node | undefined = node; at; at = at.parent) if (matches(at, list)) return at;
+    return null;
+  },
+});
 
 const input = (type?: string): Node => ({ tag: 'input', attributes: type ? { type } : {} });
 
@@ -148,6 +157,39 @@ describe('blockReload', () => {
     expect(blocked({ key: 'BrowserRefresh' })).toBe(true);
   });
 
+  it('keeps ⌘R, ⌘⇧R and ⌘[ / ⌘] from reloading the app or leaving the screen on macOS (Mac-5a)', () => {
+    expect(blocked({ key: 'r', metaKey: true })).toBe(true);
+    expect(blocked({ key: 'R', metaKey: true, shiftKey: true })).toBe(true);
+    expect(blocked({ key: '[', metaKey: true })).toBe(true);
+    expect(blocked({ key: ']', metaKey: true })).toBe(true);
+    // In a text field too: there they neither type nor move the caret.
+    expect(blocked({ key: 'r', metaKey: true }, input('text'))).toBe(true);
+    expect(blocked({ key: '[', metaKey: true }, { tag: 'textarea' })).toBe(true);
+  });
+
+  it('keeps ⌘← / ⌘→ from leaving the screen, but leaves them to a text field, where they move the caret to the start or end of the line (Mac-5a)', () => {
+    expect(blocked({ key: 'ArrowLeft', metaKey: true })).toBe(true);
+    expect(blocked({ key: 'ArrowRight', metaKey: true }, { tag: 'div' })).toBe(true);
+    expect(blocked({ key: 'ArrowLeft', metaKey: true }, input('checkbox'))).toBe(true);
+    const editable: Node = { tag: 'div', attributes: { contenteditable: '' } };
+    for (const field of [
+      input(),
+      input('text'),
+      { tag: 'textarea' },
+      { tag: 'b', parent: editable },
+    ]) {
+      expect(blocked({ key: 'ArrowLeft', metaKey: true }, field), field.tag).toBe(false);
+      expect(blocked({ key: 'ArrowRight', metaKey: true }, field), field.tag).toBe(false);
+      expect(blocked({ key: 'ArrowRight', metaKey: true, shiftKey: true }, field)).toBe(false);
+    }
+  });
+
+  it('still blocks the keys of Windows in a text field, where they do not move the caret', () => {
+    expect(blocked({ key: 'r', ctrlKey: true }, input('text'))).toBe(true);
+    expect(blocked({ key: 'F5' }, { tag: 'textarea' })).toBe(true);
+    expect(blocked({ key: 'ArrowLeft', altKey: true }, input('text'))).toBe(true);
+  });
+
   it('leaves every other key alone, typing an r included', () => {
     expect(blocked({ key: 'r' })).toBe(false);
     expect(blocked({ key: 'R', shiftKey: true })).toBe(false);
@@ -161,5 +203,8 @@ describe('blockReload', () => {
     expect(blocked({ key: 'ArrowRight', shiftKey: true })).toBe(false);
     expect(blocked({ key: 'ArrowLeft', ctrlKey: true })).toBe(false);
     expect(blocked({ key: 'ArrowLeft', ctrlKey: true, altKey: true })).toBe(false);
+    // ⌘ with any other key: copy, paste, select all.
+    expect(blocked({ key: 'c', metaKey: true })).toBe(false);
+    expect(blocked({ key: 'a', metaKey: true }, input('text'))).toBe(false);
   });
 });

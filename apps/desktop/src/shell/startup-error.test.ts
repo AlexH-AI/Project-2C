@@ -21,7 +21,7 @@ describe('startupMessage', () => {
     const cause = 'There is not enough space on the disk. (os error 112)';
     expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause }))).toEqual({
       title: 'Không sao lưu được file dữ liệu',
-      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản Windows đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản người dùng của máy đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
       detail: 'There is not enough space on the disk. (os error 112)',
     });
   });
@@ -29,7 +29,7 @@ describe('startupMessage', () => {
   it('says the disk is full when the startup backup found no room (DR-57)', () => {
     expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause: 'DISK_FULL' }))).toEqual({
       title: 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
-      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports), rồi đóng cửa sổ này và mở lại app.',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu trước khi mở nhưng ổ đĩa chứa thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu), rồi đóng cửa sổ này và mở lại app.',
     });
   });
 
@@ -56,14 +56,14 @@ describe('startupMessage', () => {
       'FILE_IN_USE',
       {
         title: 'File dữ liệu đang bị chương trình khác giữ',
-        help: 'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục dữ liệu của app: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
       },
     ],
     [
       'ACCESS_DENIED',
       {
         title: 'App không có quyền ghi vào thư mục dữ liệu',
-        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi và xóa file trong đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) và các file trong đó không chỉ đọc hay bị khóa (macOS: mục Locked ở Get Info của Finder), tài khoản người dùng của máy đang dùng được quyền ghi và xóa file trong đó (exe portable chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục của exe sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
       },
     ],
   ])('says the file is whole when it is out of reach (%s, DR6-07)', (error, expected) => {
@@ -95,7 +95,7 @@ describe('startupMessage', () => {
   it('keeps the open-failed message and the detail for any other error', () => {
     expect(startupMessage('The system cannot find the path specified. (os error 3)')).toEqual({
       title: 'Không mở được file dữ liệu',
-      help: expect.stringContaining('Project2C-data\\backups') as string,
+      help: expect.stringContaining('thư mục backups của thư mục dữ liệu') as string,
       detail: 'The system cannot find the path specified. (os error 3)',
     });
     expect(startupMessage(new Error('ALREADY_OPEN elsewhere'))).toMatchObject({

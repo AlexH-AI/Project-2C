@@ -1,7 +1,8 @@
 /**
  * OpenCode through the Rust AI commands (spec Phase 5 §5.1, ADR-0009 D-1): the key stays in the
- * Windows Credential Manager and the webview never talks to the network. Web mode has no Rust, so
- * no client: OpenCode is off there (§4.1).
+ * system's key store, the Credential Manager on Windows and the Keychain on macOS (ADR-0019 §4),
+ * and the webview never talks to the network. Web mode has no Rust, so no client: OpenCode is off
+ * there (§4.1).
  */
 import {
   AiError,

@@ -108,6 +108,13 @@ fn export_write(request: Request<'_>) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// The data folder of this run (`platform::data_dir`, ADR-0019 §2): Settings → Data shows where the
+/// file and its backups are, as it depends on the platform and the mode the exe runs in.
+#[tauri::command(async)]
+fn data_folder() -> Result<String, String> {
+    Ok(data_dir()?.to_string_lossy().into_owned())
+}
+
 /// The name of the newest automatic backup (Settings → Data), `null` when there is none.
 #[tauri::command(async)]
 fn db_latest_backup() -> Result<Option<String>, String> {
@@ -182,6 +189,7 @@ pub fn run() {
             db_save,
             db_backup,
             db_latest_backup,
+            data_folder,
             export_write,
             open_folder,
             ai_complete,
@@ -192,4 +200,16 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running Project-2C");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn data_folder_is_the_data_folder_of_the_platform() {
+        // Settings → Data shows the real place of the file and the backups (Mac-5a).
+        let folder = platform::data_dir().unwrap();
+        assert_eq!(data_folder().unwrap(), folder.to_string_lossy());
+    }
 }
