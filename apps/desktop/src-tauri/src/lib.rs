@@ -151,7 +151,8 @@ async fn ai_complete(
     .unwrap_or_else(|_| Err(ai::AiError::new(ai::AI_BAD_REQUEST)))
 }
 
-/// Stores the OpenCode key, trimmed, in the Credential Manager; no command reads it back.
+/// Stores the OpenCode key, trimmed, in the system's key store (the Credential Manager, macOS's
+/// Keychain); no command reads it back.
 #[tauri::command(async)]
 fn ai_key_set(key: String) -> Result<(), ai::AiError> {
     ai::set_key(&ai::key_entry()?, &key)
