@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from './fixtures';
-import { asExe, createKycCustomer, trackConsoleErrors } from './support';
+import { asExe, createKycCustomer, pressButton, trackConsoleErrors } from './support';
 
 // Cài đặt → Thùng rác (spec Phase 6 §4.2; mockup trash.html 11a, 11e). The seed deletes nothing,
 // and the e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -737,7 +737,7 @@ test('a purge refused because the last save failed says so and changes nothing, 
   await openTrash(page);
   await expect(table(page).getByRole('row')).toHaveCount(2);
 
-  await purgeButton(page).click();
+  await pressButton(purgeButton(page));
   const dialog = purgeDialog(page);
   await purgeWord(page).fill('DỌN SẠCH');
   await dialog.getByRole('button', { name: 'Backup rồi dọn sạch' }).click();

@@ -7,6 +7,8 @@ import {
   discoveryOutput,
   lowestContrast,
   panelOf,
+  pressButton,
+  tabKey,
   useOpenCode,
 } from './support';
 
@@ -193,7 +195,7 @@ async function retryHeld(page: Page, team: string) {
     window.exe.failSaves = false;
     window.exe.holdSaves();
   });
-  await warning(page).getByRole('button', { name: 'Thử lại' }).click();
+  await pressButton(warning(page).getByRole('button', { name: 'Thử lại' }));
 }
 
 test('"Thử lại" leaves the focus where the user moved it while the save ran, and gives the heading one that fell to the page (DR6-146)', async ({
@@ -204,7 +206,7 @@ test('"Thử lại" leaves the focus where the user moved it while the save ran,
 
   await retryHeld(page, 'Bình Minh 2');
   // On to the screen's first button while it saves.
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tabKey(page));
   const moved = page.getByRole('button', { name: '+ Nhân sự' });
   await expect(moved).toBeFocused();
   await page.evaluate(() => window.exe.releaseSaves());

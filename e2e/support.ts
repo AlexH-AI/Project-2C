@@ -162,6 +162,39 @@ export async function pickTeam(page: Page, name: string) {
   await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
 }
 
+/** The page runs on Playwright's WebKit: the `webkit` project, on a Mac (Mac-7). */
+const onWebKit = (page: Page) => page.context().browser()?.browserType().name() === 'webkit';
+
+/**
+ * The key that moves the focus on to the next control of any kind (`Shift+` before it: back). Tab
+ * on Windows. On macOS Tab alone reaches only text fields and lists unless Keyboard navigation is
+ * on, and Option+Tab reaches every control, buttons and links too (WebKit, as Safari; Mac-7).
+ */
+export const tabKey = (page: Page) => (onWebKit(page) ? 'Alt+Tab' : 'Tab');
+
+/** The keys that put the caret at the end of a text field: Ctrl+End on Windows, ⌘↓ on macOS. */
+export const endKey = (page: Page) => (onWebKit(page) ? 'Meta+ArrowDown' : 'Control+End');
+
+/**
+ * Presses `button` as a person who goes on from it with the keyboard. A click on Windows, which
+ * gives the button the focus. On macOS a click gives a button no focus (WebKit, as Safari), so
+ * there it is the keyboard's way: the focus on it, then Enter (Mac-7).
+ */
+export async function pressButton(button: Locator) {
+  if (onWebKit(button.page())) await button.press('Enter');
+  else await button.click();
+}
+
+/**
+ * Opens the screen at `path` (`/#/…`) as `page.goto` does on Chromium: a page already at that
+ * address stays as it is. WebKit loads such a page again, which drops the web build's data, kept in
+ * memory only (Mac-7).
+ */
+export async function gotoScreen(page: Page, path: string) {
+  const here = page.url();
+  if (!URL.canParse(path, here) || new URL(path, here).href !== here) await page.goto(path);
+}
+
 /**
  * A file of the e2e server that the server refused to connect for, as Edge logs it. On the Windows
  * runner the server now and then refuses one connection of the burst a page load makes, on the
@@ -370,7 +403,7 @@ declare global {
  * the first RM when left out.
  */
 export async function createKycCustomer(page: Page, name: string, rm?: string) {
-  await page.goto('/#/customers');
+  await gotoScreen(page, '/#/customers');
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);

@@ -1,14 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
-import {
-  addKycNote,
-  createKycCustomer,
-  discoveryFacts,
-  panelOf,
-  right,
-  scrolls,
-  sideways,
-} from './support';
+import { addKycNote, createKycCustomer, discoveryFacts, panelOf, right, scrolls } from './support';
 
 // DR6-148: a name has no length cap (the commands refuse only an empty one), so a name with no
 // space is valid input. Where it shows, it breaks inside its box rather than pushing the page, a
@@ -20,11 +12,29 @@ const WIDTHS = [1100, 1440] as const;
 const unbroken = (first: string, length: number) => first + 'x'.repeat(length - 1);
 
 /**
+ * What pushes the page sideways: when it scrolls sideways, the elements whose box ends past the
+ * window, with that right edge (WebKit, Mac-7); nothing when it does not.
+ */
+const pastTheWindow = (page: Page) =>
+  page.evaluate(() => {
+    const width = document.documentElement.scrollWidth;
+    if (width <= window.innerWidth) return [];
+    const past = [...document.body.querySelectorAll('*')].flatMap((node) => {
+      const edge = Math.round(node.getBoundingClientRect().right);
+      if (edge <= window.innerWidth) return [];
+      const text = (node.getAttribute('aria-label') ?? node.textContent ?? '').slice(0, 40);
+      const kind = `${node.tagName.toLowerCase()}.${node.getAttribute('class') ?? ''}`;
+      return [`${kind} "${text}" ends at ${edge}px`];
+    });
+    return past.length > 0 ? past.slice(0, 12) : [`the page, ${width}px wide`];
+  });
+
+/**
  * Neither the page nor the screen under the top bar scrolls sideways, once the window just made
  * narrower has settled: a chart keeps its width until it is drawn again.
  */
 async function expectNoSideways(page: Page, at: string) {
-  await expect.poll(() => sideways(page), { message: `page at ${at}` }).toBe(false);
+  await expect.poll(() => pastTheWindow(page), { message: `page at ${at}` }).toEqual([]);
   await expect.poll(() => scrolls(page.locator('main')), { message: `main at ${at}` }).toBe(false);
 }
 

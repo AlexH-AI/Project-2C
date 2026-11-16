@@ -8,6 +8,7 @@ import {
   panelOf,
   pickTeam,
   stubChatGptWeb,
+  tabKey,
 } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -435,7 +436,7 @@ test('a coordinator is added by "Thêm", not by arrows on the list', async ({ pa
   await pick.press('ArrowDown');
   await expect(chips).toHaveCount(before);
   const name = (await pick.locator('option:checked').textContent()) ?? '';
-  await pick.press('Tab');
+  await pick.press(tabKey(page));
   await page.keyboard.press('Enter');
   await expect(dialog.getByRole('button', { name: `Bỏ ${name}` })).toBeVisible();
   await expect(pick).toHaveValue('');

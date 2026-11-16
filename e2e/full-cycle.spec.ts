@@ -4,6 +4,7 @@ import {
   asExe,
   createKycCustomer,
   discoveryFacts,
+  gotoScreen,
   trackConsoleErrors,
 } from './support';
 
@@ -65,7 +66,7 @@ async function openSettings(page: Page, section: 'Dữ liệu' | 'Thùng rác') 
 
 /** Books an appointment of the customer on `day` from Lịch hẹn, which opens it in the detail. */
 async function book(page: Page, day: string, time?: string) {
-  await page.goto('/#/appointments');
+  await gotoScreen(page, '/#/appointments');
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(CUSTOMER);
