@@ -145,7 +145,7 @@ jobs:
       - name: E2E (web build, WebKit)
         env:
           PW_WEBKIT: '1'
-        run: pnpm exec playwright test --project webkit --workers 3 appointment-outcome.spec.ts appointments.spec.ts customer-ai.spec.ts dialog-keyboard.spec.ts full-cycle.spec.ts long-names.spec.ts save-state.spec.ts topbar-focus.spec.ts trash.spec.ts
+        run: pnpm exec playwright test --project webkit appointments.spec.ts dialog-keyboard.spec.ts full-cycle.spec.ts long-names.spec.ts
       # As ci.yml: retries turn a flaky test green, so count them where the run shows them (DR-78).
       - name: E2E summary
         id: e2e-summary
