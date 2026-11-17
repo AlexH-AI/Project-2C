@@ -330,3 +330,39 @@ test('the save warning and the close question name the cause of a failed save th
   }
   expect(await page.evaluate(() => window.exe.destroyed)).toBe(false);
 });
+
+// TEMP (T-459, Mac-7b): where Option+Tab takes the focus in the dialog of a running reload, on
+// WebKit only. Fails on purpose, so the run names each stop; removed before review.
+test('TEMP: the stops of Option+Tab in a running dialog (WebKit)', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'webkit', 'diagnosis of WebKit only');
+  await asExe(page);
+  await page.goto('/#/settings');
+  await page.evaluate(() => window.exe.holdBackup());
+  await pressButton(page.getByRole('button', { name: 'Nạp lại…' }));
+  const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
+  await dialog.getByRole('textbox', { name: /^Gõ NẠP LẠI/ }).fill('NẠP LẠI');
+  await page.keyboard.press('Enter');
+  await expect(dialog.getByRole('button', { name: 'Đang nạp lại…' })).toBeFocused();
+  const focus = () =>
+    page.evaluate(() => {
+      const node = document.activeElement;
+      const name = (node?.getAttribute('aria-label') ?? node?.textContent ?? '').slice(0, 20);
+      const where = node?.closest('dialog') ? 'in dialog' : 'outside dialog';
+      return `${document.hasFocus() ? 'page' : 'NOT page'}: ${node?.tagName.toLowerCase()} "${name}" ${where} tabIndex=${(node as HTMLElement | null)?.tabIndex}`;
+    });
+  const stops = [`start: ${await focus()}`];
+  for (let press = 1; press <= 4; press++) {
+    await page.keyboard.press(tabKey(page));
+    stops.push(`Option+Tab ${press}: ${await focus()}`);
+  }
+  for (let press = 1; press <= 3; press++) {
+    await page.keyboard.press(`Shift+${tabKey(page)}`);
+    stops.push(`Shift+Option+Tab ${press}: ${await focus()}`);
+  }
+  stops.push(`dialog.tabIndex=${await dialog.evaluate((node) => (node as HTMLElement).tabIndex)}`);
+  await page.evaluate(() => window.exe.releaseBackup());
+  expect(stops).toEqual([]);
+});
