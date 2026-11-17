@@ -342,6 +342,28 @@ async function sweep(page: Page, at: string) {
   }
 }
 
+/** A picker of the top bar, a choice of 160 letters in it, is cut at its cap (`max-w-80`). */
+async function expectCapped(picker: Locator) {
+  const { width } = (await picker.boundingBox())!;
+  expect(width, 'the cap of a picker').toBeLessThanOrEqual(320);
+}
+
+/**
+ * A name of 160 letters in a cell of a table (`CELL_NAME`) breaks at the cap of a name, 240 px, so
+ * the table keeps its other columns in the window.
+ */
+async function expectNameCapped(page: Page, name: string, at: string) {
+  const box = page.getByRole('table').getByText(name, { exact: true }).first();
+  await expect(box, at).toBeVisible();
+  const width = await box.evaluate((node) => {
+    // The box of the name: the cell's own block, whatever the name is written in (a link, text).
+    const block = node.closest('td')!.firstElementChild!;
+    return block.getBoundingClientRect().width;
+  });
+  expect(width, at).toBeLessThanOrEqual(240);
+  expect((await lineTops(box, name)).length, `lines of ${at}`).toBeGreaterThan(1);
+}
+
 /** Each choice of the radio group `name` (a view, a table) in turn, swept. */
 async function sweepEach(page: Page, name: string, at: string) {
   const choices = page.getByRole('radiogroup', { name }).getByRole('radio');
@@ -361,6 +383,7 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   const rm = unbroken('R', 160);
   const team = unbroken('T', 160);
   const model = unbroken('W', 100);
+  const lead = unbroken('L', 160);
   const scopes: readonly (readonly [ScopeKind, string?])[] = [
     ['Toàn bộ'],
     ['Team', team],
@@ -373,9 +396,9 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
       .getByRole('radio', { name: kind })
       .click();
     if (kind === 'Team') {
-      await page
-        .getByRole('combobox', { name: 'Team của góc nhìn' })
-        .selectOption({ label: pick! });
+      const picker = page.getByRole('combobox', { name: 'Team của góc nhìn' });
+      await picker.selectOption({ label: pick! });
+      await expectCapped(picker);
     }
     if (kind === 'RM') {
       const picker = page.getByRole('combobox', { name: 'RM của góc nhìn' });
@@ -385,8 +408,12 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
       await picker.focus();
       await page.keyboard.type(rm.slice(0, 4));
       await expect(picker.locator('option:checked')).toHaveText(pick!);
-      // Narrower than the name, the picker says it whole on hover.
+      // Narrower than the name, the picker says it whole under the pointer (and only there: a
+      // title kept on it would be read as its description, DR6-187).
+      await expectCapped(picker);
+      await picker.hover();
       await expect(picker).toHaveAttribute('title', pick!);
+      await page.mouse.move(0, 0);
     }
   };
 
@@ -412,6 +439,8 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   const person = rows('people').find((row) => row.id === ours.rm_id)!;
   rows('teams').find((row) => row.id === person.team_id)!.name = team;
   person.name = rm;
+  // Someone who is no RM too: a name of 160 letters among those who coordinate (review of #1360).
+  rows('people').find((row) => row.role !== 'RM')!.name = lead;
   Object.assign(
     rows('ai_analyses').find((row) => row.customer_id === ours.id)!,
     {
@@ -433,6 +462,16 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
 
   // Lịch hẹn: the list and the detail of an appointment of the customer, in each scope.
   await open(page, 'Lịch hẹn');
+  // The filter of who coordinates sits in a box of its own width, narrower than the name picked:
+  // the name is cut in the field, and widens neither the page nor the screen. WebKit counts the
+  // cut text of a list in the scrolling width of whatever holds it (Mac-7b), so any list held
+  // narrower than its choice is swept, not only the capped pickers of the top bar.
+  const coordinator = page.getByRole('combobox', { name: 'Phối hợp' });
+  const leadChoice = await coordinator.locator('option', { hasText: lead }).textContent();
+  await coordinator.selectOption({ label: leadChoice! });
+  await expect(coordinator.locator('option:checked')).toHaveText(leadChoice!);
+  await sweep(page, 'Lịch hẹn, a coordinator of 160 letters');
+  await coordinator.selectOption({ index: 0 });
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
   await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(customer);
@@ -467,6 +506,10 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
         .click();
       await expect(page.getByRole('link', { name: customer })).toBeVisible();
       await sweep(page, `Khách hàng, ${view}, ${kind}`);
+      if (view === 'Bảng') {
+        await expectNameCapped(page, customer, `the customer of Khách hàng, ${kind}`);
+        await expectNameCapped(page, rm, `the RM of Khách hàng, ${kind}`);
+      }
     }
     // Tổng quan and Báo cáo open with the scope applied, no Lọc needed.
     await open(page, 'Tổng quan');
@@ -481,6 +524,25 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
     .click();
   await expect(page.getByRole('region', { name: `Thành viên team ${team}` })).toContainText(rm);
   await sweep(page, 'Team & nhân sự');
+  // "Sửa nhân sự" of the RM: the list Team of the dialog holds the team of 160 letters, cut in the
+  // field, which stays in the dialog; the dialog does not scroll sideways for it.
+  await page
+    .getByRole('region', { name: `Thành viên team ${team}` })
+    .getByRole('button', { name: `Sửa ${rm}`, exact: true })
+    .click();
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  const teamOfPerson = edit.getByRole('combobox', { name: /^Team/ });
+  await expect(teamOfPerson.locator('option:checked')).toHaveText(team);
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectNoSideways(page, `Sửa nhân sự at ${width}`);
+    expect(await scrolls(edit), `Sửa nhân sự at ${width}`).toBe(false);
+    expect(await right(teamOfPerson), `Team of Sửa nhân sự at ${width}`).toBeLessThanOrEqual(
+      await right(edit),
+    );
+  }
+  await edit.getByRole('button', { name: 'Hủy' }).click();
+  await expect(edit).toBeHidden();
   // Into Thùng rác, below: a team of 160 letters, its name the first line of "Bản ghi".
   const gone = unbroken('G', 160);
   await page.getByRole('button', { name: '+ Team' }).click();

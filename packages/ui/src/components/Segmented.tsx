@@ -14,7 +14,11 @@ interface SegmentedProps<T extends string> {
   size?: 'sm' | 'md';
 }
 
-/** Single-choice button group (ADR-0013 "segmented"): a radio group with arrow-key support. */
+/**
+ * Single-choice button group (ADR-0013 "segmented"; mockup components.html 03 "Nút trượt"): a radio
+ * group with arrow-key support. The chosen segment says so by its thumb, an element of its own
+ * under the label (which VA7a slides), and by its brighter text.
+ */
 export function Segmented<T extends string>({
   label,
   options,
@@ -39,7 +43,7 @@ export function Segmented<T extends string>({
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="inline-flex rounded-sm border border-border bg-surface-2 p-0.5"
+      className="inline-flex gap-0.5 rounded-segmented bg-fill-2 p-0.5"
     >
       {options.map((option) => {
         const checked = option.value === value;
@@ -51,11 +55,14 @@ export function Segmented<T extends string>({
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             onClick={() => onChange(option.value)}
-            className={`cursor-pointer rounded-sm px-3 py-1 ${size === 'md' ? 'text-md' : 'text-sm'} whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-              checked ? 'bg-surface-3 font-semibold text-fg' : 'text-fg-2 hover:text-fg'
+            className={`relative h-7 cursor-pointer rounded-control-sm px-3 ${size === 'md' ? 'text-md' : 'text-sm'} font-control whitespace-nowrap transition-colors duration-(--t-2) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              checked ? 'text-fg' : 'text-fg-2 hover:text-fg'
             }`}
           >
-            {option.label}
+            {checked && (
+              <span aria-hidden="true" className="thumb absolute inset-0 rounded-control-sm" />
+            )}
+            <span className="relative">{option.label}</span>
           </button>
         );
       })}

@@ -17,6 +17,26 @@ export interface AppWindow {
 }
 
 /**
+ * What answers each request to close the window. No request closes it: `close` does, once the save
+ * is settled. A click while `close` is under way starts no second one; it waits for that, or for
+ * the question to be answered or dismissed. Once `close` is over with the window still there, the
+ * question left unanswered or closing failed (review of PR 125), the next click tries again.
+ */
+export function closeRequests(close: () => Promise<void>) {
+  let closing = false;
+  return async (event: { preventDefault(): void }) => {
+    event.preventDefault();
+    if (closing) return;
+    closing = true;
+    try {
+      await close();
+    } finally {
+      closing = false;
+    }
+  };
+}
+
+/**
  * Exe only (T-057): closing the window first saves what is still waiting, a replace of the data
  * included (`flush`, review of PR 125), while the sidebar says "Đang lưu…"; and asks before
  * dropping changes the last save could not write, until a save succeeds (`askWhileFailed`).
@@ -27,26 +47,17 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
   const [answer, setAnswer] = useState<((choice: CloseChoice) => void) | null>(null);
 
   useEffect(() => {
-    let closing = false;
     let unlisten: (() => void) | undefined;
     let gone = false;
     void appWindow
-      .onCloseRequested(async (event) => {
-        // The window closes itself once the save is settled; a second click waits for that, or
-        // for the question to be answered or dismissed.
-        event.preventDefault();
-        if (closing) return;
-        closing = true;
-        try {
-          await closeAfterSaving(saves, {
+      .onCloseRequested(
+        closeRequests(() =>
+          closeAfterSaving(saves, {
             ask: () => askWhileFailed(saves, (choose) => setAnswer(() => choose)),
             close: () => appWindow.destroy(),
-          });
-        } finally {
-          // Only matters when closing failed (review of PR 125): the next click must try again.
-          closing = false;
-        }
-      })
+          }),
+        ),
+      )
       .then((stop) => {
         if (gone) stop();
         else unlisten = stop;

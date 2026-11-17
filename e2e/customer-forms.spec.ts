@@ -218,6 +218,8 @@ test('editing the profile says what saving records in KYC (5c)', async ({ page }
   await birth.fill('1985');
   await expect(kyc).toContainText('"Hồ sơ KH: năm sinh 1985"');
   await expect(kyc).toContainText('birthYear = 1985');
+  // A space of text after the chip: read aloud, it does not run into the sentence (DR6-187).
+  await expect(kyc).toContainText('birthYear = 1985 (dữ kiện đổi');
   await expect(kyc).toContainText('tạo phiên bản KYC mới');
   await expect(kyc).not.toContainText('không tạo');
 

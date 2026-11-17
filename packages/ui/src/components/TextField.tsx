@@ -1,5 +1,6 @@
 import { useId } from 'react';
-import { fieldNotes, type FieldNote } from './field-notes';
+import { ErrorMark } from './FieldMarks';
+import { describedBy as describedByAll, fieldNotes, type FieldNote } from './field-notes';
 
 interface TextFieldProps {
   label: string;
@@ -17,8 +18,11 @@ interface TextFieldProps {
    * of its description.
    */
   help?: string;
+  /** The id of a line outside the field that describes it too, read before the lines under it. */
+  describedBy?: string;
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
+  /** Shown but not changeable (mockup `.input.locked`: a dashed edge, no fill). */
   disabled?: boolean;
   /** Also marks the field for `Dialog`, which focuses it once open. */
   autoFocus?: boolean;
@@ -39,8 +43,9 @@ const NOTE_CLASS = {
 } as const satisfies Record<FieldNote['tone'], string>;
 
 /**
- * Labelled text input (mockup `.field`), one line unless `rows` is set, with its error, or what the
- * app read, and its help under it.
+ * Labelled text input (mockup components.html 02), one line unless `rows` is set, with its error,
+ * marked as one by more than its colour, or what the app read, and its help under it. Its edge and
+ * what shows it is typed in are those of the system (theme.css `field`).
  */
 export function TextField({
   label,
@@ -49,6 +54,7 @@ export function TextField({
   error,
   hint,
   help,
+  describedBy,
   required,
   disabled,
   autoFocus,
@@ -58,7 +64,7 @@ export function TextField({
   spellCheck,
 }: TextFieldProps) {
   const id = useId();
-  const { notes, describedBy } = fieldNotes(id, { error, hint, help });
+  const { notes, describedBy: lines } = fieldNotes(id, { error, hint, help });
   const Input = rows ? 'textarea' : 'input';
   return (
     <div className="flex flex-col gap-1">
@@ -80,17 +86,16 @@ export function TextField({
         onChange={(event) => onChange(event.target.value)}
         aria-required={required}
         aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
+        aria-describedby={describedByAll(describedBy, lines)}
         disabled={disabled}
         autoFocus={autoFocus}
         data-autofocus={autoFocus || undefined}
         autoComplete="off"
-        className={`rounded-md border bg-surface-0 px-2 py-1.5 text-fg placeholder:text-fg-3 focus-visible:outline-2 focus-visible:outline-accent ${
-          error ? 'border-danger' : 'border-border-control'
-        }`}
+        className="field min-h-9 rounded-field px-2.75 py-1.5"
       />
       {notes.map((note) => (
         <span key={note.tone} id={note.id} className={NOTE_CLASS[note.tone]}>
+          {note.tone === 'error' && <ErrorMark />}
           {note.text}
         </span>
       ))}

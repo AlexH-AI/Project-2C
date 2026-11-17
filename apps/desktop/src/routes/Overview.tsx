@@ -49,6 +49,9 @@ export function Overview() {
           <AppointmentsTile counts={counts} kind={applied.period.kind} />
         </div>
         <section aria-label={t('overview.kpis')} className="grid min-w-0 flex-1 grid-cols-3 gap-3">
+          {/* A heading of their own, read only: in the list of headings the six KPI are beside
+              the tile "Lịch hẹn", as on the screen, not under it (DR6-187). */}
+          <h2 className="sr-only">{t('overview.kpis')}</h2>
           {tiles.map((tile) => (
             <KpiCard key={tile.key} tile={tile} />
           ))}

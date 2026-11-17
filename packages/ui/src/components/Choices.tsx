@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { describedBy as describedByAll } from './field-notes';
 
 export interface Choice<T extends string> {
   value: T;
@@ -16,12 +17,15 @@ interface ChoicesProps<T extends string> {
   required?: boolean;
   /** Under the choices, e.g. why some are not selectable. */
   help?: string;
+  /** The id of a line outside the group that describes it too, read before its help. */
+  describedBy?: string;
 }
 
 /**
- * Labelled row of radio chips (mockup `.choices`, each a `.choice`: bold when on, struck out when
- * off); arrow keys move between the enabled ones. A radio group rather than a plain group, so
- * `required` reaches assistive technology as `aria-required`.
+ * Labelled row of radio pills (mockup components.html 03 "Viên chọn", each a `.choice`: gold with a
+ * heavier edge when on; struck out when it cannot be picked); arrow keys move between the enabled
+ * ones. A radio group rather than a plain group, so `required` reaches assistive technology as
+ * `aria-required`.
  */
 export function Choices<T extends string>({
   label,
@@ -30,6 +34,7 @@ export function Choices<T extends string>({
   onChange,
   required,
   help,
+  describedBy,
 }: ChoicesProps<T>) {
   const name = useId();
   return (
@@ -37,7 +42,7 @@ export function Choices<T extends string>({
       role="radiogroup"
       className="m-0 flex flex-col gap-1 border-0 p-0"
       aria-required={required}
-      aria-describedby={help && `${name}-help`}
+      aria-describedby={describedByAll(describedBy, help && `${name}-help`)}
     >
       <legend className="mb-1 p-0 font-medium">
         {label}
@@ -51,7 +56,7 @@ export function Choices<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-border-strong bg-surface-2 px-2.75 py-1.25 text-fg-2 has-checked:border-accent has-checked:bg-accent-soft has-checked:font-semibold has-checked:text-fg has-disabled:cursor-default has-disabled:line-through has-disabled:opacity-40 has-focus-visible:outline-2 has-focus-visible:outline-accent"
+            className="choice press relative inline-flex min-h-7.5 cursor-pointer items-center gap-1.5 rounded-chip px-3 has-disabled:cursor-default has-disabled:line-through has-disabled:opacity-40 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
           >
             <input
               type="radio"

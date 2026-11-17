@@ -23,3 +23,12 @@ export function fieldNotes(
   add('help', help);
   return { notes, describedBy: notes.map((note) => note.id).join(' ') || undefined };
 }
+
+/**
+ * The `aria-describedby` of a field that a line outside it describes too (`outside`, the id of that
+ * line: what a KYC field holds already, above the field for its new value): that line first, then
+ * the field's `own` lines.
+ */
+export function describedBy(outside: string | undefined, own: string | undefined) {
+  return [outside, own].filter(Boolean).join(' ') || undefined;
+}
