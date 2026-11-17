@@ -158,6 +158,12 @@ describe('the JS ↔ Rust storage contract', () => {
     expect(commandSource('db_open')).toContain('let dir = opened_dir(platform::data_dir())?;');
   });
 
+  it('gives the startup page the storage of the exe, which names the data folder (L205)', () => {
+    const main = readFileSync(new URL('../main.tsx', import.meta.url), 'utf8');
+    expect(main).toContain('const storage = isTauri() ? tauriStorage(invoke) : undefined;');
+    expect(main).toContain('render(await startupErrorPage(error, storage))');
+  });
+
   it('reads an empty reply of db_open as a first start, which Rust sends for no file', () => {
     expect(commandSource('db_open')).toContain('Response::new(bytes.unwrap_or_default())');
   });

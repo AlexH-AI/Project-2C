@@ -60,23 +60,38 @@ fn launch(windows: bool, debug: bool, exe: PathBuf) -> io::Result<Launch> {
 /// Whether a folder `Project2C-data` is next to `exe`: the portable mode of the exe on Windows.
 /// Nothing there, or anything else by that name, is no. One the system cannot read is an error, as
 /// a missing variable is, so the data never goes silently to the installed app's folder (L176): a
-/// link that leads nowhere too (a junction to a deleted folder, or to a drive pulled out), which
-/// the system reports as not found. That one's message is
-/// [`DATA_DIR_UNREACHABLE`](crate::storage::DATA_DIR_UNREACHABLE): the file is whole, so the
-/// startup page must not tell to copy a backup over it (L184).
+/// link that leads nowhere or out of reach too (a junction to a deleted folder, to a drive pulled
+/// out or not ready). That one's message is
+/// [`DATA_DIR_UNREACHABLE`](crate::storage::DATA_DIR_UNREACHABLE) (see [`unreadable`]): the file
+/// is whole, so the startup page must not tell to copy a backup over it (L184, L204).
 fn portable(exe: &Path) -> io::Result<bool> {
     let dir = beside(exe)?;
     match fs::metadata(&dir) {
         Ok(found) => Ok(found.is_dir()),
-        Err(error) if error.kind() == ErrorKind::NotFound => match fs::symlink_metadata(&dir) {
-            Ok(_) => Err(io::Error::new(
-                ErrorKind::NotFound,
-                crate::storage::DATA_DIR_UNREACHABLE,
-            )),
-            Err(none) if none.kind() == ErrorKind::NotFound => Ok(false),
-            Err(other) => Err(other),
-        },
-        Err(error) => Err(error),
+        Err(error) => unreadable(error, || fs::symlink_metadata(&dir).map(drop)),
+    }
+}
+
+/// What a `Project2C-data` that `fs::metadata` could not read means ([`portable`]): `error` is
+/// that read's error, and `entry` reads the entry itself without following a link
+/// (`fs::symlink_metadata`). Passed in, so every branch is tested without a drive. Anything there
+/// whose end cannot be reached, for any cause but the system refusing the app, is
+/// [`DATA_DIR_UNREACHABLE`](crate::storage::DATA_DIR_UNREACHABLE): what it leads to is gone or
+/// out of reach (a drive pulled out, or still in the machine but not ready, a network not reached;
+/// L204). The refusal stays as it is, for `db_open` to tell apart.
+fn unreadable(error: io::Error, entry: impl FnOnce() -> io::Result<()>) -> io::Result<bool> {
+    if error.kind() == ErrorKind::PermissionDenied {
+        return Err(error);
+    }
+    let not_found = error.kind() == ErrorKind::NotFound;
+    match entry() {
+        Ok(()) => Err(io::Error::new(
+            ErrorKind::NotFound,
+            crate::storage::DATA_DIR_UNREACHABLE,
+        )),
+        Err(none) if not_found && none.kind() == ErrorKind::NotFound => Ok(false),
+        Err(other) if not_found => Err(other),
+        Err(_) => Err(error),
     }
 }
 
@@ -487,6 +502,42 @@ mod tests {
         let exe = beside_a_link_to_nowhere(&root);
         let chosen = launch(true, false, exe).and_then(choose_data_dir);
         assert_eq!(crate::opened_dir(chosen).unwrap_err(), DATA_DIR_UNREACHABLE);
+    }
+
+    #[test]
+    fn a_project2c_data_there_that_leads_to_a_drive_out_of_reach_is_unreachable() {
+        // A link to a drive still in the machine but not ready (a memory card pulled out of its
+        // reader), or across a network not reached, fails with another kind than "not found": the
+        // file is whole all the same, so not the page that tells to copy a backup over it (L204).
+        for error in [
+            io::Error::other("not ready"),
+            io::Error::from(ErrorKind::NetworkUnreachable),
+        ] {
+            let unreachable = unreadable(error, || Ok(())).unwrap_err();
+            assert_eq!(unreachable.to_string(), DATA_DIR_UNREACHABLE);
+        }
+        // Nothing to read by that name either: the error stays as it is.
+        let gone = || Err(io::Error::from(ErrorKind::NotFound));
+        let error = unreadable(io::Error::other("not ready"), gone).unwrap_err();
+        assert_eq!(
+            (error.kind(), error.to_string()),
+            (ErrorKind::Other, "not ready".into())
+        );
+        // The system refusing the app stays as it is, for `db_open` to tell apart (`opened_dir`).
+        let refused = unreadable(io::Error::from(ErrorKind::PermissionDenied), || Ok(()));
+        assert_eq!(refused.unwrap_err().kind(), ErrorKind::PermissionDenied);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn db_open_says_the_file_is_whole_when_project2c_data_leads_to_a_drive_not_ready() {
+        // Windows `ERROR_NOT_READY`, which `std` sorts into no kind (review of PR 1362); 21 is
+        // another error on macOS.
+        let error = unreadable(io::Error::from_raw_os_error(21), || Ok(())).unwrap_err();
+        assert_eq!(
+            crate::opened_dir(Err(error)).unwrap_err(),
+            DATA_DIR_UNREACHABLE
+        );
     }
 
     #[test]

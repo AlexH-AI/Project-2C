@@ -11,8 +11,7 @@ import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
 import { appLanguage, setDataCurrency } from './i18n/language';
 import { blockReload } from './shell/block-reload';
-import { startupFolder } from './shell/startup-error';
-import { StartupError } from './shell/StartupError';
+import { startupErrorPage } from './shell/StartupError';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -57,6 +56,4 @@ async function start(): Promise<ReactNode> {
 }
 
 // The page names the data folder Rust chose, when it could choose one (L185).
-start().then(render, async (error: unknown) =>
-  render(<StartupError error={error} folder={await startupFolder(storage)} />),
-);
+start().then(render, async (error: unknown) => render(await startupErrorPage(error, storage)));

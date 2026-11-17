@@ -9,7 +9,7 @@ mod ai;
 mod platform;
 mod storage;
 
-use std::io::{self, ErrorKind};
+use std::io;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::ipc::{InvokeBody, Request, Response};
@@ -33,20 +33,14 @@ fn data_dir() -> Result<PathBuf, String> {
 }
 
 /// The data folder `db_open` opens (`chosen`, see `platform::data_dir`), with the error the startup
-/// page tells apart (L184): the system refusing the app the folder → [`storage::ACCESS_DENIED`], as
-/// in `storage::open`; a `Project2C-data` that leads nowhere is
-/// [`storage::DATA_DIR_UNREACHABLE`] already. Any other error stays as it is. Only `db_open` needs
-/// this: the folder is chosen once a run, so the commands after a start that opened the file never
-/// meet these errors. `data_folder`, which the startup page asks, meets them as they are, and the
-/// page then names the folder of each platform and mode instead.
+/// page tells apart (L184), by the one rule of `storage::open` (`storage::out_of_reach`, L204): the
+/// system refusing the app the folder → [`storage::ACCESS_DENIED`]; a `Project2C-data` that leads
+/// nowhere or out of reach is [`storage::DATA_DIR_UNREACHABLE`] already. Any other error stays as
+/// it is. Only `db_open` needs this: the folder is chosen once a run, so the commands after a start
+/// that opened the file never meet these errors. `data_folder`, which the startup page asks, meets
+/// them as they are, and the page then names the folder of each platform and mode instead.
 fn opened_dir(chosen: io::Result<PathBuf>) -> Result<PathBuf, String> {
-    chosen.map_err(|error| {
-        if error.kind() == ErrorKind::PermissionDenied {
-            storage::ACCESS_DENIED.to_owned()
-        } else {
-            error.to_string()
-        }
-    })
+    chosen.map_err(|error| storage::out_of_reach(error).to_string())
 }
 
 fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
@@ -266,6 +260,7 @@ mod test_support {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::ErrorKind;
 
     #[test]
     fn data_folder_is_the_data_folder_of_the_platform() {
@@ -280,6 +275,12 @@ mod tests {
         // tells to copy a backup over a file that is whole (L184).
         let refused = opened_dir(Err(io::Error::from(ErrorKind::PermissionDenied)));
         assert_eq!(refused.unwrap_err(), storage::ACCESS_DENIED);
+        // One rule with `storage::open` (`out_of_reach`, L204): a folder another program holds.
+        #[cfg(windows)]
+        assert_eq!(
+            opened_dir(Err(io::Error::from_raw_os_error(32))).unwrap_err(),
+            storage::FILE_IN_USE
+        );
         // Any other error stays as it is, and so does the folder.
         let missing = io::Error::new(ErrorKind::NotFound, "LOCALAPPDATA is missing");
         assert_eq!(
