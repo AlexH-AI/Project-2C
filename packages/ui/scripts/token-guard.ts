@@ -45,44 +45,60 @@ export function findTokenViolations(source: string): TokenViolation[] {
   return violations;
 }
 
-/**
- * A whole string, or piece of a template, that only joins two parts (`', '`, `${a}; ${b}`): what
- * `sep.list` and `sep.semicolon` hold. `: ` is joined by hand only in JSX (`JSX_JOINER`); in a
- * template it also joins technical text (the path and detail of a validator issue).
- */
-const JOINER = /^[,;] $/;
+/** The separators and marks of the i18n strings, and the `sep.*` that only join (`', '`, `' / '`). */
+export interface Marks {
+  marks: ReadonlyMap<string, TokenViolation['rule']>;
+  joiners: ReadonlySet<string>;
+}
 
-/** The call a whole string is an argument of (`text.split(', ')`, `names.join(', ')`). */
-const CALLEE = /([\w$]+)\s*\((?:[^()[\]{}]*,)?\s*$/;
+/** A character that is text but no letter, digit or space: a separator or a mark. */
+const SYMBOL = /[^\0-\x7f\p{L}\p{M}\p{N}\s]/gu;
+/** Typographic quotes are prose wherever they are written, though no string holds one today. */
+const QUOTES = '“”‘’';
+/** A `sep.*` that only joins: one ASCII mark and the space after it. A bare `=` or `:` is code. */
+const JOINER = /^ ?[!-/:-@] $/;
+
+/**
+ * Reads the separators, marks and joiners from the source of the i18n strings (DR6-207): every
+ * symbol there, a separator when a `sep.*` holds it. A comment there, on lines of its own, may use
+ * others (`§`).
+ */
+export function marksOf(strings: string): Marks {
+  const seps = [...strings.matchAll(/'sep\.\w+':\s*'([^']*)'/g)].map((entry) => entry[1]!);
+  const marks = new Map<string, TokenViolation['rule']>();
+  for (const [c] of (QUOTES + strings.replace(/^\s*\/\/.*$/gm, '')).matchAll(SYMBOL)) {
+    marks.set(c, seps.some((sep) => sep.includes(c)) ? 'hardcoded-separator' : 'hardcoded-mark');
+  }
+  return { marks, joiners: new Set(seps.filter((sep) => JOINER.test(sep))) };
+}
 
 /** What joins with a whole string it is given: `names.join(', ')`, `a.concat(', ', b)`. */
 const JOINS = new Set(['join', 'concat']);
 
 /**
- * After the `}` of an expression of JSX, a `, ` / `; ` / `: ` before the next expression or element,
+ * After the `}` of an expression of JSX, a joiner or `: ` before the next expression or element,
  * however Prettier writes it: `{a},{' '}` then `{b}` on the next line, `{a}` then `, {b}` or
- * `,{' '}` on the next.
+ * `,{' '}` on the next. `: ` is joined by hand only in JSX; in a template it also joins technical
+ * text (the path and detail of a validator issue).
  */
-const JSX_JOINER = /\s*(?:\{(?:' '|" ")\}\s*)?[,;:](?: +|\s*\{(?:' '|" ")\}\s*)(?=\{|<(?!\/))/y;
-
-/** The separators (`sep.dot`, `sep.arrow`, `sep.range`) and marks of `vi.ts` (DR6-37, DR6-169). */
-const MARKS = new Map<string, TokenViolation['rule']>([
-  ...[...'·→–'].map((c) => [c, 'hardcoded-separator'] as const),
-  ...[...'✓○×▾▸—←…“”‘’'].map((c) => [c, 'hardcoded-mark'] as const),
-]);
+const jsxJoiner = (joiners: ReadonlySet<string>) => {
+  const marks = [...joiners].map((joiner) => `\\${joiner.trim()}`).join('');
+  const space = String.raw`\{(?:' '|" ")\}\s*`;
+  return new RegExp(String.raw`\s*(?:${space})?[:${marks}](?: +|\s*${space})(?=\{|<(?!\/))`, 'y');
+};
 
 /** Their HTML entities by name, which JSX decodes; any is found by number too (`&#183;`). */
 const ENTITIES = new Map(
-  'middot· rarr→ ndash– times× mdash— larr← hellip… ldquo“ rdquo” lsquo‘ rsquo’'
+  'middot· rarr→ ndash– times× mdash— larr← hellip… ldquo“ rdquo” lsquo‘ rsquo’ divide÷ minus−'
     .split(' ')
     .map((pair) => [pair.slice(0, -1), pair.slice(-1)] as const),
 );
 const ENTITY = /&(?:#(?:(\d+)|x([\da-f]+))|([a-z]+));/iy;
 // The escapes of a string or a template that write one: `\u00b7`, `\u{b7}`, `\xb7`.
-const ESCAPE = /u([\da-f]{4})|u\{0*([\da-f]{1,4})\}|x([\da-f]{2})/iy;
+const ESCAPE = /u([\da-f]{4})|u\{0*([\da-f]{1,6})\}|x([\da-f]{2})/iy;
 
-/** The rule a character of the given code breaks, if it is a separator or a mark. */
-const markOf = (code: number) => (code > 0xffff ? undefined : MARKS.get(String.fromCharCode(code)));
+/** What a `/` right after it opens: a regex literal, not a division. */
+const BEFORE_REGEX = new Set(['', '(', ',', '=', ':', '[', '!', '&', '|', '?', '{', ';', '=>']);
 
 /**
  * Finds a separator (`·`, `→`, `–`) or mark (`✓ ○ × ▾ ▸ — ← …`, curly quotes) of `vi.ts`, or parts
@@ -95,23 +111,46 @@ const markOf = (code: number) => (code > 0xffff ? undefined : MARKS.get(String.f
  * (`&middot;`, `&#183;`, `&#xb7;`). An escape in the string of a JSX attribute
  * (`<p title="\u00b7" />`) is found too, though JSX does not decode it (the text shows `\u00b7`):
  * it is still text written in place of i18n. The scan reads strings and templates, so a `//` or
- * `/*` inside one opens no comment (DR6-145).
- * Limits: it does not read a regex literal (an escape there is missed); a whole string given to a
- * call other than `.join(` or `concat(` (`text.split(', ')`, but `parts.push(', ')`,
- * `String.prototype.concat.call(a, ', ', b)` and the replacement of `text.replace(/\n/g, ', ')`
- * too) reads as no joiner; a joiner in JSX text beside a word (`{a}: b`) or after an element
- * (`<b>{a}</b>, {b}`) is missed, as JSX there is not told from code (`open ? <A /> : <B />`).
+ * `/*` inside one opens no comment (DR6-145), and regex literals, so a quote in one opens no string
+ * (DR6-207). The separators, marks and joiners (`' / '` too) are those of `marks`, read from
+ * `vi.ts` by `marksOf`.
+ * Limits: the scan reads characters, not the syntax tree. A form it does not read is added to this
+ * list, not as a new branch (CLR6-G4):
+ * - an escape in a regex literal, a mark outside the BMP written as two escapes, an entity whose
+ *   name is not in `ENTITIES`;
+ * - a `/` that divides right after one of `BEFORE_REGEX` or `return` (`<p>a: / b</p>`) is taken
+ *   for a regex: the rest of its line is read as one, and a string there is missed;
+ * - a whole string given to a call other than `.join(` or `concat(` (`text.split(', ')`, but
+ *   `parts.push(', ')`, `String.prototype.concat.call(a, ', ', b)` and the replacement of
+ *   `text.replace(/\n/g, ', ')` too) reads as no joiner;
+ * - a joiner in JSX text beside a word (`{a}: b`) or after an element (`<b>{a}</b>, {b}`) is
+ *   missed, as JSX there is not told from code (`open ? <A /> : <B />`); so is one written another
+ *   way (`{a},&nbsp;{b}`, `{a}&#44; {b}`, `{a}{','} {b}`, a tab after the comma).
  */
-export function findHardcodedSeparators(source: string): TokenViolation[] {
+export function findHardcodedSeparators(
+  source: string,
+  { marks, joiners }: Marks,
+): TokenViolation[] {
   const violations: TokenViolation[] = [];
+  const JSX_JOINER = jsxJoiner(joiners);
+  /** The rule a character of the given code breaks, if it is a separator or a mark. */
+  const markOf = (code: number) =>
+    code <= 0x10ffff ? marks.get(String.fromCodePoint(code)) : undefined;
   let line = 1;
   const report = (match: string, rule?: TokenViolation['rule']) => {
     if (rule) violations.push({ line, match, rule });
   };
-  // Code, a comment, a string (by its quote) or a template.
-  let mode: 'code' | '//' | '/*' | "'" | '"' | '`' = 'code';
-  // Where the string, or the piece of template, being read began.
+  // Code, a comment, a regex literal, a string (by its quote) or a template.
+  let mode: 'code' | '//' | '/*' | '/' | "'" | '"' | '`' = 'code';
+  // Where the string, or the piece of template, being read began, and what came before it.
   let start = 0;
+  let before = '';
+  // Every bracket still open: a `(` with the name it is called by (`(join`), a `[`, a `{`.
+  const groups: string[] = [];
+  // The name being read, or the last one read (the `join` of `names.join(`).
+  let name = '';
+  // Whether the regex literal being read is inside a class (`/[/]/`).
+  let inClass = false;
   // What each `{` still open began: a `${` of a template, an expression of JSX, or code. JSX is
   // told by what comes before its `{`: the `>` of a tag (not of `=>` or type arguments), or the
   // `}` of JSX.
@@ -139,12 +178,21 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
       }
       continue;
     }
-    report(c, MARKS.get(c));
+    // A character outside the BMP is read whole, at its first unit.
+    const point = source.codePointAt(i)!;
+    report(String.fromCodePoint(point), markOf(point));
     if (c === '&') {
       ENTITY.lastIndex = i;
-      const [found, dec, hex, name] = ENTITY.exec(source) ?? [];
+      const [found, dec, hex, entity] = ENTITY.exec(source) ?? [];
       const code = dec ? Number(dec) : parseInt(hex ?? '', 16);
-      if (found) report(found, name ? MARKS.get(ENTITIES.get(name) ?? '') : markOf(code));
+      if (found) report(found, entity ? marks.get(ENTITIES.get(entity) ?? '') : markOf(code));
+    }
+    if (mode === '/') {
+      // A regex ends at its `/` outside a class; one that runs to the end of its line was none.
+      if (c === '\\') i++;
+      else if (c === '[' || c === ']') inClass = c === '[';
+      else if (c === '\n' || (c === '/' && !inClass)) mode = 'code';
+      continue;
     }
     if (mode !== 'code') {
       const opens = mode === '`' && source.startsWith('${', i);
@@ -156,19 +204,19 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
         if (source.startsWith('\r\n', i + 1)) i++;
         if (source[++i] === '\n') line++;
       } else if (c === mode || opens) {
-        // Only a string of two characters can be a joiner: no slice for any other.
-        if (i - start === 2 && JOINER.test(source.slice(start, i))) {
-          // A whole string given to a call: only `.join(` and `concat(` join with it.
+        // Only a string of two or three characters can be a joiner: no slice for any other.
+        if (i - start <= 3 && joiners.has(source.slice(start, i))) {
+          // A whole string given to a call, the `(` still open around it: only `.join(` and
+          // `concat(` join with it.
           const whole = source[start - 1] === c && /^\s*[,)]/.test(source.slice(i + 1, i + 40));
-          const callee = whole
-            ? CALLEE.exec(source.slice(Math.max(0, start - 200), start - 1))
-            : null;
-          if (JOINS.has(callee?.[1] ?? 'join')) {
+          const group = whole && (before === '(' || before === ',') ? groups.at(-1) : undefined;
+          if (!group?.startsWith('(') || JOINS.has(group.slice(1) || 'join')) {
             report(source.slice(start - 1, opens ? i + 2 : i + 1), 'hardcoded-separator');
           }
         }
         if (opens) {
           braces.push('template');
+          groups.push('{');
           i++;
         }
         mode = 'code';
@@ -188,9 +236,22 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
     if (c === "'" || c === '"' || c === '`') {
       mode = c;
       start = i + 1;
+      before = last;
       continue;
     }
     if (/\s/.test(c)) continue;
+    if (c === '/' && (/^[\w$]$/.test(last) ? name === 'return' : BEFORE_REGEX.has(last))) {
+      mode = '/';
+      inClass = false;
+      last = c;
+      afterJsx = false;
+      continue;
+    }
+    if (/[\w$]/.test(c)) name = /[\w$]/.test(source[i - 1] ?? '') ? name + c : c;
+    if (c === '(') groups.push(/^[\w$]$/.test(last) ? `(${name}` : c);
+    else if (c === '[' || c === '{') groups.push(c);
+    else if (c === ')' || c === ']') groups.pop();
+    else if (c === '}') groups.length = Math.max(0, groups.lastIndexOf('{'));
     let closesJsx = false;
     if (c === '<' && (types > 0 || /[\w$]/.test(source[i - 1] ?? ''))) {
       types++;

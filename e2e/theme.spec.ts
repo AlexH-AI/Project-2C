@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { expect, test, type Locator } from './fixtures';
+import { expect, test, type Locator, type Page } from './fixtures';
 import {
   addKycNote,
   createKycCustomer,
@@ -22,45 +22,75 @@ async function expectBorderStandsOut(field: Locator) {
   expect(await lowestContrast(field, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
 }
 
-test('body uses the ADR-0013 surface, text colour and font', async ({ page }) => {
-  await page.goto('/');
+/** The value of a token of `tokens.css` as the page has it now. */
+const token = (page: Page, name: string) =>
+  page.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name), name);
 
-  const body = await page.evaluate(() => {
-    const style = getComputedStyle(document.body);
-    return {
-      background: style.backgroundColor,
-      color: style.color,
-      fontFamily: style.fontFamily,
-    };
-  });
+/**
+ * The radius a corner of the nominal radii given is drawn with on the system the page is marked
+ * with: Windows 11 draws a circular arc of that radius; macOS a continuous corner in a box of
+ * r × 1.5, or a circular arc of radius r in a web view without `corner-shape` (tokens.css).
+ */
+async function drawnCorner(page: Page, nominal: { win: number; mac: number }) {
+  if ((await page.locator('html').getAttribute('data-os')) === 'win') return `${nominal.win}px`;
+  const continuous = await page.evaluate(() => CSS.supports('corner-shape: superellipse(1.7)'));
+  return `${nominal.mac * (continuous ? 1.5 : 1)}px`;
+}
 
-  expect(body.background).toBe(BG_0);
-  expect(body.color).toBe(TEXT);
-  expect(body.fontFamily).toMatch(/^"?Be Vietnam Pro"?,/);
-});
-
-test('Be Vietnam Pro is loaded from the app itself, including Vietnamese glyphs', async ({
+test('the page is marked with its system, and its text is in the font of that system (VA1)', async ({
   page,
+  browserName,
 }) => {
   await page.goto('/');
+  // Playwright's WebKit runs on a Mac only (macos.yml); Edge is the web view of Windows.
+  const mac = browserName === 'webkit';
+  await expect(page.locator('html')).toHaveAttribute('data-os', mac ? 'mac' : 'win');
 
-  const loadedWeights = await page.evaluate(async () => {
-    // document.fonts.check() is true when no face matches at all, so inspect the faces instead.
-    const weights = ['400', '500', '600', '700'];
-    await Promise.all(
-      weights.map((w) => document.fonts.load(`${w} 16px "Be Vietnam Pro"`, 'Việt Đ')),
-    );
-    // Only the vietnamese subset covers U+1EA0–1EF9 ("ệ"); the latin face alone must not pass.
-    const faces = [...document.fonts].filter(
-      (face) =>
-        face.family.replaceAll('"', '') === 'Be Vietnam Pro' &&
-        face.status === 'loaded' &&
-        /U\+1EA0-1EF9/i.test(face.unicodeRange),
-    );
-    return weights.filter((w) => faces.some((face) => face.weight === w));
+  const body = page.locator('body');
+  await expect(body).toHaveCSS('background-color', BG_0);
+  await expect(body).toHaveCSS('color', TEXT);
+  // ADR-0013 appendix 11/11/2026 §1: SF Pro on macOS; Segoe UI Variable on Windows 11, Segoe UI
+  // where Windows has no Variable.
+  await expect(body).toHaveCSS(
+    'font-family',
+    mac
+      ? /^-apple-system, BlinkMacSystemFont, /
+      : '"Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
+  );
+  await test.step('Vietnamese text is drawn with that font, no glyph from another', async (step) => {
+    step.skip(mac, 'the font a text is drawn with is read through CDP, Chromium only (NT-MAC-18)');
+    const heading = page.getByRole('heading', { level: 1 });
+    await expect(heading).toHaveText('Tổng quan');
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('DOM.enable');
+    await cdp.send('CSS.enable');
+    const { root } = await cdp.send('DOM.getDocument');
+    const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: 'h1' });
+    const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+    expect(fonts.map((font) => font.familyName)).toEqual([
+      expect.stringMatching(/^Segoe UI( Variable( Text| Display| Small)?)?$/),
+    ]);
   });
+});
 
-  expect(loadedWeights).toEqual(['400', '500', '600', '700']);
+test('the app loads no font file but Playfair Display, the font of the slogan (VA1)', async ({
+  page,
+}) => {
+  const fonts: string[] = [];
+  page.on('request', (request) => {
+    if (request.resourceType() === 'font' || /\.(woff2?|[ot]tf)\b/.test(request.url())) {
+      fonts.push(new URL(request.url()).pathname);
+    }
+  });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // Text of every weight the app writes, Vietnamese marks too: none asks for a file.
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForLoadState('networkidle');
+
+  expect(fonts).toEqual([expect.stringMatching(/^\/assets\/playfair-display-latin-400-italic-/)]);
+  const families = await page.evaluate(() => [...document.fonts].map((face) => face.family));
+  expect(families.map((family) => family.replaceAll('"', ''))).toEqual(['Playfair Display']);
 });
 
 // Brand block of the sidebar (T-308, G3 27/10): the champagne of the slogan and of the outline.
@@ -147,11 +177,52 @@ test('figures use tabular numerals', async ({ page }) => {
   await expect(value).toHaveCSS('font-variant-numeric', 'tabular-nums');
 });
 
-test('token-backed corner radius is applied', async ({ page }) => {
+test('a corner takes the radius and the curve of the system the page is marked with (VA1)', async ({
+  page,
+}) => {
   await page.goto('/');
-
+  // A tile is `rounded-md`, until VA2 the name of `rounded-control`.
   const tile = page.getByRole('region', { name: 'Chuyển RF' });
-  await expect(tile).toHaveCSS('border-radius', '10px');
+  const mark = (os: 'mac' | 'win') =>
+    page.evaluate((os) => (document.documentElement.dataset.os = os), os);
+
+  // Windows 11 (Fluent): circular arcs, 8 px surfaces, 4 px controls.
+  await mark('win');
+  expect(await token(page, '--r-card')).toBe('8px');
+  expect(await token(page, '--r-control')).toBe('4px');
+  expect(await token(page, '--r-k')).toBe('1');
+  await expect(tile).toHaveCSS('border-radius', '4px');
+
+  await mark('mac');
+  expect(await token(page, '--r-card')).toBe('16px');
+  expect(await token(page, '--r-control')).toBe('10px');
+  const drawn = await drawnCorner(page, { win: 4, mac: 10 });
+  expect(await token(page, '--r-k')).toBe(drawn === '15px' ? '1.5' : '1');
+  await expect(tile).toHaveCSS('border-radius', drawn);
+  if (drawn === '15px') await expect(tile).toHaveCSS('corner-shape', 'superellipse(1.7)');
+});
+
+test('with "Giảm độ trong suốt" the window and the focus layer are solid, nothing blurred (VA1)', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/');
+  expect(await token(page, '--mat-pop')).not.toBe(await token(page, '--bg-2'));
+  expect(await token(page, '--mat-window')).not.toBe(await token(page, '--bg-1'));
+  expect(await token(page, '--blur-pop')).toMatch(/^blur\(/);
+
+  await test.step('the system asks for less transparency', async (step) => {
+    // Playwright has no option for this media feature; CDP sets it, on Chromium only. Whether
+    // WKWebView answers the query is checked on the app (NT-MAC-19).
+    step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+    });
+    expect(await token(page, '--mat-pop')).toBe(await token(page, '--bg-2'));
+    expect(await token(page, '--mat-window')).toBe(await token(page, '--bg-1'));
+    expect(await token(page, '--blur-pop')).toBe('none');
+  });
 });
 
 test('fields and the arrows of unsorted columns stand out 3:1 from what is next to them', async ({
@@ -213,10 +284,10 @@ test('the two fields of the app outside packages/ui stand out 3:1 from their car
 
 // Mockup forms.css `.choice` (DR6-149): --bg-2, --border-strong, --radius-sm, 5 / 11 px, --fs-sm,
 // --text-2; `.choice.on`: --accent on --accent-soft, --text, 600; `.choice.off`: 0.4, struck out.
+// The corner is `rounded-sm`, until VA3a the name of `rounded-control-sm` (VA1).
 const CHOICE = {
   'background-color': 'rgb(24, 33, 45)',
   'border-color': 'rgb(52, 66, 90)',
-  'border-radius': '6px',
   padding: '5px 11px',
   'font-size': '12.5px',
   color: 'rgb(174, 185, 200)',
@@ -236,6 +307,7 @@ async function expectChoice(radio: Locator, style: Record<string, string>) {
   for (const [property, value] of Object.entries(style)) {
     await expect(chip).toHaveCSS(property, value);
   }
+  await expect(chip).toHaveCSS('border-radius', await drawnCorner(chip.page(), { win: 4, mac: 8 }));
   expect(await lowestContrast(chip)).toBeGreaterThanOrEqual(4.5);
   return chip;
 }

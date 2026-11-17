@@ -13,6 +13,12 @@ export function isMac(nav: Nav | undefined = globalThis.navigator): boolean {
   return nav !== undefined && /Mac/.test(`${nav.platform} ${nav.userAgent}`);
 }
 
+/**
+ * The `data-os` of the page (VA1): the tokens of `packages/ui` are those of macOS, and a page
+ * marked `win` takes the ones of Windows 11 (corners, window material, font).
+ */
+export const platformMark = (nav?: Nav): 'mac' | 'win' => (isMac(nav) ? 'mac' : 'win');
+
 /** The modifier of the shortcuts: ⌘ on macOS, Ctrl on Windows. */
 export const modKey = (nav?: Nav): '⌘' | 'Ctrl' => (isMac(nav) ? '⌘' : 'Ctrl');
 

@@ -47,7 +47,7 @@
   --color-appt-missed: var(--appt-missed);
 
   --font-*: initial;
-  --font-sans: var(--font);
+  --font-sans: var(--font-ui);
 
   --text-*: initial;
   --text-xs: var(--fs-xs);
@@ -64,10 +64,30 @@
      columns of mockup customer.html (`wide:`, DR6-30) */
   --breakpoint-wide: 90rem;
 
+  /* Corners by what they round (`rounded-card`, `rounded-control-sm`…): the nominal radius of the
+     system (tokens.css). The three old names stand for a new one until VA2 and VA3a move their
+     uses (VA3a drops them). `rounded-full` stays for circles. */
   --radius-*: initial;
-  --radius-sm: var(--corner-sm);
-  --radius-md: var(--corner-md);
-  --radius-lg: var(--corner-lg);
+  --rounded-card: var(--r-card);
+  --rounded-pop: var(--r-pop);
+  --rounded-menu: var(--r-menu);
+  --rounded-field: var(--r-field);
+  --rounded-control: var(--r-control);
+  --rounded-control-sm: var(--r-control-sm);
+  --rounded-sm: var(--r-control-sm);
+  --rounded-md: var(--r-control);
+  --rounded-lg: var(--r-card);
+}
+
+/* A rounded rectangle as its system draws it (ui2.css section 5): a continuous corner on macOS, in
+   a box of r × --r-k, a circular arc on Windows 11. A chip, a capsule on macOS, is a plain arc. */
+@utility rounded-* {
+  border-radius: calc(--value(--rounded-*) * var(--r-k));
+  corner-shape: var(--r-curve);
+}
+@utility rounded-chip {
+  border-radius: calc(var(--r-chip) * var(--r-k));
+  corner-shape: round;
 }
 
 /* The brand block of the sidebar (T-308, G3 27/10): the slogan, and the outline of the navy tree
@@ -92,7 +112,7 @@
     margin: 0;
     background-color: var(--bg-0);
     color: var(--text);
-    font-family: var(--font);
+    font-family: var(--font-ui);
     font-size: var(--fs-md);
   }
 }

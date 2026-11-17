@@ -11,6 +11,7 @@ import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
 import { appLanguage, setDataCurrency } from './i18n/language';
 import { blockReload } from './shell/block-reload';
+import { platformMark } from './shell/platform';
 import { startupErrorPage } from './shell/StartupError';
 import './index.css';
 
@@ -24,6 +25,9 @@ const pinnedDay = parseDate(String(import.meta.env.VITE_DEMO_ANCHOR ?? ''));
 
 // The machine's language until the data opens (ADR-0018 §1); `index.html` says `vi`.
 document.documentElement.lang = appLanguage();
+// The system of the webview, set once before anything is drawn: the "loading" line, the screens
+// and the startup error page all take the tokens of that system (VA1).
+document.documentElement.dataset.os = platformMark();
 
 render(<p className="px-6 py-8 text-sm text-fg-2">{t('startup.loading')}</p>);
 

@@ -20,7 +20,7 @@ describe('chartTheme', () => {
     expect(theme.backgroundColor).toBe('transparent');
     expect(theme.textStyle).toEqual({
       color: 'value--text-2',
-      fontFamily: 'value--font',
+      fontFamily: 'value--font-ui',
       fontSize: 11,
     });
     expect(theme.legend.textStyle.color).toBe('value--text-2');
