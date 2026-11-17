@@ -1,5 +1,7 @@
+import type { ReactElement } from 'react';
+import type { StoragePort } from '../data/app-data';
 import { t } from '../i18n';
-import { startupMessage } from './startup-error';
+import { startupFolder, startupMessage } from './startup-error';
 
 /**
  * Full-page message when the database cannot be opened at startup; `folder` is the data folder,
@@ -18,4 +20,15 @@ export function StartupError({ error, folder }: { error: unknown; folder?: strin
       )}
     </main>
   );
+}
+
+/**
+ * The page `main.tsx` shows when the app cannot start: `StartupError` naming the data folder
+ * `storage` gives, when it can give one (L185, L205).
+ */
+export async function startupErrorPage(
+  error: unknown,
+  storage: Pick<StoragePort, 'dataFolder'> | undefined,
+): Promise<ReactElement> {
+  return <StartupError error={error} folder={await startupFolder(storage)} />;
 }

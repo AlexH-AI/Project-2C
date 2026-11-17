@@ -221,8 +221,9 @@ fn disk_full(error: io::Error) -> io::Error {
 /// Gives a database file that is whole but out of reach the messages the app tells apart, so it
 /// never tells to copy a backup over a good file (DR6-07): another program holds the file or its
 /// `.tmp` ([`FILE_IN_USE`], Windows only), or the system refuses the app the data folder
-/// ([`ACCESS_DENIED`]). Any other error stays as it is.
-fn out_of_reach(error: io::Error) -> io::Error {
+/// ([`ACCESS_DENIED`]). Any other error stays as it is. The one rule of "out of reach": `db_open`
+/// asks it of the data folder too (L204).
+pub(crate) fn out_of_reach(error: io::Error) -> io::Error {
     if platform::held_by_another_program(&error) {
         io::Error::new(ErrorKind::ResourceBusy, FILE_IN_USE)
     } else if error.kind() == ErrorKind::PermissionDenied {
