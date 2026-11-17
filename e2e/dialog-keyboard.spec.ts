@@ -128,7 +128,10 @@ test('arrow keys move the choice around a segmented control, wrapping at both en
   await expect(radios.nth(count - 1)).toBeFocused();
 });
 
-test('a second Escape does not close the dialog of a running reload', async ({ page }) => {
+test('a second Escape does not close the dialog of a running reload', async ({
+  page,
+  browserName,
+}) => {
   await asExe(page);
   await page.goto('/#/settings');
   await page.evaluate(() => window.exe.holdBackup());
@@ -152,11 +155,20 @@ test('a second Escape does not close the dialog of a running reload', async ({ p
   await expect(dialog).toBeVisible();
   // Still modal: the page behind cannot be used while the reload runs.
   expect(await dialog.evaluate((node) => node.matches(':modal'))).toBe(true);
-  // Opened again by the second Escape (DR-58), it still holds the focus; Tab comes back to it.
+  // Opened again by the second Escape (DR-58), it still holds the focus.
   await expect(running).toBeFocused();
-  await page.keyboard.press(tabKey(page));
-  await page.keyboard.press(tabKey(page));
-  await expect(running).toBeFocused();
+  await test.step('Tab twice comes back to what runs', async (step) => {
+    // On WebKit Option+Tab goes from it out of the page, to Playwright's window, then to the dialog
+    // itself, then back to it: never to the page behind, but three stops (CI run 44019009757). The
+    // app on a Mac: NT-MAC-14.
+    step.skip(
+      browserName === 'webkit',
+      'Option+Tab stops on the dialog itself and out of the page too (Mac-7b, NT-MAC-14)',
+    );
+    await page.keyboard.press(tabKey(page));
+    await page.keyboard.press(tabKey(page));
+    await expect(running).toBeFocused();
+  });
 
   await page.evaluate(() => window.exe.releaseBackup());
   await expect(dialog).toHaveCount(0);
@@ -329,40 +341,4 @@ test('the save warning and the close question name the cause of a failed save th
     await expect(warning, String(error)).toContainText(cause);
   }
   expect(await page.evaluate(() => window.exe.destroyed)).toBe(false);
-});
-
-// TEMP (T-459, Mac-7b): where Option+Tab takes the focus in the dialog of a running reload, on
-// WebKit only. Fails on purpose, so the run names each stop; removed before review.
-test('TEMP: the stops of Option+Tab in a running dialog (WebKit)', async ({
-  page,
-  browserName,
-}) => {
-  test.skip(browserName !== 'webkit', 'diagnosis of WebKit only');
-  await asExe(page);
-  await page.goto('/#/settings');
-  await page.evaluate(() => window.exe.holdBackup());
-  await pressButton(page.getByRole('button', { name: 'Nạp lại…' }));
-  const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
-  await dialog.getByRole('textbox', { name: /^Gõ NẠP LẠI/ }).fill('NẠP LẠI');
-  await page.keyboard.press('Enter');
-  await expect(dialog.getByRole('button', { name: 'Đang nạp lại…' })).toBeFocused();
-  const focus = () =>
-    page.evaluate(() => {
-      const node = document.activeElement;
-      const name = (node?.getAttribute('aria-label') ?? node?.textContent ?? '').slice(0, 20);
-      const where = node?.closest('dialog') ? 'in dialog' : 'outside dialog';
-      return `${document.hasFocus() ? 'page' : 'NOT page'}: ${node?.tagName.toLowerCase()} "${name}" ${where} tabIndex=${(node as HTMLElement | null)?.tabIndex}`;
-    });
-  const stops = [`start: ${await focus()}`];
-  for (let press = 1; press <= 4; press++) {
-    await page.keyboard.press(tabKey(page));
-    stops.push(`Option+Tab ${press}: ${await focus()}`);
-  }
-  for (let press = 1; press <= 3; press++) {
-    await page.keyboard.press(`Shift+${tabKey(page)}`);
-    stops.push(`Shift+Option+Tab ${press}: ${await focus()}`);
-  }
-  stops.push(`dialog.tabIndex=${await dialog.evaluate((node) => (node as HTMLElement).tabIndex)}`);
-  await page.evaluate(() => window.exe.releaseBackup());
-  expect(stops).toEqual([]);
 });
