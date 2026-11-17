@@ -61,7 +61,7 @@ export const STATUS_TONE = {
 
 /** A field shown but locked (mockup 6f `.input.locked`: not operable, so dashed --border-strong). */
 export const LOCKED =
-  'm-0 flex items-center gap-1.5 rounded-md border border-dashed border-border-strong bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
+  'm-0 flex items-center gap-1.5 rounded-control border border-dashed border-border-strong bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
 
 /** The "Kết quả" text: `Tạm hoãn → N3`, `N3 → N2 · RF`, `Giữ N3`, `Dời sang 02/10`; empty when none. */
 export function outcomeText(outcome: Outcome): string {

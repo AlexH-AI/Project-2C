@@ -170,7 +170,7 @@ export function TeamScreen() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
-                  className={`flex w-full cursor-pointer items-baseline gap-2 rounded-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
+                  className={`flex w-full cursor-pointer items-baseline gap-2 rounded-control-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
                     on ? 'bg-accent-soft font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >

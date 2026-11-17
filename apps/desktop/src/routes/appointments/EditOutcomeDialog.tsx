@@ -132,6 +132,7 @@ export function EditOutcomeDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('outcomeEdit.title')}
       subtitle={joinParts([
         customer.name,

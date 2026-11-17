@@ -8,6 +8,7 @@ import {
   lowestContrast,
   markOs,
   panelOf,
+  setTransparency,
   stubChatGptWeb,
   token,
 } from './support';
@@ -169,7 +170,7 @@ test('a corner takes the radius and the curve of the system the page is marked w
   page,
 }) => {
   await page.goto('/');
-  // A tile is `rounded-md`, until VA3a the name of `rounded-control`.
+  // A tile is a card (`rounded-card`); a button of it, the next step of a guide, a control.
   const tile = page.getByRole('region', { name: 'Chuyển RF' });
   const mark = (os: 'mac' | 'win') => markOs(page, os);
 
@@ -178,15 +179,15 @@ test('a corner takes the radius and the curve of the system the page is marked w
   expect(await token(page, '--r-card')).toBe('8px');
   expect(await token(page, '--r-control')).toBe('4px');
   expect(await token(page, '--r-k')).toBe('1');
-  await expect(tile).toHaveCSS('border-radius', '4px');
+  await expect(tile).toHaveCSS('border-radius', '8px');
 
   await mark('mac');
   expect(await token(page, '--r-card')).toBe('16px');
   expect(await token(page, '--r-control')).toBe('10px');
-  const drawn = await drawnCorner(page, { win: 4, mac: 10 });
-  expect(await token(page, '--r-k')).toBe(drawn === '15px' ? '1.5' : '1');
+  const drawn = await drawnCorner(page, { win: 8, mac: 16 });
+  expect(await token(page, '--r-k')).toBe(drawn === '24px' ? '1.5' : '1');
   await expect(tile).toHaveCSS('border-radius', drawn);
-  if (drawn === '15px') await expect(tile).toHaveCSS('corner-shape', 'superellipse(1.7)');
+  if (drawn === '24px') await expect(tile).toHaveCSS('corner-shape', 'superellipse(1.7)');
 });
 
 test('with "Giảm độ trong suốt" the window and the focus layer are solid, nothing blurred (VA1)', async ({
@@ -194,6 +195,8 @@ test('with "Giảm độ trong suốt" the window and the focus layer are solid,
   browserName,
 }) => {
   await page.goto('/');
+  // Not the setting of the machine of the run: Playwright gives this media feature no default (L194).
+  await setTransparency(page, 'no-preference');
   expect(await token(page, '--mat-pop')).not.toBe(await token(page, '--bg-2'));
   expect(await token(page, '--mat-window')).not.toBe(await token(page, '--bg-1'));
   expect(await token(page, '--blur-pop')).toMatch(/^blur\(/);
@@ -202,10 +205,7 @@ test('with "Giảm độ trong suốt" the window and the focus layer are solid,
     // Playwright has no option for this media feature; CDP sets it, on Chromium only. Whether
     // WKWebView answers the query is checked on the app (NT-MAC-19).
     step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Emulation.setEmulatedMedia', {
-      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
-    });
+    await setTransparency(page, 'reduce');
     expect(await token(page, '--mat-pop')).toBe(await token(page, '--bg-2'));
     expect(await token(page, '--mat-window')).toBe(await token(page, '--bg-1'));
     expect(await token(page, '--blur-pop')).toBe('none');

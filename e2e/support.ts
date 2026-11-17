@@ -22,7 +22,8 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
 
 /**
  * The lowest WCAG contrast of the text shown in `area`, each against what is painted behind it,
- * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). Disabled
+ * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). A material
+ * painted as a gradient (a card) counts at its lightest stop. Disabled
  * controls are left out, as in WCAG. With `of: 'border'`, the lower contrast of the border of
  * `area` with the colours either side of it: its own background inside, what is behind it outside
  * (WCAG 1.4.11: at least 3:1; T-284). The border is the bottom edge: a field of Windows 11 carries
@@ -63,6 +64,8 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
     // (its text, its border): a block with an opacity paints its group first, then fades it as a
     // whole over what is below.
     type Top = (style: CSSStyleDeclaration) => string;
+    /** A colour stop of a gradient, as the browser writes a computed `background-image`. */
+    const STOP = /(?:rgba?|color|oklab|oklch|lab|lch|hsla?)\([^()]*\)/g;
     const paint = (chain: Element[], from: number, top?: Top): Paint => {
       let color: Paint = { rgb: [0, 0, 0], a: 0 };
       for (let index = from; index < chain.length; index++) {
@@ -73,6 +76,12 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
           return over({ ...group, a: group.a * opacity }, color);
         }
         color = over(read(style.backgroundColor), color);
+        // A material is a gradient of see-through light (--mat-card): read where it is lightest,
+        // the place its text stands out least (ADR-0013 appendix 11/11/2026 §7).
+        for (const stop of style.backgroundImage.match(STOP) ?? []) {
+          const lit = over(read(stop), color);
+          if (luminance(lit) > luminance(color)) color = lit;
+        }
       }
       return top ? over(read(top(getComputedStyle(chain.at(-1)!))), color) : color;
     };
@@ -123,6 +132,21 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
 /** The value of a token of `tokens.css` as the page has it now. */
 export const token = (page: Page, name: string) =>
   page.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name), name);
+
+/**
+ * Sets the system's "Giảm độ trong suốt" for the page (`prefers-reduced-transparency`). Playwright
+ * has no option for it and gives it no default, so a page reads the setting of the machine of the
+ * run: a test of a see-through material first says `no-preference` (L194). Through CDP, so on
+ * Chromium only: false where it could not be set.
+ */
+export async function setTransparency(page: Page, value: 'no-preference' | 'reduce') {
+  if (onWebKit(page)) return false;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-transparency', value }],
+  });
+  return true;
+}
 
 /** Marks the page as one of `os`, as `main.tsx` does once: its tokens are those of that system. */
 export const markOs = (page: Page, os: 'mac' | 'win') =>

@@ -91,7 +91,7 @@ function MonthButton({
       aria-current={cell.state === 'current' ? 'date' : undefined}
       aria-label={monthLabel(cell, year)}
       onClick={() => onPick(cell.month)}
-      className={`flex cursor-pointer flex-col gap-2 rounded-md border px-2.75 pt-2.25 pb-2.5 text-left tabular-nums focus-visible:outline-offset-2 ${FOCUS} ${CELL[cell.state]}`}
+      className={`flex cursor-pointer flex-col gap-2 rounded-control border px-2.75 pt-2.25 pb-2.5 text-left tabular-nums focus-visible:outline-offset-2 ${FOCUS} ${CELL[cell.state]}`}
     >
       <span className="flex flex-wrap items-baseline justify-between gap-x-2 whitespace-nowrap">
         <span className={`text-md ${NAME[cell.state]}`}>
@@ -104,7 +104,7 @@ function MonthButton({
       </span>
       <span
         aria-hidden="true"
-        className={`flex h-5 gap-px overflow-hidden rounded-sm ${
+        className={`flex h-5 gap-px overflow-hidden rounded-control-sm ${
           future ? 'border border-dashed border-border-strong' : 'bg-surface-3'
         }`}
       >

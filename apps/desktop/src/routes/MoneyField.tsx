@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import { FOCUS } from './classes';
 import { moneyPlaceholder, type FieldRefusal } from './money-view';
 
-const SUGGESTION = `inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent px-2 py-0.5 font-semibold text-accent hover:bg-accent-soft ${FOCUS}`;
+const SUGGESTION = `inline-flex cursor-pointer items-center gap-1.5 rounded-control border border-accent px-2 py-0.5 font-semibold text-accent hover:bg-accent-soft ${FOCUS}`;
 
 /**
  * A money field (mockup ngon-ngu-tien-te.html #money): the example of how to type an amount when

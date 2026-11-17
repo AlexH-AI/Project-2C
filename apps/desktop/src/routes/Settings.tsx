@@ -4,7 +4,7 @@ import { Button } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
-import { FOCUS, HEADING, SETTINGS_SECTION } from './classes';
+import { CARD_SKIN, FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import type { SettingsSection } from '../shell/routes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { AiSection } from './SettingsAi';
@@ -25,7 +25,7 @@ const SECTIONS = ['data', 'ai', 'trash'] as const;
 
 type Section = (typeof SECTIONS)[number];
 
-const NAV_ITEM = `rounded-sm px-2.5 py-2 text-left text-sm ${FOCUS}`;
+const NAV_ITEM = `rounded-control-sm px-2.5 py-2 text-left text-sm ${FOCUS}`;
 
 /**
  * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
@@ -39,7 +39,7 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
     <div className="flex max-w-4xl items-start gap-4">
       <nav
         aria-label={t('settings.nav.label')}
-        className="flex w-36 shrink-0 flex-col rounded-lg border border-border bg-surface-1 p-1.5"
+        className={`${CARD_SKIN} flex w-36 shrink-0 flex-col p-1.5`}
       >
         {SECTIONS.map((item) => (
           <button

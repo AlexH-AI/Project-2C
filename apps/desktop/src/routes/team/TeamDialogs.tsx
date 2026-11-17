@@ -30,6 +30,8 @@ export function TeamNameDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t(team ? 'team.rename' : 'team.new')}
       onClose={onClose}
       onSubmit={save}
@@ -78,6 +80,8 @@ export function DeleteTeamDialog({ team, onClose }: { team: Team; onClose: () =>
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('team.deleteTitle', { name: team.name })}
       onClose={onClose}
       onSubmit={remove}

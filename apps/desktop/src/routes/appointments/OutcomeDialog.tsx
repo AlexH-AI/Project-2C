@@ -118,6 +118,7 @@ export function OutcomeDialog({
   return (
     <>
       <Dialog
+        closeLabel={t('dialog.close')}
         title={t('outcome.title')}
         subtitle={t('outcome.sub', {
           customer: customer.name,
@@ -194,7 +195,7 @@ export function OutcomeDialog({
                 </button>
               </span>
             )}
-            <fieldset className="m-0 flex flex-col gap-3 rounded-md border border-border p-3">
+            <fieldset className="m-0 flex flex-col gap-3 rounded-control border border-border p-3">
               <legend className="px-1">
                 <label className="flex items-center gap-2 font-medium">
                   <input

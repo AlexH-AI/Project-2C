@@ -199,7 +199,7 @@ function Done({
       ref={ref}
       tabIndex={-1}
       role="status"
-      className="mb-3 flex items-center gap-3 rounded-md border border-ok bg-surface-0 px-3 py-2 text-sm"
+      className="mb-3 flex items-center gap-3 rounded-control border border-ok bg-surface-0 px-3 py-2 text-sm wrap-anywhere"
     >
       <span aria-hidden="true" className="font-bold text-ok">
         {t('trash.done.mark')}
@@ -211,7 +211,7 @@ function Done({
       {link && (
         <a
           href={link.href}
-          className="rounded-md border border-border bg-surface-2 px-2.5 py-1 whitespace-nowrap text-fg no-underline hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="rounded-control border border-border bg-surface-2 px-2.5 py-1 whitespace-nowrap text-fg no-underline hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {link.text}
         </a>
@@ -391,7 +391,7 @@ export function TrashSection() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               autoComplete="off"
-              className={`min-w-56 flex-1 rounded-md border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 ${FOCUS}`}
+              className={`min-w-56 flex-1 rounded-control border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 ${FOCUS}`}
             />
           </div>
           {shown.length === 0 ? (

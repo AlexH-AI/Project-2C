@@ -89,7 +89,7 @@ function CategoryRow({
               // Focused by a click on its code cited as evidence (DR5-38).
               tabIndex={-1}
               aria-current={code === marked ? 'true' : undefined}
-              className={`flex justify-between gap-2 rounded-sm text-fg-2 ${code === marked ? 'outline-2 outline-offset-2 outline-warn' : ''}`}
+              className={`flex justify-between gap-2 rounded-control-sm text-fg-2 ${code === marked ? 'outline-2 outline-offset-2 outline-warn' : ''}`}
             >
               <span className="min-w-0 wrap-anywhere">
                 {t('kyc.factLine', {
@@ -178,7 +178,10 @@ export function KycCard({
         ))}
       </ul>
       {asking && (
-        <details open={gate.state === 'KYC_INSUFFICIENT'} className="rounded-md bg-surface-2 p-3">
+        <details
+          open={gate.state === 'KYC_INSUFFICIENT'}
+          className="rounded-control bg-surface-2 p-3"
+        >
           <summary className="cursor-pointer font-medium">{t('kyc.questions')}</summary>
           {gate.suggestedQuestions.map(({ category, questions }) => (
             <div key={category} className="mt-2">

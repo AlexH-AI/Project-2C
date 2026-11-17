@@ -281,6 +281,7 @@ export function KycNoteDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('kycNote.title', { name: customer.name })}
       subtitle={
         last
@@ -331,7 +332,7 @@ export function KycNoteDialog({
             {facts.map((fact) => (
               <li
                 key={fact.field}
-                className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-2 py-1"
+                className="flex items-center gap-2 rounded-control border border-border bg-surface-2 px-2 py-1"
               >
                 <b className="flex-1">{t(`kycField.${fact.field}`)}</b>
                 <span className="min-w-0 flex-1 wrap-anywhere">{factText(fact.value, YES_NO)}</span>
@@ -426,6 +427,7 @@ export function ResolveKycDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('kycResolve.title', { field: t(`kycField.${field}`) })}
       subtitle={joinParts([customer.name, t(core ? 'kyc.conflict.core' : 'kyc.conflict.minor')])}
       onClose={onClose}
@@ -528,6 +530,7 @@ export function ConfirmFactDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('kycConfirm.title', { field: t(`kycField.${field}`) })}
       subtitle={t('kycConfirm.sub', { date: formatDate(note.createdDate) })}
       onClose={onClose}

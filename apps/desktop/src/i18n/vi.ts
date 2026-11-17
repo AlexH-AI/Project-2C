@@ -19,6 +19,9 @@ export const vi = {
   'tableMore.shown.people': 'Đang hiện {count} / {total} người',
   'tableMore.more.people': 'Hiện thêm {count} người',
   'tableMore.all.people': 'Đã hiện hết {total} người',
+  // The × of the head of every dialog (VA3a, mockup components.html 06): apart from a button
+  // "Đóng" in the foot of a dialog.
+  'dialog.close': 'Đóng hộp thoại',
   'nav.label': 'Điều hướng chính',
   'nav.group.manage': 'Quản lý',
   'screen.overview': 'Tổng quan',

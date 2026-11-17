@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SHOW_MORE_STEP } from './show-more';
-import { tableView, type ColumnSorting } from './table-view';
+import { rowState, tableView, type ColumnSorting } from './table-view';
 
 // @ts-expect-error Only a column that does not sort may hide its header.
 const hiddenButSorts: ColumnSorting = { headerHidden: true };
@@ -67,5 +67,22 @@ describe('tableView', () => {
       visible: sorted.slice(0, 200),
       foot: { kind: 'more', shown: 200, total: 250, next: 50 },
     });
+  });
+});
+
+describe('rowState', () => {
+  it('marks the row of `selectedId` as the current one, painted as the chosen row (L21)', () => {
+    const state = rowState('b', 'b');
+    expect(state['aria-current']).toBe('true');
+    expect(state.className.split(' ')).toContain('row-selected');
+  });
+
+  it('leaves every other row unmarked, lit under the pointer only', () => {
+    for (const selectedId of ['b', undefined]) {
+      const state = rowState('a', selectedId);
+      expect(state).not.toHaveProperty('aria-current');
+      expect(state.className).not.toContain('row-selected');
+      expect(state.className).toContain('hover:');
+    }
   });
 });

@@ -214,12 +214,12 @@ test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', 
   await expect(report.getByRole('listitem').first()).toHaveText('V1 · Không có khối JSON hợp lệ');
   await expect(report).toContainText('Bản hiện hành vẫn là lần 15/09.');
   await expect(report).not.toContainText('{"x": 1}');
-  await report.getByRole('button', { name: 'Đóng' }).click();
+  await report.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(report).toBeHidden();
   // A history row opens the same report.
   await rows.nth(1).getByRole('button').click();
   await expect(report).toBeVisible();
-  await report.getByRole('button', { name: 'Đóng' }).click();
+  await report.getByRole('button', { name: 'Đóng', exact: true }).click();
 
   // The REJECTED line gives way to a new session, and is back once it ends (review of PR 459).
   const line = panel.getByText(/bị loại: /);

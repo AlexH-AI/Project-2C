@@ -143,7 +143,7 @@ test('refuses to delete a team that still has people', async ({ page }) => {
   );
   // Trying again would be refused the same: only the write lock of a data replace says to (S2-2).
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(teamButton(page, 'Bình Minh')).toBeVisible();
 });
 
@@ -264,7 +264,7 @@ test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', a
 
   await edit.getByRole('button', { name: 'Bỏ thay đổi và xóa nhân sự', exact: true }).click();
   await expect(confirm).toBeVisible();
-  await confirm.getByRole('button', { name: 'Đóng' }).click();
+  await confirm.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(table.getByRole('row', { name: /Trần Hải Yến/ })).toBeVisible();
 
   // Typed back to what is saved, a role there and back with it: nothing to ask.
@@ -397,7 +397,7 @@ test('refuses to delete an RM who still has records, and says how many (9b)', as
   await expect(dialog).not.toContainText(REVIEWER_HELP);
   await expect(dialog).not.toContainText(COORDINATOR_HELP);
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(members(page, 'Sao Mai').getByRole('row', { name: new RegExp(name) })).toBeVisible();
 });
 
@@ -524,7 +524,7 @@ test('an RM and an IS kept only by a customer in the trash: 9b counts it as the 
     `Có cả dữ liệu của KH đã xóa: ${customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RM khác chỉ chuyển được lịch Dự kiến.`,
   );
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
 
   dialog = await openDelete(page, shared(page), 'Lê Thu Hà');
   await expect(dialog.getByRole('alert')).toContainText('1 lịch hẹn là người đánh giá kết quả');
@@ -533,7 +533,7 @@ test('an RM and an IS kept only by a customer in the trash: 9b counts it as the 
     `Có cả lịch hẹn của KH đã xóa: ${customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.`,
   );
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
 
   // The customer still comes back, its RM live (TR-2).
   await goTo(page, 'Cài đặt');
@@ -568,7 +568,7 @@ test('both delete dialogs leave Xóa on when refused while the data is replaced 
       'Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup). Thay đổi này chưa được ghi — thử lại khi xong.',
     );
     await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeEnabled();
-    await dialog.getByRole('button', { name: 'Đóng' }).click();
+    await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
   };
   await teamButton(page, 'Tạm Thời').click();
   await members(page, 'Tạm Thời').getByRole('button', { name: 'Xóa team' }).click();

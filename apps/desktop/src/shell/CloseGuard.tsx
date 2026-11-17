@@ -86,6 +86,8 @@ export function CloseDialog({
   // Escape leaves the question unanswered: the window stays open and the next close asks again.
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('close.unsavedTitle')}
       onClose={() => onChoose('stay')}
       actions={

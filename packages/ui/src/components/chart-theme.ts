@@ -48,7 +48,11 @@ export function chartTheme(readToken: TokenReader, palette: readonly string[] = 
       },
     },
     valueAxis: axis,
+    // A tooltip stays in the box of its chart, and a name with no space breaks inside it instead
+    // of running out of the window (DR6-183).
     tooltip: {
+      confine: true,
+      extraCssText: 'white-space: normal; overflow-wrap: anywhere;',
       backgroundColor: token('--bg-2'),
       borderColor: borderStrong,
       textStyle: { color: token('--text') },

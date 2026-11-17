@@ -35,6 +35,17 @@ const SORT_STATE = {
 export const sorts = (column: ColumnSorting) => column.sortable !== false;
 
 /**
+ * How the row `id` shows whether it is the one of `selectedId`, the row whose details are open
+ * beside the table: the current one, in the gold tint of the chosen row (mockup components.html
+ * 05, `row-selected` of theme.css); any other is lit under the pointer only. Either is the `group`
+ * its cells read (the last row has no rule under it).
+ */
+export const rowState = (id: string, selectedId: string | undefined) =>
+  id === selectedId
+    ? ({ 'aria-current': 'true', className: 'group row-selected' } as const)
+    : ({ className: 'group hover:bg-fill-1' } as const);
+
+/**
  * What a table shows: a header per column, then its rows, sorted already, cut to the hundreds
  * asked for, with the foot under them (`showMore`).
  */

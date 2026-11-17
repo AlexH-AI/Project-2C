@@ -16,7 +16,7 @@ import { routeToHash } from '../../shell/routes';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, BADGE, CELL_NAME, FOCUS, LINK } from '../classes';
+import { ALERT, BADGE, CARD_SKIN, CELL_NAME, FOCUS, LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerFormDialog } from './CustomerDialogs';
 import {
@@ -38,7 +38,7 @@ const VIEWS = [
 const CLOSED_LIMIT = 5;
 
 /** The card of one stage, a kanban column or a closed list: less room around its rows. */
-const STAGE_CARD = 'rounded-lg border border-border bg-surface-1 p-3';
+const STAGE_CARD = `${CARD_SKIN} p-3`;
 
 const profileHref = (card: CustomerCard) =>
   routeToHash({ screen: 'customer', id: card.customer.id });
@@ -269,7 +269,7 @@ function Card({ card }: { card: CustomerCard }) {
   return (
     <a
       href={profileHref(card)}
-      className={`flex flex-col gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
+      className={`flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
     >
       <span className="flex items-center justify-between gap-1.5">
         <b className="truncate font-semibold">{card.customer.name}</b>
@@ -297,7 +297,10 @@ function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly Customer
             key={card.customer.id}
             className="flex gap-2 border-b border-border py-1.5 last:border-b-0"
           >
-            <a href={profileHref(card)} className={`truncate rounded-sm hover:underline ${FOCUS}`}>
+            <a
+              href={profileHref(card)}
+              className={`truncate rounded-control-sm hover:underline ${FOCUS}`}
+            >
               {card.customer.name}
             </a>
             <span className="ml-auto text-fg-3 tabular-nums">{formatDate(card.since)}</span>

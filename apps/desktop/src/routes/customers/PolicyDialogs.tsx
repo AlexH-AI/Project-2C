@@ -145,6 +145,7 @@ export function PolicyDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={
         mode.kind === 'edit'
           ? t('policyForm.editTitle', { customer: customer.name })
@@ -320,6 +321,8 @@ function DeletePolicyDialog({
   };
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('policyDelete.title', { date: formatDate(policy.submittedDate) })}
       subtitle={t('policyDelete.sub', {
         customer: customer.name,
