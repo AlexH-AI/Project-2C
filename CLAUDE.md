@@ -101,7 +101,8 @@ e2e/               Playwright (chạy trên bản build web)
 | `pnpm dev:web` | UI trên Vite, không cần Tauri |
 | `pnpm dev` | App Tauri |
 | `pnpm verify:rust` | `cargo fmt --check` + clippy (`-D warnings`) + `cargo test` của `src-tauri` — chạy khi sửa Rust (cần Rust; CI chạy trong job build exe) |
-| `pnpm build:exe` | Build exe portable |
+| `pnpm build:exe` | Build exe chạy thẳng `project2c.exe` (chế độ portable khi có `Project2C-data\` cạnh exe) |
+| `pnpm build:installer` | Build exe và file cài NSIS theo người dùng, bản phát hành Windows (ADR-0019 §5); CI build bằng lệnh này |
 | `tools/bootstrap.ps1` | Cài/kiểm tra toolchain trên máy mới (idempotent) |
 
 ## Quy ước

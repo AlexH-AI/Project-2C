@@ -11,7 +11,7 @@ paths:
 - PR code (mở, push thêm, mở lại): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`; `merge-pr` chặn PR đụng file cần build exe (`EXE_PATHS` trong `tools/pr-core.mjs`) mà thiếu nhãn. Cùng các file đó còn cần nhãn `build-mac` (mục "Bản macOS").
 - Bước "Note the tested base" của job Verify ghi notice `Tested base` (`TESTED_BASE` trong `tools/pr-core.mjs`): SHA cha thứ nhất của commit gộp mà run test, tức bản `main` đã test cùng PR; Re-run giữ nguyên commit gộp của lần chạy đầu (DR6-57). `merge-pr` chặn khi `main` có commit code sau SHA đó (`gh pr update-branch <N>` → CI → review lại), và khi run xanh mà không có notice (`gh pr close <N>` + `gh pr reopen <N>`). Danh sách file của PR và danh sách commit của `main` sau SHA đó đọc bằng REST có phân trang; đọc thiếu thì chặn (commit: đọc ít hơn `total_commits`, hoặc GitHub không trả số này).
 - Job Verify đọc nhãn hiện tại của PR qua API ở cuối job (T-063). Gắn `build-exe` sau khi Verify đã qua bước đó thì CI không chạy lại (không nghe sự kiện `labeled`): push thêm hoặc `gh pr close` + `gh pr reopen`.
-- Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>`.
+- Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>` gồm `project2c.exe` (exe chạy thẳng; chế độ portable khi có `Project2C-data\` cạnh exe) và file cài NSIS theo người dùng `*-setup.exe`, cùng một lần `pnpm build:installer` (ADR-0019 §5).
 - Chạy tay (`workflow_dispatch`): Verify + build exe.
 - Push mới lên cùng nhánh hủy run cũ đang chạy (`concurrency`).
 - `timeout-minutes`: Verify 75 (run xanh dài nhất tới 14/11/2026: 39 phút), build exe 45 (cache Rust nguội dựng lại mọi crate). Một test quay vòng mãi làm job đỏ ở mốc đó, không giữ tới 6 giờ của GitHub (CLR6-I3, T-428).
@@ -21,7 +21,16 @@ paths:
 ## Bản macOS (`.github/workflows/macos.yml`, T-413)
 
 - Chạy ở PR có nhãn `build-mac` (sự kiện `synchronize`, `labeled`: gắn chính nhãn `build-mac`, kể cả lúc tạo PR, là chạy một lần) và chạy tay (`gh workflow run macos.yml --ref main`, artifact cho Owner thử). PR không có nhãn: run bị bỏ qua, không tốn phút. Không chạy khi push.
-- Bước: `cargo fmt --check`, clippy `-D warnings`, unit test Rust trên macOS (code `cfg(not(windows))` chỉ được kiểm ở đây), build `Heritas L-CRM.app` cho chip Apple ký ad-hoc, `codesign --verify --deep --strict`, nén bằng `ditto` → artifact `Heritas-L-CRM-macos-<SHA head>`. Bản macOS của runner ghi ở tóm tắt run.
+- Job `Build macOS app (Apple chip)` (`MAC_CHECK`):
+  - `cargo fmt --check`, clippy `-D warnings`, unit test Rust trên macOS (code `cfg(not(windows))` chỉ được kiểm ở đây);
+  - `build:mac` của `apps/desktop`: `Heritas L-CRM.app` cho chip Apple, ký ad-hoc, trong `.dmg`; kiểm quyền của webview như bản exe (`tools/check-capabilities.mjs`);
+  - kiểm app: `codesign --verify --deep --strict`, `Signature=adhoc`, chỉ arm64, `LSMinimumSystemVersion` 26.0, `CFBundleLocalizations` vi, en, định danh và phiên bản trùng `tauri.conf.json`;
+  - kiểm `.dmg`: đúng một file, `hdiutil verify`, mount: app trong ổ ký hợp lệ, lối tắt `Applications` trỏ `/Applications`;
+  - artifact `Heritas-L-CRM-macos-<SHA head>` là file `.dmg`. Bản macOS của runner ghi ở tóm tắt run.
+- Job `E2E (WebKit, macOS)` (Mac-7, ADR-0019 §9): cùng điều kiện chạy, song song với job build, không cần Rust.
+  - Cài WebKit của Playwright (`pnpm exec playwright install webkit`, bản theo Playwright ghim ở `pnpm-lock.yaml`), rồi `PW_WEBKIT=1 pnpm exec playwright test --project webkit` (`e2e/serve.mjs` build web trước). Tóm tắt e2e (qua, flaky, đỏ, bỏ qua) ở trang run; artifact `e2e-report-webkit-<SHA head>` khi đỏ hay có ca flaky.
+  - Số worker không ghim (trên CI Playwright để mặc định, nửa số lõi của runner): 2 worker ≈ 7 phút, 1 worker 21–28 phút (9 run 16–17/11/2026). Job build 2–6 phút, nên PR `build-mac` chủ yếu chờ job này.
+  - `merge-pr` không đòi check này theo tên như `MAC_CHECK`: nó tính như mọi check của head (đỏ, bị hủy hay đang chạy thì chặn).
 - **Nhãn `build-mac` bắt buộc** (Mac-6; ADR-0019 §8, Q6) khi PR đụng file cần build exe (`EXE_PATHS`) hoặc `.github/workflows/macos.yml` (`needsMac` trong `tools/pr-core.mjs`): v1.0 phát hành cả hai nền tảng, và code `cfg(not(windows))` chỉ được kiểm ở đây. Gắn lúc tạo, cùng `build-exe`. `merge-pr` / `pr-status` chặn khi:
   - thiếu nhãn: `gh pr edit <N> --add-label build-mac`. Gắn nhãn là build ngay, không cần đóng / mở lại PR; head không đổi nên `REVIEW: PASS` vẫn còn giá trị;
   - có nhãn mà head chưa có check `Build macOS app (Apple chip)` (`MAC_CHECK`) nào;
@@ -34,6 +43,6 @@ paths:
 ## Phát hành hai nền tảng từ một SHA (ADR-0019 §8)
 
 - GitHub Release (v1.0, ở G7) gồm bản Windows, bản macOS và hướng dẫn sử dụng, build từ cùng một SHA của `main`.
-- Bản Windows: artifact của job build exe trong run CI của push lên `main` ở SHA đó (`Project-2C-<sha>`). Push chỉ sửa docs không chạy CI, nên SHA đó chưa có bản Windows: `gh workflow run ci.yml --ref main`.
-- Bản macOS: `gh workflow run macos.yml --ref main` khi `main` vẫn ở SHA đó → artifact `Heritas-L-CRM-macos-<SHA>`.
+- Bản Windows: file cài NSIS (`*-setup.exe`) trong artifact của job build exe, run CI của push lên `main` ở SHA đó (`Project-2C-<sha>`). Bản phát hành chỉ có file cài; `project2c.exe` cùng artifact dùng cho nghiệm thu và thử (ADR-0019 §5). Push chỉ sửa docs không chạy CI, nên SHA đó chưa có bản Windows: `gh workflow run ci.yml --ref main`.
+- Bản macOS: `gh workflow run macos.yml --ref main` khi `main` vẫn ở SHA đó → file `.dmg` trong artifact `Heritas-L-CRM-macos-<SHA>`.
 - Kiểm SHA của run macOS trùng SHA của bản Windows (`gh run list --workflow macos.yml --event workflow_dispatch --limit 1 --json headSha,conclusion`, và SHA trong tên hai artifact). Lệch (`main` có commit giữa hai lần build) thì không phát hành cặp đó: build lại cả hai trên `main` mới.
