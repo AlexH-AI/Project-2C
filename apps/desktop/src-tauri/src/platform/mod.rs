@@ -65,8 +65,16 @@ fn launch(windows: bool, debug: bool, exe: PathBuf) -> io::Result<Launch> {
 /// [`DATA_DIR_UNREACHABLE`](crate::storage::DATA_DIR_UNREACHABLE) (see [`unreadable`]): the file
 /// is whole, so the startup page must not tell to copy a backup over it (L184, L204).
 fn portable(exe: &Path) -> io::Result<bool> {
+    portable_with(exe, |dir| fs::metadata(dir))
+}
+
+/// [`portable`] with the read that follows a link passed in, which the tests make fail.
+fn portable_with(
+    exe: &Path,
+    metadata: impl FnOnce(&Path) -> io::Result<fs::Metadata>,
+) -> io::Result<bool> {
     let dir = beside(exe)?;
-    match fs::metadata(&dir) {
+    match metadata(&dir) {
         Ok(found) => Ok(found.is_dir()),
         Err(error) => unreadable(error, || fs::symlink_metadata(&dir).map(drop)),
     }
@@ -523,9 +531,24 @@ mod tests {
             (error.kind(), error.to_string()),
             (ErrorKind::Other, "not ready".into())
         );
-        // The system refusing the app stays as it is, for `db_open` to tell apart (`opened_dir`).
+        // The system refusing the app stays as it is, for `db_open` to tell apart (`opened_dir`):
+        // what the link leads to, or the link itself when what it leads to is not found.
         let refused = unreadable(io::Error::from(ErrorKind::PermissionDenied), || Ok(()));
         assert_eq!(refused.unwrap_err().kind(), ErrorKind::PermissionDenied);
+        let link_refused = || Err(io::Error::from(ErrorKind::PermissionDenied));
+        let refused = unreadable(io::Error::from(ErrorKind::NotFound), link_refused);
+        assert_eq!(refused.unwrap_err().kind(), ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn any_project2c_data_there_whose_read_fails_is_unreachable_not_only_a_link() {
+        // The new branch covers whatever the system reads by that name, as the one for "not found"
+        // does: a folder of any other kind of reparse point fails out of reach the same (L204).
+        let root = temp_dir();
+        fs::create_dir_all(root.join("Project2C-data")).unwrap();
+        let not_ready = |_: &Path| Err(io::Error::other("not ready"));
+        let error = portable_with(&root.join("project2c.exe"), not_ready).unwrap_err();
+        assert_eq!(error.to_string(), DATA_DIR_UNREACHABLE);
     }
 
     #[test]
