@@ -61,8 +61,7 @@ export const en: EnglishMessages = {
   'aiPanel.web.bothFailed':
     'Could not copy or open the browser — select all of the text below ({mod}A in the box), {mod}C, then open chatgpt.com yourself.',
   'aiPanel.web.pastePlaceholder': 'Paste the answer from ChatGPT ({mod}V)',
-  'aiError.AI_KEYRING':
-    "Could not read or write the API key in this computer's key store (Windows Credential Manager, or the macOS Keychain).",
+  'aiError.AI_KEYRING': "Could not read or write the API key in this computer's key store.",
   'settingsAi.providerWeb': 'OpenCode is only in the desktop app.',
   'settingsAi.keyWeb': 'Only in the desktop app.',
   'settingsAi.keyHelp':
@@ -73,16 +72,21 @@ export const en: EnglishMessages = {
   'settingsAi.keyStore.mac': 'the macOS Keychain',
   'reports.exportFailedHelp':
     'Could not write to the exports folder of the data folder (the disk is full, or the app may not write there). The data in the app is not affected.',
+  'storage.dataFolderModes':
+    'Windows: %LOCALAPPDATA%\\com.heritas.lcrm, or Project2C-data next to the exe in portable mode; macOS: ~/Library/Application Support/com.heritas.lcrm',
   'storage.openFailedHelp':
-    "The app has written nothing to the file. The automatic backups are in the backups folder of the data folder (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, or Project2C-data next to the exe in portable mode; macOS: ~/Library/Application Support/com.heritas.lcrm): copy the newest one over project2c.db in the data folder to restore it, then close this window and open the app again. If the backups folder cannot be opened, first ask the computer's administrator for the right to read it again. The newest backup may be the faulty file itself: then copy the one before it, then older ones.",
+    "The app has written nothing to the file. The automatic backups are in the backups folder of the data folder ({folder}): copy the newest one over project2c.db in the data folder to restore it, then close this window and open the app again. If the backups folder cannot be opened, first ask the computer's administrator for the right to read it again. The newest backup may be the faulty file itself: then copy the one before it, then older ones.",
   'storage.backupFailedHelp':
-    'The data file has not changed; there is nothing to restore. The app copies it to the backups folder of the data folder (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, or Project2C-data next to the exe in portable mode; macOS: ~/Library/Application Support/com.heritas.lcrm) before opening it: check that the disk has free space, that the folder is not read-only or held by another program, and that the user account in use may read and write it, then close this window and open the app again.',
+    'The data file has not changed; there is nothing to restore. The app copies it to the backups folder of the data folder ({folder}) before opening it: check that the disk has free space, that the folder is not read-only or held by another program, and that the user account in use may read and write it, then close this window and open the app again.',
   'storage.diskFullHelp':
-    'The data file has not changed; there is nothing to restore. The app copies it to the backups folder of the data folder before opening it, but the disk that holds the data folder (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, or Project2C-data next to the exe in portable mode; macOS: ~/Library/Application Support/com.heritas.lcrm) is full. Delete some files on that disk (for example old files in the exports folder of the data folder), then close this window and open the app again.',
+    'The data file has not changed; there is nothing to restore. The app copies it to the backups folder of the data folder before opening it, but the disk that holds the data folder ({folder}) is full. Delete some files on that disk (for example old files in the exports folder of the data folder), then close this window and open the app again.',
   'storage.fileInUseHelp':
-    "The data file is not damaged; there is nothing to restore. Another program (a backup, sync or antivirus tool, or one that opens SQLite files) has a file of the app's data folder open: close that program, then close this window and open the app again.",
+    "The data file is not damaged; there is nothing to restore. Another program (a backup, sync or antivirus tool, or one that opens SQLite files) has a file of the app's data folder ({folder}) open: close that program, then close this window and open the app again.",
   'storage.accessDeniedHelp':
-    "The data file is not damaged; there is nothing to restore. Check that the data folder (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, or Project2C-data next to the exe in portable mode; macOS: ~/Library/Application Support/com.heritas.lcrm) and its files are not read-only or locked (macOS: Locked in Finder's Get Info), and that the user account in use may write and delete files in it (a portable exe run from a read-only drive, or from a folder that needs administrator rights such as Program Files: copy the exe's whole folder elsewhere), then close this window and open the app again.",
+    "The data file is not damaged; there is nothing to restore. Check that the data folder ({folder}) and its files are not read-only or locked (macOS: Locked in Finder's Get Info), and that the user account in use may write and delete files in it (a portable exe run from a read-only drive, or from a folder that needs administrator rights such as Program Files: copy the exe's whole folder elsewhere), then close this window and open the app again.",
+  'storage.dataDirUnreachable': 'Cannot reach the data folder Project2C-data',
+  'storage.dataDirUnreachableHelp':
+    'The data file is not damaged; there is nothing to restore. The Project2C-data folder next to the exe is a link (junction) to a folder that is no longer there: the drive that holds it (a USB stick, a network drive) was removed or disconnected, or that folder was deleted or renamed. Plug in or reconnect that drive, or fix the link so it points to the data folder, then close this window and open the app again.',
   'settings.backup.exportHelp':
     'Writes all the data (soft-deleted records included) to the exports folder of the data folder.',
   'settings.backup.exportFailed':

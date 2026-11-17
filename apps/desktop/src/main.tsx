@@ -11,6 +11,7 @@ import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
 import { appLanguage, setDataCurrency } from './i18n/language';
 import { blockReload } from './shell/block-reload';
+import { startupFolder } from './shell/startup-error';
 import { StartupError } from './shell/StartupError';
 import './index.css';
 
@@ -29,12 +30,15 @@ render(<p className="px-6 py-8 text-sm text-fg-2">{t('startup.loading')}</p>);
 
 if (isTauri()) blockReload(window);
 
+// The exe keeps the database in the data folder of its platform and mode (ADR-0019 §2); web mode
+// keeps it in memory (ADR-0016).
+const storage = isTauri() ? tauriStorage(invoke) : undefined;
+
 // Opened once, outside React: StrictMode would otherwise open (and back up) the file twice.
 // The exe backs the file up once it opened, then saves (DR-51).
-// The exe keeps the database in Project2C-data\; web mode keeps it in memory (ADR-0016).
 async function start(): Promise<ReactNode> {
   const data = await openAppData({
-    storage: isTauri() ? tauriStorage(invoke) : undefined,
+    storage,
     locateFile: () => wasmUrl,
     today: pinnedDay ? () => pinnedDay : undefined,
     // e2e serves the pinned day's data already seeded (DR-79); without the file the app seeds.
@@ -52,4 +56,7 @@ async function start(): Promise<ReactNode> {
   return <App data={data} appWindow={isTauri() ? getCurrentWindow() : undefined} />;
 }
 
-start().then(render, (error: unknown) => render(<StartupError error={error} />));
+// The page names the data folder Rust chose, when it could choose one (L185).
+start().then(render, async (error: unknown) =>
+  render(<StartupError error={error} folder={await startupFolder(storage)} />),
+);

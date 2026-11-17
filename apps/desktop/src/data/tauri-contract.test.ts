@@ -8,10 +8,12 @@ import { tauriOpenCode } from './ai-tauri';
 import {
   ACCESS_DENIED,
   ALREADY_OPEN,
+  DATA_DIR_UNREACHABLE,
   DISK_FULL,
   FILE_IN_USE,
   FOLDER_READ_ONLY,
   READ_ONLY,
+  dataPaths,
   tauriStorage,
 } from './tauri-storage';
 
@@ -149,10 +151,22 @@ describe('the JS ↔ Rust storage contract', () => {
     expect(rustString(storage, 'ACCESS_DENIED')).toBe(ACCESS_DENIED);
     expect(rustString(storage, 'READ_ONLY')).toBe(READ_ONLY);
     expect(rustString(storage, 'FOLDER_READ_ONLY')).toBe(FOLDER_READ_ONLY);
+    expect(rustString(storage, 'DATA_DIR_UNREACHABLE')).toBe(DATA_DIR_UNREACHABLE);
+  });
+
+  it('gives the startup page the errors of the data folder it tells apart (L184)', () => {
+    expect(commandSource('db_open')).toContain('let dir = opened_dir(platform::data_dir())?;');
   });
 
   it('reads an empty reply of db_open as a first start, which Rust sends for no file', () => {
     expect(commandSource('db_open')).toContain('Response::new(bytes.unwrap_or_default())');
+  });
+
+  it('names the file and the backups folder in the data folder as Rust does', () => {
+    expect(dataPaths('D:\\data')).toEqual({
+      file: `D:\\data\\${rustString(storage, 'DB_FILE')}`,
+      backups: `D:\\data\\${rustString(storage, 'BACKUP_DIR')}\\`,
+    });
   });
 });
 
