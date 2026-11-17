@@ -187,7 +187,7 @@ test('Nhập backup, refused after a failed save, says to press "Thử lại"; t
   await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
 });
 
-/** A change whose save fails, then "Thử lại" clicked, its save held while the file can be written. */
+/** A change whose save fails, then "Thử lại" pressed, its save held while the file can be written. */
 async function retryHeld(page: Page, team: string) {
   await page.evaluate(() => (window.exe.failSaves = true));
   await addTeam(page, team);

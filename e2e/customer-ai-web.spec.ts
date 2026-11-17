@@ -6,10 +6,10 @@ import {
   discoveryFacts,
   discoveryOutput,
   panelOf,
+  pastTheWindow,
   right,
   scrolls,
   seededCustomer,
-  sideways,
   stubChatGptWeb,
 } from './support';
 
@@ -450,7 +450,7 @@ test('the history and a long word of the AI stay in the panel and in the appoint
   expect(await height(history.getByText('ChatGPT web', { exact: true }))).toBe(await height(badge));
   expect(await overhang(panel), 'panel').toBeLessThanOrEqual(1);
   expect(await scrolls(panel), 'panel scrolls sideways').toBe(false);
-  expect(await sideways(page), 'page with the panel').toBe(false);
+  expect(await pastTheWindow(page), 'page with the panel').toEqual([]);
 
   // The same lists in the detail of an appointment, read-only.
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
@@ -471,5 +471,5 @@ test('the history and a long word of the AI stay in the panel and in the appoint
   await expect(ai).toContainText(codes);
   expect(await overhang(ai), 'AI block').toBeLessThanOrEqual(1);
   expect(await scrolls(ai), 'AI block scrolls sideways').toBe(false);
-  expect(await sideways(page), 'page with the AI block').toBe(false);
+  expect(await pastTheWindow(page), 'page with the AI block').toEqual([]);
 });

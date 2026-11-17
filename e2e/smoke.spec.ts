@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { trackConsoleErrors } from './support';
 
 test('app shell shows the brand and the overview with its KPI', async ({ page }) => {
   await page.goto('/');
@@ -16,11 +17,7 @@ test('app shell shows the brand and the overview with its KPI', async ({ page })
 });
 
 test('page loads without console errors', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('pageerror', (error) => errors.push(error.message));
+  const errors = trackConsoleErrors(page);
 
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

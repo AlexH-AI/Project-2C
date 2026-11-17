@@ -1,3 +1,5 @@
+import { isMac } from './platform';
+
 /** The parts of a key press that decide whether the webview reloads the page, or steps back. */
 type KeyPress = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'altKey' | 'metaKey' | 'target'>;
 
@@ -14,14 +16,16 @@ const isReloadKey = (press: KeyPress): boolean =>
   (((press.ctrlKey && !press.altKey) || press.metaKey) && press.key.toLowerCase() === 'r');
 
 /**
- * A step through the history: Alt+← / Alt+→, a keyboard's own Back and Forward keys, and on macOS
- * ⌘[ / ⌘], and ⌘← / ⌘→ outside a text field, where they move the caret to the start or end of the
- * line instead (Mac-5a).
+ * A step through the history: a keyboard's own Back and Forward keys; Alt+← / Alt+→ on Windows,
+ * where WebView2 steps with them even in a text field; and on macOS ⌘[ / ⌘], and ⌘← / ⌘→ outside a
+ * text field, where they move the caret to the start or end of the line instead (Mac-5a). macOS
+ * leaves ⌥← / ⌥→ alone: WKWebView takes no step with them, and they move the caret a word at a time
+ * (with ⇧, select it; L186).
  */
-const isHistoryKey = (press: KeyPress): boolean =>
+const isHistoryKey = (press: KeyPress, mac: boolean): boolean =>
   press.key === 'BrowserBack' ||
   press.key === 'BrowserForward' ||
-  (press.altKey && !press.ctrlKey && isArrow(press.key)) ||
+  (!mac && press.altKey && !press.ctrlKey && isArrow(press.key)) ||
   (press.metaKey && (press.key === '[' || press.key === ']')) ||
   (press.metaKey && isArrow(press.key) && !inTextField(press.target));
 
@@ -46,14 +50,14 @@ const inTextField = (target: EventTarget | null): boolean =>
  * dialog open and what it holds, or leaves a screen in the middle of a reload or an import; the
  * sidebar is the way between screens. Chromium does not step when the page blocks the key or the
  * button's `mouseup`. Listens in the capture phase, so no screen can let one through by stopping
- * the event.
+ * the event. `mac`: the app runs on macOS; the default asks the webview.
  */
-export function blockReload(page: EventTarget): void {
+export function blockReload(page: EventTarget, mac = isMac()): void {
   page.addEventListener(
     'keydown',
     (event) => {
       const press = event as KeyboardEvent;
-      if (isReloadKey(press) || isHistoryKey(press)) event.preventDefault();
+      if (isReloadKey(press) || isHistoryKey(press, mac)) event.preventDefault();
     },
     { capture: true },
   );
