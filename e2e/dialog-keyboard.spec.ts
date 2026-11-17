@@ -126,6 +126,21 @@ test('arrow keys move the choice around a segmented control, wrapping at both en
   await page.keyboard.press('ArrowLeft');
   await expect(radios.nth(count - 1)).toHaveAttribute('aria-checked', 'true');
   await expect(radios.nth(count - 1)).toBeFocused();
+
+  // Around the end: from the last, → goes to the first, and so does ↓ (DR6-206).
+  await page.keyboard.press('ArrowRight');
+  await expect(radios.nth(0)).toHaveAttribute('aria-checked', 'true');
+  await expect(radios.nth(0)).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(radios.nth(count - 1)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(radios.nth(0)).toHaveAttribute('aria-checked', 'true');
+  await expect(radios.nth(0)).toBeFocused();
+  // ↓ is a step on, as → is, anywhere else too.
+  await page.keyboard.press('ArrowDown');
+  await expect(radios.nth(1)).toHaveAttribute('aria-checked', 'true');
+  await expect(radios.nth(1)).toBeFocused();
+  await expect(radios.and(page.locator('[aria-checked="true"]'))).toHaveCount(1);
 });
 
 test('a second Escape does not close the dialog of a running reload', async ({
@@ -144,10 +159,18 @@ test('a second Escape does not close the dialog of a running reload', async ({
   const running = dialog.getByRole('button', { name: 'Đang nạp lại…' });
   await expect(running).toBeFocused();
   await expect(running).toBeDisabled();
-  // Dimmed as a button off is, under the pointer too.
-  await expect(running).toHaveCSS('opacity', '0.5');
+  // The field, locked meanwhile, is outside --border-control: a dashed edge, no fill (VA2).
+  const locked = dialog.getByRole('textbox', { name: /^Gõ NẠP LẠI/ });
+  await expect(locked).toBeDisabled();
+  await expect(locked).toHaveCSS('border-top-style', 'dashed');
+  await expect(locked).toHaveCSS('border-bottom-color', 'rgb(52, 66, 90)');
+  await expect(locked).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  // Dimmed as a button off is (components.html 01: 0.45), under the pointer too, where it neither
+  // lights up nor shrinks.
+  await expect(running).toHaveCSS('opacity', '0.45');
   await running.hover({ force: true });
-  await expect(running).toHaveCSS('opacity', '0.5');
+  await expect(running).toHaveCSS('opacity', '0.45');
+  await expect(running).toHaveCSS('filter', 'none');
 
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
@@ -257,7 +280,7 @@ test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10
   await expect(reading).toBeFocused();
   await expect(reading).toBeDisabled();
   // Dimmed as a button off is.
-  await expect(reading).toHaveCSS('opacity', '0.5');
+  await expect(reading).toHaveCSS('opacity', '0.45');
   await page.keyboard.press('Enter');
   await reading.click({ force: true });
   await releaseReads(page);

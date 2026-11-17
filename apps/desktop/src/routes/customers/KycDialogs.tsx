@@ -1,5 +1,5 @@
 import { factCode, type ExtractedFact } from '@p2c/ai';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import {
   confirmKycFact,
   markKycConflict,
@@ -115,10 +115,14 @@ function FactValue({
   onMode: (mode: FactMode) => void;
   hint?: string;
 }) {
+  // What the trường holds describes the field of its new value too: a screen reader says it there,
+  // not only further down, at "Trường đã có giá trị" (DR6-187).
+  const currentId = useId();
+  const current = has.length > 0 ? currentId : undefined;
   return (
     <>
       {has.length > 0 && (
-        <p className="m-0 text-xs wrap-anywhere text-warn tabular-nums">
+        <p id={currentId} className="m-0 text-xs wrap-anywhere text-warn tabular-nums">
           {t('kycNote.current', {
             values: has
               .map((fact) =>
@@ -142,12 +146,14 @@ function FactValue({
             { value: 'no', label: YES_NO.no },
           ]}
           help={hint}
+          describedBy={current}
         />
       ) : (
         <TextField
           label={t('kycNote.value')}
           value={value.text}
           onChange={onText}
+          describedBy={current}
           hint={joinParts([kycAmountRead(field, value.text), hint]) || undefined}
         />
       )}

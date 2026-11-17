@@ -25,11 +25,21 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
  * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). Disabled
  * controls are left out, as in WCAG. With `of: 'border'`, the lower contrast of the border of
  * `area` with the colours either side of it: its own background inside, what is behind it outside
- * (WCAG 1.4.11: at least 3:1; T-284). Colors are read as the browser paints them, alpha included,
+ * (WCAG 1.4.11: at least 3:1; T-284). The border is the bottom edge: a field of Windows 11 carries
+ * its weight there, its other edges a hairline (VA2); on macOS the four are one. A colour that is
+ * changing (the 120 ms of a control under the pointer) is read once it has settled. Colors are read as the browser paints them, alpha included,
  * whatever their syntax (`oklab(…)`, `color(srgb …)` of Tailwind's `bg-x/10`).
  */
 export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): Promise<number> {
-  return area.evaluate((root, of) => {
+  return area.evaluate(async (root, of) => {
+    // A control changes its light in --t-1 (VA2), a button that becomes the primary one too: the
+    // colours are read once they have settled, not halfway between two states.
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
     type Paint = { rgb: number[]; a: number };
     const context = document
       .createElement('canvas')
@@ -85,7 +95,7 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
     };
     if (of === 'border') {
       const chain = chainTo(root);
-      const border = paint(chain, 0, (style) => style.borderTopColor);
+      const border = paint(chain, 0, (style) => style.borderBottomColor);
       return Math.min(
         contrast(border, paint(chain, 0)),
         contrast(border, paint(chain.slice(0, -1), 0)),
@@ -108,6 +118,25 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
     }
     return lowest;
   }, of);
+}
+
+/** The value of a token of `tokens.css` as the page has it now. */
+export const token = (page: Page, name: string) =>
+  page.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name), name);
+
+/** Marks the page as one of `os`, as `main.tsx` does once: its tokens are those of that system. */
+export const markOs = (page: Page, os: 'mac' | 'win') =>
+  page.evaluate((os) => void (document.documentElement.dataset.os = os), os);
+
+/**
+ * The radius a corner of the nominal radii given is drawn with on the system the page is marked
+ * with: Windows 11 draws a circular arc of that radius; macOS a continuous corner in a box of
+ * r × 1.5, or a circular arc of radius r in a web view without `corner-shape` (tokens.css).
+ */
+export async function drawnCorner(page: Page, nominal: { win: number; mac: number }) {
+  if ((await page.locator('html').getAttribute('data-os')) === 'win') return `${nominal.win}px`;
+  const continuous = await page.evaluate(() => CSS.supports('corner-shape: superellipse(1.7)'));
+  return `${nominal.mac * (continuous ? 1.5 : 1)}px`;
 }
 
 /** Where the right edge of `box` is in the window. */

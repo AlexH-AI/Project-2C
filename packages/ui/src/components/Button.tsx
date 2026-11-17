@@ -1,35 +1,46 @@
 import type { ButtonHTMLAttributes } from 'react';
 
+/** The paint of each level and its states (theme.css `btn-*`). */
 const VARIANTS = {
-  default: 'border border-border bg-surface-2 text-fg hover:bg-surface-3',
-  primary: 'border border-accent bg-accent text-on-accent hover:opacity-90',
-  danger: 'border border-danger bg-danger text-on-accent hover:opacity-90',
+  default: 'btn-default',
+  primary: 'btn-primary',
+  danger: 'btn-danger',
+  quiet: 'btn-quiet',
 } as const;
 
 export type ButtonVariant = keyof typeof VARIANTS;
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** `default` is the secondary button; a region has one `primary`; `quiet` is text alone. */
   variant?: ButtonVariant;
+  /** `sm` is the compact button of a card, a table row or a banner: 28 px, not 34. */
+  size?: 'md' | 'sm';
 }
 
 /**
- * Mockup `.btn` / `.btn-primary` / `.btn-danger`; `type` defaults to "button", not "submit".
- * `autoFocus` also marks it for `Dialog`, which focuses it once open. Off by `aria-disabled`, which
- * keeps the focus (DR6-154), it looks as off by `disabled`.
+ * Mockup components.html 01 (`.btn`, `.primary`, `.danger`, `.quiet`, `.sm`): one height, one
+ * press, the corner of the system; `type` defaults to "button", not "submit". `autoFocus` also
+ * marks it for `Dialog`, which focuses it once open. Off by `aria-disabled`, which keeps the focus
+ * (DR6-154), it looks as off by `disabled`.
  */
 export function Button({
   variant = 'default',
+  size = 'md',
   type = 'button',
   className,
   onMouseDown,
   ...props
 }: ButtonProps) {
   const off = props['aria-disabled'] === true || props['aria-disabled'] === 'true';
+  const box =
+    size === 'sm'
+      ? 'h-7 rounded-control-sm px-2.75 text-sm'
+      : `h-8.5 rounded-control text-md ${variant === 'quiet' ? 'px-2.5' : 'px-3.5'}`;
   return (
     <button
       type={type}
       data-autofocus={props.autoFocus || undefined}
-      className={`cursor-pointer rounded-md px-3 py-1.5 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-50 aria-disabled:cursor-default aria-disabled:opacity-50 ${VARIANTS[variant]} ${className ?? ''}`}
+      className={`press inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 ${box} ${VARIANTS[variant]} ${className ?? ''}`}
       {...props}
       onMouseDown={(event) => {
         // Off, it keeps the focus it holds when clicked. On macOS a click gives a button no focus

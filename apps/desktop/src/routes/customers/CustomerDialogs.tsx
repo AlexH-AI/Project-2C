@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useState, type ReactNode } from 'react';
 import {
   changeStageManually,
   countCustomerRecords,
@@ -148,16 +148,18 @@ function useHandover(customer: CustomerRecord | undefined, rmId: string): number
 }
 
 function KycPreview({ preview }: { preview: ProfileKycPreview }) {
-  const chip = 'rounded border border-border px-1 font-mono text-xs';
+  const chip = 'rounded-control-sm border border-border px-1 text-xs';
   return (
     <div role="status" className={`${ALERT} border-info`}>
       <b className="block">{t('customerForm.kycTitle')}</b>
       {t('customerForm.kycSource')} <span className={chip}>{t('customerForm.kycSystem')}</span>{' '}
       {t('customerForm.kycFacts', { note: preview.note })}{' '}
+      {/* A space of text after each chip, not a margin: read aloud, a chip does not run into the
+          next one nor into the sentence after them (DR6-187). */}
       {preview.facts.map(({ field, value }) => (
-        <span key={field} className={`${chip} mr-1`}>
-          {`${field} = ${String(value)}`}
-        </span>
+        <Fragment key={field}>
+          <span className={chip}>{`${field} = ${String(value)}`}</span>{' '}
+        </Fragment>
       ))}
       {t(preview.newVersion ? 'customerForm.kycNewVersion' : 'customerForm.kycSameVersion')}
     </div>

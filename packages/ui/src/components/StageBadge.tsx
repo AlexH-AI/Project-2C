@@ -9,11 +9,14 @@ const COLORS: Record<CustomerStage, string> = {
   LOST: 'text-lost',
 };
 
-/** Stage pill in the stage colour (mockup `.badge.st-*`); the caller passes the translated label. */
+/**
+ * Stage label in the stage colour, on that colour mixed into the background (mockup components.html
+ * 07 `.st.dot`); the caller passes the translated label.
+ */
 export function StageBadge({ stage, label }: { stage: CustomerStage; label: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${COLORS[stage]}`}
+      className={`label-fill inline-flex h-5 items-center gap-1.25 rounded-chip px-2 text-xs font-bold whitespace-nowrap ${COLORS[stage]}`}
     >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {label}

@@ -23,7 +23,11 @@
   --color-fg-3: var(--text-3);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-fill: var(--accent-fill);
   --color-on-accent: var(--on-accent);
+  --color-fill-1: var(--fill-1);
+  --color-fill-2: var(--fill-2);
+  --color-fill-3: var(--fill-3);
   --color-heading: var(--heading);
   --color-period-band: var(--period-band);
   --color-period-band-border: var(--period-band-border);
@@ -48,6 +52,8 @@
 
   --font-*: initial;
   --font-sans: var(--font-ui);
+  /* The weight of the words of a control (ui2.css .btn, .seg button), between medium and semibold */
+  --font-weight-control: 550;
 
   --text-*: initial;
   --text-xs: var(--fs-xs);
@@ -74,6 +80,8 @@
   --rounded-field: var(--r-field);
   --rounded-control: var(--r-control);
   --rounded-control-sm: var(--r-control-sm);
+  /* The well of a segmented control: concentric with its segments, 2 px in (10 → 8, 6 → 4) */
+  --rounded-segmented: calc(var(--r-control-sm) + 2px);
   --rounded-sm: var(--r-control-sm);
   --rounded-md: var(--r-control);
   --rounded-lg: var(--r-card);
@@ -88,6 +96,162 @@
 @utility rounded-chip {
   border-radius: calc(var(--r-chip) * var(--r-k));
   corner-shape: round;
+}
+
+/* The paint of the shared controls and its states, as components.html draws them (VA2; ui2.css
+   sections 6, 7, 9). The classes of a component give the box: height, padding, radius, text size. */
+
+/* A press (ui2.css .btn, .choice): the control shrinks 4% and springs back; under the pointer only
+   its light changes, in --t-1. Off, it does not answer the pointer. */
+@utility press {
+  transition:
+    background-color var(--t-1),
+    border-color var(--t-1),
+    color var(--t-1),
+    box-shadow var(--t-1),
+    filter var(--t-1),
+    transform var(--t-3) var(--spring-snappy);
+  &:active {
+    transform: scale(0.96);
+  }
+  &:is(:disabled, [aria-disabled='true'], :has(:disabled)):active {
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+/* The four levels of a button: secondary, primary (the one fill of --accent-fill), danger, quiet */
+@utility btn-default {
+  background-color: var(--fill-2);
+  color: var(--text);
+  font-weight: 550;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px var(--hairline);
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    background-color: var(--fill-3);
+  }
+}
+@utility btn-primary {
+  background-color: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 650;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 16px -8px var(--accent-fill);
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    filter: brightness(1.07);
+  }
+}
+@utility btn-danger {
+  background-color: var(--danger);
+  color: var(--bg-0);
+  font-weight: 650;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    filter: brightness(1.07);
+  }
+}
+@utility btn-quiet {
+  color: var(--accent);
+  font-weight: 550;
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    background-color: var(--accent-soft);
+  }
+}
+
+/* A text field and the closed box of a list (ui2.css .input). macOS: an even edge, gold with a
+   soft halo while typed in. Windows 11: the weight is on the bottom edge, gold while typed in. The
+   fill stays under the pointer: --border-control needs 3:1 against it (ADR-0013 appendix
+   11/11/2026 §7). A field that cannot be changed is outside --border-control: dashed, no fill. */
+@utility field {
+  border: 1px solid var(--border-control);
+  background-color: var(--fill-1);
+  color: var(--text);
+  outline: 0;
+  transition:
+    border-color var(--t-1),
+    box-shadow var(--t-1);
+  &::placeholder {
+    color: var(--text-3);
+  }
+  &:hover {
+    border-color: var(--text-3);
+  }
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  &[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+  &[aria-invalid='true']:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+  }
+  &:disabled {
+    border-color: var(--border-strong);
+    border-style: dashed;
+    background-color: transparent;
+    color: var(--text-2);
+  }
+  [data-os='win'] & {
+    border-color: var(--hairline);
+    border-bottom-color: var(--border-control);
+  }
+  [data-os='win'] &:hover {
+    border-color: var(--hairline);
+    border-bottom-color: var(--text-2);
+  }
+  [data-os='win'] &:focus {
+    border-color: var(--hairline);
+    border-bottom-color: var(--accent);
+    box-shadow: inset 0 -1px 0 var(--accent);
+  }
+  [data-os='win'] &[aria-invalid='true'] {
+    border-bottom-color: var(--danger);
+    box-shadow: inset 0 -1px 0 var(--danger);
+  }
+  [data-os='win'] &:disabled {
+    border-color: var(--border-strong);
+    box-shadow: none;
+  }
+}
+
+/* The thumb of a segmented control: the fill under the chosen segment (ui2.css .seg .thumb) */
+@utility thumb {
+  background-color: var(--fill-3);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* A choice pill (ui2.css .choice): the chosen one says so twice, by its gold and by its heavier
+   edge and text. Only one that can still be picked answers the pointer. */
+@utility choice {
+  border: 1px solid var(--border-control);
+  color: var(--text-2);
+  font-weight: 550;
+  &:hover:not(:has(:checked, :disabled)) {
+    background-color: var(--fill-1);
+    color: var(--text);
+  }
+  &:has(:checked) {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 0.5px var(--accent);
+    background-color: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 650;
+  }
+}
+
+/* The fill of a label (ui2.css .st): its own colour mixed into --bg-0, not a see-through tint, so
+   it reads 4.5:1 on a card, a dialog and a chosen row alike. */
+@utility label-fill {
+  background-color: color-mix(in srgb, currentColor 16%, var(--bg-0));
 }
 
 /* The brand block of the sidebar (T-308, G3 27/10): the slogan, and the outline of the navy tree

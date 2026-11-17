@@ -69,7 +69,7 @@ export function SaveFailed({
       className="flex items-center gap-3 border-b border-warn bg-surface-0 px-6 py-2.5 text-sm text-warn"
     >
       <span className="min-w-0 flex-1">{t(SAVE_FAILED[saveFailure(error)].banner)}</span>
-      <Button className="px-2 py-0.5" onClick={onRetry}>
+      <Button size="sm" onClick={onRetry}>
         {t('storage.saveRetry')}
       </Button>
     </div>

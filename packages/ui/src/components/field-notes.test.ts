@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fieldNotes } from './field-notes';
+import { describedBy, fieldNotes } from './field-notes';
 
 describe('fieldNotes', () => {
   it('gives a field with nothing to say no line and no description', () => {
@@ -35,5 +35,18 @@ describe('fieldNotes', () => {
       describedBy: 'f-read f-help',
     });
     expect(fieldNotes('f', { help: help.text })).toEqual({ notes: [help], describedBy: 'f-help' });
+  });
+});
+
+describe('describedBy', () => {
+  it('reads a line outside the field before the lines under it (DR6-187)', () => {
+    expect(describedBy('current', 'f-read f-help')).toBe('current f-read f-help');
+    expect(describedBy('current', undefined)).toBe('current');
+  });
+
+  it('is the lines under the field alone, or nothing, with no line outside', () => {
+    expect(describedBy(undefined, 'f-help')).toBe('f-help');
+    expect(describedBy(undefined, undefined)).toBeUndefined();
+    expect(describedBy('', undefined)).toBeUndefined();
   });
 });

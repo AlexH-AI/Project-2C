@@ -15,7 +15,8 @@ Component React thuần trình bày (ADR-0013): nhận dữ liệu và nhãn qua
 - Bảng: `src/components/DataTable.tsx` (TanStack Table) + phần thuần `table-view.ts` (tiêu đề, dòng hiện, chân bảng) + so sánh ô `compare-cells.ts`.
 - Biểu đồ: `src/components/Chart.tsx` (ECharts) + màu series từ token `chart-theme.ts`.
 - Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`.
-- Form / hộp thoại: `Dialog`, `TextField` (dòng dưới ô: `field-notes.ts`), `SelectField`, `Choices`, `Segmented`, `Button`; huy hiệu `StageBadge`, `PolicyBadge`.
+- Form / hộp thoại: `Dialog`, `TextField` (dòng dưới ô: `field-notes.ts`), `SelectField`, `Choices`, `Segmented`, `Button`; huy hiệu `StageBadge`, `PolicyBadge`; dấu vẽ của ô (✕ của dòng lỗi, mũi tên ô chọn): `FieldMarks.tsx`.
+- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`.
 
 ## Quy ước
 
@@ -32,6 +33,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/Choices.tsx` — type Choice, Choices
 - `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, type DataTableMoreLabels, DataTable
 - `src/components/Dialog.tsx` — DialogFocusFallback, Dialog
+- `src/components/FieldMarks.tsx` — ErrorMark, ListArrow
 - `src/components/NavIcon.tsx` — type NavIconName, NavIcon
 - `src/components/PeriodPicker.label.ts` — type PeriodLabelTemplates, periodLabel
 - `src/components/PeriodPicker.tsx` — type PeriodPickerLabels, PeriodPicker
@@ -43,7 +45,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/chart-theme.ts` — SERIES_TOKENS, chartTheme
 - `src/components/compare-cells.ts` — type CellValues, type CellKind, compareCells, compareCellsThen
 - `src/components/dialog-focus.ts` — focusBack
-- `src/components/field-notes.ts` — type FieldNote, fieldNotes
+- `src/components/field-notes.ts` — type FieldNote, fieldNotes, describedBy
 - `src/components/show-more.ts` — SHOW_MORE_STEP, type ShowMoreFoot, showMore
 - `src/components/table-view.ts` — type ColumnSorting, sorts, tableView
 - `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices

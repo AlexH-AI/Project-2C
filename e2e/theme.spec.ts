@@ -1,12 +1,15 @@
 import { readFile } from 'node:fs/promises';
-import { expect, test, type Locator, type Page } from './fixtures';
+import { expect, test, type Locator } from './fixtures';
 import {
   addKycNote,
   createKycCustomer,
   discoveryFacts,
+  drawnCorner,
   lowestContrast,
+  markOs,
   panelOf,
   stubChatGptWeb,
+  token,
 } from './support';
 
 // ADR-0013 tokens: --bg-0 #0B1017, --text #E8EDF4.
@@ -20,21 +23,6 @@ const CONTROL_CONTRAST = 3;
 async function expectBorderStandsOut(field: Locator) {
   await expect(field).toBeVisible();
   expect(await lowestContrast(field, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
-}
-
-/** The value of a token of `tokens.css` as the page has it now. */
-const token = (page: Page, name: string) =>
-  page.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name), name);
-
-/**
- * The radius a corner of the nominal radii given is drawn with on the system the page is marked
- * with: Windows 11 draws a circular arc of that radius; macOS a continuous corner in a box of
- * r × 1.5, or a circular arc of radius r in a web view without `corner-shape` (tokens.css).
- */
-async function drawnCorner(page: Page, nominal: { win: number; mac: number }) {
-  if ((await page.locator('html').getAttribute('data-os')) === 'win') return `${nominal.win}px`;
-  const continuous = await page.evaluate(() => CSS.supports('corner-shape: superellipse(1.7)'));
-  return `${nominal.mac * (continuous ? 1.5 : 1)}px`;
 }
 
 test('the page is marked with its system, and its text is in the font of that system (VA1)', async ({
@@ -181,10 +169,9 @@ test('a corner takes the radius and the curve of the system the page is marked w
   page,
 }) => {
   await page.goto('/');
-  // A tile is `rounded-md`, until VA2 the name of `rounded-control`.
+  // A tile is `rounded-md`, until VA3a the name of `rounded-control`.
   const tile = page.getByRole('region', { name: 'Chuyển RF' });
-  const mark = (os: 'mac' | 'win') =>
-    page.evaluate((os) => (document.documentElement.dataset.os = os), os);
+  const mark = (os: 'mac' | 'win') => markOs(page, os);
 
   // Windows 11 (Fluent): circular arcs, 8 px surfaces, 4 px controls.
   await mark('win');
@@ -282,23 +269,27 @@ test('the two fields of the app outside packages/ui stand out 3:1 from their car
   await expectBorderStandsOut(page.getByRole('searchbox', { name: 'Tìm theo tên' }));
 });
 
-// Mockup forms.css `.choice` (DR6-149): --bg-2, --border-strong, --radius-sm, 5 / 11 px, --fs-sm,
-// --text-2; `.choice.on`: --accent on --accent-soft, --text, 600; `.choice.off`: 0.4, struck out.
-// The corner is `rounded-sm`, until VA3a the name of `rounded-control-sm` (VA1).
+// Mockup components.html 03 "Viên chọn" (ui2.css `.choice`, VA2; before it forms.css, DR6-149): no
+// fill, an edge of --border-control, 30 px, 12 px either side, --text-2, 550; `.choice.on`: --accent
+// on --accent-soft, a heavier edge of --accent (half a pixel more, inside), 650. One that cannot be
+// picked: 0.4, struck out. The corner is the chip's: a capsule on macOS, 4 px on Windows 11.
 const CHOICE = {
-  'background-color': 'rgb(24, 33, 45)',
-  'border-color': 'rgb(52, 66, 90)',
-  padding: '5px 11px',
+  'background-color': 'rgba(0, 0, 0, 0)',
+  'border-color': 'rgb(104, 120, 144)',
+  'box-shadow': 'none',
+  'min-height': '30px',
+  padding: '0px 12px',
   'font-size': '12.5px',
   color: 'rgb(174, 185, 200)',
-  'font-weight': '400',
+  'font-weight': '550',
 };
 const CHOICE_ON = {
   ...CHOICE,
   'background-color': 'rgba(217, 178, 106, 0.14)',
   'border-color': 'rgb(217, 178, 106)',
-  color: 'rgb(232, 237, 244)',
-  'font-weight': '600',
+  'box-shadow': 'rgb(217, 178, 106) 0px 0px 0px 0.5px inset',
+  color: 'rgb(217, 178, 106)',
+  'font-weight': '650',
 };
 
 /** The chip of a radio of `Choices` (the label around it), drawn in `style`, its text at AA. */
@@ -307,7 +298,10 @@ async function expectChoice(radio: Locator, style: Record<string, string>) {
   for (const [property, value] of Object.entries(style)) {
     await expect(chip).toHaveCSS(property, value);
   }
-  await expect(chip).toHaveCSS('border-radius', await drawnCorner(chip.page(), { win: 4, mac: 8 }));
+  await expect(chip).toHaveCSS(
+    'border-radius',
+    await drawnCorner(chip.page(), { win: 4, mac: 999 }),
+  );
   expect(await lowestContrast(chip)).toBeGreaterThanOrEqual(4.5);
   return chip;
 }
@@ -321,10 +315,11 @@ test('the choices of a dialog are drawn as the mockup draws them, and read at AA
   const gender = create.getByRole('radiogroup', { name: 'Giới tính' });
   await gender.getByRole('radio', { name: 'Nữ' }).check();
   const female = await expectChoice(gender.getByRole('radio', { name: 'Nữ' }), CHOICE_ON);
-  // The chip that is on says so by its border too, 3:1 either side (WCAG 1.4.11). A chip has
-  // words, so the border of one that is off is --border-strong (G3 T-284, index.html#contrast).
+  // The chip that is on says so by its border too, 3:1 either side (WCAG 1.4.11); so does the edge
+  // of one that is off, --border-control (components.html#contrast).
   expect(await lowestContrast(female, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
-  await expectChoice(gender.getByRole('radio', { name: 'Nam' }), CHOICE);
+  const male = await expectChoice(gender.getByRole('radio', { name: 'Nam' }), CHOICE);
+  expect(await lowestContrast(male, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
   // A new customer starts in N4.
   const stages = create.getByRole('radiogroup', { name: 'Nhóm ban đầu' });
   await expectChoice(stages.getByRole('radio', { name: 'N4' }), CHOICE_ON);

@@ -111,7 +111,7 @@ export function NoteEvent({
         {button && (
           <Button
             id={buttonId}
-            className="px-2 py-0.5 text-xs"
+            size="sm"
             disabled={busy || button.tooShort}
             title={button.tooShort ? t('extraction.tooShort') : undefined}
             onClick={extract}

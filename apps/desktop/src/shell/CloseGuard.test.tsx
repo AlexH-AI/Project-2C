@@ -1,6 +1,59 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
-import { CloseDialog } from './CloseGuard';
+import { describe, expect, it, vi } from 'vitest';
+import { CloseDialog, closeRequests } from './CloseGuard';
+
+describe('closeRequests', () => {
+  const request = () => ({ preventDefault: vi.fn() });
+  /** A closing that stays under way until `settle` ends it. */
+  const closing = () => {
+    let settle!: { done: () => void; fail: (error: Error) => void };
+    const close = vi.fn(
+      () =>
+        new Promise<void>((done, fail) => {
+          settle = { done, fail };
+        }),
+    );
+    return { close, settle: () => settle };
+  };
+
+  it('never lets a request close the window itself, the first one included', async () => {
+    const first = request();
+    await closeRequests(() => Promise.resolve())(first);
+    expect(first.preventDefault).toHaveBeenCalledOnce();
+  });
+
+  it('starts no second closing for a click while the first is under way, and holds that click too (DR6-206)', async () => {
+    const { close, settle } = closing();
+    const onRequest = closeRequests(close);
+    const first = onRequest(request());
+    const again = request();
+    const second = onRequest(again);
+    expect(close).toHaveBeenCalledOnce();
+    expect(again.preventDefault).toHaveBeenCalledOnce();
+    settle().done();
+    await Promise.all([first, second]);
+  });
+
+  it('closes again for the next click once the question was left unanswered', async () => {
+    const { close, settle } = closing();
+    const onRequest = closeRequests(close);
+    const first = onRequest(request());
+    settle().done();
+    await first;
+    void onRequest(request());
+    expect(close).toHaveBeenCalledTimes(2);
+  });
+
+  it('tries again for the next click when closing failed (review of PR 125)', async () => {
+    const { close, settle } = closing();
+    const onRequest = closeRequests(close);
+    const first = onRequest(request());
+    settle().fail(new Error('the window is gone'));
+    await expect(first).rejects.toThrow('the window is gone');
+    void onRequest(request());
+    expect(close).toHaveBeenCalledTimes(2);
+  });
+});
 
 const body = (error: unknown) =>
   renderToStaticMarkup(<CloseDialog error={error} onChoose={() => {}} />);

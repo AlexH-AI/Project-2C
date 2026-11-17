@@ -528,6 +528,10 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Số con' });
   // Mockup 7c: the value in effect with its code (F1, F2 are the birth year and gender).
   await expect(dialog.getByText('Đang có: 2 · F4 (15/09/2026)')).toBeVisible();
+  // It describes the field of the new value too: a screen reader says it there (DR6-187).
+  await expect(dialog.getByRole('textbox', { name: 'Giá trị' })).toHaveAccessibleDescription(
+    'Đang có: 2 · F4 (15/09/2026)',
+  );
   await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('3');
   await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
 

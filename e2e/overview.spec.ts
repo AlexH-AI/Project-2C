@@ -26,6 +26,17 @@ test('opens on the current month to date with the appointments tile and six KPI'
   await expect(kinds.getByRole('radio', { checked: true })).toHaveText('Tháng');
   await expect(viewing).toHaveText('Đang xem: Tháng 09/2026MTD 01/09 – 15/09/2026 · Toàn bộ');
   await expect(pending).toHaveCount(0);
+  // The six KPI have a heading of their own, beside the tile "Lịch hẹn" and not under it, as on
+  // the screen (DR6-187): each is a level 3 under "Chỉ số của kỳ".
+  await expect(kpis.getByRole('heading', { level: 3 })).toHaveCount(6);
+  expect(
+    await page
+      .locator('main')
+      .getByRole('heading')
+      .evaluateAll((headings) =>
+        headings.slice(0, 3).map((heading) => `${heading.tagName} ${heading.textContent}`),
+      ),
+  ).toEqual(['H2 Lịch hẹn · cả tháng', 'H2 Chỉ số của kỳ', 'H3 Chuyển RF']);
   await expect(page.getByRole('region', { name: 'Lịch hẹn · cả tháng' })).toContainText(
     'đã gặp / tổng lịch',
   );
