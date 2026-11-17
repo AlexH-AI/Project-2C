@@ -128,14 +128,7 @@ test('arrow keys move the choice around a segmented control, wrapping at both en
   await expect(radios.nth(count - 1)).toBeFocused();
 });
 
-test('a second Escape does not close the dialog of a running reload', async ({
-  page,
-  browserName,
-}) => {
-  test.fixme(
-    browserName === 'webkit',
-    'Option+Tab twice takes the focus out of the dialog, not back to "Đang nạp lại…" (Mac-7b)',
-  );
+test('a second Escape does not close the dialog of a running reload', async ({ page }) => {
   await asExe(page);
   await page.goto('/#/settings');
   await page.evaluate(() => window.exe.holdBackup());
@@ -173,12 +166,7 @@ test('a second Escape does not close the dialog of a running reload', async ({
 
 test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)', async ({
   page,
-  browserName,
 }) => {
-  test.fixme(
-    browserName === 'webkit',
-    'a click on the dimmed "Đang nhập…" takes the focus off it (Mac-7b)',
-  );
   await asExe(page);
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
@@ -225,12 +213,7 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
 // the read opens gives it back as it goes (10a, 10b); pressed meanwhile, it opens no other chooser.
 test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10a, 10b)', async ({
   page,
-  browserName,
 }) => {
-  test.fixme(
-    browserName === 'webkit',
-    'a click on the dimmed "Đang đọc file…" takes the focus off it, so 10a does not give it back (Mac-7b)',
-  );
   await asExe(page);
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
