@@ -528,6 +528,23 @@ mod tests {
         assert_eq!(refused.unwrap_err().kind(), ErrorKind::PermissionDenied);
     }
 
+    #[test]
+    fn db_open_says_the_file_is_whole_when_project2c_data_leads_round_in_a_loop() {
+        // Two links that lead to each other: the entry is there and what it leads to fails with
+        // another kind than "not found", as a drive not ready does (L204), here through `portable`
+        // as `db_open` meets it.
+        let root = temp_dir();
+        let folder = root.join("exe");
+        fs::create_dir_all(&folder).unwrap();
+        let data = folder.join("Project2C-data");
+        link_folder(&root.join("other"), &data);
+        link_folder(&data, &root.join("other"));
+        // Windows: os error 1921; macOS: `ELOOP`.
+        assert_ne!(fs::metadata(&data).unwrap_err().kind(), ErrorKind::NotFound);
+        let chosen = launch(true, false, folder.join("project2c.exe")).and_then(choose_data_dir);
+        assert_eq!(crate::opened_dir(chosen).unwrap_err(), DATA_DIR_UNREACHABLE);
+    }
+
     #[cfg(windows)]
     #[test]
     fn db_open_says_the_file_is_whole_when_project2c_data_leads_to_a_drive_not_ready() {
