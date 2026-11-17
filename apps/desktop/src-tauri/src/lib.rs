@@ -34,7 +34,8 @@ fn data_dir() -> Result<PathBuf, String> {
 
 /// The data folder `db_open` opens (`chosen`, see `platform::data_dir`), with the error the startup
 /// page tells apart (L184), by the one rule of `storage::open` (`storage::out_of_reach`, L204): the
-/// system refusing the app the folder → [`storage::ACCESS_DENIED`]; a `Project2C-data` that leads
+/// system refusing the app the folder → [`storage::ACCESS_DENIED`]; a folder another program holds
+/// (os error 32 / 33, Windows only) → [`storage::FILE_IN_USE`]; a `Project2C-data` that leads
 /// nowhere or out of reach is [`storage::DATA_DIR_UNREACHABLE`] already. Any other error stays as
 /// it is. Only `db_open` needs this: the folder is chosen once a run, so the commands after a start
 /// that opened the file never meet these errors. `data_folder`, which the startup page asks, meets

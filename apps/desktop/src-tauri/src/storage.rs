@@ -34,10 +34,12 @@ pub const READ_ONLY: &str = "READ_ONLY";
 /// itself is the cause. The app matches it exactly. Windows decides by the folder's access list,
 /// macOS by its write bits.
 pub const FOLDER_READ_ONLY: &str = "FOLDER_READ_ONLY";
-/// Error message when the data folder is a link that leads nowhere (`Project2C-data` next to the
-/// exe, a junction to a folder deleted or on a drive pulled out; see `platform::data_dir`): the
-/// file is whole, only out of reach until the drive or the link is back. The app matches it
-/// exactly.
+/// Error message when the data folder `Project2C-data` next to the exe is there but its end is out
+/// of reach (see `platform::data_dir`, `platform::unreadable`): a link to a folder deleted, to a
+/// drive pulled out, or still in the machine but not ready, to a network not reached, links that
+/// lead round in a loop; any entry by that name the system reads but whose end it cannot, save
+/// the system refusing the app ([`ACCESS_DENIED`]). The file is whole, only out of reach until the
+/// drive, the network or the link is back. The app matches it exactly.
 pub const DATA_DIR_UNREACHABLE: &str = "DATA_DIR_UNREACHABLE";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
