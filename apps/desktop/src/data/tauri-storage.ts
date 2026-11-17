@@ -25,8 +25,9 @@ export const FILE_IN_USE = 'FILE_IN_USE';
  */
 export const ACCESS_DENIED = 'ACCESS_DENIED';
 /**
- * `db_open`'s error when the data folder `Project2C-data` next to the exe is a link that leads
- * nowhere (a drive pulled out, a folder deleted): the file is whole
+ * `db_open`'s error when the data folder `Project2C-data` next to the exe is there but its end is
+ * out of reach (a link to a folder deleted, to a drive pulled out or not ready, to a network not
+ * reached, links in a loop; see `platform::unreadable`): the file is whole
  * (`storage::DATA_DIR_UNREACHABLE`).
  */
 export const DATA_DIR_UNREACHABLE = 'DATA_DIR_UNREACHABLE';
