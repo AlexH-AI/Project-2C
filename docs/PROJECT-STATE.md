@@ -445,6 +445,23 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **Build labels** follow `needsExe` / `needsMac` (Mac-6, T-447): DS-6 touches `apps/desktop/src-tauri/**`, so `build-exe` + `build-mac`. T-461 is docs only.
     - **DS-3 and DS-4** keep their place in run 5 and run 7, as decided earlier on 17/11 (comment on PR #1353); run 3c does not change those rows.
   - Run 3c queue (`auto-issues`, Opus): #1364 (T-461, records these decisions) → #1365 (T-462, DS-6).
+- 2026-11-17: run 3d Issues (T-463, T-464, #1371, #1372). Two OWNER decisions of 17/11/2026, both taken inside the `auto-issues` pipeline of run 3c as answers to questions of the orchestrating session, which recorded each one in a "Quyết định Owner" comment on GitHub. The run itself comes from the second decision, which approved the ledger grouping proposal after run 3c. Labels verbatim; T-463 #1371 records them in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §10.1, §12.1, §12.2:
+  - **DS-7**, 17/11/2026, review of PR #1369 (T-462, DS-6), https://github.com/AlexH-AI/Project-2C/pull/1369#issuecomment-6946300331: "DS-7 mới (Recommended)".
+    - The non-blocking Nit / C note of that review gets the new target **DS-7**, a ledger clean-up Issue of the kind "data folder, startup error page", like DS-5 and DS-6: the comments of `opened_dir` (`lib.rs`) and of the constant `DATA_DIR_UNREACHABLE` (`storage.rs`) say less than the behaviour after DS-6 (ledger note L204 @`36e8654`).
+    - The OWNER was asked through the pipeline because DS-6 (#1365) closed with PR #1369, and no other work of the spec §12.1 is of that kind.
+    - Options not chosen: move the note to ACCEPTED; stop the pipeline.
+  - **Ledger grouping after run 3c**, 17/11/2026 (`auto-issues` §6, ledger @`36e8654`, proposal of the coding session `coding-ses2`), https://github.com/AlexH-AI/Project-2C/pull/1370#issuecomment-6946556438: "Duyệt (Recommended)".
+    - Two Issues: this one (T-463, `risk:low`, docs only) and DS-7 (T-464: the ledger note L204; comments only; `risk:low`, PR labels `build-exe` + `build-mac`, blocked by this one). Both run in run 3d (`auto-issues`, Opus), before Mac-rào and run 4.
+    - The 113 other OPEN notes already have a place (DS-3 / DS-4, planned work of the spec, Mac-rào). No note is proposed for ACCEPTED; no Issue touches the gates G1–G7.
+    - Option not chosen by the OWNER: stop the pipeline and create no Issue. Option the proposal itself did not choose: postpone DS-7 to run 5 (Opus, after DS-3).
+  - **Decided by Claude while writing the proposal and the Issues** (by the existing rules; not questions to the OWNER):
+    - **The name "đợt 3d"** (run 3d, a new row of the spec §10.1 table) is Claude's, given in the proposal; the OWNER approved it with the proposal.
+    - **Where DS-7 goes:** right away, before Mac-rào and run 4. The place was in the proposal the OWNER approved; the reasons are Claude's: run 4 runs on Fable and DS-7 touches Rust; DS-7 shares no file with Mac-rào (`.claude/rules/ci.md`, `.claude/rules/tests.md`, `CLAUDE.md`, `docs/testing/nghiem-thu-v1.md`) or with VA1 … VA7.
+    - **Risk of DS-7:** `risk:low` (in the approved proposal), because it only changes comments, not behaviour. The review still runs at level `high`, by the raise table of `review-pr`, since the diff touches `apps/desktop/src-tauri/**`.
+    - **Build labels** follow `needsExe` / `needsMac` (Mac-6, T-447): DS-7 touches `apps/desktop/src-tauri/**`, so its PR gets `build-exe` + `build-mac` (in the approved proposal). T-463 is docs only.
+    - **DS-7 also takes one TS comment:** the same-pattern sweep while writing the DS-7 Issue found that the comment of the constant `DATA_DIR_UNREACHABLE` in `apps/desktop/src/data/tauri-storage.ts` (the TS copy of the Rust constant) also names only a dangling link. DS-7 fixes it too, in the same way as the constant comment in `storage.rs`. The approved proposal named only `lib.rs` and `storage.rs`.
+    - **DS-3 and DS-4** keep their place in run 5 and run 7, as decided earlier on 17/11 (comments on PR #1353, #1363); run 3d does not change those rows. Noted: the ledger @`36e8654` has 15 `[DS-3]` notes while the spec §12.2 table says 12, so DS-3 may have to split in two when its Issue is written (the paragraph under the §12.2 table already allows that). T-463 does not change that number.
+  - Run 3d queue (`auto-issues`, Opus): #1371 (T-463, records these decisions) → #1372 (T-464, DS-7).
 
 ## Next decision
 
