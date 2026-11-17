@@ -207,6 +207,11 @@ test('the closed box of a list is a field with an arrow, dashed with no fill whe
   const [box, mark] = [(await list.boundingBox())!, (await arrow.boundingBox())!];
   expect(mark.x).toBeGreaterThan(box.x + box.width - 32);
   expect(mark.x + mark.width).toBeLessThan(box.x + box.width);
+  // What holds it is laid out apart: a choice cut in the field widens nothing around it on WebKit
+  // (the sweep of long-names.spec.ts picks one of 160 letters there).
+  expect(await list.evaluate((node) => getComputedStyle(node.parentElement!).contain)).toBe(
+    'layout',
+  );
   // Still the system's own list (Owner 17/11/2026): a `select`, picked as one.
   expect(await list.evaluate((node) => node.tagName)).toBe('SELECT');
   await list.selectOption({ label: 'Khác' });
