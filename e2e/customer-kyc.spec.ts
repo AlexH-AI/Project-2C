@@ -1,5 +1,5 @@
 import { expect, pasteAsIs, test, type Locator, type Page } from './fixtures';
-import { right, scrolls, sideways } from './support';
+import { pastTheWindow, right, scrolls } from './support';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026.
 const NAME = 'Bình Kiểm KYC';
@@ -134,7 +134,7 @@ test('a link of 108 characters in a KYC note, a fact or a meeting stays in its c
     await expectInside(card(page, 'Dòng thời gian'), LINK, 2, `timeline at ${width}`);
     await expectInside(card(page, 'Dữ kiện KYC'), LINK, 1, `KYC at ${width}`);
     await expectInside(card(page, 'Lịch hẹn'), LINK, 1, `appointments at ${width}`);
-    expect(await sideways(page), `page at ${width}`).toBe(false);
+    expect(await pastTheWindow(page), `page at ${width}`).toEqual([]);
   }
 });
 
@@ -210,7 +210,7 @@ test('a customer name of 81 letters with no space leaves the buttons of the prof
       const button = page.getByRole('button', { name: label, exact: true });
       expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(width);
     }
-    expect(await sideways(page), `page at ${width}`).toBe(false);
+    expect(await pastTheWindow(page), `page at ${width}`).toEqual([]);
   }
 });
 

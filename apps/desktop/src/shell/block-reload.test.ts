@@ -12,11 +12,11 @@ interface Press {
 
 /**
  * Presses `press` on a page that blocks the reload keys, in `node` when given (else on the page
- * itself, no text field); true when the page kept the key.
+ * itself, no text field), on Windows unless `mac`; true when the page kept the key.
  */
-function blocked(press: Press, node?: Node): boolean {
+function blocked(press: Press, node?: Node, mac = false): boolean {
   const page = new EventTarget();
-  blockReload(page);
+  blockReload(page, mac);
   const event = Object.assign(new Event('keydown', { cancelable: true }), {
     ctrlKey: false,
     shiftKey: false,
@@ -187,7 +187,28 @@ describe('blockReload', () => {
   it('still blocks the keys of Windows in a text field, where they do not move the caret', () => {
     expect(blocked({ key: 'r', ctrlKey: true }, input('text'))).toBe(true);
     expect(blocked({ key: 'F5' }, { tag: 'textarea' })).toBe(true);
+    // WebView2 steps back with Alt+← even in a text field.
     expect(blocked({ key: 'ArrowLeft', altKey: true }, input('text'))).toBe(true);
+    expect(blocked({ key: 'ArrowRight', altKey: true, shiftKey: true }, { tag: 'textarea' })).toBe(
+      true,
+    );
+  });
+
+  it('leaves ⌥← / ⌥→ to macOS, where they move the caret a word at a time and step through no history (L186)', () => {
+    const editable: Node = { tag: 'div', attributes: { contenteditable: '' } };
+    for (const field of [input('text'), { tag: 'textarea' }, { tag: 'b', parent: editable }]) {
+      expect(blocked({ key: 'ArrowLeft', altKey: true }, field, true), field.tag).toBe(false);
+      expect(blocked({ key: 'ArrowRight', altKey: true }, field, true), field.tag).toBe(false);
+      // With ⇧, they select a word at a time.
+      expect(blocked({ key: 'ArrowLeft', altKey: true, shiftKey: true }, field, true)).toBe(false);
+      expect(blocked({ key: 'ArrowRight', altKey: true, shiftKey: true }, field, true)).toBe(false);
+    }
+    // Outside a text field too: WKWebView takes no step back with them.
+    expect(blocked({ key: 'ArrowLeft', altKey: true }, { tag: 'div' }, true)).toBe(false);
+    // The keys that do step on macOS are still blocked there.
+    expect(blocked({ key: '[', metaKey: true }, { tag: 'div' }, true)).toBe(true);
+    expect(blocked({ key: 'ArrowLeft', metaKey: true }, { tag: 'div' }, true)).toBe(true);
+    expect(blocked({ key: 'BrowserBack' }, input('text'), true)).toBe(true);
   });
 
   it('leaves every other key alone, typing an r included', () => {

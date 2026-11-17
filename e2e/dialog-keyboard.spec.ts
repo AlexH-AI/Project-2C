@@ -132,10 +132,6 @@ test('a second Escape does not close the dialog of a running reload', async ({
   page,
   browserName,
 }) => {
-  test.fixme(
-    browserName === 'webkit',
-    'Option+Tab twice takes the focus out of the dialog, not back to "Đang nạp lại…" (Mac-7b)',
-  );
   await asExe(page);
   await page.goto('/#/settings');
   await page.evaluate(() => window.exe.holdBackup());
@@ -159,11 +155,20 @@ test('a second Escape does not close the dialog of a running reload', async ({
   await expect(dialog).toBeVisible();
   // Still modal: the page behind cannot be used while the reload runs.
   expect(await dialog.evaluate((node) => node.matches(':modal'))).toBe(true);
-  // Opened again by the second Escape (DR-58), it still holds the focus; Tab comes back to it.
+  // Opened again by the second Escape (DR-58), it still holds the focus.
   await expect(running).toBeFocused();
-  await page.keyboard.press(tabKey(page));
-  await page.keyboard.press(tabKey(page));
-  await expect(running).toBeFocused();
+  await test.step('Tab twice comes back to what runs', async (step) => {
+    // On WebKit Option+Tab goes from it out of the page, to Playwright's window, then to the dialog
+    // itself, then back to it: never to the page behind, but three stops (CI run 44019009757). The
+    // app on a Mac: NT-MAC-14.
+    step.skip(
+      browserName === 'webkit',
+      'Option+Tab stops on the dialog itself and out of the page too (Mac-7b, NT-MAC-14)',
+    );
+    await page.keyboard.press(tabKey(page));
+    await page.keyboard.press(tabKey(page));
+    await expect(running).toBeFocused();
+  });
 
   await page.evaluate(() => window.exe.releaseBackup());
   await expect(dialog).toHaveCount(0);
@@ -173,12 +178,7 @@ test('a second Escape does not close the dialog of a running reload', async ({
 
 test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)', async ({
   page,
-  browserName,
 }) => {
-  test.fixme(
-    browserName === 'webkit',
-    'a click on the dimmed "Đang nhập…" takes the focus off it (Mac-7b)',
-  );
   await asExe(page);
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
@@ -225,12 +225,7 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
 // the read opens gives it back as it goes (10a, 10b); pressed meanwhile, it opens no other chooser.
 test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10a, 10b)', async ({
   page,
-  browserName,
 }) => {
-  test.fixme(
-    browserName === 'webkit',
-    'a click on the dimmed "Đang đọc file…" takes the focus off it, so 10a does not give it back (Mac-7b)',
-  );
   await asExe(page);
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });

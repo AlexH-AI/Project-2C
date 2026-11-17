@@ -27,7 +27,8 @@ interface SelectFieldProps {
   /**
    * Never wider than `max-w-80`, for a picker in a toolbar: a longer choice is cut there, so a long
    * name does not push the toolbar out of the window, and is read whole from the field's title
-   * (DR6-170).
+   * (DR6-170). Layout containment keeps the cut text from widening the page all the same: WebKit
+   * counts it in the scrolling width of what holds the field (Mac-7b).
    */
   capped?: boolean;
 }
@@ -50,7 +51,11 @@ export function SelectField({
   const id = useId();
   const noteId = `${id}-note`;
   return (
-    <div className={capped ? 'flex min-w-0 max-w-80 flex-col gap-1' : 'flex flex-col gap-1'}>
+    <div
+      className={
+        capped ? 'flex min-w-0 max-w-80 flex-col gap-1 contain-layout' : 'flex flex-col gap-1'
+      }
+    >
       <label htmlFor={id} className={labelHidden ? 'sr-only' : 'font-medium'}>
         {label}
         {required && (
