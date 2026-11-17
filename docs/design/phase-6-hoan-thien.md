@@ -99,7 +99,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 - **TR-5 Ngày trong tương lai** (bản ghi xóa đến từ file nhập, spec Phase 3 §6 luật 10): kết quả Đã gặp / Không đến sau hôm nay, HĐ nộp / phát hành sau hôm nay → từ chối như lệnh ghi. Lịch Dự kiến ngày đã qua khôi phục được và hiện ở "chưa ghi kết quả".
 - **TR-6 Không tự dọn; người dùng dọn sạch được (hỏi trước, backup trước).** Thùng rác giữ bản ghi tới khi khôi phục (D4), hoặc tới khi người dùng dọn sạch (TR-11). App không tự xóa bản ghi nào, kể cả khi Thùng rác lớn: TR-13 chỉ nhắc. Không có xóa vĩnh viễn từng dòng. Xuất backup mang theo cả Thùng rác (như hiện nay); nhập / nạp lại thay cả Thùng rác. Owner chốt 17/10/2026 (tổng hợp deep review lượt 2 §9 Q8 (c), DR6-84), thay luật "không xóa vĩnh viễn" duyệt 11/10; Owner đã cân nhắc rồi bỏ hướng tự xóa bản cũ nhất khi vượt trần.
 - **TR-7 Thùng rác không theo góc nhìn** (Toàn bộ / Team / RE ở thanh trên): là việc quản lý dữ liệu như Cài đặt → Dữ liệu, hiện mọi bản ghi xóa.
-- **TR-8 Luôn hỏi trước khi khôi phục**, hộp xác nhận nêu hệ quả: số bản ghi con hiện lại (KH), nhóm KH đổi và RF (cuộc hẹn Đã gặp), "không đổi nhóm KH" (lịch khác). Lý do: khôi phục đổi chỉ số đã báo cáo; một hộp đơn giản rẻ hơn một lần bấm nhầm.
+- **TR-8 Luôn hỏi trước khi khôi phục**, hộp xác nhận nêu hệ quả: số bản ghi con hiện lại (KH), nhóm KH đổi và RF (cuộc hẹn Đã gặp), "không đổi nhóm KH" (lịch khác). Lý do: khôi phục đổi chỉ số đã báo cáo; một hộp đơn giản rẻ hơn một lần bấm nhầm. Ngoại lệ (Owner 17/11/2026, VA3b, spec Phase 6 phản hồi `docs/design/phase-6-phan-hoi-dung-thu.md` §10.1): nút Hoàn tác trên thông báo nổi ngay sau khi xóa khôi phục không hỏi; lệnh khôi phục từ chối (dữ liệu vừa đổi) thì báo lỗi, bản ghi vẫn ở Thùng rác. Khôi phục từ màn Thùng rác vẫn hỏi trước.
 - **TR-9 Xóa KH (5f)** làm theo mockup đã duyệt: hộp Sửa KH có "Xóa KH…" → hộp 5f đếm lịch hẹn (đã gặp, lần tính RF), HĐ, ghi chú KYC; câu cuối đổi thành "Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác." Xóa xong về danh sách Khách hàng. Lần chạy AI của KH đó đang chạy → kết quả bị bỏ (`CUSTOMER_NOT_FOUND` đã nằm trong nhóm `discarded`). Dòng Ghi chú KYC chỉ ghi số, bỏ "— giữ nguyên, không bao giờ xóa": dọn sạch Thùng rác xóa hẳn cả ghi chú của KH đã xóa (TR-11; mockup 11f).
 - **TR-10 Câu ở các hộp xóa** trỏ về chỗ khôi phục: 6g "Xóa mềm, khôi phục được ở Cài đặt → Thùng rác.", xóa HĐ / nhân sự / team thêm cùng câu đó.
 - Lịch **Dời lịch** vẫn không xóa được (Owner 30/09, #171): ngoài phạm vi.
@@ -255,7 +255,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 2. **TR-1:** khôi phục không dây chuyền, nêu tên bản ghi chặn; không có "khôi phục cả hai" hay "giao RE khác".
 3. **TR-3 / E7:** cuộc hẹn Đã gặp khôi phục khi KH đã ở nhóm sau cuộc gặp thì không thêm chuyển nhóm và không tính lại RF.
 4. **TR-6:** không xóa vĩnh viễn, không tự dọn Thùng rác.
-5. **TR-8:** luôn có hộp xác nhận khi khôi phục.
+5. **TR-8:** luôn có hộp xác nhận khi khôi phục. Từ 17/11/2026 (Owner, VA3b): nút Hoàn tác trên thông báo nổi ngay sau khi xóa khôi phục không hỏi; khôi phục từ màn Thùng rác vẫn có hộp xác nhận.
 6. **TR-9:** làm luôn hộp Xóa KH 5f (mockup đã duyệt Phase 3, app chưa có).
 7. **Hướng dẫn:** Markdown + PNG trong repo, zip kèm Release, không có nút trong app ở v1.0; ảnh chụp tự động từ bản web.
 8. **G3:** mockup `trash.html` (11a–11g).
