@@ -430,6 +430,21 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **The name "đợt 3b"** (run 3b, a new row of the spec §10.1 table) is Claude's, given while writing the Issues; not an OWNER choice.
     - **Follow-on documents** (same-pattern sweep while writing the Issues): Mac-7b may change the line of keys that do nothing in `docs/user-guide/01-bat-dau.md`; DS-5 changes the startup error page table and the `AI_KEYRING` sentence of `docs/user-guide/10-su-co.md`, and the NT-DB lines of `docs/testing/nghiem-thu-v1.md`.
   - Run 3b queue (`auto-issues`, Opus): #1354 (T-458, records these decisions) → #1355 (T-459, Mac-7b) → #1356 (T-460, DS-5).
+- 2026-11-17: run 3c Issues (T-461, T-462, #1364, #1365). Two OWNER decisions of 17/11/2026, both taken inside the `auto-issues` pipeline of run 3b as answers to questions of the orchestrating session, which recorded each one in a "Quyết định Owner" comment on GitHub. The run itself comes from the second decision, which approved the ledger grouping proposal after run 3b. Labels verbatim; T-461 #1364 records them in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §10.1, §12.1, §12.2:
+  - **DS-6**, 17/11/2026, review of PR #1362 (T-460, DS-5), https://github.com/AlexH-AI/Project-2C/pull/1362#issuecomment-6941536487: "DS-6 cho cả hai (Recommended)".
+    - Both non-blocking notes of that review get the new target **DS-6**, a ledger clean-up Issue of the kind "data folder, startup error page", like DS-5: a `Project2C-data` link to a drive that is present but not ready (os error 21) still leads to the page that advises copying a backup over a file that is still good (Low / D, L204); the line that passes the real folder to the startup error page has no test (Nit / T, L205).
+    - The OWNER was asked through the pipeline because DS-5 (#1356) closed with PR #1362, and no other DS or planned work is of that kind.
+    - Options not chosen: DS-6 only for the Low note, with the Nit note in ACCEPTED; both notes in ACCEPTED.
+  - **Ledger grouping after run 3b**, 17/11/2026 (`auto-issues` §3.6, ledger @`9c61f42`, proposal of the coding session `coding-ses2`), https://github.com/AlexH-AI/Project-2C/pull/1363#issuecomment-6942324091: "Duyệt (Recommended)".
+    - Two Issues: this one (T-461, `risk:low`, docs only) and DS-6 (T-462: the ledger notes L204, L205; `risk:med`, `build-exe` + `build-mac`, blocked by this one). Both run in run 3c (`auto-issues`, Opus), before Mac-rào and run 4.
+    - No note moves to ACCEPTED; no Issue touches the gates G1–G7.
+    - Option not chosen: stop, create no Issue.
+  - **Decided by Claude while writing the proposal and the Issues** (by the existing rules; not questions to the OWNER):
+    - **The name "đợt 3c"** (run 3c, a new row of the spec §10.1 table) is Claude's, given in the proposal; the OWNER approved it with the proposal.
+    - **Where DS-6 goes:** right away, before Mac-rào and run 4. The place was in the proposal the OWNER approved; the reasons are Claude's: run 4 runs on Fable and DS-6 touches Rust; DS-6 shares no file with VA1 … VA7; with Mac-rào it only shares `docs/testing/nghiem-thu-v1.md`, on different lines (NT-DB-26 and NT-MAC-14 / 15), so Mac-rào comes after run 3c.
+    - **Build labels** follow `needsExe` / `needsMac` (Mac-6, T-447): DS-6 touches `apps/desktop/src-tauri/**`, so `build-exe` + `build-mac`. T-461 is docs only.
+    - **DS-3 and DS-4** keep their place in run 5 and run 7, as decided earlier on 17/11 (comment on PR #1353); run 3c does not change those rows.
+  - Run 3c queue (`auto-issues`, Opus): #1364 (T-461, records these decisions) → #1365 (T-462, DS-6).
 
 ## Next decision
 
