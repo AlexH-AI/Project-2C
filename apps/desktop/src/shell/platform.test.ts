@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { t } from '../i18n';
-import { isMac, modKey, modParams, storeParams } from './platform';
+import { isMac, modKey, modParams, platformMark, storeParams } from './platform';
 
 /** What the webview of each platform says: WKWebView on macOS, WebView2 (Edge) on Windows. */
 const MAC = {
@@ -23,6 +23,14 @@ describe('the platform of the webview (Mac-5a)', () => {
     expect(isMac({ platform: 'Linux x86_64', userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' })).toBe(
       false,
     );
+  });
+
+  // VA1: `data-os` of the page, which picks the tokens of the system (tokens.css).
+  it('marks the page mac on macOS, win anywhere else', () => {
+    expect(platformMark(MAC)).toBe('mac');
+    expect(platformMark(WINDOWS)).toBe('win');
+    expect(platformMark({ platform: 'Linux x86_64', userAgent: 'X11; Linux x86_64' })).toBe('win');
+    expect(platformMark(undefined)).toBe(isMac() ? 'mac' : 'win');
   });
 
   it('names ⌘ as the modifier of the shortcuts on macOS, Ctrl on Windows', () => {

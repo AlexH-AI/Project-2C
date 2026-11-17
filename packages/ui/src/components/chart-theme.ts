@@ -35,7 +35,7 @@ export function chartTheme(readToken: TokenReader, palette: readonly string[] = 
     backgroundColor: 'transparent',
     textStyle: {
       color: text2,
-      fontFamily: token('--font'),
+      fontFamily: token('--font-ui'),
       fontSize: Number.parseFloat(token('--fs-xs')),
     },
     legend: { textStyle: { color: text2 } },

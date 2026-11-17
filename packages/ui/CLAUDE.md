@@ -9,8 +9,9 @@ Component React thuần trình bày (ADR-0013): nhận dữ liệu và nhãn qua
 
 ## File hay tìm
 
-- Token: `src/tokens.css` (biến CSS; viền ô nhập, mũi tên sắp xếp chưa chọn: `--border-control`, ≥ 3:1), `src/theme.css` (map sang Tailwind, bỏ bảng màu mặc định), font `src/fonts.css`.
-- Chặn style lách token: `scripts/token-guard.ts` + `scripts/check-tokens.ts` (`pnpm lint:tokens`, chạy trong `pnpm verify`): không màu / độ dài thô, không `style` inline (trừ `flex` đọc từ dữ liệu), không giá trị tuỳ ý của Tailwind.
+- Token: `src/tokens.css` (biến CSS; viền ô nhập, mũi tên sắp xếp chưa chọn: `--border-control`, ≥ 3:1), `src/theme.css` (map sang Tailwind, bỏ bảng màu mặc định), font `src/fonts.css` (chỉ Playfair Display của slogan; chữ giao diện là font hệ điều hành, `--font-ui`).
+- Vỏ hai nền tảng (VA1, ADR-0013 phụ lục 11/11/2026): token khối B của `ui2.css` (chất liệu `--mat-*` / `--fill-*`, bóng `--shadow-*`, chuyển động `--t-*` / `--spring-*`, bo góc `--r-*`). Giá trị macOS ở `:root`, Windows 11 đè ở `[data-os='win']` (app đặt `data-os` ở gốc trang). Bo góc dùng tiện ích theo tên thứ được bo: `rounded-card / pop / menu / field / control / control-sm / chip` (`theme.css`; `rounded-sm / md / lg` là bí danh tạm tới VA3a); `scripts/tokens.test.ts` so token với khối B của mockup.
+- Chặn style lách token: `scripts/token-guard.ts` + `scripts/check-tokens.ts` (`pnpm lint:tokens`, chạy trong `pnpm verify`): không màu / độ dài thô, không `style` inline (trừ `flex` đọc từ dữ liệu), không giá trị tuỳ ý của Tailwind; không ký hiệu / dấu nối viết cứng (tập ký hiệu đọc từ `apps/desktop/src/i18n/vi.ts` lúc chạy, dạng không bắt ghi ở "Limits" của `token-guard.ts`).
 - Bảng: `src/components/DataTable.tsx` (TanStack Table) + phần thuần `table-view.ts` (tiêu đề, dòng hiện, chân bảng) + so sánh ô `compare-cells.ts`.
 - Biểu đồ: `src/components/Chart.tsx` (ECharts) + màu series từ token `chart-theme.ts`.
 - Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`.

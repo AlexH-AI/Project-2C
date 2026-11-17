@@ -1,15 +1,19 @@
 // Usage: node packages/ui/scripts/check-tokens.ts <dir>...
 // Fails when app code styles with raw colours or values instead of the ADR-0013 tokens, or writes
-// a separator or mark (`·`, `→`, `✓`…) in place of i18n (`sep.*`, a key of `vi.ts`).
-import { readdirSync, readFileSync } from 'node:fs';
+// a separator or mark (`·`, `→`, `✓`…) in place of i18n (`sep.*`, a key of `vi.ts`). The marks are
+// those of the `i18n/vi.ts` of one of the folders: read as a file, not imported, since
+// `packages/ui` may not depend on the app.
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { findHardcodedSeparators, findTokenViolations } from './token-guard.ts';
+import { findHardcodedSeparators, findTokenViolations, marksOf } from './token-guard.ts';
 
 const dirs = process.argv.slice(2);
-if (dirs.length === 0) {
-  console.error('Usage: check-tokens <dir>...');
+const strings = dirs.map((dir) => join(dir, 'i18n', 'vi.ts')).find((file) => existsSync(file));
+if (!strings) {
+  console.error('Usage: check-tokens <dir>... (one of them holds i18n/vi.ts)');
   process.exit(2);
 }
+const marks = marksOf(readFileSync(strings, 'utf8'));
 
 let count = 0;
 for (const dir of dirs) {
@@ -20,7 +24,9 @@ for (const dir of dirs) {
     // The marks themselves live in the i18n strings; tests read them back.
     const joinsText = /\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name);
     const separators =
-      joinsText && !/[\\/]i18n$/.test(entry.parentPath) ? findHardcodedSeparators(source) : [];
+      joinsText && !/[\\/]i18n$/.test(entry.parentPath)
+        ? findHardcodedSeparators(source, marks)
+        : [];
     for (const v of [...findTokenViolations(source), ...separators]) {
       console.error(`${relative(process.cwd(), file)}:${v.line}  ${v.rule}  ${v.match}`);
       count++;

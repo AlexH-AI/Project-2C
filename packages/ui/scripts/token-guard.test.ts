@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { findHardcodedSeparators, findTokenViolations } from './token-guard';
+import { findHardcodedSeparators as find, findTokenViolations, marksOf } from './token-guard';
+
+// The i18n strings the guard reads its separators, marks and joiners from: a cut of `vi.ts`.
+const STRINGS = [
+  '// A comment may use § and ₫: no mark comes from it.',
+  'export const vi = {',
+  "  'sep.dot': '·',",
+  "  'sep.arrow': '→',",
+  "  'sep.equals': '=',",
+  "  'sep.range': '{from} – {to}',",
+  "  'sep.list': ', ',",
+  "  'sep.semicolon': '; ',",
+  "  'sep.slash': ' / ',",
+  "  'kyc.done': '✓ Đã có', 'kyc.todo': '○', 'chip.remove': '×',",
+  "  'group.open': '▾', 'group.shut': '▸', 'cell.none': '—',",
+  "  'customer.back': '← Khách hàng', 'more': 'Xem thêm…',",
+  "  'outcomeEdit.lockMark': '🔒',",
+  "  'overview.up': '▲ {value}',",
+  "  'overview.down': '▼ {value}',",
+  "  'overview.formula': '{issued} HĐ phát hành ÷ {count} RF',",
+  "  'policyForm.countMoved': 'tháng {from}: −1 {label}',",
+  '};',
+].join('\n');
+const findHardcodedSeparators = (source: string) => find(source, marksOf(STRINGS));
 
 describe('findTokenViolations', () => {
   it('accepts token-backed utilities', () => {
@@ -65,6 +88,12 @@ describe('findTokenViolations', () => {
 
   it('does not treat Tailwind spacing utilities as raw lengths', () => {
     expect(findTokenViolations('<p className="px-3 py-1 gap-6 text-2xl">')).toEqual([]);
+  });
+
+  // VA1: the corners of the theme, by the name of what they round (theme.css).
+  it('accepts the corner utilities of the theme', () => {
+    const source = '<div className="rounded-card rounded-control-sm rounded-chip rounded-full">';
+    expect(findTokenViolations(source)).toEqual([]);
   });
 
   it('does not treat JSX fragments or i18n keys as violations', () => {
@@ -157,7 +186,7 @@ describe('findHardcodedSeparators', () => {
       '<p>{a} &rarr; {b} &larr; &ndash; &mdash;</p>',
       '<p>{a} &#183; {b} &#xB7; &#x2192;</p>',
       '<p title="&hellip; &ldquo;&rdquo;" />',
-      '<p>&amp; &nbsp; &#38; &constructor; &#65719;</p>',
+      '<p>&amp; &nbsp; &#38; &constructor; &#65719; &#1114112;</p>',
       '{a && <p>&times &#183 R&D</p>}',
       '{/* &times; in a comment */}',
     ].join('\n');
@@ -174,6 +203,103 @@ describe('findHardcodedSeparators', () => {
       { line: 5, match: '&hellip;', rule: 'hardcoded-mark' },
       { line: 5, match: '&ldquo;', rule: 'hardcoded-mark' },
       { line: 5, match: '&rdquo;', rule: 'hardcoded-mark' },
+    ]);
+  });
+
+  // DR6-207 (CLR6-D1): the marks are read from the i18n strings, so one added there is found too.
+  it('flags every mark of the i18n strings, one outside the BMP and its entity or escape too', () => {
+    const source = [
+      '<span>▲ {value}</span>',
+      '<span>▼ {value}</span>',
+      'const s = `${issued} HĐ phát hành ÷ ${count} RF`;',
+      "const moved = '−1';",
+      '<i>🔒</i>',
+      '<p>&divide; &minus;</p>',
+      "const lock = '\\u{1f512}' + '\\u00f7';",
+      // Only in a comment of the strings, or in none of them: not a mark.
+      "const law = '§ 3' + '₫' + '°';",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '▲', rule: 'hardcoded-mark' },
+      { line: 2, match: '▼', rule: 'hardcoded-mark' },
+      { line: 3, match: '÷', rule: 'hardcoded-mark' },
+      { line: 4, match: '−', rule: 'hardcoded-mark' },
+      { line: 5, match: '🔒', rule: 'hardcoded-mark' },
+      { line: 6, match: '&divide;', rule: 'hardcoded-mark' },
+      { line: 6, match: '&minus;', rule: 'hardcoded-mark' },
+      { line: 7, match: '\\u{1f512}', rule: 'hardcoded-mark' },
+      { line: 7, match: '\\u00f7', rule: 'hardcoded-mark' },
+    ]);
+  });
+
+  it('takes its marks from the strings it is given, and from nothing else', () => {
+    const marks = marksOf("export const vi = { 'sep.dot': '•', 'a.star': '★ {name}' };");
+    expect(find("const a = '•' + '★' + '·' + '✓'; names.join(', ');", marks)).toEqual([
+      { line: 1, match: '•', rule: 'hardcoded-separator' },
+      { line: 1, match: '★', rule: 'hardcoded-mark' },
+    ]);
+  });
+
+  // DR6-207 (CLR6-D1): `sep.slash` joins as `sep.list` and `sep.semicolon` do.
+  it('flags parts joined by the slash of sep.slash', () => {
+    const source = [
+      "parts.join(' / ')",
+      '`${a} / ${b}`',
+      '<p>{a} / {b}</p>',
+      "a + ' / ' + b",
+      "const path = 'a / b' + a / b;",
+      "const parts = text.split(' / ');",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: "' / '", rule: 'hardcoded-separator' },
+      { line: 2, match: '} / ${', rule: 'hardcoded-separator' },
+      { line: 3, match: '} / {', rule: 'hardcoded-separator' },
+      { line: 4, match: "' / '", rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // DR6-207 (CLR6-D2): a quote or a backtick in a regex literal opens no string or template.
+  it('reads a regex literal as one: a backtick in it turns nothing after it inside out', () => {
+    const source = [
+      's.replace(/[`]/g, "")',
+      '// a comment may use → and ·',
+      '<p>{a}, {b}</p>',
+      'const t = `x`;',
+      "const cut = text.replace(/[\\\\`]\\r?\\n/g, '').split(/'/);",
+      "const half = total / 2 + ' · ' + rest / 2;",
+      "const has = (s: string) => { return /'/.test(s) ? names.join(', ') : ''; };",
+      // Limits: a quote of JSX text and a `/` taken for a regex are read to the end of their line.
+      "<p>Don't</p>",
+      '<li>km: / h',
+      '</li><p>{a}; {b}</p>',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 3, match: '}, {', rule: 'hardcoded-separator' },
+      { line: 6, match: '·', rule: 'hardcoded-separator' },
+      { line: 7, match: "', '", rule: 'hardcoded-separator' },
+      { line: 10, match: '}; {', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // DR6-207 (CXR6-D2): the call a string is given to is found past the brackets of the arguments
+  // before it.
+  it('leaves the replacement of replace( after an argument with brackets', () => {
+    const source = [
+      "text.replace(makePattern(), ', ')",
+      "text.replace(/(a)/g, ', ')",
+      "text.replace(/[()]/g, ', ')",
+      "text.replaceAll(makePattern(), '; ')",
+      "text.replace(pick([a, b], { c }), ', ')",
+      "names.map((n) => n.trim()).join(', ')",
+      "a.concat(pick(b), ', ', c)",
+      "show(pick(a), [b, ', ', c])",
+      "const one = (', ');",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 6, match: "', '", rule: 'hardcoded-separator' },
+      { line: 7, match: "', '", rule: 'hardcoded-separator' },
+      { line: 8, match: "', '", rule: 'hardcoded-separator' },
+      { line: 9, match: "', '", rule: 'hardcoded-separator' },
     ]);
   });
 
