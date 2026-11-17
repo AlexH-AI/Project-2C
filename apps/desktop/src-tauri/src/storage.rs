@@ -34,6 +34,11 @@ pub const READ_ONLY: &str = "READ_ONLY";
 /// itself is the cause. The app matches it exactly. Windows decides by the folder's access list,
 /// macOS by its write bits.
 pub const FOLDER_READ_ONLY: &str = "FOLDER_READ_ONLY";
+/// Error message when the data folder is a link that leads nowhere (`Project2C-data` next to the
+/// exe, a junction to a folder deleted or on a drive pulled out; see `platform::data_dir`): the
+/// file is whole, only out of reach until the drive or the link is back. The app matches it
+/// exactly.
+pub const DATA_DIR_UNREACHABLE: &str = "DATA_DIR_UNREACHABLE";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -606,39 +611,7 @@ fn is_export_name(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    /// A folder of its own under the system's temp folder, removed with all it holds once the test
-    /// ends, also when it fails (DR6-09).
-    struct TempDir(PathBuf);
-
-    impl std::ops::Deref for TempDir {
-        type Target = Path;
-
-        fn deref(&self) -> &Path {
-            &self.0
-        }
-    }
-
-    impl AsRef<Path> for TempDir {
-        fn as_ref(&self) -> &Path {
-            &self.0
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = fs::remove_dir_all(&self.0);
-        }
-    }
-
-    fn temp_dir() -> TempDir {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("p2c-storage-{}-{n}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        TempDir(dir)
-    }
+    use crate::test_support::temp_dir;
 
     fn names(dir: &Path) -> Vec<String> {
         let mut names: Vec<String> = fs::read_dir(dir)

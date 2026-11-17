@@ -26,6 +26,8 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'field',
   'fields',
   'file',
+  // The data folder named by the startup page (L185).
+  'folder',
   'from',
   'fyp',
   'gate',

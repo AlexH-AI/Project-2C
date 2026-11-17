@@ -108,28 +108,19 @@ mod tests {
         assert_eq!(command.get_args().collect::<Vec<_>>(), [folder.as_os_str()]);
     }
 
-    /// A file in the system's temporary folder, removed when this drops: also when a test fails
-    /// half way, so none is left behind (DR6-09).
-    struct TempFile(std::path::PathBuf);
-
-    impl Drop for TempFile {
-        fn drop(&mut self) {
-            let _ = fs::remove_file(&self.0);
-        }
-    }
-
     #[test]
     fn a_second_lock_of_the_lock_file_is_refused_until_the_first_is_released() {
         // The lock of macOS (`flock`, L137); on Windows the same `std` lock, though the exe locks
-        // by sharing there. Made before the locks, the file drops after them.
-        let path =
-            TempFile(std::env::temp_dir().join(format!("p2c-lock-{}.lock", std::process::id())));
-        let first = open_lock_file(&path.0).unwrap();
-        let error = open_lock_file(&path.0).unwrap_err();
+        // by sharing there. Made before the locks, the folder drops after them.
+        let dir = crate::test_support::temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("project2c.lock");
+        let first = open_lock_file(&path).unwrap();
+        let error = open_lock_file(&path).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::ResourceBusy);
         assert_eq!(error.to_string(), crate::storage::ALREADY_OPEN);
         drop(first);
-        drop(open_lock_file(&path.0).unwrap());
+        drop(open_lock_file(&path).unwrap());
     }
 
     #[cfg(not(windows))]

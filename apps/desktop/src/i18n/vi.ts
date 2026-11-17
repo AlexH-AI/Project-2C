@@ -256,8 +256,7 @@ export const vi = {
   'aiError.AI_HTTP': 'OpenCode báo lỗi.',
   'aiError.AI_BAD_RESPONSE': 'Trả lời của OpenCode không đọc được.',
   'aiError.AI_BUSY': 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.',
-  'aiError.AI_KEYRING':
-    'Không đọc / ghi được key trong kho key của máy (Windows Credential Manager, hay Keychain của macOS).',
+  'aiError.AI_KEYRING': 'Không đọc / ghi được key trong kho key của máy.',
   'aiError.AI_TOO_LARGE':
     'Dữ liệu gửi AI quá lớn (quá 200,000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
   'aiError.GENERAL': 'Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ.',
@@ -1093,21 +1092,26 @@ export const vi = {
   'reports.excel.file': 'bao-cao',
   'reports.excel.fileRange': '{from}-den-{to}',
   'storage.openFailed': 'Không mở được file dữ liệu',
+  'storage.dataFolderModes':
+    'Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm',
   'storage.openFailedHelp':
-    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục backups của thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm): chép bản mới nhất thành project2c.db của thư mục dữ liệu để khôi phục, rồi đóng cửa sổ này và mở lại app. Không mở được thư mục backups thì nhờ người quản trị máy cấp lại quyền đọc thư mục đó trước. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
+    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục backups của thư mục dữ liệu ({folder}): chép bản mới nhất thành project2c.db của thư mục dữ liệu để khôi phục, rồi đóng cửa sổ này và mở lại app. Không mở được thư mục backups thì nhờ người quản trị máy cấp lại quyền đọc thư mục đó trước. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
   'storage.backupFailed': 'Không sao lưu được file dữ liệu',
   'storage.backupFailedHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản người dùng của máy đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu ({folder}) trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản người dùng của máy đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.diskFull': 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
   'storage.diskFullHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu trước khi mở nhưng ổ đĩa chứa thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu), rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào thư mục backups của thư mục dữ liệu trước khi mở nhưng ổ đĩa chứa thư mục dữ liệu ({folder}) không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong thư mục exports của thư mục dữ liệu), rồi đóng cửa sổ này và mở lại app.',
   'storage.damaged': 'File dữ liệu bị hỏng',
   'storage.fileInUse': 'File dữ liệu đang bị chương trình khác giữ',
   'storage.fileInUseHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục dữ liệu của app: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục dữ liệu của app ({folder}): hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.accessDenied': 'App không có quyền ghi vào thư mục dữ liệu',
   'storage.accessDeniedHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm) và các file trong đó không chỉ đọc hay bị khóa (macOS: mục Locked ở Get Info của Finder), tài khoản người dùng của máy đang dùng được quyền ghi và xóa file trong đó (exe portable chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục của exe sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục dữ liệu ({folder}) và các file trong đó không chỉ đọc hay bị khóa (macOS: mục Locked ở Get Info của Finder), tài khoản người dùng của máy đang dùng được quyền ghi và xóa file trong đó (exe portable chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục của exe sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
+  'storage.dataDirUnreachable': 'Không truy cập được thư mục dữ liệu Project2C-data',
+  'storage.dataDirUnreachableHelp':
+    'File dữ liệu không hỏng, không cần khôi phục. Thư mục Project2C-data cạnh exe là một link (junction) tới một thư mục không còn ở đó: ổ chứa thư mục đó (USB, ổ mạng) đã rút ra hay ngắt kết nối, hoặc thư mục đó đã bị xóa hay đổi tên. Hãy cắm hay nối lại ổ đó, hoặc sửa link cho trỏ tới đúng thư mục dữ liệu, rồi đóng cửa sổ này và mở lại app.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':

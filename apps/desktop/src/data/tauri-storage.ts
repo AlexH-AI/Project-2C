@@ -20,10 +20,16 @@ export const DISK_FULL = 'DISK_FULL';
  */
 export const FILE_IN_USE = 'FILE_IN_USE';
 /**
- * `db_open`'s error when Windows refuses the app the data folder: the file is whole
+ * `db_open`'s error when the system refuses the app the data folder: the file is whole
  * (`storage::ACCESS_DENIED`).
  */
 export const ACCESS_DENIED = 'ACCESS_DENIED';
+/**
+ * `db_open`'s error when the data folder `Project2C-data` next to the exe is a link that leads
+ * nowhere (a drive pulled out, a folder deleted): the file is whole
+ * (`storage::DATA_DIR_UNREACHABLE`).
+ */
+export const DATA_DIR_UNREACHABLE = 'DATA_DIR_UNREACHABLE';
 /**
  * `db_save`'s error when Windows refuses the app the right to replace the database file after it
  * opened it: the file turned read-only, or its access list changed (`storage::READ_ONLY`). A file
@@ -51,11 +57,8 @@ export function saveFailure(error: unknown): SaveFailure {
 const DB_FILE = 'project2c.db';
 const BACKUP_DIR = 'backups';
 
-/**
- * Where Settings → Data says the database file and the automatic backups are: the only two places
- * the app shows a real path (Mac-5a); every message says "the data folder" instead.
- */
-export interface DataPaths {
+/** Where Settings → Data says the database file and the automatic backups are (Mac-5a). */
+interface DataPaths {
   readonly file: string;
   readonly backups: string;
 }

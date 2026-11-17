@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { openAppData } from '../data/app-data';
 import { AppDataContext } from '../data/AppDataContext';
-import { tauriStorage } from '../data/tauri-storage';
+import { dataPaths, tauriStorage } from '../data/tauri-storage';
 import { DataFileSection } from './SettingsDataFile';
 
 /**
@@ -33,20 +33,14 @@ async function card(folder?: string): Promise<string> {
 
 describe('DataFileSection (mockup settings-data)', () => {
   it('shows where the file and the backups really are, in the folder Rust gives (Mac-5a)', async () => {
-    const installed = await card('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm');
+    // The paths of each folder: `dataPaths` (tauri-storage.test.ts).
+    const folder = 'C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm';
+    const installed = await card(folder);
     expect(installed).toContain('Vị trí');
-    expect(installed).toContain('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm\\project2c.db');
-    expect(installed).toContain('C:\\Users\\An\\AppData\\Local\\com.heritas.lcrm\\backups\\');
+    expect(installed).toContain(dataPaths(folder).file);
+    expect(installed).toContain(dataPaths(folder).backups);
     expect(installed).not.toContain('Project2C-data');
     expect(installed).not.toContain('cạnh file exe');
-
-    const portable = await card('D:\\Heritas L-CRM\\Project2C-data');
-    expect(portable).toContain('D:\\Heritas L-CRM\\Project2C-data\\project2c.db');
-    expect(portable).toContain('D:\\Heritas L-CRM\\Project2C-data\\backups\\');
-
-    const mac = await card('/Users/an/Library/Application Support/com.heritas.lcrm');
-    expect(mac).toContain('/Users/an/Library/Application Support/com.heritas.lcrm/project2c.db');
-    expect(mac).toContain('/Users/an/Library/Application Support/com.heritas.lcrm/backups/');
   });
 
   it('has no Vị trí nor backups in web mode, which keeps the data in the browser', async () => {

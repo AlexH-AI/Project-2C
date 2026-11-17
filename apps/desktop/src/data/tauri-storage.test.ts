@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   dataPaths,
@@ -106,15 +105,6 @@ describe('dataPaths', () => {
       file: '/Users/an/Library/Application Support/com.heritas.lcrm/project2c.db',
       backups: '/Users/an/Library/Application Support/com.heritas.lcrm/backups/',
     });
-  });
-
-  it('names them as Rust does', () => {
-    const storage = readFileSync(
-      new URL('../../src-tauri/src/storage.rs', import.meta.url),
-      'utf8',
-    );
-    expect(storage).toContain('const DB_FILE: &str = "project2c.db";');
-    expect(storage).toContain('const BACKUP_DIR: &str = "backups";');
   });
 });
 

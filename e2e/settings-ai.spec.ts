@@ -394,12 +394,13 @@ test('exe: a save that failed keeps the key status, read late or not (R2-14)', a
   await card.getByLabel('Key', { exact: true }).fill(KEY);
   await card.getByRole('button', { name: 'Lưu key' }).click();
   await expect(card.getByRole('alert')).toContainText(
-    'Không đọc / ghi được key trong kho key của máy (Windows Credential Manager, hay Keychain của macOS).',
+    'Không đọc / ghi được key trong kho key của máy.',
   );
 
   await page.evaluate(() => (window as unknown as { releaseKeyStatus(): void }).releaseKeyStatus());
   await expect(card).toContainText('Đã có key');
   await expect(card.getByRole('button', { name: 'Xóa key…' })).toBeVisible();
-  // The failure stays said.
-  await expect(card.getByRole('alert')).toContainText('Windows Credential Manager');
+  // The failure stays said, in words of both platforms (the alert also names the key store of this
+  // one, L187).
+  await expect(card.getByRole('alert')).toContainText('kho key của máy');
 });

@@ -56,7 +56,8 @@ export interface StoragePort {
   openFolder(kind: DataFolder): Promise<void>;
   /**
    * The data folder of this run, which depends on the platform and the mode (ADR-0019 §2): asked
-   * once the file opened, so Rust has chosen it already.
+   * once the file opened, so Rust has chosen it already, and by the startup page when it did not,
+   * which fails when Rust cannot choose it (`startupFolder`).
    */
   dataFolder(): Promise<string>;
 }
@@ -131,7 +132,10 @@ export interface AppData {
    * is replaced it runs nothing and throws `DATA_REPLACING`.
    */
   run<T>(command: (db: Database) => T): T;
-  /** True in the exe (saved to a file, backed up); false in web mode (in memory only). */
+  /**
+   * True in the exe (saved to a file, backed up), which has a data folder; false in web mode (in
+   * memory only). Follows `folder`.
+   */
   readonly hasFile: boolean;
   /**
    * The data folder of the exe (`StoragePort.dataFolder`), the same for the whole run; `undefined`
@@ -475,7 +479,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     replacing: () => replacing > 0,
     tables: () => (tables ??= readTables(db)),
     run,
-    hasFile: storage !== undefined,
+    hasFile: folder !== undefined,
     folder,
     saves,
     today,

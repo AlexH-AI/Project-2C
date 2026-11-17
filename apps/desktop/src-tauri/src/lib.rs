@@ -9,6 +9,7 @@ mod ai;
 mod platform;
 mod storage;
 
+use std::io::{self, ErrorKind};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::ipc::{InvokeBody, Request, Response};
@@ -31,6 +32,23 @@ fn data_dir() -> Result<PathBuf, String> {
     platform::data_dir().map_err(|e| e.to_string())
 }
 
+/// The data folder `db_open` opens (`chosen`, see `platform::data_dir`), with the error the startup
+/// page tells apart (L184): the system refusing the app the folder → [`storage::ACCESS_DENIED`], as
+/// in `storage::open`; a `Project2C-data` that leads nowhere is
+/// [`storage::DATA_DIR_UNREACHABLE`] already. Any other error stays as it is. Only `db_open` needs
+/// this: the folder is chosen once a run, so the commands after a start that opened the file never
+/// meet these errors. `data_folder`, which the startup page asks, meets them as they are, and the
+/// page then names the folder of each platform and mode instead.
+fn opened_dir(chosen: io::Result<PathBuf>) -> Result<PathBuf, String> {
+    chosen.map_err(|error| {
+        if error.kind() == ErrorKind::PermissionDenied {
+            storage::ACCESS_DENIED.to_owned()
+        } else {
+            error.to_string()
+        }
+    })
+}
+
 fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
     match request.body() {
         InvokeBody::Raw(bytes) => Ok(bytes),
@@ -45,7 +63,7 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
 /// only its saves are written (see `storage::save`).
 #[tauri::command]
 async fn db_open(page: String) -> Result<Response, String> {
-    let dir = data_dir()?;
+    let dir = opened_dir(platform::data_dir())?;
     let bytes = blocking(move || storage::open(&dir, &page, &DATA_LOCK)).await?;
     Ok(Response::new(bytes.unwrap_or_default()))
 }
@@ -202,6 +220,49 @@ pub fn run() {
         .expect("error while running Project-2C");
 }
 
+/// What the tests of every module share.
+#[cfg(test)]
+mod test_support {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// A folder of its own under the system's temp folder, removed with all it holds once the test
+    /// ends, also when it fails (DR6-09). [`temp_dir`] does not make it: the test does, or the code
+    /// it tests.
+    pub struct TempDir(PathBuf);
+
+    impl std::ops::Deref for TempDir {
+        type Target = Path;
+
+        fn deref(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<Path> for TempDir {
+        fn as_ref(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    /// A new [`TempDir`], named by the process and a count of the run, so no two tests share one.
+    /// One a killed run left under the same name is removed first (L188).
+    pub fn temp_dir() -> TempDir {
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let n = NEXT.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("p2c-test-{}-{n}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        TempDir(dir)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,5 +272,21 @@ mod tests {
         // Settings → Data shows the real place of the file and the backups (Mac-5a).
         let folder = platform::data_dir().unwrap();
         assert_eq!(data_folder().unwrap(), folder.to_string_lossy());
+    }
+
+    #[test]
+    fn db_open_says_the_system_refuses_the_data_folder_as_storage_open_does() {
+        // The page of `ACCESS_DENIED` says the file needs no restoring; the page of any other error
+        // tells to copy a backup over a file that is whole (L184).
+        let refused = opened_dir(Err(io::Error::from(ErrorKind::PermissionDenied)));
+        assert_eq!(refused.unwrap_err(), storage::ACCESS_DENIED);
+        // Any other error stays as it is, and so does the folder.
+        let missing = io::Error::new(ErrorKind::NotFound, "LOCALAPPDATA is missing");
+        assert_eq!(
+            opened_dir(Err(missing)).unwrap_err(),
+            "LOCALAPPDATA is missing"
+        );
+        let folder = std::env::temp_dir().join("Project2C-data");
+        assert_eq!(opened_dir(Ok(folder.clone())).unwrap(), folder);
     }
 }
