@@ -67,7 +67,8 @@
   --fs-lg: 16px;
   --fs-xl: 20px;
   --fs-2xl: 26px;
-  --sidebar-w: 232px;
+  /* The column of the sidebar (app-shell.html #sidebar): on macOS with the 8 px its pane floats in */
+  --sidebar-w: 244px;
 }
 
 /* The shell of the two systems (ADR-0013 appendix 11/11/2026): block B of the mockups' ui2.css,
@@ -141,6 +142,7 @@
 [data-os='win'] {
   --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --mat-window: rgba(17, 24, 34, 0.84);
+  --sidebar-w: 236px;
   --r-curve: round;
   --r-k: 1;
   --r-window: 8px;

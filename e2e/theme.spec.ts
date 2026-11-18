@@ -82,11 +82,8 @@ test('the app loads no font file but Playfair Display, the font of the slogan (V
   expect(families.map((family) => family.replaceAll('"', ''))).toEqual(['Playfair Display']);
 });
 
-// Brand block of the sidebar (T-308, G3 27/10): the champagne of the slogan and of the outline.
+// The slogan of the logo (T-308, G3 27/10): its champagne.
 const SLOGAN = 'rgb(232, 211, 162)';
-const OUTLINE = ['0.5px 0px', '-0.5px 0px', '0px 0.5px', '0px -0.5px']
-  .map((offset) => `drop-shadow(rgba(232, 211, 162, 0.95) ${offset} 0px)`)
-  .join(' ');
 
 test('the slogan is in Playfair Display italic, loaded from the app itself (T-308)', async ({
   page,
@@ -135,14 +132,14 @@ test('the logo keeps its colours on the dark sidebar, the navy tree and "Heritas
       ),
     )
     .toEqual([
-      { alt: '', width: 88, loaded: true },
-      { alt: '', width: 150, loaded: true },
-      { alt: '', width: 132, loaded: true },
+      { alt: '', width: 44, loaded: true },
+      { alt: '', width: 112, loaded: true },
+      { alt: '', width: 95, loaded: true },
     ]);
-  await expect(pieces.nth(0)).toHaveCSS('filter', OUTLINE);
-  await expect(pieces.nth(1)).toHaveCSS('filter', OUTLINE);
-  // "L-CRM" is gold already.
-  await expect(pieces.nth(2)).toHaveCSS('filter', 'none');
+  // The outline of the tree and of "Heritas" is in their images, with room around each
+  // (shell.spec.ts measures it): no filter draws it, which the macOS app left out (L179). "L-CRM"
+  // is gold already.
+  for (const piece of await pieces.all()) await expect(piece).toHaveCSS('filter', 'none');
 });
 
 test('the app makes no requests to hosts other than localhost', async ({ page }) => {

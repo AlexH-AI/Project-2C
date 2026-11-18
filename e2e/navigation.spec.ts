@@ -17,7 +17,7 @@ test('the sidebar lists the six screens, each with an icon', async ({ page }) =>
   }
 });
 
-test('the smallest window shows the logo, the last item and the save state without scrolling (T-308)', async ({
+test('the smallest window shows the logo, the last item, the save state and the slogan without scrolling (T-308, VA4a)', async ({
   page,
 }) => {
   // tauri.conf.json minWidth / minHeight. The save state of web mode is the longest it reads.
@@ -30,7 +30,8 @@ test('the smallest window shows the logo, the last item and the save state witho
   await expect(sidebar.getByRole('img', { name: 'Heritas L-CRM' })).toBeInViewport({ ratio: 1 });
   await expect(last).toBeInViewport({ ratio: 1 });
   await expect(saveState).toBeInViewport({ ratio: 1 });
-  // The save state sticks to the foot of the window: it does not cover the last item.
+  await expect(sidebar.getByText('Where legacy meets trust')).toBeInViewport({ ratio: 1 });
+  // The save state is at the foot of the sidebar: it does not cover the last item.
   const lastBox = (await last.boundingBox())!;
   expect(lastBox.y + lastBox.height).toBeLessThanOrEqual((await saveState.boundingBox())!.y);
 });
@@ -55,7 +56,11 @@ test('clicking each sidebar item switches the screen and marks it current', asyn
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
     await expect(nav.locator('[aria-current="page"]')).toHaveText([name]);
-    await expect(nav.getByRole('link', { name })).toHaveCSS('color', 'rgb(217, 178, 106)');
+    // The chosen item: its icon in the accent, its fill an element of its own (VA4a).
+    await expect(nav.getByRole('link', { name }).locator('svg')).toHaveCSS(
+      'color',
+      'rgb(217, 178, 106)',
+    );
   }
   expect(errors).toEqual([]);
 });

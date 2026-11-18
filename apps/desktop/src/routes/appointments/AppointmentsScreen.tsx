@@ -33,6 +33,8 @@ import { routeToHash } from '../../shell/routes';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
+import { viewingTrail } from '../../shell/screen-bar';
+import { ScreenBar } from '../../shell/ScreenBar';
 import { useToast } from '../../shell/Toasts';
 import { ALERT, CARD, CELL_NAME, FOCUS, HEADING, LINK } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
@@ -294,6 +296,14 @@ export function AppointmentsScreen() {
 
   return (
     <>
+      <ScreenBar
+        sub={viewingTrail(scope, data.teams, data.people)}
+        actions={
+          <Button variant="primary" onClick={() => setCreating({})}>
+            {t('appointments.new')}
+          </Button>
+        }
+      />
       {team && (
         <RmPicker
           team={team}
@@ -315,20 +325,7 @@ export function AppointmentsScreen() {
           />
         </div>
         <div className="flex-1" />
-        <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">
-          {rm ? (
-            <>
-              <b className="font-semibold text-fg">{rm.name}</b> {t('sep.dot')} {summary}
-            </>
-          ) : team ? (
-            joinParts([t('appointments.viewingTeam', { team: team.name }), summary])
-          ) : (
-            summary
-          )}
-        </span>
-        <Button variant="primary" onClick={() => setCreating({})}>
-          {t('appointments.new')}
-        </Button>
+        <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">{summary}</span>
       </div>
       {outside && (
         <p ref={outsideLine} tabIndex={-1} role="status" className={`${ALERT} border-info text-sm`}>

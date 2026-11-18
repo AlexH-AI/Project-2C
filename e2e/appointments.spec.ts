@@ -787,6 +787,20 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
   await expect(year.getByRole('button', { name: /^Tháng 9\/2026:/ })).toHaveAccessibleName(
     /^Tháng 9\/2026: [\d,]+ lịch — Đã gặp [\d,]+, Dời lịch \/ hủy \/ không đến [\d,]+, Chưa ghi kết quả [1-9][\d,]*, Dự kiến [\d,]+$/,
   );
+  // The part of a bar is in the colour of its legend in every month, the month of today too: the
+  // gold tint of that month lightens what is written on it, not its bar (review of PR 1408).
+  const missed = year.locator('[title^="Dời lịch / hủy / không đến: "]');
+  const today = year.getByRole('button', { name: /^Tháng 9\/2026:/ });
+  await expect(today.locator('[title^="Dời lịch / hủy / không đến: "]')).toHaveCount(1);
+  const fills = await missed.evaluateAll((parts) =>
+    parts.map((part) => getComputedStyle(part).backgroundColor),
+  );
+  expect(fills.length).toBeGreaterThan(1);
+  expect(new Set(fills)).toEqual(new Set([await legendFill(year, 'Dời lịch')]));
+  expect(await legendFill(year, 'Dời lịch')).toBe('rgb(140, 153, 172)');
+  // "lịch" by the count of that month, on the tint: --text-2, as --text-3 is under 4.5:1 there.
+  await expect(today.locator('b').first().locator('..')).toHaveText(/^[\d,]+lịch$/);
+  await expect(today.locator('b').first().locator('..')).toHaveCSS('color', 'rgb(174, 185, 200)');
 });
 
 test('an appointment of yesterday still scheduled reads unrecorded everywhere it is shown', async ({
@@ -988,7 +1002,10 @@ test('an RM picked in the strip narrows the appointments to it, until picked aga
 
   await chip.click();
   await expect(chip).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText(SUMMARY).first()).toContainText(name);
+  // The toolbar says whose appointments these are (VA4a); the count of the period stays here.
+  await expect(page.getByRole('banner').getByRole('paragraph')).toHaveText(
+    `Team Sao Mai → ${name}`,
+  );
   await expect.poll(() => total(page)).toBe(await chipCount(chip));
   await expectList(page, await total(page));
   expect(new Set(await column(4))).toEqual(new Set([name]));
