@@ -18,6 +18,11 @@ import {
 // 1 440 the default.
 const WIDTHS = [1100, 1440] as const;
 
+// The two sweeps of many screens and dialogs, each at both widths. On the WebKit of the macOS
+// runner, with one worker, the first took 19 to 24 s of the 30 s a test has, and ran out of them in
+// a run where the runner was slow (CI run 44167332976).
+const LONG_SWEEP = 90_000;
+
 /** A name of `length` letters with no space, from `first`. */
 const unbroken = (first: string, length: number) => first + 'x'.repeat(length - 1);
 
@@ -381,6 +386,7 @@ async function sweepEach(page: Page, name: string, at: string) {
 test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no main screen sideways, in any scope', async ({
   page,
 }) => {
+  test.setTimeout(LONG_SWEEP);
   const customer = unbroken('K', 81);
   const rm = unbroken('R', 160);
   const team = unbroken('T', 160);
@@ -597,13 +603,19 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   await sweep(page, 'Thùng rác');
 });
 
-/** What of `box` ends past its right edge: a word that does not break, a line that does not wrap. */
+/**
+ * What of `box` ends past its right edge: a word that does not break, a line that does not wrap.
+ * A text field or a list keeps what it holds inside its box, a value longer than it scrolled out of
+ * sight: it counts by its box, whatever its `overflow` reads (`clip` on Chromium, `visible` on
+ * WebKit, where its `scrollWidth` is the width of the whole value).
+ */
 const sticksOut = (box: Locator) =>
   box.evaluate((node) => {
     const edge = Math.round(node.getBoundingClientRect().right);
     return [...node.querySelectorAll('*')].flatMap((part) => {
       const rect = part.getBoundingClientRect();
-      const shows = getComputedStyle(part).overflowX === 'visible';
+      const shows =
+        getComputedStyle(part).overflowX === 'visible' && !part.matches('input, textarea, select');
       const end = Math.round(
         shows ? Math.max(rect.right, rect.left + part.scrollWidth) : rect.right,
       );
@@ -633,6 +645,7 @@ async function expectHolds(page: Page, box: Locator, at: string) {
 test('names of 160 letters, an error of 200, break in the body of a dialog, a line said after an action and a tooltip', async ({
   page,
 }) => {
+  test.setTimeout(LONG_SWEEP);
   await asExe(page);
   const customer = unbroken('K', 160);
   const rm = unbroken('R', 160);
