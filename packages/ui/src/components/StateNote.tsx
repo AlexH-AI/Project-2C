@@ -39,10 +39,14 @@ interface StateNoteProps {
   detail?: { label: string; text: string };
 }
 
+/**
+ * The box of each size. A word longer than its line, a name with no space or the message of a
+ * server, breaks inside the note, in whichever of its lines it stands (DR6-183).
+ */
 const BOX = {
-  screen: 'grid justify-items-center gap-1.5 px-6 py-8.5 text-center',
-  card: 'flex items-center gap-3 px-1 pt-3.5 pb-1 text-left',
-  table: 'flex items-center gap-3 py-1.5 text-left',
+  screen: 'grid justify-items-center gap-1.5 px-6 py-8.5 text-center wrap-anywhere',
+  card: 'flex items-center gap-3 px-1 pt-3.5 pb-1 text-left wrap-anywhere',
+  table: 'flex items-center gap-3 py-1.5 text-left wrap-anywhere',
 } as const;
 
 const TONE = {
@@ -72,13 +76,9 @@ export function StateNote({
       <Title className={`${heading ? 'm-0 ' : ''}${big ? 'text-lg' : 'text-md'} font-semibold`}>
         {title}
       </Title>
-      {next && (
-        <p className={`m-0 wrap-anywhere text-fg-2 ${big ? 'max-w-105 text-md' : 'text-sm'}`}>
-          {next}
-        </p>
-      )}
+      {next && <p className={`m-0 text-fg-2 ${big ? 'max-w-105 text-md' : 'text-sm'}`}>{next}</p>}
       {detail && (
-        <p className="m-0 mt-2.5 max-w-full rounded-field bg-fill-1 px-3 py-2 text-left text-sm wrap-anywhere text-fg-2 select-text">
+        <p className="m-0 mt-2.5 max-w-full rounded-field bg-fill-1 px-3 py-2 text-left text-sm text-fg-2 select-text">
           {detail.label} <code>{detail.text}</code>
         </p>
       )}

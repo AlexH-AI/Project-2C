@@ -62,6 +62,15 @@ describe('StateNote', () => {
     expect(html).not.toContain('<button');
   });
 
+  // A word with no space, the message of a server in the first line too, breaks inside the note
+  // rather than push the page sideways (DR6-183; review of PR 1406): the whole note breaks so.
+  it('breaks a word longer than its line, in every size and in each of its lines', () => {
+    for (const size of ['screen', 'card', 'table'] as const) {
+      const html = renderToStaticMarkup(<StateNote size={size} icon="alert" title="x" next="y" />);
+      expect(classesOf(html, 'div')).toContain('wrap-anywhere');
+    }
+  });
+
   // components.html 10: an error has the shape of an empty place, red on its mark only.
   it('is an alert when an error, red on its mark alone', () => {
     const failed = renderToStaticMarkup(
