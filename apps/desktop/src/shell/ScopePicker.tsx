@@ -1,16 +1,14 @@
 import type { Person, Scope, Team } from '@p2c/domain';
-import { Segmented, SelectField } from '@p2c/ui';
-import type { Dispatch, SetStateAction } from 'react';
+import { MenuButton } from '@p2c/ui';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { t } from '../i18n';
-import { chooseKind, rmOptions, type ScopeChoice } from './scope';
+import type { ScopeChoice } from './scope';
+import { openTeamOf, pickScope, scopeLabel, scopeMenu, teamOfRow } from './scope-menu';
 
-const KINDS = [
-  { value: 'all', label: t('scope.all') },
-  { value: 'team', label: t('scope.team') },
-  { value: 'rm', label: t('scope.rm') },
-] as const;
-
-/** "Góc nhìn": everyone, one team or one RM, with the team or RM picked next to it. */
+/**
+ * "Góc nhìn" on the toolbar (mockup app-shell.html `#toolbar`): one pill naming the scope shown,
+ * which opens a menu: everyone, a whole team or one RM. A choice applies at once.
+ */
 export function ScopePicker({
   scope,
   teams,
@@ -18,47 +16,29 @@ export function ScopePicker({
   teamPicker = true,
   onChange,
 }: {
-  /** The resolved scope, so the list shows the team or RM actually used. */
+  /** The resolved scope, so the pill names the team or RM actually used. */
   scope: Scope;
   teams: readonly Team[];
   people: readonly Person[];
-  /** Whether the Team scope shows its team list; Tổng quan counts every team together. */
+  /** Whether a team of its own can be picked; Tổng quan counts every team together. */
   teamPicker?: boolean;
-  /** The state setter of the choice: a click on a kind needs the choice it replaces. */
+  /** The state setter of the choice: "Mọi team" needs the choice it replaces. */
   onChange: Dispatch<SetStateAction<ScopeChoice>>;
 }) {
+  const [openTeam, setOpenTeam] = useState<string | null>(null);
+  const name = scopeLabel(scope, teams, people, teamPicker);
   return (
-    <div className="flex items-center gap-2">
-      <Segmented
-        label={t('scope.label')}
-        options={KINDS}
-        size="md"
-        value={scope.kind}
-        onChange={(kind) => onChange((choice) => chooseKind(choice, kind))}
-      />
-      {/* Capped: a long name would push the top bar out of the window (DR6-170). */}
-      {scope.kind === 'team' && teamPicker && (
-        <SelectField
-          label={t('scope.pickTeam')}
-          labelHidden
-          capped
-          size="md"
-          value={scope.teamId}
-          options={teams.map((team) => ({ value: team.id, label: team.name }))}
-          onChange={(id) => onChange({ kind: 'team', id })}
-        />
-      )}
-      {scope.kind === 'rm' && (
-        <SelectField
-          label={t('scope.pickRm')}
-          labelHidden
-          capped
-          size="md"
-          value={scope.rmId}
-          options={rmOptions(people, teams)}
-          onChange={(id) => onChange({ kind: 'rm', id })}
-        />
-      )}
-    </div>
+    <MenuButton
+      label={t('scope.pill', { name })}
+      text={name}
+      title={t('scope.label')}
+      rows={scopeMenu(scope, teams, people, { teamPicker, openTeam })}
+      onOpen={() => setOpenTeam(openTeamOf(scope, people, teamPicker))}
+      onPick={(key) => {
+        const team = teamOfRow(key);
+        if (team) setOpenTeam((open) => (open === team ? null : team));
+        else onChange((choice) => pickScope(key, choice) ?? choice);
+      }}
+    />
   );
 }

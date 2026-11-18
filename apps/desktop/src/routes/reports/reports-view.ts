@@ -30,7 +30,7 @@ import {
   type Team,
 } from '@p2c/domain';
 import { joinParts, t } from '../../i18n';
-import { rmOptions } from '../../shell/scope';
+import { rmOptions, scopeName } from '../../shell/scope';
 import { closeRateText, countedWindow } from '../overview/overview-view';
 import { eachMark } from '../overview/stage-view';
 import { formatAmountCompact } from '../money-view';
@@ -132,33 +132,13 @@ function sumFigures(
   };
 }
 
-/** The scope as the report names it: `Toàn bộ`, `Team Bình Minh`, `RM Bùi Ngọc Trâm`. */
-export function reportScopeName(
-  scope: Scope,
-  people: readonly Person[],
-  teams: readonly Team[],
-): string {
-  switch (scope.kind) {
-    case 'all':
-      return t('scope.all');
-    case 'team':
-      return t('reports.scopeTeam', {
-        name: teams.find((team) => team.id === scope.teamId)?.name ?? '',
-      });
-    case 'rm':
-      return t('overview.scopeRm', {
-        name: people.find((person) => person.id === scope.rmId)?.name ?? '',
-      });
-  }
-}
-
 /** Beside the Tổng hợp heading: the scope with its RM count, or an RM with its team. */
 export function summaryMeta(
   scope: Scope,
   people: readonly Person[],
   teams: readonly Team[],
 ): string {
-  const name = reportScopeName(scope, people, teams);
+  const name = scopeName(scope, teams, people);
   if (scope.kind === 'rm') {
     const teamId = people.find((person) => person.id === scope.rmId)?.teamId;
     return joinParts([name, teams.find((team) => team.id === teamId)?.name ?? '']);
@@ -247,7 +227,7 @@ export function reportRows(
 
   const summary: ReportRow = {
     key: 'summary',
-    name: reportScopeName(scope, data.people, data.teams),
+    name: scopeName(scope, data.teams, data.people),
     team: null,
     ...figures(scope),
   };

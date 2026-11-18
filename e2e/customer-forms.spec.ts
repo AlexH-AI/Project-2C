@@ -1,4 +1,5 @@
 import { expect, pasteAsIs, test, type Page } from './fixtures';
+import { pickFirstRm, scopePill } from './support';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026.
 const NAME = 'An Thử Nghiệm';
@@ -32,14 +33,9 @@ test.beforeEach(async ({ page }) => {
 
 test('creates a customer in N4 on the kanban, then moves it to N2 by hand', async ({ page }) => {
   // One RM's board, so the new card is among the few shown per column.
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RM' })
-    .click();
-  const rm = await page
-    .getByRole('combobox', { name: 'RM của góc nhìn' })
-    .locator('option:checked')
-    .textContent();
+  await pickFirstRm(page);
+  // The lists of the dialogs name an RM with its team.
+  const rm = `${await scopePill(page).textContent()} · Bình Minh`;
 
   const dialog = await openCreate(page);
   await expect(dialog).toContainText('Mã KH (vd. K-9A1C) sinh khi lưu');
@@ -81,14 +77,9 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
 test('a customer made for an RM outside the scope is said to be, with a link to it (DR6-31)', async ({
   page,
 }) => {
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RM' })
-    .click();
-  const scopeRm = await page
-    .getByRole('combobox', { name: 'RM của góc nhìn' })
-    .locator('option:checked')
-    .textContent();
+  await pickFirstRm(page);
+  // The lists of the dialogs name an RM with its team.
+  const scopeRm = `${await scopePill(page).textContent()} · Bình Minh`;
   const summary = page.getByText(/KH đang mở/);
   const before = await summary.textContent();
 

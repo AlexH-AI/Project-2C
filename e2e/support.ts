@@ -240,14 +240,54 @@ export async function openProfile(page: Page): Promise<string> {
   return name;
 }
 
-/** Sets the scope to the team `name`. */
-export async function pickTeam(page: Page, name: string) {
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Team' })
-    .click();
-  await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
+/** The pill of the scope on the toolbar; its name says the scope shown ("Góc nhìn: Toàn bộ"). */
+export const scopePill = (page: Page) => page.getByRole('button', { name: /^Góc nhìn: / });
+
+/** The menu the pill of the scope opens. */
+export const scopeMenu = (page: Page) => page.getByRole('menu', { name: 'Góc nhìn' });
+
+/** The row of the team `name` in the menu of the scope: it opens the rows of the team. */
+export const teamRow = (page: Page, name: string) =>
+  scopeMenu(page)
+    .getByRole('menuitem')
+    .filter({ has: page.getByText(`Team ${name}`, { exact: true }) });
+
+/**
+ * Sets the scope in the menu of the toolbar: everyone (`all`); every team together, on Tổng quan
+ * (`teams`); the whole team `team`, or its RM `rm`.
+ */
+export async function pickScope(
+  page: Page,
+  scope: 'all' | 'teams' | { team: string; rm?: string },
+) {
+  const menu = scopeMenu(page);
+  await scopePill(page).click();
+  if (typeof scope === 'string') {
+    const name = scope === 'all' ? 'Toàn bộ' : 'Mọi team';
+    await menu.getByRole('menuitemradio', { name, exact: true }).click();
+  } else {
+    const row = teamRow(page, scope.team);
+    if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
+    await menu.getByRole('menuitemradio', { name: scope.rm ?? 'Cả team', exact: true }).click();
+  }
+  await expect(menu).toBeHidden();
 }
+
+/**
+ * Sets the scope to the first RM by name of the team `team`. One team is open at a time, so the
+ * rows of the choice are "Toàn bộ", then "Cả team" ("Mọi team" on Tổng quan), then its RM.
+ */
+export async function pickFirstRm(page: Page, team = 'Bình Minh') {
+  const menu = scopeMenu(page);
+  await scopePill(page).click();
+  const row = teamRow(page, team);
+  if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
+  await menu.getByRole('menuitemradio').nth(2).click();
+  await expect(menu).toBeHidden();
+}
+
+/** The line under the name of the screen, on the toolbar. */
+export const screenSub = (page: Page) => page.getByRole('banner').getByRole('paragraph');
 
 /** The page runs on Playwright's WebKit: the `webkit` project, on a Mac (Mac-7). */
 const onWebKit = (page: Page) => page.context().browser()?.browserType().name() === 'webkit';

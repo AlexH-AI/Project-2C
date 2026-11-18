@@ -7,8 +7,10 @@ import {
   discoveryFacts,
   panelOf,
   pastTheWindow,
-  pickTeam,
+  pickScope,
   right,
+  scopePill,
+  screenSub,
   scrolls,
 } from './support';
 
@@ -349,7 +351,7 @@ async function sweep(page: Page, at: string) {
   }
 }
 
-/** A picker of the top bar, a choice of 160 letters in it, is cut at its cap (`max-w-80`). */
+/** The pill of the scope, a name of 160 letters on it, is cut at its cap (`max-w-60`, and its arrow). */
 async function expectCapped(picker: Locator) {
   const { width } = (await picker.boundingBox())!;
   expect(width, 'the cap of a picker').toBeLessThanOrEqual(320);
@@ -392,37 +394,18 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   const team = unbroken('T', 160);
   const model = unbroken('W', 100);
   const lead = unbroken('L', 160);
-  const scopes: readonly (readonly [ScopeKind, string?])[] = [
-    ['Toàn bộ'],
-    ['Team', team],
-    ['RM', `${rm} · ${team}`],
-  ];
-  /** The scope `kind`, with `pick` in its picker; the RM picked by its first letters, as by hand. */
-  const setScope = async (kind: ScopeKind, pick?: string) => {
-    await page
-      .getByRole('radiogroup', { name: 'Góc nhìn' })
-      .getByRole('radio', { name: kind })
-      .click();
-    if (kind === 'Team') {
-      const picker = page.getByRole('combobox', { name: 'Team của góc nhìn' });
-      await picker.selectOption({ label: pick! });
-      await expectCapped(picker);
-    }
-    if (kind === 'RM') {
-      const picker = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-      // From the first RM of the list, under another team.
-      await picker.selectOption({ index: 0 });
-      await expect(picker.locator('option:checked')).not.toHaveText(pick!);
-      await picker.focus();
-      await page.keyboard.type(rm.slice(0, 4));
-      await expect(picker.locator('option:checked')).toHaveText(pick!);
-      // Narrower than the name, the picker says it whole under the pointer (and only there: a
-      // title kept on it would be read as its description, DR6-187).
-      await expectCapped(picker);
-      await picker.hover();
-      await expect(picker).toHaveAttribute('title', pick!);
-      await page.mouse.move(0, 0);
-    }
+  const scopes: readonly ScopeKind[] = ['Toàn bộ', 'Team', 'RM'];
+  /** The scope `kind` picked in the menu of the toolbar: the whole team, or its RM. */
+  const setScope = async (kind: ScopeKind) => {
+    if (kind === 'Toàn bộ') return pickScope(page, 'all');
+    await pickScope(page, kind === 'Team' ? { team } : { team, rm });
+    // Narrower than the name, the pill says it whole under the pointer (and only there: a title
+    // kept on it would be read as its description, DR6-187).
+    const pill = scopePill(page);
+    await expectCapped(pill);
+    await pill.hover();
+    await expect(pill).toHaveAttribute('title', kind === 'Team' ? `Team ${team}` : rm);
+    await page.mouse.move(0, 0);
   };
 
   // A customer with an analysis by the Mock, which the file below makes one by OpenCode.
@@ -493,8 +476,8 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
   await expect(booking).toBeHidden();
   const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
-  for (const [kind, pick] of scopes) {
-    await setScope(kind, pick);
+  for (const kind of scopes) {
+    await setScope(kind);
     await expect(detail).toContainText(`${rm} · ${team}`);
     await sweep(page, `Lịch hẹn, ${kind}`);
   }
@@ -504,9 +487,22 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   await remove.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
   await expect(remove).toBeHidden();
 
-  for (const [kind, pick] of scopes) {
+  for (const kind of scopes) {
     await open(page, 'Khách hàng');
-    await setScope(kind, pick);
+    await setScope(kind);
+    if (kind !== 'Toàn bộ') {
+      // The line under the name of the screen: cut short by the name of the team, it is read
+      // whole under the pointer, the count of customers at its end too; with an RM picked in the
+      // menu it is the count alone, whole in the line, and takes no tooltip.
+      const sub = screenSub(page);
+      await expect(sub).toHaveText(/KH đang mở · [\d,]+ đã đóng$/);
+      await sub.hover();
+      await expect(sub).toHaveAttribute(
+        'title',
+        kind === 'Team' ? /^Cả team T.+ KH đang mở · [\d,]+ đã đóng$/ : '',
+      );
+      await page.mouse.move(0, 0);
+    }
     for (const view of ['Bảng', 'Kanban']) {
       await page
         .getByRole('radiogroup', { name: 'Cách xem' })
@@ -519,7 +515,7 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
         await expectNameCapped(page, rm, `the RM of Khách hàng, ${kind}`);
       }
     }
-    // Tổng quan and Báo cáo open with the scope applied, no Lọc needed.
+    // Tổng quan and Báo cáo are for the scope picked, at once.
     await open(page, 'Tổng quan');
     await sweep(page, `Tổng quan, ${kind}`);
     await open(page, 'Báo cáo');
@@ -705,7 +701,7 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   await person.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(person).toBeHidden();
   await open(page, 'Lịch hẹn');
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
   await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(customer);
@@ -748,10 +744,7 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
 
   // The customer deleted, then restored: the dialog that asks (11b) and the line said after (11e).
   await open(page, 'Khách hàng');
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Toàn bộ' })
-    .click();
+  await pickScope(page, 'all');
   await page
     .getByRole('radiogroup', { name: 'Cách xem' })
     .getByRole('radio', { name: 'Bảng' })

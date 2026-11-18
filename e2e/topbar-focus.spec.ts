@@ -1,5 +1,13 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { addKycNote, createKycCustomer, discoveryFacts, panelOf, tabKey } from './support';
+import {
+  addKycNote,
+  createKycCustomer,
+  discoveryFacts,
+  panelOf,
+  scopeMenu,
+  scopePill,
+  tabKey,
+} from './support';
 
 // The topbar stays at the top of the page as it scrolls: what the focus or `scrollIntoView` brings
 // into view must come out from under it, a card brought to the top from its own top (WCAG 2.4.11),
@@ -46,7 +54,7 @@ test('what scrolls into view keeps the height of the bar above it, on every scre
   page,
 }) => {
   const sidebar = page.getByRole('navigation', { name: 'Điều hướng chính' });
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  const scope = scopePill(page);
   const room = () =>
     page
       .getByRole('main')
@@ -60,10 +68,13 @@ test('what scrolls into view keeps the height of the bar above it, on every scre
       await sidebar.getByRole('link', { name: screen }).click();
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(screen);
       await fits();
-      // The scope picker, where shown, with its team or RM list too.
-      for (const kind of (await scope.count()) > 0 ? ['Team', 'RM', 'Toàn bộ'] : []) {
-        await scope.getByRole('radio', { name: kind }).click();
+      // The scope pill, where shown, with its menu open too.
+      if ((await scope.count()) > 0) {
+        await scope.click();
+        await expect(scopeMenu(page)).toBeVisible();
         await fits();
+        await page.keyboard.press('Escape');
+        await expect(scopeMenu(page)).toBeHidden();
       }
     }
     await sidebar.getByRole('link', { name: 'Khách hàng' }).click();
@@ -73,18 +84,22 @@ test('what scrolls into view keeps the height of the bar above it, on every scre
   }
 });
 
-test('focus on the scope picker of the bar leaves the page where it is', async ({ page }) => {
+test('focus on the scope pill of the bar, and on its menu, leaves the page where it is', async ({
+  page,
+}) => {
   await page.goto('/#/customers');
   await page.getByRole('radio', { name: 'Bảng' }).click();
   await page.evaluate(() => window.scrollTo(0, 500));
   const scrolled = await page.evaluate(() => window.scrollY);
   expect(scrolled).toBeGreaterThan(0);
-  const team = page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Team' });
+  const pill = scopePill(page);
 
-  await team.focus();
-  await expect(team).toBeFocused();
+  await pill.focus();
+  await expect(pill).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+  // Opened, the focus goes to a row of the menu, under the bar it hangs from.
+  await pill.press('Enter');
+  await expect(scopeMenu(page).getByRole('menuitemradio').first()).toBeFocused();
   expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
 });
 
@@ -153,8 +168,8 @@ test('a card brought to the top by its heading, on a screen with the scope picke
   page,
 }) => {
   await page.goto('/#/appointments');
-  // The bar with the scope picker, the tallest.
-  await expect(page.getByRole('radiogroup', { name: 'Góc nhìn' })).toBeVisible();
+  // The bar with the scope pill.
+  await expect(scopePill(page)).toBeVisible();
   const card = page.getByRole('region', { name: 'Danh sách lịch hẹn' });
   expect(await reachesTop(card)).toBe(true);
 

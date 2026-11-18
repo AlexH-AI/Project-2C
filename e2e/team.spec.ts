@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
 import { ANCHOR_YEAR } from './anchor';
-import { asExe } from './support';
+import { asExe, pickFirstRm, scopePill } from './support';
 
 // The simulated data (spec §7, D8): 3 teams of 1 TL + 10 RM, and a shared IS, BD and BDM.
 const SEEDED = ['Bình Minh', 'Hừng Đông', 'Sao Mai'];
@@ -586,15 +586,10 @@ test('both delete dialogs leave Xóa on when refused while the data is replaced 
 
 test('member columns: an RM open customers match the Customers screen', async ({ page }) => {
   await page.goto('/#/customers');
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RM' })
-    .click();
-  // The picker shows "<RM> · <team>".
-  const [rm, team] = (await page
-    .getByRole('combobox', { name: 'RM của góc nhìn' })
-    .locator('option:checked')
-    .textContent())!.split(' · ') as [string, string];
+  const team = 'Bình Minh';
+  await pickFirstRm(page, team);
+  // The pill of the scope names the RM alone.
+  const rm = (await scopePill(page).textContent())!;
   const summary = (await page.getByText(/\d+ KH đang mở/).textContent())!;
   const open = /(\d+) KH đang mở/.exec(summary)![1]!;
 
@@ -613,9 +608,8 @@ test('member columns: an RM open customers match the Customers screen', async ({
 
   // The other two match Báo cáo for that RM: the 30 days up to today, and the year so far.
   await page.goto('/#/reports');
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  await page.getByRole('combobox', { name: 'RM của góc nhìn' }).selectOption(`${rm} · ${team}`);
+  // The scope went along from Khách hàng: the same RM.
+  await expect(scopePill(page)).toHaveText(rm);
   const kinds = page.getByRole('radiogroup', { name: 'Loại kỳ' });
   await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
   const picker = page.getByRole('group', { name: 'Kỳ thống kê' });

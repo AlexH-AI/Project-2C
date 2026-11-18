@@ -133,7 +133,8 @@ export function AppointmentsScreen() {
     () => rows.filter((row) => isInPeriod(row.appointment.date, period)).reverse(),
     [rows, period],
   );
-  // The RM strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B3).
+  // The RM strip belongs to the Team scope (mockup phase-3-feedback B3); the line under the name
+  // of the screen (`viewingTrail`) shows in every scope.
   const team =
     picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
   const rm =

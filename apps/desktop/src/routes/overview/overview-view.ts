@@ -23,6 +23,7 @@ import {
   type Team,
 } from '@p2c/domain';
 import { t } from '../../i18n';
+import { scopeName } from '../../shell/scope';
 import type { FilterSelection } from '../applied-filter';
 import { formatAmountCompact } from '../money-view';
 
@@ -242,15 +243,8 @@ function periodName(period: Period): string {
   return value;
 }
 
-function scopeText(scope: Scope, people: readonly Person[], teams: readonly Team[]): string {
-  switch (scope.kind) {
-    case 'all':
-      return t('scope.all');
-    case 'team':
-      return t('overview.scopeTeams', { teams: teams.length });
-    case 'rm':
-      return t('overview.scopeRm', {
-        name: people.find((person) => person.id === scope.rmId)?.name ?? '',
-      });
-  }
-}
+/** The Team scope of Tổng quan is every team (§4.3); the others are named as everywhere. */
+const scopeText = (scope: Scope, people: readonly Person[], teams: readonly Team[]): string =>
+  scope.kind === 'team'
+    ? t('overview.scopeTeams', { teams: teams.length })
+    : scopeName(scope, teams, people);

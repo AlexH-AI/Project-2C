@@ -28,6 +28,11 @@ export const en: EnglishMessages = {
   'screen.team': 'Team management',
   'screen.settings': 'Settings',
   'scope.label': 'View',
+  'scope.pill': 'View: {name}',
+  'scope.everyTeam': 'All teams',
+  'scope.teamName': 'Team {name}',
+  'scope.rmName': 'RM {name}',
+  'scope.rmCount': '{rm} RM',
   'scope.viewingRm': 'Team {team} → {rm}',
   'dialog.close': 'Close dialog',
   // A money field (G-03b): the words of mockup ngon-ngu-tien-te.html #money, tied to the codes of

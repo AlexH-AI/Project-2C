@@ -593,10 +593,15 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
   await appOpen();
   await checkLoadData();
   await go('#/appointments');
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Toàn bộ' })
-    .check();
+  // Everyone: the scope the measures are for, picked in the menu of the toolbar when another is.
+  const scope = page.getByRole('button', { name: /^Góc nhìn: / });
+  if ((await scope.textContent()) !== 'Toàn bộ') {
+    await scope.click();
+    await page
+      .getByRole('menu', { name: 'Góc nhìn' })
+      .getByRole('menuitemradio', { name: 'Toàn bộ', exact: true })
+      .click();
+  }
   const inYear = await checkPeriods();
 
   // Imports first: the writes at the end change the data the next run imports again.

@@ -1,5 +1,5 @@
 import { byName, isRm, type Person, type Scope, type Team } from '@p2c/domain';
-import { joinParts } from '../i18n';
+import { joinParts, t } from '../i18n';
 
 /** What the "Góc nhìn" picker holds: the kind, and the team or RM picked for it. */
 export interface ScopeChoice {
@@ -72,4 +72,23 @@ export function rmOptions(
       value: rm.id,
       label: joinParts([rm.name, team]),
     }));
+}
+
+/**
+ * A scope as the screens, the toolbar and the Excel report name it: `Toàn bộ`, `Team Bình Minh`,
+ * `RM Bùi Ngọc Trâm`. A team or RM that is gone leaves its name empty.
+ */
+export function scopeName(scope: Scope, teams: readonly Team[], people: readonly Person[]): string {
+  switch (scope.kind) {
+    case 'all':
+      return t('scope.all');
+    case 'team':
+      return t('scope.teamName', {
+        name: teams.find((team) => team.id === scope.teamId)?.name ?? '',
+      });
+    case 'rm':
+      return t('scope.rmName', {
+        name: people.find((person) => person.id === scope.rmId)?.name ?? '',
+      });
+  }
 }
