@@ -721,6 +721,9 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   expect(tip.x, 'the tooltip, left').toBeGreaterThanOrEqual(Math.floor(box.x));
   expect(tip.x + tip.width, 'the tooltip, right').toBeLessThanOrEqual(Math.ceil(box.x + box.width));
   expect(await sticksOut(tooltip), 'what the tooltip holds').toEqual([]);
+  // On WebKit the box of the chart counted a width past the window while the tooltip, and all
+  // else in it, sat inside (CI run 44214901028): the chart clips at its box, so it pushes nothing.
+  await expect(chart).toHaveCSS('overflow-x', 'hidden');
   await expectNoSideways(page, 'under a tooltip');
   await page.mouse.move(0, 0);
 

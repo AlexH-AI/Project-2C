@@ -42,7 +42,12 @@ interface ChartProps {
   className?: string;
 }
 
-/** ECharts wrapper (ADR-0014): themed from the tokens, resizes with its box, disposed on unmount. */
+/**
+ * ECharts wrapper (ADR-0014): themed from the tokens, resizes with its box, disposed on unmount.
+ * The box clips what it holds: a tooltip stays in it (`confine` of the theme), and on WebKit the
+ * box counted a width past the window while its tooltip sat inside it, which let the page scroll
+ * sideways (DR6-183; CI run 44214901028).
+ */
 export function Chart({
   label,
   describedBy,
@@ -76,7 +81,7 @@ export function Chart({
       role="img"
       aria-label={label}
       aria-describedby={describedBy}
-      className={className}
+      className={`overflow-hidden ${className}`}
     />
   );
 }
