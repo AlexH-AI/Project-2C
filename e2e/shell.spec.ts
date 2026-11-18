@@ -31,12 +31,12 @@ test('the sidebar: the compact logo in a row, an icon on every item, the save st
         images.map((image) => (image.naturalWidth > 0 ? image.width : 0)),
       ),
     )
-    // The tree 42 px and "Heritas" 108 px, each in an image with 1 px of room for its outline.
-    .toEqual([44, 110, 95]);
+    // The tree 42 px and "Heritas" 108 px, each in an image with room around it for its outline.
+    .toEqual([44, 112, 95]);
   // The tree, then "Heritas" over "L-CRM".
   const [tree, word, lcrm] = await Promise.all([0, 1, 2].map((i) => box(pieces.nth(i))));
   expect(tree!.x + tree!.width).toBeLessThanOrEqual(word!.x);
-  expect(lcrm!.x).toBe(word!.x + 1);
+  expect(lcrm!.x).toBe(word!.x + 2);
   expect(lcrm!.y).toBeGreaterThanOrEqual(word!.y + word!.height);
   expect(lcrm!.y + lcrm!.height).toBeLessThanOrEqual(tree!.y + tree!.height + 1);
 
@@ -278,6 +278,10 @@ test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on We
   await testInfo.attach('logo', { body: logo, contentType: 'image/png' });
 
   const shot = await word.screenshot();
-  // Seven letters 108 px wide: their edge is some hundreds of pixels long.
-  expect(await champagnePixels(page, shot, LETTERS)).toBeGreaterThan(100);
+  // The outline of the seven letters counts some 440 pixels at 1x and 1 330 at 2x, on Edge and on
+  // WebKit alike. Drawn by `drop-shadow`, Playwright's WebKit showed a fainter one, 199 and 541
+  // (run 44290278598 of macos.yml): under these.
+  const scale = await page.evaluate(() => devicePixelRatio);
+  expect([1, 2]).toContain(scale);
+  expect(await champagnePixels(page, shot, LETTERS)).toBeGreaterThan(scale === 1 ? 300 : 800);
 });

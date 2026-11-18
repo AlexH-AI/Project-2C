@@ -133,10 +133,10 @@ test('the logo keeps its colours on the dark sidebar, the navy tree and "Heritas
     )
     .toEqual([
       { alt: '', width: 44, loaded: true },
-      { alt: '', width: 110, loaded: true },
+      { alt: '', width: 112, loaded: true },
       { alt: '', width: 95, loaded: true },
     ]);
-  // The outline of the tree and of "Heritas" is in their images, 1 px of room around each
+  // The outline of the tree and of "Heritas" is in their images, with room around each
   // (shell.spec.ts measures it): no filter draws it, which the macOS app left out (L179). "L-CRM"
   // is gold already.
   for (const piece of await pieces.all()) await expect(piece).toHaveCSS('filter', 'none');
