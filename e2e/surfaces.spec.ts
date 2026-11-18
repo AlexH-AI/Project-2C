@@ -167,6 +167,27 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
   }
 });
 
+// The gold tint on the material of a card: --text-3 is under 4.5:1 there, as on the chosen row
+// (ADR-0013 appendix 11/11/2026 §7; review of PR 1402).
+test('what is chosen on a card reads 4.5:1 on its gold tint: the team of the list, the month of today', async ({
+  page,
+}) => {
+  await page.goto('/#/team');
+  const team = region(page, 'Team').getByRole('button', { pressed: true });
+  await expect(team).toHaveCSS('background-color', 'rgba(217, 178, 106, 0.14)');
+  expect(await lowestContrast(team), 'the team chosen').toBeGreaterThanOrEqual(TEXT_CONTRAST);
+
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Năm' })
+    .click();
+  const month = page.getByRole('button', { name: /^Tháng 9\/2026:/ });
+  await expect(month).toHaveAttribute('aria-current', 'date');
+  await expect(month).toHaveCSS('background-color', 'rgba(217, 178, 106, 0.14)');
+  expect(await lowestContrast(month), 'the month of today').toBeGreaterThanOrEqual(TEXT_CONTRAST);
+});
+
 /** Lịch hẹn → "+ Lịch hẹn": the form 6a, a dialog longer than a low window. */
 async function openBooking(page: Page) {
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();

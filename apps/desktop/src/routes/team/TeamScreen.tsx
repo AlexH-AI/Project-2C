@@ -163,7 +163,8 @@ export function TeamScreen() {
             {view.teams.map((entry) => {
               const on = entry === selected;
               // The name breaks, even with no space; the count stays whole, by the name's first line
-              // (DR6-148).
+              // (DR6-148). On the gold tint of the chosen team it is --text-2: --text-3 is under
+              // 4.5:1 there (ADR-0013 appendix 11/11/2026 §7).
               return (
                 <button
                   key={entry.team.id}
@@ -175,7 +176,9 @@ export function TeamScreen() {
                   }`}
                 >
                   {entry.team.name}
-                  <span className="ml-auto shrink-0 font-normal text-fg-3 tabular-nums">
+                  <span
+                    className={`ml-auto shrink-0 font-normal tabular-nums ${on ? 'text-fg-2' : 'text-fg-3'}`}
+                  >
                     {t(entry.lead ? 'team.count' : 'team.countNoLead', { rm: entry.rm })}
                   </span>
                 </button>
