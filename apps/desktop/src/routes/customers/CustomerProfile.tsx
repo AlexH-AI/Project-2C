@@ -17,7 +17,7 @@ import {
   type KycNoteRecord,
 } from '@p2c/db';
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
-import { Button, DialogFocusFallback } from '@p2c/ui';
+import { Button, DialogFocusFallback, StateNote } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
 import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
@@ -121,7 +121,13 @@ export function CustomerProfile({ id }: { id: string }) {
     return (
       <>
         {BACK}
-        <p className="m-0 text-sm text-fg-3">{t('customer.notFound')}</p>
+        <StateNote
+          size="screen"
+          icon="search"
+          heading={2}
+          title={t('customer.notFound')}
+          next={t('customer.notFoundNext')}
+        />
       </>
     );
   }

@@ -23,6 +23,8 @@ import {
   DialogFocusFallback,
   PeriodPicker,
   SelectField,
+  StateNote,
+  periodLabel,
   type DataTableColumn,
 } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
@@ -243,6 +245,53 @@ export function AppointmentsScreen() {
   };
   const outside = outOfSight?.appointment.id === selectedId && !selected ? outOfSight : null;
 
+  // What the list says with no appointment in the period (mockup components.html 09): none yet,
+  // or none under the filter, which it names and can clear. A button gone with its click leaves
+  // the focus on the table.
+  const list = useRef<HTMLTableElement>(null);
+  const thenList = (act: () => void) => () => {
+    act();
+    list.current?.focus();
+  };
+  const filtered = coordinator !== 'any';
+  const where = { period: periodLabel(period, PERIOD_LABELS) };
+  const emptyList = (
+    <StateNote
+      size="table"
+      icon={filtered ? 'search' : 'calendar'}
+      title={t(filtered ? 'appointments.listNoMatch' : 'appointments.listEmpty', where)}
+      next={
+        filtered
+          ? t('appointments.listNoMatchNext', {
+              name: coordinatorOptions.find((option) => option.value === coordinator)?.label ?? '',
+            })
+          : t('appointments.listEmptyNext')
+      }
+      action={
+        <>
+          {filtered ? (
+            <Button size="sm" onClick={thenList(() => setCoordinator('any'))}>
+              {t('filter.clear')}
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setCreating({})}>
+              {t('appointments.new')}
+            </Button>
+          )}
+          {!isInPeriod(today, period) && (
+            <Button
+              size="sm"
+              variant="quiet"
+              onClick={thenList(() => changePeriod(periodOf('month', today)))}
+            >
+              {t('appointments.toThisMonth')}
+            </Button>
+          )}
+        </>
+      }
+    />
+  );
+
   return (
     <>
       {team && (
@@ -329,9 +378,11 @@ export function AppointmentsScreen() {
           {t('appointments.list')}
         </h2>
         <DataTable
+          ref={list}
           label={t('appointments.list')}
           columns={columns}
           rows={inPeriod}
+          empty={emptyList}
           getRowId={(r) => r.appointment.id}
           selectedId={selected?.appointment.id}
           initialSort={{ id: 'date', desc: true }}
@@ -566,7 +617,14 @@ function DayTable({
       <h2 id="appointments-day" className={`${HEADING} mb-2`}>
         {t('appointments.day', { date: formatDate(day) })}
       </h2>
-      {groups.length === 0 && <p className="m-0 text-sm text-fg-3">{t('appointments.dayEmpty')}</p>}
+      {groups.length === 0 && (
+        <StateNote
+          size="card"
+          icon="calendar"
+          title={t('appointments.dayEmpty')}
+          next={t('appointments.dayEmptyNext')}
+        />
+      )}
       {groups.map((group) => (
         <section
           key={group.team?.id ?? ''}
@@ -644,7 +702,7 @@ function Detail({
         aria-label={t('appointments.detail')}
         className={`${CARD} w-full lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
       >
-        <p className="m-0 text-sm text-fg-3">{t('appointments.detailEmpty')}</p>
+        <StateNote size="card" icon="info" title={t('appointments.detailEmpty')} />
       </aside>
     );
   }
@@ -676,7 +734,7 @@ function Detail({
       <h2
         ref={heading}
         tabIndex={-1}
-        className="m-0 text-base font-semibold wrap-anywhere tabular-nums"
+        className="m-0 text-md font-semibold wrap-anywhere tabular-nums"
       >
         {joinParts([dateTime(a), row.customer?.name])}
       </h2>

@@ -118,7 +118,7 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
       </div>
       <div className="flex items-center gap-3 border-b border-border py-2 text-sm">
         <div className="flex-1">
-          <b className="block text-base">{t('settings.backup.export')}</b>
+          <b className="block text-md">{t('settings.backup.export')}</b>
           <span className="text-fg-2">
             {t(data.hasFile ? 'settings.backup.exportHelp' : 'settings.backup.exportHelpWeb')}
           </span>
@@ -129,7 +129,7 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
       </div>
       <div className="flex items-center gap-3 py-2 text-sm">
         <div className="flex-1">
-          <b className="block text-base">{t('settings.backup.import')}</b>
+          <b className="block text-md">{t('settings.backup.import')}</b>
           <span className="text-fg-2">
             {t('settings.backup.importHelp')}{' '}
             {data.hasFile && t('settings.backup.importHelpBackup')}

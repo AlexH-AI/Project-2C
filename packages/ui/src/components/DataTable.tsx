@@ -71,6 +71,11 @@ interface DataTableProps<Row extends RowData> {
   fixed?: boolean;
   /** Cells 6 px from the column's edges instead of 10, as in a narrow card of the mockups. */
   compact?: boolean;
+  /**
+   * What a table with no row says under its headers, which stay (mockup components.html 09): a
+   * `StateNote` of size `table`, in one row across every column.
+   */
+  empty?: ReactNode;
 }
 
 const features = tableFeatures({
@@ -118,6 +123,7 @@ export function DataTable<Row extends RowData>({
   ref,
   fixed = false,
   compact = false,
+  empty,
 }: DataTableProps<Row>) {
   const [limit, setLimit] = useState(SHOW_MORE_STEP);
   const [limitKey, setLimitKey] = useState(resetKey);
@@ -150,6 +156,9 @@ export function DataTable<Row extends RowData>({
   const align = (column: DataTableColumn<Row>) =>
     `${textAlign(column)} ${column.kind === 'text' ? '' : 'tabular-nums'}`;
   const inset = compact ? 'px-1.5' : 'px-2.5';
+  // A zero of a number column is written lighter, so the figures stand out (components.html 05).
+  const zero = (column: DataTableColumn<Row>, row: Row) =>
+    column.kind === 'number' && column.value(row) === 0 ? 'text-fg-3' : '';
 
   const { headers, visible, foot } = tableView(
     columns,
@@ -208,12 +217,19 @@ export function DataTable<Row extends RowData>({
           </tr>
         </thead>
         <tbody>
+          {rows.length === 0 && empty !== undefined && (
+            <tr>
+              <td colSpan={columns.length} className={`${inset} py-2`}>
+                {empty}
+              </td>
+            </tr>
+          )}
           {visible.map((row) => (
             <tr key={row.id} {...rowState(row.id, selectedId)}>
               {columns.map((column) => (
                 <td
                   key={column.id}
-                  className={`border-b border-hairline ${inset} py-2 align-middle group-last:border-b-0 ${align(column)} ${
+                  className={`border-b border-hairline ${inset} py-2 align-middle group-last:border-b-0 ${align(column)} ${zero(column, row.original)} ${
                     column.cellClass?.(row.original) ?? ''
                   }`}
                 >

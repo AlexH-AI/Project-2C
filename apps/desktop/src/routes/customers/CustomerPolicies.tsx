@@ -7,7 +7,7 @@ import {
   type Policy,
 } from '@p2c/domain';
 import type { Ref } from 'react';
-import { Button, PolicyBadge } from '@p2c/ui';
+import { Button, PolicyBadge, StateNote } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
 import { CARD, HEADING, LINK } from '../classes';
@@ -57,10 +57,17 @@ export function CustomerPolicies({
         {policies.length > 0 && <Button onClick={onNew}>{t('policies.new')}</Button>}
       </div>
       {policies.length === 0 ? (
-        <div className="flex items-center gap-3">
-          <p className="m-0 text-sm text-fg-3">{t('policies.empty')}</p>
-          <Button onClick={onNew}>{t('policies.new')}</Button>
-        </div>
+        <StateNote
+          size="card"
+          icon="info"
+          title={t('policies.empty')}
+          next={t('policies.emptyNext')}
+          action={
+            <Button size="sm" onClick={onNew}>
+              {t('policies.new')}
+            </Button>
+          }
+        />
       ) : (
         <ul aria-label={t('policies.title')} className="m-0 flex list-none flex-col p-0">
           {[...policies]

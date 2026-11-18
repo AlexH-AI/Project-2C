@@ -107,7 +107,14 @@ test('adds a team, then renames it', async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(teamButton(page, 'Thiên Hà')).toHaveAttribute('aria-pressed', 'true');
   await expect(teamButton(page, 'Thiên Hà')).toContainText('chưa có TL · 0 RM');
-  await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có RM.');
+  // VA3c (components.html 09): empty, the table keeps its headers, over one row holding the note.
+  const empty = members(page, 'Thiên Hà').getByRole('table');
+  await expect(empty.getByRole('columnheader', { name: 'Họ tên' })).toBeVisible();
+  await expect(empty.getByRole('row')).toHaveCount(2);
+  await expect(empty.getByRole('row').nth(1)).toContainText('Team chưa có RM.');
+  await expect(empty.getByRole('row').nth(1)).toContainText(
+    'Bấm "+ Nhân sự" để thêm RM vào team này.',
+  );
 
   await members(page, 'Thiên Hà').getByRole('button', { name: 'Đổi tên team' }).click();
   const rename = page.getByRole('dialog', { name: 'Đổi tên team' });
@@ -734,10 +741,10 @@ test('the member table keeps the sort picked when another team is shown', async 
   }
   expect(open).toEqual([...open].sort((a, b) => a - b));
 
-  // Through a team without RM, which shows no table, too.
+  // Through a team without RM, whose table keeps its headers over the note (VA3c), too.
   await createTeam(page, 'Thiên Hà');
   await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có RM.');
-  await expect(members(page, 'Thiên Hà').getByRole('table')).toHaveCount(0);
+  await expect(header('Thiên Hà', 'KH đang mở')).toHaveAttribute('aria-sort', 'ascending');
   await teamButton(page, 'Hừng Đông').click();
   await expect(header('Hừng Đông', 'KH đang mở')).toHaveAttribute('aria-sort', 'ascending');
 });

@@ -9,7 +9,7 @@ import {
   type ClosedStage,
   type CustomerStage,
 } from '@p2c/domain';
-import { Button, DataTable, Segmented, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, Segmented, StateNote, type DataTableColumn } from '@p2c/ui';
 import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
@@ -207,6 +207,14 @@ export function CustomersScreen() {
           initialSort={{ id: 'since', desc: true }}
           moreLabels={tableMore('customers')}
           resetKey={scopeKey}
+          empty={
+            <StateNote
+              size="table"
+              icon="people"
+              title={t('customers.empty')}
+              next={t('customers.emptyNext')}
+            />
+          }
         />
       ) : (
         <div className="flex items-start gap-3.5">

@@ -15,8 +15,8 @@ import {
   type Person,
   type StageTransition,
 } from '@p2c/domain';
-import { Button, Segmented } from '@p2c/ui';
-import { useState, type ReactNode, type Ref } from 'react';
+import { Button, Segmented, StateNote } from '@p2c/ui';
+import { useRef, useState, type ReactNode, type Ref } from 'react';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
@@ -282,10 +282,12 @@ export function Timeline({
     a.coordinatorIds.flatMap((id) => people.find((person) => person.id === id)?.role ?? []);
   const events = kycTimeline(transitions, kyc, appointments);
   const shown = (event: TimelineEvent) => inTimelineFilter(event, filter);
+  // "Bỏ lọc" goes with its click: the focus stays on the heading of the card it filled.
+  const heading = useRef<HTMLHeadingElement>(null);
   return (
     <section aria-labelledby="timeline" className={CARD}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h2 id="timeline" className={HEADING}>
+        <h2 ref={heading} id="timeline" tabIndex={-1} className={HEADING}>
           {t('timeline.title')}
         </h2>
         <div className="flex-1" />
@@ -296,7 +298,28 @@ export function Timeline({
           onChange={setFilter}
         />
       </div>
-      {!events.some(shown) && <p className="m-0 text-sm text-fg-3">{t('timeline.empty')}</p>}
+      {!events.some(shown) && (
+        // Nothing under the filter, which the note names and can clear (components.html 09).
+        <StateNote
+          size="card"
+          icon={filter === 'ALL' ? 'info' : 'search'}
+          title={t('timeline.empty')}
+          {...(filter !== 'ALL' && {
+            next: t('timeline.emptyNext', { label: t(`timeline.filter.${filter}`) }),
+            action: (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setFilter('ALL');
+                  heading.current?.focus();
+                }}
+              >
+                {t('filter.clear')}
+              </Button>
+            ),
+          })}
+        />
+      )}
       <ol className="m-0 flex list-none flex-col gap-3 p-0 text-sm">
         {events.map((event) => (
           <li key={event.id} hidden={!shown(event)} className="flex flex-col gap-0.5">

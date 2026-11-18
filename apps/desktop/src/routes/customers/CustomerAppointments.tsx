@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import { appointmentGroup, type CalendarDate, type StageTransition } from '@p2c/domain';
-import { DataTable, type DataTableColumn } from '@p2c/ui';
+import { DataTable, StateNote, type DataTableColumn } from '@p2c/ui';
 import { t, tableMore } from '../../i18n';
 import { dayText, isPastOrToday, withTime, writtenDay } from '../appointments/appointment-form';
 import {
@@ -173,20 +173,24 @@ export function CustomerAppointments({
           })}
         </span>
       </div>
-      {rows.length === 0 ? (
-        <p className="m-0 text-sm text-fg-3">{t('customer.noAppointments')}</p>
-      ) : (
-        <DataTable
-          label={t('customer.appointments')}
-          columns={columns}
-          rows={rows}
-          getRowId={(r) => r.appointment.id}
-          initialSort={{ id: 'date', desc: true }}
-          moreLabels={tableMore('appointments')}
-          fixed
-          compact
-        />
-      )}
+      <DataTable
+        label={t('customer.appointments')}
+        columns={columns}
+        rows={rows}
+        getRowId={(r) => r.appointment.id}
+        initialSort={{ id: 'date', desc: true }}
+        moreLabels={tableMore('appointments')}
+        fixed
+        compact
+        empty={
+          <StateNote
+            size="table"
+            icon="calendar"
+            title={t('customer.noAppointments')}
+            next={t('customer.noAppointmentsNext')}
+          />
+        }
+      />
       <p className="m-0 mt-2 text-xs text-fg-3">{t('customer.appointmentsHelp')}</p>
     </section>
   );

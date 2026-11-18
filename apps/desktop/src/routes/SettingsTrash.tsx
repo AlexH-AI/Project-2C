@@ -7,10 +7,11 @@ import {
   DialogFocusFallback,
   PolicyBadge,
   Segmented,
+  StateNote,
   type DataTableColumn,
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
-import { t } from '../i18n';
+import { joinParts, t } from '../i18n';
 import { ALERT, FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { RestoreDialog } from './RestoreDialog';
@@ -327,6 +328,7 @@ export function TrashSection() {
   const [purging, setPurging] = useState<PurgeView | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const done = useRef<HTMLDivElement>(null);
+  const table = useRef<HTMLTableElement>(null);
   // Of every row, whatever the filter (DR6-151).
   const names = useMemo(() => trashNames(rows), [rows]);
   const columns = useMemo(() => trashColumns(setRestoring, names, today), [names, today]);
@@ -369,46 +371,73 @@ export function TrashSection() {
       <p className="m-0 mb-3 text-sm text-fg-2">{t(hasFile ? 'trash.helpFile' : 'trash.help')}</p>
       {reminder && <p className={`${ALERT} mb-3 border-info text-sm`}>{reminder}</p>}
       {notice && <NoticeLine ref={done} notice={notice} />}
-      {rows.length === 0 ? (
-        <p className="m-0 px-3 py-7 text-center text-sm text-fg-2">
-          <b className="mb-1 block text-md text-fg">{t('trash.empty')}</b>
-          {t('trash.emptyHelp')}
-        </p>
-      ) : (
-        <>
-          <div className="mb-2.5 flex flex-wrap items-center gap-3">
-            <Segmented
-              label={t('trash.kinds')}
-              options={options}
-              value={filter}
-              onChange={setFilter}
-            />
-            {/* A search box without a field label, as in mockup 11a; its name is for screen readers. */}
-            <input
-              type="search"
-              aria-label={t('trash.search')}
-              placeholder={t('trash.searchPlaceholder')}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              autoComplete="off"
-              className={`min-w-56 flex-1 rounded-control border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 ${FOCUS}`}
-            />
-          </div>
-          {shown.length === 0 ? (
-            <p className="m-0 py-4 text-center text-sm text-fg-2">{t('trash.noMatch')}</p>
-          ) : (
-            <DataTable
-              label={t('trash.table')}
-              columns={columns}
-              rows={shown}
-              getRowId={(row) => `${row.kind}-${row.id}`}
-              initialSort={{ id: 'deletedAt', desc: true }}
-              moreLabels={TRASH_MORE}
-              resetKey={`${filter}|${query}`}
-            />
-          )}
-        </>
+      {rows.length > 0 && (
+        <div className="mb-2.5 flex flex-wrap items-center gap-3">
+          <Segmented
+            label={t('trash.kinds')}
+            options={options}
+            value={filter}
+            onChange={setFilter}
+          />
+          {/* A search box without a field label, as in mockup 11a; its name is for screen readers. */}
+          <input
+            type="search"
+            aria-label={t('trash.search')}
+            placeholder={t('trash.searchPlaceholder')}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            autoComplete="off"
+            className={`min-w-56 flex-1 rounded-control border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 ${FOCUS}`}
+          />
+        </div>
       )}
+      {/* Empty, the table keeps its headers (mockup components.html 09): nothing deleted yet, or
+          nothing under the filter, which the note names and can clear. */}
+      <DataTable
+        ref={table}
+        label={t('trash.table')}
+        columns={columns}
+        rows={shown}
+        getRowId={(row) => `${row.kind}-${row.id}`}
+        initialSort={{ id: 'deletedAt', desc: true }}
+        moreLabels={TRASH_MORE}
+        resetKey={`${filter}|${query}`}
+        empty={
+          rows.length === 0 ? (
+            <StateNote
+              size="table"
+              icon="trash"
+              title={t('trash.empty')}
+              next={t('trash.emptyHelp')}
+            />
+          ) : (
+            <StateNote
+              size="table"
+              icon="search"
+              title={t('trash.noMatch')}
+              next={t('trash.noMatchNext', {
+                parts: joinParts([
+                  filter !== 'all' && t('trash.filter.kind', { label: t(`trash.kind.${filter}`) }),
+                  query.trim() !== '' && t('trash.filter.query', { name: query.trim() }),
+                ]),
+              })}
+              action={
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setFilter('all');
+                    setQuery('');
+                    // The button goes with its click: the focus stays on the table it filled.
+                    table.current?.focus();
+                  }}
+                >
+                  {t('filter.clear')}
+                </Button>
+              }
+            />
+          )
+        }
+      />
       <DialogFocusFallback value={() => done.current}>
         {restoring && (
           <RestoreDialog

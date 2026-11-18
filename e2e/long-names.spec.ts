@@ -794,4 +794,15 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   await check.getByRole('button', { name: 'Kiểm tra kết nối' }).click();
   await expect(check.getByRole('alert')).toContainText(message);
   await expectHolds(page, check, 'the error of Kiểm tra kết nối');
+
+  // The same error at Phân tích, said in the shape of every error with its Thử lại (VA3c): the
+  // first line of the shape breaks as its next one does (review of PR 1406).
+  await open(page, 'Khách hàng');
+  await page.getByRole('link', { name: customer }).click();
+  await addKycNote(page, customer, discoveryFacts);
+  const panel = panelOf(page);
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText(message);
+  await expect(panel.getByRole('alert').getByRole('button', { name: 'Thử lại' })).toBeVisible();
+  await expectHolds(page, panel, 'the error of Phân tích');
 });

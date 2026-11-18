@@ -7,6 +7,7 @@ import {
   lowestContrast,
   panelOf,
   pickTeam,
+  pressButton,
   stubChatGptWeb,
   tabKey,
 } from './support';
@@ -363,6 +364,67 @@ test('the coordinator filter keeps the appointments with or without that person'
     return;
   }
   throw new Error('Nobody coordinated a meeting this month');
+});
+
+// VA3c (components.html 09): none under the filter is not none yet. Either keeps the headers.
+test('a list the coordinator filter empties names the filter, and "Bỏ lọc" fills it again', async ({
+  page,
+}) => {
+  const { coordinator, list, rows, kinds } = screen(page);
+  await kinds.getByRole('radio', { name: 'Ngày' }).click();
+  const all = await total(page);
+  expect(all).toBeGreaterThan(0);
+
+  // The first person (after "Bất kỳ" and "Không có") who joins no meeting today.
+  const people = await coordinator.locator('option').allTextContents();
+  let someone: string | undefined;
+  for (const person of people.slice(2)) {
+    await coordinator.selectOption({ label: person });
+    if ((await total(page)) > 0) continue;
+    someone = person;
+    break;
+  }
+  expect(someone, 'somebody coordinates no meeting today').toBeDefined();
+
+  await expect(list.getByRole('columnheader')).toHaveCount(8);
+  await expect(rows).toHaveCount(1);
+  await expect(rows).toContainText(`Không có lịch hẹn nào khớp trong ${TODAY}`);
+  await expect(rows).toContainText(`Đang lọc Phối hợp: ${someone}. Bỏ lọc hoặc xem kỳ khác.`);
+  // No "create" here, and today is in the period: one button.
+  await expect(rows.getByRole('button')).toHaveText(['Bỏ lọc']);
+
+  await pressButton(rows.getByRole('button', { name: 'Bỏ lọc' }));
+  await expect(coordinator).toHaveValue('any');
+  await expectList(page, all);
+  // Its button gone, the focus is on the table it filled.
+  await expect(list).toBeFocused();
+});
+
+test('a period with no appointment says so, offers a new one and the way back to this month', async ({
+  page,
+}) => {
+  const { list, rows, kinds } = screen(page);
+  const month = await total(page);
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await page.getByRole('textbox', { name: 'Từ ngày' }).fill('01/01/2020');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('02/01/2020');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+
+  await expect(list.getByRole('columnheader')).toHaveCount(8);
+  await expect(rows).toHaveCount(1);
+  await expect(rows).toContainText('Chưa có lịch hẹn nào trong 01/01 – 02/01/2020');
+  await expect(rows).toContainText('Tạo lịch hẹn mới, hoặc xem kỳ khác.');
+  await expect(rows.getByRole('button')).toHaveText(['+ Lịch hẹn', 'Về tháng này']);
+
+  await rows.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+
+  await pressButton(rows.getByRole('button', { name: 'Về tháng này' }));
+  await expect(kinds.getByRole('radio', { name: 'Tháng' })).toBeChecked();
+  await expectList(page, month);
+  await expect(list).toBeFocused();
 });
 
 test('sorting by day puts the appointments of one day in time order, either way', async ({
