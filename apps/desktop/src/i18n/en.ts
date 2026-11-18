@@ -99,6 +99,15 @@ export const en: EnglishMessages = {
   'settings.demo.confirmBackup':
     'The app first backs up the data file to the backups folder of the data folder (its path is in Settings → Data); to restore, copy that backup over project2c.db in the data folder while the app is closed.',
   'settings.demo.doneBackup': 'Backup: {file} (backups folder)',
+  'toast.movedToTrash.appointment': 'Appointment moved to Trash',
+  'toast.movedToTrash.customer': 'Customer moved to Trash',
+  'toast.movedToTrash.policy': 'Policy moved to Trash',
+  'toast.movedToTrash.team': 'Team moved to Trash',
+  'toast.movedToTrash.person': 'Staff member moved to Trash',
+  'toast.undo': 'Undo',
+  'toast.undoGone': 'The record is no longer in Trash, so this cannot be undone.',
+  'toast.close': 'Close notification',
+  'toast.appointmentCreated': 'Appointment created',
   'trash.purge.backup':
     'The app first backs up the data file to the backups folder of the data folder (its path is in Settings → Data). To get the data back as it was before emptying: copy that backup over project2c.db in the data folder while the app is closed (the changes made since are lost).',
   'storage.saveDiskFull':

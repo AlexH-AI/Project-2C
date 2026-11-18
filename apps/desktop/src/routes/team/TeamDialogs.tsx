@@ -4,6 +4,7 @@ import { normalizeText, type Team } from '@p2c/domain';
 import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useTrashUndo } from '../../shell/Toasts';
 import { retriesDelete } from './team-view';
 
 /** Mockup 9c: a new team (`team` omitted) or a new name; a refused name stays in the dialog. */
@@ -65,12 +66,14 @@ export function TeamNameDialog({
  */
 export function DeleteTeamDialog({ team, onClose }: { team: Team; onClose: () => void }) {
   const data = useAppData();
+  const undo = useTrashUndo();
   const [error, setError] = useState<string>();
   const [final, setFinal] = useState(false);
 
   const remove = () => {
     try {
       data.run((db) => softDeleteTeam(db, team.id));
+      undo('team', team.id);
       onClose();
     } catch (failure) {
       setError(errorMessage(failure));

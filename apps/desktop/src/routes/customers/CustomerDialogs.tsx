@@ -32,6 +32,7 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useDatabase, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { rmOptions } from '../../shell/scope';
+import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
 import { stageBadge } from '../stage-badge';
 import {
@@ -372,10 +373,12 @@ function DeleteCustomerDialog({
   const counts = useQuery(
     useCallback((db: Database) => countCustomerRecords(db, customer.id), [customer.id]),
   );
+  const undo = useTrashUndo();
   const [failure, setFailure] = useState<string>();
   const remove = () => {
     try {
       app.run((db) => softDeleteCustomer(db, customer.id));
+      undo('customer', customer.id);
       onDeleted();
     } catch (error) {
       setFailure(errorMessage(error));

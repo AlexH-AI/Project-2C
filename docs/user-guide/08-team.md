@@ -78,6 +78,6 @@ Người còn dữ liệu thì nút Xóa tắt và hộp ghi "Chưa xóa đượ
 - **Dọn sạch Thùng rác** xóa hẳn các bản ghi đó (xem [9. Cài đặt → Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác)). Nếu mọi bản ghi của người này đều thuộc KH đã xóa, họ xóa được sau khi dọn.
 - **Khôi phục KH** (ở Cài đặt → Thùng rác) chỉ gỡ được một phần. RM: đổi RM phụ trách của KH vừa khôi phục chỉ chuyển lịch hẹn **Dự kiến** (xem [4. Khách hàng](04-khach-hang.md#sửa-hồ-sơ-kh)); cuộc gặp đã có kết quả, lịch đã qua chưa ghi kết quả và HĐ vẫn giữ RM đã ghi. Người hỗ trợ: sửa được lịch đã có kết quả ở **Sửa kết quả**; người phối hợp của lịch Dự kiến / Dời lịch không đổi được, chỉ dọn sạch mới gỡ.
 
-Người và team đã xóa khôi phục ở [Cài đặt → Thùng rác](09-cai-dat.md#cài-đặt--thùng-rác).
+Xóa team hay xóa người xong, thông báo "Đã chuyển team vào Thùng rác" / "Đã chuyển nhân sự vào Thùng rác" hiện khoảng 4 giây ở giữa mép dưới cửa sổ, kèm nút **Hoàn tác**: bấm là team / người đó trở lại ngay, không hỏi lại. Sau đó, người và team đã xóa khôi phục ở [Cài đặt → Thùng rác](09-cai-dat.md#cài-đặt--thùng-rác).
 
 [← 7. Báo cáo](07-bao-cao.md) · [9. Cài đặt →](09-cai-dat.md)

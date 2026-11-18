@@ -42,11 +42,12 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/SelectField.tsx` — type SelectOption, SelectField
 - `src/components/StageBadge.tsx` — StageBadge
 - `src/components/TextField.tsx` — TextField
+- `src/components/Toast.tsx` — Toast
 - `src/components/chart-theme.ts` — SERIES_TOKENS, chartTheme
 - `src/components/compare-cells.ts` — type CellValues, type CellKind, compareCells, compareCellsThen
 - `src/components/dialog-focus.ts` — focusBack
 - `src/components/field-notes.ts` — type FieldNote, fieldNotes, describedBy
 - `src/components/show-more.ts` — SHOW_MORE_STEP, type ShowMoreFoot, showMore
 - `src/components/table-view.ts` — type ColumnSorting, sorts, rowState, tableView
-- `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
+- `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/Toast, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
 <!-- codemap:end -->

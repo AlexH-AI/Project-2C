@@ -31,6 +31,7 @@ import { routeToHash } from '../../shell/routes';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
+import { useToast } from '../../shell/Toasts';
 import { ALERT, CARD, CELL_NAME, FOCUS, HEADING, LINK } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentAi } from './AppointmentAi';
@@ -40,7 +41,7 @@ import { EditOutcomeDialog } from './EditOutcomeDialog';
 import { OutcomeDialog } from './OutcomeDialog';
 import { RescheduleDialog } from './RescheduleDialog';
 import { YearGrid } from './YearGrid';
-import { isPastOrToday, withTime } from './appointment-form';
+import { createdToast, isPastOrToday, withTime } from './appointment-form';
 import {
   APPOINTMENT_GROUPS,
   appointmentRows,
@@ -82,6 +83,7 @@ export function AppointmentsScreen() {
   const today = useToday();
   const data = useTables();
   const { picked, scope, pickRm } = useScopeState();
+  const toast = useToast();
   const [period, setPeriod] = useState(() => periodOf('month', today));
   const [day, setDay] = useState(today);
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
@@ -229,7 +231,7 @@ export function AppointmentsScreen() {
 
   // Shows the day of the appointment just made (or `linked` by a reschedule), so it is there to see.
   // A coordinator filter hiding it is cleared; the scope is shared by every screen, so a line
-  // says it hides it.
+  // says it hides it. Returns whether the appointment is there to see.
   const show = (appointment: AppointmentRecord, linked = false) => {
     const reveal = revealCreated(appointment, data.people, scope, coordinator);
     setPeriod(pickDay(period, appointment.date) ?? periodOf('month', appointment.date));
@@ -237,6 +239,7 @@ export function AppointmentsScreen() {
     setCoordinator(reveal.coordinator);
     setSelectedId(appointment.id);
     setOutOfSight(reveal.outsideScope ? { appointment, linked } : null);
+    return !reveal.outsideScope;
   };
   const outside = outOfSight?.appointment.id === selectedId && !selected ? outOfSight : null;
 
@@ -343,7 +346,10 @@ export function AppointmentsScreen() {
             customer={creating.from?.customer}
             from={creating.from?.appointment}
             onClose={() => setCreating(null)}
-            onCreated={show}
+            // Out of sight, the line above says so and stays; in sight, a toast says it was made.
+            onCreated={(appointment) => {
+              if (show(appointment)) toast.show(createdToast(appointment));
+            }}
           />
         )}
         {moving && <RescheduleDialog row={moving} onClose={() => setMoving(null)} onMoved={show} />}

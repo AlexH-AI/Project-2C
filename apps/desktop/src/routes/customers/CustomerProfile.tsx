@@ -22,7 +22,9 @@ import { useQuery, useToday } from '../../data/AppDataContext';
 import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { useToast } from '../../shell/Toasts';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
+import { createdToast } from '../appointments/appointment-form';
 import { LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerAppointments } from './CustomerAppointments';
@@ -79,6 +81,7 @@ const BACK = (
 /** Customer profile (mockup customer.html): the basics, KYC and policies, timeline and appointments. */
 export function CustomerProfile({ id }: { id: string }) {
   const today = useToday();
+  const toast = useToast();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
   const [editing, setEditing] = useState<
     'profile' | 'stage' | 'note' | { resolve: KycField } | null
@@ -237,7 +240,7 @@ export function CustomerProfile({ id }: { id: string }) {
           customer={customer}
           from={appointing.from}
           onClose={() => setAppointing(null)}
-          onCreated={() => undefined}
+          onCreated={(appointment) => toast.show(createdToast(appointment))}
           onSeeAll={() => {
             setAppointing(null);
             document.getElementById('customer-appointments')?.scrollIntoView({ block: 'start' });

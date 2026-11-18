@@ -11,6 +11,7 @@ import {
   readScheduleDate,
   rescheduleReason,
   searchCustomers,
+  createdToast,
   withTime,
   writtenDay,
 } from './appointment-form';
@@ -182,6 +183,19 @@ describe('writtenDay', () => {
     expect(writtenDay(d(20, 9, 2026), TODAY)).toEqual({ text: '20/09', withYear: false });
     expect(writtenDay(d(5, 11, 2025), TODAY)).toEqual({ text: '05/11/2025', withYear: true });
     expect(writtenDay(d(3, 1, 2027), TODAY)).toEqual({ text: '03/01/2027', withYear: true });
+  });
+});
+
+describe('createdToast', () => {
+  it('says the appointment was made, then its weekday, day and time (mockup components 08)', () => {
+    expect(createdToast({ date: d(28, 9, 2026), time: '14:00' })).toEqual({
+      text: 'Đã tạo lịch hẹn',
+      detail: 'Thứ Hai 28/09/2026 14:00',
+    });
+  });
+
+  it('writes the day alone of an appointment with no time', () => {
+    expect(createdToast({ date: d(1, 10, 2026), time: null }).detail).toBe('Thứ Năm 01/10/2026');
   });
 });
 

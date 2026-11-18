@@ -18,6 +18,7 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
 import { inUseHelp, retriesDelete } from './team-view';
 
@@ -173,6 +174,7 @@ export function DeletePersonDialog({
   onClose: () => void;
 }) {
   const data = useAppData();
+  const undo = useTrashUndo();
   const usage = useQuery(useCallback((db: Database) => personUsage(db, person.id), [person.id]));
   const [error, setError] = useState<string>();
   const [final, setFinal] = useState(false);
@@ -181,6 +183,7 @@ export function DeletePersonDialog({
   const remove = () => {
     try {
       data.run((db) => softDeletePerson(db, person.id));
+      undo('person', person.id);
       onClose();
     } catch (failure) {
       setError(errorMessage(failure));

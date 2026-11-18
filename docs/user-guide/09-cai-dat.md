@@ -155,6 +155,8 @@ Xong, dòng biến khỏi bảng và app báo "Đã khôi phục …" kèm nút 
 
 Khôi phục không kéo theo bản ghi khác: mỗi bản ghi khôi phục riêng.
 
+Ngay sau khi xóa một bản ghi ở màn của nó, thông báo "Đã chuyển … vào Thùng rác" có nút **Hoàn tác** trong khoảng 4 giây: bấm là bản ghi trở lại ngay, không qua hộp **Khôi phục …?**. Hết thông báo thì khôi phục ở đây, và app luôn hỏi trước như trên.
+
 ### Khi không khôi phục được
 
 Khi bản ghi cần một bản ghi khác đã xóa hoặc đã đổi, nút **Khôi phục…** tắt và dòng ghi lý do, nêu tên bản ghi chặn và việc cần làm trước. Ví dụ:
