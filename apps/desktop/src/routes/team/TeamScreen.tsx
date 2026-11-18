@@ -172,7 +172,7 @@ export function TeamScreen() {
             {view.teams.map((entry) => {
               const on = entry === selected;
               // The name breaks, even with no space; the count stays whole, by the name's first line
-              // (DR6-148). On the gold tint of the chosen team `row-selected` writes it one step
+              // (DR6-148). On the gold tint of the chosen team `chosen-tint` writes it one step
               // lighter: --text-3 is under 4.5:1 there (ADR-0013 appendix 11/11/2026 §7).
               return (
                 <button
@@ -181,7 +181,7 @@ export function TeamScreen() {
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
                   className={`flex w-full cursor-pointer items-baseline gap-2 rounded-control-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
-                    on ? 'row-selected font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
+                    on ? 'chosen-tint font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >
                   {entry.team.name}

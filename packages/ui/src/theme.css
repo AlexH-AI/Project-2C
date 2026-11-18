@@ -142,14 +142,20 @@
   background-color: color-mix(in srgb, white 5.25%, var(--bg-0));
 }
 
-/* The chosen row of a table (ui2.css `.tbl tr.is-sel`), and any other chosen thing on a card (a
-   team of the list, the month of today): the gold tint. --text-3 is under 4.5:1 on it, so what is
-   written in it there, a missed appointment too, is one step lighter (ADR-0013 appendix 11/11/2026
-   §7). */
-@utility row-selected {
+/* A chosen thing on a card (a team of the list, the month of today, a row of a table): the gold
+   tint. --text-3 is under 4.5:1 on it, so what is written in it there is one step lighter
+   (ADR-0013 appendix 11/11/2026 §7). */
+@utility chosen-tint {
   --text-3: var(--text-2);
-  --appt-missed: var(--text-2);
   background-color: var(--accent-soft);
+}
+
+/* The chosen row of a table (ui2.css `.tbl tr.is-sel`): the tint, and a missed appointment, which
+   the row writes in --appt-missed, one step lighter too. Only where that colour is text: the part
+   of a bar and the dot of a legend keep it. */
+@utility row-selected {
+  @apply chosen-tint;
+  --appt-missed: var(--text-2);
 }
 
 /* A row of a table under the pointer (ui2.css `.tbl tbody tr:hover td`). The light of the card that

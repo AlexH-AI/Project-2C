@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { drawnCorner, markOs, pickTeam, right } from './support';
+import { drawnCorner, markOs, pickTeam, right, setTransparency } from './support';
 
 // The shell of mockup app-shell.html (VA4a): the sidebar with the compact logo (`#sidebar`), and
 // the toolbar, where a screen writes a line under its name and puts its main button (`#toolbar`).
@@ -212,18 +212,35 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
   await expect(sub(page)).toHaveText('Toàn bộ');
 });
 
-test('the toolbar is 68 px high and what scrolls under it fades at its edge', async ({ page }) => {
+test('the toolbar is 68 px high and what scrolls under it fades at its edge', async ({
+  page,
+  browserName,
+}) => {
   await page.goto('/#/customers');
+  // Not the setting of the machine of the run: Playwright gives this media feature no default (L194).
+  await setTransparency(page, 'no-preference');
   expect((await box(toolbar(page))).height).toBe(68);
   await expect(toolbar(page)).toHaveCSS('position', 'sticky');
   await expect(toolbar(page)).toHaveCSS('border-bottom-width', '0px');
-  // The scroll edge: --mat-edge fading out below the toolbar, over what scrolls under it.
-  const edge = await toolbar(page).evaluate((node) => {
-    const style = getComputedStyle(node, '::before');
-    return { image: style.backgroundImage, bottom: style.bottom };
+  // The scroll edge: --mat-edge fading out below the toolbar, over what scrolls under it, blurred.
+  const edge = () =>
+    toolbar(page).evaluate((node) => {
+      const style = getComputedStyle(node, '::before');
+      return { image: style.backgroundImage, bottom: style.bottom, blur: style.backdropFilter };
+    });
+  expect((await edge()).image).toMatch(
+    /^linear-gradient\(.*rgba\(11, 16, 23, 0\.9\d*\) 50%, .*\)$/,
+  );
+  expect((await edge()).bottom).toBe('-18px');
+  expect((await edge()).blur).toBe('blur(14px)');
+
+  await test.step('the system asks for less transparency: a solid edge, nothing blurred', async (step) => {
+    // Set through CDP, on Chromium only; on the macOS app it is checked by hand (NT-MAC-19).
+    step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
+    await setTransparency(page, 'reduce');
+    expect((await edge()).image).toMatch(/^linear-gradient\(.*rgb\(11, 16, 23\) 50%, .*\)$/);
+    expect((await edge()).blur).toBe('none');
   });
-  expect(edge.image).toMatch(/^linear-gradient\(.*rgba\(11, 16, 23, 0\.9\d*\) 50%, .*\)$/);
-  expect(edge.bottom).toBe('-18px');
 });
 
 /**
