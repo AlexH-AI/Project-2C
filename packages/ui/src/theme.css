@@ -336,8 +336,8 @@
   background-color: color-mix(in srgb, currentColor 16%, var(--bg-0));
 }
 
-/* The brand block of the sidebar (T-308, G3 27/10): the slogan, and the outline of the navy tree
-   and "Heritas" on the dark sidebar, a ring of four half-pixel shadows (one pixel at 1x). */
+/* The slogan of the logo, at the foot of the sidebar (T-308, G3 27/10). The outline of the navy
+   tree and "Heritas" is in their images (`Brand`). */
 @utility brand-slogan {
   font-family: var(--font-brand);
   font-size: 13px;
@@ -458,11 +458,6 @@
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.022em;
-}
-
-@utility brand-outline {
-  filter: drop-shadow(0.5px 0 0 var(--brand-outline)) drop-shadow(-0.5px 0 0 var(--brand-outline))
-    drop-shadow(0 0.5px 0 var(--brand-outline)) drop-shadow(0 -0.5px 0 var(--brand-outline));
 }
 
 @layer base {

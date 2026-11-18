@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
 import { drawnCorner, markOs, pickTeam, right } from './support';
 
@@ -32,11 +31,12 @@ test('the sidebar: the compact logo in a row, an icon on every item, the save st
         images.map((image) => (image.naturalWidth > 0 ? image.width : 0)),
       ),
     )
-    .toEqual([42, 108, 95]);
+    // The tree 42 px and "Heritas" 108 px, each in an image with 1 px of room for its outline.
+    .toEqual([44, 110, 95]);
   // The tree, then "Heritas" over "L-CRM".
   const [tree, word, lcrm] = await Promise.all([0, 1, 2].map((i) => box(pieces.nth(i))));
   expect(tree!.x + tree!.width).toBeLessThanOrEqual(word!.x);
-  expect(lcrm!.x).toBe(word!.x);
+  expect(lcrm!.x).toBe(word!.x + 1);
   expect(lcrm!.y).toBeGreaterThanOrEqual(word!.y + word!.height);
   expect(lcrm!.y + lcrm!.height).toBeLessThanOrEqual(tree!.y + tree!.height + 1);
 
@@ -260,9 +260,10 @@ async function champagnePixels(page: Page, png: Buffer, rows: { from: number; to
   }
 }
 
-// L179: on WebKit the outline drawn by four `drop-shadow` of half a pixel did not show, and the
-// navy "Heritas" was lost on the dark sidebar. Its letters are navy below the gold leaf of the "i":
-// there, any champagne is the outline.
+// L179: in the macOS app the outline drawn by four `drop-shadow` of half a pixel did not show, and
+// the navy "Heritas" was lost on the dark sidebar; the outline is now in the image. Its letters are
+// navy below the gold leaf of the "i": there, any champagne is the outline, and with no outline
+// there is none.
 const LETTERS = { from: 0.45, to: 1 };
 
 test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on WebKit (L179)', async ({
@@ -278,38 +279,5 @@ test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on We
 
   const shot = await word.screenshot();
   // Seven letters 108 px wide: their edge is some hundreds of pixels long.
-  expect(await champagnePixels(page, shot, LETTERS)).toBeGreaterThan(100);
-});
-
-// Temporary, for the first push of the PR only: the two pieces with the outline drawn into them
-// (the fix of L179), on a blank page of each browser, before the app takes them. On WebKit the
-// test above is red with the `drop-shadow` outline, and this one shows the fix holds there.
-test('probe: the pieces of the logo with the outline in them show it, on a blank page', async ({
-  page,
-}, testInfo) => {
-  const piece = async (name: string) =>
-    (await readFile(`apps/desktop/src/assets/brand/${name}`)).toString('base64');
-  const [tree, word] = await Promise.all([
-    piece('heritas-tree-outlined.png'),
-    piece('heritas-wordmark-outlined.png'),
-  ]);
-  const blank = await page.context().newPage();
-  await blank.setContent(
-    `<body style="margin: 0; background: #0b1017">
-      <div id="logo" style="display: flex; align-items: center; gap: 10px; width: 180px; padding: 8px">
-        <img width="42" src="data:image/png;base64,${tree}" />
-        <img id="word" width="108" src="data:image/png;base64,${word}" />
-      </div>
-    </body>`,
-  );
-  for (const image of await blank.locator('img').all()) {
-    await image.evaluate((node: HTMLImageElement) => node.decode());
-  }
-  await testInfo.attach('logo-outline-in-the-image', {
-    body: await blank.locator('#logo').screenshot(),
-    contentType: 'image/png',
-  });
-  const shot = await blank.locator('#word').screenshot();
-  await blank.close();
   expect(await champagnePixels(page, shot, LETTERS)).toBeGreaterThan(100);
 });
