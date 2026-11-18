@@ -7,18 +7,46 @@
 /** The focus ring of what is not a `Button`: a link, a chip, a day of the calendar. */
 export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
 
-/** A card of a screen: the calendar, the list of the day, a block of the customer profile. */
-export const CARD = 'rounded-card border border-border bg-surface-1 p-4';
+/**
+ * The skin of every card (mockup components.html 04; `card` of theme.css): no border, the material
+ * of a card with its lit top edge and its shadow, the corner of a card. What uses it adds its room.
+ */
+export const CARD_SKIN = 'card rounded-card';
 
-/** A section of Cài đặt: a card with less room above and below its content. */
-export const SETTINGS_SECTION = 'rounded-card border border-border bg-surface-1 px-4 py-3';
+/** The room inside a card: 18 px above and below, 20 px at the sides (components.html 04). */
+const ROOMY = 'px-5 py-4.5';
 
 /**
- * A block of Tổng quan and Báo cáo: its heading over its figures, chart or table. Its corner is
- * the one `rounded-md` stood for, until VA3a draws the cards.
+ * A dense card of a screen, 16 px of room: the calendar, the list of the day, a block of the
+ * customer profile.
  */
-export const PANEL =
-  'flex flex-col gap-3 rounded-control border border-border bg-surface-1 px-3.5 py-3';
+export const CARD = `${CARD_SKIN} p-4`;
+
+/** A section of Cài đặt. */
+export const SETTINGS_SECTION = `${CARD_SKIN} ${ROOMY}`;
+
+/** A block of Tổng quan and Báo cáo: its heading over its figures, chart or table. */
+export const PANEL = `${CARD_SKIN} flex flex-col gap-3 ${ROOMY}`;
+
+/** What `lightCard` reads of a pointer event: where the pointer is, and what it is over. */
+interface PointerOver {
+  readonly clientX: number;
+  readonly clientY: number;
+  readonly target: unknown;
+}
+
+/**
+ * The light of a card follows the pointer (ui2.css `.card::after`): tells the card under the
+ * pointer where the pointer is over it, as shares of its box (`--mx`, `--my` of theme.css). The
+ * `onPointerMove` of what holds the cards.
+ */
+export function lightCard({ clientX, clientY, target }: PointerOver) {
+  const card = (target as Partial<Element>).closest?.<HTMLElement>('.card');
+  if (!card) return;
+  const box = card.getBoundingClientRect();
+  card.style.setProperty('--mx', `${((clientX - box.left) / box.width) * 100}%`);
+  card.style.setProperty('--my', `${((clientY - box.top) / box.height) * 100}%`);
+}
 
 /** The heading of a card, a section or a block: "Dữ kiện KYC", "Thùng rác", "So sánh team". */
 export const HEADING = 'm-0 text-sm font-medium text-heading';
@@ -31,8 +59,11 @@ export const HEADING = 'm-0 text-sm font-medium text-heading';
 export const BADGE =
   'label-fill inline-flex h-5 items-center rounded-chip px-2 text-xs font-bold whitespace-nowrap';
 
-/** A boxed line (mockup `.alert`); where it is used adds its border colour and anything else. */
-export const ALERT = 'm-0 rounded-field border px-3 py-2';
+/**
+ * A boxed line (mockup `.alert`); where it is used adds its border colour and anything else. A
+ * word longer than its line, a name with no space, breaks inside it (DR6-183).
+ */
+export const ALERT = 'm-0 rounded-field border px-3 py-2 wrap-anywhere';
 
 /**
  * A name in a cell of a table (Khách hàng, Lịch hẹn, the history of AI analyses): under a cap it

@@ -84,7 +84,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                         event.stopPropagation();
                         toggle(team.key);
                       }}
-                      className={`inline-flex cursor-pointer items-baseline rounded-sm text-left font-semibold ${FOCUS}`}
+                      className={`inline-flex cursor-pointer items-baseline rounded-control-sm text-left font-semibold ${FOCUS}`}
                     >
                       <span
                         aria-hidden="true"

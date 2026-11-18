@@ -147,7 +147,7 @@ test('"Nạp lại…" is off while a backup file is read, and on again once it 
     await page.evaluate((fail) => (window as unknown as Held).release(fail), read.fail);
     if (read.dialog) {
       const dialog = page.getByRole('dialog', { name: read.dialog });
-      await dialog.getByRole('button', { name: read.close }).click();
+      await dialog.getByRole('button', { name: read.close, exact: true }).click();
       await expect(dialog).toBeHidden();
     } else {
       await expect(section(page).getByRole('alert')).toHaveText(
@@ -212,7 +212,7 @@ test('refuses a file that is not a Project-2C backup', async ({ page }) => {
   await expect(dialog.getByRole('alert')).toContainText(
     'File hỏng hoặc không phải backup Project-2C',
   );
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(dialog).toBeHidden();
 });
 
@@ -271,7 +271,7 @@ test('refuses a backup with a date that does not exist, keeping the current data
   await expect(dialog.getByRole('alert')).toContainText(
     'File hỏng hoặc không phải backup Project-2C',
   );
-  await dialog.getByRole('button', { name: 'Đóng' }).click();
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
   await nav(page, 'Team & nhân sự');
   await expect(teamList(page).getByRole('button')).toHaveCount(4);
 });

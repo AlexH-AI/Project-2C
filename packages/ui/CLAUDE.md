@@ -10,13 +10,13 @@ Component React thuần trình bày (ADR-0013): nhận dữ liệu và nhãn qua
 ## File hay tìm
 
 - Token: `src/tokens.css` (biến CSS; viền ô nhập, mũi tên sắp xếp chưa chọn: `--border-control`, ≥ 3:1), `src/theme.css` (map sang Tailwind, bỏ bảng màu mặc định), font `src/fonts.css` (chỉ Playfair Display của slogan; chữ giao diện là font hệ điều hành, `--font-ui`).
-- Vỏ hai nền tảng (VA1, ADR-0013 phụ lục 11/11/2026): token khối B của `ui2.css` (chất liệu `--mat-*` / `--fill-*`, bóng `--shadow-*`, chuyển động `--t-*` / `--spring-*`, bo góc `--r-*`). Giá trị macOS ở `:root`, Windows 11 đè ở `[data-os='win']` (app đặt `data-os` ở gốc trang). Bo góc dùng tiện ích theo tên thứ được bo: `rounded-card / pop / menu / field / control / control-sm / chip` (`theme.css`; `rounded-sm / md / lg` là bí danh tạm tới VA3a); `scripts/tokens.test.ts` so token với khối B của mockup.
+- Vỏ hai nền tảng (VA1, ADR-0013 phụ lục 11/11/2026): token khối B của `ui2.css` (chất liệu `--mat-*` / `--fill-*`, bóng `--shadow-*`, chuyển động `--t-*` / `--spring-*`, bo góc `--r-*`). Giá trị macOS ở `:root`, Windows 11 đè ở `[data-os='win']` (app đặt `data-os` ở gốc trang). Bo góc dùng tiện ích theo tên thứ được bo: `rounded-card / pop / menu / field / control / control-sm / chip` (`theme.css`; ba tên cũ `rounded-sm / md / lg` đã gỡ ở VA3a); `scripts/tokens.test.ts` so token với khối B của mockup.
 - Chặn style lách token: `scripts/token-guard.ts` + `scripts/check-tokens.ts` (`pnpm lint:tokens`, chạy trong `pnpm verify`): không màu / độ dài thô, không `style` inline (trừ `flex` đọc từ dữ liệu), không giá trị tuỳ ý của Tailwind; không ký hiệu / dấu nối viết cứng (tập ký hiệu đọc từ `apps/desktop/src/i18n/vi.ts` lúc chạy, dạng không bắt ghi ở "Limits" của `token-guard.ts`).
 - Bảng: `src/components/DataTable.tsx` (TanStack Table) + phần thuần `table-view.ts` (tiêu đề, dòng hiện, chân bảng) + so sánh ô `compare-cells.ts`.
 - Biểu đồ: `src/components/Chart.tsx` (ECharts) + màu series từ token `chart-theme.ts`.
 - Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`.
 - Form / hộp thoại: `Dialog`, `TextField` (dòng dưới ô: `field-notes.ts`), `SelectField`, `Choices`, `Segmented`, `Button`; huy hiệu `StageBadge`, `PolicyBadge`; dấu vẽ của ô (✕ của dòng lỗi, mũi tên ô chọn): `FieldMarks.tsx`.
-- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`.
+- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`. Thẻ, dòng đang chọn của bảng, lớp tiêu điểm (VA3a, mục 04, 05, 06): `card`, `row-selected`, `pop`; nền đặc của ô đứng yên trên thẻ (cột tên của Báo cáo): `card-cover`.
 
 ## Quy ước
 
@@ -47,6 +47,6 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/dialog-focus.ts` — focusBack
 - `src/components/field-notes.ts` — type FieldNote, fieldNotes, describedBy
 - `src/components/show-more.ts` — SHOW_MORE_STEP, type ShowMoreFoot, showMore
-- `src/components/table-view.ts` — type ColumnSorting, sorts, tableView
+- `src/components/table-view.ts` — type ColumnSorting, sorts, rowState, tableView
 - `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
 <!-- codemap:end -->

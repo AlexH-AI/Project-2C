@@ -296,7 +296,7 @@ test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10
 
   await choose('{"format":"project2-backup","tables":{}}');
   const refused = page.getByRole('dialog', { name: 'Không nhập được file' });
-  await refused.getByRole('button', { name: 'Đóng' }).click();
+  await refused.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(refused).toHaveCount(0);
   await expect(open).toBeFocused();
   // Pressed while the first file was read, it opened no chooser of its own.

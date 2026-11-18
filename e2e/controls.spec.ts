@@ -316,9 +316,8 @@ test('the labels of a stage, a policy and an appointment read 4.5:1 on a fill th
   await expectLabel(day.getByText('Chưa ghi kết quả', { exact: true }).first(), 'unrecorded');
 });
 
-test('the labels of a policy, submitted and issued, read 4.5:1 on their fill (VA2)', async ({
-  page,
-}) => {
+// An issued policy has the colour of N1 (--issued), measured on the label N1 above.
+test('the label of a submitted policy reads 4.5:1 on its fill (VA2)', async ({ page }) => {
   const name = 'Hà Nhãn HĐ';
   await createKycCustomer(page, name);
   const policies = page.getByRole('region', { name: 'Hợp đồng', exact: true });

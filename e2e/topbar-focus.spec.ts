@@ -226,12 +226,16 @@ test('Shift+Tab to a field cut by the top edge of a scrolled dialog stops it rig
     .getByRole('radio', { name: 'N2', exact: true });
   await stage.check();
   await dialog.getByRole('combobox', { name: /^Người đánh giá/ }).focus();
-  const edge = await dialog.evaluate((node) => node.getBoundingClientRect().top + node.clientTop);
-  // Half of the chip above the edge.
-  await stage.evaluate((radio, edge) => {
+  // The body of the dialog scrolls, under its head (VA3a): its top is the edge. Half of the chip
+  // above it.
+  const edge = await stage.evaluate((radio) => {
+    let body = radio.parentElement!;
+    while (getComputedStyle(body).overflowY !== 'auto') body = body.parentElement!;
+    const edge = body.getBoundingClientRect().top + body.clientTop;
     const box = radio.getBoundingClientRect();
-    radio.closest('dialog')!.scrollTop += box.top + box.height / 2 - edge;
-  }, edge);
+    body.scrollTop += box.top + box.height / 2 - edge;
+    return edge;
+  });
   const box = (await stage.boundingBox())!;
   expect(box.y).toBeLessThan(edge);
   expect(box.y + box.height).toBeGreaterThan(edge);

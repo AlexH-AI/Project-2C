@@ -180,7 +180,7 @@ export function AppointmentsScreen() {
           <button
             type="button"
             onClick={() => setSelectedId(r.appointment.id)}
-            className={`max-w-60 cursor-pointer rounded-sm text-left font-semibold wrap-anywhere hover:underline ${FOCUS}`}
+            className={`max-w-60 cursor-pointer rounded-control-sm text-left font-semibold wrap-anywhere hover:underline ${FOCUS}`}
           >
             {r.customer?.name}
           </button>
@@ -330,6 +330,7 @@ export function AppointmentsScreen() {
           columns={columns}
           rows={inPeriod}
           getRowId={(r) => r.appointment.id}
+          selectedId={selected?.appointment.id}
           initialSort={{ id: 'date', desc: true }}
           moreLabels={tableMore('appointments')}
           resetKey={JSON.stringify([period, scope, coordinator])}
@@ -449,7 +450,8 @@ function Dot({ kind }: { kind: AppointmentGroup }) {
   return <i aria-hidden="true" className={`inline-block size-2 rounded-full ${DOT[kind]}`} />;
 }
 
-const CELL = 'relative flex min-h-15 flex-col rounded-sm border px-2 py-1.5 text-left tabular-nums';
+const CELL =
+  'relative flex min-h-15 flex-col rounded-control-sm border px-2 py-1.5 text-left tabular-nums';
 
 function DayButton({
   cell,
@@ -576,7 +578,7 @@ function DayTable({
                     <button
                       type="button"
                       onClick={() => onSelect(row.appointment.id)}
-                      className={`cursor-pointer truncate rounded-sm hover:underline ${FOCUS}`}
+                      className={`cursor-pointer truncate rounded-control-sm hover:underline ${FOCUS}`}
                     >
                       {row.customer?.name}
                     </button>

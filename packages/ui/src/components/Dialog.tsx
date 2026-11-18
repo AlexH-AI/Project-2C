@@ -14,6 +14,13 @@ interface DialogProps {
   subtitle?: string;
   /** Escape calls it; omitted (e.g. while working), the dialog closes only through its buttons. */
   onClose?: () => void;
+  /**
+   * The name of the × of the head, which closes as Escape does. Without it, or without `onClose`,
+   * the head has no ×.
+   */
+  closeLabel?: string;
+  /** A question to confirm is 400 px wide, a form 480 px (mockup components.html 06). */
+  size?: 'confirm' | 'form';
   /** Enter in a field, or a `type="submit"` button. */
   onSubmit?: () => void;
   /** Footer buttons, end-aligned. */
@@ -27,13 +34,29 @@ function open(node: HTMLDialogElement) {
   node.querySelector<HTMLElement>('[data-autofocus]')?.focus();
 }
 
+const WIDTH = { confirm: 'w-100', form: 'w-120' } as const;
+
 /**
- * Modal dialog (mockup `.dialog`): opens on mount; the caller unmounts it to close. Focus goes to
- * the field or button marked `[data-autofocus]` (`Button` / `TextField` with `autoFocus`), and
- * back to whatever had it before once the dialog is gone, or to `DialogFocusFallback` when that
- * went too.
+ * Modal dialog, the focus layer (mockup components.html 06, `.dlg` of ui2.css): opens on mount;
+ * the caller unmounts it to close. Three parts: the head (title, a line of context, the ×), the
+ * body, which scrolls when long and breaks a word longer than its line (DR6-183), and the foot
+ * with the actions; head and foot stay where they are. A click on what is dimmed behind does not
+ * close it. Focus goes to the field or button marked `[data-autofocus]` (`Button` / `TextField`
+ * with `autoFocus`), and back to whatever had it before once the dialog is gone, or to
+ * `DialogFocusFallback` when that went too. The × comes last in the dialog, so a dialog that marks
+ * nothing still opens on its first field or button.
  */
-export function Dialog({ title, subtitle, onClose, onSubmit, actions, children }: DialogProps) {
+export function Dialog({
+  title,
+  subtitle,
+  onClose,
+  closeLabel,
+  size = 'form',
+  onSubmit,
+  actions,
+  children,
+}: DialogProps) {
+  const closes = onClose && closeLabel;
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   // Kept from the first run: StrictMode runs the effect again once focus is inside the dialog.
@@ -58,7 +81,7 @@ export function Dialog({ title, subtitle, onClose, onSubmit, actions, children }
     <dialog
       ref={dialog}
       aria-labelledby={titleId}
-      className="m-auto w-full max-w-md rounded-lg border border-border bg-surface-1 p-0 text-fg backdrop:bg-surface-0/70"
+      className={`pop m-auto ${WIDTH[size]} flex-col rounded-pop p-0 text-fg open:flex`}
       onCancel={(event) => {
         // The browser would close the dialog behind React's back; the caller decides instead.
         // A cancel it will not let us refuse ends in `close` instead.
@@ -74,21 +97,46 @@ export function Dialog({ title, subtitle, onClose, onSubmit, actions, children }
       }}
     >
       <form
-        className="flex flex-col gap-3 p-4 text-sm"
+        className="flex min-h-0 flex-col text-sm"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit?.();
         }}
       >
         {/* A name in the title or the subtitle breaks, even with no space (DR6-148). */}
-        <div className="wrap-anywhere">
-          <h2 id={titleId} className="m-0 text-base font-semibold">
+        <div className={`px-5.5 pt-5 pb-3 wrap-anywhere ${closes ? 'pr-14' : ''}`}>
+          <h2 id={titleId} className="m-0 text-lg font-semibold">
             {title}
           </h2>
-          {subtitle && <p className="m-0 text-fg-2">{subtitle}</p>}
+          {subtitle && <p className="m-0 mt-0.5 text-fg-3 tabular-nums">{subtitle}</p>}
         </div>
-        {children}
-        <div className="flex justify-end gap-2">{actions}</div>
+        {/* Positioned: what it holds out of the flow (a line for screen readers only) scrolls with it. */}
+        <div className="relative flex min-h-0 flex-col gap-3 overflow-x-hidden overflow-y-auto px-5.5 pt-1 pb-4 wrap-anywhere">
+          {children}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-hairline px-5.5 pt-3.5 pb-4.5">
+          {actions}
+        </div>
+        {closes && (
+          <button
+            type="button"
+            aria-label={closeLabel}
+            onClick={onClose}
+            className="absolute top-4.5 right-4.5 grid size-7 cursor-pointer place-items-center rounded-chip text-fg-3 hover:bg-fill-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              className="size-3.5"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        )}
       </form>
     </dialog>
   );

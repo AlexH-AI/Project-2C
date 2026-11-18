@@ -22,7 +22,8 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
 
 /**
  * The lowest WCAG contrast of the text shown in `area`, each against what is painted behind it,
- * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). Disabled
+ * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). A material
+ * painted as a gradient (a card) counts at its lightest stop. Disabled
  * controls are left out, as in WCAG. With `of: 'border'`, the lower contrast of the border of
  * `area` with the colours either side of it: its own background inside, what is behind it outside
  * (WCAG 1.4.11: at least 3:1; T-284). The border is the bottom edge: a field of Windows 11 carries
@@ -63,6 +64,8 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
     // (its text, its border): a block with an opacity paints its group first, then fades it as a
     // whole over what is below.
     type Top = (style: CSSStyleDeclaration) => string;
+    /** A colour stop of a gradient, as the browser writes a computed `background-image`. */
+    const STOP = /(?:rgba?|color|oklab|oklch|lab|lch|hsla?)\([^()]*\)/g;
     const paint = (chain: Element[], from: number, top?: Top): Paint => {
       let color: Paint = { rgb: [0, 0, 0], a: 0 };
       for (let index = from; index < chain.length; index++) {
@@ -73,6 +76,14 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
           return over({ ...group, a: group.a * opacity }, color);
         }
         color = over(read(style.backgroundColor), color);
+        // A material is a gradient of see-through light (--mat-card): read where it is lightest,
+        // the place its text stands out least (ADR-0013 appendix 11/11/2026 §7). Each stop lies on
+        // what is under the material, not on the stop before it.
+        const under = color;
+        for (const stop of style.backgroundImage.match(STOP) ?? []) {
+          const lit = over(read(stop), under);
+          if (luminance(lit) > luminance(color)) color = lit;
+        }
       }
       return top ? over(read(top(getComputedStyle(chain.at(-1)!))), color) : color;
     };
@@ -124,6 +135,21 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
 export const token = (page: Page, name: string) =>
   page.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name), name);
 
+/**
+ * Sets the system's "Giảm độ trong suốt" for the page (`prefers-reduced-transparency`). Playwright
+ * has no option for it and gives it no default, so a page reads the setting of the machine of the
+ * run: a test of a see-through material first says `no-preference` (L194). Through CDP, so on
+ * Chromium only: false where it could not be set.
+ */
+export async function setTransparency(page: Page, value: 'no-preference' | 'reduce') {
+  if (onWebKit(page)) return false;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-transparency', value }],
+  });
+  return true;
+}
+
 /** Marks the page as one of `os`, as `main.tsx` does once: its tokens are those of that system. */
 export const markOs = (page: Page, os: 'mac' | 'win') =>
   page.evaluate((os) => void (document.documentElement.dataset.os = os), os);
@@ -150,17 +176,31 @@ export const scrolls = (box: Locator) =>
  * What pushes the page sideways: when it scrolls sideways, the elements whose box, or what shows
  * out of it (a word that does not break), ends past the window, with that right edge, the deepest
  * last (WebKit, Mac-7); nothing when it does not. A test expects `[]`, and a page that scrolls
- * names what pushes it.
+ * names what pushes it. What a box that clips or scrolls sideways holds is left out: it is past the
+ * window and pushes nothing, as the cells of a table kept for screen readers in a box of one pixel
+ * (run 44210407647 named only those).
  */
 export const pastTheWindow = (page: Page) =>
   page.evaluate(() => {
     const width = document.documentElement.scrollWidth;
     if (width <= window.innerWidth) return [];
+    // Up the boxes that hold `node`: one out of the flow (absolute) is held by the first positioned
+    // box above it, not by those between; a fixed one by the window.
+    const clipped = (node: Element) => {
+      let position = getComputedStyle(node).position;
+      for (let box = node.parentElement; box && position !== 'fixed'; box = box.parentElement) {
+        const style = getComputedStyle(box);
+        if (position === 'absolute' && style.position === 'static') continue;
+        if (style.overflowX !== 'visible') return true;
+        position = style.position;
+      }
+      return false;
+    };
     const past = [...document.body.querySelectorAll('*')].flatMap((node) => {
       const box = node.getBoundingClientRect();
       const shows = getComputedStyle(node).overflowX === 'visible';
       const edge = Math.round(shows ? Math.max(box.right, box.left + node.scrollWidth) : box.right);
-      if (edge <= window.innerWidth) return [];
+      if (edge <= window.innerWidth || clipped(node)) return [];
       const text = (node.getAttribute('aria-label') ?? node.textContent ?? '').slice(0, 40);
       const kind = `${node.tagName.toLowerCase()}.${node.getAttribute('class') ?? ''}`;
       return [`${kind} "${text}" ends at ${edge}px`];

@@ -140,10 +140,11 @@ function Codes({ codes, onCode }: { codes: readonly string[]; onCode?: (code: st
 
 /**
  * An analysis shown faded (STALE, or under a run or a gate; mockup ai.html 2h): the block at 85 %
- * and its items hollow, so every text stays at WCAG AA on the card (DR6-21). The lowest pair,
- * `text-fg-3` on `--bg-1`, is 4.81:1; on `bg-surface-2` it would be 4.44:1.
+ * and its items hollow, so every text stays at WCAG AA on the card (DR6-21): on the material of a
+ * card `--text-3` at 85 % is under 4.5:1, so the block writes it one step lighter (`faded` of
+ * theme.css).
  */
-export const FADED = 'opacity-85';
+export const FADED = 'faded';
 
 export function Item({
   item,
@@ -158,7 +159,7 @@ export function Item({
   const missing = item.missing && t('aiPanel.missing', { label: t(`kycCategory.${item.missing}`) });
   const box = faded ? 'border-dashed border-border-strong' : 'border-border bg-surface-2';
   return (
-    <li className={`rounded-sm border ${box} px-2.5 py-2 wrap-anywhere`}>
+    <li className={`rounded-control-sm border ${box} px-2.5 py-2 wrap-anywhere`}>
       {item.system && <b>{t(`aiPanel.system.${item.system}`)} </b>}
       {item.text}
       <span className="mt-1 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-fg-3">
@@ -205,7 +206,7 @@ function Analysis({
       <p className="m-0 flex flex-wrap items-center gap-1.5">
         <span className={`${BADGE} ${BADGE_COLORS[analysis.gateState]}`}>{analysis.gateState}</span>
         {/* A model no list has, from a backup edited by hand, breaks in the panel (DR6-170). */}
-        <span className="min-w-0 rounded-sm bg-surface-2 px-2 py-0.5 text-xs wrap-anywhere text-fg-2 tabular-nums">
+        <span className="min-w-0 rounded-control-sm bg-surface-2 px-2 py-0.5 text-xs wrap-anywhere text-fg-2 tabular-nums">
           {t('aiPanel.chip', {
             version: chip.version,
             label: chip.prompt,
@@ -253,7 +254,7 @@ function Analysis({
       {content.reference.length > 0 && (
         <section
           aria-label={t('aiPanel.reference')}
-          className={`mt-3.5 rounded-sm border px-2.5 pb-2.5 ${faded ? 'border-border' : 'border-dashed border-border-strong'}`}
+          className={`mt-3.5 rounded-control-sm border px-2.5 pb-2.5 ${faded ? 'border-border' : 'border-dashed border-border-strong'}`}
         >
           <h3 className={SUBHEADING}>{t('aiPanel.reference')}</h3>
           <ul className={ITEMS}>
@@ -289,7 +290,7 @@ function BusyLine({ children, action }: { children: ReactNode; action?: ReactNod
   return (
     <div
       role="status"
-      className="flex items-center gap-2.5 rounded-sm border border-border-strong bg-surface-2 px-3 py-2.5 text-sm"
+      className="flex items-center gap-2.5 rounded-control-sm border border-border-strong bg-surface-2 px-3 py-2.5 text-sm"
     >
       <span className="flex-1">{children}</span>
       {action}

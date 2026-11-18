@@ -36,7 +36,7 @@ import {
 } from './appointment-form';
 import { personLabel, STATUS_TONE, statusLabel, type AppointmentData } from './appointments-view';
 
-const CHIP = 'cursor-pointer rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs';
+const CHIP = 'cursor-pointer rounded-control border border-border bg-surface-2 px-2 py-0.5 text-xs';
 const MATCHES = 6;
 
 /** How the day typed reads back: `Thứ Hai 28/09/2026 · 2 ngày nữa` (mockup `.read`). */
@@ -128,6 +128,7 @@ export function AppointmentDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t(from ? 'appointmentForm.nextTitle' : 'appointmentForm.title')}
       subtitle={
         from

@@ -83,6 +83,7 @@ export function PersonDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t(person ? 'person.edit' : 'person.new')}
       onClose={onClose}
       onSubmit={save}
@@ -189,6 +190,8 @@ export function DeletePersonDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('person.deleteTitle', { name: person.name })}
       subtitle={t('person.deleteSub', { role: person.role, team: teamName })}
       onClose={onClose}

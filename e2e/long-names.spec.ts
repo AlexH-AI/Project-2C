@@ -2,10 +2,12 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
 import {
   addKycNote,
+  asExe,
   createKycCustomer,
   discoveryFacts,
   panelOf,
   pastTheWindow,
+  pickTeam,
   right,
   scrolls,
 } from './support';
@@ -15,6 +17,11 @@ import {
 // button or the figures of a table out of the window. The windows of the exe: 1 100 the smallest,
 // 1 440 the default.
 const WIDTHS = [1100, 1440] as const;
+
+// The two sweeps of many screens and dialogs, each at both widths. On the WebKit of the macOS
+// runner, with one worker, the first took 19 to 24 s of the 30 s a test has, and ran out of them in
+// a run where the runner was slow (CI run 44167332976).
+const LONG_SWEEP = 90_000;
 
 /** A name of `length` letters with no space, from `first`. */
 const unbroken = (first: string, length: number) => first + 'x'.repeat(length - 1);
@@ -379,6 +386,7 @@ async function sweepEach(page: Page, name: string, at: string) {
 test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no main screen sideways, in any scope', async ({
   page,
 }) => {
+  test.setTimeout(LONG_SWEEP);
   const customer = unbroken('K', 81);
   const rm = unbroken('R', 160);
   const team = unbroken('T', 160);
@@ -593,4 +601,197 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   const records = page.getByRole('region', { name: 'Thùng rác' }).getByRole('table');
   for (const name of [customer, gone, `RM ${rm}`]) await expect(records).toContainText(name);
   await sweep(page, 'Thùng rác');
+});
+
+/**
+ * What of `box` ends past its right edge: a word that does not break, a line that does not wrap.
+ * A text field or a list keeps what it holds inside its box, a value longer than it scrolled out of
+ * sight: it counts by its box, whatever its `overflow` reads (`clip` on Chromium, `visible` on
+ * WebKit, where its `scrollWidth` is the width of the whole value).
+ */
+const sticksOut = (box: Locator) =>
+  box.evaluate((node) => {
+    const edge = Math.round(node.getBoundingClientRect().right);
+    return [...node.querySelectorAll('*')].flatMap((part) => {
+      const rect = part.getBoundingClientRect();
+      const shows =
+        getComputedStyle(part).overflowX === 'visible' && !part.matches('input, textarea, select');
+      const end = Math.round(
+        shows ? Math.max(rect.right, rect.left + part.scrollWidth) : rect.right,
+      );
+      if (!part.checkVisibility() || end <= edge) return [];
+      const text = (part.textContent ?? '').slice(0, 40);
+      return [`${part.tagName.toLowerCase()} "${text}" ends ${end - edge}px past`];
+    });
+  });
+
+/**
+ * How many pixels of the bottom of `box` do not show: a box around it that does not let what it
+ * holds show past its bottom edge cuts it there.
+ */
+const cutBelow = (box: Locator) =>
+  box.evaluate((node) => {
+    const { bottom } = node.getBoundingClientRect();
+    let shown = bottom;
+    for (let around = node.parentElement; around; around = around.parentElement) {
+      if (getComputedStyle(around).overflowY === 'visible') continue;
+      shown = Math.min(shown, around.getBoundingClientRect().bottom);
+    }
+    return Math.round(bottom - shown);
+  });
+
+/**
+ * `box`, a dialog or a line said after an action, holds all it says at each width of the exe:
+ * nothing of it ends past its edge or scrolls it sideways, and the page stays in the window.
+ */
+async function expectHolds(page: Page, box: Locator, at: string) {
+  await expect(box, at).toBeVisible();
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await sticksOut(box), `${at} at ${width}`).toEqual([]);
+    expect(await scrolls(box), `${at} at ${width}`).toBe(false);
+    await expectNoSideways(page, `${at} at ${width}`);
+  }
+}
+
+// DR6-183 (L16): the sweep above is of each screen at rest. What a screen says after an action,
+// the body of a dialog, an error of the AI and the tooltip of a chart break a name with no space
+// too: once in what they share (the body of `Dialog`, `ALERT`, the theme of a chart).
+test('names of 160 letters, an error of 200, break in the body of a dialog, a line said after an action and a tooltip', async ({
+  page,
+}) => {
+  test.setTimeout(LONG_SWEEP);
+  await asExe(page);
+  const customer = unbroken('K', 160);
+  const rm = unbroken('R', 160);
+  const team = unbroken('T', 160);
+  await page.goto('/#/team');
+  await renameTeam(page, 'Bình Minh', team);
+  const members = page.getByRole('region', { name: `Thành viên team ${team}` });
+  const editRm = members.getByRole('table').getByRole('button', { name: /^Sửa / }).first();
+  await renamePerson(page, editRm, rm);
+
+  // 9c: a second team of that name is refused, in a line of the dialog that names it.
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const create = page.getByRole('dialog', { name: 'Team mới' });
+  await create.getByRole('textbox', { name: 'Tên team' }).fill(team);
+  await create.getByRole('button', { name: 'Tạo team' }).click();
+  await expect(create).toContainText(`Đã có team "${team}".`);
+  await expectHolds(page, create, '9c, a team that exists');
+  await create.getByRole('button', { name: 'Hủy' }).click();
+
+  // 9b: "Xóa nhân sự" of an RM who has records is refused, in the body of the dialog.
+  await members.getByRole('button', { name: `Sửa ${rm}`, exact: true }).click();
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  await edit.getByRole('button', { name: 'Xóa nhân sự' }).click();
+  const removeRm = page.getByRole('dialog', { name: `Xóa ${rm}?` });
+  await expect(removeRm.getByRole('alert')).toContainText('RM còn dữ liệu');
+  await expectHolds(page, removeRm, '9b, refused');
+  await removeRm.getByRole('button', { name: 'Đóng', exact: true }).click();
+  await expect(removeRm).toBeHidden();
+
+  // A customer of that RM, then an appointment made while the scope is another team: the line
+  // said after it names the RM (6a).
+  await open(page, 'Khách hàng');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const person = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await person.getByRole('textbox', { name: 'Họ tên' }).fill(customer);
+  const rmList = person.getByRole('combobox', { name: 'RM phụ trách' });
+  await rmList.selectOption({
+    label: (await rmList.locator('option', { hasText: rm }).textContent())!,
+  });
+  await person.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
+  await person.getByRole('radio', { name: 'Nữ' }).check();
+  await person.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(person).toBeHidden();
+  await open(page, 'Lịch hẹn');
+  await pickTeam(page, 'Sao Mai');
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(customer);
+  await booking
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: customer })
+    .click();
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('16/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toBeHidden();
+  const outside = page.getByRole('status').filter({ hasText: 'ngoài góc nhìn' });
+  await expect(outside).toContainText(`Đã tạo lịch hẹn 16/09/2026 cho ${rm}.`);
+  await expectHolds(page, outside, 'the line of an appointment made out of the scope');
+
+  // Tổng quan, the scope Team: the tooltip of the chart of the team names it, inside the chart.
+  await open(page, 'Tổng quan');
+  const chart = page.getByRole('img', {
+    name: `Diễn biến khách hàng theo nhóm · Team ${team}`,
+    exact: true,
+  });
+  await chart.scrollIntoViewIfNeeded();
+  await chart.hover();
+  const tooltip = chart.locator('div').filter({ hasText: team }).first();
+  await expect(tooltip).toBeVisible();
+  const [tip, box] = [(await tooltip.boundingBox())!, (await chart.boundingBox())!];
+  expect(tip.x, 'the tooltip, left').toBeGreaterThanOrEqual(Math.floor(box.x));
+  expect(tip.x + tip.width, 'the tooltip, right').toBeLessThanOrEqual(Math.ceil(box.x + box.width));
+  expect(await sticksOut(tooltip), 'what the tooltip holds').toEqual([]);
+  // The name takes lines of the width of the chart, so the tooltip is taller than the chart: it
+  // shows past the bottom of it, down to its last line (review of PR 1402).
+  expect(tip.height, 'a tooltip taller than its chart').toBeGreaterThan(box.height);
+  expect(await cutBelow(tooltip), 'the tooltip, cut at the bottom').toBe(0);
+  // On WebKit the box of the chart counted a width past the window while the tooltip, and all
+  // else in it, sat inside (CI run 44214901028): the chart clips at its sides, so it pushes nothing.
+  await expect(chart).toHaveCSS('overflow-x', 'clip');
+  await expectNoSideways(page, 'under a tooltip');
+  await page.mouse.move(0, 0);
+
+  // The customer deleted, then restored: the dialog that asks (11b) and the line said after (11e).
+  await open(page, 'Khách hàng');
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Toàn bộ' })
+    .click();
+  await page
+    .getByRole('radiogroup', { name: 'Cách xem' })
+    .getByRole('radio', { name: 'Bảng' })
+    .click();
+  await page.getByRole('link', { name: customer }).click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: `Sửa hồ sơ · ${customer}` })
+    .getByRole('button', { name: 'Xóa KH…' })
+    .click();
+  await page
+    .getByRole('dialog', { name: `Xóa ${customer}?` })
+    .getByRole('button', { name: 'Xóa KH' })
+    .click();
+  await expect(page).toHaveURL(/#\/customers$/);
+  await open(page, 'Cài đặt');
+  await settingsSection(page, 'Thùng rác');
+  const trash = page.getByRole('region', { name: 'Thùng rác' });
+  await trash.getByRole('button', { name: new RegExp(`^Khôi phục KH ${customer}`) }).click();
+  const restore = page.getByRole('dialog', { name: `Khôi phục ${customer}?` });
+  await expectHolds(page, restore, 'the dialog that restores');
+  await restore.getByRole('button', { name: 'Khôi phục', exact: true }).click();
+  await expect(restore).toBeHidden();
+  const restored = trash.getByRole('status');
+  await expect(restored).toContainText(`Đã khôi phục KH ${customer}`);
+  await expectHolds(page, restored, '11e, the line of a restore');
+
+  // An error of OpenCode whose message has no space, at Kiểm tra kết nối.
+  await settingsSection(page, 'AI');
+  await page
+    .getByRole('radiogroup', { name: 'Provider' })
+    .getByRole('radio', { name: 'OpenCode' })
+    .check();
+  const message = unbroken('E', 200);
+  await page.evaluate(
+    (message) => (window.exe.aiError = { code: 'AI_HTTP', httpStatus: 502, message }),
+    message,
+  );
+  const check = page.getByRole('region', { name: 'Kiểm tra kết nối' });
+  await check.getByRole('button', { name: 'Kiểm tra kết nối' }).click();
+  await expect(check.getByRole('alert')).toContainText(message);
+  await expectHolds(page, check, 'the error of Kiểm tra kết nối');
 });

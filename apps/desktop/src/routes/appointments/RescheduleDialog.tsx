@@ -42,6 +42,7 @@ export function RescheduleDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('reschedule.title')}
       subtitle={t('reschedule.sub', {
         customer: row.customer?.name ?? '',

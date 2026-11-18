@@ -254,6 +254,8 @@ function ImportDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('settings.backup.confirmTitle')}
       subtitle={chosen.name}
       // Nothing may close the dialog while the import runs.
@@ -315,6 +317,8 @@ function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => 
       : params;
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('settings.backup.refusedTitle')}
       subtitle={refused.name}
       onClose={onClose}

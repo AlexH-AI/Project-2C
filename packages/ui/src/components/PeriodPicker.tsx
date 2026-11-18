@@ -63,7 +63,7 @@ function tryCustomPeriod(start: string, end: string): Period | DraftError {
 }
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent';
-const stepClass = `cursor-pointer rounded-sm px-1.5 py-0.5 text-lg leading-none text-fg-3 hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:text-fg-3 ${focusRing}`;
+const stepClass = `cursor-pointer rounded-control-sm px-1.5 py-0.5 text-lg leading-none text-fg-3 hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:text-fg-3 ${focusRing}`;
 
 /**
  * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping;
@@ -117,7 +117,7 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       value={shown[field]}
       onChange={(event) => setDraft({ ...shown, [field]: event.target.value, error: null })}
       onKeyDown={(event: KeyboardEvent) => event.key === 'Enter' && apply()}
-      className={`w-28 rounded-sm border bg-surface-2 px-2.5 py-1 text-sm text-fg tabular-nums ${focusRing} ${
+      className={`w-28 rounded-control-sm border bg-surface-2 px-2.5 py-1 text-sm text-fg tabular-nums ${focusRing} ${
         fieldInvalid(field) ? 'border-danger' : 'border-border-control'
       }`}
     />
@@ -145,7 +145,7 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       </button>
       <output
         aria-live="polite"
-        className="rounded-sm border border-border bg-surface-2 px-2.5 py-1 text-sm whitespace-nowrap text-fg tabular-nums"
+        className="rounded-control-sm border border-border bg-surface-2 px-2.5 py-1 text-sm whitespace-nowrap text-fg tabular-nums"
       >
         {periodLabel(value, labels)}
       </output>

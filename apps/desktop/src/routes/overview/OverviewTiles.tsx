@@ -1,9 +1,10 @@
 import { formatNumber, type AppointmentCounts, type PeriodKind } from '@p2c/domain';
 import { t } from '../../i18n';
 import { APPOINTMENT_GROUPS } from '../appointments/appointments-view';
+import { CARD_SKIN } from '../classes';
 import type { KpiTile } from './overview-view';
 
-const TILE = 'flex flex-col gap-2 rounded-md border border-border bg-surface-1 px-3.5 py-3';
+const TILE = `${CARD_SKIN} flex flex-col gap-2 px-5 py-4.5`;
 const LABEL = 'text-sm text-fg-2';
 const VALUE = 'text-2xl leading-tight font-semibold tabular-nums';
 const UNIT = 'text-md font-medium text-fg-3';
@@ -29,7 +30,7 @@ export function AppointmentsTile({
       <p className={`m-0 -mt-1.5 ${FOOT}`}>{t('overview.appointments.foot')}</p>
       {counts.total === 0 ? (
         // An empty bar says so (mockup 1e), as the months of the Lịch hẹn year grid do.
-        <p className="m-0 grid h-5 place-items-center rounded-sm bg-surface-3 text-xs font-medium text-fg-3">
+        <p className="m-0 grid h-5 place-items-center rounded-control-sm bg-surface-3 text-xs font-medium text-fg-3">
           {t('appointments.monthEmpty')}
         </p>
       ) : (

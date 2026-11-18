@@ -34,6 +34,14 @@ describe('chartTheme', () => {
     });
   });
 
+  it('keeps a tooltip in its chart, a name with no space broken inside it (L16)', () => {
+    const { tooltip } = chartTheme(read);
+
+    expect(tooltip.confine).toBe(true);
+    expect(tooltip.extraCssText).toContain('white-space: normal');
+    expect(tooltip.extraCssText).toContain('overflow-wrap: anywhere');
+  });
+
   it('offers a `today` style for category labels: the date-today colour, bold', () => {
     expect(chartTheme(read).categoryAxis.axisLabel.rich.today).toEqual({
       color: 'value--date-today',

@@ -33,6 +33,8 @@ export function RestoreDialog({
   };
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={view.title}
       subtitle={view.subtitle}
       onClose={onClose}

@@ -115,7 +115,7 @@ export function KycWebSession({
             </p>
           )}
           <p className={`${ROW} m-0`}>
-            <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-fg-2 tabular-nums">
+            <span className="rounded-control-sm bg-surface-2 px-2 py-0.5 text-xs text-fg-2 tabular-nums">
               {t('aiPanel.web.chip', { version: chip.version, label: chip.prompt, when: chip.at })}
             </span>
             <span className="text-xs text-fg-3">{t('aiPanel.web.attempt', { n: 1 })}</span>
@@ -137,7 +137,7 @@ export function KycWebSession({
             aria-label={t('aiPanel.web.manual')}
             value={web.manual}
             rows={4}
-            className="rounded-md border border-border-control bg-surface-0 px-2 py-1.5 font-mono text-xs text-fg-2"
+            className="rounded-control border border-border-control bg-surface-0 px-2 py-1.5 font-mono text-xs text-fg-2"
           />
         </>
       )}

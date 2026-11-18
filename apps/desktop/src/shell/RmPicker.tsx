@@ -1,8 +1,9 @@
 import { formatNumber, type Person, type Team } from '@p2c/domain';
 import { t } from '../i18n';
+import { CARD_SKIN } from '../routes/classes';
 
 const CHIP =
-  'flex min-w-0 cursor-pointer items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'flex min-w-0 cursor-pointer items-center gap-1.5 rounded-control-sm border px-2.5 py-1.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const ON = 'border-accent bg-accent-soft font-semibold text-accent';
 const OFF = 'border-border bg-surface-2 text-fg-2 hover:border-border-strong hover:text-fg';
 
@@ -32,7 +33,7 @@ export function RmPicker({
   return (
     <section
       aria-label={t('rmPicker.label', { team: team.name })}
-      className="flex gap-3.5 rounded-lg border border-border bg-surface-1 px-3.5 py-3"
+      className={`${CARD_SKIN} flex gap-3.5 px-3.5 py-3`}
     >
       <div className="flex w-50 shrink-0 flex-col gap-1.5 border-r border-border pr-3.5">
         {/* A long team name breaks in the column, not over the RM (DR6-170). */}

@@ -28,6 +28,7 @@ export const en: EnglishMessages = {
   'screen.team': 'Team management',
   'screen.settings': 'Settings',
   'scope.label': 'View',
+  'dialog.close': 'Close dialog',
   // A money field (G-03b): the words of mockup ngon-ngu-tien-te.html #money, tied to the codes of
   // the reading (ADR-0018 §5); "whole cents" chosen by the Owner 14/11/2026.
   'money.read': '{amount} ({compact})',

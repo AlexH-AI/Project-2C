@@ -37,7 +37,7 @@ export function Sidebar({ current }: { current: Section }) {
               <a
                 href={routeToHash({ screen: section })}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-2.5 rounded-sm px-2.5 py-2 ${FOCUS} ${
+                className={`flex items-center gap-2.5 rounded-control-sm px-2.5 py-2 ${FOCUS} ${
                   active
                     ? 'bg-accent-soft font-semibold text-accent'
                     : 'text-fg-2 hover:bg-surface-3 hover:text-fg'

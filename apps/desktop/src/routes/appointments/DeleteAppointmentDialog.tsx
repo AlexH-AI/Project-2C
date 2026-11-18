@@ -40,6 +40,8 @@ export function DeleteAppointmentDialog({
   };
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('appointmentDelete.title', { when: whenText(a) })}
       subtitle={t('appointmentDelete.sub', {
         customer: customer.name,

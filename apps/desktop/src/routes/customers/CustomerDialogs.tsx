@@ -262,6 +262,7 @@ export function CustomerFormDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={
         customer ? t('customerForm.editTitle', { name: customer.name }) : t('customerForm.newTitle')
       }
@@ -395,6 +396,8 @@ function DeleteCustomerDialog({
   ] as const;
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={t('customerDelete.title', { name: customer.name })}
       subtitle={customer.code}
       onClose={onClose}
@@ -464,6 +467,7 @@ export function ChangeStageDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('stageForm.title', { name: customer.name })}
       subtitle={t('stageForm.sub', {
         code: customer.code,

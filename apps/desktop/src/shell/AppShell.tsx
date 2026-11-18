@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
+import { lightCard } from '../routes/classes';
 import { Screen } from '../routes/Screen';
 import type { AppWindow } from './CloseGuard';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -86,7 +87,7 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
             />
           )}
         </header>
-        <main ref={main} className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
+        <main ref={main} onPointerMove={lightCard} className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
           <ScopeContext value={scopeState}>
             <ErrorBoundary key={routeToHash(route)} resetKey={scope}>
               <Screen route={route} />

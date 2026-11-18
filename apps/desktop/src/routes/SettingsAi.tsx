@@ -301,6 +301,8 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
       )}
       {confirming && (
         <Dialog
+          closeLabel={t('dialog.close')}
+          size="confirm"
           title={t('settingsAi.keyDeleteTitle')}
           subtitle={t('settingsAi.keyDeleteSub')}
           onClose={working ? undefined : () => setConfirming(false)}
@@ -380,7 +382,7 @@ function ConnectionCard({ mock, settings }: { mock: boolean; settings: AiSetting
             </span>
           )}
           {shown.phase === 'error' && !busy && (
-            <span role="alert" className="text-danger">
+            <span role="alert" className="min-w-0 wrap-anywhere text-danger">
               {shown.text}
             </span>
           )}

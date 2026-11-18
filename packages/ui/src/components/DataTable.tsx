@@ -12,7 +12,7 @@ import { formatDate } from '@p2c/domain';
 import { Button } from './Button';
 import { compareCellsThen, type CellKind, type CellValues } from './compare-cells';
 import { SHOW_MORE_STEP } from './show-more';
-import { sorts, tableView, type ColumnSorting } from './table-view';
+import { rowState, sorts, tableView, type ColumnSorting } from './table-view';
 
 interface ColumnBase<Row extends RowData> {
   id: string;
@@ -38,11 +38,11 @@ export type DataTableSort = ColumnSort;
 
 /** Words of the foot under a table of over a hundred rows, from the app's i18n. */
 export interface DataTableMoreLabels {
-  /** "Đang hiện 100 / 7.071 lịch" */
+  /** "Đang hiện 100 / 7,071 lịch" */
   shown: (shown: number, total: number) => string;
   /** "Hiện thêm 100 lịch" */
   more: (count: number) => string;
-  /** "Đã hiện hết 7.071 lịch" */
+  /** "Đã hiện hết 7,071 lịch" */
   all: (total: number) => string;
 }
 
@@ -53,6 +53,11 @@ interface DataTableProps<Row extends RowData> {
   /** Keep the array stable between renders (state or memo), or sorting is recomputed. */
   rows: readonly Row[];
   getRowId?: (row: Row, index: number) => string;
+  /**
+   * The row, by its `getRowId`, whose details are open beside the table: painted as the chosen
+   * row, and `aria-current`.
+   */
+  selectedId?: string;
   initialSort?: DataTableSort;
   moreLabels: DataTableMoreLabels;
   /** Back to the first hundred rows when this changes (period, filters); a sort keeps the count. */
@@ -106,6 +111,7 @@ export function DataTable<Row extends RowData>({
   columns,
   rows,
   getRowId,
+  selectedId,
   initialSort,
   moreLabels,
   resetKey,
@@ -173,7 +179,7 @@ export function DataTable<Row extends RowData>({
                   key={column.id}
                   scope="col"
                   aria-sort={header.kind === 'button' ? header.ariaSort : undefined}
-                  className={`border-b border-border ${inset} py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase ${
+                  className={`border-b border-hairline ${inset} py-1.5 text-xs font-semibold whitespace-nowrap ${
                     sorted ? 'text-fg-2' : 'text-fg-3'
                   } ${align(column)} ${column.width ?? ''} ${hidden ? 'relative' : ''}`}
                 >
@@ -181,7 +187,7 @@ export function DataTable<Row extends RowData>({
                     <button
                       type="button"
                       onClick={table.getColumn(column.id)?.getToggleSortingHandler()}
-                      className={`w-full cursor-pointer rounded-sm font-semibold uppercase select-none focus-visible:outline-2 focus-visible:outline-accent ${textAlign(column)}`}
+                      className={`w-full cursor-pointer rounded-control-sm font-semibold select-none focus-visible:outline-2 focus-visible:outline-accent ${textAlign(column)}`}
                     >
                       {column.header}{' '}
                       <span
@@ -203,11 +209,11 @@ export function DataTable<Row extends RowData>({
         </thead>
         <tbody>
           {visible.map((row) => (
-            <tr key={row.id} className="group hover:bg-surface-2">
+            <tr key={row.id} {...rowState(row.id, selectedId)}>
               {columns.map((column) => (
                 <td
                   key={column.id}
-                  className={`border-b border-border ${inset} py-2 align-middle group-last:border-b-0 ${align(column)} ${
+                  className={`border-b border-hairline ${inset} py-2 align-middle group-last:border-b-0 ${align(column)} ${
                     column.cellClass?.(row.original) ?? ''
                   }`}
                 >

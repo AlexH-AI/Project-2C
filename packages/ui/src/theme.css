@@ -18,6 +18,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-border-control: var(--border-control);
+  --color-hairline: var(--hairline);
   --color-fg: var(--text);
   --color-fg-2: var(--text-2);
   --color-fg-3: var(--text-3);
@@ -71,8 +72,7 @@
   --breakpoint-wide: 90rem;
 
   /* Corners by what they round (`rounded-card`, `rounded-control-sm`…): the nominal radius of the
-     system (tokens.css). The three old names stand for a new one until VA2 and VA3a move their
-     uses (VA3a drops them). `rounded-full` stays for circles. */
+     system (tokens.css). `rounded-full` stays for circles. */
   --radius-*: initial;
   --rounded-card: var(--r-card);
   --rounded-pop: var(--r-pop);
@@ -82,9 +82,6 @@
   --rounded-control-sm: var(--r-control-sm);
   /* The well of a segmented control: concentric with its segments, 2 px in (10 → 8, 6 → 4) */
   --rounded-segmented: calc(var(--r-control-sm) + 2px);
-  --rounded-sm: var(--r-control-sm);
-  --rounded-md: var(--r-control);
-  --rounded-lg: var(--r-card);
 }
 
 /* A rounded rectangle as its system draws it (ui2.css section 5): a continuous corner on macOS, in
@@ -96,6 +93,80 @@
 @utility rounded-chip {
   border-radius: calc(var(--r-chip) * var(--r-k));
   corner-shape: round;
+}
+
+/* Where the pointer is over a card, as shares of its box (the app's `lightCard` sets them). Not
+   inherited: a move of the pointer restyles the card alone, not everything it holds. */
+@property --mx {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+@property --my {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+/* A card (ui2.css section 8, components.html 04): no border. A layer a little lighter than the
+   content behind it, its top edge catching the light; under the pointer a soft light follows it. */
+@utility card {
+  position: relative;
+  background: var(--mat-card);
+  box-shadow: var(--mat-card-edge), var(--shadow-1);
+  &::after {
+    --mx: inherit;
+    --my: inherit;
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    corner-shape: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      260px circle at var(--mx) var(--my),
+      var(--mat-spec),
+      transparent 68%
+    );
+    opacity: 0;
+    transition: opacity var(--t-3);
+  }
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+/* What stays put on a card while its neighbours scroll under it (the name column of a report):
+   solid, as the material is see-through, in the shade the card has halfway down (--mat-card). */
+@utility card-cover {
+  background-color: color-mix(in srgb, white 5.25%, var(--bg-0));
+}
+
+/* The chosen row of a table (ui2.css `.tbl tr.is-sel`): the gold tint. --text-3 is under 4.5:1 on
+   it, so what the row writes in it, a missed appointment too, is one step lighter (ADR-0013
+   appendix 11/11/2026 §7). */
+@utility row-selected {
+  --text-3: var(--text-2);
+  --appt-missed: var(--text-2);
+  background-color: var(--accent-soft);
+}
+
+/* A block shown faded on a card (a stale analysis): 85 %, and for the same reason as on the chosen
+   row, what it writes in --text-3 is one step lighter. */
+@utility faded {
+  --text-3: var(--text-2);
+  opacity: 0.85;
+}
+
+/* The focus layer (ui2.css section 10): dark glass with a lit top edge, over the scrim that dims
+   what is behind a dialog. */
+@utility pop {
+  background: var(--mat-pop);
+  backdrop-filter: var(--blur-pop);
+  box-shadow: var(--mat-pop-edge), var(--shadow-3);
+  &::backdrop {
+    background: var(--scrim);
+  }
 }
 
 /* The paint of the shared controls and its states, as components.html draws them (VA2; ui2.css

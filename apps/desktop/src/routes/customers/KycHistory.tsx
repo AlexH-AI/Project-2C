@@ -73,7 +73,7 @@ export function AnalysisHistory({
                 <button
                   type="button"
                   aria-label={t('aiPanel.history.open', { when: row.at })}
-                  className={`rounded-sm text-fg ${FOCUS}`}
+                  className={`rounded-control-sm text-fg ${FOCUS}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     onPick(row.id);
@@ -119,6 +119,7 @@ export function RejectedReportDialog({
   const report = rejectedReport(row, analyses, versions);
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
       title={t('aiPanel.report.title', { when: report.at })}
       subtitle={joinParts([
         t('aiPanel.history.viewingVersion', { version: report.version }),

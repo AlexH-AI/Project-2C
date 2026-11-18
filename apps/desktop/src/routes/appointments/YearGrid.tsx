@@ -91,20 +91,21 @@ function MonthButton({
       aria-current={cell.state === 'current' ? 'date' : undefined}
       aria-label={monthLabel(cell, year)}
       onClick={() => onPick(cell.month)}
-      className={`flex cursor-pointer flex-col gap-2 rounded-md border px-2.75 pt-2.25 pb-2.5 text-left tabular-nums focus-visible:outline-offset-2 ${FOCUS} ${CELL[cell.state]}`}
+      className={`flex cursor-pointer flex-col gap-2 rounded-control border px-2.75 pt-2.25 pb-2.5 text-left tabular-nums focus-visible:outline-offset-2 ${FOCUS} ${CELL[cell.state]}`}
     >
       <span className="flex flex-wrap items-baseline justify-between gap-x-2 whitespace-nowrap">
         <span className={`text-md ${NAME[cell.state]}`}>
           {t('appointments.monthCell', { month: cell.month })}
         </span>
-        <span className="text-xs text-fg-3">
+        {/* On the gold tint of the month of today --text-3 is under 4.5:1 (ADR-0013 appendix §7). */}
+        <span className={`text-xs ${cell.state === 'current' ? 'text-fg-2' : 'text-fg-3'}`}>
           <b className="mr-0.75 text-lg text-fg">{formatNumber(count)}</b>
           {t('appointments.unit')}
         </span>
       </span>
       <span
         aria-hidden="true"
-        className={`flex h-5 gap-px overflow-hidden rounded-sm ${
+        className={`flex h-5 gap-px overflow-hidden rounded-control-sm ${
           future ? 'border border-dashed border-border-strong' : 'bg-surface-3'
         }`}
       >

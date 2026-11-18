@@ -71,6 +71,8 @@ export function ConfirmWordDialog({
 
   return (
     <Dialog
+      closeLabel={t('dialog.close')}
+      size="confirm"
       title={title}
       subtitle={subtitle}
       onClose={running ? undefined : onClose}

@@ -194,4 +194,4 @@ export function NoteEvent({
 }
 
 /** The mockup's `.pending` line: a proposal, or "nothing new". */
-const ROW = 'flex flex-wrap items-center gap-2 rounded-sm border px-2.5 py-1.5';
+const ROW = 'flex flex-wrap items-center gap-2 rounded-control-sm border px-2.5 py-1.5';
