@@ -142,9 +142,10 @@
   background-color: color-mix(in srgb, white 5.25%, var(--bg-0));
 }
 
-/* The chosen row of a table (ui2.css `.tbl tr.is-sel`): the gold tint. --text-3 is under 4.5:1 on
-   it, so what the row writes in it, a missed appointment too, is one step lighter (ADR-0013
-   appendix 11/11/2026 §7). */
+/* The chosen row of a table (ui2.css `.tbl tr.is-sel`), and any other chosen thing on a card (a
+   team of the list, the month of today): the gold tint. --text-3 is under 4.5:1 on it, so what is
+   written in it there, a missed appointment too, is one step lighter (ADR-0013 appendix 11/11/2026
+   §7). */
 @utility row-selected {
   --text-3: var(--text-2);
   --appt-missed: var(--text-2);
@@ -345,6 +346,118 @@
   line-height: 1.3;
   letter-spacing: 0.01em;
   color: var(--brand-slogan);
+}
+
+/* The shell of the window (VA4a; ui2.css sections 4 and 5). `win:` is for the few boxes Windows 11
+   sizes its own way; what a system draws differently is in the utilities below. */
+@custom-variant win ([data-os='win'] &);
+
+/* The sidebar stays in the window as the page scrolls. macOS: a pane of glass 8 px inside the
+   window, concentric with it; --sidebar-w counts that gap. Windows 11: flat on the window. */
+@utility sidebar {
+  position: sticky;
+  top: 8px;
+  box-sizing: border-box;
+  width: calc(var(--sidebar-w) - 8px);
+  height: calc(100vh - 16px);
+  margin: 8px 0 8px 8px;
+  padding: 14px 8px 12px;
+  overflow-y: auto;
+  border-radius: calc((var(--r-window) - 8px) * var(--r-k));
+  corner-shape: var(--r-curve);
+  background: var(--mat-pane);
+  box-shadow:
+    var(--mat-pane-edge),
+    0 18px 40px -18px rgba(0, 0, 0, 0.5);
+  [data-os='win'] & {
+    top: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    margin: 0;
+    padding: 8px 8px 12px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+}
+
+/* An item of the sidebar: concentric with the pane on macOS (16 → 8), 4 px on Windows 11. The
+   chosen one is heavier, its icon gold; its fill is `nav-pill`, an element of its own. */
+@utility nav-item {
+  position: relative;
+  isolation: isolate;
+  border-radius: calc(var(--r-control-sm) * var(--r-k));
+  corner-shape: var(--r-curve);
+  font-weight: 500;
+  color: var(--text-2);
+  transition:
+    color var(--t-1),
+    background-color var(--t-1);
+  &:hover {
+    background-color: var(--fill-1);
+    color: var(--text);
+  }
+  &[aria-current='page'] {
+    background-color: transparent;
+    color: var(--text);
+    font-weight: 650;
+  }
+  &[aria-current='page'] svg {
+    color: var(--accent);
+    transform: scale(1.08);
+  }
+}
+
+/* The fill of the chosen item (ui2.css .nav-pill); Windows 11 adds the gold bar on its left. */
+@utility nav-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background-color: var(--fill-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  [data-os='win'] &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 2px;
+    background-color: var(--accent);
+  }
+}
+
+/* The toolbar floats over the screen. Its scroll edge (ui2.css .toolbar::before): what scrolls
+   under it blurs and fades out, down to 18 px below it, instead of meeting a hard bar. */
+@utility toolbar {
+  position: sticky;
+  top: 0;
+  height: 68px;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 -18px 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, var(--mat-edge) 50%, transparent);
+    backdrop-filter: blur(14px);
+    mask-image: linear-gradient(180deg, #000 64%, transparent);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    &::before {
+      backdrop-filter: none;
+    }
+  }
+}
+
+/* The name of the screen on the toolbar (ui2.css .tl-title h2) */
+@utility screen-title {
+  font-size: var(--fs-2xl);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.022em;
 }
 
 @utility brand-outline {

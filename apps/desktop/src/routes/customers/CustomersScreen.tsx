@@ -16,6 +16,7 @@ import { routeToHash } from '../../shell/routes';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
+import { ScreenBar } from '../../shell/ScreenBar';
 import { ALERT, BADGE, CARD_SKIN, CELL_NAME, FOCUS, LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerFormDialog } from './CustomerDialogs';
@@ -161,9 +162,9 @@ export function CustomersScreen() {
           onPick={pickRm}
         />
       )}
-      <div className="flex items-center gap-3">
-        <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">
-          {rm ? (
+      <ScreenBar
+        sub={
+          rm ? (
             <>
               <b className="font-semibold text-fg">{rm.name}</b> {t('sep.dot')} {summary}
             </>
@@ -171,13 +172,16 @@ export function CustomersScreen() {
             joinParts([t('customers.viewingTeam', { team: team.name }), summary])
           ) : (
             summary
-          )}
-        </span>
-        <div className="flex-1" />
+          )
+        }
+        actions={
+          <Button variant="primary" onClick={() => setCreating(true)}>
+            {t('customers.add')}
+          </Button>
+        }
+      />
+      <div className="flex justify-end">
         <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          {t('customers.add')}
-        </Button>
       </div>
       {creating && (
         <CustomerFormDialog

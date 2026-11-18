@@ -3,6 +3,7 @@ import { Button, Segmented } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { useScopeState } from '../../shell/ScopeContext';
+import { ScreenBar } from '../../shell/ScreenBar';
 import { HEADING, PANEL } from '../classes';
 import { FilterBar, useAppliedFilter } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
@@ -48,19 +49,19 @@ export function ReportsScreen() {
 
   return (
     <>
-      {/* Xuất Excel at the right end of the period picker's line (mockup reports.html 2a). */}
-      <div className="flex flex-wrap items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <FilterBar filter={filter} today={today} viewing={viewing} />
-        </div>
-        <Button
-          variant="primary"
-          disabled={exporter.busy}
-          onClick={() => void exporter.run({ rows, period: applied.period, viewing, today })}
-        >
-          {exporter.busy ? t('reports.exporting') : t('reports.export')}
-        </Button>
-      </div>
+      {/* Xuất Excel, the main button of the screen, is on the toolbar (app-shell.html #toolbar). */}
+      <ScreenBar
+        actions={
+          <Button
+            variant="primary"
+            disabled={exporter.busy}
+            onClick={() => void exporter.run({ rows, period: applied.period, viewing, today })}
+          >
+            {exporter.busy ? t('reports.exporting') : t('reports.export')}
+          </Button>
+        }
+      />
+      <FilterBar filter={filter} today={today} viewing={viewing} />
       {exporter.notice && <ExportNoticeLine notice={exporter.notice} />}
       <section aria-label={summary} className={PANEL}>
         <div className="flex flex-wrap items-baseline gap-2">

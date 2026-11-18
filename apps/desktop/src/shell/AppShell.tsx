@@ -10,6 +10,7 @@ import { routeToHash, sectionOf, teamPickerShown, usesScope, type Route } from '
 import { narrowScope, resolveScope, type ScopeChoice } from './scope';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
+import { Toolbar } from './ScreenBar';
 import { Sidebar } from './Sidebar';
 import { ToastProvider, ToastRegion } from './Toasts';
 import { useRoute } from './useRoute';
@@ -52,7 +53,7 @@ function useScreenFocus(route: Route, appWindow: AppWindow | undefined) {
 }
 
 /**
- * Sidebar + topbar + current screen (ADR-0013 layout), and the toast of the window, which every
+ * Sidebar + toolbar + current screen (mockup app-shell.html), and the toast of the window, which every
  * screen shows through (`useToast`); `appWindow` is the exe's (see `App`).
  */
 export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
@@ -82,30 +83,35 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar current={sectionOf(route)} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col win:border-l win:border-hairline">
         <SaveWarning heading={heading} />
-        <header className="sticky top-0 z-10 flex items-center gap-3.5 border-b border-border bg-surface-0 px-6 py-3.5">
-          <h1 ref={heading} tabIndex={-1} className="m-0 text-xl font-semibold whitespace-nowrap">
-            {t(`screen.${route.screen}`)}
-          </h1>
-          <div className="flex-1" />
-          {usesScope(route.screen) && (
-            <ScopePicker
-              scope={picked}
-              teams={teams}
-              people={people}
-              teamPicker={teamPickerShown(route.screen)}
-              onChange={setChoice}
-            />
-          )}
-        </header>
-        <main ref={main} onPointerMove={lightCard} className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
-          <ScopeContext value={scopeState}>
-            <ErrorBoundary key={routeToHash(route)} resetKey={scope}>
-              <Screen route={route} />
-            </ErrorBoundary>
-          </ScopeContext>
-        </main>
+        <Toolbar
+          title={t(`screen.${route.screen}`)}
+          heading={heading}
+          tools={
+            usesScope(route.screen) && (
+              <ScopePicker
+                scope={picked}
+                teams={teams}
+                people={people}
+                teamPicker={teamPickerShown(route.screen)}
+                onChange={setChoice}
+              />
+            )
+          }
+        >
+          <main
+            ref={main}
+            onPointerMove={lightCard}
+            className="flex flex-col gap-4.5 px-7 pt-5 pb-8"
+          >
+            <ScopeContext value={scopeState}>
+              <ErrorBoundary key={routeToHash(route)} resetKey={scope}>
+                <Screen route={route} />
+              </ErrorBoundary>
+            </ScopeContext>
+          </main>
+        </Toolbar>
       </div>
       <ToastRegion heading={heading} />
     </div>

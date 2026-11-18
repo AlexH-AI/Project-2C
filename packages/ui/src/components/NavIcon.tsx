@@ -1,46 +1,42 @@
-/** Sidebar icons from the approved mockups (ADR-0013): 24-unit grid, stroke style, inherit colour. */
+/**
+ * Sidebar icons of mockup app-shell.html (`#sidebar`, ADR-0013 appendix 11/11/2026 §4): 24-unit
+ * grid, 18 px, a stroke of 1.7 px in the colour of the text beside them.
+ */
 const PATHS = {
   overview: (
     <>
-      <rect x="3" y="3" width="7" height="9" rx="1.5" />
-      <rect x="14" y="3" width="7" height="5" rx="1.5" />
-      <rect x="14" y="12" width="7" height="9" rx="1.5" />
-      <rect x="3" y="16" width="7" height="5" rx="1.5" />
+      <rect x="3" y="3" width="8" height="8" rx="2" />
+      <rect x="13" y="3" width="8" height="5" rx="2" />
+      <rect x="13" y="10" width="8" height="11" rx="2" />
+      <rect x="3" y="13" width="8" height="8" rx="2" />
     </>
   ),
   calendar: (
     <>
-      <rect x="3" y="4" width="18" height="17" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 17.5h2" />
+      <rect x="3" y="4.5" width="18" height="16" rx="3" />
+      <path d="M3 9.5h18M8 3v3M16 3v3" />
     </>
   ),
   customers: (
     <>
-      <circle cx="9" cy="8" r="3.5" />
-      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
-      <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.5a6.5 6.5 0 0 1 3 5.5" />
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" />
     </>
   ),
-  reports: (
-    <>
-      <path d="M3 3v18h18" />
-      <path d="M7.5 16.5v-4M12 16.5V8M16.5 16.5v-6.5" />
-    </>
-  ),
+  reports: <path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" />,
   team: (
     <>
-      <rect x="9" y="2.5" width="6" height="5" rx="1" />
-      <rect x="2.5" y="16.5" width="6" height="5" rx="1" />
-      <rect x="15.5" y="16.5" width="6" height="5" rx="1" />
-      <path d="M12 7.5v4M5.5 16.5v-2a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v2" />
+      <circle cx="12" cy="6" r="2.5" />
+      <circle cx="5.5" cy="17.5" r="2.5" />
+      <circle cx="18.5" cy="17.5" r="2.5" />
+      <path d="M12 8.5V12M5.5 15v-3h13v3" />
     </>
   ),
   settings: (
     <>
-      <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
-      <circle cx="15" cy="6" r="2" />
-      <circle cx="9" cy="12" r="2" />
-      <circle cx="17" cy="18" r="2" />
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="8" cy="17" r="2" />
     </>
   ),
 } as const;
@@ -52,8 +48,8 @@ export function NavIcon({ name }: { name: NavIconName }) {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="size-4.5 flex-none fill-none stroke-current opacity-90"
-      strokeWidth={1.8}
+      className="size-4.5 flex-none fill-none stroke-current"
+      strokeWidth={1.7}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

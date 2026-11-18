@@ -176,9 +176,11 @@ Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lú
 
 ![Sidebar](img/01-bat-dau-sidebar.png)
 
-Góc trên sidebar là logo Heritas L-CRM và slogan "Where legacy meets trust". Sidebar bên trái mở các màn: **Tổng quan**, **Lịch hẹn**, **Khách hàng**, **Báo cáo**; nhóm **Quản lý** có **Team & nhân sự** và **Cài đặt**. Hồ sơ một KH mở từ màn Khách hàng hoặc từ lịch hẹn. Thanh tiêu đề cửa sổ ghi màn đang mở, ví dụ "Khách hàng · Heritas L-CRM".
+Góc trên sidebar là logo Heritas L-CRM; chân sidebar có dòng trạng thái lưu, dưới nó là slogan "Where legacy meets trust". Sidebar bên trái mở các màn: **Tổng quan**, **Lịch hẹn**, **Khách hàng**, **Báo cáo**; nhóm **Quản lý** có **Team & nhân sự** và **Cài đặt**. Hồ sơ một KH mở từ màn Khách hàng hoặc từ lịch hẹn. Thanh tiêu đề cửa sổ ghi màn đang mở, ví dụ "Khách hàng · Heritas L-CRM".
 
-Ở góc trên bên phải các màn Tổng quan, Lịch hẹn, Khách hàng và Báo cáo có ô **Góc nhìn**:
+Phía trên mỗi màn là thanh công cụ: bên trái là tên màn, ở vài màn có thêm một dòng nhỏ dưới tên (Lịch hẹn: đang xem team và RM nào; Khách hàng: số KH đang mở và đã đóng; Team & nhân sự: số team, TL, RM và người hỗ trợ); bên phải là nút chính của màn (**+ Lịch hẹn**, **+ Khách hàng**, **Xuất Excel**, **+ Nhân sự** và **+ Team**).
+
+Trên thanh công cụ của các màn Tổng quan, Lịch hẹn, Khách hàng và Báo cáo có ô **Góc nhìn**:
 
 | Góc nhìn | Xem gì |
 |---|---|

@@ -10,7 +10,7 @@ import {
 
 const CELL = {
   past: 'border-border bg-surface-2 hover:border-border-strong',
-  current: 'border-accent bg-accent-soft inset-ring inset-ring-accent',
+  current: 'border-accent row-selected inset-ring inset-ring-accent',
   future: 'border-dashed border-border bg-surface-1 hover:border-border-strong',
 } as const satisfies Record<MonthCell['state'], string>;
 
@@ -97,8 +97,8 @@ function MonthButton({
         <span className={`text-md ${NAME[cell.state]}`}>
           {t('appointments.monthCell', { month: cell.month })}
         </span>
-        {/* On the gold tint of the month of today --text-3 is under 4.5:1 (ADR-0013 appendix §7). */}
-        <span className={`text-xs ${cell.state === 'current' ? 'text-fg-2' : 'text-fg-3'}`}>
+        {/* On the gold tint of the month of today `row-selected` writes it one step lighter. */}
+        <span className="text-xs text-fg-3">
           <b className="mr-0.75 text-lg text-fg">{formatNumber(count)}</b>
           {t('appointments.unit')}
         </span>

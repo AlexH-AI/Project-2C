@@ -988,7 +988,10 @@ test('an RM picked in the strip narrows the appointments to it, until picked aga
 
   await chip.click();
   await expect(chip).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText(SUMMARY).first()).toContainText(name);
+  // The toolbar says whose appointments these are (VA4a); the count of the period stays here.
+  await expect(page.getByRole('banner').getByRole('paragraph')).toHaveText(
+    `Team Sao Mai → ${name}`,
+  );
   await expect.poll(() => total(page)).toBe(await chipCount(chip));
   await expectList(page, await total(page));
   expect(new Set(await column(4))).toEqual(new Set([name]));

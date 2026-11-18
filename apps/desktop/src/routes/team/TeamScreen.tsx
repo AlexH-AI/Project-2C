@@ -4,6 +4,7 @@ import { Button, DataTable, DialogFocusFallback, StateNote, type DataTableColumn
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
+import { ScreenBar } from '../../shell/ScreenBar';
 import { CARD, FOCUS, HEADING, LINK } from '../classes';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
@@ -136,23 +137,24 @@ export function TeamScreen() {
 
   return (
     <>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-fg-2 tabular-nums">
-          {t('team.summary', {
-            teams: view.teams.length,
-            tl: tlCount,
-            rm: rmCount,
-            shared: view.shared.length,
-          })}
-        </span>
-        <div className="flex-1" />
-        <Button onClick={() => setEditing({ kind: 'addPerson', teamId: selected?.team.id })}>
-          {t('person.add')}
-        </Button>
-        <Button variant="primary" onClick={() => setEditing({ kind: 'create' })}>
-          {t('team.add')}
-        </Button>
-      </div>
+      <ScreenBar
+        sub={t('team.summary', {
+          teams: view.teams.length,
+          tl: tlCount,
+          rm: rmCount,
+          shared: view.shared.length,
+        })}
+        actions={
+          <>
+            <Button onClick={() => setEditing({ kind: 'addPerson', teamId: selected?.team.id })}>
+              {t('person.add')}
+            </Button>
+            <Button variant="primary" onClick={() => setEditing({ kind: 'create' })}>
+              {t('team.add')}
+            </Button>
+          </>
+        }
+      />
       <div className="flex items-start gap-4">
         <div className="flex w-64 shrink-0 flex-col gap-4">
           <section aria-labelledby={LIST_TITLE} className={CARD}>
@@ -170,8 +172,8 @@ export function TeamScreen() {
             {view.teams.map((entry) => {
               const on = entry === selected;
               // The name breaks, even with no space; the count stays whole, by the name's first line
-              // (DR6-148). On the gold tint of the chosen team it is --text-2: --text-3 is under
-              // 4.5:1 there (ADR-0013 appendix 11/11/2026 §7).
+              // (DR6-148). On the gold tint of the chosen team `row-selected` writes it one step
+              // lighter: --text-3 is under 4.5:1 there (ADR-0013 appendix 11/11/2026 §7).
               return (
                 <button
                   key={entry.team.id}
@@ -179,13 +181,11 @@ export function TeamScreen() {
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
                   className={`flex w-full cursor-pointer items-baseline gap-2 rounded-control-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
-                    on ? 'bg-accent-soft font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
+                    on ? 'row-selected font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >
                   {entry.team.name}
-                  <span
-                    className={`ml-auto shrink-0 font-normal tabular-nums ${on ? 'text-fg-2' : 'text-fg-3'}`}
-                  >
+                  <span className="ml-auto shrink-0 font-normal text-fg-3 tabular-nums">
                     {t(entry.lead ? 'team.count' : 'team.countNoLead', { rm: entry.rm })}
                   </span>
                 </button>

@@ -37,6 +37,8 @@ export const vi = {
   'scope.rm': 'RM',
   'scope.pickTeam': 'Team của góc nhìn',
   'scope.pickRm': 'RM của góc nhìn',
+  // The line under the name of a screen, on the toolbar: the team, then its RM being viewed.
+  'scope.viewingRm': 'Team {team} → {rm}',
   'rmPicker.label': 'RM của team {team}',
   'rmPicker.title': 'Team {team} · {count} RM',
   'rmPicker.all': 'Cả team',

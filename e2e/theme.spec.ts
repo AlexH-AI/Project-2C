@@ -135,9 +135,9 @@ test('the logo keeps its colours on the dark sidebar, the navy tree and "Heritas
       ),
     )
     .toEqual([
-      { alt: '', width: 88, loaded: true },
-      { alt: '', width: 150, loaded: true },
-      { alt: '', width: 132, loaded: true },
+      { alt: '', width: 42, loaded: true },
+      { alt: '', width: 108, loaded: true },
+      { alt: '', width: 95, loaded: true },
     ]);
   await expect(pieces.nth(0)).toHaveCSS('filter', OUTLINE);
   await expect(pieces.nth(1)).toHaveCSS('filter', OUTLINE);

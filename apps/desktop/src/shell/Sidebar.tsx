@@ -5,7 +5,7 @@ import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
 import { FOCUS } from '../routes/classes';
-import { Brand } from './Brand';
+import { Brand, Slogan } from './Brand';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
 const ICONS: Record<Section, NavIconName> = {
@@ -20,9 +20,14 @@ const ICONS: Record<Section, NavIconName> = {
 /** Sections from here on sit under the "Quản lý" group label. */
 const FIRST_MANAGE_SECTION: Section = 'team';
 
+/**
+ * The sidebar of mockup app-shell.html (`#sidebar`): the compact logo, the screens, and at its
+ * foot the save state, then the slogan. The fill of the chosen item is an element of its own
+ * (`data-slot="nav-pill"`), for it to glide to the next one (VA7a).
+ */
 export function Sidebar({ current }: { current: Section }) {
   return (
-    <aside className="flex w-(--sidebar-w) flex-none flex-col gap-4.5 border-r border-border bg-surface-1 px-3.5 py-4.5">
+    <aside className="sidebar flex flex-none flex-col gap-3 self-start">
       <Brand />
       <nav aria-label={t('nav.label')} className="flex flex-col gap-0.5">
         {SECTIONS.map((section) => {
@@ -30,19 +35,16 @@ export function Sidebar({ current }: { current: Section }) {
           return (
             <Fragment key={section}>
               {section === FIRST_MANAGE_SECTION && (
-                <div className="px-2.5 pt-2 pb-1 text-xs tracking-wider text-fg-3 uppercase">
+                <div className="px-2.5 pt-3.5 pb-1.25 text-xs font-semibold tracking-wide text-fg-2">
                   {t('nav.group.manage')}
                 </div>
               )}
               <a
                 href={routeToHash({ screen: section })}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-2.5 rounded-control-sm px-2.5 py-2 ${FOCUS} ${
-                  active
-                    ? 'bg-accent-soft font-semibold text-accent'
-                    : 'text-fg-2 hover:bg-surface-3 hover:text-fg'
-                }`}
+                className={`nav-item flex h-8.5 flex-none items-center gap-2.75 px-2.5 win:h-9 ${FOCUS}`}
               >
+                {active && <span aria-hidden="true" data-slot="nav-pill" className="nav-pill" />}
                 <NavIcon name={ICONS[section]} />
                 {t(`screen.${section}`)}
               </a>
@@ -50,7 +52,10 @@ export function Sidebar({ current }: { current: Section }) {
           );
         })}
       </nav>
-      <SaveState />
+      <div className="mt-auto flex flex-col gap-1.5 px-2.5 pb-0.5">
+        <SaveState />
+        <Slogan />
+      </div>
     </aside>
   );
 }
@@ -63,16 +68,15 @@ function SaveState() {
 }
 
 /**
- * Mockup settings-data 10d: the save state at the foot of the sidebar, on every screen, kept in
- * view while a long screen scrolls; `undefined` is web mode. Not a live region: a failed save is
- * told by the warning's alert, and reading out every save would talk after each change.
+ * Mockup settings-data 10d: the save state at the foot of the sidebar, on every screen, in view
+ * while a long screen scrolls, as the sidebar is; `undefined` is web mode. Not a live region: a
+ * failed save is told by the warning's alert, and reading out every save would talk after each
+ * change.
  */
 export function SaveStateLine({ status }: { status: SaveStatus | undefined }) {
   const { dot, tone, text } = saveState(status);
   return (
-    <p
-      className={`sticky bottom-0 m-0 mt-auto flex items-center gap-1.5 bg-surface-1 px-2.5 py-2 text-xs tabular-nums ${tone}`}
-    >
+    <p className={`m-0 flex items-center gap-1.5 text-xs tabular-nums ${tone}`}>
       <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${dot}`} />
       {text}
     </p>
