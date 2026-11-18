@@ -4,6 +4,7 @@ import { formatDayMonth, isRfTransition, type StageTransition } from '@p2c/domai
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
 import { FailureAlert } from '../customers/CustomerDialogs';
 import { stageBadge } from '../stage-badge';
@@ -29,10 +30,12 @@ export function DeleteAppointmentDialog({
   onDeleted: () => void;
 }) {
   const app = useAppData();
+  const undo = useTrashUndo();
   const [failure, setFailure] = useState<string>();
   const remove = () => {
     try {
       app.run((db) => softDeleteAppointment(db, a.id));
+      undo('appointment', a.id);
       onDeleted();
     } catch (error) {
       setFailure(errorMessage(error));

@@ -46,8 +46,8 @@ async function openTrash(page: Page) {
   await expect(trash(page)).toBeVisible();
 }
 
-/** Books an appointment on `date` for the customer named `name`, or the first N3 one. */
-async function book(page: Page, date: string, name?: string) {
+/** Books an appointment on `date` (at `time`) for the customer named `name`, or the first N3 one. */
+async function book(page: Page, date: string, name?: string, time?: string) {
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(name ?? 'K-');
@@ -59,6 +59,7 @@ async function book(page: Page, date: string, name?: string) {
     .click();
   const booked = (await dialog.locator('b').first().textContent()) ?? '';
   await dialog.getByRole('textbox', { name: /^Ngày/ }).fill(date);
+  if (time) await dialog.getByRole('textbox', { name: /^Giờ/ }).fill(time);
   await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
   await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
   await expect(dialog).toHaveCount(0);
@@ -764,4 +765,215 @@ test('a purge refused because the last save failed says so and changes nothing, 
   await purgeDialog(page).getByRole('button', { name: 'Backup rồi dọn sạch' }).click();
   await expect(trash(page).getByRole('status')).toContainText('Đã dọn sạch Thùng rác');
   await expect(trash(page)).toContainText('Thùng rác trống');
+});
+
+// ---- Thông báo nổi và Hoàn tác (VA3b; mockup components.html 08; TR-8 and its exception) ----
+
+/** The polite live region while it holds a toast of these words: what a screen reader reads out. */
+const toast = (page: Page, text: string) =>
+  page.locator('[aria-live="polite"]').filter({ hasText: text });
+const undo = (page: Page) => page.getByRole('button', { name: 'Hoàn tác', exact: true });
+const MOVED = 'Đã chuyển lịch hẹn vào Thùng rác';
+
+/** Stops the page's clock: a toast shown from now on stays until the test moves the clock on. */
+const holdClock = async (page: Page) =>
+  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+
+/** "Hoàn tác" of the toast `moved`: no question is asked, and a toast says what came back. */
+async function undoFrom(page: Page, moved: string, restored: string) {
+  await expect(toast(page, moved)).toBeVisible();
+  await undo(page).click();
+  await expect(toast(page, restored)).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(undo(page)).toHaveCount(0);
+}
+
+test('a deleted appointment says so in a toast; Hoàn tác brings it back at once, unasked', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  const { name } = await bookAndDelete(page);
+  await expect(toast(page, MOVED)).toBeVisible();
+  // It takes no focus, which goes where it went before: to the detail the appointment left.
+  await expect(undo(page)).not.toBeFocused();
+  await expect(detail(page)).not.toContainText(name);
+
+  // By the keyboard: the button goes with its toast, the focus to the heading of the screen.
+  await undo(page).press('Enter');
+  await expect(toast(page, 'Đã khôi phục lịch hẹn 15/09/2026')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1, name: 'Lịch hẹn' })).toBeFocused();
+  await expect(detail(page).getByRole('heading', { level: 2 })).toContainText(name);
+  await openTrash(page);
+  await expect(trash(page)).toContainText('Thùng rác trống');
+  expect(errors).toEqual([]);
+});
+
+test('a toast leaves after 4,2 s, its Hoàn tác with it; from Thùng rác the restore still asks (TR-8)', async ({
+  page,
+}) => {
+  const { name } = await bookAndDelete(page, () => holdClock(page));
+  await expect(toast(page, MOVED)).toBeVisible();
+  await page.clock.runFor(4_199);
+  await expect(toast(page, MOVED)).toBeVisible();
+  await page.clock.runFor(1);
+  await expect(toast(page, MOVED)).toHaveCount(0);
+  await expect(undo(page)).toHaveCount(0);
+
+  await openTrash(page);
+  await table(page)
+    .getByRole('button', { name: `Khôi phục lịch hẹn 15/09/2026 · Dự kiến của KH ${name}` })
+    .click();
+  await expect(page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 15/09/2026?' })).toBeVisible();
+});
+
+test('Hoàn tác brings back a team, a person, a policy and a customer', async ({ page }) => {
+  await page.goto('/#/team');
+  await page.getByRole('button', { name: '+ Team' }).click();
+  let dialog = page.getByRole('dialog', { name: 'Team mới' });
+  await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');
+  await dialog.getByRole('button', { name: 'Tạo team' }).click();
+  const members = (team: string) => page.getByRole('region', { name: `Thành viên team ${team}` });
+  await members('Thiên Hà').getByRole('button', { name: 'Xóa team' }).click();
+  const confirm = (title: string, button = 'Xóa') =>
+    page.getByRole('dialog', { name: title }).getByRole('button', { name: button, exact: true });
+  await confirm('Xóa team Thiên Hà?').click();
+  await expect(members('Thiên Hà')).toHaveCount(0);
+  await undoFrom(page, 'Đã chuyển team vào Thùng rác', 'Đã khôi phục team Thiên Hà');
+  const teams = page.getByRole('region', { name: 'Team', exact: true });
+  await expect(teams.getByRole('button', { name: /^Thiên Hà / })).toBeVisible();
+
+  await page.getByRole('button', { name: '+ Nhân sự' }).click();
+  dialog = page.getByRole('dialog', { name: 'Nhân sự mới' });
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Trần Hải Yến');
+  await dialog.getByRole('radio', { name: 'RM', exact: true }).check();
+  await dialog.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Hừng Đông' });
+  await dialog.getByRole('button', { name: 'Thêm' }).click();
+  const person = members('Hừng Đông').getByRole('row', { name: /Trần Hải Yến/ });
+  await person.getByRole('button', { name: 'Sửa Trần Hải Yến' }).click();
+  await confirm('Sửa nhân sự', 'Xóa nhân sự').click();
+  await confirm('Xóa Trần Hải Yến?').click();
+  await expect(person).toHaveCount(0);
+  await undoFrom(page, 'Đã chuyển nhân sự vào Thùng rác', 'Đã khôi phục nhân sự Trần Hải Yến');
+  await expect(person).toBeVisible();
+
+  await createKycCustomer(page, 'Lý Thu Hoàn');
+  const profile = new URL(page.url()).hash;
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('1/9');
+  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('400tr');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  const policy = card.getByRole('listitem').filter({ hasText: 'Nộp 01/09 · 400 tr' });
+  await policy.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
+  await confirm('Sửa HĐ · Lý Thu Hoàn', 'Xóa HĐ…').click();
+  await confirm('Xóa HĐ nộp 01/09/2026', 'Xóa HĐ').click();
+  await expect(policy).toHaveCount(0);
+  await undoFrom(page, 'Đã chuyển HĐ vào Thùng rác', 'Đã khôi phục HĐ nộp 01/09/2026');
+  await expect(policy).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  await confirm('Sửa hồ sơ · Lý Thu Hoàn', 'Xóa KH…').click();
+  await confirm('Xóa Lý Thu Hoàn?', 'Xóa KH').click();
+  // The toast outlives the screen it was shown from: the profile gave way to the list.
+  await expect(page).toHaveURL(/#\/customers$/);
+  await undoFrom(page, 'Đã chuyển KH vào Thùng rác', 'Đã khôi phục KH Lý Thu Hoàn');
+  await page.goto(`/${profile}`);
+  await expect(policy).toBeVisible();
+  await openTrash(page);
+  await expect(trash(page)).toContainText('Thùng rác trống');
+});
+
+/**
+ * A meeting of 15/09 with the first N3 customer, met with N2 (an RF), then deleted, the clock held
+ * so that its toast stays; the customer's profile is the screen shown.
+ */
+async function deleteMet(page: Page) {
+  await page.goto('/#/appointments');
+  await book(page, '15/9');
+  await recordMet(page, 'N2');
+  const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
+  await holdClock(page);
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const edit = page.getByRole('dialog', { name: 'Sửa kết quả cuộc gặp' });
+  await edit.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Xóa lịch hẹn 15/09/2026?' });
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  await expect(toast(page, MOVED)).toBeVisible();
+  await page.goto(`/${profile ?? ''}`);
+}
+
+/** The dialog "Chuyển nhóm" of the profile shown, where the customer's `stage` reads "hiện tại". */
+async function stageDialog(page: Page, stage: string) {
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const dialog = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await expect(dialog.getByRole('radio', { name: /hiện tại$/ })).toHaveAccessibleName(
+    `${stage} hiện tại`,
+  );
+  return dialog;
+}
+
+test('Hoàn tác of a met appointment gives the customer the stage it moved to back, unasked', async ({
+  page,
+}) => {
+  await deleteMet(page);
+  // The deletion took the move back (D7): N2 → N3.
+  await (await stageDialog(page, 'N3')).getByRole('button', { name: 'Hủy' }).click();
+  await undoFrom(page, MOVED, 'Đã khôi phục lịch hẹn 15/09/2026');
+  await stageDialog(page, 'N2');
+});
+
+test('a restore refused at Hoàn tác says why in a red toast that stays; the record keeps to Thùng rác', async ({
+  page,
+}) => {
+  await deleteMet(page);
+  // The data changes between the deletion and Hoàn tác: the stage is changed by hand.
+  const dialog = await stageDialog(page, 'N3');
+  await dialog.getByRole('radio', { name: 'N1', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await undo(page).click();
+  const refused = page.getByRole('alert');
+  await expect(refused).toHaveText(
+    'Nhóm KH đã đổi ngày 15/09/2026, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
+  );
+  await expect(undo(page)).toHaveCount(0);
+  // An error does not leave by itself.
+  await page.clock.runFor(60_000);
+  await expect(refused).toBeVisible();
+  await refused.getByRole('button', { name: 'Đóng thông báo' }).click();
+  await expect(refused).toHaveCount(0);
+  await openTrash(page);
+  await expect(trash(page)).toContainText('1 bản ghi');
+});
+
+test('an appointment made in the scope says so in a toast, at the middle of the bottom edge and under a dialog', async ({
+  page,
+}) => {
+  await page.goto('/#/appointments');
+  await holdClock(page);
+  await book(page, '15/9', undefined, '14:00');
+  // Mockup 08: "Đã tạo lịch hẹn · Thứ Hai 28/09/2026 14:00".
+  const made = toast(page, 'Đã tạo lịch hẹn');
+  await expect(made).toHaveText('Đã tạo lịch hẹn · Thứ Ba 15/09/2026 14:00');
+  await expect(made.getByRole('button')).toHaveCount(0);
+  const place = await made.evaluate((node) => {
+    const { left, right, bottom } = node.getBoundingClientRect();
+    const middle = document.documentElement.clientWidth / 2;
+    return { offCentre: Math.abs((left + right) / 2 - middle), fromBottom: innerHeight - bottom };
+  });
+  expect(place.offCentre).toBeLessThan(1);
+  expect(place.fromBottom).toBe(22);
+
+  // A dialog opened meanwhile is over the toast: its main button takes the click at its middle.
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const create = page.getByRole('dialog').getByRole('button', { name: 'Tạo lịch hẹn' });
+  const onTop = await create.evaluate((button) => {
+    const { left, right, top, bottom } = button.getBoundingClientRect();
+    return document.elementFromPoint((left + right) / 2, (top + bottom) / 2) === button;
+  });
+  expect(onTop).toBe(true);
+  await expect(made).toBeVisible();
 });

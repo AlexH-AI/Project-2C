@@ -55,7 +55,7 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 4. **Ngày (dd/mm)**: gõ ví dụ `20/9`; dòng dưới đọc lại thứ, ngày và "hôm nay" / "… ngày nữa". **Giờ (hh:mm, không bắt buộc)**.
 5. **Trigger**: lý do có cuộc hẹn (Giới thiệu từ KH, Đáo hạn tài sản, Hội thảo / sự kiện, Sinh nhật, dịp đặc biệt, Khác). Bắt buộc; "—" là chưa chọn. **Mô tả trigger** không bắt buộc.
 6. **Người phối hợp (không tính chỉ số)**: chọn một TL, IS, BD hoặc BDM đi cùng trong ô **+ thêm** rồi bấm **Thêm**; mỗi người thêm thành một ô có dấu × để bỏ. Người phối hợp không được tính chỉ số.
-7. Bấm **Tạo lịch hẹn**. Ở màn Lịch hẹn, màn chuyển tới ngày của lịch mới và mở chi tiết của nó.
+7. Bấm **Tạo lịch hẹn**. Ở màn Lịch hẹn, màn chuyển tới ngày của lịch mới và mở chi tiết của nó. Giữa mép dưới cửa sổ hiện thông báo "Đã tạo lịch hẹn" kèm thứ, ngày và giờ của lịch trong khoảng 4 giây (cả khi tạo từ Hồ sơ KH).
 
 Gõ một ngày đã qua, app hỏi lại (ví dụ "Ý anh là …?") và có nút **Dùng …** để lấy ngày gợi ý. App không tự đổi năm: giữ nguyên ngày đã qua là **nhập bù** một lịch hẹn quá khứ.
 
@@ -115,6 +115,8 @@ Nếu nhóm của KH đã đổi tiếp sau cuộc gặp này, hộp khóa ba ô
 - Lịch đã có kết quả: bấm **Sửa kết quả** rồi **Xóa lịch hẹn** trong hộp.
 
 Hộp xóa cho biết hậu quả trước khi xóa: nhóm KH (cuộc gặp đã chuyển nhóm thì KH về nhóm cũ), RF (bớt 1 nếu cuộc gặp tính RF), ghi chú KYC (giữ nguyên). Bấm **Xóa lịch hẹn** để xóa.
+
+Xóa xong, giữa mép dưới cửa sổ hiện thông báo "Đã chuyển lịch hẹn vào Thùng rác" kèm nút **Hoàn tác** trong khoảng 4 giây. Bấm **Hoàn tác** là lịch trở lại ngay, không hỏi lại; cuộc gặp đã chuyển nhóm thì nhóm KH và RF cũng trở lại như trước khi xóa. Nếu dữ liệu đã đổi trong lúc đó (ví dụ nhóm KH vừa được chuyển tay), thông báo đỏ ghi lý do không khôi phục được và lịch vẫn nằm ở Thùng rác.
 
 Xóa là **xóa mềm**: lịch biến khỏi danh sách và chỉ số nhưng vẫn còn trong dữ liệu, khôi phục được ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)). Khi nhóm KH đã đổi tiếp sau cuộc gặp, việc xóa cũng bị chặn như sửa.
 

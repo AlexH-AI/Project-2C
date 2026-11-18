@@ -11,6 +11,7 @@ import { narrowScope, resolveScope, type ScopeChoice } from './scope';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
 import { Sidebar } from './Sidebar';
+import { ToastProvider, ToastRegion } from './Toasts';
 import { useRoute } from './useRoute';
 
 /**
@@ -50,8 +51,19 @@ function useScreenFocus(route: Route, appWindow: AppWindow | undefined) {
   return { heading, main };
 }
 
-/** Sidebar + topbar + current screen (ADR-0013 layout); `appWindow` is the exe's (see `App`). */
+/**
+ * Sidebar + topbar + current screen (ADR-0013 layout), and the toast of the window, which every
+ * screen shows through (`useToast`); `appWindow` is the exe's (see `App`).
+ */
 export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
+  return (
+    <ToastProvider>
+      <Shell appWindow={appWindow} />
+    </ToastProvider>
+  );
+}
+
+function Shell({ appWindow }: { appWindow?: AppWindow }) {
   const route = useRoute();
   const { heading, main } = useScreenFocus(route, appWindow);
   const { teams, people } = useTables();
@@ -95,6 +107,7 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
           </ScopeContext>
         </main>
       </div>
+      <ToastRegion heading={heading} />
     </div>
   );
 }

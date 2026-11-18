@@ -102,7 +102,7 @@ HĐ nộp tháng này mà phát hành tháng sau thì vẫn tính nộp vào th�
 ### Sửa, xóa HĐ
 
 - Bấm **Sửa** ở dòng HĐ. Hộp **Sửa HĐ · …** cho sửa ngày nộp, FYP nộp và, với HĐ đã phát hành, ngày phát hành, FYP phát hành (RM của HĐ không đổi được). Khung **Ảnh hưởng chỉ số** cho biết FYP nộp / FYP phát hành của tháng nào tăng / giảm bao nhiêu. Dời ngày nộp hay ngày phát hành sang tháng khác thì HĐ chuyển sang tháng mới: FYP rời tháng cũ, và khung thêm một dòng số HĐ, ví dụ "tháng 08/2026: −1 HĐ nộp · tháng 09/2026: +1 HĐ nộp". Bấm **Lưu**.
-- Muốn xóa: trong hộp Sửa HĐ bấm **Xóa HĐ…**, rồi **Xóa HĐ**. HĐ không còn tính vào FYP nộp / phát hành của RM; nhóm của KH không đổi. Xóa mềm: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
+- Muốn xóa: trong hộp Sửa HĐ bấm **Xóa HĐ…**, rồi **Xóa HĐ**. HĐ không còn tính vào FYP nộp / phát hành của RM; nhóm của KH không đổi. Thông báo "Đã chuyển HĐ vào Thùng rác" có nút **Hoàn tác** trong khoảng 4 giây: bấm là HĐ trở lại ngay. Xóa mềm: sau đó khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
 
 ## Lịch hẹn của KH
 

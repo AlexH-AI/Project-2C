@@ -12,6 +12,8 @@ import {
   type QuickDateError,
   type Weekday,
 } from '@p2c/domain';
+import { t } from '../../i18n';
+import type { ToastSpec } from '../../shell/toast-queue';
 import { outcomeResolver, type AppointmentData, type Outcome } from './appointments-view';
 
 /** "Các lần hẹn trước" shows this many, newest first; the rest is behind "Xem tất cả". */
@@ -110,6 +112,18 @@ export const dayText = (date: CalendarDate, today: CalendarDate) => writtenDay(d
 
 /** A day as written, then its time when it has one: `dd/mm/yyyy hh:mm`. */
 export const withTime = (day: string, time: string | null) => (time ? `${day} ${time}` : day);
+
+/**
+ * The toast of an appointment just made, where the screen shows it (mockup components.html 08):
+ * "Đã tạo lịch hẹn · Thứ Hai 28/09/2026 14:00".
+ */
+export function createdToast(a: Pick<AppointmentRecord, 'date' | 'time'>): ToastSpec {
+  const day = t('date.read', {
+    weekday: t(`weekdayLong.${weekdayOf(a.date)}`),
+    date: formatDate(a.date),
+  });
+  return { text: t('toast.appointmentCreated'), detail: withTime(day, a.time) };
+}
 
 /**
  * `hh:mm` (the hour may lose its zero); empty means no time. Read as `normalizeText` keeps it, as

@@ -19,6 +19,7 @@ import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { rmOptions } from '../../shell/scope';
+import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
 import { MoneyField } from '../MoneyField';
 import { amountRead, formatAmountCompact, formatAmountDelta, formRefusal } from '../money-view';
@@ -310,10 +311,12 @@ function DeletePolicyDialog({
   onDeleted: () => void;
 }) {
   const app = useAppData();
+  const undo = useTrashUndo();
   const [failure, setFailure] = useState<string>();
   const remove = () => {
     try {
       app.run((db) => softDeletePolicy(db, policy.id));
+      undo('policy', policy.id);
       onDeleted();
     } catch (error) {
       setFailure(errorMessage(error));

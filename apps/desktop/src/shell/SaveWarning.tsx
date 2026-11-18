@@ -66,7 +66,7 @@ export function SaveFailed({
     <div
       ref={ref}
       role="alert"
-      className="flex items-center gap-3 border-b border-warn bg-surface-0 px-6 py-2.5 text-sm text-warn"
+      className="mx-6 mt-4 flex items-center gap-3 rounded-field border border-warn px-3 py-2 text-sm wrap-anywhere text-warn"
     >
       <span className="min-w-0 flex-1">{t(SAVE_FAILED[saveFailure(error)].banner)}</span>
       <Button size="sm" onClick={onRetry}>

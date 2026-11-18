@@ -438,6 +438,16 @@ export const vi = {
   'trash.done.mark': '✓',
   'trash.restored.openProfile': 'Mở hồ sơ',
   'trash.restored.openTeam': 'Mở Team & nhân sự',
+  // The toast (mockup components.html 08): what just happened, one line, with one way back.
+  'toast.movedToTrash.appointment': 'Đã chuyển lịch hẹn vào Thùng rác',
+  'toast.movedToTrash.customer': 'Đã chuyển KH vào Thùng rác',
+  'toast.movedToTrash.policy': 'Đã chuyển HĐ vào Thùng rác',
+  'toast.movedToTrash.team': 'Đã chuyển team vào Thùng rác',
+  'toast.movedToTrash.person': 'Đã chuyển nhân sự vào Thùng rác',
+  'toast.undo': 'Hoàn tác',
+  'toast.undoGone': 'Bản ghi không còn ở Thùng rác nên không hoàn tác được.',
+  'toast.close': 'Đóng thông báo',
+  'toast.appointmentCreated': 'Đã tạo lịch hẹn',
   'settingsAi.invalid':
     'Cài đặt AI đã lưu không hợp lệ — đang dùng mặc định: {defaults}. Chọn lại để lưu.',
   'settingsAi.invalidModel':
