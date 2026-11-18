@@ -71,6 +71,50 @@ test('the cards of Tổng quan, Lịch hẹn, a profile and Cài đặt have no 
   await expectCard(page, region(page, 'Xuất / nhập backup'), 'a section of Cài đặt');
 });
 
+/** `colors`, each as painted on the ground of the content (--bg-0): its red, green and blue. */
+const onGround = (page: Page, colors: string[]) =>
+  page.evaluate((colors) => {
+    const context = document
+      .createElement('canvas')
+      .getContext('2d', { willReadFrequently: true })!;
+    const ground = getComputedStyle(document.documentElement).getPropertyValue('--bg-0');
+    return colors.map((color) => {
+      for (const paint of [ground, color]) {
+        context.fillStyle = paint;
+        context.fillRect(0, 0, 1, 1);
+      }
+      return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+    });
+  }, colors);
+
+// The material of a card is see-through, and the name column of a report stays put over figures
+// that scroll under it: it is solid, in a shade the card has between its top and its bottom, so
+// the column is no band of another colour (review of PR 1402).
+test('the name column of a report, which stays put, is a shade of the card around it', async ({
+  page,
+}) => {
+  await page.goto('/#/reports');
+  const card = region(page, 'Theo team');
+  const name = card.getByRole('rowheader').first();
+  await expect(name).toHaveCSS('position', 'sticky');
+  const style = (box: Locator, property: 'backgroundColor' | 'backgroundImage') =>
+    box.evaluate((node, property) => getComputedStyle(node)[property], property);
+  const ends = (await style(card, 'backgroundImage')).match(/rgba?\([^()]*\)/g) ?? [];
+  expect(ends).toHaveLength(2);
+  const [cell = [], top = [], bottom = []] = await onGround(page, [
+    await style(name, 'backgroundColor'),
+    ...ends,
+  ]);
+  expect(top).not.toEqual(bottom);
+  cell.forEach((shade, channel) => {
+    const [dark = 0, light = 0] = [top[channel]!, bottom[channel]!].sort((a, b) => a - b);
+    expect(shade, `channel ${channel}`).toBeGreaterThanOrEqual(dark);
+    expect(shade, `channel ${channel}`).toBeLessThanOrEqual(light);
+  });
+  // Under the light of the card as the rest of it: an index of its own would lift it above.
+  await expect(name).toHaveCSS('z-index', 'auto');
+});
+
 test('the light of a card follows the pointer over it', async ({ page }) => {
   await page.goto('/#/appointments');
   const card = region(page, 'Danh sách lịch hẹn');

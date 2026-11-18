@@ -23,8 +23,11 @@ const GROUP_STARTS = new Set(REPORT_GROUPS.map((group) => group.first));
 
 const CELL = 'border-b border-border px-2 py-1.5 whitespace-nowrap';
 const RULE = 'border-l border-l-border-strong';
-/** The name column stays put while the figures scroll sideways. */
-const STICKY = 'sticky left-0 z-1 bg-surface-1';
+/**
+ * The name column stays put while the figures scroll sideways: solid in a shade of the card, and
+ * with no index of its own, so the light of the card passes over it as over the figures.
+ */
+const STICKY = 'sticky left-0 card-cover';
 /**
  * A name of the lead columns: under a cap it keeps its one line and the column its width; a longer
  * one breaks at the cap, even with no space, so the figures stay readable (DR6-148).

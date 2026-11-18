@@ -20,12 +20,17 @@ const columns: ReadonlyArray<DataTableColumn<Row>> = [
 ];
 
 // `@p2c/ui` has no react-dom of its own, so its markup is checked from the app.
-const table = () =>
+const table = (selectedId?: string) =>
   renderToStaticMarkup(
     <DataTable
       label="Thành viên"
       columns={columns}
-      rows={[{ id: 'an', name: 'An' }]}
+      rows={[
+        { id: 'an', name: 'An' },
+        { id: 'binh', name: 'Bình' },
+      ]}
+      getRowId={(row) => row.id}
+      {...(selectedId === undefined ? {} : { selectedId })}
       moreLabels={{ shown: () => '', more: () => '', all: () => '' }}
     />,
   );
@@ -36,5 +41,14 @@ describe('DataTable', () => {
       table(),
     );
     expect(cell?.[1]?.split(/\s+/)).toContain('relative');
+  });
+
+  it('marks the row of `selectedId` as the current one, and no row without it (L21)', () => {
+    const current = (markup: string) =>
+      [...markup.matchAll(/<tr[^>]*aria-current="true"[^>]*>.*?<\/tr>/g)].map(([row]) =>
+        row.replace(/<[^>]*>/g, ''),
+      );
+    expect(current(table('binh'))).toEqual(['Bình']);
+    expect(current(table())).toEqual([]);
   });
 });

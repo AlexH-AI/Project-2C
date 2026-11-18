@@ -626,6 +626,21 @@ const sticksOut = (box: Locator) =>
   });
 
 /**
+ * How many pixels of the bottom of `box` do not show: a box around it that does not let what it
+ * holds show past its bottom edge cuts it there.
+ */
+const cutBelow = (box: Locator) =>
+  box.evaluate((node) => {
+    const { bottom } = node.getBoundingClientRect();
+    let shown = bottom;
+    for (let around = node.parentElement; around; around = around.parentElement) {
+      if (getComputedStyle(around).overflowY === 'visible') continue;
+      shown = Math.min(shown, around.getBoundingClientRect().bottom);
+    }
+    return Math.round(bottom - shown);
+  });
+
+/**
  * `box`, a dialog or a line said after an action, holds all it says at each width of the exe:
  * nothing of it ends past its edge or scrolls it sideways, and the page stays in the window.
  */
@@ -721,9 +736,13 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   expect(tip.x, 'the tooltip, left').toBeGreaterThanOrEqual(Math.floor(box.x));
   expect(tip.x + tip.width, 'the tooltip, right').toBeLessThanOrEqual(Math.ceil(box.x + box.width));
   expect(await sticksOut(tooltip), 'what the tooltip holds').toEqual([]);
+  // The name takes lines of the width of the chart, so the tooltip is taller than the chart: it
+  // shows past the bottom of it, down to its last line (review of PR 1402).
+  expect(tip.height, 'a tooltip taller than its chart').toBeGreaterThan(box.height);
+  expect(await cutBelow(tooltip), 'the tooltip, cut at the bottom').toBe(0);
   // On WebKit the box of the chart counted a width past the window while the tooltip, and all
-  // else in it, sat inside (CI run 44214901028): the chart clips at its box, so it pushes nothing.
-  await expect(chart).toHaveCSS('overflow-x', 'hidden');
+  // else in it, sat inside (CI run 44214901028): the chart clips at its sides, so it pushes nothing.
+  await expect(chart).toHaveCSS('overflow-x', 'clip');
   await expectNoSideways(page, 'under a tooltip');
   await page.mouse.move(0, 0);
 

@@ -136,6 +136,12 @@
   }
 }
 
+/* What stays put on a card while its neighbours scroll under it (the name column of a report):
+   solid, as the material is see-through, in the shade the card has halfway down (--mat-card). */
+@utility card-cover {
+  background-color: color-mix(in srgb, white 5.25%, var(--bg-0));
+}
+
 /* The chosen row of a table (ui2.css `.tbl tr.is-sel`): the gold tint. --text-3 is under 4.5:1 on
    it, so what the row writes in it, a missed appointment too, is one step lighter (ADR-0013
    appendix 11/11/2026 §7). */

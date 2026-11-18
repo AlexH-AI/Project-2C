@@ -16,7 +16,7 @@ Component React thuần trình bày (ADR-0013): nhận dữ liệu và nhãn qua
 - Biểu đồ: `src/components/Chart.tsx` (ECharts) + màu series từ token `chart-theme.ts`.
 - Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`.
 - Form / hộp thoại: `Dialog`, `TextField` (dòng dưới ô: `field-notes.ts`), `SelectField`, `Choices`, `Segmented`, `Button`; huy hiệu `StageBadge`, `PolicyBadge`; dấu vẽ của ô (✕ của dòng lỗi, mũi tên ô chọn): `FieldMarks.tsx`.
-- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`. Thẻ, dòng đang chọn của bảng, lớp tiêu điểm (VA3a, mục 04, 05, 06): `card`, `row-selected`, `pop`.
+- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`. Thẻ, dòng đang chọn của bảng, lớp tiêu điểm (VA3a, mục 04, 05, 06): `card`, `row-selected`, `pop`; nền đặc của ô đứng yên trên thẻ (cột tên của Báo cáo): `card-cover`.
 
 ## Quy ước
 

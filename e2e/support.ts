@@ -77,9 +77,11 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
         }
         color = over(read(style.backgroundColor), color);
         // A material is a gradient of see-through light (--mat-card): read where it is lightest,
-        // the place its text stands out least (ADR-0013 appendix 11/11/2026 §7).
+        // the place its text stands out least (ADR-0013 appendix 11/11/2026 §7). Each stop lies on
+        // what is under the material, not on the stop before it.
+        const under = color;
         for (const stop of style.backgroundImage.match(STOP) ?? []) {
-          const lit = over(read(stop), color);
+          const lit = over(read(stop), under);
           if (luminance(lit) > luminance(color)) color = lit;
         }
       }
