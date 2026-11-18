@@ -26,3 +26,23 @@ describe('startupErrorPage', () => {
     expect(page).toContain('thư mục dữ liệu (Windows: %LOCALAPPDATA%\\com.heritas.lcrm');
   });
 });
+
+// VA3c (components.html 10): the error of the whole app has the shape of every error, red on its
+// mark only; its words and its technical detail are as before.
+describe('the shape of the startup page', () => {
+  it('is an alert under the one heading of the page, red on its mark alone', () => {
+    const page = renderToStaticMarkup(<StartupError error={new Error('boom')} folder={FOLDER} />);
+    expect(page).toMatch(/^<main [^>]*><div role="alert"/);
+    expect(page).toMatch(/<h1 class="[^"]*">Không mở được file dữ liệu<\/h1>/);
+    expect(page).toContain('Chi tiết kỹ thuật: <code>Error: boom</code>');
+    const marked = page.replace(/<span aria-hidden="true".*?<\/svg><\/span>/, '');
+    expect(page).toContain('text-danger');
+    expect(marked).not.toContain('danger');
+  });
+
+  it('has no technical detail when the message alone says what to do', () => {
+    const page = renderToStaticMarkup(<StartupError error="FILE_IN_USE" folder={FOLDER} />);
+    expect(page).not.toContain('<code>');
+    expect(page).not.toContain('Chi tiết kỹ thuật');
+  });
+});

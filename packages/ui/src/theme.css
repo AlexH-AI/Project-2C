@@ -151,6 +151,16 @@
   background-color: var(--accent-soft);
 }
 
+/* A row of a table under the pointer (ui2.css `.tbl tbody tr:hover td`). The light of the card that
+   follows the pointer lies over it: --text-3 would fall under 4.5:1 near the top of a card, so what
+   the row writes in it, a zero of a number column too, is one step lighter (L208). */
+@utility row-hover {
+  &:hover {
+    --text-3: var(--text-2);
+    background-color: var(--fill-1);
+  }
+}
+
 /* A block shown faded on a card (a stale analysis): 85 %, and for the same reason as on the chosen
    row, what it writes in --text-3 is one step lighter. */
 @utility faded {

@@ -38,6 +38,11 @@ test('a screen that fails to render shows a message and the sidebar still works'
   await expect(failedHeading(page)).toHaveText(FAILED);
   await expect(alert).toContainText('Chọn một màn khác ở thanh bên');
   await expect(alert.locator('code')).toHaveText('Error: e2e: customers screen render failure');
+  // VA3c (components.html 10): the technical detail can be selected, to copy it to who helps.
+  await alert.locator('code').click({ clickCount: 3 });
+  expect(await page.evaluate(() => String(getSelection()))).toContain(
+    'Error: e2e: customers screen render failure',
+  );
   // Sidebar and topbar stay: the window is not blank.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Khách hàng');
 

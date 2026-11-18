@@ -124,7 +124,7 @@ function DemoSection({ notice: outcome, onNotice, busy }: DemoSectionProps) {
       </h2>
       <div className="flex items-center gap-3 py-2 text-sm">
         <div className="flex-1">
-          <b className="block text-base">{t('settings.demo.reload')}</b>
+          <b className="block text-md">{t('settings.demo.reload')}</b>
           <span className="text-fg-2">
             {t('settings.demo.reloadHelp')} {hasFile && t('settings.demo.reloadHelpBackup')}
           </span>

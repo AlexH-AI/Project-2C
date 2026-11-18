@@ -122,4 +122,26 @@ export const en: EnglishMessages = {
     "The latest changes were not written to the file because the data file (Settings → Data) is read-only or locked, or the user account in use may not write or delete it. Turn read-only off (Windows: right-click the file → Properties → clear Read-only; macOS: select the file in Finder → Get Info → clear Locked, give Read & Write) or ask the computer's administrator to give the rights back, then choose Try again. Or close the app and drop the unsaved changes.",
   'close.unsavedBodyFolderReadOnly':
     "The latest changes were not written to the file because the data folder (its path is in Settings → Data) does not let the user account in use create new files in it. Ask the computer's administrator to give back the right to write to it, then choose Try again. Or close the app and drop the unsaved changes.",
+  // The next step of an empty place, and the filter it names (VA3c, mockup components.html 09).
+  'filter.clear': 'Clear filter',
+  'appointments.dayEmptyNext': 'Pick a day with dots on the calendar to see its appointments.',
+  'appointments.listEmpty': 'No appointments yet in {period}',
+  'appointments.listEmptyNext': 'Create an appointment, or view another period.',
+  'appointments.listNoMatch': 'No appointments match in {period}',
+  'appointments.listNoMatchNext':
+    'Filtering by Coordinator: {name}. Clear the filter or view another period.',
+  'appointments.toThisMonth': 'Back to this month',
+  'customers.empty': 'No customers yet in this view',
+  'customers.emptyNext': 'Press "+ Customer" to add one.',
+  'customer.notFoundNext':
+    'Go back to Customers to pick another customer. A deleted customer is in Settings → Trash and can be restored.',
+  'customer.noAppointmentsNext': 'Press "+ Appointment" at the top of the profile to create one.',
+  'policies.emptyNext':
+    'When the customer pays the premium, record the policy as submitted (FYP, submission date) → then issued (issue date).',
+  'timeline.emptyNext': 'Filtering by: {label}. Clear the filter to see the whole timeline.',
+  'trash.noMatchNext': 'Filtering by: {parts}. Remove a condition to see other records.',
+  'trash.filter.kind': 'Kind {label}',
+  'trash.filter.query': 'Name contains "{name}"',
+  'team.noneNext': 'Press "+ Team" to create one.',
+  'team.emptyNext': 'Press "+ Staff" to add an RM to this team.',
 };

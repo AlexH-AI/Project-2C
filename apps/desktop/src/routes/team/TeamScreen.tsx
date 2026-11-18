@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Person, PersonRole, Team } from '@p2c/domain';
-import { Button, DataTable, DialogFocusFallback, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, DialogFocusFallback, StateNote, type DataTableColumn } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
@@ -159,7 +159,14 @@ export function TeamScreen() {
             <h2 id={LIST_TITLE} tabIndex={-1} className={`${HEADING} mb-2`}>
               {t('team.list')}
             </h2>
-            {view.teams.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.none')}</p>}
+            {view.teams.length === 0 && (
+              <StateNote
+                size="card"
+                icon="people"
+                title={t('team.none')}
+                next={t('team.noneNext')}
+              />
+            )}
             {view.teams.map((entry) => {
               const on = entry === selected;
               // The name breaks, even with no space; the count stays whole, by the name's first line
@@ -259,7 +266,7 @@ function SharedSupport({
         {t('team.shared')}
       </h2>
       {people.length === 0 ? (
-        <p className="m-0 text-sm text-fg-3">{t('team.sharedNone')}</p>
+        <StateNote size="card" icon="people" title={t('team.sharedNone')} />
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
           {people.map((person) => (
@@ -331,9 +338,9 @@ function Members({
           <Button onClick={onDelete}>{t('team.delete')}</Button>
         </div>
       </div>
-      {entry.reps.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>}
-      {/* Hidden, not gone, for a team without RM: the sort holds for the team shown after. */}
-      <div className="overflow-x-auto" hidden={entry.reps.length === 0}>
+      {/* Kept for a team without RM, its headers over the note: the sort holds for the team shown
+          after. */}
+      <div className="overflow-x-auto">
         <DataTable
           label={t('team.members', { name: entry.team.name })}
           columns={columns}
@@ -344,6 +351,14 @@ function Members({
           // The table is not made anew for each team: this takes another team back to its first
           // hundred rows (DR6-32).
           resetKey={entry.team.id}
+          empty={
+            <StateNote
+              size="table"
+              icon="people"
+              title={t('team.empty')}
+              next={t('team.emptyNext')}
+            />
+          }
         />
       </div>
     </section>

@@ -50,7 +50,7 @@ Cả bốn trường hợp: dữ liệu vẫn còn trong app, dải cảnh báo 
 
 ## Một màn không hiện được
 
-Màn ghi **Màn này gặp lỗi và không hiển thị được**: dữ liệu đã lưu không bị ảnh hưởng. Chọn màn khác ở sidebar để làm tiếp. Lỗi lặp lại thì gửi dòng chi tiết kỹ thuật trên màn cho người hỗ trợ.
+Màn ghi **Màn này gặp lỗi và không hiển thị được**: dữ liệu đã lưu không bị ảnh hưởng. Chọn màn khác ở sidebar để làm tiếp. Lỗi lặp lại thì bôi chọn dòng chi tiết kỹ thuật trong khung dưới câu báo, chép và gửi cho người hỗ trợ.
 
 ## Đang thay toàn bộ dữ liệu
 

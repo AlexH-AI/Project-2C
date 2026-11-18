@@ -135,7 +135,7 @@ Bảng **Bản ghi đã xóa**, mới xóa nhất ở trên:
 | **Thuộc** | KH, RM, team của bản ghi; bản ghi cha cũng đã xóa thì ghi "(đã xóa)" |
 | **Xóa lúc** | Ngày giờ xóa |
 
-Thùng rác trống thì ghi "Thùng rác trống".
+Thùng rác trống thì bảng chỉ còn dòng tiêu đề cột, dưới ghi "Thùng rác trống". Lọc hay tìm mà không ra dòng nào thì bảng ghi "Không có bản ghi đã xóa nào khớp." kèm điều kiện đang lọc; bấm **Bỏ lọc** để thấy lại mọi bản ghi.
 
 ### Khôi phục
 

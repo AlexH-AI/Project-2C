@@ -121,7 +121,14 @@ test('Thùng rác comes after Dữ liệu and AI, at #/settings/trash, empty at 
   await expect(trash(page)).toContainText(
     'KH, lịch hẹn, HĐ, nhân sự và team đã xóa nằm ở đây và khôi phục được.',
   );
-  await expect(table(page)).toHaveCount(0);
+  // VA3c (components.html 09): empty, the table keeps its headers, over one row holding the note;
+  // with nothing to filter, no filter shows.
+  await expect(table(page).getByRole('columnheader')).toHaveCount(5);
+  await expect(table(page).getByRole('columnheader', { name: 'Bản ghi' })).toBeVisible();
+  await expect(table(page).getByRole('row')).toHaveCount(2);
+  await expect(table(page).getByRole('row').nth(1)).toContainText('Thùng rác trống');
+  await expect(kinds(page)).toHaveCount(0);
+  await expect(trash(page).getByRole('button', { name: 'Bỏ lọc' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -172,12 +179,26 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
   await search.fill(name.slice(0, 6));
   await expect(rows).toHaveCount(2);
   await kinds(page).getByRole('radio', { name: 'KH 0' }).click();
-  await expect(trash(page)).toContainText('Không có bản ghi đã xóa nào khớp.');
-  await kinds(page).getByRole('radio', { name: 'Tất cả 1' }).click();
-  await search.fill('không có ai tên này');
-  await expect(table(page)).toHaveCount(0);
-  await search.fill('');
+  // VA3c: nothing under the filter is not an empty trash. The headers stay, the note names the
+  // filter, and "Bỏ lọc" takes the kind and the name back to what the screen opens with.
+  const note = rows.nth(1);
   await expect(rows).toHaveCount(2);
+  await expect(table(page).getByRole('columnheader', { name: 'Bản ghi' })).toBeVisible();
+  await expect(note).toContainText('Không có bản ghi đã xóa nào khớp.');
+  await expect(note).toContainText(
+    `Đang lọc: Loại KH · Tên có "${name.slice(0, 6)}". Bỏ bớt điều kiện để thấy các bản ghi khác.`,
+  );
+  await expect(trash(page)).not.toContainText('Thùng rác trống');
+  await pressButton(note.getByRole('button', { name: 'Bỏ lọc' }));
+  await expect(rows.nth(1).getByRole('cell').nth(0)).toHaveText('Lịch hẹn');
+  await expect(kinds(page).getByRole('radio', { name: 'Tất cả 1' })).toBeChecked();
+  await expect(search).toHaveValue('');
+  // Its button gone, the focus is on the table it filled.
+  await expect(table(page)).toBeFocused();
+  await search.fill('không có ai tên này');
+  await expect(note).toContainText('Đang lọc: Tên có "không có ai tên này".');
+  await search.fill('');
+  await expect(rows.nth(1).getByRole('cell').nth(0)).toHaveText('Lịch hẹn');
 
   // Another RM in the scope of the top bar: the trash still lists the appointment.
   await sidebar(page).getByRole('link', { name: 'Lịch hẹn' }).click();

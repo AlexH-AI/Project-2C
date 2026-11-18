@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { StateNote } from '@p2c/ui';
 import { t } from '../i18n';
 import { screenErrorMessage } from './screen-error';
 
@@ -18,7 +19,8 @@ interface Props {
 /**
  * Catches a render error of the current screen (T-077): React would otherwise unmount the whole
  * tree and leave a blank window. Sidebar and topbar sit outside it and keep working; the shell
- * keys it by route, so moving to another screen renders that screen afresh.
+ * keys it by route, so moving to another screen renders that screen afresh. The error of one
+ * screen, in the shape of every empty place and error (mockup components.html 10).
  */
 export class ErrorBoundary extends Component<Props, State> {
   override state: State = { failed: false };
@@ -37,13 +39,15 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.failed) return this.props.children;
     const { title, help, detail } = screenErrorMessage(this.state.error);
     return (
-      <section role="alert" className="flex flex-col gap-2">
-        <h2 className="m-0 text-base font-semibold text-danger">{title}</h2>
-        <p className="m-0 text-sm text-fg-2">{help}</p>
-        <p className="m-0 text-sm text-fg-2">
-          {t('storage.technicalDetail')} <code>{detail}</code>
-        </p>
-      </section>
+      <StateNote
+        size="screen"
+        tone="error"
+        icon="alert"
+        heading={2}
+        title={title}
+        next={help}
+        detail={{ label: t('storage.technicalDetail'), text: detail }}
+      />
     );
   }
 }

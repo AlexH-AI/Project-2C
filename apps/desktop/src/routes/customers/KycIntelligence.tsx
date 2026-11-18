@@ -1,6 +1,6 @@
 import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
 import { evaluateKycGate, formatDate, formatDayMonth, KYC_INSUFFICIENT_MESSAGE } from '@p2c/domain';
-import { Button } from '@p2c/ui';
+import { Button, StateNote } from '@p2c/ui';
 import {
   useEffect,
   useId,
@@ -298,7 +298,10 @@ function BusyLine({ children, action }: { children: ReactNode; action?: ReactNod
   );
 }
 
-/** A failure and its Thử lại (mockups 2f, 3e), which waits for the runner as every AI button (P5). */
+/**
+ * A failure and its Thử lại (mockups 2f, 3e), which waits for the runner as every AI button (P5):
+ * the error of one card, in the shape of every error (mockup components.html 10).
+ */
 function RetryAlert({
   children,
   retryOn,
@@ -309,12 +312,17 @@ function RetryAlert({
   onRetry: () => void;
 }) {
   return (
-    <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
-      <span className="flex-1">{children}</span>
-      <Button disabled={!retryOn} onClick={onRetry}>
-        {t('aiPanel.retry')}
-      </Button>
-    </div>
+    <StateNote
+      size="card"
+      tone="error"
+      icon="alert"
+      title={children}
+      action={
+        <Button size="sm" disabled={!retryOn} onClick={onRetry}>
+          {t('aiPanel.retry')}
+        </Button>
+      }
+    />
   );
 }
 
@@ -612,7 +620,7 @@ export function KycIntelligence({
       ) : (
         !view.blocked && (
           <div className="flex flex-col gap-1.5">
-            <p className="m-0 text-sm text-fg-3">{t('aiPanel.empty')}</p>
+            <StateNote size="card" icon="info" title={t('aiPanel.empty')} />
             <HelpLine help={aiPanelHelp(facts, app.ai.settings())} />
           </div>
         )

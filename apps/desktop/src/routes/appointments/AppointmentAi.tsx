@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { getKycProfile, listAiAnalyses, listKycVersions, type Database } from '@p2c/db';
 import { formatDayMonth } from '@p2c/domain';
+import { StateNote } from '@p2c/ui';
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
@@ -87,12 +88,16 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
           />
         </div>
       ) : (
-        <p className="m-0 text-fg-3">
-          {t('appointments.ai.empty')}{' '}
-          <a href={routeToHash({ screen: 'customer', id: customerId })} className={LINK}>
-            {t('appointments.ai.toProfile')}
-          </a>
-        </p>
+        <StateNote
+          size="card"
+          icon="info"
+          title={t('appointments.ai.empty')}
+          next={
+            <a href={routeToHash({ screen: 'customer', id: customerId })} className={LINK}>
+              {t('appointments.ai.toProfile')}
+            </a>
+          }
+        />
       )}
     </section>
   );

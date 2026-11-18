@@ -251,8 +251,12 @@ test('a customer without appointments says so', async ({ page }) => {
 
   const { card } = appointments(page);
   await expect(card).toContainText('0 lịch · 0 đã gặp');
-  await expect(card).toContainText('KH chưa có lịch hẹn.');
-  await expect(card.getByRole('table')).toHaveCount(0);
+  // VA3c (components.html 09): empty, the table keeps its headers, over one row holding the note.
+  const table = card.getByRole('table', { name: 'Lịch hẹn' });
+  await expect(table.getByRole('columnheader')).toHaveCount(4);
+  await expect(table.getByRole('row')).toHaveCount(2);
+  await expect(table.getByRole('row').nth(1)).toContainText('KH chưa có lịch hẹn.');
+  await expect(table.getByRole('row').nth(1)).toContainText('Bấm "+ Lịch hẹn" ở đầu hồ sơ để tạo.');
 });
 
 test('"Xem tất cả" in the dialog opened on the profile shows the appointments card', async ({

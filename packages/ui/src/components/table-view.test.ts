@@ -82,7 +82,7 @@ describe('rowState', () => {
       const state = rowState('a', selectedId);
       expect(state).not.toHaveProperty('aria-current');
       expect(state.className).not.toContain('row-selected');
-      expect(state.className).toContain('hover:');
+      expect(state.className.split(' ')).toContain('row-hover');
     }
   });
 });
