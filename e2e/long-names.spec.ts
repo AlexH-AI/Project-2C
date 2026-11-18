@@ -720,7 +720,8 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   const [tip, box] = [(await tooltip.boundingBox())!, (await chart.boundingBox())!];
   expect(tip.x, 'the tooltip, left').toBeGreaterThanOrEqual(Math.floor(box.x));
   expect(tip.x + tip.width, 'the tooltip, right').toBeLessThanOrEqual(Math.ceil(box.x + box.width));
-  expect(await pastTheWindow(page), 'the page under a tooltip').toEqual([]);
+  expect(await sticksOut(tooltip), 'what the tooltip holds').toEqual([]);
+  await expectNoSideways(page, 'under a tooltip');
   await page.mouse.move(0, 0);
 
   // The customer deleted, then restored: the dialog that asks (11b) and the line said after (11e).

@@ -174,17 +174,31 @@ export const scrolls = (box: Locator) =>
  * What pushes the page sideways: when it scrolls sideways, the elements whose box, or what shows
  * out of it (a word that does not break), ends past the window, with that right edge, the deepest
  * last (WebKit, Mac-7); nothing when it does not. A test expects `[]`, and a page that scrolls
- * names what pushes it.
+ * names what pushes it. What a box that clips or scrolls sideways holds is left out: it is past the
+ * window and pushes nothing, as the cells of a table kept for screen readers in a box of one pixel
+ * (run 44210407647 named only those).
  */
 export const pastTheWindow = (page: Page) =>
   page.evaluate(() => {
     const width = document.documentElement.scrollWidth;
     if (width <= window.innerWidth) return [];
+    // Up the boxes that hold `node`: one out of the flow (absolute) is held by the first positioned
+    // box above it, not by those between; a fixed one by the window.
+    const clipped = (node: Element) => {
+      let position = getComputedStyle(node).position;
+      for (let box = node.parentElement; box && position !== 'fixed'; box = box.parentElement) {
+        const style = getComputedStyle(box);
+        if (position === 'absolute' && style.position === 'static') continue;
+        if (style.overflowX !== 'visible') return true;
+        position = style.position;
+      }
+      return false;
+    };
     const past = [...document.body.querySelectorAll('*')].flatMap((node) => {
       const box = node.getBoundingClientRect();
       const shows = getComputedStyle(node).overflowX === 'visible';
       const edge = Math.round(shows ? Math.max(box.right, box.left + node.scrollWidth) : box.right);
-      if (edge <= window.innerWidth) return [];
+      if (edge <= window.innerWidth || clipped(node)) return [];
       const text = (node.getAttribute('aria-label') ?? node.textContent ?? '').slice(0, 40);
       const kind = `${node.tagName.toLowerCase()}.${node.getAttribute('class') ?? ''}`;
       return [`${kind} "${text}" ends at ${edge}px`];
