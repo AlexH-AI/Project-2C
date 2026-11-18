@@ -6,19 +6,21 @@ Màn này cho biết số lịch hẹn, 6 chỉ số chính, KH theo nhóm và s
 
 ![Tổng quan, kỳ Tháng 09/2026, góc nhìn Toàn bộ](img/02-tong-quan.png)
 
-## Chọn kỳ và bấm Lọc
+## Chọn kỳ và góc nhìn
 
-Hàng **Kỳ thống kê** ở đầu màn:
+Viên **kỳ** trên thanh công cụ, cạnh viên góc nhìn, ghi kỳ đang xem (lúc mở màn là tháng hiện tại):
 
-1. Chọn loại kỳ: **Ngày**, **Tuần** (Thứ Hai → Chủ nhật), **Tháng**, **Năm** hoặc **Tùy chọn**.
-2. Dùng hai nút mũi tên (**Kỳ trước** / **Kỳ sau**) để lùi / tiến một kỳ; **Hôm nay** về kỳ chứa hôm nay.
+1. Dùng hai nút mũi tên ‹ › (**Kỳ trước** / **Kỳ sau**) ở hai đầu viên để lùi / tiến một kỳ.
+2. Bấm tên kỳ ở giữa viên để mở bảng **Chọn kỳ**. Chọn loại kỳ: **Ngày**, **Tuần** (Thứ Hai → Chủ nhật), **Tháng**, **Năm** hoặc **Tùy chọn**. Đổi loại kỳ giữ ngày đang xem: đang ở tháng có hôm nay, chọn **Tuần** là ra tuần này.
 3. Với **Tùy chọn**: gõ **Từ ngày** và **Đến ngày** dạng dd/mm/yyyy. Khoảng ngày được nhận khi bấm Enter hoặc khi rời cả hai ô; Tab từ ô này sang ô kia chưa báo lỗi. Kỳ Tùy chọn dài tối đa 3 tháng.
-4. Chọn **Góc nhìn** ở góc trên bên phải (xem [1. Bắt đầu](01-bat-dau.md#sidebar-và-góc-nhìn)).
-5. Bấm **Lọc**. Số liệu chỉ đổi khi bấm Lọc; trước đó màn nhắc "Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật".
+4. **Hôm nay** trong bảng đưa về kỳ chứa hôm nay và đóng bảng. Đóng bảng: bấm ra ngoài hoặc nhấn Esc.
+5. Chọn góc nhìn ở viên **góc nhìn** bên cạnh (xem [1. Bắt đầu](01-bat-dau.md#sidebar-và-góc-nhìn)).
 
-Dòng **Đang xem:** bên phải cho biết số trên màn thuộc kỳ và góc nhìn nào. Tháng đang diễn ra có nhãn **MTD** (từ ngày 1 tới hôm nay), kèm khoảng ngày được tính.
+Đổi kỳ hay góc nhìn là số trên màn đổi ngay, không có nút nào phải bấm thêm.
 
-Ở Tổng quan, góc nhìn **Team** cộng mọi team và vẽ mỗi team một biểu đồ; muốn xem một team riêng, dùng màn Báo cáo hoặc góc nhìn RM.
+Dòng dưới tên màn cho biết số trên màn thuộc kỳ và góc nhìn nào, ví dụ "Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ". Tháng đang diễn ra có chữ **(MTD)** (từ ngày 1 tới hôm nay) sau khoảng ngày được tính; năm đang diễn ra cũng ghi khoảng ngày được tính.
+
+Ở Tổng quan, góc nhìn **Mọi team** cộng mọi team và vẽ mỗi team một biểu đồ; muốn xem một team riêng, dùng màn Báo cáo hoặc góc nhìn RM.
 
 ## Ô Lịch hẹn
 
@@ -64,7 +66,7 @@ Trình đọc màn hình (ví dụ Narrator) đọc được số của biểu �
 
 ![Bảng So sánh team](img/02-tong-quan-so-sanh-team.png)
 
-Bảng **So sánh team** (góc nhìn Toàn bộ và Team) đặt các team cạnh nhau: Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng **Tổng** cộng mọi team (Tỉ lệ chốt dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình).
+Bảng **So sánh team** (góc nhìn Toàn bộ và Mọi team) đặt các team cạnh nhau: Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng **Tổng** cộng mọi team (Tỉ lệ chốt dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình).
 
 Bấm một team để xem các RM của team ngay bên dưới; bấm lại để thu. Bảng không so với kỳ trước. Góc nhìn RM không có bảng này.
 

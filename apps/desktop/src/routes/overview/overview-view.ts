@@ -22,7 +22,8 @@ import {
   type Scope,
   type Team,
 } from '@p2c/domain';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
+import { scopeName } from '../../shell/scope';
 import type { FilterSelection } from '../applied-filter';
 import { formatAmountCompact } from '../money-view';
 
@@ -206,7 +207,7 @@ function closeRateTile(
 export const metricsScope = (scope: Scope): Scope =>
   scope.kind === 'team' ? { kind: 'all' } : scope;
 
-/** The "Đang xem" line: the period and scope the numbers on screen are for (mockup 1a–1c). */
+/** The period and scope the numbers on screen are for (mockup 1a–1c), as the screen names them. */
 export interface ViewingText {
   readonly period: string;
   /** A month in progress, its last day included, is counted month to date (§4.2 C02). */
@@ -242,15 +243,15 @@ function periodName(period: Period): string {
   return value;
 }
 
-function scopeText(scope: Scope, people: readonly Person[], teams: readonly Team[]): string {
-  switch (scope.kind) {
-    case 'all':
-      return t('scope.all');
-    case 'team':
-      return t('overview.scopeTeams', { teams: teams.length });
-    case 'rm':
-      return t('overview.scopeRm', {
-        name: people.find((person) => person.id === scope.rmId)?.name ?? '',
-      });
-  }
-}
+/** The Team scope of Tổng quan is every team (§4.3); the others are named as everywhere. */
+const scopeText = (scope: Scope, people: readonly Person[], teams: readonly Team[]): string =>
+  scope.kind === 'team'
+    ? t('overview.scopeTeams', { teams: teams.length })
+    : scopeName(scope, teams, people);
+
+/**
+ * The line under the name of Tổng quan and Báo cáo, on the toolbar (mockup app-shell.html
+ * `#toolbar`): the period, the days counted while it is in progress, the scope.
+ */
+export const viewingLine = ({ period, mtd, range, scope }: ViewingText): string =>
+  joinParts([period, ...(range ? [mtd ? t('overview.mtdRange', { range }) : range] : []), scope]);

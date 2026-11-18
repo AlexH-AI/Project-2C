@@ -178,17 +178,20 @@ Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lú
 
 Góc trên sidebar là logo Heritas L-CRM; chân sidebar có dòng trạng thái lưu, dưới nó là slogan "Where legacy meets trust". Sidebar bên trái mở các màn: **Tổng quan**, **Lịch hẹn**, **Khách hàng**, **Báo cáo**; nhóm **Quản lý** có **Team & nhân sự** và **Cài đặt**. Hồ sơ một KH mở từ màn Khách hàng hoặc từ lịch hẹn. Thanh tiêu đề cửa sổ ghi màn đang mở, ví dụ "Khách hàng · Heritas L-CRM".
 
-Phía trên mỗi màn là thanh công cụ: bên trái là tên màn, ở vài màn có thêm một dòng nhỏ dưới tên (Lịch hẹn: đang xem team và RM nào; Khách hàng: số KH đang mở và đã đóng; Team & nhân sự: số team, TL, RM và người hỗ trợ); bên phải là nút chính của màn (**+ Lịch hẹn**, **+ Khách hàng**, **Xuất Excel**, **+ Nhân sự** và **+ Team**).
+Phía trên mỗi màn là thanh công cụ: bên trái là tên màn, ở vài màn có thêm một dòng nhỏ dưới tên (Tổng quan và Báo cáo: kỳ, khoảng ngày được tính và góc nhìn đang xem; Lịch hẹn: đang xem team và RM nào; Khách hàng: số KH đang mở và đã đóng; Team & nhân sự: số team, TL, RM và người hỗ trợ); bên phải là viên góc nhìn, viên kỳ (Tổng quan và Báo cáo) và nút chính của màn (**+ Lịch hẹn**, **+ Khách hàng**, **Xuất Excel**, **+ Nhân sự** và **+ Team**). Dòng dưới tên quá dài thì bị cắt bằng "…"; rê chuột lên để đọc đủ.
 
-Trên thanh công cụ của các màn Tổng quan, Lịch hẹn, Khách hàng và Báo cáo có ô **Góc nhìn**:
+Trên thanh công cụ của các màn Tổng quan, Lịch hẹn, Khách hàng và Báo cáo có viên **góc nhìn**, ghi góc nhìn đang xem (lúc mở app là **Toàn bộ**). Bấm vào viên để mở menu **Góc nhìn**:
 
-| Góc nhìn | Xem gì |
+| Chọn trong menu | Xem gì |
 |---|---|
 | **Toàn bộ** | Mọi team, mọi RM |
-| **Team** | Một team: chọn team ở ô bên cạnh. Ở Tổng quan, Team hiện mọi team cạnh nhau (không chọn một team) |
-| **RM** | Một RM: chọn RM ở ô bên cạnh |
+| Một team, rồi **Cả team** | Team đó. Bấm tên team (kèm số RM) để mở các dòng của team; bấm lại để thu. Mỗi lúc chỉ một team mở |
+| Một team, rồi tên một RM | RM đó |
+| **Mọi team** (chỉ ở Tổng quan) | Mọi team cạnh nhau. Tổng quan không xem riêng một team: ở đó team chỉ mở ra các RM |
 
-Góc nhìn là cách xem dữ liệu, không phải tài khoản đăng nhập: ai dùng app cũng xem và sửa được mọi dữ liệu. Góc nhìn chọn ở một màn giữ nguyên khi chuyển sang màn khác.
+Chọn xong là màn đổi ngay, không có nút nào phải bấm thêm. Đóng menu mà không chọn: bấm ra ngoài hoặc nhấn Esc. Bằng bàn phím: ↑ ↓ (Home / End về đầu / cuối) để di chuyển, Enter để chọn hoặc mở một team.
+
+Góc nhìn là cách xem dữ liệu, không phải tài khoản đăng nhập: ai dùng app cũng xem và sửa được mọi dữ liệu. Góc nhìn chọn ở một màn giữ nguyên khi chuyển sang màn khác; đang chọn một team mà sang Tổng quan thì viên ghi **Mọi team**, quay lại màn khác vẫn là team đó.
 
 Ở Lịch hẹn và Khách hàng, khi góc nhìn là Team, phía trên có hàng RM của team (kèm số đếm). Bấm một RM để chỉ xem RM đó, bấm lại để bỏ; **Cả team** xem cả team.
 

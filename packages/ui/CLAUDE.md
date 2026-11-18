@@ -14,9 +14,10 @@ Component React thuần trình bày (ADR-0013): nhận dữ liệu và nhãn qua
 - Chặn style lách token: `scripts/token-guard.ts` + `scripts/check-tokens.ts` (`pnpm lint:tokens`, chạy trong `pnpm verify`): không màu / độ dài thô, không `style` inline (trừ `flex` đọc từ dữ liệu), không giá trị tuỳ ý của Tailwind; không ký hiệu / dấu nối viết cứng (tập ký hiệu đọc từ `apps/desktop/src/i18n/vi.ts` lúc chạy, dạng không bắt ghi ở "Limits" của `token-guard.ts`).
 - Bảng: `src/components/DataTable.tsx` (TanStack Table) + phần thuần `table-view.ts` (tiêu đề, dòng hiện, chân bảng) + so sánh ô `compare-cells.ts`.
 - Biểu đồ: `src/components/Chart.tsx` (ECharts) + màu series từ token `chart-theme.ts`.
-- Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`.
+- Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`; viên kỳ của thanh công cụ `PeriodPill.tsx` (‹ ›, tên kỳ mở `PeriodPicker` trong lớp nổi).
+- Menu và lớp nổi của thanh công cụ (VA4b, `app-shell.html` `#toolbar`): `src/components/Menu.tsx` (`MenuButton`: viên mở menu; `MenuRows`: các dòng, `menuitemradio` / dòng mở dòng con; `useLayer`: đóng bằng Esc, bấm ra ngoài) + phím `menu-keys.ts`.
 - Form / hộp thoại: `Dialog`, `TextField` (dòng dưới ô: `field-notes.ts`), `SelectField`, `Choices`, `Segmented`, `Button`; huy hiệu `StageBadge`, `PolicyBadge`; dấu vẽ của ô (✕ của dòng lỗi, mũi tên ô chọn): `FieldMarks.tsx`.
-- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`. Thẻ, dòng đang chọn của bảng, lớp tiêu điểm (VA3a, mục 04, 05, 06): `card`, `row-selected`, `pop`; nền đặc của ô đứng yên trên thẻ (cột tên của Báo cáo): `card-cover`.
+- Vỏ của nút, ô nhập, ô chọn, nút trượt, viên chọn, nhãn (VA2, `components.html` mục 01, 02, 03, 07): lớp của component cho kích thước (cao, đệm, bo góc, cỡ chữ); màu, bóng và trạng thái (rê chuột, nhấn, đang gõ, lỗi, khóa, khác nhau theo `data-os`) ở các `@utility` của `theme.css`: `press`, `btn-default / primary / danger / quiet`, `field`, `thumb`, `choice`, `label-fill`. Thẻ, dòng đang chọn của bảng, lớp tiêu điểm (VA3a, mục 04, 05, 06): `card`, `row-selected`, `pop`; nền đặc của ô đứng yên trên thẻ (cột tên của Báo cáo): `card-cover`. Thanh bên, thanh công cụ (VA4a, `app-shell.html` `#sidebar`, `#toolbar`): `sidebar`, `nav-item`, `nav-pill`, `toolbar`, `screen-title`, `chosen-tint`, biến thể `win:`; `--sidebar-w` theo hệ điều hành (`tokens.css`).
 
 ## Quy ước
 
@@ -34,9 +35,11 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, type DataTableMoreLabels, DataTable
 - `src/components/Dialog.tsx` — DialogFocusFallback, Dialog
 - `src/components/FieldMarks.tsx` — ErrorMark, ListArrow
+- `src/components/Menu.tsx` — useLayer, LAYER, type MenuRow, MenuRows, MenuButton
 - `src/components/NavIcon.tsx` — type NavIconName, NavIcon
 - `src/components/PeriodPicker.label.ts` — type PeriodLabelTemplates, periodLabel
 - `src/components/PeriodPicker.tsx` — type PeriodPickerLabels, PeriodPicker
+- `src/components/PeriodPill.tsx` — PeriodPill
 - `src/components/PolicyBadge.tsx` — PolicyBadge
 - `src/components/Segmented.tsx` — type SegmentedOption, Segmented
 - `src/components/SelectField.tsx` — type SelectOption, SelectField
@@ -48,7 +51,8 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/compare-cells.ts` — type CellValues, type CellKind, compareCells, compareCellsThen
 - `src/components/dialog-focus.ts` — focusBack
 - `src/components/field-notes.ts` — type FieldNote, fieldNotes, describedBy
+- `src/components/menu-keys.ts` — menuMove
 - `src/components/show-more.ts` — SHOW_MORE_STEP, type ShowMoreFoot, showMore
 - `src/components/table-view.ts` — type ColumnSorting, sorts, rowState, tableView
-- `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/PeriodPicker.label, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/Toast, ./components/StateNote, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
+- `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/PeriodPicker.label, ./components/PeriodPill, ./components/Menu, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/Toast, ./components/StateNote, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
 <!-- codemap:end -->

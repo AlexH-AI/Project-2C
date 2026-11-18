@@ -8,7 +8,7 @@ Màn Lịch hẹn là nơi RM làm việc hằng ngày: xem lịch, đặt lịc
 
 ## Xem lịch
 
-Đầu màn có hàng **Kỳ thống kê** như ở Tổng quan (Ngày / Tuần / Tháng / Năm / Tùy chọn, mũi tên, **Hôm nay**). Ở màn này kỳ đổi ngay, không cần bấm Lọc. Ô **Phối hợp** lọc theo người phối hợp: **Bất kỳ**, **Không có người phối hợp**, hoặc một người cụ thể. Bên phải là số đếm của kỳ, ví dụ "471 lịch · 177 đã gặp".
+Đầu màn có hàng **Kỳ thống kê** ngay trong màn (không phải viên kỳ trên thanh công cụ như ở Tổng quan): Ngày / Tuần / Tháng / Năm / Tùy chọn, mũi tên, **Hôm nay**. Chọn là kỳ đổi ngay. Ô **Phối hợp** lọc theo người phối hợp: **Bất kỳ**, **Không có người phối hợp**, hoặc một người cụ thể. Bên phải là số đếm của kỳ, ví dụ "471 lịch · 177 đã gặp".
 
 Lịch hẹn chia 4 nhóm, cùng màu ở mọi chỗ trong màn:
 

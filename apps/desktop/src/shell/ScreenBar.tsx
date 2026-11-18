@@ -27,7 +27,8 @@ export function ScreenBar({ sub, actions }: { sub?: ReactNode; actions?: ReactNo
 /**
  * The toolbar and the screen under it. The toolbar: the name of the screen and the line under it;
  * the place kept for the "Lưu ý" pill (`data-slot="heads-up"`, VA9); then, on the right, `tools`
- * (the controls of the shell: the scope) and the buttons of the screen. `children` is the screen:
+ * (the controls of the shell: the scope pill) and what the screen puts there: its period pill, its
+ * buttons. `children` is the screen:
  * its `ScreenBar` draws into this toolbar.
  */
 export function Toolbar({
@@ -52,10 +53,17 @@ export function Toolbar({
           <h1 ref={heading} tabIndex={-1} className="screen-title m-0 whitespace-nowrap">
             {title}
           </h1>
+          {/* --text-2, not the mockup's --text-3: over the bright cells that scroll under the
+              scroll edge, --text-3 is below 4.5:1 here. A line cut short shows whole as the
+              tooltip of the pointer over it. */}
           <p
             ref={setSub}
             data-slot="screen-sub"
-            className="m-0 truncate text-sm text-fg-3 tabular-nums empty:hidden"
+            onPointerEnter={(event) => {
+              const line = event.currentTarget;
+              line.title = line.scrollWidth > line.clientWidth ? (line.textContent ?? '') : '';
+            }}
+            className="m-0 truncate text-sm text-fg-2 tabular-nums empty:hidden"
           />
         </div>
         <div data-slot="heads-up" className="min-w-4 flex-1" />

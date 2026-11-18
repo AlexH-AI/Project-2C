@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { drawnCorner, markOs, pickTeam, right, setTransparency } from './support';
+import { drawnCorner, markOs, pickFirstRm, pickScope, right, setTransparency } from './support';
 
 // The shell of mockup app-shell.html (VA4a): the sidebar with the compact logo (`#sidebar`), and
 // the toolbar, where a screen writes a line under its name and puts its main button (`#toolbar`).
@@ -153,13 +153,58 @@ test('the main button of a screen is on the toolbar, after the place kept for "L
     // The smallest window: the toolbar keeps its button inside it.
     expect(main.x + main.width).toBeLessThanOrEqual(1100);
   }
-  // Tổng quan and Cài đặt put no button there yet: the toolbar has the name alone.
-  for (const screen of ['Tổng quan', 'Cài đặt']) {
-    await nav(page).getByRole('link', { name: screen }).click();
-    await expect(title).toHaveText(screen);
-    await expect(toolbar(page).getByRole('button')).toHaveCount(0);
-    await expect(sub(page)).toBeHidden();
+  // Cài đặt puts nothing there: the toolbar has the name alone.
+  await nav(page).getByRole('link', { name: 'Cài đặt' }).click();
+  await expect(title).toHaveText('Cài đặt');
+  await expect(toolbar(page).getByRole('button')).toHaveCount(0);
+  await expect(sub(page)).toBeHidden();
+});
+
+test('Tổng quan and Báo cáo: the scope pill, then the period pill, then the main button (VA4b)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto('/#/reports');
+  const scope = toolbar(page).getByRole('button', { name: 'Góc nhìn: Toàn bộ' });
+  const period = toolbar(page).getByRole('group', { name: 'Kỳ thống kê' });
+  const main = toolbar(page).getByRole('button', { name: 'Xuất Excel', exact: true });
+  const headsUp = toolbar(page).locator('[data-slot="heads-up"]');
+  // ‹, the name of the period, ›.
+  await expect(period.getByRole('button')).toHaveText(['‹', 'Tháng 09/2026', '›']);
+  const [gap, first, second, last] = await Promise.all([
+    box(headsUp),
+    box(scope),
+    box(period),
+    box(main),
+  ]);
+  expect(first.x).toBeGreaterThanOrEqual(gap.x + gap.width);
+  expect(second.x).toBeGreaterThanOrEqual(first.x + first.width);
+  expect(last.x).toBeGreaterThanOrEqual(second.x + second.width);
+  expect(last.x + last.width).toBeLessThanOrEqual(1100);
+  // The pills are as high as the buttons beside them, and painted as the secondary button.
+  expect(first.height).toBe(34);
+  expect(second.height).toBe(34);
+  await expect(scope).toHaveCSS('background-color', FILL_2);
+
+  // The layers hang from their pill, inside the window, over the screen.
+  await scope.click();
+  const menu = page.getByRole('menu', { name: 'Góc nhìn' });
+  const menuBox = await box(menu);
+  expect(menuBox.y).toBeGreaterThanOrEqual(first.y + first.height);
+  expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(first.x + first.width + 1);
+  expect(menuBox.x).toBeGreaterThanOrEqual(0);
+  for (const os of ['win', 'mac'] as const) {
+    await markOs(page, os);
+    await expect(menu).toHaveCSS('border-radius', await drawnCorner(page, { win: 8, mac: 14 }));
   }
+  await page.keyboard.press('Escape');
+
+  // Tổng quan has the two pills and no main button yet (D8).
+  await nav(page).getByRole('link', { name: 'Tổng quan' }).click();
+  await expect(toolbar(page).getByRole('button', { name: /^Góc nhìn: / })).toBeVisible();
+  await expect(period).toBeVisible();
+  await expect(toolbar(page).getByRole('button')).toHaveCount(4);
+  await expect(sub(page)).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
 });
 
 test('the button on the toolbar works as it did in the screen, and takes the focus back from its dialog', async ({
@@ -192,7 +237,7 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
 
   await nav(page).getByRole('link', { name: 'Khách hàng' }).click();
   await expect(sub(page)).toHaveText(/^[\d,]+ KH đang mở · [\d,]+ đã đóng$/);
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   await expect(sub(page)).toHaveText(/^Cả team Sao Mai · [\d,]+ KH đang mở · [\d,]+ đã đóng$/);
 
   // The scope is the one of every screen: Lịch hẹn opens on the team.
@@ -205,10 +250,9 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
   await rm.click();
   await expect(sub(page)).toHaveText(`Team Sao Mai → ${name}`);
 
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
-  await scope.getByRole('radio', { name: 'RM', exact: true }).click();
+  await pickFirstRm(page);
   await expect(sub(page)).toHaveText(/^Team .+ → .+$/);
-  await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
+  await pickScope(page, 'all');
   await expect(sub(page)).toHaveText('Toàn bộ');
 });
 

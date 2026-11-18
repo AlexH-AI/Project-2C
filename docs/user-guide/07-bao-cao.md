@@ -8,9 +8,9 @@ Màn Báo cáo đặt số liệu của một kỳ thành bảng: lịch hẹn, 
 
 ## Chọn kỳ và góc nhìn
 
-Hàng **Kỳ thống kê** và nút **Lọc** dùng như ở Tổng quan (xem [2. Tổng quan](02-tong-quan.md#chọn-kỳ-và-bấm-lọc)): chọn loại kỳ, lùi / tiến kỳ, chọn **Góc nhìn**, rồi bấm **Lọc**. Dòng **Đang xem:** cho biết bảng đang tính cho kỳ và góc nhìn nào.
+Viên **kỳ** và viên **góc nhìn** trên thanh công cụ dùng như ở Tổng quan (xem [2. Tổng quan](02-tong-quan.md#chọn-kỳ-và-góc-nhìn)): lùi / tiến kỳ bằng ‹ ›, bấm tên kỳ để chọn loại kỳ, bấm viên góc nhìn để chọn góc nhìn. Chọn xong là bảng đổi ngay. Dòng dưới tên màn cho biết bảng đang tính cho kỳ và góc nhìn nào.
 
-Khác Tổng quan: ở Báo cáo, góc nhìn **Team** có ô chọn một team, và bảng chỉ tính team đó.
+Khác Tổng quan: ở Báo cáo, menu góc nhìn chọn được một team (**Cả team**), và bảng chỉ tính team đó.
 
 ## Các cột
 
@@ -56,8 +56,8 @@ Mốc có hôm nay được đánh dấu và ghi "tới …" (ví dụ "14–20/
 
 ## Xuất Excel
 
-1. Chọn kỳ, góc nhìn, bấm **Lọc**.
-2. Bấm **Xuất Excel** (góc phải hàng Kỳ thống kê). Nút ghi "Đang xuất…" trong lúc tạo file.
+1. Chọn kỳ và góc nhìn: file xuất đúng kỳ và góc nhìn đang xem.
+2. Bấm **Xuất Excel** (bên phải thanh công cụ). Nút ghi "Đang xuất…" trong lúc tạo file.
 
 File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các bảng của góc nhìn): Toàn bộ 4 sheet, Team 3 sheet, RM 2 sheet. Dòng đầu mỗi sheet ghi tên bảng, kỳ, góc nhìn và ngày xuất. Ô giữ số thật (tiền theo đồng, tỉ lệ dạng %) để tính tiếp trong Excel.
 
@@ -66,6 +66,6 @@ File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các b�
 
 Không xuất được (ổ đĩa đầy, không có quyền ghi): app báo **Không xuất được báo cáo** kèm lý do. Dữ liệu trong app không bị ảnh hưởng; sửa lỗi rồi bấm lại.
 
-Thông báo xuất gắn với kỳ và góc nhìn lúc bấm; bấm **Lọc** với kỳ khác thì thông báo mất.
+Thông báo xuất gắn với kỳ và góc nhìn lúc bấm: đổi sang kỳ hay góc nhìn khác thì thông báo ẩn đi (số trên màn không còn là số của file đó), quay về đúng kỳ và góc nhìn đã xuất thì thông báo hiện lại.
 
 [← 6. KYC Intelligence](06-ai.md) · [8. Team & nhân sự →](08-team.md)

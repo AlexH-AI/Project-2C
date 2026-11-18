@@ -5,6 +5,7 @@ import {
   narrowScope,
   rmOptions,
   resolveScope,
+  scopeName,
   teamRms,
   type ScopeChoice,
 } from './scope';
@@ -153,5 +154,18 @@ describe('teamRms', () => {
       { id: 'r4', name: 'Dung', role: 'RM', teamId: 'bm' },
     ];
     expect(teamRms(staff, 'bm').map((rm) => rm.name)).toEqual(['Dung', 'Đạt', 'Em']);
+  });
+});
+
+describe('scopeName', () => {
+  it('names everyone, a team and an RM', () => {
+    expect(scopeName({ kind: 'all' }, teams, people)).toBe('Toàn bộ');
+    expect(scopeName({ kind: 'team', teamId: 't2' }, teams, people)).toBe('Team Sao Mai');
+    expect(scopeName({ kind: 'rm', rmId: 're1' }, teams, people)).toBe('RM Bình');
+  });
+
+  it('leaves the name of a team or RM that is gone empty', () => {
+    expect(scopeName({ kind: 'team', teamId: 'gone' }, teams, people)).toBe('Team ');
+    expect(scopeName({ kind: 'rm', rmId: 'gone' }, teams, people)).toBe('RM ');
   });
 });

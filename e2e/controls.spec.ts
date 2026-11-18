@@ -6,7 +6,8 @@ import {
   drawnCorner,
   lowestContrast,
   markOs,
-  pickTeam,
+  pickScope,
+  scopePill,
   token,
 } from './support';
 
@@ -218,29 +219,30 @@ test('the closed box of a list is a field with an arrow, dashed with no fill whe
   await expect(list.locator('option:checked')).toHaveText('Khác');
 });
 
-test('a capped list names its choice once to a screen reader, and whole under the pointer (DR6-187)', async ({
+test('the scope pill names its choice once to a screen reader, and whole under the pointer (DR6-187)', async ({
   page,
 }) => {
   await page.goto('/#/appointments');
-  await pickTeam(page, 'Bình Minh');
-  const picker = page.getByRole('combobox', { name: 'Team của góc nhìn' });
-  await expect(picker.locator('option:checked')).toHaveText('Bình Minh');
-  // No title while the pointer is elsewhere: it would be the description of the list, and the
+  await pickScope(page, { team: 'Bình Minh' });
+  const pill = scopePill(page);
+  await expect(pill).toHaveText('Team Bình Minh');
+  // No title while the pointer is elsewhere: it would be the description of the pill, and the
   // choice would be said twice.
   await page.mouse.move(0, 0);
-  await expect(picker).not.toHaveAttribute('title');
-  await expect(picker).toHaveAccessibleDescription('');
-  await picker.hover();
-  await expect(picker).toHaveAttribute('title', 'Bình Minh');
+  await expect(pill).not.toHaveAttribute('title');
+  await expect(pill).toHaveAccessibleName('Góc nhìn: Team Bình Minh');
+  await expect(pill).toHaveAccessibleDescription('');
+  await pill.hover();
+  await expect(pill).toHaveAttribute('title', 'Team Bình Minh');
   await page.mouse.move(0, 0);
-  await expect(picker).not.toHaveAttribute('title');
+  await expect(pill).not.toHaveAttribute('title');
 });
 
 test('the chosen segment has a thumb of its own under its words, the others none (VA2)', async ({
   page,
 }) => {
   await page.goto('/#/appointments');
-  const group = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  const group = page.getByRole('radiogroup', { name: 'Loại kỳ' });
   await expect(group).toHaveCSS('background-color', await painted(page, '--fill-2'));
   const chosen = group.getByRole('radio', { checked: true });
   const thumb = chosen.locator('[aria-hidden="true"]');

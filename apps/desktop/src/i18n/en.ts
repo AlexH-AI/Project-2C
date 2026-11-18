@@ -28,8 +28,16 @@ export const en: EnglishMessages = {
   'screen.team': 'Team management',
   'screen.settings': 'Settings',
   'scope.label': 'View',
+  'scope.pill': 'View: {name}',
+  'scope.everyTeam': 'All teams',
+  'scope.teamName': 'Team {name}',
+  'scope.rmName': 'RM {name}',
+  'scope.rmCount': '{rm} RM',
   'scope.viewingRm': 'Team {team} → {rm}',
   'dialog.close': 'Close dialog',
+  'period.pick': 'Choose a period',
+  'period.applies': 'A choice updates the numbers at once',
+  'overview.mtdRange': '{range} (MTD)',
   // A money field (G-03b): the words of mockup ngon-ngu-tien-te.html #money, tied to the codes of
   // the reading (ADR-0018 §5); "whole cents" chosen by the Owner 14/11/2026.
   'money.read': '{amount} ({compact})',

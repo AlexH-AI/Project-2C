@@ -1,5 +1,14 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { asExe, trackConsoleErrors } from './support';
+import {
+  asExe,
+  periodPill,
+  pickScope,
+  scopeMenu,
+  scopePill,
+  screenSub,
+  teamRow,
+  trackConsoleErrors,
+} from './support';
 
 const SCREENS = ['Tổng quan', 'Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự', 'Cài đặt'];
 
@@ -279,56 +288,127 @@ test('an unknown address falls back to the overview', async ({ page }) => {
   await expect(page).toHaveURL(/#\/overview$/);
 });
 
-test('the scope switch selects one of All / Team / RM', async ({ page }) => {
+test('the scope pill names the scope shown and says it opens a menu', async ({ page }) => {
   await page.goto('/#/customers');
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  const pill = scopePill(page);
+  const menu = scopeMenu(page);
 
-  await expect(scope.getByRole('radio', { checked: true })).toHaveText('Toàn bộ');
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await expect(scope.getByRole('radio', { checked: true })).toHaveText('Team');
+  await expect(pill).toHaveText('Toàn bộ');
+  await expect(pill).toHaveAccessibleName('Góc nhìn: Toàn bộ');
+  await expect(pill).toHaveAttribute('aria-haspopup', 'menu');
+  await expect(pill).toHaveAttribute('aria-expanded', 'false');
+  await expect(menu).toHaveCount(0);
+
+  await pill.click();
+  await expect(pill).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText('Toàn bộ');
+  // A press outside closes it with nothing picked.
+  await page.getByRole('heading', { level: 1 }).click();
+  await expect(menu).toBeHidden();
+  await expect(pill).toHaveText('Toàn bộ');
 });
 
-test('Team and RM scopes pick the team or RM next to the switch', async ({ page }) => {
+test('the menu lists the teams by name, each opening into "Cả team" and its RM', async ({
+  page,
+}) => {
   await page.goto('/#/customers');
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
-  const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
-  const rm = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-  await expect(team).toHaveCount(0);
+  const pill = scopePill(page);
+  const menu = scopeMenu(page);
+  const rows = menu.getByRole('menuitemradio');
+  await pill.click();
+  // Each team with its number of RM; none is open while everyone is shown.
+  await expect(menu.getByRole('menuitem')).toHaveText([
+    /^Team Bình Minh\s*10 RM$/,
+    /^Team Hừng Đông\s*10 RM$/,
+    /^Team Sao Mai\s*10 RM$/,
+  ]);
+  await expect(rows).toHaveText(['Toàn bộ']);
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await expect(team.locator('option')).toHaveText(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
-  await expect(team).toHaveValue(/.+/);
-  await team.selectOption({ label: 'Sao Mai' });
-  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
-  // Clicking the scope already selected keeps the team picked.
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
+  // A team row opens its rows and picks nothing: the menu stays open, the scope as it was.
+  await teamRow(page, 'Sao Mai').click();
+  await expect(teamRow(page, 'Sao Mai')).toHaveAttribute('aria-expanded', 'true');
+  await expect(rows).toHaveCount(12);
+  await expect(rows.nth(1)).toHaveText('Cả team');
+  // Only an RM has metrics: the rows are the 10 RM of the team, by name.
+  const names = (await rows.allTextContents()).slice(2);
+  expect(names).toEqual([...names].sort(new Intl.Collator('vi').compare));
+  await expect(pill).toHaveText('Toàn bộ');
 
-  // Only an RM has metrics: the list holds the 30 RM of the simulated data, with their team.
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  await expect(team).toHaveCount(0);
-  await expect(rm.locator('option')).toHaveCount(30);
-  await expect(rm.locator('option').first()).toHaveText(/ · (Bình Minh|Hừng Đông|Sao Mai)$/);
-  // All the RM of one team come before the next team's.
-  const teamsInOrder = (await rm.locator('option').allTextContents()).map(
-    (label) => label.split(' · ')[1] ?? '',
-  );
-  expect([...new Set(teamsInOrder)]).toEqual(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
-  expect(teamsInOrder).toEqual([...teamsInOrder].sort(new Intl.Collator('vi').compare));
-  await expect(rm.locator('option:checked')).toHaveText(/ · Bình Minh$/);
-  const secondRm = (await rm.locator('option').nth(1).textContent()) ?? '';
-  await rm.selectOption({ index: 1 });
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  await expect(rm.locator('option:checked')).toHaveText(secondRm);
+  // One team is open at a time.
+  await teamRow(page, 'Bình Minh').click();
+  await expect(teamRow(page, 'Sao Mai')).toHaveAttribute('aria-expanded', 'false');
+  await expect(rows).toHaveCount(12);
 
-  await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
-  await expect(rm).toHaveCount(0);
+  await rows.nth(1).click();
+  await expect(menu).toBeHidden();
+  await expect(pill).toHaveText('Team Bình Minh');
+  await expect(pill).toHaveAccessibleName('Góc nhìn: Team Bình Minh');
+
+  // Opened again, the team of the scope is open and its row the one checked.
+  await pill.click();
+  await expect(teamRow(page, 'Bình Minh')).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText('Cả team');
+  const second = (await rows.nth(3).textContent()) ?? '';
+  await rows.nth(3).click();
+  await expect(pill).toHaveText(second);
+  await expect(pill).toHaveAccessibleName(`Góc nhìn: ${second}`);
+
+  await pill.click();
+  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText(second);
+  await menu.getByRole('menuitemradio', { name: 'Toàn bộ' }).click();
+  await expect(pill).toHaveText('Toàn bộ');
+});
+
+test('the menu of the scope by keyboard: arrows, Home, End, Enter, Esc', async ({ page }) => {
+  await page.goto('/#/customers');
+  const pill = scopePill(page);
+  const menu = scopeMenu(page);
+  const everyone = menu.getByRole('menuitemradio', { name: 'Toàn bộ' });
+
+  // Opened, the focus is on the row of the scope shown.
+  await pill.press('Enter');
+  await expect(everyone).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(teamRow(page, 'Bình Minh')).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(teamRow(page, 'Sao Mai')).toBeFocused();
+  // Around the ends.
+  await page.keyboard.press('ArrowDown');
+  await expect(everyone).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(teamRow(page, 'Sao Mai')).toBeFocused();
+
+  // Enter on a team opens it; the focus stays on its row, its RM below it.
+  await page.keyboard.press('Enter');
+  await expect(teamRow(page, 'Sao Mai')).toHaveAttribute('aria-expanded', 'true');
+  await expect(teamRow(page, 'Sao Mai')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitemradio', { name: 'Cả team' })).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(everyone).toBeFocused();
+
+  // Esc closes it with nothing picked, the focus back on the pill.
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(pill).toBeFocused();
+  await expect(pill).toHaveText('Toàn bộ');
+
+  // Enter on a row of the choice picks it and closes the menu, the focus back on the pill.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitemradio', { name: 'Cả team' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(menu).toBeHidden();
+  await expect(pill).toHaveText('Team Bình Minh');
+  await expect(pill).toBeFocused();
 });
 
 test('the scope picker shows only on Overview, Customers, Appointments and Reports', async ({
   page,
 }) => {
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  const scope = scopePill(page);
   for (const [hash, shown] of [
     ['overview', true],
     ['appointments', true],
@@ -346,38 +426,70 @@ test('the scope picker shows only on Overview, Customers, Appointments and Repor
   await expect(scope).toHaveCount(0);
 });
 
-test('the scope kept while its picker is hidden', async ({ page }) => {
+test('the scope kept while its pill is hidden', async ({ page }) => {
   await page.goto('/#/customers');
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Team' })
-    .click();
-  await page
-    .getByRole('combobox', { name: 'Team của góc nhìn' })
-    .selectOption({ label: 'Sao Mai' });
+  await pickScope(page, { team: 'Sao Mai' });
 
   await page.getByRole('link', { name: 'Team & nhân sự' }).click();
-  await expect(page.getByRole('radiogroup', { name: 'Góc nhìn' })).toHaveCount(0);
+  await expect(scopePill(page)).toHaveCount(0);
   await page.getByRole('link', { name: 'Khách hàng' }).click();
 
-  await expect(
-    page.getByRole('radiogroup', { name: 'Góc nhìn' }).getByRole('radio', { checked: true }),
-  ).toHaveText('Team');
-  await expect(
-    page.getByRole('combobox', { name: 'Team của góc nhìn' }).locator('option:checked'),
-  ).toHaveText('Sao Mai');
+  await expect(scopePill(page)).toHaveText('Team Sao Mai');
 });
 
-test('the scope picker text is 14px; other segmented buttons stay 12.5px', async ({ page }) => {
+// NT-CH-04: one scope for every screen, applied where it lands with nothing to press.
+test('the scope goes along from screen to screen; only Tổng quan and Báo cáo have the period pill', async ({
+  page,
+}) => {
+  const sidebar = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  await page.goto('/#/customers');
+  await pickScope(page, { team: 'Sao Mai' });
+  await expect(periodPill(page)).toHaveCount(0);
+
+  // Lịch hẹn keeps its period picker in the screen, the kinds in sight.
+  await sidebar.getByRole('link', { name: 'Lịch hẹn' }).click();
+  await expect(scopePill(page)).toHaveText('Team Sao Mai');
+  await expect(periodPill(page)).toHaveCount(0);
+  const picker = page.getByRole('main').getByRole('group', { name: 'Kỳ thống kê' });
+  await expect(picker.getByRole('radiogroup', { name: 'Loại kỳ' })).toBeVisible();
+  await expect(picker.getByRole('button', { name: 'Hôm nay' })).toBeVisible();
+
+  await sidebar.getByRole('link', { name: 'Báo cáo' }).click();
+  await expect(scopePill(page)).toHaveText('Team Sao Mai');
+  await expect(periodPill(page)).toBeVisible();
+  await expect(screenSub(page)).toHaveText(
+    'Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Team Sao Mai',
+  );
+  await expect(page.getByRole('table', { name: 'Tổng hợp' }).getByRole('rowheader')).toHaveText([
+    'Team Sao Mai',
+  ]);
+
+  // Tổng quan counts every team in the Team scope, and says so.
+  await sidebar.getByRole('link', { name: 'Tổng quan' }).click();
+  await expect(scopePill(page)).toHaveText('Mọi team');
+  await expect(periodPill(page)).toBeVisible();
+  await expect(screenSub(page)).toHaveText(
+    'Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Mọi team (3 team)',
+  );
+  for (const screen of ['Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Tổng quan']) {
+    await sidebar.getByRole('link', { name: screen }).click();
+    await expect(page.getByRole('button', { name: 'Lọc', exact: true })).toHaveCount(0);
+  }
+  // Back on a screen with a team of its own, the team picked is still the one.
+  await sidebar.getByRole('link', { name: 'Khách hàng' }).click();
+  await expect(scopePill(page)).toHaveText('Team Sao Mai');
+});
+
+test('the scope pill and its menu are 14px; a segmented button of the screen stays 12.5px', async ({
+  page,
+}) => {
   await page.goto('/#/customers');
   const size = (locator: import('@playwright/test').Locator) =>
     locator.evaluate((el) => getComputedStyle(el).fontSize);
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
-  await expect.poll(() => size(scope.getByRole('radio').first())).toBe('14px');
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await expect
-    .poll(() => size(page.getByRole('combobox', { name: 'Team của góc nhìn' })))
-    .toBe('14px');
+  await expect.poll(() => size(scopePill(page))).toBe('14px');
+  await scopePill(page).click();
+  await expect.poll(() => size(scopeMenu(page).getByRole('menuitemradio').first())).toBe('14px');
+  await page.keyboard.press('Escape');
   await expect
     .poll(() => size(page.getByRole('radiogroup', { name: 'Cách xem' }).getByRole('radio').first()))
     .toBe('12.5px');

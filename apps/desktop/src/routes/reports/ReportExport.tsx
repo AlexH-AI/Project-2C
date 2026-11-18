@@ -26,9 +26,10 @@ export type ExportNotice =
 /**
  * Xuất Excel (mockup reports.html 2f): the exe writes the file into `exports\`, web mode downloads
  * it. A failure only says so; the data in the app is untouched. The notice is for the period and
- * scope applied when Xuất Excel was pressed, and goes once Lọc applies others.
+ * scope on screen when Xuất Excel was pressed, and goes once another is picked: the numbers shown
+ * are no longer those of the file it names. Back on that period and scope, it shows again.
  */
-export function useReportExport(applied: FilterSelection) {
+export function useReportExport(shown: FilterSelection) {
   const data = useAppData();
   const [busy, setBusy] = useState(false);
   const [last, setLast] = useState<{ notice: ExportNotice; for: FilterSelection } | null>(null);
@@ -39,7 +40,7 @@ export function useReportExport(applied: FilterSelection) {
     return path;
   };
   const run = async (report: ExportedReport) => {
-    const exported = applied;
+    const exported = shown;
     setBusy(true);
     setLast(null);
     try {
@@ -58,12 +59,12 @@ export function useReportExport(applied: FilterSelection) {
       setBusy(false);
     }
   };
-  // By value: Lọc may apply the same period and scope again as new objects.
-  const notice = last && sameSelection(last.for, applied) ? last.notice : null;
+  // By value: the same period and scope picked again are new objects.
+  const notice = last && sameSelection(last.for, shown) ? last.notice : null;
   return { busy, notice, run };
 }
 
-/** The line under the Lọc bar after an export (mockup reports.html 2f). */
+/** The line over the tables after an export (mockup reports.html 2f). */
 export function ExportNoticeLine({ notice }: { notice: ExportNotice }) {
   if (notice.kind === 'failed') {
     return (

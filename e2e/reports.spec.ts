@@ -1,15 +1,20 @@
 import { expect, test, type Page } from './fixtures';
-import { readWorkbook, trackConsoleErrors } from './support';
+import {
+  periodPill,
+  pickFirstRm,
+  pickPeriodKind,
+  pickScope,
+  readWorkbook,
+  screenSub,
+  trackConsoleErrors,
+} from './support';
 
 // The e2e build pins today to Tuesday 15/09/2026 (playwright.config.ts): September is in progress.
 async function openReports(page: Page) {
   await page.goto('/#/reports');
   return {
-    kinds: page.getByRole('radiogroup', { name: 'Loại kỳ' }),
-    scope: page.getByRole('radiogroup', { name: 'Góc nhìn' }),
-    filter: page.getByRole('button', { name: 'Lọc', exact: true }),
-    pending: page.getByText('Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật'),
-    viewing: page.locator('p', { hasText: 'Đang xem:' }),
+    // The line under the name of the screen: the period, the days counted, the scope.
+    viewing: screenSub(page),
     summary: page.getByRole('table', { name: 'Tổng hợp' }),
     tables: page.getByRole('radiogroup', { name: 'Bảng báo cáo' }),
   };
@@ -19,8 +24,12 @@ test('Toàn bộ: Tổng hợp over Theo team, and Theo RM can be chosen', async
   const errors = trackConsoleErrors(page);
   const { viewing, summary, tables } = await openReports(page);
 
-  await expect(viewing).toHaveText('Đang xem: Tháng 09/2026MTD 01/09 – 15/09/2026 · Toàn bộ');
+  await expect(viewing).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
+  // A period or scope picked applies at once: no "Lọc" (ADR-0013 appendix 11/11/2026 §5).
+  await expect(page.getByRole('button', { name: 'Lọc', exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Tổng hợp' })).toContainText('Toàn bộ · 30 RM');
+  // The second table has a heading of its own in the list of headings (DR6-187).
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Tổng hợp', 'Theo team']);
   await expect(summary.getByRole('rowheader')).toHaveText(['Toàn bộ']);
   await expect(summary.getByRole('columnheader', { name: 'Kết quả · tới hôm nay' })).toBeVisible();
   await expect(summary.getByRole('columnheader', { name: 'Mất cơ hội' })).toBeVisible();
@@ -78,13 +87,9 @@ test('scrolled sideways, Theo RM keeps the RM name and every figure of Tổng re
 });
 
 test('Team Bình Minh has no Theo team, and Theo RM lists its 10 RM', async ({ page }) => {
-  const { scope, filter, viewing, summary, tables } = await openReports(page);
+  const { viewing, summary, tables } = await openReports(page);
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await page
-    .getByRole('combobox', { name: 'Team của góc nhìn' })
-    .selectOption({ label: 'Bình Minh' });
-  await filter.click();
+  await pickScope(page, { team: 'Bình Minh' });
 
   await expect(viewing).toContainText('· Team Bình Minh');
   await expect(summary.getByRole('rowheader')).toHaveText(['Team Bình Minh']);
@@ -98,14 +103,13 @@ test('RM · Năm: Tổng hợp and Theo mốc of 12 months, the months after tod
   page,
 }) => {
   const errors = trackConsoleErrors(page);
-  const { kinds, scope, filter, viewing, summary, tables } = await openReports(page);
+  const { viewing, summary, tables } = await openReports(page);
 
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await filter.click();
+  await pickFirstRm(page);
+  await pickPeriodKind(page, 'Năm');
 
   // NT-TQ-22, NT-BC-09: the year in progress, then its days set off by a dot (mockup 2e).
-  await expect(viewing).toHaveText(/^Đang xem: Năm 2026 · 01\/01 – 15\/09\/2026 · RM \S/);
+  await expect(viewing).toHaveText(/^Năm 2026 · 01\/01 – 15\/09\/2026 · RM \S/);
   await expect(summary).toBeVisible();
   await expect(tables.getByRole('radio')).toHaveText(['Theo mốc']);
   await expect(page.getByRole('table')).toHaveCount(2);
@@ -127,17 +131,24 @@ test('RM · Năm: Tổng hợp and Theo mốc of 12 months, the months after tod
   expect(errors).toEqual([]);
 });
 
-test('a new period waits for Lọc: the tables keep their numbers until then', async ({ page }) => {
-  const { kinds, filter, pending, summary } = await openReports(page);
-  const before = await summary.textContent();
+test('a new period or scope applies at once: the tables change with no Lọc', async ({ page }) => {
+  const { viewing, summary } = await openReports(page);
+  const month = await summary.textContent();
 
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await expect(pending).toBeVisible();
-  await expect(summary).toHaveText(before ?? '');
+  await pickPeriodKind(page, 'Năm');
+  await expect(viewing).toContainText('Năm 2026');
+  await expect(summary).not.toHaveText(month ?? '');
+  const year = await summary.textContent();
 
-  await filter.click();
-  await expect(pending).toHaveCount(0);
-  await expect(summary).not.toHaveText(before ?? '');
+  // ‹ on the pill: one period back.
+  await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+  await expect(viewing).toHaveText('Năm 2025 · Toàn bộ');
+  await expect(summary).not.toHaveText(year ?? '');
+  const lastYear = await summary.textContent();
+
+  await pickScope(page, { team: 'Sao Mai' });
+  await expect(viewing).toHaveText('Năm 2025 · Team Sao Mai');
+  await expect(summary).not.toHaveText(lastYear ?? '');
 });
 
 test('Xuất Excel downloads the report of the period and scope viewed, a sheet per table', async ({
@@ -185,24 +196,29 @@ test('Xuất Excel downloads the report of the period and scope viewed, a sheet 
   expect(errors).toEqual([]);
 });
 
-test('Xuất Excel exports the period applied, not one still waiting for Lọc', async ({ page }) => {
-  const { kinds, pending } = await openReports(page);
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await expect(pending).toBeVisible();
+test('Xuất Excel exports the period and scope just picked, with no Lọc', async ({ page }) => {
+  await openReports(page);
+  await pickPeriodKind(page, 'Năm');
+  await pickScope(page, { team: 'Bình Minh' });
 
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Xuất Excel' }).click();
   const file = await download;
 
-  expect(file.suggestedFilename()).toBe('bao-cao_2026-09_toan-bo_2026-09-15.xlsx');
+  expect(file.suggestedFilename()).toBe('bao-cao_2026_team-binh-minh_2026-09-15.xlsx');
   const workbook = await readWorkbook(file);
-  expect(workbook.getWorksheet('Tổng hợp')!.getCell('A1').text).toContain('Tháng 09/2026');
+  expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
+    'Tổng hợp',
+    'Theo RM',
+    'Theo mốc',
+  ]);
+  const title = workbook.getWorksheet('Tổng hợp')!.getCell('A1').text;
+  expect(title).toContain('Năm 2026');
+  expect(title).toContain('Team Bình Minh');
 });
 
-test('the export line stays while a new period waits for Lọc, and goes once it is applied', async ({
-  page,
-}) => {
-  const { kinds, filter, pending } = await openReports(page);
+test('the export line goes once another period or scope is picked', async ({ page }) => {
+  await openReports(page);
   const exported = page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' });
 
   const download = page.waitForEvent('download');
@@ -210,17 +226,18 @@ test('the export line stays while a new period waits for Lọc, and goes once it
   await download;
   await expect(exported).toBeVisible();
 
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await expect(pending).toBeVisible();
+  // The numbers on screen are no longer those of the file the line names.
+  await pickPeriodKind(page, 'Năm');
+  await expect(exported).toHaveCount(0);
+  await pickPeriodKind(page, 'Tháng');
   await expect(exported).toBeVisible();
 
-  await filter.click();
-  await expect(pending).toHaveCount(0);
+  await pickScope(page, { team: 'Sao Mai' });
   await expect(exported).toHaveCount(0);
 });
 
-test('the export line stays when Lọc applies the same period and scope again', async ({ page }) => {
-  const { kinds, filter, pending, viewing } = await openReports(page);
+test('the export line is back with the period and scope it was exported for', async ({ page }) => {
+  const { viewing } = await openReports(page);
   const exported = page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' });
 
   const download = page.waitForEvent('download');
@@ -229,10 +246,9 @@ test('the export line stays when Lọc applies the same period and scope again',
   await expect(exported).toBeVisible();
 
   // Year, then back to the month: the same period as the one exported, though made anew.
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await kinds.getByRole('radio', { name: 'Tháng' }).click();
-  await expect(pending).toHaveCount(0);
-  await filter.click();
+  await pickPeriodKind(page, 'Năm');
+  await expect(exported).toHaveCount(0);
+  await pickPeriodKind(page, 'Tháng');
   await expect(viewing).toContainText('Tháng 09/2026');
   await expect(exported).toBeVisible();
 });
