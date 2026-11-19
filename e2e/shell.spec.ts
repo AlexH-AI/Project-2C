@@ -374,6 +374,21 @@ test('the page lets the material of the exe window through, and the web build st
   });
 });
 
+// main.tsx marks the exe's page with the material under its window (VA5), never the web build (the
+// case above): glass on macOS; on Windows by the client hints of the machine (Playwright's Desktop
+// Edge says Windows 10: solid).
+test('the exe marks its page with the material under its window (VA5)', async ({
+  page,
+  browserName,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-backdrop',
+    browserName === 'webkit' ? 'glass' : /^(glass|solid)$/,
+  );
+});
+
 // The macOS glass under the sidebar is the system's material, as light as the wallpaper makes it
 // (ADR-0013 appendix 11/11/2026 §7). On the Owner's Mac, under a dark wallpaper, it measured
 // rgb(50, 52, 57) beneath the pane (3.77:1 for "Đã lưu" in --text-3; PR 1414, 19/11/2026). Here
