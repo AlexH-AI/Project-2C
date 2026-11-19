@@ -309,6 +309,18 @@
   }
 }
 
+/* The open list of a native list (SelectField). Chromium (WebView2) draws it with the colours of
+   the list and of its options: over the see-through --fill-1 of `field` the white of the popup
+   showed, the light text of the app lost on it (Owner, PR 1414). Each option takes the solid
+   ground of the focus layer, --bg-2 (--mat-pop made solid), the text of the app on it. */
+@layer base {
+  option,
+  optgroup {
+    background-color: var(--bg-2);
+    color: var(--text);
+  }
+}
+
 /* The thumb of a segmented control: the fill under the chosen segment (ui2.css .seg .thumb) */
 @utility thumb {
   background-color: var(--fill-3);
