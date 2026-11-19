@@ -436,11 +436,14 @@
 }
 
 /* The toolbar floats over the screen. Its scroll edge (ui2.css .toolbar::before): what scrolls
-   under it blurs and fades out, down to 18 px below it, instead of meeting a hard bar. */
+   under it blurs and fades out, down to 18 px below it, instead of meeting a hard bar. On Windows
+   it takes the rounded corner of the content's pane (below). Under "Giảm độ trong suốt" nothing
+   shows through the bar itself: solid down to its foot, it fades out in the 18 px below (L225;
+   ui2.css keeps the fade of the bar, app-shell.html #feasible turns the glass solid). */
 @utility toolbar {
   position: sticky;
   top: 0;
-  height: 68px;
+  height: var(--toolbar-h);
   &::before {
     content: '';
     position: absolute;
@@ -451,10 +454,75 @@
     backdrop-filter: blur(14px);
     mask-image: linear-gradient(180deg, #000 64%, transparent);
   }
+  [data-os='win'] &::before {
+    border-top-left-radius: var(--r-window);
+  }
   @media (prefers-reduced-transparency: reduce) {
     &::before {
+      background: linear-gradient(180deg, var(--mat-edge) calc(100% - 18px), transparent);
       backdrop-filter: none;
+      mask-image: none;
     }
+  }
+}
+
+/* The window of the exe (VA5, ui2.css .win), transparent over the material of its system, which
+   main.tsx names in `data-backdrop` of the page: `glass` where the system has one (macOS; the Mica
+   of Windows 11), `solid` on Windows 10. The page lets the glass through where the window shows
+   it: on macOS under the sidebar's pane, fading into --bg-0 past it (226 to 300 px of ui2.css);
+   on Windows the whole window, the sidebar flat on it. Under "Giảm độ trong suốt", and on Windows
+   10, the window is --bg-1 (--mat-window, solid then). Web mode has no window and no mark. */
+@layer base {
+  [data-backdrop='glass'] {
+    --window-fill: transparent;
+  }
+  [data-backdrop='solid'] {
+    --window-fill: var(--bg-1);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    [data-backdrop] {
+      --window-fill: var(--mat-window);
+    }
+  }
+  html[data-backdrop] {
+    background: linear-gradient(
+      90deg,
+      var(--window-fill) 0,
+      var(--window-fill) 226px,
+      var(--bg-0) 300px
+    );
+  }
+  html[data-backdrop][data-os='win'] {
+    background: var(--window-fill);
+  }
+  html[data-backdrop] body {
+    background-color: transparent;
+  }
+}
+
+/* Windows: the content of the shell is a pane on the window, its top left corner rounded, edged by
+   a hairline (ui2.css [data-os='win'] .main). It stays as the page scrolls over it. */
+@utility content-pane {
+  display: none;
+  [data-os='win'] & {
+    display: block;
+    position: fixed;
+    inset: 0 0 0 var(--sidebar-w);
+    z-index: -1;
+    pointer-events: none;
+    border-top-left-radius: var(--r-window);
+    background-color: var(--bg-0);
+    box-shadow: inset 1px 1px 0 var(--hairline);
+  }
+}
+
+/* The row of the three buttons of a macOS window, which the system draws over the page: the top of
+   the sidebar's pane keeps their place (ui2.css .lights, 12 px and 8 below). The exe only. */
+@utility window-controls {
+  display: none;
+  [data-os='mac'][data-backdrop] & {
+    display: block;
+    height: 20px;
   }
 }
 

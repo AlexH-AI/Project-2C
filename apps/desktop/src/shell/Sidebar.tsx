@@ -6,6 +6,7 @@ import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
 import { FOCUS } from '../routes/classes';
 import { Brand, Slogan } from './Brand';
+import { macDragRegion } from './platform';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
 const ICONS: Record<Section, NavIconName> = {
@@ -28,7 +29,12 @@ const FIRST_MANAGE_SECTION: Section = 'team';
 export function Sidebar({ current }: { current: Section }) {
   return (
     <aside className="sidebar flex flex-none flex-col gap-3 self-start">
-      <Brand />
+      {/* The top of the pane: in the macOS exe the window's three buttons sit there (VA5), and
+          the window moves by it. */}
+      <div data-tauri-drag-region={macDragRegion()} className="flex flex-col gap-3">
+        <div aria-hidden="true" className="window-controls" />
+        <Brand />
+      </div>
       <nav aria-label={t('nav.label')} className="flex flex-col gap-0.5">
         {SECTIONS.map((section) => {
           const active = section === current;

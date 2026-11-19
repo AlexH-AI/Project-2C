@@ -1,5 +1,6 @@
 import { createContext, use, useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { macDragRegion } from './platform';
 
 /** The two places of the toolbar a screen fills: the line under its name, and its buttons. */
 interface BarSlots {
@@ -48,7 +49,11 @@ export function Toolbar({
   const slots = useMemo(() => ({ sub, actions }), [sub, actions]);
   return (
     <BarSlotsContext value={slots}>
-      <header className="toolbar z-10 flex flex-none items-center gap-2.5 pr-5.5 pl-7">
+      {/* The macOS window moves by the free space of the toolbar (VA5). */}
+      <header
+        data-tauri-drag-region={macDragRegion()}
+        className="toolbar z-10 flex flex-none items-center gap-2.5 pr-5.5 pl-7"
+      >
         <div className="min-w-0">
           <h1 ref={heading} tabIndex={-1} className="screen-title m-0 whitespace-nowrap">
             {title}

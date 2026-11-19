@@ -278,12 +278,18 @@ test('the toolbar is 68 px high and what scrolls under it fades at its edge', as
   expect((await edge()).bottom).toBe('-18px');
   expect((await edge()).blur).toBe('blur(14px)');
 
-  await test.step('the system asks for less transparency: a solid edge, nothing blurred', async (step) => {
+  await test.step('the system asks for less transparency: solid down to the foot of the bar, nothing blurred', async (step) => {
     // Set through CDP, on Chromium only; on the macOS app it is checked by hand (NT-MAC-19).
     step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
     await setTransparency(page, 'reduce');
-    expect((await edge()).image).toMatch(/^linear-gradient\(.*rgb\(11, 16, 23\) 50%, .*\)$/);
+    // Solid over the whole bar, fading out in the 18 px below it only (L225).
+    expect((await edge()).image).toMatch(
+      /^linear-gradient\(.*rgb\(11, 16, 23\) calc\(100% - 18px\), .*\)$/,
+    );
     expect((await edge()).blur).toBe('none');
+    expect(
+      await toolbar(page).evaluate((node) => getComputedStyle(node, '::before').maskImage),
+    ).toBe('none');
   });
 });
 

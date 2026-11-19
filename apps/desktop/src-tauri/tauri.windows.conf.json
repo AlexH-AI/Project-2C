@@ -3,9 +3,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "publisher": "Heritas",
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "languages": ["Vietnamese", "English"]
       }
     }
   }
