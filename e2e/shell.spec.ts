@@ -293,6 +293,71 @@ test('the toolbar is 68 px high and what scrolls under it fades at its edge', as
   });
 });
 
+// VA5: main.tsx marks the exe's page `data-backdrop`, the material under its transparent window;
+// the web build has no window and no mark. The mark is set here by hand to read the exe's CSS.
+test('the page lets the material of the exe window through, and the web build stays solid (VA5)', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/#/customers');
+  await setTransparency(page, 'no-preference');
+  const html = page.locator('html');
+  const controls = sidebar(page).locator('[data-slot="window-controls"]');
+  const pane = page.locator('[data-slot="content-pane"]');
+  const column = toolbar(page).locator('xpath=..');
+  const mark = (os: 'mac' | 'win', backdrop?: 'glass' | 'solid') =>
+    page.evaluate(
+      ([os, backdrop]) => {
+        document.documentElement.dataset.os = os;
+        if (backdrop) document.documentElement.dataset.backdrop = backdrop;
+        else delete document.documentElement.dataset.backdrop;
+      },
+      [os, backdrop] as const,
+    );
+
+  // The web build: --bg-0 under everything, no row kept for the buttons of a macOS window.
+  await expect(html).not.toHaveAttribute('data-backdrop');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 16, 23)');
+  await expect(controls).toBeHidden();
+  await mark('win');
+  await expect(controls).toBeHidden();
+  // Windows: the content on a pane of --bg-0, its top left corner rounded, right of the sidebar;
+  // the column keeps the 1 px of its edge, so the layout is as before VA5.
+  await expect(pane).toHaveCSS('position', 'fixed');
+  await expect(pane).toHaveCSS('border-top-left-radius', '8px');
+  await expect(pane).toHaveCSS('background-color', 'rgb(11, 16, 23)');
+  expect((await box(pane)).x).toBe((await box(sidebar(page))).width);
+  expect((await box(toolbar(page))).x).toBe((await box(pane)).x + 1);
+  await expect(column).toHaveCSS('border-left-width', '1px');
+  await mark('mac');
+  await expect(pane).toBeHidden();
+
+  // The macOS exe: glass under the sidebar's pane, fading into --bg-0; a row of 20 px at the top of
+  // the pane for the window's three buttons.
+  await mark('mac', 'glass');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(html).toHaveCSS(
+    'background-image',
+    /^linear-gradient\(90deg, rgba\(0, 0, 0, 0\) 0(px)?, rgba\(0, 0, 0, 0\) 226px, rgb\(11, 16, 23\) 300px\)$/,
+  );
+  await expect(controls).toBeVisible();
+  expect((await box(controls)).height).toBe(20);
+  // Windows 11: Mica under the whole window; Windows 10: --bg-1, nothing shows through.
+  await mark('win', 'glass');
+  await expect(controls).toBeHidden();
+  await expect(html).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await mark('win', 'solid');
+  await expect(html).toHaveCSS('background-color', 'rgb(17, 24, 34)');
+
+  await test.step('the system asks for less transparency: the window is solid', async (step) => {
+    // Set through CDP, on Chromium only; on the macOS app it is checked by hand (NT-MAC-26).
+    step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
+    await setTransparency(page, 'reduce');
+    await mark('win', 'glass');
+    await expect(html).toHaveCSS('background-color', 'rgb(17, 24, 34)');
+  });
+});
+
 /**
  * How many pixels of a screenshot are the champagne of the outline: light, and warm, where the
  * navy of the logo and the dark behind it are both blue. Counted on a blank page of the same

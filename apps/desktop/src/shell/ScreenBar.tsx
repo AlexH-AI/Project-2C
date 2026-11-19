@@ -49,9 +49,10 @@ export function Toolbar({
   const slots = useMemo(() => ({ sub, actions }), [sub, actions]);
   return (
     <BarSlotsContext value={slots}>
-      {/* The macOS window moves by the free space of the toolbar (VA5). */}
+      {/* The macOS window moves by the free space of the toolbar (VA5): the bar itself and the
+          place between the name and the pills, not what they open (menus open inside the bar). */}
       <header
-        data-tauri-drag-region={macDragRegion()}
+        data-tauri-drag-region={macDragRegion('self')}
         className="toolbar z-10 flex flex-none items-center gap-2.5 pr-5.5 pl-7"
       >
         <div className="min-w-0">
@@ -73,7 +74,11 @@ export function Toolbar({
             className="m-0 truncate text-sm text-fg-2 tabular-nums empty:hidden"
           />
         </div>
-        <div data-slot="heads-up" className="min-w-4 flex-1" />
+        <div
+          data-slot="heads-up"
+          data-tauri-drag-region={macDragRegion('self')}
+          className="min-w-4 flex-1"
+        />
         <div className="flex flex-none items-center gap-2">
           {tools}
           <div ref={setActions} data-slot="screen-actions" className="contents" />

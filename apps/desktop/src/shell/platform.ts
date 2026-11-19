@@ -43,10 +43,12 @@ export async function windowBackdrop(
 
 /**
  * `data-tauri-drag-region` of the places a macOS window moves by (VA5): its title bar is over the
- * page, so the free space of the toolbar and the top of the sidebar take its place; `deep`, from
- * anything inside that is not a control (Tauri's script). Windows keeps its own title bar (kiểu B).
+ * page, so the free space of the toolbar and the top of the sidebar take its place. Tauri's script
+ * reads `''` as a press on that very element, `deep` as one anywhere inside it but on a control:
+ * the toolbar takes `self`, as its menus open inside it. Windows keeps its own title bar (kiểu B).
  */
-export const macDragRegion = (nav?: Nav) => (isMac(nav) ? 'deep' : undefined);
+export const macDragRegion = (reach: 'self' | 'deep', nav?: Nav) =>
+  isMac(nav) ? (reach === 'deep' ? 'deep' : '') : undefined;
 
 /** The modifier of the shortcuts: ⌘ on macOS, Ctrl on Windows. */
 export const modKey = (nav?: Nav): '⌘' | 'Ctrl' => (isMac(nav) ? '⌘' : 'Ctrl');

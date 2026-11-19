@@ -30,9 +30,9 @@ export function Sidebar({ current }: { current: Section }) {
   return (
     <aside className="sidebar flex flex-none flex-col gap-3 self-start">
       {/* The top of the pane: in the macOS exe the window's three buttons sit there (VA5), and
-          the window moves by it. */}
-      <div data-tauri-drag-region={macDragRegion()} className="flex flex-col gap-3">
-        <div aria-hidden="true" className="window-controls" />
+          the window moves by it, the logo too: nothing in it opens or takes a click. */}
+      <div data-tauri-drag-region={macDragRegion('deep')} className="flex flex-col gap-3">
+        <div aria-hidden="true" data-slot="window-controls" className="window-controls" />
         <Brand />
       </div>
       <nav aria-label={t('nav.label')} className="flex flex-col gap-0.5">

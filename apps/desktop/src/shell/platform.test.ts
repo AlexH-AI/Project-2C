@@ -86,8 +86,11 @@ describe('the platform of the webview (Mac-5a)', () => {
 
   // VA5: the title bar of macOS is over the page; Windows keeps its own, the page moves no window.
   it('lets the window move by the toolbar and the top of the sidebar on macOS only', () => {
-    expect(macDragRegion(MAC)).toBe('deep');
-    expect(macDragRegion(WINDOWS)).toBeUndefined();
+    // `''`: a press on that element itself; `deep`: anywhere inside it but on a control.
+    expect(macDragRegion('self', MAC)).toBe('');
+    expect(macDragRegion('deep', MAC)).toBe('deep');
+    expect(macDragRegion('self', WINDOWS)).toBeUndefined();
+    expect(macDragRegion('deep', WINDOWS)).toBeUndefined();
   });
 
   it('names the key store of the platform: the Keychain on macOS, the Credential Manager on Windows', () => {

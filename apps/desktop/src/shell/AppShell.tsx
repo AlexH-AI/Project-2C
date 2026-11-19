@@ -82,10 +82,11 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* On Windows the content lies on a pane of its own, its edge and corner (VA5). */}
-      <div aria-hidden="true" className="content-pane" />
+      {/* On Windows the content lies on a pane of its own, which draws its edge and corner (VA5);
+          the column keeps the 1 px of the edge it had. */}
+      <div aria-hidden="true" data-slot="content-pane" className="content-pane" />
       <Sidebar current={sectionOf(route)} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col win:border-l win:border-transparent">
         <SaveWarning heading={heading} />
         <Toolbar
           title={t(`screen.${route.screen}`)}
