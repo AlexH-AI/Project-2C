@@ -144,9 +144,19 @@ test('a press outside closes the period layer and keeps what was picked', async 
 
   const layer = await periodLayer(page);
   await layer.getByRole('radio', { name: 'Tuần' }).click();
-  await page.getByRole('heading', { level: 1 }).click();
+  // An empty place of the screen, which takes no focus: the focus goes back to the name of the
+  // period, not to the page.
+  await page.getByRole('main').click({ position: { x: 3, y: 3 } });
   await expect(layer).toBeHidden();
   await expect(viewing).toHaveText('14/09 – 20/09/2026 · Toàn bộ');
+  await expect(periodName(page)).toBeFocused();
+
+  // The name of the period closes its own layer too, and has the focus after.
+  await periodName(page).click();
+  await expect(layer).toBeVisible();
+  await periodName(page).click();
+  await expect(layer).toBeHidden();
+  await expect(periodName(page)).toBeFocused();
 });
 
 test('the Team scope has no team to pick and counts every team', async ({ page }) => {

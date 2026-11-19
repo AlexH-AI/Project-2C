@@ -55,7 +55,7 @@ export function PeriodPill({
           type="button"
           aria-haspopup="dialog"
           aria-expanded={open}
-          onClick={() => setOpen(!open)}
+          onClick={() => (open ? close() : setOpen(true))}
           className={`cursor-pointer rounded-control-sm px-1.5 whitespace-nowrap tabular-nums ${RING}`}
         >
           {periodLabel(value, labels)}

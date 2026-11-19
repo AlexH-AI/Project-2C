@@ -5,7 +5,9 @@ import { menuMove } from './menu-keys';
  * A layer that opens under its button (mockup ui2.css `.tl-pop`: the menu of the scope, the period
  * picker). It closes on Esc, on a press outside, and once the focus goes to something outside;
  * Esc gives the focus back to the button, wherever the focus was: on macOS a click in the layer
- * leaves it on nothing (WebKit). `root` goes on the box of the button and the layer.
+ * leaves it on nothing (WebKit). So does a press outside on what takes no focus; on another
+ * control, the focus stays where the press put it. `root` goes on the box of the button and the
+ * layer; the button closes its layer with `close`.
  */
 export function useLayer() {
   const [open, setOpen] = useState(false);
@@ -21,6 +23,13 @@ export function useLayer() {
       const focused = document.activeElement;
       if (focused instanceof HTMLElement && root.current?.contains(focused)) focused.blur();
       setOpen(false);
+      // Once the press is over the browser has moved the focus: left on the page, it goes back
+      // to the button.
+      const settle = () => {
+        const now = document.activeElement;
+        if (!now || now === document.body) trigger.current?.focus();
+      };
+      document.addEventListener('pointerup', settle, { once: true });
     };
     // A click on macOS may move the focus to nothing (WebKit): only a real target counts.
     const onFocus = (event: FocusEvent) => {
@@ -86,7 +95,7 @@ function Mark({ path, className }: { path: string; className: string }) {
 }
 
 const ROW =
-  'flex min-h-8 w-full cursor-pointer items-center gap-2.5 rounded-control-sm pr-2.5 text-left text-md whitespace-nowrap hover:bg-fill-2 focus-visible:bg-fill-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent';
+  'group flex min-h-8 w-full cursor-pointer items-center gap-2.5 rounded-control-sm pr-2.5 text-left text-md whitespace-nowrap hover:bg-fill-2 focus-visible:bg-fill-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent';
 
 /**
  * The rows of a menu (mockup ui2.css `.menu`, components.html 03): a heading, then rows. A row of
@@ -124,6 +133,9 @@ export function MenuRows({
       <div className="px-2.5 pt-1.5 pb-1 text-xs font-semibold text-fg-3">{title}</div>
       {rows.map((row) => {
         const opener = row.expanded !== undefined;
+        // Chosen, a row of the first level takes the gold; a row under an opened one keeps its
+        // colour, and its weight and the gold check say it (mockup bao-cao.html `.sub.on`).
+        const tone = row.sub ? 'pl-7.5 text-fg-2' : `pl-2.5 ${row.checked ? 'text-accent' : ''}`;
         return (
           <div key={row.key} role="none">
             {row.divided && <hr className="mx-2 my-1 border-0 border-t border-hairline" />}
@@ -134,9 +146,7 @@ export function MenuRows({
               aria-expanded={row.expanded}
               tabIndex={-1}
               onClick={() => onPick(row)}
-              className={`${ROW} ${row.sub ? 'pl-7.5 text-fg-2' : 'pl-2.5'} ${
-                row.checked ? 'font-semibold text-accent' : ''
-              }`}
+              className={`${ROW} ${tone} ${row.checked ? 'font-semibold' : ''}`}
             >
               {opener && (
                 <Mark
@@ -146,7 +156,9 @@ export function MenuRows({
               )}
               {/* A long name is cut in the row rather than widen the menu past the window. */}
               <span className="max-w-80 truncate">{row.label}</span>
-              <span className="ml-auto flex items-center gap-1.5 text-fg-3 tabular-nums">
+              {/* On the lighter row of the pointer or the focus, --text-3 is under 4.5:1: the
+                  count goes a step brighter there. */}
+              <span className="ml-auto flex items-center gap-1.5 text-fg-3 tabular-nums group-hover:text-fg-2 group-focus-visible:text-fg-2">
                 {row.note}
                 {row.checked && (
                   <Mark path="M5 12.5l4.5 4.5L19 7.5" className="size-4 text-accent" />
@@ -215,8 +227,9 @@ export function MenuButton({
         onPointerEnter={() => setPointed(true)}
         onPointerLeave={() => setPointed(false)}
         onClick={() => {
-          if (!open) onOpen?.();
-          setOpen(!open);
+          if (open) return close();
+          onOpen?.();
+          setOpen(true);
         }}
         className="press btn-default inline-flex h-8.5 cursor-pointer items-center gap-1.5 rounded-control px-3.25 text-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >

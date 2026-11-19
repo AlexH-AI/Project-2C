@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from './fixtures';
 import {
   asExe,
+  lowestContrast,
   periodPill,
   pickScope,
   scopeMenu,
@@ -11,6 +12,9 @@ import {
 } from './support';
 
 const SCREENS = ['Tổng quan', 'Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự', 'Cài đặt'];
+// --accent and --text-2, as the browser reports them.
+const ACCENT = 'rgb(217, 178, 106)';
+const TEXT_2 = 'rgb(174, 185, 200)';
 
 test('the sidebar lists the six screens, each with an icon', async ({ page }) => {
   await page.goto('/');
@@ -301,11 +305,30 @@ test('the scope pill names the scope shown and says it opens a menu', async ({ p
 
   await pill.click();
   await expect(pill).toHaveAttribute('aria-expanded', 'true');
-  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText('Toàn bộ');
-  // A press outside closes it with nothing picked.
-  await page.getByRole('heading', { level: 1 }).click();
+  const chosen = menu.getByRole('menuitemradio', { checked: true });
+  await expect(chosen).toHaveText('Toàn bộ');
+  // A row of the first level takes the gold when chosen.
+  await expect(chosen).toHaveCSS('color', ACCENT);
+  // A press outside closes it with nothing picked. On what takes the focus (the name of the
+  // screen does), the focus goes there.
+  const heading = page.getByRole('heading', { level: 1 });
+  await heading.click();
   await expect(menu).toBeHidden();
   await expect(pill).toHaveText('Toàn bộ');
+  await expect(heading).toBeFocused();
+
+  // On an empty place, which takes no focus, the focus goes back to the pill, not to the page.
+  await pill.click();
+  await expect(menu).toBeVisible();
+  await page.getByRole('main').click({ position: { x: 3, y: 3 } });
+  await expect(menu).toBeHidden();
+  await expect(pill).toBeFocused();
+  // The pill closes its own menu too, and has the focus after (a click gives it none on macOS).
+  await pill.click();
+  await expect(menu).toBeVisible();
+  await pill.click();
+  await expect(menu).toBeHidden();
+  await expect(pill).toBeFocused();
 });
 
 test('the menu lists the teams by name, each opening into "Cả team" and its RM', async ({
@@ -347,7 +370,13 @@ test('the menu lists the teams by name, each opening into "Cả team" and its RM
   // Opened again, the team of the scope is open and its row the one checked.
   await pill.click();
   await expect(teamRow(page, 'Bình Minh')).toHaveAttribute('aria-expanded', 'true');
-  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText('Cả team');
+  const whole = menu.getByRole('menuitemradio', { checked: true });
+  await expect(whole).toHaveText('Cả team');
+  // A row under a team keeps the colour of its level when chosen: its weight and the gold check
+  // say it (mockup bao-cao.html, `.sub.on`).
+  await expect(whole).toHaveCSS('color', TEXT_2);
+  await expect(whole).toHaveCSS('font-weight', '600');
+  await expect(whole.locator('svg')).toHaveCSS('color', ACCENT);
   const second = (await rows.nth(3).textContent()) ?? '';
   await rows.nth(3).click();
   await expect(pill).toHaveText(second);
@@ -370,6 +399,8 @@ test('the menu of the scope by keyboard: arrows, Home, End, Enter, Esc', async (
   await expect(everyone).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(teamRow(page, 'Bình Minh')).toBeFocused();
+  // Under the focus the row is lighter: its number of RM still reads at 4.5:1.
+  expect(await lowestContrast(teamRow(page, 'Bình Minh'))).toBeGreaterThanOrEqual(4.5);
   await page.keyboard.press('End');
   await expect(teamRow(page, 'Sao Mai')).toBeFocused();
   // Around the ends.

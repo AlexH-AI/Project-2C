@@ -456,7 +456,7 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   // The filter of who coordinates sits in a box of its own width, narrower than the name picked:
   // the name is cut in the field, and widens neither the page nor the screen. WebKit counts the
   // cut text of a list in the scrolling width of whatever holds it (Mac-7b), so any list held
-  // narrower than its choice is swept, not only the capped pickers of the top bar.
+  // narrower than its choice is swept.
   const coordinator = page.getByRole('combobox', { name: 'Phối hợp' });
   const leadChoice = await coordinator.locator('option', { hasText: lead }).textContent();
   await coordinator.selectOption({ label: leadChoice! });
@@ -493,15 +493,16 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
     if (kind !== 'Toàn bộ') {
       // The line under the name of the screen: cut short by the name of the team, it is read
       // whole under the pointer, the count of customers at its end too; with an RM picked in the
-      // menu it is the count alone, whole in the line, and takes no tooltip.
+      // menu it is the count alone, whole in the line, and takes no tooltip. The title is there
+      // only under the pointer: kept, it would be the description of the line, soon an old one.
       const sub = screenSub(page);
       await expect(sub).toHaveText(/KH đang mở · [\d,]+ đã đóng$/);
       await sub.hover();
-      await expect(sub).toHaveAttribute(
-        'title',
-        kind === 'Team' ? /^Cả team T.+ KH đang mở · [\d,]+ đã đóng$/ : '',
-      );
+      if (kind === 'Team') {
+        await expect(sub).toHaveAttribute('title', /^Cả team T.+ KH đang mở · [\d,]+ đã đóng$/);
+      } else await expect(sub).not.toHaveAttribute('title');
       await page.mouse.move(0, 0);
+      await expect(sub).not.toHaveAttribute('title');
     }
     for (const view of ['Bảng', 'Kanban']) {
       await page
