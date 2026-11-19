@@ -71,8 +71,10 @@
   --fs-2xl: 26px;
   /* The column of the sidebar (app-shell.html #sidebar): on macOS with the 8 px its pane floats in */
   --sidebar-w: 244px;
-  /* The height of the toolbar (app-shell.html #toolbar), which what scrolls stops below (L226) */
+  /* The height of the toolbar (app-shell.html #toolbar), which what scrolls stops below (L226), and
+     the depth of its scroll edge below it, where what scrolls under it fades out */
   --toolbar-h: 68px;
+  --toolbar-edge: 18px;
 }
 
 /* The shell of the two systems (ADR-0013 appendix 11/11/2026): block B of the mockups' ui2.css,

@@ -1,5 +1,13 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { drawnCorner, markOs, pickFirstRm, pickScope, right, setTransparency } from './support';
+import {
+  asExe,
+  drawnCorner,
+  markOs,
+  pickFirstRm,
+  pickScope,
+  right,
+  setTransparency,
+} from './support';
 
 // The shell of mockup app-shell.html (VA4a): the sidebar with the compact logo (`#sidebar`), and
 // the toolbar, where a screen writes a line under its name and puts its main button (`#toolbar`).
@@ -365,13 +373,42 @@ test('the page lets the material of the exe window through, and the web build st
   });
 });
 
+// The warning of a failed save sits in the column above the toolbar (SaveWarning): the Windows pane
+// keeps its one corner and its edge at the top of the window, and no edge crosses it where the
+// toolbar starts (review of PR 1414 @574f57e).
+test('the Windows pane keeps its edge at the top of the window while the save warning shows (VA5)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await markOs(page, 'win');
+  await page.evaluate(() => (window.exe.failSaves = 'DISK_FULL'));
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Team mới' });
+  await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Bình Minh 2');
+  await dialog.getByRole('button', { name: 'Tạo team' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('alert').filter({ hasText: 'Chưa lưu được' })).toBeVisible();
+
+  const left = (await box(page.locator('[data-slot="content-pane"]'))).x;
+  const bar = await box(toolbar(page));
+  expect(bar.y).toBeGreaterThan(20);
+  // The top edge and the left edge of the pane, at the top of the window.
+  const top = await shade(page, { x: left + 120, y: 0, width: 1, height: 4 });
+  expect(top.at(0)! - top.at(-1)!, 'the top edge').toBeGreaterThan(10);
+  const side = await shade(page, { x: left, y: bar.y + 2, width: 4, height: 1 });
+  expect(side.at(0)! - side.at(-1)!, 'the left edge by the toolbar').toBeGreaterThan(10);
+  // Where the toolbar starts, the pane goes on: no line across it (left of the warning, which has
+  // a border of its own, 28 px in).
+  const across = await shade(page, { x: left + 14, y: bar.y - 2, width: 1, height: 5 });
+  expect(Math.max(...across) - Math.min(...across), 'no line at the toolbar').toBeLessThan(8);
+});
+
 /**
- * The lightness (the sum of red, green and blue) of each device pixel of a strip of the page, in
- * order: down a strip one pixel wide, across one a pixel high. Decoded on a blank page of the same
- * browser, which decodes the PNG.
+ * The pixels of a PNG screenshot, as RGBA rows of its device pixels, with its width. Decoded on a
+ * blank page of the same browser, which decodes the PNG.
  */
-async function shade(page: Page, clip: { x: number; y: number; width: number; height: number }) {
-  const png = await page.screenshot({ clip });
+async function decoded(page: Page, png: Buffer) {
   const blank = await page.context().newPage();
   try {
     return await blank.evaluate(async (data) => {
@@ -384,10 +421,7 @@ async function shade(page: Page, clip: { x: number; y: number; width: number; he
       const context = canvas.getContext('2d')!;
       context.drawImage(image, 0, 0);
       const { data: pixels } = context.getImageData(0, 0, canvas.width, canvas.height);
-      const sums: number[] = [];
-      for (let i = 0; i < pixels.length; i += 4)
-        sums.push(pixels[i]! + pixels[i + 1]! + pixels[i + 2]!);
-      return sums;
+      return { width: canvas.width, height: canvas.height, pixels: [...pixels] };
     }, png.toString('base64'));
   } finally {
     await blank.close();
@@ -395,37 +429,30 @@ async function shade(page: Page, clip: { x: number; y: number; width: number; he
 }
 
 /**
+ * The lightness (the sum of red, green and blue) of each device pixel of a strip of the page, in
+ * order: down a strip one pixel wide, across one a pixel high.
+ */
+async function shade(page: Page, clip: { x: number; y: number; width: number; height: number }) {
+  const { pixels } = await decoded(page, await page.screenshot({ clip }));
+  const sums: number[] = [];
+  for (let i = 0; i < pixels.length; i += 4)
+    sums.push(pixels[i]! + pixels[i + 1]! + pixels[i + 2]!);
+  return sums;
+}
+
+/**
  * How many pixels of a screenshot are the champagne of the outline: light, and warm, where the
- * navy of the logo and the dark behind it are both blue. Counted on a blank page of the same
- * browser, which decodes the PNG.
+ * navy of the logo and the dark behind it are both blue.
  */
 async function champagnePixels(page: Page, png: Buffer, rows: { from: number; to: number }) {
-  const blank = await page.context().newPage();
-  try {
-    return await blank.evaluate(
-      async ({ data, rows }) => {
-        const image = new Image();
-        image.src = `data:image/png;base64,${data}`;
-        await image.decode();
-        const canvas = document.createElement('canvas');
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-        const context = canvas.getContext('2d')!;
-        context.drawImage(image, 0, 0);
-        const top = Math.round(canvas.height * rows.from);
-        const height = Math.round(canvas.height * rows.to) - top;
-        const { data: pixels } = context.getImageData(0, top, canvas.width, height);
-        let count = 0;
-        for (let i = 0; i < pixels.length; i += 4) {
-          if (pixels[i]! > 90 && pixels[i]! - pixels[i + 2]! > 20) count++;
-        }
-        return count;
-      },
-      { data: png.toString('base64'), rows },
-    );
-  } finally {
-    await blank.close();
+  const { width, height, pixels } = await decoded(page, png);
+  const top = Math.round(height * rows.from);
+  const bottom = Math.round(height * rows.to);
+  let count = 0;
+  for (let i = top * width * 4; i < bottom * width * 4; i += 4) {
+    if (pixels[i]! > 90 && pixels[i]! - pixels[i + 2]! > 20) count++;
   }
+  return count;
 }
 
 // L179: in the macOS app the outline drawn by four `drop-shadow` of half a pixel did not show, and
