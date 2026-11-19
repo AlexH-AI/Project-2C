@@ -101,5 +101,6 @@ function saveState(status: SaveStatus | undefined): { dot: string; tone: string;
   const text = status.lastSave
     ? t('saveState.savedAt', { time: formatLocalTime(status.lastSave.at) })
     : t('saveState.saved');
-  return { dot: 'bg-ok', tone: 'text-fg-3', text };
+  // --text-2, as ui2.css .sb-foot: on the glass of macOS --text-3 is under 4.5:1 (PR 1414).
+  return { dot: 'bg-ok', tone: 'text-fg-2', text };
 }

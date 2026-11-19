@@ -78,11 +78,17 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
         color = over(read(style.backgroundColor), color);
         // A material is a gradient of see-through light (--mat-card): read where it is lightest,
         // the place its text stands out least (ADR-0013 appendix 11/11/2026 §7). Each stop lies on
-        // what is under the material, not on the stop before it.
+        // what is under the material, not on the stop before it. A gradient covers its box (the
+        // app sizes none), so what shows is one of its stops, a see-through one the colour under
+        // it: a dark layer over a light ground (--mat-window over the glass, VA5) is read as such.
         const under = color;
-        for (const stop of style.backgroundImage.match(STOP) ?? []) {
-          const lit = over(read(stop), under);
-          if (luminance(lit) > luminance(color)) color = lit;
+        const stops = (style.backgroundImage.match(STOP) ?? []).map((stop) =>
+          over(read(stop), under),
+        );
+        if (stops.length > 0) {
+          color = stops.reduce((lightest, lit) =>
+            luminance(lit) > luminance(lightest) ? lit : lightest,
+          );
         }
       }
       return top ? over(read(top(getComputedStyle(chain.at(-1)!))), color) : color;
@@ -400,6 +406,7 @@ export async function asExe(page: Page) {
   await page.addInitScript(() => {
     addEventListener('DOMContentLoaded', () => {
       const style = document.createElement('style');
+      style.id = 'exe-window-stand-in';
       style.textContent =
         "[data-backdrop] { --window-fill: var(--bg-1) !important; } [data-os='mac'][data-backdrop] { background-color: var(--bg-0); }";
       document.head.append(style);

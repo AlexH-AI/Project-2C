@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from './fixtures';
 import {
   asExe,
   drawnCorner,
+  lowestContrast,
   markOs,
   pickFirstRm,
   pickScope,
@@ -347,13 +348,13 @@ test('the page lets the material of the exe window through, and the web build st
   await mark('mac');
   await expect(pane).toBeHidden();
 
-  // The macOS exe: glass under the sidebar's pane, fading into --bg-0; a row of 20 px at the top of
-  // the pane for the window's three buttons.
+  // The macOS exe: glass under the sidebar's pane, through --mat-window as in ui2.css .win, fading
+  // into --bg-0; a row of 20 px at the top of the pane for the window's three buttons.
   await mark('mac', 'glass');
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(html).toHaveCSS(
     'background-image',
-    /^linear-gradient\(90deg, rgba\(0, 0, 0, 0\) 0(px)?, rgba\(0, 0, 0, 0\) 226px, rgb\(11, 16, 23\) 300px\)$/,
+    /^linear-gradient\(90deg, rgba\(11, 16, 23, 0\.62\) 0(px)?, rgba\(11, 16, 23, 0\.62\) 226px, rgb\(11, 16, 23\) 300px\)$/,
   );
   await expect(controls).toBeVisible();
   expect((await box(controls)).height).toBe(20);
@@ -371,6 +372,30 @@ test('the page lets the material of the exe window through, and the web build st
     await mark('win', 'glass');
     await expect(html).toHaveCSS('background-color', 'rgb(17, 24, 34)');
   });
+});
+
+// The macOS glass under the sidebar is the system's material, as light as the wallpaper makes it
+// (ADR-0013 appendix 11/11/2026 §7). On the Owner's Mac, under a dark wallpaper, it measured
+// rgb(50, 52, 57) beneath the pane (3.77:1 for "Đã lưu" in --text-3; PR 1414, 19/11/2026). Here
+// it stands at 1.6 times that, for a light wallpaper (NT-MAC-26 (g) measures it on the Mac): every
+// text of the sidebar reads at AA on it, at the lightest place of the pane.
+const BRIGHTEST_GLASS = 'rgb(80, 83, 91)';
+
+test('the text of the macOS sidebar reads at AA on the glass at its brightest (VA5)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await setTransparency(page, 'no-preference');
+  await expect(sidebar(page).getByRole('paragraph').first()).toHaveText(/^Đã lưu/);
+  // The exe's window on macOS, the system's material under the page instead of the stand-in's.
+  await page.evaluate((glass) => {
+    document.getElementById('exe-window-stand-in')?.remove();
+    document.documentElement.dataset.os = 'mac';
+    document.documentElement.dataset.backdrop = 'glass';
+    document.documentElement.style.backgroundColor = glass;
+  }, BRIGHTEST_GLASS);
+  expect(await lowestContrast(sidebar(page))).toBeGreaterThanOrEqual(4.5);
 });
 
 // The warning of a failed save sits in the column above the toolbar (SaveWarning): the Windows pane

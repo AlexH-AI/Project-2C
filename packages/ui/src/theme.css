@@ -488,13 +488,19 @@
 /* The window of the exe (VA5, ui2.css .win), transparent over the material of its system, which
    main.tsx names in `data-backdrop` of the page: `glass` where the system has one (macOS; the Mica
    of Windows 11), `solid` on Windows 10. The page lets the glass through where the window shows
-   it: on macOS under the sidebar's pane, fading into --bg-0 past it (226 to 300 px of ui2.css,
-   18 px before and 56 px past the column of the sidebar);
-   on Windows the whole window, the sidebar flat on it. Under "Giảm độ trong suốt", and on Windows
-   10, the window is --bg-1 (--mat-window, solid then). Web mode has no window and no mark. */
+   it: on macOS under the sidebar's pane, through --mat-window, fading into --bg-0 past it (226 to
+   300 px of ui2.css, 18 px before and 56 px past the column of the sidebar); on Windows the whole
+   window, the sidebar flat on it. Under "Giảm độ trong suốt", and on Windows 10, the window is
+   --bg-1 (--mat-window, solid then). Web mode has no window and no mark. */
 @layer base {
   [data-backdrop='glass'] {
     --window-fill: transparent;
+  }
+  /* macOS: the glass shows through --mat-window, as in ui2.css .win, where the system's material
+     takes the place of the mockup's blur only. Its light follows the wallpaper; this layer keeps
+     the text of the sidebar at AA on it (Owner, PR 1414: 3.77:1 on the bare glass). */
+  [data-backdrop='glass'][data-os='mac'] {
+    --window-fill: var(--mat-window);
   }
   [data-backdrop='solid'] {
     --window-fill: var(--bg-1);
