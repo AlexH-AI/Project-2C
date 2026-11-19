@@ -1,85 +1,40 @@
-import { periodOf, type CalendarDate, type Period, type Scope } from '@p2c/domain';
-import { Button, PeriodPicker } from '@p2c/ui';
-import { useMemo, useState } from 'react';
-import { t } from '../i18n';
-import {
-  applyFilter,
-  chooseFilter,
-  isPending,
-  startFilter,
-  type FilterSelection,
-} from './applied-filter';
-import type { ViewingText } from './overview/overview-view';
+import type { CalendarDate, Period } from '@p2c/domain';
+import { PeriodPill } from '@p2c/ui';
+import type { ReactNode } from 'react';
+import { ScreenBar } from '../shell/ScreenBar';
+import { viewingLine, type ViewingText } from './overview/overview-view';
 import { PERIOD_LABELS } from './period-labels';
 
-export interface AppliedFilter {
-  /** The period chosen in the picker, applied or not. */
-  readonly period: Period;
-  readonly setPeriod: (period: Period) => void;
-  /** The period and scope the numbers on screen are counted for. */
-  readonly applied: FilterSelection;
-  readonly pending: boolean;
-  readonly apply: () => void;
-}
-
 /**
- * The Lọc state of Tổng quan and Báo cáo: the screen opens on the current month with the scope
- * picked applied; later changes of period or scope wait for Lọc (spec Phase 4 §4.3, §4.5).
+ * What Tổng quan and Báo cáo put on the toolbar (mockup app-shell.html `#toolbar`): under the name
+ * of the screen, the period, the days counted and the scope the numbers are for; after the scope,
+ * the period pill, then the buttons of the screen. A period picked applies at once, as a scope
+ * does: there is no "Lọc" (ADR-0013 appendix 11/11/2026 §5).
  */
-export function useAppliedFilter(today: CalendarDate, picked: Scope): AppliedFilter {
-  const [period, setPeriod] = useState(() => periodOf('month', today));
-  const chosen = useMemo(() => ({ period, scope: picked }), [period, picked]);
-  const [filter, setFilter] = useState(() => startFilter(chosen));
-  const current = chooseFilter(filter, chosen);
-  return {
-    period,
-    setPeriod,
-    applied: current.applied,
-    pending: isPending(current),
-    apply: () => setFilter(applyFilter(current)),
-  };
-}
-
-/** The period picker, Lọc and the "Đang xem" line (mockup overview.html 1a, reports.html 2a). */
 export function FilterBar({
-  filter,
+  period,
+  onPeriod,
   today,
   viewing,
+  actions,
 }: {
-  filter: AppliedFilter;
+  period: Period;
+  onPeriod: (period: Period) => void;
   today: CalendarDate;
   viewing: ViewingText;
+  /** The buttons of the screen, after the period pill. */
+  actions?: ReactNode;
 }) {
-  const { period, setPeriod, pending, apply } = filter;
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <PeriodPicker value={period} onChange={setPeriod} today={today} labels={PERIOD_LABELS} />
-      <Button
-        variant={pending ? 'primary' : 'default'}
-        onClick={apply}
-        className="inline-flex items-center gap-1.5"
-      >
-        {t('overview.filter')}
-        {pending && <i aria-hidden="true" className="size-1.5 rounded-full bg-on-accent" />}
-      </Button>
-      {/* Always there, so assistive tech reads the reminder the moment it appears (DR-72). */}
-      <span role="status" className={pending ? 'text-sm text-accent' : 'sr-only'}>
-        {pending && t('overview.pending')}
-      </span>
-      <div className="flex-1" />
-      {/* A long team or RM name breaks in the line rather than push it out (DR6-170). */}
-      <p className="m-0 min-w-0 text-sm wrap-anywhere text-fg-3 tabular-nums" aria-live="polite">
-        {t('overview.viewing')} <b className="font-semibold text-fg-2">{viewing.period}</b>
-        {viewing.mtd && (
-          <span className="ml-1.5 rounded-full border border-accent px-2 py-px text-xs font-bold text-accent">
-            {t('overview.mtd')}
-          </span>
-        )}
-        {/* After MTD the range follows the badge; a year's is set off by "·" (mockup 1c, 2e). */}
-        {viewing.range &&
-          (viewing.mtd ? ` ${viewing.range}` : ` ${t('sep.dot')} ${viewing.range}`)}{' '}
-        {t('sep.dot')} <b className="font-semibold text-fg-2">{viewing.scope}</b>
-      </p>
-    </div>
+    <ScreenBar
+      // Read out when it changes: the numbers of the screen are now for another period or scope.
+      sub={<span aria-live="polite">{viewingLine(viewing)}</span>}
+      actions={
+        <>
+          <PeriodPill value={period} onChange={onPeriod} today={today} labels={PERIOD_LABELS} />
+          {actions}
+        </>
+      }
+    />
   );
 }

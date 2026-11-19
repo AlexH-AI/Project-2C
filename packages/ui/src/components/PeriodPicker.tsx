@@ -35,6 +35,10 @@ export interface PeriodPickerLabels extends PeriodLabelTemplates {
   customReversed: string;
   /** Note by the custom date fields when the range runs past the 3-month cap. */
   customTooLong: string;
+  /** The name of the layer the period pill opens. */
+  pick: string;
+  /** Beside "Hôm nay" in that layer: a choice applies at once. */
+  applies: string;
 }
 
 interface PeriodPickerProps {
@@ -42,6 +46,11 @@ interface PeriodPickerProps {
   onChange: (period: Period) => void;
   today: CalendarDate;
   labels: PeriodPickerLabels;
+  /**
+   * In the layer of the period pill (`PeriodPill`): the kinds, the custom dates and "Hôm nay"
+   * one under the other, with no title nor ‹ › (the pill has them). Called after "Hôm nay".
+   */
+  onToday?: () => void;
 }
 
 /** Why typed custom dates were refused: not dates, start after end, or past the 3-month cap. */
@@ -69,12 +78,13 @@ const stepClass = `cursor-pointer rounded-control-sm px-1.5 py-0.5 text-lg leadi
  * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping;
  * a step that would leave 1900–2100 (or a custom range's 3-month cap) is disabled; "Hôm nay"
  * (always enabled) goes to the period containing today.
+ * "Hôm nay" is the compact button: beside the name of the period, the height of that box.
  * Custom dates are typed as dd/mm/yyyy (not `<input type="date">`, whose format follows the OS
  * locale) and applied on Enter or once the focus leaves both fields, not on Tab from one to the other
  * (R4); a date that does not exist, a start after the end or a range over 3 months is refused with a
  * note the fields point to.
  */
-export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerProps) {
+export function PeriodPicker({ value, onChange, today, labels, onToday }: PeriodPickerProps) {
   const titleId = useId();
   const errorId = useId();
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -123,17 +133,65 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
     />
   );
 
+  const kinds = (
+    <Segmented
+      label={labels.kinds.group}
+      options={PERIOD_KINDS.map((kind) => ({ value: kind, label: labels.kinds[kind] }))}
+      value={value.kind}
+      onChange={(kind) => change(switchKind(value, kind, today))}
+    />
+  );
+  const todayButton = (
+    <Button
+      variant={onToday ? 'quiet' : 'default'}
+      size="sm"
+      onClick={() => {
+        const target = todayPeriod(value, today);
+        if (target !== value) change(target);
+        onToday?.();
+      }}
+    >
+      {labels.today}
+    </Button>
+  );
+  const custom = value.kind === 'custom' && (
+    <>
+      {/* The two dates are one range: the focus moving from one to the other applies nothing. */}
+      <span
+        className={onToday ? 'flex gap-2' : 'contents'}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) apply();
+        }}
+      >
+        {dateField('start', labels.from)}
+        {dateField('end', labels.to)}
+      </span>
+      {shown.error && (
+        <span id={errorId} className="text-xs text-danger">
+          {errorNote[shown.error]}
+        </span>
+      )}
+    </>
+  );
+
+  if (onToday) {
+    return (
+      <div className="flex flex-col items-start gap-2.5">
+        {kinds}
+        {custom}
+        <div className="flex items-center gap-2 self-stretch border-t border-hairline pt-2 text-sm text-fg-2">
+          <span className="flex-1">{labels.applies}</span>
+          {todayButton}
+        </div>
+      </div>
+    );
+  }
   return (
     <div role="group" aria-labelledby={titleId} className="flex flex-wrap items-center gap-2">
       <span id={titleId} className="mr-1 text-xs font-semibold tracking-wider text-fg-3 uppercase">
         {labels.title}
       </span>
-      <Segmented
-        label={labels.kinds.group}
-        options={PERIOD_KINDS.map((kind) => ({ value: kind, label: labels.kinds[kind] }))}
-        value={value.kind}
-        onChange={(kind) => change(switchKind(value, kind, today))}
-      />
+      {kinds}
       <button
         type="button"
         aria-label={labels.previous}
@@ -158,34 +216,8 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       >
         ›
       </button>
-      <Button
-        onClick={() => {
-          const target = todayPeriod(value, today);
-          if (target !== value) change(target);
-        }}
-        className="px-2.5 py-1"
-      >
-        {labels.today}
-      </Button>
-      {value.kind === 'custom' && (
-        <>
-          {/* The two dates are one range: the focus moving from one to the other applies nothing. */}
-          <span
-            className="contents"
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) apply();
-            }}
-          >
-            {dateField('start', labels.from)}
-            {dateField('end', labels.to)}
-          </span>
-          {shown.error && (
-            <span id={errorId} className="text-xs text-danger">
-              {errorNote[shown.error]}
-            </span>
-          )}
-        </>
-      )}
+      {todayButton}
+      {custom}
     </div>
   );
 }

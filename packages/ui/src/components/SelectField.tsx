@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { ErrorMark, ListArrow } from './FieldMarks';
 
 export interface SelectOption {
@@ -21,16 +21,8 @@ interface SelectFieldProps {
   help?: string;
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
-  /** `md` is the larger text of a topbar picker; `sm` (default) is the usual size. */
-  size?: 'sm' | 'md';
   /** Shown but not changeable (mockup `.input.locked`: a dashed edge, no fill). */
   disabled?: boolean;
-  /**
-   * Never wider than `max-w-80`, for a picker in a toolbar: a longer choice is cut there, so a long
-   * name does not push the toolbar out of the window, and is read whole from the field's title
-   * under the pointer (DR6-170).
-   */
-  capped?: boolean;
 }
 
 /**
@@ -48,17 +40,12 @@ export function SelectField({
   error,
   help,
   required,
-  size = 'sm',
   disabled,
-  capped,
 }: SelectFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
-  // The title is there only under the pointer, which it is for: kept on the field it would be its
-  // description too, and a screen reader would say the choice twice (DR6-187).
-  const [pointed, setPointed] = useState(false);
   return (
-    <div className={capped ? 'flex min-w-0 max-w-80 flex-col gap-1' : 'flex flex-col gap-1'}>
+    <div className="flex flex-col gap-1">
       <label htmlFor={id} className={labelHidden ? 'sr-only' : 'font-medium'}>
         {label}
         {required && (
@@ -67,8 +54,8 @@ export function SelectField({
           </span>
         )}
       </label>
-      {/* Layout containment around every list, capped or held narrower from outside (a box of a
-          bar, a dialog): the choice shown is cut in the field, and WebKit counts the cut text in
+      {/* Layout containment around every list held narrower from outside (a box of a screen, a
+          dialog): the choice shown is cut in the field, and WebKit counts the cut text in
           the scrolling width of whatever holds the field, up to the page (Mac-7b, VA2). */}
       <div className="relative flex flex-col contain-layout">
         <select
@@ -76,15 +63,10 @@ export function SelectField({
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          onPointerEnter={capped ? () => setPointed(true) : undefined}
-          onPointerLeave={capped ? () => setPointed(false) : undefined}
           aria-required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={error || help ? noteId : undefined}
-          title={
-            capped && pointed ? options.find((option) => option.value === value)?.label : undefined
-          }
-          className={`field min-h-9 cursor-pointer appearance-none rounded-field py-1.5 pr-8 pl-2.75 disabled:cursor-default ${size === 'md' ? 'text-md' : 'text-sm'}`}
+          className="field min-h-9 cursor-pointer appearance-none rounded-field py-1.5 pr-8 pl-2.75 disabled:cursor-default text-sm"
         >
           {placeholder !== undefined && <option value="">{placeholder}</option>}
           {options.map((option) => (

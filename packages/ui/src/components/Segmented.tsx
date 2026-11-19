@@ -10,8 +10,6 @@ interface SegmentedProps<T extends string> {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
   onChange: (value: T) => void;
-  /** `md` is the larger text of a topbar picker; `sm` (default) is the usual size. */
-  size?: 'sm' | 'md';
 }
 
 /**
@@ -24,7 +22,6 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
-  size = 'sm',
 }: SegmentedProps<T>) {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
@@ -55,7 +52,7 @@ export function Segmented<T extends string>({
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             onClick={() => onChange(option.value)}
-            className={`relative h-7 cursor-pointer rounded-control-sm px-3 ${size === 'md' ? 'text-md' : 'text-sm'} font-control whitespace-nowrap transition-colors duration-(--t-2) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            className={`relative h-7 cursor-pointer rounded-control-sm px-3 text-sm font-control whitespace-nowrap transition-colors duration-(--t-2) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
               checked ? 'text-fg' : 'text-fg-2 hover:text-fg'
             }`}
           >

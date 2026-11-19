@@ -482,15 +482,20 @@ async function customers(aiId: string) {
   await expect(panel).toContainText('Đang xem lần');
 }
 
-/** Tổng quan and Báo cáo: Lọc on Năm then on Tháng; Báo cáo by RM. */
+/**
+ * Tổng quan and Báo cáo: the period Năm then Tháng, picked in the layer of the period pill and
+ * applied at once (there is no "Lọc" since VA4b; the names of the measures stay, to compare with
+ * the runs before); Báo cáo by RM.
+ */
 async function filters() {
   for (const screen of ['overview', 'reports']) {
     await go(`#/${screen}`);
-    const filter = page.getByRole('button', { name: 'Lọc', exact: true });
-    await kind('Năm').click();
-    await click(`${screen}.filter-year`, filter);
-    await kind('Tháng').click();
-    await click(`${screen}.filter-month`, filter);
+    // The name of the period, between ‹ and ›, opens the kinds; the layer stays open over them.
+    const pill = page.getByRole('banner').getByRole('group', { name: 'Kỳ thống kê' });
+    await pill.getByRole('button').nth(1).click();
+    await click(`${screen}.filter-year`, kind('Năm'));
+    await click(`${screen}.filter-month`, kind('Tháng'));
+    await page.keyboard.press('Escape');
   }
   const tables = page.getByRole('radiogroup', { name: 'Bảng báo cáo' });
   await click('reports.table-re', tables.getByRole('radio', { name: 'Theo RM' }));

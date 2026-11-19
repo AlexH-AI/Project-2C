@@ -1,7 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
 import { ANCHOR_YEAR } from './anchor';
-import { asExe, pickFirstRm, scopePill } from './support';
+import {
+  asExe,
+  pickCustomPeriod,
+  pickFirstRm,
+  pickPeriodKind,
+  scopePill,
+  screenSub,
+} from './support';
 
 // The simulated data (spec §7, D8): 3 teams of 1 TL + 10 RM, and a shared IS, BD and BDM.
 const SEEDED = ['Bình Minh', 'Hừng Đông', 'Sao Mai'];
@@ -608,22 +615,15 @@ test('member columns: an RM open customers match the Customers screen', async ({
 
   // The other two match Báo cáo for that RM: the 30 days up to today, and the year so far.
   await page.goto('/#/reports');
-  // The scope went along from Khách hàng: the same RM.
+  // The scope went along from Khách hàng: the same RM, with nothing to apply.
   await expect(scopePill(page)).toHaveText(rm);
-  const kinds = page.getByRole('radiogroup', { name: 'Loại kỳ' });
-  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
-  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
-  await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('17/08/2026');
-  await picker.getByRole('textbox', { name: 'Đến ngày' }).fill('15/09/2026');
-  const filter = page.getByRole('button', { name: 'Lọc', exact: true });
-  await filter.click();
-  const viewing = page.locator('p', { hasText: 'Đang xem:' });
-  await expect(viewing).toContainText(`17/08 – 15/09/2026 · RM ${rm}`);
+  await pickCustomPeriod(page, '17/08/2026', '15/09/2026');
+  const viewing = screenSub(page);
+  await expect(viewing).toHaveText(`17/08 – 15/09/2026 · RM ${rm}`);
   const totals = page.getByRole('table', { name: 'Tổng hợp' }).getByRole('cell');
   await expect(totals.nth(4)).toHaveText(appointments30!);
 
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await filter.click();
+  await pickPeriodKind(page, 'Năm');
   await expect(viewing).toContainText(`Năm ${ANCHOR_YEAR}`);
   await expect(totals.nth(8)).toHaveText(issued!);
 });

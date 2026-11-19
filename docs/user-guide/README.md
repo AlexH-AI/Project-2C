@@ -19,7 +19,7 @@ Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **
 | Mục | Nội dung |
 |---|---|
 | [1. Bắt đầu](01-bat-dau.md) | Cài, gỡ trên Windows, chế độ portable, cài trên macOS (Open Anyway, Keychain), nơi để dữ liệu, phím ⌘ / Ctrl, dữ liệu giả lập lúc mở lần đầu, báo lỗi lưu, góc nhìn Toàn bộ / Team / RM |
-| [2. Tổng quan](02-tong-quan.md) | Chọn kỳ, Lọc, ô Lịch hẹn, 6 chỉ số + so kỳ trước, KH theo nhóm, So sánh team |
+| [2. Tổng quan](02-tong-quan.md) | Chọn kỳ và góc nhìn, ô Lịch hẹn, 6 chỉ số + so kỳ trước, KH theo nhóm, So sánh team |
 | [3. Lịch hẹn](03-lich-hen.md) | Lịch tháng / năm, đặt lịch, ghi kết quả, hẹn tiếp, dời lịch, sửa / xóa |
 | [4. Khách hàng](04-khach-hang.md) | Kanban / Bảng, tạo / sửa / xóa KH, chuyển nhóm tay |
 | [5. Hồ sơ KH](05-ho-so-kh.md) | Dữ kiện KYC, ghi chú KYC, mâu thuẫn, dòng thời gian, hợp đồng, lịch hẹn của KH |

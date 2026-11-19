@@ -289,6 +289,44 @@ export async function pickFirstRm(page: Page, team = 'Bình Minh') {
 /** The line under the name of the screen, on the toolbar. */
 export const screenSub = (page: Page) => page.getByRole('banner').getByRole('paragraph');
 
+/** The period pill of the toolbar (Tổng quan, Báo cáo): ‹ ›, and the name of the period. */
+export const periodPill = (page: Page) =>
+  page.getByRole('banner').getByRole('group', { name: 'Kỳ thống kê' });
+
+/** The name of the period on its pill, between ‹ and ›: it opens the layer of the kinds. */
+export const periodName = (page: Page) => periodPill(page).getByRole('button').nth(1);
+
+/**
+ * The layer the name of the period opens (the kinds, the custom dates, "Hôm nay"), opened when it
+ * is not.
+ */
+export async function periodLayer(page: Page): Promise<Locator> {
+  const layer = page.getByRole('dialog', { name: 'Chọn kỳ' });
+  if (!(await layer.isVisible())) await periodName(page).click();
+  await expect(layer).toBeVisible();
+  return layer;
+}
+
+/** Picks a kind of period on the toolbar, then closes the layer: the period applies at once. */
+export async function pickPeriodKind(page: Page, kind: string) {
+  const layer = await periodLayer(page);
+  await layer.getByRole('radio', { name: kind, exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(layer).toBeHidden();
+}
+
+/** Types a Tùy chọn period on the toolbar (dd/mm/yyyy), applies it with Enter and closes the layer. */
+export async function pickCustomPeriod(page: Page, from: string, to: string) {
+  const layer = await periodLayer(page);
+  await layer.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await layer.getByRole('textbox', { name: 'Từ ngày' }).fill(from);
+  const end = layer.getByRole('textbox', { name: 'Đến ngày' });
+  await end.fill(to);
+  await end.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(layer).toBeHidden();
+}
+
 /** The page runs on Playwright's WebKit: the `webkit` project, on a Mac (Mac-7). */
 const onWebKit = (page: Page) => page.context().browser()?.browserType().name() === 'webkit';
 

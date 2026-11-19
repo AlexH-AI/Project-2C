@@ -1,17 +1,23 @@
 import { expect, test, type Page } from './fixtures';
-import { pickFirstRm, pickScope, scopeMenu, scopePill, trackConsoleErrors } from './support';
+import {
+  periodLayer,
+  periodName,
+  periodPill,
+  pickCustomPeriod,
+  pickFirstRm,
+  pickScope,
+  scopeMenu,
+  scopePill,
+  screenSub,
+  trackConsoleErrors,
+} from './support';
 
 // The e2e build pins today to Tuesday 15/09/2026 (playwright.config.ts): September is in progress.
 async function openOverview(page: Page) {
   await page.goto('/#/overview');
   return {
-    kinds: page.getByRole('radiogroup', { name: 'Loại kỳ' }),
-    filter: page.getByRole('button', { name: 'Lọc', exact: true }),
-    // A status, so assistive tech reads it the moment it appears (DR-72).
-    pending: page
-      .getByRole('status')
-      .filter({ hasText: 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật' }),
-    viewing: page.locator('p', { hasText: 'Đang xem:' }),
+    // The line under the name of the screen: the period, the days counted, the scope.
+    viewing: screenSub(page),
     kpis: page.getByRole('region', { name: 'Chỉ số của kỳ' }),
   };
 }
@@ -20,11 +26,13 @@ test('opens on the current month to date with the appointments tile and six KPI'
   page,
 }) => {
   const errors = trackConsoleErrors(page);
-  const { kinds, viewing, kpis, pending } = await openOverview(page);
+  const { viewing, kpis } = await openOverview(page);
 
-  await expect(kinds.getByRole('radio', { checked: true })).toHaveText('Tháng');
-  await expect(viewing).toHaveText('Đang xem: Tháng 09/2026MTD 01/09 – 15/09/2026 · Toàn bộ');
-  await expect(pending).toHaveCount(0);
+  await expect(periodName(page)).toHaveText('Tháng 09/2026');
+  await expect(viewing).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
+  await expect(scopePill(page)).toHaveText('Toàn bộ');
+  // A period or scope picked applies at once: no "Lọc" (ADR-0013 appendix 11/11/2026 §5).
+  await expect(page.getByRole('button', { name: 'Lọc', exact: true })).toHaveCount(0);
   // The six KPI have a heading of their own, beside the tile "Lịch hẹn" and not under it, as on
   // the screen (DR6-187): each is a level 3 under "Chỉ số của kỳ".
   await expect(kpis.getByRole('heading', { level: 3 })).toHaveCount(6);
@@ -82,34 +90,77 @@ async function appointmentsTile(page: Page) {
   return { met: met!, total: total!, lines };
 }
 
-test('a new period waits for Lọc, then "Đang xem" changes', async ({ page }) => {
-  const { kinds, filter, pending, viewing } = await openOverview(page);
-
-  await kinds.getByRole('radio', { name: 'Năm' }).click();
-  await expect(pending).toBeVisible();
-  await expect(viewing).toContainText('Tháng 09/2026');
+test('a new period applies at once: the line under the name and the numbers change', async ({
+  page,
+}) => {
+  const { viewing } = await openOverview(page);
   await expect(page.getByRole('region', { name: 'Lịch hẹn · cả tháng' })).toBeVisible();
 
-  await filter.click();
-  await expect(pending).toHaveCount(0);
-  await expect(viewing).toHaveText('Đang xem: Năm 2026 · 01/01 – 15/09/2026 · Toàn bộ');
+  // The name of the period opens the kinds; one picked applies while the layer is still open.
+  const layer = await periodLayer(page);
+  await expect(layer.getByRole('radio', { checked: true })).toHaveText('Tháng');
+  await layer.getByRole('radio', { name: 'Năm' }).click();
+  await expect(layer).toBeVisible();
+  await expect(periodName(page)).toHaveText('Năm 2026');
+  await expect(viewing).toHaveText('Năm 2026 · 01/01 – 15/09/2026 · Toàn bộ');
   await expect(page.getByRole('region', { name: 'Lịch hẹn · cả năm' })).toBeVisible();
+  // Esc closes the layer, the focus back on the name of the period.
+  await page.keyboard.press('Escape');
+  await expect(layer).toBeHidden();
+  await expect(periodName(page)).toBeFocused();
   await expect(
     page.getByRole('region', { name: 'Chỉ số của kỳ' }).getByRole('region', { name: 'Chuyển RF' }),
   ).toContainText('so với 01/01 – 15/09/2025');
 });
 
-test('choosing the shown period again leaves nothing to apply', async ({ page }) => {
-  const { kinds, pending } = await openOverview(page);
+test('‹ › on the pill step one period, and "Hôm nay" comes back to the one of today', async ({
+  page,
+}) => {
+  const { viewing } = await openOverview(page);
+  const tile = page.getByRole('region', { name: 'Lịch hẹn · cả tháng' });
+  const september = await tile.textContent();
 
-  await kinds.getByRole('radio', { name: 'Tuần' }).click();
-  await expect(pending).toBeVisible();
-  await kinds.getByRole('radio', { name: 'Tháng' }).click();
-  await expect(pending).toHaveCount(0);
+  await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+  await expect(periodName(page)).toHaveText('Tháng 08/2026');
+  // A month that ended has no days counted to say.
+  await expect(viewing).toHaveText('Tháng 08/2026 · Toàn bộ');
+  await expect(tile).not.toHaveText(september ?? '');
+
+  await periodPill(page).getByRole('button', { name: 'Kỳ sau' }).click();
+  await periodPill(page).getByRole('button', { name: 'Kỳ sau' }).click();
+  await expect(periodName(page)).toHaveText('Tháng 10/2026');
+
+  // "Hôm nay" goes to the month of today and closes the layer.
+  const layer = await periodLayer(page);
+  await expect(layer).toContainText('Chọn là số cập nhật ngay');
+  await layer.getByRole('button', { name: 'Hôm nay' }).click();
+  await expect(layer).toBeHidden();
+  await expect(viewing).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
+  await expect(tile).toHaveText(september ?? '');
+});
+
+test('a press outside closes the period layer and keeps what was picked', async ({ page }) => {
+  const { viewing } = await openOverview(page);
+
+  const layer = await periodLayer(page);
+  await layer.getByRole('radio', { name: 'Tuần' }).click();
+  // An empty place of the screen, which takes no focus: the focus goes back to the name of the
+  // period, not to the page.
+  await page.getByRole('main').click({ position: { x: 3, y: 3 } });
+  await expect(layer).toBeHidden();
+  await expect(viewing).toHaveText('14/09 – 20/09/2026 · Toàn bộ');
+  await expect(periodName(page)).toBeFocused();
+
+  // The name of the period closes its own layer too, and has the focus after.
+  await periodName(page).click();
+  await expect(layer).toBeVisible();
+  await periodName(page).click();
+  await expect(layer).toBeHidden();
+  await expect(periodName(page)).toBeFocused();
 });
 
 test('the Team scope has no team to pick and counts every team', async ({ page }) => {
-  const { filter, pending, viewing } = await openOverview(page);
+  const { viewing } = await openOverview(page);
   const all = await appointmentsTile(page);
 
   // "Mọi team" stands for the Team scope; a team opens into its RM alone, with no "Cả team".
@@ -119,30 +170,22 @@ test('the Team scope has no team to pick and counts every team', async ({ page }
   await expect(menu.getByRole('menuitemradio', { name: 'Cả team' })).toHaveCount(0);
   await menu.getByRole('menuitemradio', { name: 'Mọi team' }).click();
   await expect(menu).toBeHidden();
-  await expect(scopePill(page)).toHaveText('Mọi team');
-  await expect(pending).toBeVisible();
 
-  await filter.click();
+  await expect(scopePill(page)).toHaveText('Mọi team');
   await expect(viewing).toContainText('· Mọi team (3 team)');
   expect(await appointmentsTile(page)).toEqual(all);
 
   await pickFirstRm(page);
-  await filter.click();
   await expect(viewing).toContainText('· RM ');
+  expect(await appointmentsTile(page)).not.toEqual(all);
 });
 
 test('a period without appointments shows "0 / 0" and "chưa có lịch" in the bar', async ({
   page,
 }) => {
-  const { kinds, filter } = await openOverview(page);
+  await openOverview(page);
 
-  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
-  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
-  await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('01/01/2000');
-  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
-  await end.fill('10/01/2000');
-  await end.press('Enter');
-  await filter.click();
+  await pickCustomPeriod(page, '01/01/2000', '10/01/2000');
 
   const tile = page.getByRole('region', { name: 'Lịch hẹn · cả khoảng' });
   await expect(tile).toContainText('0 / 0');
@@ -152,7 +195,7 @@ test('a period without appointments shows "0 / 0" and "chưa có lịch" in the 
 test('customers by stage: four tiles over the chart, a stage hidden and shown again', async ({
   page,
 }) => {
-  const { filter } = await openOverview(page);
+  await openOverview(page);
   const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
   const n4 = block.getByRole('button', { name: /^N4/ });
 
@@ -161,7 +204,6 @@ test('customers by stage: four tiles over the chart, a stage hidden and shown ag
   await expect(block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm/ })).toHaveCount(1);
 
   await pickScope(page, 'teams');
-  await filter.click();
   await expect(block).toContainText('cộng 3 team');
   const charts = block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm · Team / });
   await expect(charts).toHaveCount(3);
@@ -196,10 +238,9 @@ test('customers by stage: four tiles over the chart, a stage hidden and shown ag
 test('a period not started yet has "—" in the tiles and says so over the chart', async ({
   page,
 }) => {
-  const { filter } = await openOverview(page);
+  await openOverview(page);
 
   await page.getByRole('button', { name: 'Kỳ sau' }).click();
-  await filter.click();
 
   const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
   const n4 = block.getByRole('button', { name: /^N4/ });
@@ -215,7 +256,7 @@ test('a period not started yet has "—" in the tiles and says so over the chart
 test('So sánh team: a team opens its RM by name, closes again, and the RM scope has no table', async ({
   page,
 }) => {
-  const { filter } = await openOverview(page);
+  await openOverview(page);
   const table = page.getByRole('table', { name: 'So sánh team' });
   const rows = table.getByRole('row');
   const team = table.getByRole('button', { name: 'Bình Minh' });
@@ -239,11 +280,9 @@ test('So sánh team: a team opens its RM by name, closes again, and the RM scope
   await expect(rows).toHaveCount(5);
 
   await pickScope(page, 'teams');
-  await filter.click();
   await expect(table).toBeVisible();
 
   await pickFirstRm(page);
-  await filter.click();
   await expect(page.getByRole('region', { name: 'Khách hàng theo nhóm' })).toBeVisible();
   await expect(table).toHaveCount(0);
 });

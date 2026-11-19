@@ -55,14 +55,16 @@ export function Toolbar({
           </h1>
           {/* --text-2, not the mockup's --text-3: over the bright cells that scroll under the
               scroll edge, --text-3 is below 4.5:1 here. A line cut short shows whole as the
-              tooltip of the pointer over it. */}
+              tooltip of the pointer over it, and only then: kept, the title would be the
+              description of the line, an old one once the line changes (DR6-187). */}
           <p
             ref={setSub}
             data-slot="screen-sub"
             onPointerEnter={(event) => {
               const line = event.currentTarget;
-              line.title = line.scrollWidth > line.clientWidth ? (line.textContent ?? '') : '';
+              if (line.scrollWidth > line.clientWidth) line.title = line.textContent ?? '';
             }}
+            onPointerLeave={(event) => event.currentTarget.removeAttribute('title')}
             className="m-0 truncate text-sm text-fg-2 tabular-nums empty:hidden"
           />
         </div>

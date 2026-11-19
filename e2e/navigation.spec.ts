@@ -1,7 +1,20 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { asExe, pickScope, scopeMenu, scopePill, teamRow, trackConsoleErrors } from './support';
+import {
+  asExe,
+  lowestContrast,
+  periodPill,
+  pickScope,
+  scopeMenu,
+  scopePill,
+  screenSub,
+  teamRow,
+  trackConsoleErrors,
+} from './support';
 
 const SCREENS = ['Tổng quan', 'Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự', 'Cài đặt'];
+// --accent and --text-2, as the browser reports them.
+const ACCENT = 'rgb(217, 178, 106)';
+const TEXT_2 = 'rgb(174, 185, 200)';
 
 test('the sidebar lists the six screens, each with an icon', async ({ page }) => {
   await page.goto('/');
@@ -292,11 +305,30 @@ test('the scope pill names the scope shown and says it opens a menu', async ({ p
 
   await pill.click();
   await expect(pill).toHaveAttribute('aria-expanded', 'true');
-  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText('Toàn bộ');
-  // A press outside closes it with nothing picked.
-  await page.getByRole('heading', { level: 1 }).click();
+  const chosen = menu.getByRole('menuitemradio', { checked: true });
+  await expect(chosen).toHaveText('Toàn bộ');
+  // A row of the first level takes the gold when chosen.
+  await expect(chosen).toHaveCSS('color', ACCENT);
+  // A press outside closes it with nothing picked. On what takes the focus (the name of the
+  // screen does), the focus goes there.
+  const heading = page.getByRole('heading', { level: 1 });
+  await heading.click();
   await expect(menu).toBeHidden();
   await expect(pill).toHaveText('Toàn bộ');
+  await expect(heading).toBeFocused();
+
+  // On an empty place, which takes no focus, the focus goes back to the pill, not to the page.
+  await pill.click();
+  await expect(menu).toBeVisible();
+  await page.getByRole('main').click({ position: { x: 3, y: 3 } });
+  await expect(menu).toBeHidden();
+  await expect(pill).toBeFocused();
+  // The pill closes its own menu too, and has the focus after (a click gives it none on macOS).
+  await pill.click();
+  await expect(menu).toBeVisible();
+  await pill.click();
+  await expect(menu).toBeHidden();
+  await expect(pill).toBeFocused();
 });
 
 test('the menu lists the teams by name, each opening into "Cả team" and its RM', async ({
@@ -338,7 +370,13 @@ test('the menu lists the teams by name, each opening into "Cả team" and its RM
   // Opened again, the team of the scope is open and its row the one checked.
   await pill.click();
   await expect(teamRow(page, 'Bình Minh')).toHaveAttribute('aria-expanded', 'true');
-  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveText('Cả team');
+  const whole = menu.getByRole('menuitemradio', { checked: true });
+  await expect(whole).toHaveText('Cả team');
+  // A row under a team keeps the colour of its level when chosen: its weight and the gold check
+  // say it (mockup bao-cao.html, `.sub.on`).
+  await expect(whole).toHaveCSS('color', TEXT_2);
+  await expect(whole).toHaveCSS('font-weight', '600');
+  await expect(whole.locator('svg')).toHaveCSS('color', ACCENT);
   const second = (await rows.nth(3).textContent()) ?? '';
   await rows.nth(3).click();
   await expect(pill).toHaveText(second);
@@ -361,6 +399,8 @@ test('the menu of the scope by keyboard: arrows, Home, End, Enter, Esc', async (
   await expect(everyone).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(teamRow(page, 'Bình Minh')).toBeFocused();
+  // Under the focus the row is lighter: its number of RM still reads at 4.5:1.
+  expect(await lowestContrast(teamRow(page, 'Bình Minh'))).toBeGreaterThanOrEqual(4.5);
   await page.keyboard.press('End');
   await expect(teamRow(page, 'Sao Mai')).toBeFocused();
   // Around the ends.
@@ -429,16 +469,28 @@ test('the scope kept while its pill is hidden', async ({ page }) => {
 });
 
 // NT-CH-04: one scope for every screen, applied where it lands with nothing to press.
-test('the scope goes along from screen to screen', async ({ page }) => {
+test('the scope goes along from screen to screen; only Tổng quan and Báo cáo have the period pill', async ({
+  page,
+}) => {
   const sidebar = page.getByRole('navigation', { name: 'Điều hướng chính' });
   await page.goto('/#/customers');
   await pickScope(page, { team: 'Sao Mai' });
+  await expect(periodPill(page)).toHaveCount(0);
 
+  // Lịch hẹn keeps its period picker in the screen, the kinds in sight.
   await sidebar.getByRole('link', { name: 'Lịch hẹn' }).click();
   await expect(scopePill(page)).toHaveText('Team Sao Mai');
+  await expect(periodPill(page)).toHaveCount(0);
+  const picker = page.getByRole('main').getByRole('group', { name: 'Kỳ thống kê' });
+  await expect(picker.getByRole('radiogroup', { name: 'Loại kỳ' })).toBeVisible();
+  await expect(picker.getByRole('button', { name: 'Hôm nay' })).toBeVisible();
 
   await sidebar.getByRole('link', { name: 'Báo cáo' }).click();
   await expect(scopePill(page)).toHaveText('Team Sao Mai');
+  await expect(periodPill(page)).toBeVisible();
+  await expect(screenSub(page)).toHaveText(
+    'Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Team Sao Mai',
+  );
   await expect(page.getByRole('table', { name: 'Tổng hợp' }).getByRole('rowheader')).toHaveText([
     'Team Sao Mai',
   ]);
@@ -446,7 +498,14 @@ test('the scope goes along from screen to screen', async ({ page }) => {
   // Tổng quan counts every team in the Team scope, and says so.
   await sidebar.getByRole('link', { name: 'Tổng quan' }).click();
   await expect(scopePill(page)).toHaveText('Mọi team');
-  await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText('· Mọi team (3 team)');
+  await expect(periodPill(page)).toBeVisible();
+  await expect(screenSub(page)).toHaveText(
+    'Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Mọi team (3 team)',
+  );
+  for (const screen of ['Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Tổng quan']) {
+    await sidebar.getByRole('link', { name: screen }).click();
+    await expect(page.getByRole('button', { name: 'Lọc', exact: true })).toHaveCount(0);
+  }
   // Back on a screen with a team of its own, the team picked is still the one.
   await sidebar.getByRole('link', { name: 'Khách hàng' }).click();
   await expect(scopePill(page)).toHaveText('Team Sao Mai');

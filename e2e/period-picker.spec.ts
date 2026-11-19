@@ -1,20 +1,25 @@
 import { expect, test, type Locator, type Page } from './fixtures';
 
 import { ANCHOR_MORNING } from './anchor';
-import { trackConsoleErrors } from './support';
+import { periodLayer, periodName, periodPill, screenSub, trackConsoleErrors } from './support';
 
 // The clock stays on the pinned day so the app's today cannot move during a test.
 const TODAY = ANCHOR_MORNING;
 
+/**
+ * Tổng quan with the layer of its period pill open: the pill has ‹ › and the name of the period,
+ * the layer (`picker`) the kinds, the custom dates and "Hôm nay". A step or a kind leaves it open.
+ */
 async function openPicker(page: Page) {
   await page.clock.setFixedTime(TODAY);
   await page.goto('/#/overview');
-  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+  const pill = periodPill(page);
+  const picker = await periodLayer(page);
   return {
     kinds: picker.getByRole('radiogroup', { name: 'Loại kỳ' }),
-    label: picker.getByRole('status'),
-    previous: picker.getByRole('button', { name: 'Kỳ trước' }),
-    next: picker.getByRole('button', { name: 'Kỳ sau' }),
+    label: periodName(page),
+    previous: pill.getByRole('button', { name: 'Kỳ trước' }),
+    next: pill.getByRole('button', { name: 'Kỳ sau' }),
     picker,
   };
 }
@@ -207,6 +212,13 @@ test('disables ‹ at year 1900 and › at year 2100 without console errors', as
   await next.click();
   await expect(label).toHaveText('Năm 1901');
   await expect(previous).toBeEnabled();
+  // The step that reaches the end goes off and keeps the focus it has (DR6-186).
+  await previous.press('Enter');
+  await expect(label).toHaveText('Năm 1900');
+  await expect(previous).toBeDisabled();
+  await expect(previous).toBeFocused();
+  await next.click();
+  await expect(label).toHaveText('Năm 1901');
 
   await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
   await start.fill('27/12/2100');
@@ -251,14 +263,18 @@ test('"Hôm nay" goes back to the period containing today and stays enabled at y
   await next.click();
   await next.click();
   await expect(label).toHaveText('Tháng 11/2026');
+  // "Hôm nay" closes the layer: the name of the period opens it again.
   await todayButton.click();
+  await expect(picker).toBeHidden();
   await expect(label).toHaveText('Tháng 09/2026');
 
+  await periodLayer(page);
   await kinds.getByRole('radio', { name: 'Tuần' }).click();
   await next.click();
   await todayButton.click();
   await expect(label).toHaveText('14/09 – 20/09/2026');
 
+  await periodLayer(page);
   await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
   await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('01/01/1900');
   const end = picker.getByRole('textbox', { name: 'Đến ngày' });
@@ -289,26 +305,29 @@ const LAST_MINUTE = new Date(2026, 8, 15, 23, 59);
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
-test('after midnight "Hôm nay" goes to the new month; the numbers wait for Lọc', async ({
+test('after midnight "Hôm nay" goes to the new month, and the numbers are of it at once', async ({
   page,
 }) => {
   await page.clock.install({ time: LAST_MINUTE });
   await page.goto('/#/overview');
-  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
-  const label = picker.getByRole('status');
-  const viewing = page.locator('p', { hasText: 'Đang xem:' });
+  const label = periodName(page);
+  const viewing = screenSub(page);
+  const tile = page.getByRole('region', { name: 'Lịch hẹn · cả tháng' });
   await expect(label).toHaveText('Tháng 09/2026');
+  await expect(viewing).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
+  const september = await tile.textContent();
 
-  // 15 days and 2 minutes on, the app left open: its day is 01/10/2026.
+  // 15 days and 2 minutes on, the app left open: its day is 01/10/2026, and September has ended.
   await page.clock.fastForward(15 * DAY + 2 * MINUTE);
   await expect(label).toHaveText('Tháng 09/2026');
-  await picker.getByRole('button', { name: 'Hôm nay' }).click();
+  await expect(viewing).toHaveText('Tháng 09/2026 · Toàn bộ');
+  const layer = await periodLayer(page);
+  await layer.getByRole('button', { name: 'Hôm nay' }).click();
   await expect(label).toHaveText('Tháng 10/2026');
-  await expect(page.getByText('Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật')).toBeVisible();
-  await expect(viewing).toContainText('Tháng 09/2026');
-
-  await page.getByRole('button', { name: 'Lọc', exact: true }).click();
-  await expect(viewing).toHaveText('Đang xem: Tháng 10/2026MTD 01/10/2026 · Toàn bộ');
+  // No "Lọc": the line under the name and the numbers are those of October already.
+  await expect(viewing).toHaveText('Tháng 10/2026 · 01/10/2026 (MTD) · Toàn bộ');
+  await expect(tile).not.toHaveText(september ?? '');
+  await expect(page.getByRole('button', { name: 'Lọc', exact: true })).toHaveCount(0);
 });
 
 test('after midnight the appointments expected the day before read unrecorded, on the same screen', async ({

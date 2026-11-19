@@ -1,7 +1,7 @@
 import type { PeriodPickerLabels } from '@p2c/ui';
 import { t } from '../i18n';
 
-/** Labels of the shared period picker (Tổng quan, Lịch hẹn, Báo cáo). */
+/** Labels of the shared period picker (Lịch hẹn) and period pill (Tổng quan, Báo cáo). */
 export const PERIOD_LABELS: PeriodPickerLabels = {
   title: t('period.title'),
   kinds: {
@@ -21,6 +21,8 @@ export const PERIOD_LABELS: PeriodPickerLabels = {
   customInvalid: t('period.customInvalid'),
   customReversed: t('period.customReversed'),
   customTooLong: t('period.customTooLong'),
+  pick: t('period.pick'),
+  applies: t('period.applies'),
   monthLabel: t('period.monthLabel'),
   yearLabel: t('period.yearLabel'),
 };

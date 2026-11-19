@@ -6,6 +6,7 @@ import {
   discoveryFacts,
   gotoScreen,
   pickScope,
+  screenSub,
   trackConsoleErrors,
 } from './support';
 
@@ -35,7 +36,6 @@ const SUMMARY = ['1', '0', '0', '1', '2', ...COMPARED.slice(1), '0', '0', '1', '
 const SUMMARY_OF_COMPARED = [0, 5, 6, 7, 8, 9, 10];
 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Điều hướng chính' });
-const filter = (page: Page) => page.getByRole('button', { name: 'Lọc', exact: true });
 const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
 const trash = (page: Page) => page.getByRole('region', { name: 'Thùng rác' });
 const backup = (page: Page) => page.getByRole('region', { name: 'Xuất / nhập backup' });
@@ -88,10 +88,10 @@ async function addPolicy(page: Page, day: string, fyp: string, issued?: [string,
 /** The figures of the team and its RM on Tổng quan and Báo cáo, for September to date. */
 async function figures(page: Page) {
   await gotoScreen(page, '/#/overview');
+  // No "Lọc" anywhere: a scope picked is the one the numbers are for.
   await pickScope(page, 'teams');
-  await filter(page).click();
-  await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(
-    'Tháng 09/2026MTD 01/09 – 15/09/2026 · Mọi team',
+  await expect(screenSub(page)).toContainText(
+    'Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Mọi team',
   );
   const compared = page
     .getByRole('table', { name: 'So sánh team' })
@@ -102,8 +102,7 @@ async function figures(page: Page) {
   const overview = await compared.allInnerTexts();
 
   await scopeOnRm(page);
-  await filter(page).click();
-  await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(`· RM ${RM}`);
+  await expect(screenSub(page)).toContainText(`· RM ${RM}`);
   const tile = page.getByRole('region', { name: 'Lịch hẹn · cả tháng' });
   const appointments = [
     (await tile.getByRole('paragraph').first().innerText()).replace(/\s/g, ''),
@@ -112,9 +111,8 @@ async function figures(page: Page) {
 
   await sidebar(page).getByRole('link', { name: 'Báo cáo' }).click();
   await pickScope(page, { team: TEAM });
-  await filter(page).click();
-  await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(
-    `Tháng 09/2026MTD 01/09 – 15/09/2026 · Team ${TEAM}`,
+  await expect(screenSub(page)).toHaveText(
+    `Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Team ${TEAM}`,
   );
   const summary = page.getByRole('table', { name: 'Tổng hợp' }).getByRole('cell');
   await expect(summary).toHaveCount(SUMMARY.length);

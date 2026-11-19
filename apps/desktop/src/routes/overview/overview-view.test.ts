@@ -16,7 +16,7 @@ import {
   STAGE_TRANSITIONS,
   TEAMS,
 } from '../../../../../packages/domain/src/golden/metrics.fixture';
-import { kpiTiles, metricsScope, viewingText, type KpiTile } from './overview-view';
+import { kpiTiles, metricsScope, viewingLine, viewingText, type KpiTile } from './overview-view';
 
 const GOLDEN: MetricsData = {
   people: PEOPLE,
@@ -331,6 +331,23 @@ describe('viewingText ("Đang xem")', () => {
 
     expect(rm).toEqual({ period: 'Năm 2026', mtd: false, range: null, scope: 'RM An' });
     expect(team.scope).toBe('Mọi team (2 team)');
+  });
+});
+
+describe('viewingLine (the line under the name of the screen)', () => {
+  const viewing = { period: 'Tháng 01/2027', mtd: false, range: null, scope: 'Toàn bộ' };
+
+  it('is the period, then the scope', () => {
+    expect(viewingLine(viewing)).toBe('Tháng 01/2027 · Toàn bộ');
+  });
+
+  it('puts the days counted between them, marked MTD for a month in progress', () => {
+    expect(viewingLine({ ...viewing, mtd: true, range: '01/01 – 15/01/2027' })).toBe(
+      'Tháng 01/2027 · 01/01 – 15/01/2027 (MTD) · Toàn bộ',
+    );
+    expect(viewingLine({ ...viewing, period: 'Năm 2027', range: '01/01 – 15/01/2027' })).toBe(
+      'Năm 2027 · 01/01 – 15/01/2027 · Toàn bộ',
+    );
   });
 });
 

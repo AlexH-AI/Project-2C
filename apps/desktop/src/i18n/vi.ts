@@ -742,6 +742,8 @@ export const vi = {
   'period.customInvalid': 'Ngày không có thật — nhập theo dd/mm/yyyy',
   'period.customReversed': 'Từ ngày phải trước hoặc trùng Đến ngày',
   'period.customTooLong': 'Kỳ Tùy chọn tối đa 3 tháng',
+  'period.pick': 'Chọn kỳ',
+  'period.applies': 'Chọn là số cập nhật ngay',
   'period.monthLabel': 'Tháng {value}',
   'period.yearLabel': 'Năm {value}',
   'appointments.summary': '{total} lịch · {met} đã gặp',
@@ -1022,10 +1024,8 @@ export const vi = {
   // The cap in the compact form of the data's currency (ADR-0018 §3; mockup #money "Quá trần phí").
   'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa {max} VNĐ.',
   'error.AMOUNT_TOO_LARGE.cents': 'Số tiền tối đa {max}.',
-  'overview.filter': 'Lọc',
-  'overview.pending': 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật',
-  'overview.viewing': 'Đang xem:',
-  'overview.mtd': 'MTD',
+  // The line under the name of Tổng quan and Báo cáo: the days counted of a month in progress.
+  'overview.mtdRange': '{range} (MTD)',
   'overview.scopeTeams': 'Mọi team ({teams} team)',
   'overview.appointments.day': 'Lịch hẹn · trong ngày',
   'overview.appointments.week': 'Lịch hẹn · cả tuần',
