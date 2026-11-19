@@ -1,12 +1,11 @@
 import { expect, test, type Page } from './fixtures';
-import { readWorkbook, trackConsoleErrors } from './support';
+import { pickFirstRm, pickScope, readWorkbook, trackConsoleErrors } from './support';
 
 // The e2e build pins today to Tuesday 15/09/2026 (playwright.config.ts): September is in progress.
 async function openReports(page: Page) {
   await page.goto('/#/reports');
   return {
     kinds: page.getByRole('radiogroup', { name: 'Loại kỳ' }),
-    scope: page.getByRole('radiogroup', { name: 'Góc nhìn' }),
     filter: page.getByRole('button', { name: 'Lọc', exact: true }),
     pending: page.getByText('Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật'),
     viewing: page.locator('p', { hasText: 'Đang xem:' }),
@@ -78,12 +77,9 @@ test('scrolled sideways, Theo RM keeps the RM name and every figure of Tổng re
 });
 
 test('Team Bình Minh has no Theo team, and Theo RM lists its 10 RM', async ({ page }) => {
-  const { scope, filter, viewing, summary, tables } = await openReports(page);
+  const { filter, viewing, summary, tables } = await openReports(page);
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await page
-    .getByRole('combobox', { name: 'Team của góc nhìn' })
-    .selectOption({ label: 'Bình Minh' });
+  await pickScope(page, { team: 'Bình Minh' });
   await filter.click();
 
   await expect(viewing).toContainText('· Team Bình Minh');
@@ -98,9 +94,9 @@ test('RM · Năm: Tổng hợp and Theo mốc of 12 months, the months after tod
   page,
 }) => {
   const errors = trackConsoleErrors(page);
-  const { kinds, scope, filter, viewing, summary, tables } = await openReports(page);
+  const { kinds, filter, viewing, summary, tables } = await openReports(page);
 
-  await scope.getByRole('radio', { name: 'RM' }).click();
+  await pickFirstRm(page);
   await kinds.getByRole('radio', { name: 'Năm' }).click();
   await filter.click();
 

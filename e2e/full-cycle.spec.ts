@@ -5,6 +5,7 @@ import {
   createKycCustomer,
   discoveryFacts,
   gotoScreen,
+  pickScope,
   trackConsoleErrors,
 } from './support';
 
@@ -34,27 +35,13 @@ const SUMMARY = ['1', '0', '0', '1', '2', ...COMPARED.slice(1), '0', '0', '1', '
 const SUMMARY_OF_COMPARED = [0, 5, 6, 7, 8, 9, 10];
 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Điều hướng chính' });
-const scope = (page: Page) => page.getByRole('radiogroup', { name: 'Góc nhìn' });
 const filter = (page: Page) => page.getByRole('button', { name: 'Lọc', exact: true });
 const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
 const trash = (page: Page) => page.getByRole('region', { name: 'Thùng rác' });
 const backup = (page: Page) => page.getByRole('region', { name: 'Xuất / nhập backup' });
 
-/**
- * Picks `label` in a select, failing at once when the data has no such option rather than waiting
- * for it until the test times out.
- */
-async function pick(page: Page, name: string, label: string) {
-  const select = page.getByRole('combobox', { name });
-  await expect(select.getByRole('option', { name: label, exact: true }), label).toHaveCount(1);
-  await select.selectOption({ label });
-}
-
-/** The scope of the top bar on RM, ours. */
-async function scopeOnRm(page: Page) {
-  await scope(page).getByRole('radio', { name: 'RM' }).click();
-  await pick(page, 'RM của góc nhìn', RM_LABEL);
-}
+/** The scope of the toolbar on our RM. */
+const scopeOnRm = (page: Page) => pickScope(page, { team: TEAM, rm: RM });
 
 async function openSettings(page: Page, section: 'Dữ liệu' | 'Thùng rác') {
   await sidebar(page).getByRole('link', { name: 'Cài đặt' }).click();
@@ -101,10 +88,10 @@ async function addPolicy(page: Page, day: string, fyp: string, issued?: [string,
 /** The figures of the team and its RM on Tổng quan and Báo cáo, for September to date. */
 async function figures(page: Page) {
   await gotoScreen(page, '/#/overview');
-  await scope(page).getByRole('radio', { name: 'Team' }).click();
+  await pickScope(page, 'teams');
   await filter(page).click();
   await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(
-    'Tháng 09/2026MTD 01/09 – 15/09/2026 · Team',
+    'Tháng 09/2026MTD 01/09 – 15/09/2026 · Mọi team',
   );
   const compared = page
     .getByRole('table', { name: 'So sánh team' })
@@ -124,8 +111,7 @@ async function figures(page: Page) {
   ];
 
   await sidebar(page).getByRole('link', { name: 'Báo cáo' }).click();
-  await scope(page).getByRole('radio', { name: 'Team' }).click();
-  await pick(page, 'Team của góc nhìn', TEAM);
+  await pickScope(page, { team: TEAM });
   await filter(page).click();
   await expect(page.locator('p', { hasText: 'Đang xem:' })).toContainText(
     `Tháng 09/2026MTD 01/09 – 15/09/2026 · Team ${TEAM}`,

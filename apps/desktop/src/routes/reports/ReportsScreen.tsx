@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, Segmented } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { scopeName } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { ScreenBar } from '../../shell/ScreenBar';
 import { HEADING, PANEL } from '../classes';
@@ -9,13 +10,7 @@ import { FilterBar, useAppliedFilter } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
 import { ExportNoticeLine, useReportExport } from './ReportExport';
 import { ReportTable, type ReportLead } from './ReportTable';
-import {
-  reportRows,
-  reportScopeName,
-  summaryMeta,
-  type ReportRow,
-  type ReportRows,
-} from './reports-view';
+import { reportRows, summaryMeta, type ReportRow, type ReportRows } from './reports-view';
 
 type TableKey = 'byTeam' | 'byRm' | 'byMark';
 
@@ -35,7 +30,7 @@ export function ReportsScreen() {
 
   const viewing = {
     ...viewingText(applied, today, data.people, data.teams),
-    scope: reportScopeName(applied.scope, data.people, data.teams),
+    scope: scopeName(applied.scope, data.teams, data.people),
   };
   const rows = useMemo(
     () => reportRows(data, applied.period, applied.scope, today),

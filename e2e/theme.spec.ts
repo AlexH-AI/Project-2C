@@ -222,12 +222,8 @@ test('fields and the arrows of unsorted columns stand out 3:1 from what is next 
   await page.getByRole('radio', { name: 'Tùy chọn' }).click();
   await expectBorderStandsOut(page.getByRole('textbox', { name: 'Từ ngày' }));
   await expectBorderStandsOut(page.getByRole('textbox', { name: 'Đến ngày' }));
-  // A list of the bar.
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RM' })
-    .click();
-  await expectBorderStandsOut(page.getByRole('combobox', { name: 'RM của góc nhìn' }));
+  // A list of the screen: the bar has none since its scope is a pill and a menu.
+  await expectBorderStandsOut(page.getByRole('combobox', { name: 'Phối hợp' }));
 
   // A text field and a list of a dialog.
   await page.goto('/#/customers');

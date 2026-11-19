@@ -10,7 +10,7 @@ Màn Báo cáo đặt số liệu của một kỳ thành bảng: lịch hẹn, 
 
 Hàng **Kỳ thống kê** và nút **Lọc** dùng như ở Tổng quan (xem [2. Tổng quan](02-tong-quan.md#chọn-kỳ-và-bấm-lọc)): chọn loại kỳ, lùi / tiến kỳ, chọn **Góc nhìn**, rồi bấm **Lọc**. Dòng **Đang xem:** cho biết bảng đang tính cho kỳ và góc nhìn nào.
 
-Khác Tổng quan: ở Báo cáo, góc nhìn **Team** có ô chọn một team, và bảng chỉ tính team đó.
+Khác Tổng quan: ở Báo cáo, menu góc nhìn chọn được một team (**Cả team**), và bảng chỉ tính team đó.
 
 ## Các cột
 

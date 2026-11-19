@@ -1,10 +1,11 @@
 import { expect, test, type Page } from './fixtures';
+import { pickScope } from './support';
 
 const FAILED = 'Màn này gặp lỗi và không hiển thị được';
 
 // The customers board formats its dates with `padStart`, which the app shell itself never calls;
 // breaking that call while the hash is `#/customers` makes exactly this screen throw while
-// rendering (T-077), with no test hook in the app. The customers screen keeps its scope picker,
+// rendering (T-077), with no test hook in the app. The customers screen keeps its scope pill,
 // which the reset test needs. Startup formats dates too, so the tests open the app on another
 // screen first. The failure stops once the test sets `window.p2cRenderFixed`.
 test.beforeEach(async ({ page }) => {
@@ -60,7 +61,7 @@ test('changing the scope renders a failed screen again', async ({ page }) => {
   await expect(failedHeading(page)).toHaveText(FAILED);
 
   await page.evaluate(() => ((window as { p2cRenderFixed?: boolean }).p2cRenderFixed = true));
-  await page.getByRole('radio', { name: 'Team', exact: true }).click();
+  await pickScope(page, { team: 'Sao Mai' });
 
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'N4', exact: true })).toBeVisible();

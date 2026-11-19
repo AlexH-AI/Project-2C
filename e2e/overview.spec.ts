@@ -1,5 +1,5 @@
 import { expect, test, type Page } from './fixtures';
-import { trackConsoleErrors } from './support';
+import { pickFirstRm, pickScope, scopeMenu, scopePill, trackConsoleErrors } from './support';
 
 // The e2e build pins today to Tuesday 15/09/2026 (playwright.config.ts): September is in progress.
 async function openOverview(page: Page) {
@@ -13,7 +13,6 @@ async function openOverview(page: Page) {
       .filter({ hasText: 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật' }),
     viewing: page.locator('p', { hasText: 'Đang xem:' }),
     kpis: page.getByRole('region', { name: 'Chỉ số của kỳ' }),
-    scope: page.getByRole('radiogroup', { name: 'Góc nhìn' }),
   };
 }
 
@@ -110,19 +109,24 @@ test('choosing the shown period again leaves nothing to apply', async ({ page })
 });
 
 test('the Team scope has no team to pick and counts every team', async ({ page }) => {
-  const { scope, filter, pending, viewing } = await openOverview(page);
+  const { filter, pending, viewing } = await openOverview(page);
   const all = await appointmentsTile(page);
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await expect(page.getByRole('combobox', { name: 'Team của góc nhìn' })).toHaveCount(0);
+  // "Mọi team" stands for the Team scope; a team opens into its RM alone, with no "Cả team".
+  await scopePill(page).click();
+  const menu = scopeMenu(page);
+  await menu.getByRole('menuitem').first().click();
+  await expect(menu.getByRole('menuitemradio', { name: 'Cả team' })).toHaveCount(0);
+  await menu.getByRole('menuitemradio', { name: 'Mọi team' }).click();
+  await expect(menu).toBeHidden();
+  await expect(scopePill(page)).toHaveText('Mọi team');
   await expect(pending).toBeVisible();
 
   await filter.click();
-  await expect(viewing).toContainText('· Team (3 team)');
+  await expect(viewing).toContainText('· Mọi team (3 team)');
   expect(await appointmentsTile(page)).toEqual(all);
 
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  await expect(page.getByRole('combobox', { name: 'RM của góc nhìn' })).toBeVisible();
+  await pickFirstRm(page);
   await filter.click();
   await expect(viewing).toContainText('· RM ');
 });
@@ -148,7 +152,7 @@ test('a period without appointments shows "0 / 0" and "chưa có lịch" in the 
 test('customers by stage: four tiles over the chart, a stage hidden and shown again', async ({
   page,
 }) => {
-  const { scope, filter } = await openOverview(page);
+  const { filter } = await openOverview(page);
   const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
   const n4 = block.getByRole('button', { name: /^N4/ });
 
@@ -156,7 +160,7 @@ test('customers by stage: four tiles over the chart, a stage hidden and shown ag
   await expect(block.getByRole('button')).toHaveCount(4);
   await expect(block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm/ })).toHaveCount(1);
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
+  await pickScope(page, 'teams');
   await filter.click();
   await expect(block).toContainText('cộng 3 team');
   const charts = block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm · Team / });
@@ -211,7 +215,7 @@ test('a period not started yet has "—" in the tiles and says so over the chart
 test('So sánh team: a team opens its RM by name, closes again, and the RM scope has no table', async ({
   page,
 }) => {
-  const { scope, filter } = await openOverview(page);
+  const { filter } = await openOverview(page);
   const table = page.getByRole('table', { name: 'So sánh team' });
   const rows = table.getByRole('row');
   const team = table.getByRole('button', { name: 'Bình Minh' });
@@ -234,11 +238,11 @@ test('So sánh team: a team opens its RM by name, closes again, and the RM scope
   await expect(team).toHaveAttribute('aria-expanded', 'false');
   await expect(rows).toHaveCount(5);
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
+  await pickScope(page, 'teams');
   await filter.click();
   await expect(table).toBeVisible();
 
-  await scope.getByRole('radio', { name: 'RM' }).click();
+  await pickFirstRm(page);
   await filter.click();
   await expect(page.getByRole('region', { name: 'Khách hàng theo nhóm' })).toBeVisible();
   await expect(table).toHaveCount(0);

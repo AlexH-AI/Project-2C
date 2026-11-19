@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { drawnCorner, markOs, pickTeam, right, setTransparency } from './support';
+import { drawnCorner, markOs, pickFirstRm, pickScope, right, setTransparency } from './support';
 
 // The shell of mockup app-shell.html (VA4a): the sidebar with the compact logo (`#sidebar`), and
 // the toolbar, where a screen writes a line under its name and puts its main button (`#toolbar`).
@@ -153,11 +153,15 @@ test('the main button of a screen is on the toolbar, after the place kept for "L
     // The smallest window: the toolbar keeps its button inside it.
     expect(main.x + main.width).toBeLessThanOrEqual(1100);
   }
-  // Tổng quan and Cài đặt put no button there yet: the toolbar has the name alone.
-  for (const screen of ['Tổng quan', 'Cài đặt']) {
+  // Tổng quan and Cài đặt put nothing there yet: the toolbar has the name and, on Tổng quan, the
+  // scope pill of the shell.
+  for (const [screen, buttons] of [
+    ['Tổng quan', 1],
+    ['Cài đặt', 0],
+  ] as const) {
     await nav(page).getByRole('link', { name: screen }).click();
     await expect(title).toHaveText(screen);
-    await expect(toolbar(page).getByRole('button')).toHaveCount(0);
+    await expect(toolbar(page).getByRole('button')).toHaveCount(buttons);
     await expect(sub(page)).toBeHidden();
   }
 });
@@ -192,7 +196,7 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
 
   await nav(page).getByRole('link', { name: 'Khách hàng' }).click();
   await expect(sub(page)).toHaveText(/^[\d,]+ KH đang mở · [\d,]+ đã đóng$/);
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   await expect(sub(page)).toHaveText(/^Cả team Sao Mai · [\d,]+ KH đang mở · [\d,]+ đã đóng$/);
 
   // The scope is the one of every screen: Lịch hẹn opens on the team.
@@ -205,10 +209,9 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
   await rm.click();
   await expect(sub(page)).toHaveText(`Team Sao Mai → ${name}`);
 
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
-  await scope.getByRole('radio', { name: 'RM', exact: true }).click();
+  await pickFirstRm(page);
   await expect(sub(page)).toHaveText(/^Team .+ → .+$/);
-  await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
+  await pickScope(page, 'all');
   await expect(sub(page)).toHaveText('Toàn bộ');
 });
 

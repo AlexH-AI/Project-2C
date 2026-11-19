@@ -330,7 +330,7 @@ describe('viewingText ("Đang xem")', () => {
     );
 
     expect(rm).toEqual({ period: 'Năm 2026', mtd: false, range: null, scope: 'RM An' });
-    expect(team.scope).toBe('Team (2 team)');
+    expect(team.scope).toBe('Mọi team (2 team)');
   });
 });
 

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from './fixtures';
-import { pickTeam } from './support';
+import { pickFirstRm, pickScope, scopePill } from './support';
 
 const OPEN = ['N4', 'N3', 'N2', 'N1'];
 const CLOSED = ['Tạm hoãn', 'Mất cơ hội'];
@@ -50,19 +50,16 @@ test('the kanban shows N4 → N1 and the closed stages, adding up to the summary
 
 test('the scope narrows the customers to one team, then to one RM', async ({ page }) => {
   const [allOpen] = await summary(page);
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
-  await expect(team.locator('option')).toHaveText(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
-  await team.selectOption({ label: 'Sao Mai' });
+  await pickScope(page, { team: 'Sao Mai' });
   await expect.poll(async () => (await summary(page))[0]).toBeLessThan(allOpen);
+  const [teamOpen] = await summary(page);
 
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  const rm = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-  await expect(rm.locator('option')).toHaveCount(30);
+  await pickFirstRm(page, 'Sao Mai');
+  await expect.poll(async () => (await summary(page))[0]).toBeLessThan(teamOpen);
   await page.getByRole('radio', { name: 'Bảng' }).click();
-  const rmName = (await rm.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
+  // The pill of the scope names the RM alone.
+  const rmName = (await scopePill(page).textContent()) ?? '';
   const rows = page.getByRole('table').getByRole('row');
   const [rmOpen, rmClosed] = await summary(page);
   await expect(rows).toHaveCount(1 + rmOpen + rmClosed);
@@ -93,7 +90,7 @@ test('the RM strip shows on the Team scope only, with the RM of the team', async
   const strip = page.getByRole('region', { name: /^RM của team/ });
   await expect(strip).toHaveCount(0);
 
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   await expect(strip).toHaveAccessibleName('RM của team Sao Mai');
   await expect(strip.getByRole('button')).toHaveCount(11);
   await expect(strip.getByRole('button', { name: /^Cả team/ })).toHaveAttribute(
@@ -102,17 +99,16 @@ test('the RM strip shows on the Team scope only, with the RM of the team', async
   );
   await expect(page.getByText(/KH đang mở/)).toContainText('Cả team Sao Mai');
 
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
-  await scope.getByRole('radio', { name: 'RM' }).click();
+  await pickFirstRm(page, 'Sao Mai');
   await expect(strip).toHaveCount(0);
-  await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
+  await pickScope(page, 'all');
   await expect(strip).toHaveCount(0);
 });
 
 test('an RM picked in the strip narrows the customers to it, until picked again', async ({
   page,
 }) => {
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   const [teamOpen] = await summary(page);
   const strip = page.getByRole('region', { name: 'RM của team Sao Mai' });
   const chip = strip.getByRole('button').nth(1);
@@ -136,14 +132,14 @@ test('an RM picked in the strip narrows the customers to it, until picked again'
 });
 
 test('another team drops the RM picked in the strip', async ({ page }) => {
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   await page
     .getByRole('region', { name: 'RM của team Sao Mai' })
     .getByRole('button')
     .nth(1)
     .click();
 
-  await pickTeam(page, 'Bình Minh');
+  await pickScope(page, { team: 'Bình Minh' });
   const strip = page.getByRole('region', { name: 'RM của team Bình Minh' });
   await expect(strip.getByRole('button', { pressed: true })).toHaveText(/^Cả team/);
 });

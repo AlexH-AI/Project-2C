@@ -6,8 +6,10 @@ import {
   discoveryOutput,
   lowestContrast,
   panelOf,
-  pickTeam,
+  pickFirstRm,
+  pickScope,
   pressButton,
+  scopePill,
   stubChatGptWeb,
   tabKey,
 } from './support';
@@ -327,18 +329,14 @@ test('the date cell is tinted past, today or future, kept on hover; the time cel
 test('the scope narrows the day and the list to one team, then one RM', async ({ page }) => {
   const { day, column } = screen(page);
   const all = await total(page);
-  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
 
-  await scope.getByRole('radio', { name: 'Team' }).click();
-  await page
-    .getByRole('combobox', { name: 'Team của góc nhìn' })
-    .selectOption({ label: 'Sao Mai' });
+  await pickScope(page, { team: 'Sao Mai' });
   await expect(day.getByRole('heading', { level: 3 })).toHaveText(['Sao Mai']);
   await expect.poll(() => total(page)).toBeLessThan(all);
 
-  await scope.getByRole('radio', { name: 'RM' }).click();
-  const rm = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-  const rmName = (await rm.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
+  await pickFirstRm(page, 'Sao Mai');
+  // The pill of the scope names the RM alone.
+  const rmName = (await scopePill(page).textContent()) ?? '';
   await expect.poll(async () => new Set(await column(4))).toEqual(new Set([rmName]));
   await expectList(page, await total(page));
 });
@@ -883,12 +881,7 @@ test('a coordinator filter hiding the new appointment is cleared', async ({ page
 
 test('an appointment for an RM outside the scope says so; the scope stays', async ({ page }) => {
   const { detail } = screen(page);
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Team' })
-    .click();
-  const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
-  await team.selectOption({ label: 'Sao Mai' });
+  await pickScope(page, { team: 'Sao Mai' });
   const f = await fillAppointment(page, '30/9', 'Sao Mai');
   await f.create.click();
 
@@ -897,13 +890,10 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   await expect(notice).toHaveText(
     `Đã tạo lịch hẹn 30/09/2026 cho ${f.rmName}. RM này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`,
   );
-  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
+  await expect(scopePill(page)).toHaveText('Team Sao Mai');
   await expect(detail).toContainText('Chọn một lịch hẹn để xem chi tiết.');
 
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Toàn bộ' })
-    .click();
+  await pickScope(page, 'all');
   await expect(notice).toHaveCount(0);
   await expect(detail.getByRole('heading', { level: 2 })).toContainText(`30/09/2026 · ${f.name}`);
 });
@@ -917,7 +907,7 @@ test('by the keyboard, a next appointment made out of sight leaves the focus on 
   page,
 }) => {
   const { rows, detail } = screen(page);
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   await showDay(page, '14/09/2026');
   await rows.first().getByRole('button').click();
   const next = detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
@@ -944,7 +934,7 @@ test('by the keyboard, a reschedule link to an appointment out of sight leaves t
   page,
 }) => {
   const { rows, detail } = screen(page);
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   const planned = rows.filter({ hasText: 'Dự kiến' }).first();
   const oldDate = (await planned.locator('td:nth-child(1)').textContent()) ?? '';
   const oldTime = (await planned.locator('td:nth-child(2)').textContent()) ?? '';
@@ -980,7 +970,7 @@ test('by the keyboard, a reschedule link to an appointment out of sight leaves t
   await expect(notice).toBeFocused();
 
   // From the new RM's team, the new one is shown; "Dời từ" names the old one, on the old RM.
-  await pickTeam(page, newTeam);
+  await pickScope(page, { team: newTeam });
   await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
   await detail
     .getByRole('button', { name: [oldDate, oldTime].filter(Boolean).join(' ') })
@@ -993,7 +983,7 @@ test('an RM picked in the strip narrows the appointments to it, until picked aga
   page,
 }) => {
   const { day, column } = screen(page);
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   const strip = page.getByRole('region', { name: 'RM của team Sao Mai' });
   const teamTotal = await total(page);
   expect(await chipCount(strip.getByRole('button', { name: /^Cả team/ }))).toBe(teamTotal);
@@ -1021,7 +1011,7 @@ test('an RM picked in the strip narrows the appointments to it, until picked aga
 test('the RM picked on Customers is still picked on Appointments', async ({ page }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
   await nav.getByRole('link', { name: 'Khách hàng' }).click();
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   const chip = page.getByRole('region', { name: 'RM của team Sao Mai' }).getByRole('button').nth(2);
   const name = (await chip.locator('span').first().textContent()) ?? '';
   await chip.click();
@@ -1035,7 +1025,7 @@ test('the RM picked on Customers is still picked on Appointments', async ({ page
 });
 
 test('the numbers in the strip follow the period', async ({ page }) => {
-  await pickTeam(page, 'Sao Mai');
+  await pickScope(page, { team: 'Sao Mai' });
   const strip = page.getByRole('region', { name: 'RM của team Sao Mai' });
   const counts = () => strip.getByRole('button').locator('span:last-child').allTextContents();
   const month = await counts();

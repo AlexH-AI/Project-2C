@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from './fixtures';
-import { asExe, createKycCustomer, pressButton, trackConsoleErrors } from './support';
+import {
+  asExe,
+  createKycCustomer,
+  pressButton,
+  scopeMenu,
+  scopePill,
+  teamRow,
+  trackConsoleErrors,
+} from './support';
 
 // Cài đặt → Thùng rác (spec Phase 6 §4.2; mockup trash.html 11a, 11e). The seed deletes nothing,
 // and the e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -202,15 +210,12 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
 
   // Another RM in the scope of the top bar: the trash still lists the appointment.
   await sidebar(page).getByRole('link', { name: 'Lịch hẹn' }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'RM' })
-    .click();
-  const picker = page.getByRole('combobox', { name: 'RM của góc nhìn' });
-  const others = (await picker.locator('option').allTextContents()).filter(
-    (label) => label.split(' · ')[0] !== rm,
-  );
-  await picker.selectOption({ label: others[0]! });
+  await scopePill(page).click();
+  await teamRow(page, 'Bình Minh').click();
+  // After "Toàn bộ" and "Cả team": the first RM of the team that is not the one of the appointment.
+  await scopeMenu(page).getByRole('menuitemradio').filter({ hasNotText: rm }).nth(2).click();
+  await expect(scopeMenu(page)).toBeHidden();
+  await expect(scopePill(page)).not.toHaveText(rm);
   await openTrash(page);
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText(`KH ${name}`);

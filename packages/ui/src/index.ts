@@ -2,6 +2,7 @@ export { NavIcon, type NavIconName } from './components/NavIcon';
 export { Segmented, type SegmentedOption } from './components/Segmented';
 export { PeriodPicker, type PeriodPickerLabels } from './components/PeriodPicker';
 export { periodLabel } from './components/PeriodPicker.label';
+export { MenuButton, MenuRows, type MenuRow } from './components/Menu';
 export {
   DataTable,
   type DataTableColumn,

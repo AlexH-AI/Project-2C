@@ -52,5 +52,5 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/routes/overview/` — OverviewTiles.tsx, StageBlock.tsx, TeamCompare.tsx, overview-view.ts, stage-chart.ts, stage-view.ts, team-compare-view.ts
 - `src/routes/reports/` — ReportExport.tsx, ReportTable.tsx, ReportsScreen.tsx, report-workbook.ts, reports-view.ts
 - `src/routes/team/` — PersonDialogs.tsx, TeamDialogs.tsx, TeamScreen.tsx, team-view.ts
-- `src/shell/` — AppShell.tsx, Brand.tsx, CloseGuard.tsx, ErrorBoundary.tsx, RmPicker.tsx, SaveWarning.tsx, ScopeContext.tsx, ScopePicker.tsx, ScreenBar.tsx, Sidebar.tsx, StartupError.tsx, Toasts.tsx, block-reload.ts, close-guard.ts, platform.ts, routes.ts, scope.ts, screen-bar.ts, screen-error.ts, startup-error.ts, toast-queue.ts, trash-undo.ts, useRoute.ts
+- `src/shell/` — AppShell.tsx, Brand.tsx, CloseGuard.tsx, ErrorBoundary.tsx, RmPicker.tsx, SaveWarning.tsx, ScopeContext.tsx, ScopePicker.tsx, ScreenBar.tsx, Sidebar.tsx, StartupError.tsx, Toasts.tsx, block-reload.ts, close-guard.ts, platform.ts, routes.ts, scope-menu.ts, scope.ts, screen-bar.ts, screen-error.ts, startup-error.ts, toast-queue.ts, trash-undo.ts, useRoute.ts
 <!-- codemap:end -->
