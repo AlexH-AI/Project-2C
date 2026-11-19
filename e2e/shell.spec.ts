@@ -329,6 +329,13 @@ test('the page lets the material of the exe window through, and the web build st
   expect((await box(pane)).x).toBe((await box(sidebar(page))).width);
   expect((await box(toolbar(page))).x).toBe((await box(pane)).x + 1);
   await expect(column).toHaveCSS('border-left-width', '1px');
+  // The hairline of the pane shows on top and on the left, the scroll edge of the toolbar over it:
+  // the edge is a line lighter than the pane next to it, as painted.
+  const left = (await box(pane)).x;
+  const top = await shade(page, { x: left + 120, y: 0, width: 1, height: 4 });
+  expect(top.at(0)! - top.at(-1)!, 'the top edge').toBeGreaterThan(10);
+  const side = await shade(page, { x: left, y: 40, width: 4, height: 1 });
+  expect(side.at(0)! - side.at(-1)!, 'the left edge').toBeGreaterThan(10);
   await mark('mac');
   await expect(pane).toBeHidden();
 
@@ -357,6 +364,35 @@ test('the page lets the material of the exe window through, and the web build st
     await expect(html).toHaveCSS('background-color', 'rgb(17, 24, 34)');
   });
 });
+
+/**
+ * The lightness (the sum of red, green and blue) of each device pixel of a strip of the page, in
+ * order: down a strip one pixel wide, across one a pixel high. Decoded on a blank page of the same
+ * browser, which decodes the PNG.
+ */
+async function shade(page: Page, clip: { x: number; y: number; width: number; height: number }) {
+  const png = await page.screenshot({ clip });
+  const blank = await page.context().newPage();
+  try {
+    return await blank.evaluate(async (data) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${data}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(image, 0, 0);
+      const { data: pixels } = context.getImageData(0, 0, canvas.width, canvas.height);
+      const sums: number[] = [];
+      for (let i = 0; i < pixels.length; i += 4)
+        sums.push(pixels[i]! + pixels[i + 1]! + pixels[i + 2]!);
+      return sums;
+    }, png.toString('base64'));
+  } finally {
+    await blank.close();
+  }
+}
 
 /**
  * How many pixels of a screenshot are the champagne of the outline: light, and warm, where the

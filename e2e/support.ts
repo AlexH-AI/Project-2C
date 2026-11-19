@@ -391,17 +391,17 @@ export function trackConsoleErrors(page: Page): string[] {
  *
  * The page then marks itself `data-backdrop` as in the exe (VA5), and on macOS (WebKit) lets the
  * glass of the window through: a tab has none under its page, only white. The stand-in's window
- * takes the solid fill the page has where the system gives no material (Windows 10, "Giảm độ trong
- * suốt"), over the --bg-0 the page fades into, so what is read against it is the app's own colours
- * (`lowestContrast` reads a gradient against what is under it). The glass itself is checked by hand
- * (NT-MAC-26, NT-CH-18).
+ * takes the solid fill the page has where the system gives no material (--bg-1: Windows 10,
+ * "Giảm độ trong suốt"), so what is read against it is the app's own colours. On macOS that fill
+ * is the start of a gradient into --bg-0, which `lowestContrast` reads against what is under it:
+ * --bg-0 there, the colour it fades into. The glass itself is checked by hand (NT-MAC-26, NT-CH-18).
  */
 export async function asExe(page: Page) {
   await page.addInitScript(() => {
     addEventListener('DOMContentLoaded', () => {
       const style = document.createElement('style');
       style.textContent =
-        '[data-backdrop] { --window-fill: var(--bg-1) !important; background-color: var(--bg-0); }';
+        "[data-backdrop] { --window-fill: var(--bg-1) !important; } [data-os='mac'][data-backdrop] { background-color: var(--bg-0); }";
       document.head.append(style);
     });
   });

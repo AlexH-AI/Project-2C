@@ -437,7 +437,9 @@
 
 /* The toolbar floats over the screen. Its scroll edge (ui2.css .toolbar::before): what scrolls
    under it blurs and fades out, down to 18 px below it, instead of meeting a hard bar. On Windows
-   it takes the rounded corner of the content's pane (below). Under "Giảm độ trong suốt" nothing
+   it lies over the top of the content's pane (`content-pane`, below it all): it takes the pane's
+   rounded corner and its 1 px of edge on the left, and draws the pane's hairline on top and on the
+   left (ui2.css [data-os='win'] .main), which it would cover. Under "Giảm độ trong suốt" nothing
    shows through the bar itself: solid down to its foot, it fades out in the 18 px below (L225;
    ui2.css keeps the fade of the bar, app-shell.html #feasible turns the glass solid). */
 @utility toolbar {
@@ -455,7 +457,9 @@
     mask-image: linear-gradient(180deg, #000 64%, transparent);
   }
   [data-os='win'] &::before {
+    left: -1px;
     border-top-left-radius: var(--r-window);
+    box-shadow: inset 1px 1px 0 var(--hairline);
   }
   @media (prefers-reduced-transparency: reduce) {
     &::before {
@@ -469,7 +473,8 @@
 /* The window of the exe (VA5, ui2.css .win), transparent over the material of its system, which
    main.tsx names in `data-backdrop` of the page: `glass` where the system has one (macOS; the Mica
    of Windows 11), `solid` on Windows 10. The page lets the glass through where the window shows
-   it: on macOS under the sidebar's pane, fading into --bg-0 past it (226 to 300 px of ui2.css);
+   it: on macOS under the sidebar's pane, fading into --bg-0 past it (226 to 300 px of ui2.css,
+   18 px before and 56 px past the column of the sidebar);
    on Windows the whole window, the sidebar flat on it. Under "Giảm độ trong suốt", and on Windows
    10, the window is --bg-1 (--mat-window, solid then). Web mode has no window and no mark. */
 @layer base {
@@ -488,8 +493,8 @@
     background: linear-gradient(
       90deg,
       var(--window-fill) 0,
-      var(--window-fill) 226px,
-      var(--bg-0) 300px
+      var(--window-fill) calc(var(--sidebar-w) - 18px),
+      var(--bg-0) calc(var(--sidebar-w) + 56px)
     );
   }
   html[data-backdrop][data-os='win'] {
