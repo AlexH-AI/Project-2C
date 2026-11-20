@@ -9,6 +9,7 @@ import {
   kycHash,
   type CalendarDate,
   type KycFact,
+  type KycField,
   type KycProfile,
   type StageTransition,
 } from '@p2c/domain';
@@ -114,24 +115,12 @@ describe('factText', () => {
 
 // VA6a, app-shell.html #privacy: KYC facts in words may hold a name; numbers and amounts do not.
 describe('factInWords', () => {
-  it('takes the text trường a user types', () => {
-    for (const field of ['residence', 'occupation', 'primaryGoal', 'mainConcern'] as const) {
-      expect(factInWords(field), field).toBe(true);
-    }
-  });
-
-  it('leaves out numbers, yes / no, amounts and what the profile wrote', () => {
-    for (const field of [
-      'birthYear',
-      'childrenCount',
-      'hasProtection',
-      'annualIncome',
-      'totalAssets',
-      'liabilities',
-      'gender',
-    ] as const) {
-      expect(factInWords(field), field).toBe(false);
-    }
+  it('takes the text trường a user types, not numbers, yes / no, amounts nor the profile', () => {
+    const words = (fields: string) => fields.split(' ').filter((f) => factInWords(f as KycField));
+    expect(words('residence occupation primaryGoal mainConcern')).toHaveLength(4);
+    const others =
+      'birthYear childrenCount hasProtection annualIncome totalAssets liabilities gender';
+    expect(words(others)).toEqual([]);
   });
 });
 

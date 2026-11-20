@@ -24,11 +24,8 @@ describe('maskName', () => {
     expect(maskName('Ông Ích Ưng')).toBe('Ô. Í. Ư.');
   });
 
-  it('reads letters typed as a base and its marks as the one letter they write', () => {
+  it('reads a base and its marks as one letter, and leaves out the spaces around words', () => {
     expect(maskName('Ánh Đỗ')).toBe('Á. Đ.');
-  });
-
-  it('leaves out the spaces around and between the words', () => {
     expect(maskName('  Trịnh   Minh\tAnh \n')).toBe('T. M. A.');
   });
 
@@ -49,8 +46,11 @@ describe('maskName', () => {
 });
 
 describe('createNameMask', () => {
-  it('starts unmasked on a machine that stored nothing', () => {
-    expect(createNameMask(fakeStorage()).masked()).toBe(false);
+  it('starts unmasked on a machine that stored nothing, or a value it does not know', () => {
+    const storage = fakeStorage();
+    expect(createNameMask(storage).masked()).toBe(false);
+    storage().setItem(NAME_MASK_KEY, 'yes');
+    expect(createNameMask(storage).masked()).toBe(false);
   });
 
   it('remembers a change for the next run of the app', () => {
@@ -80,11 +80,5 @@ describe('createNameMask', () => {
     expect(mask.masked()).toBe(false);
     mask.set(true);
     expect(mask.masked()).toBe(true);
-  });
-
-  it('reads a value it does not know as unmasked', () => {
-    const storage = fakeStorage();
-    storage().setItem(NAME_MASK_KEY, 'yes');
-    expect(createNameMask(storage).masked()).toBe(false);
   });
 });

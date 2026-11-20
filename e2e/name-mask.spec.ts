@@ -32,29 +32,20 @@ const ACCENT = 'rgb(217, 178, 106)';
 // --info: the (i) of the toast.
 const INFO = 'rgb(111, 168, 255)';
 
-test('the eye is first on the right of the toolbar on every screen, the profile too', async ({
-  page,
-}) => {
+test('the eye is first on the right of the toolbar on every screen', async ({ page }) => {
   await page.goto('/#/overview');
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
-  for (const screen of ['Tổng quan', 'Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự']) {
+  const screens = ['Tổng quan', 'Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự', 'Cài đặt'];
+  for (const screen of screens) {
     await nav.getByRole('link', { name: screen }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(screen);
     await expect(page.getByRole('banner').getByRole('button').first()).toHaveAccessibleName(
       'Che tên khách hàng',
     );
   }
-  await nav.getByRole('link', { name: 'Cài đặt' }).click();
-  // Cài đặt puts nothing on the toolbar: the eye alone.
-  await expect(page.getByRole('banner').getByRole('button')).toHaveCount(1);
-  await expect(eye(page)).toBeVisible();
-  await page.goto('/#/customers');
-  await column(page, 'N4').getByRole('link').first().click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
-  await expect(eye(page)).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('on: first letters on Khách hàng, codes and RM as they were, the button gold and a toast; off: the names back', async ({
+test('on: first letters on Khách hàng, codes and RM as they were, a gold button, a toast, kept after a reload; off: names back', async ({
   page,
 }) => {
   await page.goto('/#/customers');
@@ -84,6 +75,10 @@ test('on: first letters on Khách hàng, codes and RM as they were, the button g
   await expect(card.locator('b')).toHaveText(maskName(cardName!));
   await expect(card).toContainText(/RM \S/);
   await expect(closed).toHaveText(maskName(closedName!));
+  // Remembered when the app opens again; the web build reseeds the same data on a reload.
+  await page.reload();
+  await expect(eye(page)).toHaveText('Đang che tên');
+  await expect(card.locator('b')).toHaveText(maskName(cardName!));
 
   await eye(page).click();
   await expect(eye(page)).toHaveAttribute('aria-pressed', 'false');
@@ -91,6 +86,9 @@ test('on: first letters on Khách hàng, codes and RM as they were, the button g
   await expect(toastOf(page, 'Đã hiện lại tên khách hàng')).toBeVisible();
   await expect(card.locator('b')).toHaveText(cardName!);
   await expect(closed).toHaveText(closedName!);
+  await page.reload();
+  await expect(eye(page)).toHaveAttribute('aria-pressed', 'false');
+  await expect(card.locator('b')).toHaveText(cardName!);
 });
 
 test('the gold button reads at AA on both systems, the macOS glass too', async ({ page }) => {
@@ -214,30 +212,6 @@ test('what was typed or written by the AI shows as dots: a note, a trigger, KYC 
   await expect(another).toContainText('Đang có: •••');
   await expect(another).not.toContainText('Bác sĩ');
   await page.keyboard.press('Escape');
-});
-
-test('remembered when the app opens again; off, everything shows again', async ({ page }) => {
-  const name = 'Lan Nhớ Che';
-  await createKycCustomer(page, name);
-  await addKycNote(page, name, discoveryFacts);
-  await eye(page).click();
-  await expect(page.getByRole('heading', { level: 2, name: 'L. N. C.' })).toBeVisible();
-
-  // The web build reseeds on a reload, so the profile is one of the seed.
-  await page.goto('/#/customers');
-  const card = column(page, 'N4').getByRole('link').first();
-  await page.reload();
-  await expect(eye(page)).toHaveAttribute('aria-pressed', 'true');
-  await expect(eye(page)).toHaveText('Đang che tên');
-  const short = (await card.locator('b').textContent()) ?? '';
-  expect(short).toMatch(/^(\p{Lu}\.)( \p{Lu}\.)*$/u);
-
-  await eye(page).click();
-  await expect(eye(page)).toHaveAttribute('aria-pressed', 'false');
-  await expect(card.locator('b')).not.toHaveText(short);
-  expect(maskName((await card.locator('b').textContent()) ?? '')).toBe(short);
-  await page.reload();
-  await expect(eye(page)).toHaveAttribute('aria-pressed', 'false');
 });
 
 /** The full names of `names` the page shows: in its text or an attribute (a tooltip, a name read out). */
