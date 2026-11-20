@@ -82,8 +82,12 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
 
   return (
     <div className="flex min-h-screen">
+      {/* On Windows the content lies on a pane of its own, its edge and corner drawn above the
+          toolbar (VA5); the column keeps the 1 px of the edge it had. */}
+      <div aria-hidden="true" data-slot="content-pane" className="content-pane" />
+      <div aria-hidden="true" data-slot="content-edge" className="content-edge" />
       <Sidebar current={sectionOf(route)} />
-      <div className="flex min-w-0 flex-1 flex-col win:border-l win:border-hairline">
+      <div className="flex min-w-0 flex-1 flex-col win:border-l win:border-transparent">
         <SaveWarning heading={heading} />
         <Toolbar
           title={t(`screen.${route.screen}`)}

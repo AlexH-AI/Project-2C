@@ -1,12 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the main window: only the close event and destroy (CloseGuard), and its title (AppShell)",
+  "description": "Permissions for the main window: only the close event and destroy (CloseGuard), its title (AppShell), and moving and zooming it from the drag regions of macOS (Sidebar, toolbar)",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",
     "core:event:allow-unlisten",
     "core:window:allow-destroy",
-    "core:window:allow-set-title"
+    "core:window:allow-set-title",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize"
   ]
 }

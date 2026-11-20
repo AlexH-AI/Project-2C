@@ -11,7 +11,7 @@ import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
 import { appLanguage, setDataCurrency } from './i18n/language';
 import { blockReload } from './shell/block-reload';
-import { platformMark } from './shell/platform';
+import { platformMark, windowBackdrop } from './shell/platform';
 import { startupErrorPage } from './shell/StartupError';
 import './index.css';
 
@@ -28,6 +28,14 @@ document.documentElement.lang = appLanguage();
 // The system of the webview, set once before anything is drawn: the "loading" line, the screens
 // and the startup error page all take the tokens of that system (VA1).
 document.documentElement.dataset.os = platformMark();
+// The exe's window is transparent over the material of its system (VA5): the page lets that
+// through, or paints the whole window where there is none (Windows 10). Until the mark is set the
+// page is solid, as in web mode, which has no window and no mark.
+if (isTauri()) {
+  void windowBackdrop().then((backdrop) => {
+    document.documentElement.dataset.backdrop = backdrop;
+  });
+}
 
 render(<p className="px-6 py-8 text-sm text-fg-2">{t('startup.loading')}</p>);
 

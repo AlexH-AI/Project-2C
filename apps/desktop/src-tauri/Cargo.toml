@@ -16,7 +16,7 @@ crate-type = ["rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["macos-private-api"] }
 # AI commands only (ADR-0009 D-1, ADR-0005 appendix); the file commands stay on `std` (ADR-0016).
 keyring-core = "=1.0.0"
 serde = { version = "=1.0.229", features = ["derive"] }

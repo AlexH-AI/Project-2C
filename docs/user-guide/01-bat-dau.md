@@ -11,7 +11,7 @@ Heritas L-CRM chạy trên Windows và macOS (bản máy tính), cùng giao di�
 1. Tải file cài `Heritas L-CRM_<phiên bản>_x64-setup.exe`, ví dụ `Heritas L-CRM_1.0.0_x64-setup.exe`.
 2. Đóng mọi cửa sổ Heritas L-CRM đang mở, kể cả exe chạy thẳng của [chế độ portable](#chế-độ-portable) (xem [Khi trình cài báo app đang chạy](#khi-trình-cài-báo-app-đang-chạy)).
 3. Bấm đúp file cài. File chưa ký nên SmartScreen có thể chặn lần mở đầu: bấm *More info* (thêm thông tin) rồi *Run anyway* (vẫn chạy).
-4. Làm theo các màn của trình cài. Trình cài chỉ có tiếng Anh. Cài không cần quyền quản trị (không có hộp hỏi quyền admin): app cài cho người dùng Windows đang đăng nhập, mặc định vào `%LOCALAPPDATA%\Heritas L-CRM\`. Màn cuối có ô `Create desktop shortcut` (tạo thêm lối tắt trên màn hình nền).
+4. Làm theo các màn của trình cài. Trình cài và trình gỡ nói theo ngôn ngữ hiển thị của Windows: tiếng Việt khi Windows để tiếng Việt, tiếng Anh khi Windows để tiếng Anh (ngôn ngữ khác: tiếng Việt). Cài không cần quyền quản trị (không có hộp hỏi quyền admin): app cài cho người dùng Windows đang đăng nhập, mặc định vào `%LOCALAPPDATA%\Heritas L-CRM\`. Màn cuối có ô `Tạo biểu tượng ngoài màn hình` (`Create desktop shortcut` trên Windows tiếng Anh): tạo thêm lối tắt trên màn hình nền.
 5. Mở app từ lối tắt **Heritas L-CRM** ở menu Start.
 
 Dữ liệu của bản cài nằm ở `%LOCALAPPDATA%\com.heritas.lcrm\`, khác thư mục cài app (xem [Nơi để dữ liệu](#nơi-để-dữ-liệu-bản-máy-tính)).
@@ -19,8 +19,8 @@ Dữ liệu của bản cài nằm ở `%LOCALAPPDATA%\com.heritas.lcrm\`, khác
 ### Gỡ cài
 
 1. Đóng mọi cửa sổ Heritas L-CRM, kể cả exe chạy thẳng.
-2. Gỡ ở Cài đặt → Ứng dụng của Windows, dòng **Heritas L-CRM**.
-3. Trình gỡ (tiếng Anh) có ô `Delete the application data` (xóa dữ liệu của app), mặc định không tích:
+2. Gỡ ở Cài đặt → Ứng dụng của Windows, dòng **Heritas L-CRM** (nhà phát hành Heritas).
+3. Trình gỡ có ô `Xóa dữ liệu ứng dụng` (`Delete the application data` trên Windows tiếng Anh), mặc định không tích:
    - Không tích (nên dùng): gỡ app, giữ nguyên thư mục dữ liệu `%LOCALAPPDATA%\com.heritas.lcrm\`. Cài lại là thấy dữ liệu cũ.
    - Tích: xóa luôn cả thư mục dữ liệu đó: file dữ liệu, các bản sao lưu tự động trong `backups`, mọi file đã xuất trong `exports` (backup `.p2cbackup`, báo cáo Excel) và bộ nhớ giao diện (`EBWebView`). Không lấy lại được. Chỉ tích khi chắc không cần dữ liệu nữa; muốn giữ thì trước đó **Xuất backup** và chép file `.p2cbackup` ra ngoài thư mục này.
 
@@ -40,7 +40,7 @@ Muốn mang app sang ổ khác hay máy khác ở chế độ portable, chép c�
 
 ### Khi trình cài báo app đang chạy
 
-Trình cài và trình gỡ tìm mọi `project2c.exe` đang chạy của người dùng Windows, cả bản cài lẫn exe chạy thẳng, rồi hiện hộp `Heritas L-CRM is running!`, dòng dưới `Click OK to kill it`:
+Trình cài và trình gỡ tìm mọi `project2c.exe` đang chạy của người dùng Windows, cả bản cài lẫn exe chạy thẳng, rồi hiện hộp `Heritas L-CRM đang chạy!`, dòng dưới `Nhấn OK để tắt ứng dụng` (trên Windows tiếng Anh: `Heritas L-CRM is running!`, `Click OK to kill it`):
 
 - Bấm nút hủy (*Cancel*), đóng app như thường (app lưu xong rồi mới đóng), rồi chạy lại file cài / trình gỡ.
 - Bấm **OK** thì app bị tắt ngay, không qua bước lưu khi đóng: nếu app đang báo "Chưa lưu được dữ liệu vào file…", các thay đổi chỉ còn trong app sẽ mất.

@@ -1,5 +1,14 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { drawnCorner, markOs, pickFirstRm, pickScope, right, setTransparency } from './support';
+import {
+  asExe,
+  drawnCorner,
+  lowestContrast,
+  markOs,
+  pickFirstRm,
+  pickScope,
+  right,
+  setTransparency,
+} from './support';
 
 // The shell of mockup app-shell.html (VA4a): the sidebar with the compact logo (`#sidebar`), and
 // the toolbar, where a screen writes a line under its name and puts its main button (`#toolbar`).
@@ -278,47 +287,212 @@ test('the toolbar is 68 px high and what scrolls under it fades at its edge', as
   expect((await edge()).bottom).toBe('-18px');
   expect((await edge()).blur).toBe('blur(14px)');
 
-  await test.step('the system asks for less transparency: a solid edge, nothing blurred', async (step) => {
+  await test.step('the system asks for less transparency: solid down to the foot of the bar, nothing blurred', async (step) => {
     // Set through CDP, on Chromium only; on the macOS app it is checked by hand (NT-MAC-19).
     step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
     await setTransparency(page, 'reduce');
-    expect((await edge()).image).toMatch(/^linear-gradient\(.*rgb\(11, 16, 23\) 50%, .*\)$/);
+    // Solid over the whole bar, fading out in the 18 px below it only (L225).
+    expect((await edge()).image).toMatch(
+      /^linear-gradient\(.*rgb\(11, 16, 23\) calc\(100% - 18px\), .*\)$/,
+    );
     expect((await edge()).blur).toBe('none');
+    expect(
+      await toolbar(page).evaluate((node) => getComputedStyle(node, '::before').maskImage),
+    ).toBe('none');
   });
 });
 
+// VA5: main.tsx marks the exe's page `data-backdrop`, the material under its transparent window;
+// the web build has no window and no mark. The mark is set here by hand to read the exe's CSS.
+test('the page lets the material of the exe window through, and the web build stays solid (VA5)', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/#/customers');
+  await setTransparency(page, 'no-preference');
+  const html = page.locator('html');
+  const controls = sidebar(page).locator('[data-slot="window-controls"]');
+  const pane = page.locator('[data-slot="content-pane"]');
+  const column = toolbar(page).locator('xpath=..');
+  const mark = (os: 'mac' | 'win', backdrop?: 'glass' | 'solid') =>
+    page.evaluate(
+      ([os, backdrop]) => {
+        document.documentElement.dataset.os = os;
+        if (backdrop) document.documentElement.dataset.backdrop = backdrop;
+        else delete document.documentElement.dataset.backdrop;
+      },
+      [os, backdrop] as const,
+    );
+
+  // The web build: --bg-0 under everything, no row kept for the buttons of a macOS window.
+  await expect(html).not.toHaveAttribute('data-backdrop');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 16, 23)');
+  await expect(controls).toBeHidden();
+  await mark('win');
+  await expect(controls).toBeHidden();
+  // Windows: the content on a pane of --bg-0, its top left corner rounded, right of the sidebar;
+  // the column keeps the 1 px of its edge, so the layout is as before VA5.
+  await expect(pane).toHaveCSS('position', 'fixed');
+  await expect(pane).toHaveCSS('border-top-left-radius', '8px');
+  await expect(pane).toHaveCSS('background-color', 'rgb(11, 16, 23)');
+  expect((await box(pane)).x).toBe((await box(sidebar(page))).width);
+  expect((await box(toolbar(page))).x).toBe((await box(pane)).x + 1);
+  await expect(column).toHaveCSS('border-left-width', '1px');
+  // The hairline of the pane shows on top and on the left, the scroll edge of the toolbar over it:
+  // the edge is a line lighter than the pane next to it, as painted.
+  const left = (await box(pane)).x;
+  const top = await shade(page, { x: left + 120, y: 0, width: 1, height: 4 });
+  expect(top.at(0)! - top.at(-1)!, 'the top edge').toBeGreaterThan(10);
+  const side = await shade(page, { x: left, y: 40, width: 4, height: 1 });
+  expect(side.at(0)! - side.at(-1)!, 'the left edge').toBeGreaterThan(10);
+  await mark('mac');
+  await expect(pane).toBeHidden();
+
+  // The macOS exe: glass under the sidebar's pane, through --mat-window as in ui2.css .win, fading
+  // into --bg-0; a row of 20 px at the top of the pane for the window's three buttons.
+  await mark('mac', 'glass');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(html).toHaveCSS(
+    'background-image',
+    /^linear-gradient\(90deg, rgba\(11, 16, 23, 0\.62\) 0(px)?, rgba\(11, 16, 23, 0\.62\) 226px, rgb\(11, 16, 23\) 300px\)$/,
+  );
+  await expect(controls).toBeVisible();
+  expect((await box(controls)).height).toBe(20);
+  // Windows 11: Mica under the whole window; Windows 10: --bg-1, nothing shows through.
+  await mark('win', 'glass');
+  await expect(controls).toBeHidden();
+  await expect(html).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await mark('win', 'solid');
+  await expect(html).toHaveCSS('background-color', 'rgb(17, 24, 34)');
+
+  await test.step('the system asks for less transparency: the window is solid', async (step) => {
+    // Set through CDP, on Chromium only; on the macOS app it is checked by hand (NT-MAC-26).
+    step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
+    await setTransparency(page, 'reduce');
+    await mark('win', 'glass');
+    await expect(html).toHaveCSS('background-color', 'rgb(17, 24, 34)');
+  });
+});
+
+// main.tsx marks the exe's page with the material under its window (VA5), never the web build (the
+// case above): glass on macOS; on Windows by the client hints of the machine (Playwright's Desktop
+// Edge says Windows 10: solid).
+test('the exe marks its page with the material under its window (VA5)', async ({
+  page,
+  browserName,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-backdrop',
+    browserName === 'webkit' ? 'glass' : /^(glass|solid)$/,
+  );
+});
+
+// The macOS glass under the sidebar is the system's material, as light as the wallpaper makes it
+// (ADR-0013 appendix 11/11/2026 §7). On the Owner's Mac, under a dark wallpaper, it measured
+// rgb(50, 52, 57) beneath the pane (3.77:1 for "Đã lưu" in --text-3; PR 1414, 19/11/2026). Here
+// it stands at 1.6 times that, for a light wallpaper (NT-MAC-26 (g) measures it on the Mac): every
+// text of the sidebar reads at AA on it, at the lightest place of the pane.
+const BRIGHTEST_GLASS = 'rgb(80, 83, 91)';
+
+test('the text of the macOS sidebar reads at AA on the glass at its brightest (VA5)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await setTransparency(page, 'no-preference');
+  await expect(sidebar(page).getByRole('paragraph').first()).toHaveText(/^Đã lưu/);
+  // The exe's window on macOS, the system's material under the page instead of the stand-in's.
+  await page.evaluate((glass) => {
+    document.getElementById('exe-window-stand-in')?.remove();
+    document.documentElement.dataset.os = 'mac';
+    document.documentElement.dataset.backdrop = 'glass';
+    document.documentElement.style.backgroundColor = glass;
+  }, BRIGHTEST_GLASS);
+  expect(await lowestContrast(sidebar(page))).toBeGreaterThanOrEqual(4.5);
+});
+
+// The warning of a failed save sits in the column above the toolbar (SaveWarning): the Windows pane
+// keeps its one corner and its edge at the top of the window, and no edge crosses it where the
+// toolbar starts (review of PR 1414 @574f57e).
+test('the Windows pane keeps its edge at the top of the window while the save warning shows (VA5)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await markOs(page, 'win');
+  await page.evaluate(() => (window.exe.failSaves = 'DISK_FULL'));
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Team mới' });
+  await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Bình Minh 2');
+  await dialog.getByRole('button', { name: 'Tạo team' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('alert').filter({ hasText: 'Chưa lưu được' })).toBeVisible();
+
+  const left = (await box(page.locator('[data-slot="content-pane"]'))).x;
+  const bar = await box(toolbar(page));
+  expect(bar.y).toBeGreaterThan(20);
+  // The top edge and the left edge of the pane, at the top of the window.
+  const top = await shade(page, { x: left + 120, y: 0, width: 1, height: 4 });
+  expect(top.at(0)! - top.at(-1)!, 'the top edge').toBeGreaterThan(10);
+  const side = await shade(page, { x: left, y: bar.y + 2, width: 4, height: 1 });
+  expect(side.at(0)! - side.at(-1)!, 'the left edge by the toolbar').toBeGreaterThan(10);
+  // Where the toolbar starts, the pane goes on: no line across it (left of the warning, which has
+  // a border of its own, 28 px in).
+  const across = await shade(page, { x: left + 14, y: bar.y - 2, width: 1, height: 5 });
+  expect(Math.max(...across) - Math.min(...across), 'no line at the toolbar').toBeLessThan(8);
+});
+
 /**
- * How many pixels of a screenshot are the champagne of the outline: light, and warm, where the
- * navy of the logo and the dark behind it are both blue. Counted on a blank page of the same
- * browser, which decodes the PNG.
+ * The pixels of a PNG screenshot, as RGBA rows of its device pixels, with its width. Decoded on a
+ * blank page of the same browser, which decodes the PNG.
  */
-async function champagnePixels(page: Page, png: Buffer, rows: { from: number; to: number }) {
+async function decoded(page: Page, png: Buffer) {
   const blank = await page.context().newPage();
   try {
-    return await blank.evaluate(
-      async ({ data, rows }) => {
-        const image = new Image();
-        image.src = `data:image/png;base64,${data}`;
-        await image.decode();
-        const canvas = document.createElement('canvas');
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-        const context = canvas.getContext('2d')!;
-        context.drawImage(image, 0, 0);
-        const top = Math.round(canvas.height * rows.from);
-        const height = Math.round(canvas.height * rows.to) - top;
-        const { data: pixels } = context.getImageData(0, top, canvas.width, height);
-        let count = 0;
-        for (let i = 0; i < pixels.length; i += 4) {
-          if (pixels[i]! > 90 && pixels[i]! - pixels[i + 2]! > 20) count++;
-        }
-        return count;
-      },
-      { data: png.toString('base64'), rows },
-    );
+    return await blank.evaluate(async (data) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${data}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(image, 0, 0);
+      const { data: pixels } = context.getImageData(0, 0, canvas.width, canvas.height);
+      return { width: canvas.width, height: canvas.height, pixels: [...pixels] };
+    }, png.toString('base64'));
   } finally {
     await blank.close();
   }
+}
+
+/**
+ * The lightness (the sum of red, green and blue) of each device pixel of a strip of the page, in
+ * order: down a strip one pixel wide, across one a pixel high.
+ */
+async function shade(page: Page, clip: { x: number; y: number; width: number; height: number }) {
+  const { pixels } = await decoded(page, await page.screenshot({ clip }));
+  const sums: number[] = [];
+  for (let i = 0; i < pixels.length; i += 4)
+    sums.push(pixels[i]! + pixels[i + 1]! + pixels[i + 2]!);
+  return sums;
+}
+
+/**
+ * How many pixels of a screenshot are the champagne of the outline: light, and warm, where the
+ * navy of the logo and the dark behind it are both blue.
+ */
+async function champagnePixels(page: Page, png: Buffer, rows: { from: number; to: number }) {
+  const { width, height, pixels } = await decoded(page, png);
+  const top = Math.round(height * rows.from);
+  const bottom = Math.round(height * rows.to);
+  let count = 0;
+  for (let i = top * width * 4; i < bottom * width * 4; i += 4) {
+    if (pixels[i]! > 90 && pixels[i]! - pixels[i + 2]! > 20) count++;
+  }
+  return count;
 }
 
 // L179: in the macOS app the outline drawn by four `drop-shadow` of half a pixel did not show, and

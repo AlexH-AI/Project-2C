@@ -17,9 +17,19 @@
         "width": 1440,
         "height": 900,
         "minWidth": 1100,
-        "minHeight": 700
+        "minHeight": 700,
+        "theme": "Dark",
+        "transparent": true,
+        "windowEffects": {
+          "effects": ["sidebar", "micaDark"],
+          "state": "followsWindowActiveState"
+        },
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 20, "y": 24 }
       }
     ],
+    "macOSPrivateApi": true,
     "security": {
       "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; base-uri 'none'; form-action 'none'"
     }

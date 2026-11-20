@@ -33,7 +33,9 @@
   --date-today-bg: rgba(63, 214, 154, 0.2);
   --date-future-bg: rgba(111, 168, 255, 0.22);
   /* Brand block of the sidebar (T-308, G3 27/10): the light champagne of the slogan, and of the
-     thin outline that lifts the navy of the logo off the dark sidebar */
+     thin outline that lifts the navy of the logo off the dark sidebar. No CSS of the app reads
+     --brand-outline: the outline is in the images of the logo (`Brand`), captured with this
+     colour; a new colour means capturing them again (L222). */
   --brand-slogan: #e8d3a2;
   --brand-outline: rgba(232, 211, 162, 0.95);
 
@@ -69,6 +71,10 @@
   --fs-2xl: 26px;
   /* The column of the sidebar (app-shell.html #sidebar): on macOS with the 8 px its pane floats in */
   --sidebar-w: 244px;
+  /* The height of the toolbar (app-shell.html #toolbar), which what scrolls stops below (L226), and
+     the depth of its scroll edge below it, where what scrolls under it fades out */
+  --toolbar-h: 68px;
+  --toolbar-edge: 18px;
 }
 
 /* The shell of the two systems (ADR-0013 appendix 11/11/2026): block B of the mockups' ui2.css,

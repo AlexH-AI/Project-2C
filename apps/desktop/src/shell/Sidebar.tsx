@@ -6,6 +6,7 @@ import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
 import { FOCUS } from '../routes/classes';
 import { Brand, Slogan } from './Brand';
+import { macDragRegion } from './platform';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
 const ICONS: Record<Section, NavIconName> = {
@@ -28,7 +29,12 @@ const FIRST_MANAGE_SECTION: Section = 'team';
 export function Sidebar({ current }: { current: Section }) {
   return (
     <aside className="sidebar flex flex-none flex-col gap-3 self-start">
-      <Brand />
+      {/* The top of the pane: in the macOS exe the window's three buttons sit there (VA5), and
+          the window moves by it, the logo too: nothing in it opens or takes a click. */}
+      <div data-tauri-drag-region={macDragRegion('deep')} className="flex flex-col gap-3">
+        <div aria-hidden="true" data-slot="window-controls" className="window-controls" />
+        <Brand />
+      </div>
       <nav aria-label={t('nav.label')} className="flex flex-col gap-0.5">
         {SECTIONS.map((section) => {
           const active = section === current;
@@ -95,5 +101,6 @@ function saveState(status: SaveStatus | undefined): { dot: string; tone: string;
   const text = status.lastSave
     ? t('saveState.savedAt', { time: formatLocalTime(status.lastSave.at) })
     : t('saveState.saved');
-  return { dot: 'bg-ok', tone: 'text-fg-3', text };
+  // --text-2, as ui2.css .sb-foot: on the glass of macOS --text-3 is under 4.5:1 (PR 1414).
+  return { dot: 'bg-ok', tone: 'text-fg-2', text };
 }

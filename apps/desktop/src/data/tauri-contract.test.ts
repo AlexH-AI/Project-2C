@@ -300,7 +300,11 @@ const tauriConf = () =>
     productName: string;
     version: string;
     identifier: string;
-    app: { windows: { label: string; title: string }[]; security: { csp: string } };
+    app: {
+      windows: { label: string; title: string }[];
+      security: { csp: string };
+      macOSPrivateApi?: boolean;
+    };
   };
 
 /** Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside. */
@@ -418,7 +422,9 @@ describe('the release configuration (DR6-12…14)', () => {
     expect(tauriConf().app.windows.map(({ label }) => label)).toEqual(['main']);
     // Its whole object: `remote` would open it to web pages, another window would get it too.
     // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
-    // AppShell: `setTitle` names the window after the screen. The app's own commands need none.
+    // AppShell: `setTitle` names the window after the screen. The drag regions of macOS (VA5:
+    // `data-tauri-drag-region`, Tauri's own script): `start_dragging` moves the window,
+    // `internal_toggle_maximize` zooms it on a double click. The app's own commands need none.
     expect(JSON.parse(desktop('src-tauri/capabilities/default.json'))).toEqual({
       $schema: expect.any(String),
       identifier: 'default',
@@ -429,8 +435,45 @@ describe('the release configuration (DR6-12…14)', () => {
         'core:event:allow-unlisten',
         'core:window:allow-destroy',
         'core:window:allow-set-title',
+        'core:window:allow-start-dragging',
+        'core:window:allow-internal-toggle-maximize',
       ],
     });
+  });
+
+  // The window of each system (VA5, ADR-0013 appendix 11/11/2026 §2, §3), in tauri.conf.json, as
+  // a platform's file only packs the app: the system's dark material under a page that lets it
+  // through, glass on macOS, Mica on Windows 11 (each system takes the first effect it has). macOS:
+  // the title bar over the page, no title, its three buttons inside the sidebar's pane; a
+  // transparent window there is a private API, fine outside the Mac App Store only
+  // (docs/design/nen-tang-mac-va-thuong-mai-hoa.md §7). Windows keeps its own title bar (kiểu B):
+  // Snap Layouts on a drawn maximize button needs the app's own Win32 hit test.
+  it('draws the window on the material of its system', () => {
+    const { app } = tauriConf();
+    expect(app.macOSPrivateApi).toBe(true);
+    expect(desktop('src-tauri/Cargo.toml')).toMatch(
+      /^tauri = \{ version = "2", features = \["macos-private-api"\] \}$/m,
+    );
+    expect(app.windows[0]).toMatchObject({
+      theme: 'Dark',
+      transparent: true,
+      windowEffects: { effects: ['sidebar', 'micaDark'], state: 'followsWindowActiveState' },
+      titleBarStyle: 'Overlay',
+      hiddenTitle: true,
+      trafficLightPosition: { x: 20, y: 24 },
+    });
+    expect(app.windows[0]).not.toHaveProperty('decorations');
+  });
+
+  // The installer and its uninstaller speak the language of Windows, Vietnamese or English (the
+  // first for any other), and Windows names the publisher "Heritas" in its list of apps (L170,
+  // Owner 17/11/2026), not "heritas" taken from the identifier.
+  it('gives the Windows installer Vietnamese and English, and the publisher Heritas', () => {
+    const { bundle } = JSON.parse(desktop('src-tauri/tauri.windows.conf.json')) as {
+      bundle: { publisher?: string; windows: { nsis: { languages?: string[] } } };
+    };
+    expect(bundle.publisher).toBe('Heritas');
+    expect(bundle.windows.nsis.languages).toEqual(['Vietnamese', 'English']);
   });
 
   // Tauri merges the platform's file into tauri.conf.json (JSON merge patch), and the cases here

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { t } from '../i18n';
-import { isMac, modKey, modParams, platformMark, storeParams } from './platform';
+import {
+  isMac,
+  macDragRegion,
+  modKey,
+  modParams,
+  platformMark,
+  storeParams,
+  windowBackdrop,
+} from './platform';
 
 /** What the webview of each platform says: WKWebView on macOS, WebView2 (Edge) on Windows. */
 const MAC = {
@@ -51,6 +59,38 @@ describe('the platform of the webview (Mac-5a)', () => {
     expect(t('aiPanel.web.pastePlaceholder', modParams(WINDOWS))).toBe(
       'Dán câu trả lời của ChatGPT (Ctrl+V)',
     );
+  });
+
+  // VA5: `data-backdrop` of the exe's page. WebView2 names the version of Windows only in its
+  // client hints: 1 to 10 are Windows 10, 13 and up Windows 11, 0.x Windows 8.1 and before.
+  it('lays the page on the system material on macOS and on Windows 11, solid elsewhere', async () => {
+    const hints = (platformVersion: string | Error) => ({
+      ...WINDOWS,
+      userAgentData: {
+        getHighEntropyValues: () =>
+          platformVersion instanceof Error
+            ? Promise.reject(platformVersion)
+            : Promise.resolve({ platformVersion }),
+      },
+    });
+    await expect(windowBackdrop(MAC)).resolves.toBe('glass');
+    await expect(windowBackdrop(hints('13.0.0'))).resolves.toBe('glass');
+    await expect(windowBackdrop(hints('19.0.0'))).resolves.toBe('glass');
+    await expect(windowBackdrop(hints('10.0.0'))).resolves.toBe('solid');
+    await expect(windowBackdrop(hints('0.3.0'))).resolves.toBe('solid');
+    // Unknown is solid: a window with nothing under it would show the desktop through the page.
+    await expect(windowBackdrop(hints(''))).resolves.toBe('solid');
+    await expect(windowBackdrop(hints(new Error('not allowed')))).resolves.toBe('solid');
+    await expect(windowBackdrop(WINDOWS)).resolves.toBe('solid');
+  });
+
+  // VA5: the title bar of macOS is over the page; Windows keeps its own, the page moves no window.
+  it('lets the window move by the toolbar and the top of the sidebar on macOS only', () => {
+    // `''`: a press on that element itself; `deep`: anywhere inside it but on a control.
+    expect(macDragRegion('self', MAC)).toBe('');
+    expect(macDragRegion('deep', MAC)).toBe('deep');
+    expect(macDragRegion('self', WINDOWS)).toBeUndefined();
+    expect(macDragRegion('deep', WINDOWS)).toBeUndefined();
   });
 
   it('names the key store of the platform: the Keychain on macOS, the Credential Manager on Windows', () => {

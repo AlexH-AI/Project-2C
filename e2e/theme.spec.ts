@@ -233,6 +233,44 @@ test('fields and the arrows of unsorted columns stand out 3:1 from what is next 
   await expectBorderStandsOut(dialog.getByRole('combobox', { name: 'RM phụ trách' }));
 });
 
+// The open list of a native list (SelectField): Chromium (WebView2) draws it with the colours of
+// the list and of its options. Over the see-through fill of a field (--fill-1) the white of the
+// popup showed, the light text of the app lost on it (Owner, PR 1414, 19/11/2026). Each option has
+// a solid ground of its own, and its text reads at AA on it.
+test('the options of a native list read at AA on a solid ground of their own', async ({ page }) => {
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const list = page
+    .getByRole('dialog', { name: 'Khách hàng mới' })
+    .getByRole('combobox', { name: 'RM phụ trách' });
+  const options = await list.evaluate((select: HTMLSelectElement) => {
+    const channels = (color: string) => (color.match(/[\d.]+/g) ?? []).map(Number);
+    const luminance = (color: string) => {
+      const [r = 0, g = 0, b = 0] = channels(color).map((value) => {
+        const c = value / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    return [...select.options].map((option) => {
+      const { backgroundColor, color } = getComputedStyle(option);
+      const [light = 0, dark = 0] = [luminance(color), luminance(backgroundColor)].sort(
+        (x, y) => y - x,
+      );
+      return {
+        option: option.text,
+        alpha: channels(backgroundColor)[3] ?? 1,
+        contrast: (light + 0.05) / (dark + 0.05),
+      };
+    });
+  });
+  expect(options.length).toBeGreaterThan(1);
+  for (const { option, alpha, contrast } of options) {
+    expect(alpha, option).toBe(1);
+    expect(contrast, option).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 test('the two fields of the app outside packages/ui stand out 3:1 from their card too', async ({
   page,
 }) => {
