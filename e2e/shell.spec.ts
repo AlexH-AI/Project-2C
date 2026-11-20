@@ -266,6 +266,25 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
   await expect(sub(page)).toHaveText('Toàn bộ');
 });
 
+// L228: lost, the attribute leaves every test green while the macOS window no longer moves by the
+// toolbar. Tauri reads `''` as a press on the element itself, `deep` as one anywhere inside it.
+test('the macOS window moves by the free space of the toolbar and the top of the sidebar; Windows keeps its title bar (VA5)', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/#/overview');
+  const places = [
+    [page.getByRole('banner'), ''],
+    [page.locator('[data-slot="heads-up"]'), ''],
+    [page.locator('[data-slot="window-controls"]').locator('..'), 'deep'],
+  ] as const;
+  for (const [place, reach] of places) {
+    if (browserName === 'webkit')
+      await expect(place).toHaveAttribute('data-tauri-drag-region', reach);
+    else await expect(place).not.toHaveAttribute('data-tauri-drag-region');
+  }
+});
+
 test('the toolbar is 68 px high and what scrolls under it fades at its edge', async ({
   page,
   browserName,

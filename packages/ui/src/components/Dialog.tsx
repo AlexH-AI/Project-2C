@@ -1,5 +1,14 @@
-import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { focusBack } from './dialog-focus';
+import { calmMotion } from './motion';
 
 /**
  * Where a dialog inside gives the focus back when what opened it is gone too (DR6-83), e.g. a
@@ -36,6 +45,34 @@ function open(node: HTMLDialogElement) {
 
 const WIDTH = { confirm: 'w-100', form: 'w-120' } as const;
 
+/** Longer than the move out of a dialog and of what dims behind it (--t-2). */
+const GONE_MS = 400;
+
+/**
+ * A dialog closed goes in --t-1, what dims behind it in --t-2 (`motion-dialog` of theme.css), but
+ * its caller has taken it away: a copy of it stays for that time, over the page, taking nothing,
+ * neither a click nor the focus, and read by no screen reader, with no ids, then goes. None under
+ * "Giảm chuyển động", nor where the page cannot show one.
+ */
+function leaveBehind(dialog: HTMLDialogElement) {
+  if (calmMotion() || typeof dialog.showPopover !== 'function') return;
+  const copy = dialog.cloneNode(true) as HTMLDialogElement;
+  for (const named of [copy, ...copy.querySelectorAll('[id]')]) named.removeAttribute('id');
+  for (const name of ['open', 'aria-labelledby']) copy.removeAttribute(name);
+  copy.setAttribute('aria-hidden', 'true');
+  copy.setAttribute('popover', 'manual');
+  copy.setAttribute('data-state', 'closing');
+  copy.inert = true;
+  document.body.append(copy);
+  copy.showPopover();
+  const gone = () => copy.remove();
+  void Promise.all(copy.getAnimations({ subtree: true }).map((move) => move.finished)).then(
+    gone,
+    gone,
+  );
+  setTimeout(gone, GONE_MS);
+}
+
 /**
  * Modal dialog, the focus layer (mockup components.html 06, `.dlg` of ui2.css): opens on mount;
  * the caller unmounts it to close. Three parts: the head (title, a line of context, the ×), the
@@ -44,7 +81,8 @@ const WIDTH = { confirm: 'w-100', form: 'w-120' } as const;
  * close it. Focus goes to the field or button marked `[data-autofocus]` (`Button` / `TextField`
  * with `autoFocus`), and back to whatever had it before once the dialog is gone, or to
  * `DialogFocusFallback` when that went too. The × comes last in the dialog, so a dialog that marks
- * nothing still opens on its first field or button.
+ * nothing still opens on its first field or button. It comes as its system brings one, and goes in
+ * --t-1 (`motion-dialog`, `leaveBehind`).
  */
 export function Dialog({
   title,
@@ -77,11 +115,22 @@ export function Dialog({
     return () => focusBack(opener.current, fallback.current);
   }, []);
 
+  useLayoutEffect(() => {
+    const node = dialog.current;
+    // In the commit that takes the dialog away, before the page is painted without it; only a
+    // dialog that did leave the page (not the second run of StrictMode) leaves a copy, of what it
+    // held as it went.
+    return () =>
+      queueMicrotask(() => {
+        if (node && !node.isConnected) leaveBehind(node);
+      });
+  }, []);
+
   return (
     <dialog
       ref={dialog}
       aria-labelledby={titleId}
-      className={`pop m-auto ${WIDTH[size]} flex-col rounded-pop p-0 text-fg open:flex`}
+      className={`pop motion-dialog m-auto ${WIDTH[size]} flex-col rounded-pop p-0 text-fg open:flex`}
       onCancel={(event) => {
         // The browser would close the dialog behind React's back; the caller decides instead.
         // A cancel it will not let us refuse ends in `close` instead.

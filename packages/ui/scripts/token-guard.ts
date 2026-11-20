@@ -61,12 +61,20 @@ const JOINER = /^ ?[!-/:-@] $/;
 /**
  * Reads the separators, marks and joiners from the source of the i18n strings (DR6-207): every
  * symbol there, a separator when a `sep.*` holds it. A comment there, on lines of its own, may use
- * others (`§`).
+ * others (`§`). A `sep.*` written another way than `'sep.name': 'text'` throws: unread, its joiner
+ * would no longer be guarded while the check stays green (L190).
  */
 export function marksOf(strings: string): Marks {
-  const seps = [...strings.matchAll(/'sep\.\w+':\s*'([^']*)'/g)].map((entry) => entry[1]!);
+  const code = strings.replace(/^\s*\/\/.*$/gm, '');
+  const seps = [...code.matchAll(/'sep\.\w+':\s*'([^']*)'/g)].map((entry) => entry[1]!);
+  const keys = code.match(/['"]sep\.[^'"]*['"]\s*:/g)?.length ?? 0;
+  if (seps.length !== keys) {
+    throw new Error(
+      `marksOf: read ${seps.length} of the ${keys} sep.* keys; write each as 'sep.name': 'text'`,
+    );
+  }
   const marks = new Map<string, TokenViolation['rule']>();
-  for (const [c] of (QUOTES + strings.replace(/^\s*\/\/.*$/gm, '')).matchAll(SYMBOL)) {
+  for (const [c] of (QUOTES + code).matchAll(SYMBOL)) {
     marks.set(c, seps.some((sep) => sep.includes(c)) ? 'hardcoded-separator' : 'hardcoded-mark');
   }
   return { marks, joiners: new Set(seps.filter((sep) => JOINER.test(sep))) };
@@ -111,8 +119,9 @@ const BEFORE_REGEX = new Set(['', '(', ',', '=', ':', '[', '!', '&', '|', '?', '
  * (`&middot;`, `&#183;`, `&#xb7;`). An escape in the string of a JSX attribute
  * (`<p title="\u00b7" />`) is found too, though JSX does not decode it (the text shows `\u00b7`):
  * it is still text written in place of i18n. The scan reads strings and templates, so a `//` or
- * `/*` inside one opens no comment (DR6-145), and regex literals, so a quote in one opens no string
- * (DR6-207). The separators, marks and joiners (`' / '` too) are those of `marks`, read from
+ * `/*` inside one opens no comment (DR6-145), and regex literals where one may start (after one of
+ * `BEFORE_REGEX` or `return`), so a quote in one opens no string (DR6-207). The separators, marks
+ * and joiners (`' / '` too) are those of `marks`, read from
  * `vi.ts` by `marksOf`.
  * Limits: the scan reads characters, not the syntax tree. A form it does not read is added to this
  * list, not as a new branch (CLR6-G4):
@@ -120,6 +129,9 @@ const BEFORE_REGEX = new Set(['', '(', ',', '=', ':', '[', '!', '&', '|', '?', '
  *   name is not in `ENTITIES`;
  * - a `/` that divides right after one of `BEFORE_REGEX` or `return` (`<p>a: / b</p>`) is taken
  *   for a regex: the rest of its line is read as one, and a string there is missed;
+ * - a regex literal after anything else (`)`, another operator or keyword: `typeof /'/`) is read
+ *   as code: a quote or a backtick in it opens a string, and what follows is read the wrong way
+ *   round (a joiner after it, `typeof /'/ + names.join(', ')`, is missed); none in the app today;
  * - a whole string given to a call other than `.join(` or `concat(` (`text.split(', ')`, but
  *   `parts.push(', ')`, `String.prototype.concat.call(a, ', ', b)` and the replacement of
  *   `text.replace(/\n/g, ', ')` too) reads as no joiner;

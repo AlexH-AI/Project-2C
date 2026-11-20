@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import { riseStep } from '@p2c/ui';
 import { useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { lightCard } from '../routes/classes';
@@ -53,6 +62,47 @@ function useScreenFocus(route: Route, appWindow: AppWindow | undefined) {
   return { heading, main };
 }
 
+/** A part of a screen for "Hiện": a card, or a block marked `data-part` (a row of controls). */
+const PART = '.card, [data-part]';
+
+/** Past the last move of "Hiện" (a bar of the eighth step lands at 0.9 s). */
+const RISE_MS = 1_000;
+
+/**
+ * "Hiện" (VA7a, chuyen-dong.html `#hien`): a new screen is there at once, the one before gone with
+ * no move; its parts rise in their order (`[data-rise]` of theme.css, `riseStep`), with the name
+ * of the screen and the line under it. A part inside another rises with it: the rows of a table,
+ * the cards of the board of Khách hàng. Only as a screen opens: what a change of scope or period
+ * draws again is there at once. The name and its line stay from screen to screen; their move
+ * starts again.
+ */
+function useRise(
+  main: RefObject<HTMLElement | null>,
+  heading: RefObject<HTMLElement | null>,
+  hash: string,
+) {
+  useLayoutEffect(() => {
+    const parts = [...(main.current?.querySelectorAll<HTMLElement>(PART) ?? [])].filter(
+      (part) => !part.parentElement?.closest(PART),
+    );
+    parts.forEach((part, index) => {
+      part.style.setProperty('--rise-step', String(riseStep(index)));
+      part.setAttribute('data-rise', '');
+    });
+    const name = heading.current;
+    const lines = [name, name?.nextElementSibling].filter((line) => line instanceof HTMLElement);
+    for (const line of lines) {
+      line.removeAttribute('data-rise');
+      void line.offsetWidth;
+      line.setAttribute('data-rise', '');
+    }
+    const settled = setTimeout(() => {
+      for (const moved of [...parts, ...lines]) moved.removeAttribute('data-rise');
+    }, RISE_MS);
+    return () => clearTimeout(settled);
+  }, [main, heading, hash]);
+}
+
 /**
  * Sidebar + toolbar + current screen (mockup app-shell.html), and the toast of the window, which every
  * screen shows through (`useToast`); `appWindow` is the exe's (see `App`).
@@ -68,6 +118,7 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
 function Shell({ appWindow }: { appWindow?: AppWindow }) {
   const route = useRoute();
   const { heading, main } = useScreenFocus(route, appWindow);
+  useRise(main, heading, routeToHash(route));
   const { teams, people } = useTables();
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);

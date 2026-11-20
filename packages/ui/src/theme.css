@@ -190,7 +190,8 @@
    sections 6, 7, 9). The classes of a component give the box: height, padding, radius, text size. */
 
 /* A press (ui2.css .btn, .choice): the control shrinks 4% and springs back; under the pointer only
-   its light changes, in --t-1. Off, it does not answer the pointer. */
+   its light changes, in --t-1. Off, it does not answer the pointer. A card that opens something
+   (a customer card) shrinks 1.5% (`press-card`). Still under "Giảm chuyển động" ("Motion"). */
 @utility press {
   transition:
     background-color var(--t-1),
@@ -205,10 +206,21 @@
   &:is(:disabled, [aria-disabled='true'], :has(:disabled)):active {
     transform: none;
   }
-  @media (prefers-reduced-motion: reduce) {
-    &:active {
-      transform: none;
-    }
+}
+@utility press-card {
+  @apply press;
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+/* The shape of a toast (ui2.css .toast): a capsule on macOS, 8 px on Windows 11; its button, a chip,
+   is concentric with it on both. */
+@utility toast-shape {
+  border-radius: calc(var(--r-chip) * var(--r-k));
+  corner-shape: round;
+  [data-os='win'] & {
+    border-radius: 8px;
   }
 }
 
@@ -400,10 +412,11 @@
 }
 
 /* An item of the sidebar: concentric with the pane on macOS (16 → 8), 4 px on Windows 11. The
-   chosen one is heavier, its icon gold; its fill is `nav-pill`, an element of its own. */
+   chosen one is heavier, its icon gold, which springs to its size (`--spring-snappy`); its fill is
+   `nav-pill`, an element of its own, under every item of the list (`isolate` on the list), so that
+   it glides under them to the next one chosen. */
 @utility nav-item {
   position: relative;
-  isolation: isolate;
   border-radius: calc(var(--r-control-sm) * var(--r-k));
   corner-shape: var(--r-curve);
   font-weight: 500;
@@ -419,6 +432,11 @@
     background-color: transparent;
     color: var(--text);
     font-weight: 650;
+  }
+  & svg {
+    transition:
+      color var(--t-2),
+      transform var(--t-3) var(--spring-snappy);
   }
   &[aria-current='page'] svg {
     color: var(--accent);
@@ -529,28 +547,29 @@
 /* Windows: the content of the shell is a pane on the window, its top left corner rounded, edged by
    a hairline on top and on the left (ui2.css [data-os='win'] .main). Both stay as the page scrolls:
    the pane under it all, its edge above the toolbar, which would cover it, wherever the toolbar is
-   (below the warning of a failed save, or stuck at the top). */
-@utility content-pane {
+   (below the warning of a failed save, or stuck at the top). Both have the frame of the pane
+   (`content-frame`), so that the edge never leaves the pane (L227). */
+@utility content-frame {
   display: none;
   [data-os='win'] & {
     display: block;
     position: fixed;
     inset: 0 0 0 var(--sidebar-w);
-    z-index: -1;
     pointer-events: none;
     border-top-left-radius: var(--r-window);
+  }
+}
+@utility content-pane {
+  @apply content-frame;
+  [data-os='win'] & {
+    z-index: -1;
     background-color: var(--bg-0);
   }
 }
 @utility content-edge {
-  display: none;
+  @apply content-frame;
   [data-os='win'] & {
-    display: block;
-    position: fixed;
-    inset: 0 0 0 var(--sidebar-w);
     z-index: 20;
-    pointer-events: none;
-    border-top-left-radius: var(--r-window);
     box-shadow: inset 1px 1px 0 var(--hairline);
   }
 }
@@ -571,6 +590,150 @@
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.022em;
+}
+
+/* ---------- Motion (VA7a; ADR-0013 appendix 14/11/2026; chuyen-dong.html, ui2.css 13, 19) ----------
+   Only transform and opacity move: nothing is laid out again halfway. What is called out takes
+   220–400 ms to arrive, what is closed goes in --t-1, a screen left has no move out. A move never
+   holds a hand: what moves takes the clicks of the page as it is, and a new click ends it at its
+   end. One move at a time for a thing; no loop. Places with no motion (`#where`): the rows of a
+   table, the cards of the board of Khách hàng, what a filter, a search or a sort changes, a field,
+   the scroll, the print and the Excel file. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes glide {
+  from {
+    transform: translate(calc(var(--glide-x, 0) * 1px), calc(var(--glide-y, 0) * 1px));
+  }
+}
+/* A layer comes from where it is called: it fades in in --t-2 as it travels the last few px in --t-3
+   by the snappy spring; closed, it goes back the way it came in --t-1. */
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes arrive {
+  from {
+    transform: translateY(var(--from-y)) scale(var(--from-scale));
+  }
+}
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateY(var(--from-y)) scale(var(--from-scale));
+  }
+}
+@keyframes vanish {
+  to {
+    opacity: 0;
+  }
+}
+
+@layer components {
+  /* "Hiện" (`useRise` of the shell): the parts of a screen just opened rise 8 px and fade in, in
+     their order, 28 ms apart, in at most 8 steps (`--rise-step`); the line under its name 40 ms
+     after the name. A bar in a part (`data-bar`) grows from its left 100 ms after its part. */
+  [data-rise] {
+    animation: rise var(--t-3) var(--spring-snappy) backwards;
+    animation-delay: calc(var(--rise-step, 0) * 28ms);
+  }
+  [data-slot='screen-sub'][data-rise] {
+    animation-delay: 40ms;
+  }
+  [data-rise] [data-bar] {
+    transform-origin: left;
+    animation: grow var(--t-4) var(--spring-smooth) backwards;
+    animation-delay: calc(var(--rise-step, 0) * 28ms + 100ms);
+  }
+  /* "Trượt" of what is chosen (`glide`): from where the one before was to its own place. */
+  [data-glide] {
+    animation: glide var(--t-3) var(--spring-snappy);
+  }
+}
+
+/* A menu or the panel of a toolbar pill (`useLayerState`): 6 px from its pill, 98 % → 100 %. */
+@utility motion-layer {
+  --from-y: -6px;
+  --from-scale: 0.98;
+  transform-origin: top right;
+  animation:
+    appear var(--t-2) var(--ease-out) backwards,
+    arrive var(--t-3) var(--spring-snappy) backwards;
+  &[data-state='closing'] {
+    animation: leave var(--t-1) var(--ease-in) forwards;
+    pointer-events: none;
+  }
+}
+/* A dialog: on macOS a sheet that drops 36 px from under the toolbar, on Windows 11 it grows in the
+   middle, 94 % → 100 %; what is behind dims in --t-2. Closed, it goes in --t-1 and what is behind
+   lights again in --t-2 (`Dialog`, which leaves a copy that takes nothing for that time). */
+@utility motion-dialog {
+  --from-y: -36px;
+  --from-scale: 0.98;
+  transform-origin: top center;
+  animation:
+    appear var(--t-2) var(--ease-out) backwards,
+    arrive var(--t-3) var(--spring-snappy) backwards;
+  &::backdrop {
+    animation: appear var(--t-2) var(--ease-out) backwards;
+  }
+  [data-os='win'] & {
+    --from-y: 0px;
+    --from-scale: 0.94;
+    transform-origin: center;
+  }
+  &[data-state='closing'] {
+    animation: leave var(--t-1) var(--ease-in) forwards;
+    pointer-events: none;
+  }
+  &[data-state='closing']::backdrop {
+    animation: vanish var(--t-2) var(--ease-in) forwards;
+  }
+  /* The copy is not modal: it keeps the room a modal dialog has in the window */
+  &:popover-open {
+    max-height: calc(100% - 2em - 6px);
+  }
+}
+/* A toast rises from 24 px under the bottom edge, 96 % → 100 %, by the bouncy spring in --t-4; it
+   leaves the same way in --t-2. */
+@utility motion-toast {
+  --from-y: 24px;
+  --from-scale: 0.96;
+  animation:
+    appear var(--t-2) var(--ease-out) backwards,
+    arrive var(--t-4) var(--spring-bouncy) backwards;
+  [data-state='closing'] > & {
+    animation: leave var(--t-2) var(--ease-in) forwards;
+  }
+}
+
+/* The system's "Giảm chuyển động" (no switch of the app's own), one place for every move: nothing
+   moves. A new screen is there whole at once, a pill or a thumb jumps to its place, a layer, a
+   dialog or a toast shows and goes at once (`calmMotion` takes it away), a press does not shrink.
+   Colours still change under the pointer, the focus ring stays, a toast still leaves after 4.2 s. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after,
+  ::backdrop {
+    animation: none;
+  }
+  :is(.press, .press-card):active {
+    transform: none;
+  }
+  .nav-item svg {
+    transition: color var(--t-2);
+  }
 }
 
 @layer base {

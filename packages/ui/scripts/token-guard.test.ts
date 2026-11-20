@@ -240,6 +240,24 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
+  // L190: a separator it cannot read would no longer be guarded, `pnpm lint:tokens` still green.
+  it('refuses strings whose sep.* it cannot read, rather than guard fewer joiners', () => {
+    const vi = (...entries: string[]) => ['export const vi = {', ...entries, '};'].join('\n');
+    const dot = "  'sep.dot': '·',";
+    expect(marksOf(vi("  'sep.list': ', ',", dot)).joiners).toEqual(new Set([', ']));
+    // A comment may name one; strings with none have no joiner.
+    expect(marksOf(vi("  // 'sep.list': ', ' joins", "  'a.star': '★',")).joiners).toEqual(
+      new Set(),
+    );
+    for (const list of [
+      `  "sep.list": ", ",`,
+      `  'sep.list': "; ",`,
+      "  'sep.list.short': ', ',",
+    ]) {
+      expect(() => marksOf(vi(list, dot))).toThrow('read 1 of the 2 sep.* keys');
+    }
+  });
+
   // DR6-207 (CLR6-D1): `sep.slash` joins as `sep.list` and `sep.semicolon` do.
   it('flags parts joined by the slash of sep.slash', () => {
     const source = [

@@ -77,6 +77,8 @@ test('a button has the fill of its level, 34 px and the corner of its system; a 
 test('under the pointer a button changes its light only; pressed it shrinks 4%, not with "Giảm chuyển động" (VA2)', async ({
   page,
 }) => {
+  // The motion is on here; every other test runs under "Giảm chuyển động" (playwright.config.ts).
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   const dialog = await openBooking(page);
   const primary = dialog.getByRole('button', { name: 'Tạo lịch hẹn' });
   const secondary = dialog.getByRole('button', { name: 'Hủy' });

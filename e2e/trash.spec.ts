@@ -818,7 +818,8 @@ test('a deleted appointment says so in a toast; Hoàn tác brings it back at onc
   page,
 }) => {
   const errors = trackConsoleErrors(page);
-  const { name } = await bookAndDelete(page);
+  // The clock held: a slow machine does not see the toast go before Hoàn tác is pressed (L210).
+  const { name } = await bookAndDelete(page, () => holdClock(page));
   await expect(toast(page, MOVED)).toBeVisible();
   // It takes no focus, which goes where it went before: to the detail the appointment left.
   await expect(undo(page)).not.toBeFocused();
@@ -855,6 +856,7 @@ test('a toast leaves after 4,2 s, its Hoàn tác with it; from Thùng rác the r
 
 test('Hoàn tác brings back a team, a person, a policy and a customer', async ({ page }) => {
   await page.goto('/#/team');
+  await holdClock(page);
   await page.getByRole('button', { name: '+ Team' }).click();
   let dialog = page.getByRole('dialog', { name: 'Team mới' });
   await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');

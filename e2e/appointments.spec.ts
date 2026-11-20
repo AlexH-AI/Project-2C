@@ -895,6 +895,8 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   );
   await expect(scopePill(page)).toHaveText('Team Sao Mai');
   await expect(detail).toContainText('Chọn một lịch hẹn để xem chi tiết.');
+  // The line says it: no toast besides (VA3b; L210).
+  await expect(page.locator('[aria-live="polite"][aria-atomic="true"]')).toBeEmpty();
 
   await pickScope(page, 'all');
   await expect(notice).toHaveCount(0);
