@@ -52,10 +52,12 @@ const GONE_MS = 400;
  * A dialog closed goes in --t-1, what dims behind it in --t-2 (`motion-dialog` of theme.css), but
  * its caller has taken it away: a copy of it stays for that time, over the page, taking nothing,
  * neither a click nor the focus, and read by no screen reader, with no ids, then goes. None under
- * "Giảm chuyển động", nor where the page cannot show one.
+ * "Giảm chuyển động", nor where the page cannot show one, nor while another dialog is open (one
+ * that took its place, or the one under it): a copy would lie over that one and dim it twice.
  */
 function leaveBehind(dialog: HTMLDialogElement) {
   if (calmMotion() || typeof dialog.showPopover !== 'function') return;
+  if (document.querySelector('dialog:modal')) return;
   const copy = dialog.cloneNode(true) as HTMLDialogElement;
   for (const named of [copy, ...copy.querySelectorAll('[id]')]) named.removeAttribute('id');
   for (const name of ['open', 'aria-labelledby']) copy.removeAttribute(name);

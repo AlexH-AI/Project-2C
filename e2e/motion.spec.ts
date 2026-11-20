@@ -1,5 +1,13 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { markOs, periodPill, pickScope, scopeMenu, scopePill } from './support';
+import {
+  markOs,
+  periodPill,
+  pickScope,
+  pressButton,
+  scopeMenu,
+  scopePill,
+  tabKey,
+} from './support';
 
 // The moves of the app (VA7a; chuyen-dong.html, ADR-0013 appendix 14/11/2026). Every other spec
 // runs under "Giảm chuyển động" (playwright.config.ts); these turn the motion on, but the last
@@ -201,7 +209,8 @@ test('a dialog comes as its system brings one and goes in --t-1; focus, Esc and 
 
   // macOS: a sheet that drops from under the toolbar.
   await markOs(page, 'mac');
-  await add.click();
+  // By the keyboard on macOS: a click there gives the button no focus to come back to.
+  await pressButton(add);
   expect((await opened())[0]).toEqual([
     { name: 'appear', start: 0, end: 220, from: { opacity: '0' } },
     { name: 'arrive', start: 0, end: 400, from: { transform: 'translateY(-36px) scale(0.98)' } },
@@ -222,7 +231,8 @@ test('a dialog comes as its system brings one and goes in --t-1; focus, Esc and 
 
   // Windows 11: it grows in the middle of the window.
   await markOs(page, 'win');
-  await add.click();
+  // By the keyboard on macOS: a click there gives the button no focus to come back to.
+  await pressButton(add);
   expect((await opened())[0]?.[1]).toEqual({
     name: 'arrive',
     start: 0,
@@ -356,7 +366,7 @@ test.describe('under "Giảm chuyển động"', () => {
     await other.hover();
     await expect(other).not.toHaveCSS('background-color', unlit);
     await nav(page, 'Khách hàng').focus();
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(tabKey(page));
     await expect(nav(page, 'Báo cáo')).toBeFocused();
     await expect(nav(page, 'Báo cáo')).toHaveCSS('outline-style', 'solid');
   });

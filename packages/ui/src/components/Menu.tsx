@@ -11,7 +11,7 @@ const GONE_MS = 400;
 /**
  * The life of a layer as `open` changes (`layerState`): drawn while open or closing; what goes on
  * the layer is its state (`data-state`, for `motion-layer` of theme.css), and while it closes it
- * takes nothing (`inert`) and goes once its move out ends.
+ * takes nothing (`inert`), is read by no screen reader, and goes once its move out ends.
  */
 export function useLayerState(open: boolean) {
   const [state, setState] = useState<LayerState>(open ? 'open' : 'closed');
@@ -31,6 +31,7 @@ export function useLayerState(open: boolean) {
     layer: {
       'data-state': state,
       inert: state === 'closing',
+      'aria-hidden': state === 'closing' || undefined,
       onAnimationEnd: (event: AnimationEvent) => {
         if (event.animationName === 'leave') gone();
       },

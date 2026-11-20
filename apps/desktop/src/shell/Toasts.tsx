@@ -122,7 +122,7 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
         </div>
       )}
       {!toast && drawn && last && (
-        <div aria-hidden="true" {...layer} className="flex max-w-full">
+        <div {...layer} className="flex max-w-full">
           {draw(last)}
         </div>
       )}
