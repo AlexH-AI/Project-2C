@@ -33,7 +33,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/Button.tsx` — type ButtonVariant, Button
 - `src/components/Chart.tsx` — type ChartOption, encodeHtml, Chart
 - `src/components/Choices.tsx` — type Choice, Choices
-- `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, type DataTableMoreLabels, DataTable
+- `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, type DataTableView, type DataTableMoreLabels, DataTable
 - `src/components/Dialog.tsx` — DialogFocusFallback, Dialog
 - `src/components/FieldMarks.tsx` — ErrorMark, ListArrow
 - `src/components/Menu.tsx` — useLayerState, useLayer, LAYER, type MenuRow, MenuRows, MenuButton

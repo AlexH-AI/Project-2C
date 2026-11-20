@@ -60,10 +60,11 @@ const GLIDE_ENDS = ['animationend', 'animationcancel'] as const;
  * "Trượt" of what is chosen (the pill of the sidebar, the thumb of a segmented control): drawn at
  * its new place, it starts `x` / `y` px away, where the one before was, and glides there in --t-3
  * by the snappy spring (`[data-glide]` of theme.css). Its place stays the layout's. Once its move
- * is over the marks go, so a copy of it, or the thing shown again, does not glide again.
+ * is over the marks go, so a copy of it, or the thing shown again, does not glide again. Under
+ * "Giảm chuyển động" nothing is marked: no move would end to take the marks away.
  */
 export function glide(mark: Glider, { x = 0, y = 0 }: { x?: number; y?: number }) {
-  if (x === 0 && y === 0) return;
+  if ((x === 0 && y === 0) || calmMotion()) return;
   mark.style.setProperty('--glide-x', String(x));
   mark.style.setProperty('--glide-y', String(y));
   mark.setAttribute('data-glide', '');
@@ -177,6 +178,20 @@ const OPEN_NAME = 'view-transition-name';
 
 let opening: Transition | null = null;
 
+/** The move that named a thing "open" last: a move takes away its own names only. */
+const namedBy = new WeakMap<Opened, object>();
+
+function name(thing: Opened, by: object) {
+  thing.style.setProperty(OPEN_NAME, 'open');
+  namedBy.set(thing, by);
+}
+
+function unname(thing: Opened | null, by: object) {
+  if (!thing || namedBy.get(thing) !== by) return;
+  thing.style.removeProperty(OPEN_NAME);
+  namedBy.delete(thing);
+}
+
 /**
  * "Mở" (VA7b; ADR-0013 appendix 14/11/2026 §3, chuyen-dong.html `#mo`): the thing clicked (`from`)
  * grows into the page `to()` gives once `change` has drawn the new screen; `back`, the page shrinks
@@ -202,13 +217,16 @@ export function openFrom(
   }
   const root = page.documentElement;
   root.setAttribute('data-open', back ? 'back' : 'in');
-  from.style.setProperty(OPEN_NAME, 'open');
+  const self = {};
+  name(from, self);
   let end: Opened | null = null;
   const move = page.startViewTransition(() => {
-    from.style.removeProperty(OPEN_NAME);
+    unname(from, self);
     change(true);
+    // Ended before its update ran (a new move): it names no page, the new move pictures it.
+    if (opening !== move) return;
     end = to?.() ?? null;
-    end?.style.setProperty(OPEN_NAME, 'open');
+    if (end) name(end, self);
   });
   opening = move;
   const press = () => move.skipTransition();
@@ -219,7 +237,8 @@ export function openFrom(
     .catch(() => undefined)
     .then(() => {
       page.removeEventListener('pointerdown', press, true);
-      end?.style.removeProperty(OPEN_NAME);
+      // Not when a new move named it since (Enter on the card the page shrank to, VA7b review).
+      unname(end, self);
       if (opening !== move) return;
       opening = null;
       root.removeAttribute('data-open');

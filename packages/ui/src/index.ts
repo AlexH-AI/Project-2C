@@ -11,6 +11,7 @@ export {
   type DataTableColumn,
   type DataTableMoreLabels,
   type DataTableSort,
+  type DataTableView,
 } from './components/DataTable';
 export { Chart, encodeHtml, type ChartOption } from './components/Chart';
 export { Button, type ButtonVariant } from './components/Button';

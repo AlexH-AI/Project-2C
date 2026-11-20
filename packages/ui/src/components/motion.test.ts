@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   COUNT_MS,
   GONE_MS,
@@ -13,6 +13,9 @@ import {
 } from './motion';
 
 afterEach(() => void vi.unstubAllGlobals());
+
+/** The system asks for no less motion: moves run. */
+const moving = () => vi.stubGlobal('matchMedia', () => ({ matches: false }));
 
 describe('riseStep', () => {
   it('gives parts 1 … 8 a step each, in the order of the screen', () => {
@@ -96,6 +99,7 @@ function glider() {
 
 describe('glide', () => {
   const mark = glider;
+  beforeEach(moving);
 
   it('starts what is chosen from where the one before was, and glides it to its place', () => {
     const pill = mark();
@@ -105,6 +109,15 @@ describe('glide', () => {
     const thumb = mark();
     glide(thumb, { x: 58.5 });
     expect(thumb.set).toEqual({ '--glide-x': '58.5', '--glide-y': '0' });
+  });
+
+  it('marks nothing under "Giảm chuyển động", where no move would end to take the marks away', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const pill = mark();
+    glide(pill, { y: -38 });
+    expect(pill.set).toEqual({});
+    expect(pill.marks).toEqual(new Set());
+    expect(pill.heard.size).toBe(0);
   });
 
   it('does not move what is chosen at the same place', () => {
@@ -117,6 +130,7 @@ describe('glide', () => {
 });
 
 describe('glide, once over', () => {
+  beforeEach(moving);
   const end = (type: string, target: unknown) => ({ type, target }) as unknown as Event;
 
   it('takes its marks away when its own move ends or is cut short, not when a move inside it does (L247)', () => {
@@ -300,7 +314,6 @@ describe('openFrom ("Mở")', () => {
     return { page, root, moves, heard };
   }
   const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-  const moving = () => vi.stubGlobal('matchMedia', () => ({ matches: false }));
 
   it('grows the thing clicked into the page: the update names the page "open", in a move marked "in"', async () => {
     moving();
@@ -373,6 +386,33 @@ describe('openFrom ("Mở")', () => {
     expect(main.name()).toBeUndefined();
     expect(root).toEqual({});
     expect(heard.size).toBe(0);
+  });
+
+  it('leaves the name of the thing a new move grows from, when the move before ended on it', async () => {
+    moving();
+    const { page, moves } = testPage();
+    const main = named();
+    const card = named();
+    // Back to the card; Enter on it while the page still shrinks.
+    openFrom(main, () => {}, { back: true, to: () => card, page });
+    moves[0]!.update();
+    openFrom(card, () => {}, { to: () => main, page });
+    moves[0]!.end();
+    await settle();
+    expect(card.name()).toBe('open');
+    moves[1]!.update();
+    expect(card.name()).toBeUndefined();
+    expect(main.name()).toBe('open');
+  });
+
+  it('names no page for a move ended before its update ran', () => {
+    moving();
+    const { page, moves } = testPage();
+    const page1 = named();
+    openFrom(named(), () => {}, { to: () => page1, page });
+    openFrom(named(), () => {}, { page });
+    moves[0]!.update();
+    expect(page1.name()).toBeUndefined();
   });
 
   it('works on the document of the page by default', () => {

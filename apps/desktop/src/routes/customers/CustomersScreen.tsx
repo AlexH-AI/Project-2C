@@ -9,7 +9,14 @@ import {
   type ClosedStage,
   type CustomerStage,
 } from '@p2c/domain';
-import { Button, DataTable, Segmented, StateNote, type DataTableColumn } from '@p2c/ui';
+import {
+  Button,
+  DataTable,
+  Segmented,
+  StateNote,
+  type DataTableColumn,
+  type DataTableView,
+} from '@p2c/ui';
 import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
@@ -37,8 +44,15 @@ const VIEWS = [
   { value: 'table', label: t('customers.table') },
 ] as const;
 
-/** The view last shown: the way back from a profile opened here returns to it (VA7b, "Mở"). */
-let lastView: View = 'kanban';
+/**
+ * Khách hàng as last left: its view, and the sort and the rows shown of its table. The way back
+ * from a profile opened here draws it so again (VA7b, "Mở").
+ */
+let left: { view: View; table?: DataTableView } = { view: 'kanban' };
+
+const keepTable = (table: DataTableView) => {
+  left = { ...left, table };
+};
 
 /** Names per closed list (cards per kanban column: `kanbanColumn`); the table shows everyone. */
 const CLOSED_LIMIT = 5;
@@ -133,10 +147,13 @@ export function CustomersScreen() {
     ],
     [board],
   );
-  const [view, setView] = useState<View>(() => (isReturning() ? lastView : 'kanban'));
+  // Drawn by the way back of "Mở": as it was left. Else the board, and a table of the newest first.
+  const [back] = useState(() => (isReturning() ? left : null));
+  const [view, setView] = useState<View>(back?.view ?? 'kanban');
   useEffect(() => {
-    lastView = view;
+    left = { ...left, view };
   }, [view]);
+  const tableBack = back?.view === 'table' ? back.table : undefined;
   // "+ n KH" goes with the kanban it is on: the focus goes to the table it opens (DR6-35). A count,
   // so each click moves it.
   const table = useRef<HTMLTableElement>(null);
@@ -220,7 +237,9 @@ export function CustomersScreen() {
             columns={COLUMNS}
             rows={rows}
             getRowId={(c) => c.customer.id}
-            initialSort={{ id: 'since', desc: true }}
+            initialSort={tableBack ? (tableBack.sort ?? undefined) : { id: 'since', desc: true }}
+            initialLimit={tableBack?.limit}
+            onView={keepTable}
             moreLabels={tableMore('customers')}
             resetKey={scopeKey}
             empty={

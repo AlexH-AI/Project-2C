@@ -577,33 +577,43 @@ async function watchMoves(page: Page) {
   await page.evaluate(() => {
     const log: string[] = [];
     const lengths: number[] = [];
-    Object.assign(window, { moves: log, moveLengths: lengths });
+    const states: string[] = [];
+    Object.assign(window, { moves: log, moveLengths: lengths, moveStates: states });
     const start = document.startViewTransition.bind(document);
     document.startViewTransition = ((update: () => void) => {
       const move = start(update);
+      // What the move found once the screen changed, and what it grows from or to there.
       void move.updateCallbackDone.then(() =>
         log.push(
-          `${document.documentElement.dataset.open} ${location.hash} ${document.querySelector('h1')?.textContent}`,
+          `${document.documentElement.dataset.open} ${location.hash} ${document.querySelector('h1')?.textContent} ${document.querySelector('[style*="view-transition-name"]')?.localName}`,
         ),
       );
-      void move.ready.then(() =>
-        lengths.push(
-          ...document
-            .getAnimations()
-            .filter((one) => (one.effect as KeyframeEffect).pseudoElement?.endsWith('-group(open)'))
-            .map((one) => Number(one.effect!.getComputedTiming().duration)),
-        ),
+      // A move skipped (no picture taken) never gets ready, on any engine.
+      move.ready.then(
+        () => {
+          states.push('ready');
+          lengths.push(
+            ...document
+              .getAnimations()
+              .filter((one) =>
+                (one.effect as KeyframeEffect | null)?.pseudoElement?.endsWith('-group(open)'),
+              )
+              .map((one) => Number(one.effect!.getComputedTiming().duration)),
+          );
+        },
+        () => states.push('skipped'),
       );
       return move;
     }) as typeof document.startViewTransition;
   });
   return () =>
     page.evaluate(() => {
-      const { moves, moveLengths } = window as unknown as {
+      const { moves, moveLengths, moveStates } = window as unknown as {
         moves: string[];
         moveLengths: number[];
+        moveStates: string[];
       };
-      return { moves, lengths: moveLengths };
+      return { moves, lengths: moveLengths, states: moveStates };
     });
 }
 
@@ -648,16 +658,19 @@ test('a card of Khách hàng grows into the profile, which shrinks back to it: t
   await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
   // The page grown is one block: nothing in it rises.
   expect(await page.locator('main [data-rise]').count()).toBe(0);
-  await expect.poll(async () => (await moved()).moves).toEqual([`in ${href} Hồ sơ khách hàng`]);
+  await expect
+    .poll(async () => (await moved()).moves)
+    .toEqual([`in ${href} Hồ sơ khách hàng main`]);
 
   await page.getByRole('link', { name: '← Khách hàng' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
   await expect(card).toBeFocused();
   expect(await scrollOf(page)).toBe(scroll);
   expect(await page.locator('main [data-rise]').count()).toBe(0);
+  // The page shrinks to the card itself.
   await expect
     .poll(async () => (await moved()).moves)
-    .toEqual([`in ${href} Hồ sơ khách hàng`, 'back #/customers Khách hàng']);
+    .toEqual([`in ${href} Hồ sơ khách hàng main`, 'back #/customers Khách hàng a']);
 
   // From the table (Bảng), the row grows; the way back returns to the table, as far scrolled.
   const row = await scrolledCard(page, 'Bảng');
@@ -669,13 +682,49 @@ test('a card of Khách hàng grows into the profile, which shrinks back to it: t
   expect(await scrollOf(page)).toBe(row.scroll);
   await expect.poll(async () => (await moved()).moves).toHaveLength(4);
   expect((await moved()).moves.slice(2)).toEqual([
-    `in ${row.href} Hồ sơ khách hàng`,
-    'back #/customers Khách hàng',
+    `in ${row.href} Hồ sơ khách hàng main`,
+    'back #/customers Khách hàng tr',
   ]);
+  // Each of the four moves ran: none was skipped.
+  await expect.poll(async () => (await moved()).states).toEqual(Array(4).fill('ready'));
   await test.step('the box grows in --t-3 and shrinks back in --t-2', async (step) => {
     step.skip(browserName === 'webkit', 'the moves of a View Transition are read on Chromium');
     expect((await moved()).lengths).toEqual([400, 220, 400, 220]);
   });
+});
+
+test('the way back to a table sorted by name and shown past its first hundred rows draws it as it was left (Mở)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await gotoScreen(page, '/#/customers');
+  await page
+    .getByRole('radiogroup', { name: 'Cách xem' })
+    .getByRole('radio', { name: 'Bảng' })
+    .click();
+  const table = page.getByRole('table', { name: 'Khách hàng' });
+  const byName = table.getByRole('columnheader', { name: /^Họ tên/ });
+  await byName.getByRole('button').click();
+  await expect(byName).toHaveAttribute('aria-sort', 'ascending');
+  await page.getByRole('button', { name: /^Hiện thêm/ }).click();
+  // The heading row, and two hundred customers.
+  await expect(table.getByRole('row')).toHaveCount(201);
+  const moved = await watchMoves(page);
+  // The 121st customer: past the first hundred.
+  const link = table.getByRole('row').nth(121).getByRole('link');
+  await link.scrollIntoViewIfNeeded();
+  const [href, scroll] = [await link.getAttribute('href'), await scrollOf(page)];
+  await link.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(byName).toHaveAttribute('aria-sort', 'ascending');
+  await expect(table.getByRole('row')).toHaveCount(201);
+  await expect(table.getByRole('row').nth(121).getByRole('link')).toBeFocused();
+  expect(await scrollOf(page)).toBe(scroll);
+  // The page shrinks to the row clicked.
+  await expect
+    .poll(async () => (await moved()).moves)
+    .toEqual([`in ${href} Hồ sơ khách hàng main`, 'back #/customers Khách hàng tr']);
 });
 
 test('without View Transitions a card opens the plain way: the profile rises, the way back keeps the scroll', async ({
