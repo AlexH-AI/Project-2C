@@ -28,9 +28,9 @@ export function ScreenBar({ sub, actions }: { sub?: ReactNode; actions?: ReactNo
 /**
  * The toolbar and the screen under it. The toolbar: the name of the screen and the line under it;
  * the place kept for the "Lưu ý" pill (`data-slot="heads-up"`, VA9); then, on the right, `tools`
- * (the controls of the shell: the eye of the customer-name mask, the scope pill) and what the screen puts there: its period pill, its
- * buttons. `children` is the screen:
- * its `ScreenBar` draws into this toolbar.
+ * (the controls of the shell: the eye of the customer-name mask, the scope pill) and what the
+ * screen puts there: its period pill, its buttons. `children` is the screen: its `ScreenBar`
+ * draws into this toolbar.
  */
 export function Toolbar({
   title,

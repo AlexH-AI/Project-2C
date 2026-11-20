@@ -53,7 +53,7 @@ export const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
 /** A fact's value as shown: in words, dots while the customer-name mask is on (VA6a). */
 export function factWords(field: KycField, value: KycValue, masked: Masked): string {
   const text = factText(value, YES_NO);
-  return factInWords(field) ? masked.text(text) : text;
+  return factInWords(field, value) ? masked.text(text) : text;
 }
 
 function CategoryRow({

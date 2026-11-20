@@ -118,13 +118,14 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
 
 /**
  * Whether a fact is words a user typed, or the AI wrote, which the customer-name mask hides as it
- * may hold a name (VA6a, mockup app-shell.html #privacy): a text trường, not an amount and not
- * one the profile writes. Numbers, yes / no answers and amounts stay shown.
+ * may hold a name (VA6a, mockup app-shell.html #privacy): a text trường the profile does not
+ * write, an amount trường only for words that read as no amount. Numbers, yes / no answers and
+ * amounts stay shown.
  */
-export function factInWords(field: KycField): boolean {
-  return (
-    kycFieldType(field) === 'text' && !AMOUNT_FIELDS.has(field) && !KYC_FIELDS[field].fromProfile
-  );
+export function factInWords(field: KycField, value: KycValue): boolean {
+  if (kycFieldType(field) !== 'text' || KYC_FIELDS[field].fromProfile) return false;
+  // An amount trường keeps what was typed: "Vay mua nhà" is words (review of PR 1416).
+  return !AMOUNT_FIELDS.has(field) || kycAmountRead(field, String(value)) === null;
 }
 
 /**

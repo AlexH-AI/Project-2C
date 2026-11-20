@@ -11,6 +11,7 @@ import {
   type KycFact,
   type KycField,
   type KycProfile,
+  type KycValue,
   type StageTransition,
 } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
@@ -116,11 +117,16 @@ describe('factText', () => {
 // VA6a, app-shell.html #privacy: KYC facts in words may hold a name; numbers and amounts do not.
 describe('factInWords', () => {
   it('takes the text trường a user types, not numbers, yes / no, amounts nor the profile', () => {
-    const words = (fields: string) => fields.split(' ').filter((f) => factInWords(f as KycField));
+    const words = (fields: string, value: KycValue = 'Bác sĩ') =>
+      fields.split(' ').filter((f) => factInWords(f as KycField, value));
     expect(words('residence occupation primaryGoal mainConcern')).toHaveLength(4);
-    const others =
-      'birthYear childrenCount hasProtection annualIncome totalAssets liabilities gender';
-    expect(words(others)).toEqual([]);
+    expect(words('birthYear childrenCount hasProtection gender')).toEqual([]);
+    expect(words('annualIncome totalAssets liabilities', '6 tỷ')).toEqual([]);
+  });
+
+  it('takes the words of an amount trường that read as no amount (review of PR 1416)', () => {
+    expect(factInWords('liabilities', 'Vay mua nhà')).toBe(true);
+    expect(factInWords('annualIncome', 'Khoảng 12 tỷ')).toBe(true);
   });
 });
 

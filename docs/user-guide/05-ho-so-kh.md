@@ -17,7 +17,7 @@ Cửa sổ rộng từ 1 440 px (cỡ mặc định của app) chia hồ sơ ba 
 | **+ Lịch hẹn** | Đặt lịch hẹn, KH điền sẵn | [3. Lịch hẹn](03-lich-hen.md#đặt-lịch-hẹn) |
 | **+ Ghi chú KYC** | Ghi điều mới biết về KH, kèm dữ kiện | [Ghi chú KYC](#ghi-chú-kyc) |
 
-Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), đầu hồ sơ và tiêu đề các hộp thoại ghi chữ cái đầu của tên; ghi chú, mô tả trigger, dữ kiện KYC dạng chữ, câu của KYC Intelligence và đề xuất AI trích xuất hiện "•••". Số con, năm sinh, số tiền, câu trả lời Có / Không và ghi chú hệ thống "Hồ sơ KH: …" vẫn hiện.
+Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), đầu hồ sơ và tiêu đề các hộp thoại ghi chữ cái đầu của tên; ghi chú, mô tả trigger, dữ kiện KYC dạng chữ, câu của KYC Intelligence và đề xuất AI trích xuất hiện "•••". Số con, năm sinh, số tiền (chữ ở ô số tiền mà app không đọc ra số, như "Vay mua nhà", thì cũng hiện "•••"), câu trả lời Có / Không và ghi chú hệ thống "Hồ sơ KH: …" vẫn hiện.
 
 ## Dữ kiện KYC
 
