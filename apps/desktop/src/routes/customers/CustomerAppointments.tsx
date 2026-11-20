@@ -3,6 +3,7 @@ import type { AppointmentRecord } from '@p2c/db';
 import { appointmentGroup, type CalendarDate, type StageTransition } from '@p2c/domain';
 import { DataTable, StateNote, type DataTableColumn } from '@p2c/ui';
 import { t, tableMore } from '../../i18n';
+import { TypedText } from '../../shell/NameMask';
 import { dayText, isPastOrToday, withTime, writtenDay } from '../appointments/appointment-form';
 import {
   outcomeResolver,
@@ -139,7 +140,9 @@ export function CustomerAppointments({
       value: (r) => r.appointment.note,
       // A link with nowhere to break would stretch the column over the next card (DR6-117).
       cell: (r) => (
-        <span className="line-clamp-1 wrap-anywhere text-fg-2">{r.appointment.note}</span>
+        <span className="line-clamp-1 wrap-anywhere text-fg-2">
+          <TypedText text={r.appointment.note} />
+        </span>
       ),
     },
     {

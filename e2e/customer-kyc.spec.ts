@@ -267,15 +267,26 @@ test('the timeline filter keeps to the KYC or the appointments, "Tất cả" sho
   page,
 }) => {
   await createCustomer(page);
+  const region = page.getByRole('region', { name: 'Dòng thời gian' });
+  const items = region.getByRole('listitem');
+  const filter = region.getByRole('radiogroup', { name: 'Lọc dòng thời gian' });
+
+  // No appointment yet: the filter shows nothing and says so; "Bỏ lọc" goes back to "Tất cả",
+  // the focus on the name of the card (components.html 09, PR #1406).
+  await filter.getByRole('radio', { name: 'Lịch hẹn' }).click();
+  await expect(region).toContainText('Không có mục nào.');
+  await expect(region).toContainText('Đang lọc: Lịch hẹn. Bỏ lọc để xem cả dòng thời gian.');
+  await region.getByRole('button', { name: 'Bỏ lọc' }).click();
+  await expect(filter.getByRole('radio', { name: 'Tất cả' })).toBeChecked();
+  await expect(region.getByRole('heading', { name: 'Dòng thời gian' })).toBeFocused();
+  await expect(region).not.toContainText('Không có mục nào.');
+
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const booking = page.getByRole('dialog');
   await booking.getByRole('textbox', { name: /^Ngày/ }).fill('20/9');
   await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
   await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
   await expect(booking).toHaveCount(0);
-  const region = page.getByRole('region', { name: 'Dòng thời gian' });
-  const items = region.getByRole('listitem');
-  const filter = region.getByRole('radiogroup', { name: 'Lọc dòng thời gian' });
 
   await expect(filter.getByRole('radio', { name: 'Tất cả' })).toBeChecked();
   await expect(items).toHaveText([

@@ -11,7 +11,7 @@ export const TOAST_MS = 4_200;
 export interface ToastSpec {
   readonly text: string;
   readonly detail?: string;
-  readonly tone?: 'info' | 'error';
+  readonly tone?: 'done' | 'info' | 'error';
   readonly action?: { readonly label: string; readonly run: () => void };
 }
 

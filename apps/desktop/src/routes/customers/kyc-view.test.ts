@@ -17,6 +17,7 @@ import {
   currentFactRecords,
   factCodeTarget,
   factInEffect,
+  factInWords,
   factText,
   inTimelineFilter,
   kycAmountRead,
@@ -108,6 +109,29 @@ describe('factText', () => {
     expect(factText(false, words)).toBe('Không');
     expect(factText(1984, words)).toBe('1984');
     expect(factText('Bác sĩ', words)).toBe('Bác sĩ');
+  });
+});
+
+// VA6a, app-shell.html #privacy: KYC facts in words may hold a name; numbers and amounts do not.
+describe('factInWords', () => {
+  it('takes the text trường a user types', () => {
+    for (const field of ['residence', 'occupation', 'primaryGoal', 'mainConcern'] as const) {
+      expect(factInWords(field), field).toBe(true);
+    }
+  });
+
+  it('leaves out numbers, yes / no, amounts and what the profile wrote', () => {
+    for (const field of [
+      'birthYear',
+      'childrenCount',
+      'hasProtection',
+      'annualIncome',
+      'totalAssets',
+      'liabilities',
+      'gender',
+    ] as const) {
+      expect(factInWords(field), field).toBe(false);
+    }
   });
 });
 

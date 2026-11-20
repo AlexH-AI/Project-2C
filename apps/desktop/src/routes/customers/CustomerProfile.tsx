@@ -21,6 +21,7 @@ import { Button, DialogFocusFallback, StateNote } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
 import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
+import { CustomerName } from '../../shell/NameMask';
 import { routeToHash } from '../../shell/routes';
 import { useToast } from '../../shell/Toasts';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
@@ -165,7 +166,7 @@ export function CustomerProfile({ id }: { id: string }) {
       <section aria-labelledby="customer-name" className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
           <h2 id="customer-name" className="m-0 min-w-0 text-lg font-semibold wrap-anywhere">
-            {customer.name}
+            <CustomerName name={customer.name} />
           </h2>
           {stageBadge(customer.stage)}
           <span className="text-xs text-fg-3 tabular-nums">

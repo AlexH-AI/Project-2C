@@ -7,17 +7,27 @@ interface ToastProps {
   text: string;
   /** A few words after the text, lighter and smaller: when it is, or how to take it back. */
   detail?: string;
-  /** `info` is the plain toast, a check before what was done; `error` the red one. */
-  tone?: 'info' | 'error';
+  /**
+   * `done` is the plain toast, a check before what was done; `info` the blue one, an (i) before a
+   * state now on (the customer-name mask); `error` the red one.
+   */
+  tone?: 'done' | 'info' | 'error';
   /** The one button of the toast: the way back ("Hoàn tác"). */
   action?: ToastButton;
   /** The × of a toast that stays until it is closed (an error). */
   close?: ToastButton;
 }
 
-/** The marks of a toast (mockups' `#i-check`, `#i-alert`, `#i-x`), no text for a screen reader. */
+/**
+ * The marks of a toast (mockups' `#i-check`, `#i-info`, `#i-alert`, `#i-x`), no text for a screen
+ * reader.
+ */
 const MARKS = {
-  info: { path: 'M5 12.5l4.5 4.5L19 7.5', look: 'size-4.25 shrink-0 text-ok' },
+  done: { path: 'M5 12.5l4.5 4.5L19 7.5', look: 'size-4.25 shrink-0 text-ok' },
+  info: {
+    path: 'M12 3.5a8.5 8.5 0 1 1 0 17a8.5 8.5 0 1 1 0-17zM12 11v5.5M12 7.5v.01',
+    look: 'size-4.25 shrink-0 text-info',
+  },
   error: { path: 'M12 4l9 16H3zM12 10v4M12 17v.01', look: 'size-4.25 shrink-0 text-danger' },
   close: { path: 'M6 6l12 12M18 6L6 18', look: 'size-3.5' },
 } as const;
@@ -48,7 +58,7 @@ const BUTTON =
  * a chip too, concentric with it. Presentation only: where it stands, the live region that reads
  * it and when it leaves are the app's. Words longer than the window break rather than run out.
  */
-export function Toast({ text, detail, tone = 'info', action, close }: ToastProps) {
+export function Toast({ text, detail, tone = 'done', action, close }: ToastProps) {
   return (
     <div
       className={`pop inline-flex min-h-10.5 max-w-full items-center gap-3 rounded-chip py-1.5 pl-4 text-md text-fg ${

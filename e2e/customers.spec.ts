@@ -66,6 +66,34 @@ test('the scope narrows the customers to one team, then to one RM', async ({ pag
   await expect(rows.nth(1).getByRole('cell').nth(3)).toHaveText(rmName);
 });
 
+// The table of an RM with no customer yet keeps its seven columns over the note saying so
+// (components.html 09, PR #1406).
+test('the table of an RM with no customer says so under its columns', async ({ page }) => {
+  const rm = 'Lý Chưa Có Khách';
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Team & nhân sự' })
+    .click();
+  await page.getByRole('button', { name: '+ Nhân sự' }).click();
+  const person = page.getByRole('dialog', { name: 'Nhân sự mới' });
+  await person.getByRole('textbox', { name: 'Họ tên' }).fill(rm);
+  await person.getByRole('radio', { name: 'RM', exact: true }).check();
+  await person.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Sao Mai' });
+  await person.getByRole('button', { name: 'Thêm' }).click();
+  await expect(person).toBeHidden();
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Khách hàng' })
+    .click();
+
+  await pickScope(page, { team: 'Sao Mai', rm });
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const table = page.getByRole('table', { name: 'Khách hàng' });
+  await expect(table.getByRole('columnheader')).toHaveCount(7);
+  await expect(table).toContainText('Chưa có KH nào trong góc nhìn này');
+  await expect(table).toContainText('Bấm "+ Khách hàng" để thêm.');
+});
+
 test('a card opens the customer profile with its code, stage and policies', async ({ page }) => {
   const card = column(page, 'N2').getByRole('link').first();
   const name = (await card.locator('b').textContent()) ?? '';

@@ -6,10 +6,11 @@ import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { extractFromNote } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { fillSlots, t } from '../../i18n';
-import { UpdateHead, VersionLines, YES_NO } from './CustomerKyc';
+import { TypedText, useMasked } from '../../shell/NameMask';
+import { factWords, UpdateHead, VersionLines } from './CustomerKyc';
 import { busyElsewhere, extractionButton, extractionView } from './extraction-view';
 import { AiErrorText, AiRunStatus } from './KycIntelligence';
-import { factText, type TimelineVersion } from './kyc-view';
+import type { TimelineVersion } from './kyc-view';
 import { useAiJob } from './use-ai-job';
 
 /** Xác nhận of a proposal: the fact dialog, filled in; `onSaved` once the fact is saved. */
@@ -20,12 +21,13 @@ type ConfirmProposal = (note: KycNoteRecord, proposal: ExtractedFact, onSaved: (
  * in once the sentence is split, so one holding "{field}" reads as given.
  */
 function Proposed({ fact }: { fact: ExtractedFact }) {
+  const masked = useMasked();
   const [before, after = ''] = t('extraction.proposed').split('{field}');
   return (
     <>
       {before}
       <b>{t(`kycField.${fact.field}`)}</b>
-      {fillSlots(after, { value: factText(fact.value, YES_NO) })}
+      {fillSlots(after, { value: factWords(fact.field, fact.value, masked) })}
     </>
   );
 }
@@ -52,6 +54,7 @@ export function NoteEvent({
   onConfirm: ConfirmProposal;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const { runner } = app.ai;
   // Every AI button is off while any AI request runs (P5), and this customer's while its ChatGPT web
   // session waits (ADR-0009 W-1 item 6).
@@ -123,7 +126,8 @@ export function NoteEvent({
       {/* The note quoted as the RM or the profile wrote it, one per note of the timeline. */}
       <div className="whitespace-pre-line wrap-anywhere text-fg-2">
         <blockquote id={textId} tabIndex={-1} className="m-0 inline">
-          {note.text}
+          {/* What the RM wrote may hold a name: the mask hides it; the profile's own stays (VA6a). */}
+          {note.source === 'SYSTEM' ? note.text : <TypedText text={note.text} />}
         </blockquote>
         {button?.tooShort && (
           <span className="text-xs text-fg-3">
@@ -162,7 +166,9 @@ export function NoteEvent({
               <li key={index} className={`${ROW} border-dashed border-border-strong bg-surface-2`}>
                 <span className="min-w-0 flex-1 wrap-anywhere">
                   <Proposed fact={fact} />{' '}
-                  <span className="text-fg-3">{t('extraction.quote', { value: fact.quote })}</span>
+                  <span className="text-fg-3">
+                    {t('extraction.quote', { value: masked.text(fact.quote) })}
+                  </span>
                 </span>
                 <Button
                   id={proposalId(index)}

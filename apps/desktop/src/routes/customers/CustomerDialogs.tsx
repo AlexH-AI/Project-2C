@@ -31,6 +31,7 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useDatabase, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { rmOptions } from '../../shell/scope';
 import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
@@ -197,6 +198,7 @@ export function CustomerFormDialog({
   const date = useDateField(today);
   const [errors, setErrors] = useState<Errors>({});
   const [deleting, setDeleting] = useState(false);
+  const masked = useMasked();
   const edit =
     <T,>(field: Field, set: (value: T) => void) =>
     (value: T) => {
@@ -265,7 +267,9 @@ export function CustomerFormDialog({
     <Dialog
       closeLabel={t('dialog.close')}
       title={
-        customer ? t('customerForm.editTitle', { name: customer.name }) : t('customerForm.newTitle')
+        customer
+          ? t('customerForm.editTitle', { name: masked.name(customer.name) })
+          : t('customerForm.newTitle')
       }
       subtitle={
         customer
@@ -375,6 +379,7 @@ function DeleteCustomerDialog({
   );
   const undo = useTrashUndo();
   const [failure, setFailure] = useState<string>();
+  const masked = useMasked();
   const remove = () => {
     try {
       app.run((db) => softDeleteCustomer(db, customer.id));
@@ -401,7 +406,7 @@ function DeleteCustomerDialog({
     <Dialog
       closeLabel={t('dialog.close')}
       size="confirm"
-      title={t('customerDelete.title', { name: customer.name })}
+      title={t('customerDelete.title', { name: masked.name(customer.name) })}
       subtitle={customer.code}
       onClose={onClose}
       onSubmit={remove}
@@ -443,6 +448,7 @@ export function ChangeStageDialog({
   const allowed = allowedStages(customer.stage);
   const closed = !isPipelineStage(customer.stage);
   const [to, setTo] = useState<CustomerStage | null>(null);
+  const masked = useMasked();
   const direction = to && stageDirection(customer.stage, to);
   const date = useDateField(data.today());
   const [errors, setErrors] = useState<Errors>({});
@@ -471,7 +477,7 @@ export function ChangeStageDialog({
   return (
     <Dialog
       closeLabel={t('dialog.close')}
-      title={t('stageForm.title', { name: customer.name })}
+      title={t('stageForm.title', { name: masked.name(customer.name) })}
       subtitle={t('stageForm.sub', {
         code: customer.code,
         stage: t(`stage.${customer.stage}`),

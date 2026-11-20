@@ -42,6 +42,16 @@ export const vi = {
   'scope.rmCount': '{rm} RM',
   // The line under the name of a screen, on the toolbar: the team, then its RM being viewed.
   'scope.viewingRm': 'Team {team} → {rm}',
+  // The eye of the toolbar (VA6a, mockup app-shell.html #privacy): a customer's name shows as its
+  // first letters, text typed or written by the AI as dots; "hidden" is what a screen reader hears.
+  'nameMask.button': 'Che tên khách hàng',
+  'nameMask.on': 'Đang che tên',
+  'nameMask.onTitle': 'Đang che tên khách hàng · bấm để hiện lại',
+  'nameMask.onToast': 'Đang che tên khách hàng',
+  'nameMask.onToastDetail': 'bấm lại nút con mắt để hiện',
+  'nameMask.offToast': 'Đã hiện lại tên khách hàng',
+  'nameMask.dots': '•••',
+  'nameMask.hidden': 'đã ẩn',
   'rmPicker.label': 'RM của team {team}',
   'rmPicker.title': 'Team {team} · {count} RM',
   'rmPicker.all': 'Cả team',

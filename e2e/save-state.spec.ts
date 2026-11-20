@@ -205,9 +205,9 @@ test('"Thử lại" leaves the focus where the user moved it while the save ran,
   await page.goto('/#/team');
 
   await retryHeld(page, 'Bình Minh 2');
-  // On to the screen's first button while it saves.
+  // On to the first button of the toolbar while it saves: the eye of the name mask (VA6a).
   await page.keyboard.press(tabKey(page));
-  const moved = page.getByRole('button', { name: '+ Nhân sự' });
+  const moved = page.getByRole('button', { name: 'Che tên khách hàng' });
   await expect(moved).toBeFocused();
   await page.evaluate(() => window.exe.releaseSaves());
   await expect(warning(page)).toHaveCount(0);
