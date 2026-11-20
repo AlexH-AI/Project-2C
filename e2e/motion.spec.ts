@@ -116,6 +116,54 @@ const nav = (page: Page, name: string) =>
 
 const RISE = { name: 'rise', from: { transform: 'translateY(8px)', opacity: '0' } };
 
+/** Dialog 6c of an appointment booked today: its check box "Hẹn lần tiếp theo". */
+async function nextBookingBox(page: Page) {
+  await page.goto('/#/appointments');
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
+  await booking
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: /N3$/ })
+    .first()
+    .click();
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('15/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toHaveCount(0);
+  await page
+    .getByRole('complementary', { name: 'Chi tiết lịch hẹn' })
+    .getByRole('button', { name: 'Ghi kết quả' })
+    .click();
+  return page
+    .getByRole('dialog', { name: 'Kết quả cuộc gặp' })
+    .getByRole('checkbox', { name: 'Hẹn lần tiếp theo' });
+}
+
+/**
+ * Ticks `box` by a click, then reads the move of its tick (the `::after` the app draws): its
+ * duration, and whether its curve is --spring-bouncy, as the page reads both.
+ */
+const tick = (box: Locator) =>
+  box.evaluate((node: HTMLInputElement) => {
+    node.click();
+    const probe = document.createElement('div');
+    probe.style.transitionTimingFunction = 'var(--spring-bouncy)';
+    document.body.append(probe);
+    const bouncy = getComputedStyle(probe).transitionTimingFunction;
+    probe.remove();
+    const moves = node
+      .getAnimations({ subtree: true })
+      .filter((move) => move instanceof CSSTransition && move.transitionProperty === 'transform')
+      .map((move) => ({
+        on: (move.effect as KeyframeEffect).pseudoElement,
+        duration: Number(move.effect!.getComputedTiming().duration),
+        bouncy: getComputedStyle(node, '::after').transitionTimingFunction === bouncy,
+      }));
+    return { checked: node.checked, moves };
+  });
+
 test('a new screen is there at once, its parts rise in turn and land within 0.6 s; a change of scope or period plays nothing', async ({
   page,
 }) => {
@@ -311,6 +359,14 @@ test('a toast rises from the bottom edge by the bouncy spring, and leaves in --t
   await expect(page.locator('[data-state="closing"]')).toHaveCount(0);
 });
 
+test('a tick lands by the bouncy spring in --t-3', async ({ page }) => {
+  const box = await nextBookingBox(page);
+  expect(await tick(box)).toEqual({
+    checked: true,
+    moves: [{ on: '::after', duration: 400, bouncy: true }],
+  });
+});
+
 test.describe('under "Giảm chuyển động"', () => {
   test.use({ reducedMotion: 'reduce' });
 
@@ -369,5 +425,14 @@ test.describe('under "Giảm chuyển động"', () => {
     await page.keyboard.press(tabKey(page));
     await expect(nav(page, 'Báo cáo')).toBeFocused();
     await expect(nav(page, 'Báo cáo')).toHaveCSS('outline-style', 'solid');
+  });
+
+  test('a tick is there at once', async ({ page }) => {
+    const box = await nextBookingBox(page);
+    expect(await tick(box)).toEqual({ checked: true, moves: [] });
+    // Its whole size at once, no transition to wait for.
+    expect(await box.evaluate((node) => getComputedStyle(node, '::after').transform)).not.toBe(
+      'matrix(0, 0, 0, 0, 0, 0)',
+    );
   });
 });
