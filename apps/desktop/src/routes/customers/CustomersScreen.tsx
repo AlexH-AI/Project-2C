@@ -13,6 +13,7 @@ import { Button, DataTable, Segmented, StateNote, type DataTableColumn } from '@
 import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { isReturning } from '../../shell/useRoute';
 import { CustomerName, useMasked } from '../../shell/NameMask';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
@@ -35,6 +36,9 @@ const VIEWS = [
   { value: 'kanban', label: t('customers.kanban') },
   { value: 'table', label: t('customers.table') },
 ] as const;
+
+/** The view last shown: the way back from a profile opened here returns to it (VA7b, "Mở"). */
+let lastView: View = 'kanban';
 
 /** Names per closed list (cards per kanban column: `kanbanColumn`); the table shows everyone. */
 const CLOSED_LIMIT = 5;
@@ -61,7 +65,8 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     value: (c) => c.customer.name,
     cell: (c) => (
       <span className={CELL_NAME}>
-        <a href={profileHref(c)} className={LINK}>
+        {/* "Mở": the row grows into the profile (VA7b). */}
+        <a href={profileHref(c)} data-open="row" className={LINK}>
           <CustomerName name={c.customer.name} />
         </a>
       </span>
@@ -128,7 +133,10 @@ export function CustomersScreen() {
     ],
     [board],
   );
-  const [view, setView] = useState<View>('kanban');
+  const [view, setView] = useState<View>(() => (isReturning() ? lastView : 'kanban'));
+  useEffect(() => {
+    lastView = view;
+  }, [view]);
   // "+ n KH" goes with the kanban it is on: the focus goes to the table it opens (DR6-35). A count,
   // so each click moves it.
   const table = useRef<HTMLTableElement>(null);
@@ -282,10 +290,12 @@ export function StageHead({
   );
 }
 
+/** A customer on the board: a click grows the card into the profile (VA7b, "Mở"). */
 function Card({ card }: { card: CustomerCard }) {
   return (
     <a
       href={profileHref(card)}
+      data-open
       className={`press-card flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
     >
       <span className="flex items-center justify-between gap-1.5">
@@ -318,6 +328,7 @@ function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly Customer
           >
             <a
               href={profileHref(card)}
+              data-open
               className={`truncate rounded-control-sm hover:underline ${FOCUS}`}
             >
               <CustomerName name={card.customer.name} />

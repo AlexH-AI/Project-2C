@@ -5,9 +5,11 @@ import {
   useMemo,
   useRef,
   useState,
+  type MouseEvent,
   type RefObject,
 } from 'react';
-import { riseStep } from '@p2c/ui';
+import { flushSync } from 'react-dom';
+import { openFrom, riseStep } from '@p2c/ui';
 import { useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { lightCard } from '../routes/classes';
@@ -23,7 +25,7 @@ import { ScopePicker } from './ScopePicker';
 import { Toolbar } from './ScreenBar';
 import { Sidebar } from './Sidebar';
 import { ToastProvider, ToastRegion } from './Toasts';
-import { useRoute } from './useRoute';
+import { navigate, returnTo, useRoute } from './useRoute';
 
 /**
  * A new screen says so (DR6-35): the window takes its name, and the focus, gone with the screen
@@ -74,14 +76,16 @@ const RISE_MS = 1_000;
  * of the screen and the line under it. A part inside another rises with it: the rows of a table,
  * the cards of the board of Khách hàng. Only as a screen opens: what a change of scope or period
  * draws again is there at once. The name and its line stay from screen to screen; their move
- * starts again.
+ * starts again. A screen drawn by "Mở" (`still`) comes as one block: nothing in it rises.
  */
 function useRise(
   main: RefObject<HTMLElement | null>,
   heading: RefObject<HTMLElement | null>,
   hash: string,
+  still: RefObject<boolean>,
 ) {
   useLayoutEffect(() => {
+    if (still.current) return;
     const parts = [...(main.current?.querySelectorAll<HTMLElement>(PART) ?? [])].filter(
       (part) => !part.parentElement?.closest(PART),
     );
@@ -100,7 +104,70 @@ function useRise(
       for (const moved of [...parts, ...lines]) moved.removeAttribute('data-rise');
     }, RISE_MS);
     return () => clearTimeout(settled);
-  }, [main, heading, hash]);
+  }, [main, heading, hash, still]);
+}
+
+/** A card of the board of Khách hàng grows itself; a name in the table, its row (`data-open="row"`). */
+const grower = (link: HTMLElement): HTMLElement =>
+  (link.dataset.open === 'row' && link.closest('tr')) || link;
+
+/** The way back of "Mở": the screen a page was opened from, how far it was scrolled, the page. */
+interface WayBack {
+  readonly from: string;
+  readonly scroll: number;
+  readonly to: string;
+}
+
+/**
+ * "Mở" (VA7b, `openFrom`; chuyen-dong.html `#mo`): a link marked `data-open` grows into the page
+ * it opens, the whole of `main`; the link back to the screen it came from then shrinks the page to
+ * it again, that screen as it was left: as far scrolled, the focus on the link (`useScreenFocus`).
+ * The new screen is drawn in `flushSync`, so the move pictures it. Another way to a screen (the
+ * sidebar, any other link) forgets the way back. Gives the click handler of `main`, and `still`:
+ * set while "Mở" draws a screen, which comes as one block ("Hiện" does not play).
+ */
+function useOpen(main: RefObject<HTMLElement | null>, hash: string) {
+  const still = useRef(false);
+  const way = useRef<WayBack | null>(null);
+  useEffect(() => {
+    if (way.current?.to !== hash) way.current = null;
+  }, [hash]);
+  const go = (to: string, moving: boolean) => {
+    still.current = moving;
+    try {
+      flushSync(() => navigate(to));
+    } finally {
+      still.current = false;
+    }
+  };
+  const onOpen = (event: MouseEvent<HTMLElement>) => {
+    const plain = !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+    if (event.defaultPrevented || event.button !== 0 || !plain) return;
+    const link = event.target instanceof Element ? event.target.closest('a') : null;
+    const to = link?.getAttribute('href');
+    if (!link || !to) return;
+    const back = way.current;
+    if (link.hasAttribute('data-open')) {
+      event.preventDefault();
+      way.current = { from: hash, scroll: window.scrollY, to };
+      openFrom(grower(link), (moving) => go(to, moving), { to: () => main.current });
+    } else if (back && to === back.from) {
+      event.preventDefault();
+      way.current = null;
+      // The link of the page on the screen returned to, if it is still there.
+      const shown = () => {
+        const links = main.current?.querySelectorAll<HTMLElement>('a[data-open]') ?? [];
+        const link = [...links].find((one) => one.getAttribute('href') === back.to);
+        return link ? grower(link) : null;
+      };
+      const change = (moving: boolean) => {
+        returnTo(() => go(to, moving));
+        window.scrollTo(0, back.scroll);
+      };
+      openFrom(main.current, change, { back: true, to: shown });
+    }
+  };
+  return { onOpen, still };
 }
 
 /**
@@ -118,7 +185,8 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
 function Shell({ appWindow }: { appWindow?: AppWindow }) {
   const route = useRoute();
   const { heading, main } = useScreenFocus(route, appWindow);
-  useRise(main, heading, routeToHash(route));
+  const { onOpen, still } = useOpen(main, routeToHash(route));
+  useRise(main, heading, routeToHash(route), still);
   const { teams, people } = useTables();
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
@@ -163,6 +231,7 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
           <main
             ref={main}
             onPointerMove={lightCard}
+            onClick={onOpen}
             className="flex flex-col gap-4.5 px-7 pt-5 pb-8"
           >
             <ScopeContext value={scopeState}>

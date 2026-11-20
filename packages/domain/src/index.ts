@@ -131,7 +131,7 @@ export {
   maxFee,
   parseMoney,
 } from './money';
-export { formatBytes, formatNumber, formatPercentage } from './number';
+export { countFrame, formatBytes, formatNumber, formatPercentage, type CountStep } from './number';
 export type { Currency, CurrencyCode, Money, MoneyParseError, MoneyParseResult } from './money';
 export {
   APPOINTMENT_STATUSES,

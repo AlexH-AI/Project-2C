@@ -715,8 +715,9 @@
   // calm(el): nothing moves — the system asks for less motion, or an ancestor carries .calm (a mockup
   // tool: "Giảm chuyển động" tried on one part of the page).
   const calm = (el) => reduce || !!(el && el.closest && el.closest('.calm'));
-  // The pace of the page (a mockup tool, not app behaviour): 1 is real time, 5 plays every transition,
-  // animation and running number five times slower, so one move can be watched part by part.
+  // The pace of the page (a mockup tool, not app behaviour): 1 is real time; 4 and 10 ("Chậm 4×",
+  // "Chậm 10×" of chuyen-dong.html) play every transition, animation and running number that many times
+  // slower, so one move can be watched part by part.
   let pace = 1;
   const tune = () => { if (document.getAnimations) for (const a of document.getAnimations()) a.playbackRate = 1 / pace; };
   function setPace(n) { pace = n > 0 ? n : 1; tune(); }
@@ -806,13 +807,21 @@
   // frame carry the exact values (exact = true), the ones in between a running value. With nothing to
   // run from, or when nothing may move, only the last call is made. el._now is the value on screen:
   // pass it as `from` and a number that is changed again while it runs goes on from where it is.
-  // sig3 rounds a running value to three significant digits, so a frame reads like a number at rest
-  // ("987 tr", not "987.65 tr"); the page formats every frame with the app's own formatter, so the
-  // unit is always the unit of the value on screen.
+  // sig3(v, from) rounds a running value to three significant digits, so a frame reads like a number
+  // at rest ("987 tr", not "987.65 tr"), and rounds it towards `from`, the value the run started from
+  // (down on the way up, up on the way down, never back past `from`): no frame passes the target, so
+  // 290 tr → 310.6 tr runs "… 309 tr | 310 tr | 310.6 tr", never through "311 tr" (L94). Without
+  // `from`, the run being written gives it; outside a run it rounds to the nearest. The page formats
+  // every frame with the app's own formatter, so the unit is always the unit of the value on screen.
+  let runFrom = null;
   function run(el, from, to, write, ms = 400) {
     cancelAnimationFrame(el._raf);
     clearTimeout(el._end);
-    const put = (v, exact) => { el._now = v; write(v, exact); };
+    const put = (v, exact) => {
+      el._now = v;
+      runFrom = exact ? null : from;
+      try { write(v, exact); } finally { runFrom = null; }
+    };
     if (calm(el) || from === undefined || from === null || from === to || !isFinite(from) || !isFinite(to)) return put(to, true);
     const dur = ms * pace, t0 = performance.now();
     const done = () => { cancelAnimationFrame(el._raf); clearTimeout(el._end); put(to, true); };
@@ -826,6 +835,11 @@
     el._raf = requestAnimationFrame(step);
     el._end = setTimeout(done, dur + 120); // a hidden tab draws no frame: the number still arrives
   }
-  const sig3 = (v) => Number(v.toPrecision(3));
+  function sig3(v, from = runFrom) {
+    if (from === null || from === undefined || !isFinite(from) || !v || v === from) return Number(v.toPrecision(3));
+    const up = v > from, step = 10 ** (Math.floor(Math.log10(Math.abs(v))) - 2);
+    const r = Number(((up ? Math.floor(v / step + 1e-9) : Math.ceil(v / step - 1e-9)) * step).toPrecision(3));
+    return up ? Math.max(from, r) : Math.min(from, r);
+  }
   Object.assign(window.ui2, { calm, setPace, morph, grow, shrink, run, sig3, noVT: false });
 })();

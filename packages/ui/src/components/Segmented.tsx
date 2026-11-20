@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, type KeyboardEvent } from 'react';
-import { glide } from './motion';
+import { useRef, type KeyboardEvent } from 'react';
+import { useGlide } from './motion-hooks';
 
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -26,17 +26,14 @@ export function Segmented<T extends string>({
   onChange,
 }: SegmentedProps<T>) {
   const group = useRef<HTMLDivElement>(null);
-  const before = useRef(value);
-  useLayoutEffect(() => {
-    const was = before.current;
-    before.current = value;
-    if (was === value) return;
-    const radios = group.current?.querySelectorAll<HTMLElement>('[role="radio"]');
-    const at = (chosen: T) => radios?.[options.findIndex((option) => option.value === chosen)];
-    const [from, to] = [at(was), at(value)];
-    const thumb = to?.querySelector<HTMLElement>('[data-slot="thumb"]');
-    if (from && to && thumb) glide(thumb, { x: from.offsetLeft - to.offsetLeft });
-  }, [value, options]);
+  useGlide(
+    value,
+    (chosen) =>
+      group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[
+        options.findIndex((option) => option.value === chosen)
+      ],
+    'thumb',
+  );
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
     if (!step) return;

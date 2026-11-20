@@ -20,10 +20,45 @@ function store(hash: string): void {
   }
 }
 
+/** Who reads the route: told at once by `navigate`, and by `hashchange` for any other change. */
+const readers = new Set<() => void>();
+
 function subscribe(onChange: () => void): () => void {
+  readers.add(onChange);
   window.addEventListener('hashchange', onChange);
-  return () => window.removeEventListener('hashchange', onChange);
+  return () => {
+    readers.delete(onChange);
+    window.removeEventListener('hashchange', onChange);
+  };
 }
+
+/**
+ * Goes to `hash` as a link to it would, but tells the screen at once rather than at the
+ * `hashchange` that comes later: inside `flushSync` the new screen is drawn before it returns, as
+ * "Mở" needs (VA7b). The `hashchange` then finds the screen already there.
+ */
+export function navigate(hash: string): void {
+  window.location.hash = hash;
+  for (const read of readers) read();
+}
+
+let returning = false;
+
+/**
+ * Draws, by `change`, the screen the way back of "Mở" returns to: that screen comes back as it was
+ * left (VA7b), which a screen keeping more than the scroll reads by `isReturning` as it is drawn.
+ */
+export function returnTo(change: () => void): void {
+  returning = true;
+  try {
+    change();
+  } finally {
+    returning = false;
+  }
+}
+
+/** Whether the screen being drawn is the one the way back of "Mở" returns to (`returnTo`). */
+export const isReturning = () => returning;
 
 const getHash = () => window.location.hash;
 

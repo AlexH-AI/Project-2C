@@ -21,6 +21,7 @@ import {
   type Person,
   type Scope,
   type Team,
+  type CountStep,
 } from '@p2c/domain';
 import { joinParts, t } from '../../i18n';
 import { scopeName } from '../../shell/scope';
@@ -34,15 +35,31 @@ export interface KpiDelta {
   readonly text: string;
 }
 
-/** One of the six KPI tiles of Tổng quan (mockup overview.html 1a, 1e). */
-export interface KpiTile {
-  readonly key: KpiKey;
-  readonly label: string;
-  /** The number, `—` when there is none; its unit (`tr`, `K`, `VNĐ`, `%`) apart, or empty. */
+/** How a KPI is written: a count, an amount in the compact form, a percentage. */
+export type KpiKind = 'count' | 'money' | 'percent';
+
+/** How the number of a tile runs in "Đếm" (VA7b): as it is written at rest. */
+export const KPI_STEP = {
+  count: 'whole',
+  money: 'sig3',
+  percent: 'tenth',
+} as const satisfies Record<KpiKind, CountStep>;
+
+/** A number as a tile writes it: `—` when there is none; its unit (`tr`, `K`, `VNĐ`, `%`) apart. */
+export interface KpiText {
   readonly value: string;
   readonly unit: string;
   /** A space between the number and its unit: `400 tr`, but `500K`, `66.7%`. */
   readonly unitSpaced: boolean;
+}
+
+/** One of the six KPI tiles of Tổng quan (mockup overview.html 1a, 1e): its number, written. */
+export interface KpiTile extends KpiText {
+  readonly key: KpiKey;
+  readonly label: string;
+  readonly kind: KpiKind;
+  /** The number itself, which "Đếm" runs from one value to the next; null for `—`. */
+  readonly amount: number | null;
   /** Change against the previous window; null when not compared. */
   readonly delta: KpiDelta | null;
   /** "so với …" after the change, or the reason it is not compared. */
@@ -68,20 +85,22 @@ export const closeRateText = (rate: CloseRate | null): string =>
     ? `${formatPercentage(closeRatePercent(rate))}${t('overview.percentUnit')}`
     : t('overview.none');
 
-interface Shown {
-  readonly value: string;
-  readonly unit: string;
-  readonly unitSpaced: boolean;
-}
-
 /**
  * `400 tr` → `400` + `tr`, `500K` → `500` + `K`, `0 VNĐ` → `0` + `VNĐ`: the unit is what follows
  * the last digit, set smaller beside the number.
  */
-function splitUnit(text: string): Shown {
+function splitUnit(text: string): KpiText {
   const end = text.search(/\d\D*$/) + 1;
   const after = text.slice(end);
   return { value: text.slice(0, end), unit: after.trimStart(), unitSpaced: after.startsWith(' ') };
+}
+
+/** A number of a tile, at rest or a frame of "Đếm": the unit is always the unit of that number. */
+export function kpiText(kind: KpiKind, amount: number | null): KpiText {
+  if (amount === null) return { value: t('overview.none'), unit: '', unitSpaced: false };
+  if (kind === 'money') return splitUnit(formatAmountCompact(amount));
+  if (kind === 'count') return { value: formatNumber(amount), unit: '', unitSpaced: false };
+  return { value: formatPercentage(amount), unit: t('overview.percentUnit'), unitSpaced: false };
 }
 
 function delta(change: number, text: (magnitude: number) => string): KpiDelta {
@@ -132,12 +151,17 @@ export function kpiTiles(
   const note = windows
     ? t('overview.comparedWith', { value: windowText(windows.previous, period) })
     : notComparedReason(period, today);
-  const none: Shown = { value: t('overview.none'), unit: '', unitSpaced: false };
-
-  const tile = (key: KpiKey, shown: Shown, change: KpiDelta | null): KpiTile => ({
+  const tile = (
+    key: KpiKey,
+    kind: KpiKind,
+    amount: number | null,
+    change: KpiDelta | null,
+  ): KpiTile => ({
     key,
     label: t(`overview.kpi.${key}`),
-    ...shown,
+    kind,
+    amount,
+    ...kpiText(kind, amount),
     delta: change,
     note,
     formula: null,
@@ -146,14 +170,16 @@ export function kpiTiles(
   const counts = COUNTS.map((key) =>
     tile(
       key,
-      current ? { value: formatNumber(current[METRIC[key]]), unit: '', unitSpaced: false } : none,
+      'count',
+      current && current[METRIC[key]],
       deltas && delta(deltas[METRIC[key]], formatNumber),
     ),
   );
   const amounts = AMOUNTS.map((key) =>
     tile(
       key,
-      current ? splitUnit(formatAmountCompact(current[METRIC[key]])) : none,
+      'money',
+      current && current[METRIC[key]],
       deltas && delta(deltas[METRIC[key]], formatAmountCompact),
     ),
   );
@@ -169,14 +195,13 @@ function closeRateTile(
   comparedNote: string,
 ): KpiTile {
   const rate = current?.closeRate ?? null;
-  const base = { key: 'closeRate', label: t('overview.kpi.closeRate') } as const;
+  const base = { key: 'closeRate', label: t('overview.kpi.closeRate'), kind: 'percent' } as const;
   if (!current || !rate) {
     const note = current && previous ? t('overview.noRf') : comparedNote;
     return {
       ...base,
-      value: t('overview.none'),
-      unit: '',
-      unitSpaced: false,
+      amount: null,
+      ...kpiText('percent', null),
       delta: null,
       note,
       formula: null,
@@ -184,11 +209,11 @@ function closeRateTile(
   }
   const points = deltas?.closeRatePoints ?? null;
   const roundsToZero = points !== null && formatPercentage(points) === '0';
+  const amount = closeRatePercent(rate);
   return {
     ...base,
-    value: formatPercentage(closeRatePercent(rate)),
-    unit: t('overview.percentUnit'),
-    unitSpaced: false,
+    amount,
+    ...kpiText('percent', amount),
     delta:
       points === null
         ? null

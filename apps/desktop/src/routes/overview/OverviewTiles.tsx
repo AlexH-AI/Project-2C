@@ -1,8 +1,9 @@
 import { formatNumber, type AppointmentCounts, type PeriodKind } from '@p2c/domain';
+import { Count } from '@p2c/ui';
 import { t } from '../../i18n';
 import { APPOINTMENT_GROUPS } from '../appointments/appointments-view';
 import { CARD_SKIN } from '../classes';
-import type { KpiTile } from './overview-view';
+import { KPI_STEP, kpiText, type KpiTile } from './overview-view';
 
 const TILE = `${CARD_SKIN} flex flex-col gap-2 px-5 py-4.5`;
 const LABEL = 'text-sm text-fg-2';
@@ -11,7 +12,10 @@ const UNIT = 'text-md font-medium text-fg-3';
 const FOOT = 'text-xs text-fg-3 tabular-nums';
 const TONE = { up: 'text-ok', down: 'text-danger', same: 'text-fg-2' } as const;
 
-/** "Lịch hẹn": met of all, a bar of the four groups and their counts (mockup overview.html 1a). */
+/**
+ * "Lịch hẹn": met of all, a bar of the four groups and their counts (mockup overview.html 1a). The
+ * number met runs to a new value ("Đếm", VA7b); the bar, a share of four, and the counts change at once.
+ */
 export function AppointmentsTile({
   counts,
   kind,
@@ -24,7 +28,7 @@ export function AppointmentsTile({
     <section aria-label={label} className={TILE}>
       <h2 className={`m-0 font-normal ${LABEL}`}>{label}</h2>
       <p className={`m-0 ${VALUE}`}>
-        {formatNumber(counts.met)}{' '}
+        <Count value={counts.met} step="whole" write={formatNumber} />{' '}
         <small className={UNIT}>{t('overview.ofTotal', { total: counts.total })}</small>
       </p>
       <p className={`m-0 -mt-1.5 ${FOOT}`}>{t('overview.appointments.foot')}</p>
@@ -56,16 +60,29 @@ export function AppointmentsTile({
   );
 }
 
-/** One KPI with its change against the previous window, or why there is none (mockup 1a, 1e). */
+/**
+ * One KPI with its change against the previous window, or why there is none (mockup 1a, 1e). Its
+ * number runs to a new value ("Đếm", VA7b), each frame written as the number at rest; the line
+ * under it, a sentence, changes at once.
+ */
 export function KpiCard({ tile }: { tile: KpiTile }) {
   return (
     <section aria-label={tile.label} className={TILE}>
       <h3 className={`m-0 font-normal ${LABEL}`}>{tile.label}</h3>
       <p className={`m-0 ${VALUE}`}>
-        {tile.value}
-        {tile.unit && (
-          <small className={UNIT}>{tile.unitSpaced ? ` ${tile.unit}` : tile.unit}</small>
-        )}
+        <Count
+          value={tile.amount}
+          step={KPI_STEP[tile.kind]}
+          write={(amount) => {
+            const { value, unit, unitSpaced } = kpiText(tile.kind, amount);
+            return (
+              <>
+                {value}
+                {unit && <small className={UNIT}>{unitSpaced ? ` ${unit}` : unit}</small>}
+              </>
+            );
+          }}
+        />
       </p>
       <p className={`m-0 ${FOOT}`}>
         {tile.delta && <span className={TONE[tile.delta.tone]}>{tile.delta.text} </span>}

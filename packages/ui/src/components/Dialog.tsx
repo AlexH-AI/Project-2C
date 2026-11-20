@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { focusBack } from './dialog-focus';
-import { calmMotion } from './motion';
+import { GONE_MS, calmMotion } from './motion';
 
 /**
  * Where a dialog inside gives the focus back when what opened it is gone too (DR6-83), e.g. a
@@ -44,9 +44,6 @@ function open(node: HTMLDialogElement) {
 }
 
 const WIDTH = { confirm: 'w-100', form: 'w-120' } as const;
-
-/** Longer than the move out of a dialog and of what dims behind it (--t-2). */
-const GONE_MS = 400;
 
 /** A dialog closed leaves a copy of itself for its move out (`leaveBehind`), where it can. */
 const leavesBehind = (dialog: HTMLDialogElement) =>

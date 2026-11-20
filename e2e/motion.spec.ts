@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from './fixtures';
 import {
+  gotoScreen,
   markOs,
   periodPill,
   pickScope,
@@ -7,6 +8,7 @@ import {
   scopeMenu,
   scopePill,
   tabKey,
+  teamRow,
 } from './support';
 
 // The moves of the app (VA7a; chuyen-dong.html, ADR-0013 appendix 14/11/2026). Every other spec
@@ -403,6 +405,272 @@ test('a tick lands by the bouncy spring in --t-3; under forced colours the syste
   });
 });
 
+test('the arrow of a team row turns 90° in --t-3 by the snappy spring as it opens (L238)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await scopePill(page).click();
+  const row = teamRow(page, 'Bình Minh');
+  const arrow = row.locator('svg');
+  await expect(arrow).toHaveCSS('transition-property', 'rotate');
+  await expect(arrow).toHaveCSS('transition-duration', '0.4s');
+  const opened = (await row.getAttribute('aria-expanded')) === 'true';
+  await row.click();
+  await expect(row).toHaveAttribute('aria-expanded', String(!opened));
+  expect(
+    await arrow.evaluate((node) =>
+      node
+        .getAnimations()
+        .filter((move) => move instanceof CSSTransition)
+        .map((move) => (move as CSSTransition).transitionProperty),
+    ),
+  ).toEqual(['rotate']);
+});
+
+test('a press on a control turned off, out of a menu opened by the keyboard, puts the focus back on its pill (L246)', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName === 'webkit',
+    "a press on a control turned off reaches no pointer listener in Playwright's WebKit",
+  );
+  await page.goto('/#/overview');
+  // No screen with this menu has a control that stays off: the case adds one, as the review's
+  // probe did (PR #1420).
+  await page.locator('main').evaluate((main) => {
+    const off = document.createElement('button');
+    off.disabled = true;
+    off.textContent = 'Nút đã khóa';
+    main.prepend(off);
+  });
+  await scopePill(page).focus();
+  await page.keyboard.press('Enter');
+  await expect(scopeMenu(page).getByRole('menuitemradio').first()).toBeFocused();
+  await page.getByRole('button', { name: 'Nút đã khóa' }).click({ force: true });
+  await expect(scopeMenu(page)).toHaveCount(0);
+  await expect(scopePill(page)).toBeFocused();
+});
+
+/**
+ * Records, from now on, what each large number of a screen shows (a KPI, the met of "Lịch hẹn")
+ * each time it changes, by the name of its tile. A running number is read as the eye sees it, not
+ * the new value it tells a screen reader.
+ */
+async function recordNumbers(page: Page) {
+  await page.evaluate(() => {
+    const seen: Record<string, string[]> = {};
+    const read = () => {
+      for (const tile of document.querySelectorAll('main section[aria-label]')) {
+        const number = tile.querySelector(':scope > p');
+        if (!number) continue;
+        const copy = number.cloneNode(true) as Element;
+        copy.querySelector('[aria-hidden="true"]')?.nextElementSibling?.remove();
+        const text = (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+        const list = (seen[tile.getAttribute('aria-label')!] ??= []);
+        if (list.at(-1) !== text) list.push(text);
+      }
+    };
+    read();
+    new MutationObserver(read).observe(document.querySelector('main')!, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+    (window as unknown as { numbersSeen: typeof seen }).numbersSeen = seen;
+  });
+  return () =>
+    page.evaluate(
+      () => (window as unknown as { numbersSeen: Record<string, string[]> }).numbersSeen,
+    );
+}
+
+const UNITS: Readonly<Record<string, number>> = { K: 1e3, tr: 1e6, tỷ: 1e9 };
+
+/** What a number of a tile reads as: `1.03 tỷ`, `761 tr`, `66.7%`, `1,204`, `12 / 30` (12). */
+const amountOf = (text: string) => {
+  const [, digits = '', unit = ''] = /^([\d.,]+)\s*(\S*)/.exec(text) ?? [];
+  return Number(digits.replace(/,/g, '')) * (UNITS[unit] ?? 1);
+};
+
+/** The six KPI of Tổng quan and its tile of appointments. */
+const NUMBERS = [
+  'Chuyển RF',
+  'HĐ nộp',
+  'Case size',
+  'HĐ phát hành',
+  'Doanh số',
+  'Tỉ lệ chốt',
+  'Lịch hẹn · cả tháng',
+];
+
+test('a screen opens with its numbers there; a large number runs to its new value in --t-3, never past it (Đếm)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+  const seen = await recordNumbers(page);
+  await nav(page, 'Tổng quan').click();
+  await expect(page.getByRole('region', { name: 'Doanh số' })).toBeVisible();
+  await page.waitForTimeout(600);
+  // Never counted from 0: each number is there at once, as it stays.
+  const opened = await seen();
+  for (const name of NUMBERS) expect(opened[name], name).toHaveLength(1);
+
+  await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: 'Doanh số' })).toBeVisible();
+  await page.waitForTimeout(600);
+  const ran = await seen();
+  let running = 0;
+  for (const name of NUMBERS) {
+    const [from, ...frames] = ran[name]!;
+    const to = frames.at(-1);
+    if (to === undefined) continue;
+    // It stops on the value of the new period, read once the run is over.
+    await expect(page.getByRole('region', { name }).locator('p').first()).toHaveText(
+      new RegExp(`^${to.replace(/[.]/g, '\\.')}`),
+    );
+    const [low, high] = [amountOf(from!), amountOf(to)].sort((a, b) => a - b);
+    for (const frame of frames) {
+      expect(amountOf(frame), `${name}: ${ran[name]!.join(' → ')}`).toBeGreaterThanOrEqual(low!);
+      expect(amountOf(frame), `${name}: ${ran[name]!.join(' → ')}`).toBeLessThanOrEqual(high!);
+    }
+    if (frames.length > 1) running += 1;
+  }
+  // The amounts run frame by frame (Doanh số among them), each frame a compact form of its own.
+  expect(ran['Doanh số']!.length, ran['Doanh số']!.join(' → ')).toBeGreaterThan(2);
+  expect(
+    ran['Doanh số']!.every((frame) => /^\d[\d,]*(\.\d\d?)?( tr| tỷ|K| VNĐ)$/.test(frame)),
+  ).toBe(true);
+  expect(running).toBeGreaterThan(1);
+});
+
+/**
+ * Watches the View Transitions of the page: once a move has drawn its new screen, what it found
+ * (`data-open` of <html>, the address, the name of the screen); and, as it starts, the length of
+ * the move of the box (Chromium reads it).
+ */
+async function watchMoves(page: Page) {
+  await page.evaluate(() => {
+    const log: string[] = [];
+    const lengths: number[] = [];
+    Object.assign(window, { moves: log, moveLengths: lengths });
+    const start = document.startViewTransition.bind(document);
+    document.startViewTransition = ((update: () => void) => {
+      const move = start(update);
+      void move.updateCallbackDone.then(() =>
+        log.push(
+          `${document.documentElement.dataset.open} ${location.hash} ${document.querySelector('h1')?.textContent}`,
+        ),
+      );
+      void move.ready.then(() =>
+        lengths.push(
+          ...document
+            .getAnimations()
+            .filter((one) => (one.effect as KeyframeEffect).pseudoElement?.endsWith('-group(open)'))
+            .map((one) => Number(one.effect!.getComputedTiming().duration)),
+        ),
+      );
+      return move;
+    }) as typeof document.startViewTransition;
+  });
+  return () =>
+    page.evaluate(() => {
+      const { moves, moveLengths } = window as unknown as {
+        moves: string[];
+        moveLengths: number[];
+      };
+      return { moves, lengths: moveLengths };
+    });
+}
+
+/**
+ * Khách hàng scrolled down, as chuyen-dong.html `#mo` asks: the board in a window too low for it
+ * (1100 × 460), or the table (Bảng) at 1100 × 700. Gives a customer in view (its link), and how far
+ * the screen is scrolled.
+ */
+async function scrolledCard(page: Page, view: 'Kanban' | 'Bảng' = 'Kanban') {
+  await page.setViewportSize({ width: 1100, height: view === 'Kanban' ? 460 : 700 });
+  await gotoScreen(page, '/#/customers');
+  await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+  await page
+    .getByRole('radiogroup', { name: 'Cách xem' })
+    .getByRole('radio', { name: view })
+    .click();
+  const { href, scroll } = await page.evaluate(
+    (down) => {
+      window.scrollTo(0, down);
+      const card = [...document.querySelectorAll<HTMLElement>('main a[data-open]')].find((link) => {
+        const box = link.getBoundingClientRect();
+        return box.top > 100 && box.bottom < innerHeight - 20;
+      });
+      return { href: card?.getAttribute('href') ?? '', scroll: window.scrollY };
+    },
+    view === 'Kanban' ? 120 : 900,
+  );
+  expect(scroll).toBeGreaterThan(0);
+  expect(href).toMatch(/^#\/customers\//);
+  return { card: page.locator(`main a[href="${href}"]`), href, scroll };
+}
+
+const scrollOf = (page: Page) => page.evaluate(() => window.scrollY);
+
+test('a card of Khách hàng grows into the profile, which shrinks back to it: the board as far scrolled, the focus on the card (Mở)', async ({
+  page,
+  browserName,
+}) => {
+  const { card, href, scroll } = await scrolledCard(page);
+  const moved = await watchMoves(page);
+  await card.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
+  // The page grown is one block: nothing in it rises.
+  expect(await page.locator('main [data-rise]').count()).toBe(0);
+  await expect.poll(async () => (await moved()).moves).toEqual([`in ${href} Hồ sơ khách hàng`]);
+
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+  await expect(card).toBeFocused();
+  expect(await scrollOf(page)).toBe(scroll);
+  expect(await page.locator('main [data-rise]').count()).toBe(0);
+  await expect
+    .poll(async () => (await moved()).moves)
+    .toEqual([`in ${href} Hồ sơ khách hàng`, 'back #/customers Khách hàng']);
+
+  // From the table (Bảng), the row grows; the way back returns to the table, as far scrolled.
+  const row = await scrolledCard(page, 'Bảng');
+  await row.card.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(page.getByRole('radio', { name: 'Bảng' })).toBeChecked();
+  await expect(row.card).toBeFocused();
+  expect(await scrollOf(page)).toBe(row.scroll);
+  await expect.poll(async () => (await moved()).moves).toHaveLength(4);
+  expect((await moved()).moves.slice(2)).toEqual([
+    `in ${row.href} Hồ sơ khách hàng`,
+    'back #/customers Khách hàng',
+  ]);
+  await test.step('the box grows in --t-3 and shrinks back in --t-2', async (step) => {
+    step.skip(browserName === 'webkit', 'the moves of a View Transition are read on Chromium');
+    expect((await moved()).lengths).toEqual([400, 220, 400, 220]);
+  });
+});
+
+test('without View Transitions a card opens the plain way: the profile rises, the way back keeps the scroll', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    delete (Document.prototype as { startViewTransition?: unknown }).startViewTransition;
+  });
+  const { card, scroll } = await scrolledCard(page);
+  await card.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
+  await expect(page.locator('main [data-rise]').first()).toBeAttached();
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+  await expect(card).toBeFocused();
+  expect(await scrollOf(page)).toBe(scroll);
+});
+
 test.describe('under "Giảm chuyển động"', () => {
   test.use({ reducedMotion: 'reduce' });
 
@@ -424,12 +692,14 @@ test.describe('under "Giảm chuyển động"', () => {
     await nav(page, 'Tổng quan').click();
     await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan' })).toBeFocused();
     expect(await moving('main, header, nav')).toEqual([]);
-    const shifted = await page.evaluate(() =>
-      [...document.querySelectorAll('main .card, main [data-part]')].filter(
-        (part) => getComputedStyle(part).transform !== 'none',
-      ),
+    // The parts are the ones the shell gives a step of "Hiện" (`--rise-step`), all nine of them:
+    // none is shifted (L239).
+    const parts = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('main *')]
+        .filter((part) => part.style.getPropertyValue('--rise-step') !== '')
+        .map((part) => getComputedStyle(part).transform),
     );
-    expect(shifted).toEqual([]);
+    expect(parts).toEqual(Array(9).fill('none'));
 
     await scopePill(page).click();
     await expect(scopeMenu(page)).toBeVisible();
@@ -461,6 +731,41 @@ test.describe('under "Giảm chuyển động"', () => {
     await page.keyboard.press(tabKey(page));
     await expect(nav(page, 'Báo cáo')).toBeFocused();
     await expect(nav(page, 'Báo cáo')).toHaveCSS('outline-style', 'solid');
+  });
+
+  test('a card opens its profile at once and the way back keeps the scroll; a number changes straight to its value', async ({
+    page,
+  }) => {
+    const { card, scroll } = await scrolledCard(page);
+    const started = await page.evaluate(() => {
+      const calls: string[] = [];
+      Object.assign(window, { started: calls });
+      const start = document.startViewTransition.bind(document);
+      document.startViewTransition = ((update: () => void) => {
+        calls.push(location.hash);
+        return start(update);
+      }) as typeof document.startViewTransition;
+      return calls;
+    });
+    expect(started).toEqual([]);
+    await card.click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
+    await page.getByRole('link', { name: '← Khách hàng' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+    await expect(card).toBeFocused();
+    expect(await scrollOf(page)).toBe(scroll);
+    expect(await page.evaluate(() => (window as unknown as { started: string[] }).started)).toEqual(
+      [],
+    );
+
+    await nav(page, 'Tổng quan').click();
+    await expect(page.getByRole('region', { name: 'Doanh số' })).toBeVisible();
+    const seen = await recordNumbers(page);
+    await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+    await page.waitForTimeout(600);
+    const ran = await seen();
+    expect(ran['Doanh số']).toHaveLength(2);
+    for (const name of NUMBERS) expect(ran[name]!.length, name).toBeLessThanOrEqual(2);
   });
 
   test('a tick is there at once', async ({ page }) => {
