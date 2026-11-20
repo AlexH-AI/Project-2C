@@ -3,6 +3,7 @@ import {
   gotoScreen,
   markOs,
   periodPill,
+  pickFirstRm,
   pickScope,
   pressButton,
   scopeMenu,
@@ -415,16 +416,24 @@ test('the arrow of a team row turns 90° in --t-3 by the snappy spring as it ope
   await expect(arrow).toHaveCSS('transition-property', 'rotate');
   await expect(arrow).toHaveCSS('transition-duration', '0.4s');
   const opened = (await row.getAttribute('aria-expanded')) === 'true';
+  // What turns, heard as it starts (a turn lasts 400 ms only).
+  await arrow.evaluate((node) => {
+    const turned = new Promise((resolve) =>
+      node.addEventListener(
+        'transitionrun',
+        (event) => resolve((event as TransitionEvent).propertyName),
+        {
+          once: true,
+        },
+      ),
+    );
+    Object.assign(window, { turned });
+  });
   await row.click();
   await expect(row).toHaveAttribute('aria-expanded', String(!opened));
-  expect(
-    await arrow.evaluate((node) =>
-      node
-        .getAnimations()
-        .filter((move) => move instanceof CSSTransition)
-        .map((move) => (move as CSSTransition).transitionProperty),
-    ),
-  ).toEqual(['rotate']);
+  expect(await page.evaluate(() => (window as unknown as { turned: Promise<string> }).turned)).toBe(
+    'rotate',
+  );
 });
 
 test('a press on a control turned off, out of a menu opened by the keyboard, puts the focus back on its pill (L246)', async ({
@@ -433,7 +442,7 @@ test('a press on a control turned off, out of a menu opened by the keyboard, put
 }) => {
   test.skip(
     browserName === 'webkit',
-    "a press on a control turned off reaches no pointer listener in Playwright's WebKit",
+    "WebKit sends no mouse event to a control turned off, and whether a pointer event reaches a listener there is not checked: Playwright's WebKit runs on the CI Mac only",
   );
   await page.goto('/#/overview');
   // No screen with this menu has a control that stays off: the case adds one, as the review's
@@ -504,21 +513,14 @@ const NUMBERS = [
   'Lịch hẹn · cả tháng',
 ];
 
-test('a screen opens with its numbers there; a large number runs to its new value in --t-3, never past it (Đếm)', async ({
-  page,
-}) => {
-  await page.goto('/#/customers');
-  await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+/**
+ * What the large numbers of Tổng quan show once `change` is made and --t-3 is over, by tile, and
+ * how many ran (more than one frame). Each one stops on its new value, read in the tile, and no
+ * frame is outside the old and the new value.
+ */
+async function runOf(page: Page, change: () => Promise<void>) {
   const seen = await recordNumbers(page);
-  await nav(page, 'Tổng quan').click();
-  await expect(page.getByRole('region', { name: 'Doanh số' })).toBeVisible();
-  await page.waitForTimeout(600);
-  // Never counted from 0: each number is there at once, as it stays.
-  const opened = await seen();
-  for (const name of NUMBERS) expect(opened[name], name).toHaveLength(1);
-
-  await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
-  await expect(page.getByRole('heading', { level: 3, name: 'Doanh số' })).toBeVisible();
+  await change();
   await page.waitForTimeout(600);
   const ran = await seen();
   let running = 0;
@@ -537,12 +539,33 @@ test('a screen opens with its numbers there; a large number runs to its new valu
     }
     if (frames.length > 1) running += 1;
   }
-  // The amounts run frame by frame (Doanh số among them), each frame a compact form of its own.
+  return { ran, running };
+}
+
+test('a screen opens with its numbers there; a large number runs to its new value in --t-3, never past it (Đếm)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+  const seen = await recordNumbers(page);
+  await nav(page, 'Tổng quan').click();
+  await expect(page.getByRole('region', { name: 'Doanh số' })).toBeVisible();
+  await page.waitForTimeout(600);
+  // Never counted from 0: each number is there at once, as it stays.
+  const opened = await seen();
+  for (const name of NUMBERS) expect(opened[name], name).toHaveLength(1);
+
+  // A change of period: the amounts run frame by frame, each frame a compact form of its own.
+  const { ran, running } = await runOf(page, () =>
+    periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click(),
+  );
   expect(ran['Doanh số']!.length, ran['Doanh số']!.join(' → ')).toBeGreaterThan(2);
   expect(
     ran['Doanh số']!.every((frame) => /^\d[\d,]*(\.\d\d?)?( tr| tỷ|K| VNĐ)$/.test(frame)),
   ).toBe(true);
   expect(running).toBeGreaterThan(1);
+  // A change of scope (one RM): the screen is not drawn anew, its numbers run too.
+  expect((await runOf(page, () => pickFirstRm(page))).running).toBeGreaterThan(0);
 });
 
 /**
@@ -704,6 +727,8 @@ test.describe('under "Giảm chuyển động"', () => {
     await scopePill(page).click();
     await expect(scopeMenu(page)).toBeVisible();
     expect(await moving('[role="menu"]')).toEqual([]);
+    // The arrow of a team row turns at once (L238).
+    await expect(teamRow(page, 'Bình Minh').locator('svg')).toHaveCSS('transition-duration', '0s');
     await page.keyboard.press('Escape');
     // Gone at once: no menu on its way out.
     expect(await page.locator('[role="menu"]').count()).toBe(0);

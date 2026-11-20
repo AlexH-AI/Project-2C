@@ -87,7 +87,10 @@ describe('countFrame', () => {
   it('counts whole numbers, rounded towards the old value', () => {
     expect(countFrame(3, 12, 0.5, 'whole')).toBe(7);
     expect(countFrame(12, 3, 0.5, 'whole')).toBe(8);
-    expect(countFrame(0, 1_204, 0.5, 'sig3')).toBe(602);
+    // Past 999 a count still runs by ones, not by three significant digits.
+    expect(countFrame(1_204, 3_507, 0.5, 'whole')).toBe(2_355);
+    expect(countFrame(3_507, 1_204, 0.5, 'whole')).toBe(2_356);
+    expect(countFrame(1_204, 3_507, 0.5, 'sig3')).toBe(2_350);
     expect(countFrame(0, 57, 0.5, 'sig3')).toBe(28);
   });
 

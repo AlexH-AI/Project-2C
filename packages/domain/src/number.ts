@@ -47,10 +47,13 @@ export function countFrame(from: number, to: number, progress: number, step: Cou
   if (progress >= 1) return to;
   const running = from + (to - from) * progress;
   const up = to >= from;
+  // A step of `size / per`: three significant digits of an amount, never under one minor unit.
   const [size, per] =
     step === 'tenth'
       ? [1, 10]
-      : [Math.max(1, 10 ** (Math.floor(Math.log10(Math.abs(running))) - 2)), 1];
+      : step === 'whole'
+        ? [1, 1]
+        : [Math.max(1, 10 ** (Math.floor(Math.log10(Math.abs(running))) - 2)), 1];
   const steps = up
     ? Math.floor((running * per) / size + NEARLY)
     : Math.ceil((running * per) / size - NEARLY);
