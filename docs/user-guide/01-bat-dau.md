@@ -178,7 +178,7 @@ Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lú
 
 Góc trên sidebar là logo Heritas L-CRM; chân sidebar có dòng trạng thái lưu, dưới nó là slogan "Where legacy meets trust". Sidebar bên trái mở các màn: **Tổng quan**, **Lịch hẹn**, **Khách hàng**, **Báo cáo**; nhóm **Quản lý** có **Team & nhân sự** và **Cài đặt**. Hồ sơ một KH mở từ màn Khách hàng hoặc từ lịch hẹn. Thanh tiêu đề cửa sổ ghi màn đang mở, ví dụ "Khách hàng · Heritas L-CRM".
 
-Phía trên mỗi màn là thanh công cụ: bên trái là tên màn, ở vài màn có thêm một dòng nhỏ dưới tên (Tổng quan và Báo cáo: kỳ, khoảng ngày được tính và góc nhìn đang xem; Lịch hẹn: đang xem team và RM nào; Khách hàng: số KH đang mở và đã đóng; Team & nhân sự: số team, TL, RM và người hỗ trợ); bên phải là viên góc nhìn, viên kỳ (Tổng quan và Báo cáo) và nút chính của màn (**+ Lịch hẹn**, **+ Khách hàng**, **Xuất Excel**, **+ Nhân sự** và **+ Team**). Dòng dưới tên quá dài thì bị cắt bằng "…"; rê chuột lên để đọc đủ.
+Phía trên mỗi màn là thanh công cụ: bên trái là tên màn, ở vài màn có thêm một dòng nhỏ dưới tên (Tổng quan và Báo cáo: kỳ, khoảng ngày được tính và góc nhìn đang xem; Lịch hẹn: đang xem team và RM nào; Khách hàng: số KH đang mở và đã đóng; Team & nhân sự: số team, TL, RM và người hỗ trợ); bên phải là nút con mắt [che tên KH](#che-tên-kh-khi-chiếu-màn-hình) (mọi màn), viên góc nhìn, viên kỳ (Tổng quan và Báo cáo) và nút chính của màn (**+ Lịch hẹn**, **+ Khách hàng**, **Xuất Excel**, **+ Nhân sự** và **+ Team**). Dòng dưới tên quá dài thì bị cắt bằng "…"; rê chuột lên để đọc đủ.
 
 Trên thanh công cụ của các màn Tổng quan, Lịch hẹn, Khách hàng và Báo cáo có viên **góc nhìn**, ghi góc nhìn đang xem (lúc mở app là **Toàn bộ**). Bấm vào viên để mở menu **Góc nhìn**:
 
@@ -194,5 +194,18 @@ Chọn xong là màn đổi ngay, không có nút nào phải bấm thêm. Đón
 Góc nhìn là cách xem dữ liệu, không phải tài khoản đăng nhập: ai dùng app cũng xem và sửa được mọi dữ liệu. Góc nhìn chọn ở một màn giữ nguyên khi chuyển sang màn khác; đang chọn một team mà sang Tổng quan thì viên ghi **Mọi team**, quay lại màn khác vẫn là team đó.
 
 Ở Lịch hẹn và Khách hàng, khi góc nhìn là Team, phía trên có hàng RM của team (kèm số đếm). Bấm một RM để chỉ xem RM đó, bấm lại để bỏ; **Cả team** xem cả team.
+
+## Che tên KH khi chiếu màn hình
+
+Nút con mắt đầu cụm nút bên phải thanh công cụ, cùng chỗ ở mọi màn, che tên KH khi chiếu màn hình hay chia sẻ màn hình. Bấm một lần là mọi màn đổi ngay; thông báo nổi "Đang che tên khách hàng" xác nhận, nút chuyển vàng kèm chữ **Đang che tên** cho tới khi bấm lại. App nhớ lựa chọn này: tắt app rồi mở lại vẫn đang che.
+
+Khi che:
+
+- Tên KH thành chữ cái đầu của từng tiếng: "Trịnh Minh Anh" → "T. M. A.". Mã KH (K-9A1C) giữ nguyên, nên hai KH trùng chữ cái đầu vẫn phân biệt được.
+- Chữ người dùng tự gõ có thể chứa tên (ghi chú KYC, ghi chú và việc tiếp theo của cuộc gặp, mô tả trigger, dữ kiện KYC dạng chữ) và câu AI viết về KH thành "•••".
+- Không che: tên RM, TL, team; nhóm N4–N1; mọi con số. Ô nhập đang sửa vẫn hiện chữ đang gõ.
+- Chỉ là cách hiện: dữ liệu không đổi; file Excel và backup luôn ghi tên đầy đủ.
+
+Bản này che ở màn Khách hàng và hồ sơ KH (cả các hộp thoại KH, HĐ, KYC); các màn còn lại che ở bản sau.
 
 [Mục kế tiếp: 2. Tổng quan →](02-tong-quan.md)

@@ -20,6 +20,7 @@ import {
   isRfTransition,
   KYC_CATEGORIES,
   KYC_FIELDS,
+  kycFieldType,
   markConflict,
   nextKycVersion,
   type CalendarDate,
@@ -114,6 +115,18 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
   'totalAssets',
   'liabilities',
 ]);
+
+/**
+ * Whether a fact is words a user typed, or the AI wrote, which the customer-name mask hides as it
+ * may hold a name (VA6a, mockup app-shell.html #privacy): a text trường the profile does not
+ * write, an amount trường only for words that read as no amount. Numbers, yes / no answers and
+ * amounts stay shown.
+ */
+export function factInWords(field: KycField, value: KycValue): boolean {
+  if (kycFieldType(field) !== 'text' || KYC_FIELDS[field].fromProfile) return false;
+  // An amount trường keeps what was typed: "Vay mua nhà" is words (review of PR 1416).
+  return !AMOUNT_FIELDS.has(field) || kycAmountRead(field, String(value)) === null;
+}
 
 /**
  * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, as every money input

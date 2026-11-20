@@ -162,10 +162,11 @@ test('the main button of a screen is on the toolbar, after the place kept for "L
     // The smallest window: the toolbar keeps its button inside it.
     expect(main.x + main.width).toBeLessThanOrEqual(1100);
   }
-  // Cài đặt puts nothing there: the toolbar has the name alone.
+  // Cài đặt puts nothing there: the toolbar has the name and the eye of the shell alone (VA6a).
   await nav(page).getByRole('link', { name: 'Cài đặt' }).click();
   await expect(title).toHaveText('Cài đặt');
-  await expect(toolbar(page).getByRole('button')).toHaveCount(0);
+  await expect(toolbar(page).getByRole('button')).toHaveCount(1);
+  await expect(toolbar(page).getByRole('button', { name: 'Che tên khách hàng' })).toBeVisible();
   await expect(sub(page)).toBeHidden();
 });
 
@@ -208,11 +209,11 @@ test('Tổng quan and Báo cáo: the scope pill, then the period pill, then the 
   }
   await page.keyboard.press('Escape');
 
-  // Tổng quan has the two pills and no main button yet (D8).
+  // Tổng quan has the eye of the name mask (VA6a), the two pills and no main button yet (D8).
   await nav(page).getByRole('link', { name: 'Tổng quan' }).click();
   await expect(toolbar(page).getByRole('button', { name: /^Góc nhìn: / })).toBeVisible();
   await expect(period).toBeVisible();
-  await expect(toolbar(page).getByRole('button')).toHaveCount(4);
+  await expect(toolbar(page).getByRole('button')).toHaveCount(5);
   await expect(sub(page)).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
 });
 

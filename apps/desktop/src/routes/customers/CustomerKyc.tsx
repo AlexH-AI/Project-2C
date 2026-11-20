@@ -12,12 +12,14 @@ import {
   type CalendarDate,
   type KycField,
   type KycGateState,
+  type KycValue,
   type Person,
   type StageTransition,
 } from '@p2c/domain';
 import { Button, Segmented, StateNote } from '@p2c/ui';
 import { useRef, useState, type ReactNode, type Ref } from 'react';
 import { joinParts, t } from '../../i18n';
+import { useMasked, type Masked } from '../../shell/NameMask';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
 import { BADGE, CARD, HEADING } from '../classes';
@@ -25,6 +27,7 @@ import { stageBadge } from '../stage-badge';
 import { NextButton } from './CustomerAppointments';
 import {
   factAnchor,
+  factInWords,
   factText,
   inTimelineFilter,
   kycOverview,
@@ -47,6 +50,12 @@ const GATE_COLORS: Record<KycGateState, string> = {
 
 export const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
 
+/** A fact's value as shown: in words, dots while the customer-name mask is on (VA6a). */
+export function factWords(field: KycField, value: KycValue, masked: Masked): string {
+  const text = factText(value, YES_NO);
+  return factInWords(field, value) ? masked.text(text) : text;
+}
+
 function CategoryRow({
   row,
   marked,
@@ -56,6 +65,7 @@ function CategoryRow({
   marked: string | null;
   onResolve: (field: KycField) => void;
 }) {
+  const masked = useMasked();
   const conflicting = [
     ...new Set(row.facts.filter((f) => f.status === 'conflict').map((f) => f.field)),
   ];
@@ -94,7 +104,7 @@ function CategoryRow({
               <span className="min-w-0 wrap-anywhere">
                 {t('kyc.factLine', {
                   field: t(`kycField.${fact.field}`),
-                  value: factText(fact.value, YES_NO),
+                  value: factWords(fact.field, fact.value, masked),
                 })}
                 {KYC_FIELDS[fact.field].fromProfile && (
                   <span className="text-xs text-fg-3">
@@ -218,12 +228,20 @@ function StageCause({ transition }: { transition: StageTransition }) {
   );
 }
 
-/** A meeting's own line: the trigger while planned, else its note and next step. */
-function meetingText(a: AppointmentRecord): string {
+/**
+ * A meeting's own line: the trigger while planned, else its note and next step. What the RM typed
+ * shows as dots while the customer-name mask is on (VA6a); the name of a trigger kind stays.
+ */
+function meetingText(a: AppointmentRecord, masked: Masked): string {
   if (a.status === 'SCHEDULED') {
-    return t('timeline.trigger', { trigger: a.triggerNote ?? t(`trigger.${a.triggerType}`) });
+    return t('timeline.trigger', {
+      trigger: a.triggerNote ? masked.text(a.triggerNote) : t(`trigger.${a.triggerType}`),
+    });
   }
-  return joinParts([a.note, a.nextStep && t('timeline.nextStep', { step: a.nextStep })]);
+  return joinParts([
+    a.note && masked.text(a.note),
+    a.nextStep && t('timeline.nextStep', { step: masked.text(a.nextStep) }),
+  ]);
 }
 
 /** Mockup customer.html: "Cập nhật KYC dd/mm/yyyy", "thay đổi quan trọng" when one version is. */
@@ -278,6 +296,7 @@ export function Timeline({
   renderNote: (note: KycNoteRecord, versions: readonly TimelineVersion[]) => ReactNode;
 }) {
   const [filter, setFilter] = useState<TimelineFilter>('ALL');
+  const masked = useMasked();
   const roles = (a: AppointmentRecord) =>
     a.coordinatorIds.flatMap((id) => people.find((person) => person.id === id)?.role ?? []);
   const events = kycTimeline(transitions, kyc, appointments);
@@ -345,7 +364,7 @@ export function Timeline({
                   ])}
                 </b>
                 <span className="flex flex-wrap items-baseline gap-x-2 wrap-anywhere text-fg-2">
-                  {meetingText(event.appointment)}
+                  {meetingText(event.appointment, masked)}
                   <NextButton appointment={event.appointment} today={today} onNext={onNext}>
                     {t('timeline.next')}
                   </NextButton>

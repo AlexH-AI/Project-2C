@@ -4,7 +4,7 @@
 
 Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RM phụ trách và luôn ở một nhóm: bốn nhóm mở **N4** → **N3** → **N2** → **N1** (N1 gần chốt nhất) hoặc hai nhóm đóng **Tạm hoãn**, **Mất cơ hội**. Ý nghĩa từng nhóm ở [11. Thuật ngữ](11-thuat-ngu.md#khách-hàng-và-nhóm).
 
-Đầu màn ghi số KH theo góc nhìn, ví dụ "884 KH đang mở · 316 đã đóng". Ô **Cách xem** chuyển giữa **Kanban** và **Bảng**.
+Đầu màn ghi số KH theo góc nhìn, ví dụ "884 KH đang mở · 316 đã đóng". Ô **Cách xem** chuyển giữa **Kanban** và **Bảng**. Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), thẻ và bảng ghi chữ cái đầu của tên ("T. M. A."), mã KH và tên RM giữ nguyên.
 
 ## Kanban
 

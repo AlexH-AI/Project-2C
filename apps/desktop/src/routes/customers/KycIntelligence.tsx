@@ -14,6 +14,7 @@ import {
 import { analyseCustomer, startChatGptWeb, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { TypedText } from '../../shell/NameMask';
 import { errorParts, SETTINGS_AI_HASH, type AiFailure } from '../ai-error-view';
 import { ALERT, BADGE, CARD, HEADING, LINK } from '../classes';
 import {
@@ -161,7 +162,8 @@ export function Item({
   return (
     <li className={`rounded-control-sm border ${box} px-2.5 py-2 wrap-anywhere`}>
       {item.system && <b>{t(`aiPanel.system.${item.system}`)} </b>}
-      {item.text}
+      {/* Written by the AI from what the RM typed, it may name a customer (VA6a). */}
+      <TypedText text={item.text} />
       <span className="mt-1 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-fg-3">
         <span>
           {item.codes.length > 0 && <Codes codes={item.codes} onCode={onCode} />}

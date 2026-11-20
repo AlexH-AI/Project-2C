@@ -13,6 +13,7 @@ import { Button, DataTable, Segmented, StateNote, type DataTableColumn } from '@
 import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { CustomerName, useMasked } from '../../shell/NameMask';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
@@ -61,7 +62,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     cell: (c) => (
       <span className={CELL_NAME}>
         <a href={profileHref(c)} className={LINK}>
-          {c.customer.name}
+          <CustomerName name={c.customer.name} />
         </a>
       </span>
     ),
@@ -149,6 +150,7 @@ export function CustomersScreen() {
     created?.scopeKey === scopeKey && !inScope(data.people, created.customer.rmId, scope)
       ? created.customer
       : null;
+  const masked = useMasked();
 
   return (
     <>
@@ -193,7 +195,7 @@ export function CustomersScreen() {
       {outside && (
         <p role="status" className={`${ALERT} border-info text-sm`}>
           {t('customers.createdOutside', {
-            name: outside.name,
+            name: masked.name(outside.name),
             rm: data.people.find((person) => person.id === outside.rmId)?.name ?? '',
           })}{' '}
           <a href={routeToHash({ screen: 'customer', id: outside.id })} className={LINK}>
@@ -284,7 +286,9 @@ function Card({ card }: { card: CustomerCard }) {
       className={`flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
     >
       <span className="flex items-center justify-between gap-1.5">
-        <b className="truncate font-semibold">{card.customer.name}</b>
+        <b className="truncate font-semibold">
+          <CustomerName name={card.customer.name} />
+        </b>
         {card.policies > 0 && (
           <span className={`${BADGE} whitespace-nowrap text-issued`}>
             {t('customers.policies', { count: card.policies })}
@@ -313,7 +317,7 @@ function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly Customer
               href={profileHref(card)}
               className={`truncate rounded-control-sm hover:underline ${FOCUS}`}
             >
-              {card.customer.name}
+              <CustomerName name={card.customer.name} />
             </a>
             <span className="ml-auto text-fg-3 tabular-nums">{formatDate(card.since)}</span>
           </li>

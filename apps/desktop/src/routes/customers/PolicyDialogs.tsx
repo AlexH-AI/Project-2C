@@ -18,6 +18,7 @@ import {
 import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { rmOptions } from '../../shell/scope';
 import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
@@ -61,6 +62,7 @@ export function PolicyDialog({
   onClose: () => void;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const today = app.today();
   const saved = mode.kind === 'new' ? null : mode.policy;
   const [opened] = useState(() => openDraft(mode, today));
@@ -149,7 +151,7 @@ export function PolicyDialog({
       closeLabel={t('dialog.close')}
       title={
         mode.kind === 'edit'
-          ? t('policyForm.editTitle', { customer: customer.name })
+          ? t('policyForm.editTitle', { customer: masked.name(customer.name) })
           : t(saved ? 'policyForm.issueTitle' : 'policyForm.newTitle')
       }
       subtitle={
@@ -160,11 +162,11 @@ export function PolicyDialog({
             })
           : saved
             ? t('policyForm.sub', {
-                customer: customer.name,
+                customer: masked.name(customer.name),
                 date: formatDate(saved.submittedDate),
                 fyp: formatAmountCompact(saved.submittedFyp),
               })
-            : t('policyForm.newSub', { customer: customer.name, code: customer.code })
+            : t('policyForm.newSub', { customer: masked.name(customer.name), code: customer.code })
       }
       onClose={onClose}
       onSubmit={save}
@@ -311,6 +313,7 @@ function DeletePolicyDialog({
   onDeleted: () => void;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const undo = useTrashUndo();
   const [failure, setFailure] = useState<string>();
   const remove = () => {
@@ -328,7 +331,7 @@ function DeletePolicyDialog({
       size="confirm"
       title={t('policyDelete.title', { date: formatDate(policy.submittedDate) })}
       subtitle={t('policyDelete.sub', {
-        customer: customer.name,
+        customer: masked.name(customer.name),
         fyp: formatAmountCompact(policy.submittedFyp),
       })}
       onClose={onClose}

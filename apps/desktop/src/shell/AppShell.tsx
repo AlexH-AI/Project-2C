@@ -5,6 +5,7 @@ import { lightCard } from '../routes/classes';
 import { Screen } from '../routes/Screen';
 import type { AppWindow } from './CloseGuard';
 import { ErrorBoundary } from './ErrorBoundary';
+import { NameMaskButton } from './NameMask';
 import { SaveWarning } from './SaveWarning';
 import { routeToHash, sectionOf, teamPickerShown, usesScope, type Route } from './routes';
 import { narrowScope, resolveScope, type ScopeChoice } from './scope';
@@ -93,15 +94,19 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
           title={t(`screen.${route.screen}`)}
           heading={heading}
           tools={
-            usesScope(route.screen) && (
-              <ScopePicker
-                scope={picked}
-                teams={teams}
-                people={people}
-                teamPicker={teamPickerShown(route.screen)}
-                onChange={setChoice}
-              />
-            )
+            <>
+              {/* The mask of customer names, at the same place on every screen (VA6a). */}
+              <NameMaskButton />
+              {usesScope(route.screen) && (
+                <ScopePicker
+                  scope={picked}
+                  teams={teams}
+                  people={people}
+                  teamPicker={teamPickerShown(route.screen)}
+                  onChange={setChoice}
+                />
+              )}
+            </>
           }
         >
           <main

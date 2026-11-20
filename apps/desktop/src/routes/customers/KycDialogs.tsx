@@ -28,12 +28,12 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { ALERT, BADGE } from '../classes';
 import { Actions, FailureAlert, useDateField } from './CustomerDialogs';
-import { YES_NO } from './CustomerKyc';
+import { factWords, YES_NO } from './CustomerKyc';
 import {
   currentFactRecords,
-  factText,
   kycAmountRead,
   nextVersionNumber,
   previewKycNote,
@@ -118,6 +118,7 @@ function FactValue({
   // What the trường holds describes the field of its new value too: a screen reader says it there,
   // not only further down, at "Trường đã có giá trị" (DR6-187).
   const currentId = useId();
+  const masked = useMasked();
   const current = has.length > 0 ? currentId : undefined;
   return (
     <>
@@ -127,7 +128,7 @@ function FactValue({
             values: has
               .map((fact) =>
                 t('kycNote.currentValue', {
-                  value: factText(fact.value, YES_NO),
+                  value: factWords(field, fact.value, masked),
                   code: factCode(fact.seq),
                   date: formatDate(fact.confirmedDate),
                 }),
@@ -193,6 +194,7 @@ export function KycNoteDialog({
   onClose: () => void;
 }) {
   const data = useAppData();
+  const masked = useMasked();
   const today = data.today();
   const [text, setText] = useState(initialText);
   const date = useDateField(today, initialDate);
@@ -282,7 +284,7 @@ export function KycNoteDialog({
   return (
     <Dialog
       closeLabel={t('dialog.close')}
-      title={t('kycNote.title', { name: customer.name })}
+      title={t('kycNote.title', { name: masked.name(customer.name) })}
       subtitle={
         last
           ? t('kycNote.sub', {
@@ -335,7 +337,9 @@ export function KycNoteDialog({
                 className="flex items-center gap-2 rounded-control border border-border bg-surface-2 px-2 py-1"
               >
                 <b className="flex-1">{t(`kycField.${fact.field}`)}</b>
-                <span className="min-w-0 flex-1 wrap-anywhere">{factText(fact.value, YES_NO)}</span>
+                <span className="min-w-0 flex-1 wrap-anywhere">
+                  {factWords(fact.field, fact.value, masked)}
+                </span>
                 <span className={`${BADGE} ${fact.conflict ? 'text-danger' : 'text-info'}`}>
                   {t(
                     fact.conflict
@@ -408,6 +412,7 @@ export function ResolveKycDialog({
   onClose: () => void;
 }) {
   const data = useAppData();
+  const masked = useMasked();
   const [chosen, setChosen] = useState<string | null>(null);
   const [material, setMaterial] = useState(false);
   const [error, setError] = useState<string>();
@@ -429,7 +434,10 @@ export function ResolveKycDialog({
     <Dialog
       closeLabel={t('dialog.close')}
       title={t('kycResolve.title', { field: t(`kycField.${field}`) })}
-      subtitle={joinParts([customer.name, t(core ? 'kyc.conflict.core' : 'kyc.conflict.minor')])}
+      subtitle={joinParts([
+        masked.name(customer.name),
+        t(core ? 'kyc.conflict.core' : 'kyc.conflict.minor'),
+      ])}
       onClose={onClose}
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('kycResolve.save')} />}
@@ -448,7 +456,7 @@ export function ResolveKycDialog({
           disabled: option.disabled,
           label: (
             <span className="flex min-w-0 flex-col wrap-anywhere">
-              <b>{t('kycResolve.value', { value: factText(option.value, YES_NO) })}</b>
+              <b>{t('kycResolve.value', { value: factWords(field, option.value, masked) })}</b>
               <span className="text-xs text-fg-3 tabular-nums">
                 {t(option.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
                   code: option.code,
@@ -495,6 +503,7 @@ export function ConfirmFactDialog({
   onClose: () => void;
 }) {
   const data = useAppData();
+  const masked = useMasked();
   const today = data.today();
   const { field } = proposal;
   const proposed = proposal.value;
@@ -539,7 +548,8 @@ export function ConfirmFactDialog({
     >
       {error && <FailureAlert>{error}</FailureAlert>}
       <p className={`${ALERT} border-border`}>
-        {t('kycConfirm.quote')} <b>{t('kycConfirm.quoted', { value: proposal.quote })}</b>
+        {t('kycConfirm.quote')}{' '}
+        <b>{t('kycConfirm.quoted', { value: masked.text(proposal.quote) })}</b>
       </p>
       <FactValue
         field={field}
