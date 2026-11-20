@@ -54,14 +54,15 @@ const BUTTON =
 
 /**
  * A toast (mockup components.html 08, `.toast` of ui2.css section 10): one line saying what just
- * happened, with one button at most, on the focus layer and in the shape of a chip. Its button is
- * a chip too, concentric with it. Presentation only: where it stands, the live region that reads
- * it and when it leaves are the app's. Words longer than the window break rather than run out.
+ * happened, with one button at most, on the focus layer, a capsule on macOS, 8 px on Windows 11
+ * (`toast-shape`). Its button is a chip, concentric with it. It rises from the bottom edge as it
+ * shows (`motion-toast`). Presentation only: where it stands, the live region that reads it and
+ * when it leaves are the app's. Words longer than the window break rather than run out.
  */
 export function Toast({ text, detail, tone = 'done', action, close }: ToastProps) {
   return (
     <div
-      className={`pop inline-flex min-h-10.5 max-w-full items-center gap-3 rounded-chip py-1.5 pl-4 text-md text-fg ${
+      className={`pop toast-shape motion-toast inline-flex min-h-10.5 max-w-full items-center gap-3 py-1.5 pl-4 text-md text-fg tabular-nums ${
         action || close ? 'pr-2' : 'pr-4'
       }`}
     >

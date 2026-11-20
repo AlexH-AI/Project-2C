@@ -1,13 +1,53 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type AnimationEvent, type KeyboardEvent } from 'react';
 import { menuMove } from './menu-keys';
+import { calmMotion, layerState, type LayerState } from './motion';
+
+/** What can take the focus a press gives: a press on one of these keeps it there. */
+const CONTROL = 'a[href], button, input, select, textarea, [tabindex]';
+
+/** Longer than any move out: a layer whose move cannot end (a page in the background) still goes. */
+const GONE_MS = 400;
+
+/**
+ * The life of a layer as `open` changes (`layerState`): drawn while open or closing; what goes on
+ * the layer is its state (`data-state`, for `motion-layer` of theme.css), and while it closes it
+ * takes nothing (`inert`), is read by no screen reader, and goes once its move out ends.
+ */
+export function useLayerState(open: boolean) {
+  const [state, setState] = useState<LayerState>(open ? 'open' : 'closed');
+  const [was, setWas] = useState(open);
+  if (was !== open) {
+    setWas(open);
+    setState(layerState(state, open ? 'open' : 'close', calmMotion()));
+  }
+  const gone = () => setState((now) => layerState(now, 'gone', false));
+  useEffect(() => {
+    if (state !== 'closing') return;
+    const late = setTimeout(gone, GONE_MS);
+    return () => clearTimeout(late);
+  }, [state]);
+  return {
+    drawn: state !== 'closed',
+    layer: {
+      'data-state': state,
+      inert: state === 'closing',
+      'aria-hidden': state === 'closing' || undefined,
+      onAnimationEnd: (event: AnimationEvent) => {
+        if (event.animationName === 'leave') gone();
+      },
+    },
+  };
+}
 
 /**
  * A layer that opens under its button (mockup ui2.css `.tl-pop`: the menu of the scope, the period
  * picker). It closes on Esc, on a press outside, and once the focus goes to something outside;
  * Esc gives the focus back to the button, wherever the focus was: on macOS a click in the layer
  * leaves it on nothing (WebKit). So does a press outside on what takes no focus; on another
- * control, the focus stays where the press put it. `root` goes on the box of the button and the
- * layer; the button closes its layer with `close`.
+ * control, the focus stays where the press put it, or where its click puts it: on macOS a click
+ * gives a button no focus (WebKit), which must not pull it back to the button first. `root` goes on
+ * the box of the button and the layer; the button closes its layer with `close`. The layer moves
+ * out before it goes (`useLayerState`).
  */
 export function useLayer() {
   const [open, setOpen] = useState(false);
@@ -23,13 +63,17 @@ export function useLayer() {
       const focused = document.activeElement;
       if (focused instanceof HTMLElement && root.current?.contains(focused)) focused.blur();
       setOpen(false);
-      // Once the press is over the browser has moved the focus: left on the page, it goes back
-      // to the button.
-      const settle = () => {
+      if (event.target instanceof Element && event.target.closest(CONTROL)) return;
+      // Once the press on what takes no focus is over, the focus left on the page goes back to
+      // the button; a press that ends in a drag (a cancel) leaves it alone.
+      const settle = (end: PointerEvent) => {
+        document.removeEventListener('pointerup', settle);
+        document.removeEventListener('pointercancel', settle);
         const now = document.activeElement;
-        if (!now || now === document.body) trigger.current?.focus();
+        if (end.type === 'pointerup' && (!now || now === document.body)) trigger.current?.focus();
       };
-      document.addEventListener('pointerup', settle, { once: true });
+      document.addEventListener('pointerup', settle);
+      document.addEventListener('pointercancel', settle);
     };
     // A click on macOS may move the focus to nothing (WebKit): only a real target counts.
     const onFocus = (event: FocusEvent) => {
@@ -54,11 +98,11 @@ export function useLayer() {
     setOpen(false);
     trigger.current?.focus();
   };
-  return { open, setOpen, close, root, trigger };
+  return { open, setOpen, close, root, trigger, ...useLayerState(open) };
 }
 
-/** Where a layer sits: under the right end of its button, over the screen. */
-export const LAYER = 'pop absolute top-full right-0 z-20 mt-2';
+/** Where a layer sits: under the right end of its button, over the screen; it moves in and out. */
+export const LAYER = 'pop motion-layer absolute top-full right-0 z-20 mt-2';
 
 /** One row of a menu. */
 export interface MenuRow {
@@ -106,11 +150,14 @@ export function MenuRows({
   title,
   rows,
   onPick,
+  layer,
 }: {
   /** The heading of the menu, and its name. */
   title: string;
   rows: readonly MenuRow[];
   onPick: (row: MenuRow) => void;
+  /** Its state as a layer that moves in and out (`useLayerState`). */
+  layer?: ReturnType<typeof useLayerState>['layer'];
 }) {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const buttons = [...event.currentTarget.querySelectorAll('button')];
@@ -128,6 +175,7 @@ export function MenuRows({
       role="menu"
       aria-label={title}
       onKeyDown={onKeyDown}
+      {...layer}
       className={`${LAYER} max-h-110 min-w-67 overflow-y-auto rounded-menu p-1.5`}
     >
       <div className="px-2.5 pt-1.5 pb-1 text-xs font-semibold text-fg-3">{title}</div>
@@ -195,7 +243,7 @@ export function MenuButton({
   onOpen?: () => void;
   onPick: (key: string) => void;
 }) {
-  const { open, setOpen, close, root, trigger } = useLayer();
+  const { open, setOpen, close, root, trigger, drawn, layer } = useLayer();
   // The title is there only under the pointer, which it is for: kept on the button it would be
   // its description, and a screen reader would say the choice twice (DR6-187).
   const [pointed, setPointed] = useState(false);
@@ -238,10 +286,11 @@ export function MenuButton({
         <span className="max-w-60 truncate">{text}</span>
         <Mark path="M6 9l6 6 6-6" className="size-3.25 text-fg-2" />
       </button>
-      {open && (
+      {drawn && (
         <MenuRows
           title={title}
           rows={rows}
+          layer={layer}
           onPick={(row) => {
             onPick(row.key);
             if (row.expanded === undefined) close();

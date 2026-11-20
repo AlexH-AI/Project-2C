@@ -75,4 +75,43 @@ describe('createToastQueue', () => {
     queue.show({ text: 'Đã tạo lịch hẹn' });
     expect(listener).toHaveBeenCalledTimes(2);
   });
+
+  it('stays while the pointer is over it or the focus in it, then has 4 200 ms again (L209)', () => {
+    const queue = createToastQueue();
+    queue.show({ text: 'Đã chuyển lịch hẹn vào Thùng rác', action: undo(() => {}) });
+    vi.advanceTimersByTime(4_000);
+    queue.hold('pointer', true);
+    queue.hold('focus', true);
+    vi.advanceTimersByTime(60_000);
+    queue.hold('pointer', false);
+    vi.advanceTimersByTime(60_000);
+    // Held by one of the two, it still stays.
+    expect(queue.current()).not.toBeNull();
+    queue.hold('focus', false);
+    vi.advanceTimersByTime(4_199);
+    expect(queue.current()).not.toBeNull();
+    vi.advanceTimersByTime(1);
+    expect(queue.current()).toBeNull();
+  });
+
+  it('lets a new toast go by its own clock, and holds only what is held', () => {
+    const queue = createToastQueue();
+    queue.show({ text: 'first' });
+    queue.hold('pointer', true);
+    // The new one comes under a pointer that has not moved: no hold of its own.
+    queue.show({ text: 'second' });
+    vi.advanceTimersByTime(4_000);
+    // Let go, or held again, a hold that was not there changes nothing: the clock keeps running.
+    queue.hold('pointer', false);
+    queue.hold('focus', false);
+    vi.advanceTimersByTime(200);
+    expect(queue.current()).toBeNull();
+    // An error stays, held or not.
+    queue.show({ text: 'Khôi phục KH trước.', tone: 'error' });
+    queue.hold('focus', true);
+    queue.hold('focus', true);
+    queue.hold('focus', false);
+    vi.advanceTimersByTime(60_000);
+    expect(queue.current()).toEqual({ text: 'Khôi phục KH trước.', tone: 'error' });
+  });
 });

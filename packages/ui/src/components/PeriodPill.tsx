@@ -23,7 +23,7 @@ export function PeriodPill({
   today: CalendarDate;
   labels: PeriodPickerLabels;
 }) {
-  const { open, setOpen, close, root, trigger } = useLayer();
+  const { open, setOpen, close, root, trigger, drawn, layer } = useLayer();
   const step = (by: -1 | 1, label: string, mark: string) => {
     const off = !canShift(value, by);
     return (
@@ -62,8 +62,13 @@ export function PeriodPill({
         </button>
         {step(1, labels.next, '›')}
       </span>
-      {open && (
-        <div role="dialog" aria-label={labels.pick} className={`${LAYER} rounded-pop p-3`}>
+      {drawn && (
+        <div
+          role="dialog"
+          aria-label={labels.pick}
+          {...layer}
+          className={`${LAYER} rounded-pop p-3`}
+        >
           <PeriodPicker
             value={value}
             onChange={onChange}

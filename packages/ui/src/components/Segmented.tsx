@@ -1,4 +1,5 @@
-import type { KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, type KeyboardEvent } from 'react';
+import { glide } from './motion';
 
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -15,7 +16,8 @@ interface SegmentedProps<T extends string> {
 /**
  * Single-choice button group (ADR-0013 "segmented"; mockup components.html 03 "Nút trượt"): a radio
  * group with arrow-key support. The chosen segment says so by its thumb, an element of its own
- * under the label (which VA7a slides), and by its brighter text.
+ * under every label, and by its brighter text. The thumb is drawn in the segment chosen, as wide as
+ * it at once, and glides there from the one before (VA7a, `glide`).
  */
 export function Segmented<T extends string>({
   label,
@@ -23,6 +25,18 @@ export function Segmented<T extends string>({
   value,
   onChange,
 }: SegmentedProps<T>) {
+  const group = useRef<HTMLDivElement>(null);
+  const before = useRef(value);
+  useLayoutEffect(() => {
+    const was = before.current;
+    before.current = value;
+    if (was === value) return;
+    const radios = group.current?.querySelectorAll<HTMLElement>('[role="radio"]');
+    const at = (chosen: T) => radios?.[options.findIndex((option) => option.value === chosen)];
+    const [from, to] = [at(was), at(value)];
+    const thumb = to?.querySelector<HTMLElement>('[data-slot="thumb"]');
+    if (from && to && thumb) glide(thumb, { x: from.offsetLeft - to.offsetLeft });
+  }, [value, options]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
     if (!step) return;
@@ -37,10 +51,11 @@ export function Segmented<T extends string>({
 
   return (
     <div
+      ref={group}
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="inline-flex gap-0.5 rounded-segmented bg-fill-2 p-0.5"
+      className="isolate inline-flex gap-0.5 rounded-segmented bg-fill-2 p-0.5"
     >
       {options.map((option) => {
         const checked = option.value === value;
@@ -57,7 +72,11 @@ export function Segmented<T extends string>({
             }`}
           >
             {checked && (
-              <span aria-hidden="true" className="thumb absolute inset-0 rounded-control-sm" />
+              <span
+                aria-hidden="true"
+                data-slot="thumb"
+                className="thumb absolute inset-0 -z-1 rounded-control-sm"
+              />
             )}
             <span className="relative">{option.label}</span>
           </button>

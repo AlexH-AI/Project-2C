@@ -886,6 +886,8 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   const { detail } = screen(page);
   await pickScope(page, { team: 'Sao Mai' });
   const f = await fillAppointment(page, '30/9', 'Sao Mai');
+  // The page clock held: a toast shown by mistake would stay, not leave by itself in 4,2 s (L210).
+  await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
   await f.create.click();
 
   await expect(f.dialog).toHaveCount(0);
@@ -895,6 +897,8 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   );
   await expect(scopePill(page)).toHaveText('Team Sao Mai');
   await expect(detail).toContainText('Chọn một lịch hẹn để xem chi tiết.');
+  // The line says it: no toast besides (VA3b; L210).
+  await expect(page.locator('[aria-live="polite"][aria-atomic="true"]')).toBeEmpty();
 
   await pickScope(page, 'all');
   await expect(notice).toHaveCount(0);

@@ -182,7 +182,7 @@ export function CustomersScreen() {
           </Button>
         }
       />
-      <div className="flex justify-end">
+      <div data-part className="flex justify-end">
         <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
       </div>
       {creating && (
@@ -203,27 +203,30 @@ export function CustomersScreen() {
           </a>
         </p>
       )}
+      {/* The table, or the board, rises as one part: not its rows, nor its cards (VA7a). */}
       {view === 'table' ? (
-        <DataTable
-          ref={table}
-          label={t('screen.customers')}
-          columns={COLUMNS}
-          rows={rows}
-          getRowId={(c) => c.customer.id}
-          initialSort={{ id: 'since', desc: true }}
-          moreLabels={tableMore('customers')}
-          resetKey={scopeKey}
-          empty={
-            <StateNote
-              size="table"
-              icon="people"
-              title={t('customers.empty')}
-              next={t('customers.emptyNext')}
-            />
-          }
-        />
+        <div data-part className="flex flex-col gap-4.5">
+          <DataTable
+            ref={table}
+            label={t('screen.customers')}
+            columns={COLUMNS}
+            rows={rows}
+            getRowId={(c) => c.customer.id}
+            initialSort={{ id: 'since', desc: true }}
+            moreLabels={tableMore('customers')}
+            resetKey={scopeKey}
+            empty={
+              <StateNote
+                size="table"
+                icon="people"
+                title={t('customers.empty')}
+                next={t('customers.emptyNext')}
+              />
+            }
+          />
+        </div>
       ) : (
-        <div className="flex items-start gap-3.5">
+        <div data-part className="flex items-start gap-3.5">
           <div className="grid min-w-0 flex-1 grid-cols-4 gap-3">
             {PIPELINE_STAGES.map((stage) => {
               const { shown, more } = kanbanColumn(board.open[stage]);
@@ -283,7 +286,7 @@ function Card({ card }: { card: CustomerCard }) {
   return (
     <a
       href={profileHref(card)}
-      className={`flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
+      className={`press-card flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
     >
       <span className="flex items-center justify-between gap-1.5">
         <b className="truncate font-semibold">

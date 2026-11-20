@@ -327,7 +327,7 @@ export function AppointmentsScreen() {
           onPick={pickRm}
         />
       )}
-      <div className="flex flex-wrap items-end gap-3">
+      <div data-part className="flex flex-wrap items-end gap-3">
         <PeriodPicker value={period} onChange={changePeriod} today={today} labels={PERIOD_LABELS} />
         <div className="w-60">
           <SelectField

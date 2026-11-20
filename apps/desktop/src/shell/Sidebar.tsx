@@ -1,6 +1,6 @@
-import { Fragment } from 'react';
+import { Fragment, useLayoutEffect, useRef } from 'react';
 import { formatLocalTime } from '@p2c/domain';
-import { NavIcon, type NavIconName } from '@p2c/ui';
+import { NavIcon, glide, type NavIconName } from '@p2c/ui';
 import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
@@ -24,9 +24,22 @@ const FIRST_MANAGE_SECTION: Section = 'team';
 /**
  * The sidebar of mockup app-shell.html (`#sidebar`): the compact logo, the screens, and at its
  * foot the save state, then the slogan. The fill of the chosen item is an element of its own
- * (`data-slot="nav-pill"`), for it to glide to the next one (VA7a).
+ * (`data-slot="nav-pill"`), under every item: drawn in the item chosen, it glides there from the
+ * one before (VA7a, `glide`).
  */
 export function Sidebar({ current }: { current: Section }) {
+  const nav = useRef<HTMLElement>(null);
+  const before = useRef(current);
+  useLayoutEffect(() => {
+    const was = before.current;
+    before.current = current;
+    if (was === current) return;
+    const item = (section: Section) =>
+      nav.current?.querySelector<HTMLElement>(`a[href="${routeToHash({ screen: section })}"]`);
+    const [from, to] = [item(was), item(current)];
+    const pill = to?.querySelector<HTMLElement>('[data-slot="nav-pill"]');
+    if (from && to && pill) glide(pill, { y: from.offsetTop - to.offsetTop });
+  }, [current]);
   return (
     <aside className="sidebar flex flex-none flex-col gap-3 self-start">
       {/* The top of the pane: in the macOS exe the window's three buttons sit there (VA5), and
@@ -35,7 +48,7 @@ export function Sidebar({ current }: { current: Section }) {
         <div aria-hidden="true" data-slot="window-controls" className="window-controls" />
         <Brand />
       </div>
-      <nav aria-label={t('nav.label')} className="flex flex-col gap-0.5">
+      <nav ref={nav} aria-label={t('nav.label')} className="isolate flex flex-col gap-0.5">
         {SECTIONS.map((section) => {
           const active = section === current;
           return (

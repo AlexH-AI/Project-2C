@@ -818,7 +818,8 @@ test('a deleted appointment says so in a toast; Hoàn tác brings it back at onc
   page,
 }) => {
   const errors = trackConsoleErrors(page);
-  const { name } = await bookAndDelete(page);
+  // The clock held: a slow machine does not see the toast go before Hoàn tác is pressed (L210).
+  const { name } = await bookAndDelete(page, () => holdClock(page));
   await expect(toast(page, MOVED)).toBeVisible();
   // It takes no focus, which goes where it went before: to the detail the appointment left.
   await expect(undo(page)).not.toBeFocused();
@@ -853,8 +854,32 @@ test('a toast leaves after 4,2 s, its Hoàn tác with it; from Thùng rác the r
   await expect(page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 15/09/2026?' })).toBeVisible();
 });
 
+// L209: the 4,2 s of a toast wait while the keyboard is on its Hoàn tác or the pointer over it.
+test('a toast stays while the focus is on its Hoàn tác or the pointer over it, then has 4,2 s again', async ({
+  page,
+}) => {
+  await bookAndDelete(page, () => holdClock(page));
+  const moved = toast(page, MOVED);
+  await expect(moved).toBeVisible();
+  await undo(page).focus();
+  await page.clock.runFor(10_000);
+  await expect(moved).toBeVisible();
+  await page.getByRole('heading', { level: 1, name: 'Lịch hẹn' }).focus();
+  await page.clock.runFor(4_000);
+  await expect(moved).toBeVisible();
+  await moved.hover();
+  await page.clock.runFor(10_000);
+  await expect(moved).toBeVisible();
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(4_199);
+  await expect(moved).toBeVisible();
+  await page.clock.runFor(1);
+  await expect(moved).toHaveCount(0);
+});
+
 test('Hoàn tác brings back a team, a person, a policy and a customer', async ({ page }) => {
   await page.goto('/#/team');
+  await holdClock(page);
   await page.getByRole('button', { name: '+ Team' }).click();
   let dialog = page.getByRole('dialog', { name: 'Team mới' });
   await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');

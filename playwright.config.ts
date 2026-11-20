@@ -30,6 +30,10 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}`,
     locale: 'vi-VN',
+    // Every test runs under "Giảm chuyển động" (VA7a): nothing moves, so a step never reads a part
+    // halfway through its move nor waits for a layer to leave. The moves have tests of their own,
+    // which turn it off (motion.spec.ts, the press of controls.spec.ts).
+    reducedMotion: 'reduce',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },

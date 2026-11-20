@@ -10,13 +10,23 @@ import {
   type RefObject,
 } from 'react';
 import type { TrashRow } from '@p2c/db';
-import { Toast } from '@p2c/ui';
+import { Toast, useLayerState } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { t } from '../i18n';
-import { createToastQueue, type Toaster, type ToastQueue } from './toast-queue';
+import { createToastQueue, type Toaster, type ToastQueue, type ToastSpec } from './toast-queue';
 import { deletedToast } from './trash-undo';
 
 const ToastContext = createContext<ToastQueue | null>(null);
+
+const keys = new WeakMap<ToastSpec, number>();
+let shownCount = 0;
+
+/** A key of its own for each toast shown (`show` makes a new one every time). */
+function keyOf(toast: ToastSpec): number {
+  let key = keys.get(toast);
+  if (key === undefined) keys.set(toast, (key = ++shownCount));
+  return key;
+}
 
 function useToastQueue(): ToastQueue {
   const queue = useContext(ToastContext);
@@ -58,12 +68,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
  * (DR-72), holds it; an error comes as an alert of its own, with a × since it stays. The lighter
  * words come after a dot, as in the mockup. The toast takes no focus; last in the page, as it is
  * last on screen, its button is reached by Tab. A button that goes with its toast while it holds
- * the focus gives it to the screen's heading, as the save warning does (`SaveWarning`).
+ * the focus gives it to the screen's heading, as the save warning does (`SaveWarning`). While the
+ * pointer is over the toast or the focus in it, it stays (`hold`). Each toast shown is drawn anew,
+ * so that one of the same words is read out again and rises again (L208); one that leaves moves out
+ * (`motion-toast`) out of the live region, taking nothing.
  */
 export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null> }) {
   const queue = useToastQueue();
   const toast = useSyncExternalStore(queue.subscribe, queue.current, queue.current);
   const region = useRef<HTMLDivElement>(null);
+  const [last, setLast] = useState(toast);
+  if (toast && toast !== last) setLast(toast);
+  const { drawn, layer } = useLayerState(toast !== null);
   // The queue tells its listeners as the toast changes, before React renders its buttons away.
   useEffect(
     () =>
@@ -73,18 +89,28 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
     [queue, heading],
   );
   const error = toast?.tone === 'error';
-  const view = toast && (
+  const draw = (toast: ToastSpec) => (
     <Toast
+      key={keyOf(toast)}
       text={toast.text}
       detail={toast.detail && `${t('sep.dot')} ${toast.detail}`}
       tone={toast.tone}
       action={toast.action && { label: toast.action.label, onClick: queue.act }}
-      close={error ? { label: t('toast.close'), onClick: queue.dismiss } : undefined}
+      close={
+        toast.tone === 'error' ? { label: t('toast.close'), onClick: queue.dismiss } : undefined
+      }
     />
   );
+  const view = toast && draw(toast);
   return (
     <div
       ref={region}
+      onPointerEnter={() => queue.hold('pointer', true)}
+      onPointerLeave={() => queue.hold('pointer', false)}
+      onFocus={() => queue.hold('focus', true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) queue.hold('focus', false);
+      }}
       className="pointer-events-none fixed inset-x-0 bottom-5.5 z-40 flex justify-center px-4"
     >
       <div aria-live="polite" aria-atomic="true" className="pointer-events-auto flex max-w-full">
@@ -93,6 +119,11 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       {error && (
         <div role="alert" className="pointer-events-auto flex max-w-full">
           {view}
+        </div>
+      )}
+      {!toast && drawn && last && (
+        <div {...layer} className="flex max-w-full">
+          {draw(last)}
         </div>
       )}
     </div>

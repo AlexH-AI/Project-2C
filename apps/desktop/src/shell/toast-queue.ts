@@ -26,6 +26,11 @@ export interface ToastQueue extends Toaster {
   /** Runs the action of the toast shown, then closes that toast: not one the action showed. */
   act(): void;
   dismiss(): void;
+  /**
+   * While the pointer is over the toast or the focus in it, it stays; once neither is, it has
+   * `TOAST_MS` again. A new toast has its own clock.
+   */
+  hold(by: 'pointer' | 'focus', on: boolean): void;
   /** Called as the toast changes, before anything renders it; returns how to leave. */
   subscribe(listener: () => void): () => void;
 }
@@ -34,13 +39,21 @@ export function createToastQueue(): ToastQueue {
   const listeners = new Set<() => void>();
   let shown: ToastSpec | null = null;
   let leaving: ReturnType<typeof setTimeout> | undefined;
+  const held = new Set<string>();
 
-  const set = (toast: ToastSpec | null) => {
+  const leaveLater = () => {
     clearTimeout(leaving);
     leaving = undefined;
+    if (shown && shown.tone !== 'error' && held.size === 0) {
+      leaving = setTimeout(() => set(null), TOAST_MS);
+    }
+  };
+
+  const set = (toast: ToastSpec | null) => {
     if (shown === toast) return;
     shown = toast;
-    if (toast && toast.tone !== 'error') leaving = setTimeout(() => set(null), TOAST_MS);
+    held.clear();
+    leaveLater();
     // A listener's bug must not keep the toast from changing, nor the others from hearing of it.
     notify(listeners, console.error);
   };
@@ -55,6 +68,12 @@ export function createToastQueue(): ToastQueue {
       if (shown === toast) set(null);
     },
     dismiss: () => set(null),
+    hold(by, on) {
+      if (held.has(by) === on) return;
+      if (on) held.add(by);
+      else held.delete(by);
+      leaveLater();
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => void listeners.delete(listener);
