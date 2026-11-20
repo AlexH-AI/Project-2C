@@ -24,6 +24,7 @@ import {
 import type { DataTableMoreLabels } from '@p2c/ui';
 import { isUnsavedChangesError, type AppData, type PurgedTrash } from '../data/app-data';
 import { errorMessage, joinParts, t } from '../i18n';
+import { maskName } from '../shell/name-mask';
 import { routeToHash } from '../shell/routes';
 import { statusLabel } from './appointments/appointments-view';
 import { policyStatusText } from './customers/policy-form';
@@ -77,6 +78,39 @@ export function filterTrash(
       (filter === 'all' || row.kind === filter) &&
       (needle === '' || searchText(searchedName(row)).includes(needle)),
   );
+}
+
+/**
+ * What "Đang lọc" names: the kind, and the text typed as `filterTrash` reads it, so text of spaces
+ * or invisible characters alone, which filters nothing, is not named (L215).
+ */
+export function filterParts(filter: TrashFilter, query: string): string[] {
+  return [
+    ...(filter === 'all' ? [] : [t('trash.filter.kind', { label: t(`trash.kind.${filter}`) })]),
+    ...(searchText(query) === '' ? [] : [t('trash.filter.query', { name: query.trim() })]),
+  ];
+}
+
+/**
+ * The row as the trash shows it while customer names are `masked` (VA6b): a customer's name, the
+ * customer of a record and the customer a refusal waits for, as their first letters. Search,
+ * sorting and restoring read the row itself.
+ */
+export function shownRow(row: TrashRow, masked: boolean): TrashRow {
+  if (!masked) return row;
+  const { customer } = row.owner;
+  const block = row.blocked?.code === 'CUSTOMER_NOT_FOUND' ? row.blocked : undefined;
+  const waitsFor = block?.params?.name;
+  return {
+    ...row,
+    ...(row.kind === 'customer' && { name: maskName(row.name) }),
+    ...(customer && {
+      owner: { ...row.owner, customer: { ...customer, name: maskName(customer.name) } },
+    }),
+    ...(typeof waitsFor === 'string' && {
+      blocked: { ...block, params: { ...block?.params, name: maskName(waitsFor) } },
+    }),
+  } as TrashRow;
 }
 
 const stage = (value: CustomerStage) => t(`stage.${value}`);
@@ -640,12 +674,19 @@ const RESTORE: Record<TrashRow['kind'], (db: Database, id: string) => void> = {
  * since the dialog opened) and is refused while the data is replaced (S2-2, E17). Null once done,
  * else the line the dialog shows: the sentence of the reason the row would now be blocked by.
  */
-export function restoreRow(app: Pick<AppData, 'run'>, row: TrashRow): string | null {
+export function restoreRow(
+  app: Pick<AppData, 'run'>,
+  row: TrashRow,
+  masked = false,
+): string | null {
   try {
     app.run((db) => RESTORE[row.kind](db, row.id));
     return null;
   } catch (error) {
-    return error instanceof DbError ? blockedReason(row, error) : errorMessage(error);
+    if (!(error instanceof DbError)) return errorMessage(error);
+    // The customer it waits for, as the mask shows names (VA6b).
+    const shown = shownRow({ ...row, blocked: error }, masked);
+    return blockedReason(shown, shown.blocked!);
   }
 }
 

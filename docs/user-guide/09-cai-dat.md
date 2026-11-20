@@ -121,6 +121,8 @@ KH, lịch hẹn, HĐ, nhân sự và team khi xóa là **xóa mềm**: ẩn kh�
 
 Thùng rác không theo góc nhìn: luôn hiện mọi bản ghi đã xóa.
 
+Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), tên KH ở cột Bản ghi, cột Thuộc, dòng "Khôi phục KH … trước.", hộp khôi phục và dòng "Đã khôi phục KH …" ghi chữ cái đầu; ô tìm vẫn tìm theo tên thật.
+
 ### Tìm bản ghi
 
 - Ô **Loại bản ghi**: **Tất cả**, **KH**, **Lịch hẹn**, **HĐ**, **Nhân sự**, **Team**, mỗi loại có số đếm.

@@ -1,10 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { t } from '../i18n';
-import { createNameMask, maskName } from './name-mask';
+import { maskName, nameMask as mask } from './name-mask';
 import { useToast } from './Toasts';
-
-/** The mask of this run of the app (VA6a): one for every screen, as this machine stored it. */
-const mask = createNameMask();
 
 /**
  * Whether customer names are masked, and how to change it (mockup app-shell.html `#privacy`):

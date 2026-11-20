@@ -18,6 +18,7 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
 import { inUseHelp, retriesDelete } from './team-view';
@@ -176,6 +177,7 @@ export function DeletePersonDialog({
   const data = useAppData();
   const undo = useTrashUndo();
   const usage = useQuery(useCallback((db: Database) => personUsage(db, person.id), [person.id]));
+  const masked = useMasked();
   const [error, setError] = useState<string>();
   const [final, setFinal] = useState(false);
   const inUse = isPersonInUse(usage);
@@ -232,7 +234,7 @@ export function DeletePersonDialog({
               )}
             </ul>
           </div>
-          {inUseHelp(usage).map((help) => (
+          {inUseHelp(usage, masked.name).map((help) => (
             <span key={help} className="text-xs text-fg-3">
               {help}
             </span>

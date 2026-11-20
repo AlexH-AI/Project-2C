@@ -1,6 +1,7 @@
 import { DbError, type PersonUsage } from '@p2c/db';
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
+import { maskName } from '../../shell/name-mask';
 import { groupByTeam, inUseHelp, retriesDelete, staffMetrics } from './team-view';
 
 const SAO_MAI: Team = { id: 't1', name: 'Sao Mai' };
@@ -208,6 +209,15 @@ describe('inUseHelp (mockup 9b)', () => {
     expect(
       inUseHelp(usage({ coordinating: 4, inTrash: trash('An', 'Bảo', 'Lan', 'Lan') })).at(-1),
     ).toContain('KH đã xóa: An, Bảo, Lan (K-0002) và 1 KH khác.');
+  });
+
+  // VA6b: masked, each by its first letters, a code for two alike so, even of two names; one full
+  // stop after the last.
+  it('names the customers of the trash as the mask shows them', () => {
+    const inTrash = trash('Phạm Gia Long', 'Phan Gia Lộc', 'Lê An');
+    expect(inUseHelp(usage({ policies: 1, inTrash }), maskName).at(-1)).toBe(
+      rmTrash('P. G. L. (K-0000), P. G. L. (K-0001), L. A.').replace('A.. ', 'A. '),
+    );
   });
 
   it('says nothing for a person nothing keeps', () => {

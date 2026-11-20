@@ -5,9 +5,11 @@ import {
   asExe,
   createKycCustomer,
   discoveryFacts,
+  fullNamesShown,
   lowestContrast,
   markOs,
   panelOf,
+  seededNames,
   setTransparency,
 } from './support';
 
@@ -215,36 +217,12 @@ test('what was typed or written by the AI shows as dots: a note, a trigger, KYC 
   await page.keyboard.press('Escape');
 });
 
-/** The full names of `names` the page shows: in its text or an attribute (a tooltip, a name read out). */
-const fullNamesShown = (page: Page, names: readonly string[]) =>
-  page.evaluate((names) => {
-    const attributes = [...document.querySelectorAll('*')].flatMap((element) =>
-      [...element.attributes].filter((a) => a.name !== 'class').map((a) => a.value),
-    );
-    const text = [document.body.innerText, ...attributes].join('\n');
-    return names.filter(
-      (name) =>
-        text.includes(name) &&
-        new RegExp(`(?<![\\p{L}\\p{M}])${name}(?![\\p{L}\\p{M}])`, 'u').test(text),
-    );
-  }, names);
-
 test('masked, no full name of a seeded customer is left on Khách hàng and on profiles, nor what was typed', async ({
   page,
 }) => {
   test.setTimeout(120_000);
-  // Every customer of the seed, from the table with all its rows shown, and the RM of each: a
-  // customer named as an RM is left out, as the RM's name stays.
-  await page.goto('/#/customers');
-  await page.getByRole('radio', { name: 'Bảng' }).click();
-  const table = page.getByRole('table', { name: 'Khách hàng' });
-  const more = page.getByRole('button', { name: /^Hiện thêm/ });
-  while (!(await page.getByText(/^Đã hiện hết/).isVisible())) await more.click();
-  const rows = await table.evaluate((element: HTMLTableElement) =>
-    [...element.tBodies[0]!.rows].map((row) => [row.cells[1]!.innerText, row.cells[3]!.innerText]),
-  );
-  const rms = new Set(rows.map(([, rm]) => rm));
-  const names = [...new Set(rows.map(([name]) => name!))].filter((name) => !rms.has(name));
+  // Every customer of the seed, Khách hàng left as a table with all its rows.
+  const names = await seededNames(page);
   expect(names.length).toBeGreaterThan(500);
   const typed: string[] = [];
 

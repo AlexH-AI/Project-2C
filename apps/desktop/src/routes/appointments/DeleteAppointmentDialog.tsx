@@ -4,6 +4,7 @@ import { formatDayMonth, isRfTransition, type StageTransition } from '@p2c/domai
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { useTrashUndo } from '../../shell/Toasts';
 import { ALERT } from '../classes';
 import { FailureAlert } from '../customers/CustomerDialogs';
@@ -30,6 +31,7 @@ export function DeleteAppointmentDialog({
   onDeleted: () => void;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const undo = useTrashUndo();
   const [failure, setFailure] = useState<string>();
   const remove = () => {
@@ -47,7 +49,7 @@ export function DeleteAppointmentDialog({
       size="confirm"
       title={t('appointmentDelete.title', { when: whenText(a) })}
       subtitle={t('appointmentDelete.sub', {
-        customer: customer.name,
+        customer: masked.name(customer.name),
         status: statusLabel(a, app.today()).text,
       })}
       onClose={onClose}

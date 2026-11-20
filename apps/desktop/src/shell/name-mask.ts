@@ -67,3 +67,9 @@ export function createNameMask(storage: () => MaskStorage = webStorage): NameMas
     },
   };
 }
+
+/**
+ * The mask of this run of the app (VA6a): one for every screen, as this machine stored it. Code out
+ * of React (the "Hoàn tác" of a toast, VA6b) reads it as it runs.
+ */
+export const nameMask = createNameMask();

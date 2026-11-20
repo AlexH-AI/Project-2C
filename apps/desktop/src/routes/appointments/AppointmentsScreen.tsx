@@ -30,6 +30,7 @@ import {
 import { useTables, useToday } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { CustomerName, TypedText, useMasked } from '../../shell/NameMask';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
@@ -189,7 +190,7 @@ export function AppointmentsScreen() {
             onClick={() => setSelectedId(r.appointment.id)}
             className={`max-w-60 cursor-pointer rounded-control-sm text-left font-semibold wrap-anywhere hover:underline ${FOCUS}`}
           >
-            {r.customer?.name}
+            <CustomerName name={r.customer?.name ?? ''} />
           </button>
         ),
       },
@@ -200,7 +201,18 @@ export function AppointmentsScreen() {
         value: (r) => r.rm?.name ?? '',
         cell: (r) => <span className={CELL_NAME}>{r.rm?.name}</span>,
       },
-      { id: 'trigger', header: t('appointments.trigger'), kind: 'text', value: triggerText },
+      {
+        id: 'trigger',
+        header: t('appointments.trigger'),
+        kind: 'text',
+        value: triggerText,
+        cell: (r) =>
+          r.appointment.triggerNote ? (
+            <TypedText text={r.appointment.triggerNote} />
+          ) : (
+            triggerText(r)
+          ),
+      },
       {
         id: 'coordinators',
         header: t('appointments.coordinators'),
@@ -257,6 +269,7 @@ export function AppointmentsScreen() {
     list.current?.focus();
   };
   const filtered = coordinator !== 'any';
+  const filter = coordinatorOptions.find((option) => option.value === coordinator)?.label ?? '';
   const where = { period: periodLabel(period, PERIOD_LABELS) };
   const emptyList = (
     <StateNote
@@ -265,9 +278,7 @@ export function AppointmentsScreen() {
       title={t(filtered ? 'appointments.listNoMatch' : 'appointments.listEmpty', where)}
       next={
         filtered
-          ? t('appointments.listNoMatchNext', {
-              name: coordinatorOptions.find((option) => option.value === coordinator)?.label ?? '',
-            })
+          ? t('appointments.listNoMatchNext', { name: filter })
           : t('appointments.listEmptyNext')
       }
       action={
@@ -350,7 +361,13 @@ export function AppointmentsScreen() {
           ) : (
             <>
               <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
-              <DayTable day={day} today={today} rows={rows} onSelect={setSelectedId} />
+              <DayTable
+                day={day}
+                today={today}
+                rows={rows}
+                filter={filtered ? filter : null}
+                onSelect={setSelectedId}
+              />
             </>
           )}
         </div>
@@ -602,11 +619,14 @@ function DayTable({
   day,
   today,
   rows,
+  filter,
   onSelect,
 }: {
   day: CalendarDate;
   today: CalendarDate;
   rows: readonly AppointmentRow[];
+  /** The coordinator the rows are filtered by, which an empty day names as the list does (L212). */
+  filter: string | null;
   onSelect: (id: string) => void;
 }) {
   const groups = useMemo(() => dayBoard(rows, day), [rows, day]);
@@ -618,9 +638,13 @@ function DayTable({
       {groups.length === 0 && (
         <StateNote
           size="card"
-          icon="calendar"
-          title={t('appointments.dayEmpty')}
-          next={t('appointments.dayEmptyNext')}
+          icon={filter === null ? 'calendar' : 'search'}
+          title={t(filter === null ? 'appointments.dayEmpty' : 'appointments.dayNoMatch')}
+          next={
+            filter === null
+              ? t('appointments.dayEmptyNext')
+              : t('appointments.dayNoMatchNext', { name: filter })
+          }
         />
       )}
       {groups.map((group) => (
@@ -642,7 +666,7 @@ function DayTable({
                       onClick={() => onSelect(row.appointment.id)}
                       className={`cursor-pointer truncate rounded-control-sm hover:underline ${FOCUS}`}
                     >
-                      {row.customer?.name}
+                      <CustomerName name={row.customer?.name ?? ''} />
                     </button>
                     <span className="ml-auto text-xs text-fg-3">
                       <Status label={statusLabel(row.appointment, today)} />
@@ -691,6 +715,7 @@ function Detail({
   onDelete: (row: AppointmentRow) => void;
   onShow: (appointment: AppointmentRecord) => void;
 }) {
+  const masked = useMasked();
   if (!row) {
     return (
       // Sticky as with an appointment shown: emptied by a delete, it keeps its place and the focus.
@@ -717,10 +742,21 @@ function Detail({
       t('appointments.coordinators'),
       row.coordinators.map(personLabel).join(t('sep.list')) || t('appointments.none'),
     ],
-    [t('appointments.trigger'), joinParts([t(`trigger.${a.triggerType}`), a.triggerNote])],
+    [
+      t('appointments.trigger'),
+      <>
+        {t(`trigger.${a.triggerType}`)}
+        {a.triggerNote && (
+          <>
+            {` ${t('sep.dot')} `}
+            <TypedText text={a.triggerNote} />
+          </>
+        )}
+      </>,
+    ],
     [t('appointments.status'), <Status label={statusLabel(a, today)} />],
     [t('appointments.outcome'), outcomeText(row.outcome) || t('appointments.none')],
-    [t('appointments.note'), a.note || t('appointments.none')],
+    [t('appointments.note'), a.note ? <TypedText text={a.note} /> : t('appointments.none')],
   ];
   if (links?.from) facts.push([t('appointments.rescheduledFrom'), link(links.from)]);
   if (links?.to) facts.push([t('appointments.rescheduledToLink'), link(links.to)]);
@@ -734,7 +770,7 @@ function Detail({
         tabIndex={-1}
         className="m-0 text-md font-semibold wrap-anywhere tabular-nums"
       >
-        {joinParts([dateTime(a), row.customer?.name])}
+        {joinParts([dateTime(a), row.customer && masked.name(row.customer.name)])}
       </h2>
       <dl className="m-0 flex flex-col gap-1.5 text-sm">
         {facts.map(([term, value]) => (

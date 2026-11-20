@@ -6,6 +6,8 @@ Màn này cho biết số lịch hẹn, 6 chỉ số chính, KH theo nhóm và s
 
 ![Tổng quan, kỳ Tháng 09/2026, góc nhìn Toàn bộ](img/02-tong-quan.png)
 
+Màn này không ghi tên KH, nên khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình) mọi ô, bảng và chart vẫn như khi không che.
+
 ## Chọn kỳ và góc nhìn
 
 Viên **kỳ** trên thanh công cụ, cạnh viên góc nhìn, ghi kỳ đang xem (lúc mở màn là tháng hiện tại):

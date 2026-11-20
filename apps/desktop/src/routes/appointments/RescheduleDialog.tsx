@@ -4,6 +4,7 @@ import { weekdayOf } from '@p2c/domain';
 import { Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { Actions, FailureAlert } from '../customers/CustomerDialogs';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { statusLabel, type AppointmentRow } from './appointments-view';
@@ -23,6 +24,7 @@ export function RescheduleDialog({
   onMoved: (appointment: AppointmentRecord) => void;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const old = row.appointment;
   const today = app.today();
   const form = useRescheduleForm(old, today);
@@ -45,7 +47,7 @@ export function RescheduleDialog({
       closeLabel={t('dialog.close')}
       title={t('reschedule.title')}
       subtitle={t('reschedule.sub', {
-        customer: row.customer?.name ?? '',
+        customer: masked.name(row.customer?.name ?? ''),
         weekday: t(`weekdayLong.${weekdayOf(old.date)}`),
         when: whenText(old),
         status: statusLabel(old, today).text,

@@ -13,6 +13,7 @@ import { formatDate, normalizeText, weekdayOf, type CalendarDate, type Person } 
 import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useQuery, useTables } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { routeToHash } from '../../shell/routes';
 import { ALERT, LINK } from '../classes';
 import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
@@ -51,6 +52,7 @@ export function OutcomeDialog({
   onShow: (appointment: AppointmentRecord) => void;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const { transitions, appointments } = useTables();
   const today = app.today();
   const a = row.appointment;
@@ -121,7 +123,7 @@ export function OutcomeDialog({
         closeLabel={t('dialog.close')}
         title={t('outcome.title')}
         subtitle={t('outcome.sub', {
-          customer: customer.name,
+          customer: masked.name(customer.name),
           weekday: t(`weekdayLong.${weekdayOf(a.date)}`),
           when: whenText(a),
           stage: t(`stage.${customer.stage}`),
