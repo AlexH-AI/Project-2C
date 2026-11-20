@@ -121,26 +121,28 @@ test('a field carries its edge as its system does, keeps its fill under the poin
       return [style.borderTopColor, style.borderRightColor, style.borderBottomColor];
     });
 
+  // The edges ease to the system's colours (`field`: border-color in --t-1). Read until settled:
+  // WebKit opens as macOS, and the bottom edge, alike on both systems, is there at once.
   // Windows 11: the weight is on the bottom edge, gold while typed in.
   await markOs(page, 'win');
   await date.focus();
   await expect(field).toHaveCSS('border-bottom-color', BORDER_CONTROL);
-  expect(await edges(field)).toEqual([HAIRLINE, HAIRLINE, BORDER_CONTROL]);
+  await expect.poll(() => edges(field)).toEqual([HAIRLINE, HAIRLINE, BORDER_CONTROL]);
   await expect(field).toHaveCSS('border-radius', await drawnCorner(page, { win: 4, mac: 10 }));
   await field.focus();
   await expect(field).toHaveCSS('border-bottom-color', ACCENT);
-  expect(await edges(field)).toEqual([HAIRLINE, HAIRLINE, ACCENT]);
+  await expect.poll(() => edges(field)).toEqual([HAIRLINE, HAIRLINE, ACCENT]);
   await expect(field).toHaveCSS('outline-style', 'none');
 
   // macOS: an even edge; gold with a soft halo while typed in.
   await markOs(page, 'mac');
   await date.focus();
   await expect(field).toHaveCSS('border-bottom-color', BORDER_CONTROL);
-  expect(await edges(field)).toEqual([BORDER_CONTROL, BORDER_CONTROL, BORDER_CONTROL]);
+  await expect.poll(() => edges(field)).toEqual([BORDER_CONTROL, BORDER_CONTROL, BORDER_CONTROL]);
   await expect(field).toHaveCSS('border-radius', await drawnCorner(page, { win: 4, mac: 10 }));
   await field.focus();
   await expect(field).toHaveCSS('border-bottom-color', ACCENT);
-  expect(await edges(field)).toEqual([ACCENT, ACCENT, ACCENT]);
+  await expect.poll(() => edges(field)).toEqual([ACCENT, ACCENT, ACCENT]);
   await expect(field).toHaveCSS('box-shadow', 'rgba(217, 178, 106, 0.14) 0px 0px 0px 3px');
 
   // The fill stays under the pointer on either system: --border-control needs 3:1 against it.
