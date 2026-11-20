@@ -886,6 +886,8 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   const { detail } = screen(page);
   await pickScope(page, { team: 'Sao Mai' });
   const f = await fillAppointment(page, '30/9', 'Sao Mai');
+  // The page clock held: a toast shown by mistake would stay, not leave by itself in 4,2 s (L210).
+  await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
   await f.create.click();
 
   await expect(f.dialog).toHaveCount(0);

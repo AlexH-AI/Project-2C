@@ -30,6 +30,9 @@ interface Move {
   readonly to?: Frame;
   /** What it runs on: its role, or its tag (`nextMove`). */
   readonly on?: string;
+  /** What it runs on shows, where it has any: the choice of each list, how far it is scrolled. */
+  readonly lists?: readonly string[];
+  readonly scrolled?: number;
 }
 
 /**
@@ -80,6 +83,11 @@ async function nextMove(page: Page, name: string): Promise<() => Promise<Move>> 
         const effect = move.effect as KeyframeEffect;
         const timing = effect.getComputedTiming();
         const last: ComputedKeyframe | undefined = effect.getKeyframes().at(-1);
+        const parts = [...(event.target as Element).querySelectorAll('*')];
+        const lists = parts
+          .filter((part) => part instanceof HTMLSelectElement)
+          .map((list) => list.selectedOptions[0]?.textContent ?? '');
+        const scrolled = Math.max(0, ...parts.map((part) => part.scrollTop));
         resolve({
           name,
           start: Number(timing.delay),
@@ -89,6 +97,8 @@ async function nextMove(page: Page, name: string): Promise<() => Promise<Move>> 
             ...(typeof last?.opacity === 'string' && { opacity: last.opacity }),
           },
           on: (event.target as Element).getAttribute('role') ?? (event.target as Element).localName,
+          ...(lists.length > 0 && { lists }),
+          ...(scrolled > 0 && { scrolled }),
         });
       };
       document.addEventListener('animationstart', started, true);
@@ -263,17 +273,34 @@ test('a dialog comes as its system brings one and goes in --t-1; focus, Esc and 
     { name: 'appear', start: 0, end: 220, from: { opacity: '0' } },
     { name: 'arrive', start: 0, end: 400, from: { transform: 'translateY(-36px) scale(0.98)' } },
   ]);
+  // A list chosen and the body scrolled, in a window too low for the whole dialog.
+  const rm = dialog.getByRole('combobox', { name: 'RM phụ trách' });
+  const chosen = (await rm.locator('option').allTextContents())[2]!;
+  await rm.selectOption({ label: chosen });
+  await page.setViewportSize({ width: 1280, height: 480 });
+  const scrolled = await dialog.evaluate((node) => {
+    const body = [...node.querySelectorAll('*')].find(
+      (part) =>
+        part.scrollHeight > part.clientHeight && getComputedStyle(part).overflowY === 'auto',
+    )!;
+    body.scrollTop = body.scrollHeight;
+    return body.scrollTop;
+  });
+  expect(scrolled).toBeGreaterThan(0);
   const left = await nextMove(page, 'leave');
   await dialog.getByRole('button', { name: 'Hủy' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(add).toBeFocused();
-  // What stays for the move out is a copy that takes nothing and no screen reader reads.
+  // What stays for the move out is a copy that takes nothing and no screen reader reads, and shows
+  // what the dialog showed as it closed: the list on its choice, the body where it was scrolled.
   expect(await left()).toEqual({
     name: 'leave',
     start: 0,
     end: 120,
     to: { opacity: '0', transform: 'translateY(-36px) scale(0.98)' },
     on: 'dialog',
+    lists: expect.arrayContaining([chosen]),
+    scrolled,
   });
   await expect(page.locator(COPY)).toHaveCount(0);
 
@@ -359,11 +386,20 @@ test('a toast rises from the bottom edge by the bouncy spring, and leaves in --t
   await expect(page.locator('[data-state="closing"]')).toHaveCount(0);
 });
 
-test('a tick lands by the bouncy spring in --t-3', async ({ page }) => {
+test('a tick lands by the bouncy spring in --t-3; under forced colours the system draws the box', async ({
+  page,
+  browserName,
+}) => {
   const box = await nextBookingBox(page);
   expect(await tick(box)).toEqual({
     checked: true,
     moves: [{ on: '::after', duration: 400, bouncy: true }],
+  });
+  await test.step('a contrast theme of Windows drops the shadow that edges the box: the system draws it', async (step) => {
+    // Forced colours are a theme of Windows, emulated by Playwright on Chromium only.
+    step.skip(browserName === 'webkit', 'forced-colors is emulated on Chromium only');
+    await page.emulateMedia({ forcedColors: 'active' });
+    await expect(box).toHaveCSS('appearance', 'auto');
   });
 });
 

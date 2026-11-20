@@ -48,17 +48,42 @@ const WIDTH = { confirm: 'w-100', form: 'w-120' } as const;
 /** Longer than the move out of a dialog and of what dims behind it (--t-2). */
 const GONE_MS = 400;
 
+/** A dialog closed leaves a copy of itself for its move out (`leaveBehind`), where it can. */
+const leavesBehind = (dialog: HTMLDialogElement) =>
+  !calmMotion() && typeof dialog.showPopover === 'function';
+
+/** What a clone does not take with it: the choice of each list, how far each box is scrolled. */
+interface Held {
+  readonly chosen: readonly number[];
+  readonly scrolled: ReadonlyArray<readonly [index: number, top: number, left: number]>;
+}
+
+const partsOf = (dialog: HTMLDialogElement) => [dialog, ...dialog.querySelectorAll('*')];
+
+/** Read while the dialog is still on the page, as it is closed. */
+function heldOf(dialog: HTMLDialogElement): Held {
+  return {
+    chosen: [...dialog.querySelectorAll('select')].map((list) => list.selectedIndex),
+    scrolled: partsOf(dialog).flatMap((part, index) =>
+      part.scrollTop || part.scrollLeft ? [[index, part.scrollTop, part.scrollLeft] as const] : [],
+    ),
+  };
+}
+
 /**
  * A dialog closed goes in --t-1, what dims behind it in --t-2 (`motion-dialog` of theme.css), but
  * its caller has taken it away: a copy of it stays for that time, over the page, taking nothing,
- * neither a click nor the focus, and read by no screen reader, with no ids, then goes. None under
- * "Giảm chuyển động", nor where the page cannot show one, nor while another dialog is open (one
- * that took its place, or the one under it): a copy would lie over that one and dim it twice.
+ * neither a click nor the focus, and read by no screen reader, with no ids, then goes. It shows
+ * what the dialog showed as it closed: each list on its choice, each box scrolled as it was
+ * (`held`). None while another dialog is open (one that took its place, or the one under it): a
+ * copy would lie over that one and dim it twice.
  */
-function leaveBehind(dialog: HTMLDialogElement) {
-  if (calmMotion() || typeof dialog.showPopover !== 'function') return;
+function leaveBehind(dialog: HTMLDialogElement, held: Held) {
   if (document.querySelector('dialog:modal')) return;
   const copy = dialog.cloneNode(true) as HTMLDialogElement;
+  copy.querySelectorAll('select').forEach((list, index) => {
+    list.selectedIndex = held.chosen[index] ?? list.selectedIndex;
+  });
   for (const named of [copy, ...copy.querySelectorAll('[id]')]) named.removeAttribute('id');
   for (const name of ['open', 'aria-labelledby']) copy.removeAttribute(name);
   copy.setAttribute('aria-hidden', 'true');
@@ -67,6 +92,8 @@ function leaveBehind(dialog: HTMLDialogElement) {
   copy.inert = true;
   document.body.append(copy);
   copy.showPopover();
+  const parts = partsOf(copy);
+  for (const [index, top, left] of held.scrolled) parts[index]?.scrollTo(left, top);
   const gone = () => copy.remove();
   void Promise.all(copy.getAnimations({ subtree: true }).map((move) => move.finished)).then(
     gone,
@@ -119,13 +146,16 @@ export function Dialog({
 
   useLayoutEffect(() => {
     const node = dialog.current;
-    // In the commit that takes the dialog away, before the page is painted without it; only a
-    // dialog that did leave the page (not the second run of StrictMode) leaves a copy, of what it
-    // held as it went.
-    return () =>
+    // In the commit that takes the dialog away, while it is still on the page; the copy comes
+    // once the commit is over, before the page is painted without the dialog, and only from a
+    // dialog that did leave the page (not from the second run of StrictMode).
+    return () => {
+      if (!node || !leavesBehind(node)) return;
+      const held = heldOf(node);
       queueMicrotask(() => {
-        if (node && !node.isConnected) leaveBehind(node);
+        if (!node.isConnected) leaveBehind(node, held);
       });
+    };
   }, []);
 
   return (

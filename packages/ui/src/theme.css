@@ -381,6 +381,13 @@
     [data-os='win'] & {
       border-radius: 4px;
     }
+    /* Forced colours (Windows contrast themes) drop the shadow that edges it: the system's box */
+    @media (forced-colors: active) {
+      appearance: auto;
+      &::after {
+        content: none;
+      }
+    }
   }
 }
 
