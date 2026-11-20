@@ -61,6 +61,8 @@ Mốc có hôm nay được đánh dấu và ghi "tới …" (ví dụ "14–20/
 
 File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các bảng của góc nhìn): Toàn bộ 4 sheet, Team 3 sheet, RM 2 sheet. Dòng đầu mỗi sheet ghi tên bảng, kỳ, góc nhìn và ngày xuất. Ô giữ số thật (tiền theo đồng, tỉ lệ dạng %) để tính tiếp trong Excel.
 
+Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), file vẫn ghi tên đầy đủ, như khi không che. Bảng báo cáo trên màn không ghi tên KH.
+
 - (bản máy tính) File lưu vào thư mục `exports` của thư mục dữ liệu (xem [1. Bắt đầu → Nơi để dữ liệu](01-bat-dau.md#nơi-để-dữ-liệu-bản-máy-tính)), tên dạng `bao-cao_<kỳ>_<góc nhìn>_<ngày xuất>.xlsx`, ví dụ `bao-cao_2026-10_toan-bo_2026-10-15.xlsx`. App báo "Đã xuất báo cáo · 4 sheet: …" kèm đường dẫn và nút **Mở thư mục**.
 - Bản web: file tải về thư mục tải xuống của trình duyệt.
 

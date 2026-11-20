@@ -12,6 +12,7 @@ import {
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
+import { useNameMask } from '../shell/NameMask';
 import { ALERT, FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { RestoreDialog } from './RestoreDialog';
@@ -22,6 +23,7 @@ import {
   blockedReason,
   canPurge,
   deletedAtText,
+  filterParts,
   filterTrash,
   goneText,
   keptReason,
@@ -36,12 +38,12 @@ import {
   recordTitle,
   restoreLabel,
   restoredNotice,
+  shownRow,
   trashCounts,
   trashNames,
   type PurgedNotice,
   type PurgeRefusal,
   type PurgeView,
-  type RestoredNotice,
   type TrashFilter,
   type TrashNames,
 } from './trash-view';
@@ -118,6 +120,7 @@ const trashColumns = (
   onRestore: (row: TrashRow) => void,
   names: TrashNames,
   today: CalendarDate,
+  masked: boolean,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
     id: 'kind',
@@ -136,14 +139,14 @@ const trashColumns = (
     kind: 'text',
     sortable: false,
     value: (row) => recordTitle(row, today),
-    cell: (row) => <RecordCell row={row} names={names} today={today} />,
+    cell: (row) => <RecordCell row={shownRow(row, masked)} names={names} today={today} />,
   },
   {
     id: 'owner',
     header: t('trash.col.owner'),
     kind: 'text',
     value: (row) => ownerParts(row)[0]?.text ?? '',
-    cell: (row) => <OwnerCell row={row} names={names} />,
+    cell: (row) => <OwnerCell row={shownRow(row, masked)} names={names} />,
   },
   {
     id: 'deletedAt',
@@ -164,7 +167,7 @@ const trashColumns = (
     cell: (row) => (
       <Button
         disabled={row.blocked !== undefined}
-        aria-label={restoreLabel(row, names, today)}
+        aria-label={restoreLabel(shownRow(row, masked), names, today)}
         aria-describedby={row.blocked && reasonId(row)}
         onClick={() => onRestore(row)}
       >
@@ -176,7 +179,7 @@ const trashColumns = (
 
 /** The line at the head of the card: what was restored (11e) or purged (11j), or a purge refused. */
 type Notice =
-  | { readonly kind: 'restored'; readonly view: RestoredNotice }
+  | { readonly kind: 'restored'; readonly row: TrashRow }
   | { readonly kind: 'purged'; readonly view: PurgedNotice }
   | { readonly kind: 'refused'; readonly view: PurgeRefusal };
 
@@ -223,9 +226,11 @@ function Done({
 
 /** The line at the head of the card once a dialog closed: `Done`, or a purge refused. */
 function NoticeLine({ notice, ref }: { notice: Notice; ref: Ref<HTMLDivElement> }) {
+  const { masked } = useNameMask();
   switch (notice.kind) {
     case 'restored': {
-      const { title, detail, href, open } = notice.view;
+      // The record itself, so the line follows the mask turned on or off after it (VA6b).
+      const { title, detail, href, open } = restoredNotice(shownRow(notice.row, masked));
       return (
         <Done ref={ref} title={title} link={{ href, text: open }}>
           {detail}
@@ -330,8 +335,13 @@ export function TrashSection() {
   const done = useRef<HTMLDivElement>(null);
   const table = useRef<HTMLTableElement>(null);
   // Of every row, whatever the filter (DR6-151).
-  const names = useMemo(() => trashNames(rows), [rows]);
-  const columns = useMemo(() => trashColumns(setRestoring, names, today), [names, today]);
+  const { masked } = useNameMask();
+  // As shown: two customers of one set of first letters are told apart too (VA6b).
+  const names = useMemo(() => trashNames(rows.map((row) => shownRow(row, masked))), [rows, masked]);
+  const columns = useMemo(
+    () => trashColumns(setRestoring, names, today, masked),
+    [names, today, masked],
+  );
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const reminder = purgeReminder(rows.length);
@@ -416,10 +426,7 @@ export function TrashSection() {
               icon="search"
               title={t('trash.noMatch')}
               next={t('trash.noMatchNext', {
-                parts: joinParts([
-                  filter !== 'all' && t('trash.filter.kind', { label: t(`trash.kind.${filter}`) }),
-                  query.trim() !== '' && t('trash.filter.query', { name: query.trim() }),
-                ]),
+                parts: joinParts(filterParts(filter, query)),
               })}
               action={
                 <Button
@@ -444,7 +451,7 @@ export function TrashSection() {
             row={restoring}
             onClose={() => setRestoring(null)}
             onRestored={() => {
-              setNotice({ kind: 'restored', view: restoredNotice(restoring) });
+              setNotice({ kind: 'restored', row: restoring });
               setRestoring(null);
             }}
           />

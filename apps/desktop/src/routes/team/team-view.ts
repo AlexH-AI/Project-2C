@@ -108,7 +108,7 @@ const NAMED_IN_TRASH = 3;
  * then, when some of it belongs to customers in the trash, which ones (T-250): a purge of the trash
  * deletes it for good, while restoring them hands over or edits only part of it (DR6-115).
  */
-export function inUseHelp(usage: PersonUsage): string[] {
+export function inUseHelp(usage: PersonUsage, shown = (name: string) => name): string[] {
   const owns = ownsRecords(usage);
   const reviews = usage.reviewing > 0;
   const coordinates = usage.coordinating > 0;
@@ -121,23 +121,28 @@ export function inUseHelp(usage: PersonUsage): string[] {
         : coordinates
           ? t('person.inUseCoordinatorHelp')
           : null;
-  // A name two customers of the trash share comes with each one's code (review of PR 669).
-  const names = usage.inTrash.map(({ name }) => name);
-  const named = usage.inTrash
+  // A name two customers of the trash share comes with each one's code (review of PR 669), as
+  // `shown`: two names alike once masked too (VA6b).
+  const names = usage.inTrash.map(({ name }) => shown(name));
+  const named = names
     .slice(0, NAMED_IN_TRASH)
-    .map(({ name, code }) =>
+    .map((name, i) =>
       names.indexOf(name) === names.lastIndexOf(name)
         ? name
-        : t('customer.withCode', { name, code }),
+        : t('customer.withCode', { name, code: usage.inTrash[i]!.code }),
     )
     .join(t('sep.list'));
   const others = usage.inTrash.length - NAMED_IN_TRASH;
   const customer =
     others > 0 ? t('person.inUseTrashMore', { customer: named, count: others }) : named;
+  const sentence = t(owns ? 'person.inUseTrash' : 'person.inUseSupportTrash', { customer });
+  // A masked name ends the list with its own full stop: the sentence's goes.
   const trash =
-    usage.inTrash.length > 0
-      ? t(owns ? 'person.inUseTrash' : 'person.inUseSupportTrash', { customer })
-      : null;
+    usage.inTrash.length === 0
+      ? null
+      : customer.endsWith('.')
+        ? sentence.replace(`${customer}.`, customer)
+        : sentence;
   return [role, trash].filter((line) => line !== null);
 }
 

@@ -1,10 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { t } from '../i18n';
-import { createNameMask, maskName } from './name-mask';
+import { maskName, nameMask as mask } from './name-mask';
 import { useToast } from './Toasts';
-
-/** The mask of this run of the app (VA6a): one for every screen, as this machine stored it. */
-const mask = createNameMask();
 
 /**
  * Whether customer names are masked, and how to change it (mockup app-shell.html `#privacy`):
@@ -41,14 +38,16 @@ export function CustomerName({ name }: { name: string }) {
 /**
  * Text a user typed, or the AI wrote, about a customer (a note, the trigger of a meeting, a KYC
  * fact in words, an analysis): it may hold a name, so while the mask is on the whole of it shows
- * as dots, which a screen reader reads as "đã ẩn", never the text.
+ * as dots, which a screen reader reads as "đã ẩn", never the text. `plain`: in the colour of the
+ * text around them, as in a row of a table, whose gold tint once chosen takes --text-2 below 4.5:1
+ * on the glass of macOS (VA6b).
  */
-export function TypedText({ text }: { text: string }) {
+export function TypedText({ text, plain = false }: { text: string; plain?: boolean }) {
   const { masked } = useNameMask();
   if (!masked || !text) return text;
   // --text-2, not the mockup's --text-3: on the glass of macOS --text-3 is below 4.5:1.
   return (
-    <span className="text-fg-2 italic">
+    <span className={plain ? 'italic' : 'text-fg-2 italic'}>
       <span aria-hidden="true">{t('nameMask.dots')}</span>
       <span className="sr-only">{t('nameMask.hidden')}</span>
     </span>

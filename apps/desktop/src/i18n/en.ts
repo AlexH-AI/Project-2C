@@ -142,6 +142,9 @@ export const en: EnglishMessages = {
   // The next step of an empty place, and the filter it names (VA3c, mockup components.html 09).
   'filter.clear': 'Clear filter',
   'appointments.dayEmptyNext': 'Pick a day with dots on the calendar to see its appointments.',
+  'appointments.dayNoMatch': 'No appointments match on this day.',
+  'appointments.dayNoMatchNext':
+    'Filtering by Coordinator: {name}. Clear it in the Coordinator box, or pick another day.',
   'appointments.listEmpty': 'No appointments yet in {period}',
   'appointments.listEmptyNext': 'Create an appointment, or view another period.',
   'appointments.listNoMatch': 'No appointments match in {period}',

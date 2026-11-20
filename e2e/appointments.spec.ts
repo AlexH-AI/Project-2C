@@ -368,7 +368,7 @@ test('the coordinator filter keeps the appointments with or without that person'
 test('a list the coordinator filter empties names the filter, and "Bỏ lọc" fills it again', async ({
   page,
 }) => {
-  const { coordinator, list, rows, kinds } = screen(page);
+  const { coordinator, list, rows, kinds, day } = screen(page);
   await kinds.getByRole('radio', { name: 'Ngày' }).click();
   const all = await total(page);
   expect(all).toBeGreaterThan(0);
@@ -388,6 +388,9 @@ test('a list the coordinator filter empties names the filter, and "Bỏ lọc" f
   await expect(rows).toHaveCount(1);
   await expect(rows).toContainText(`Không có lịch hẹn nào khớp trong ${TODAY}`);
   await expect(rows).toContainText(`Đang lọc Phối hợp: ${someone}. Bỏ lọc hoặc xem kỳ khác.`);
+  // The card of the day names the filter too, not "none on this day" (L212).
+  await expect(day).toContainText('Không có lịch hẹn nào khớp trong ngày.');
+  await expect(day).toContainText(`Đang lọc Phối hợp: ${someone}.`);
   // No "create" here, and today is in the period: one button.
   await expect(rows.getByRole('button')).toHaveText(['Bỏ lọc']);
 

@@ -29,6 +29,7 @@ import {
   blockedReason,
   canPurge,
   deletedAtText,
+  filterParts,
   filterTrash,
   goneText,
   keptReason,
@@ -45,6 +46,7 @@ import {
   restoreRow,
   restoreView,
   restoredNotice,
+  shownRow,
   trashCounts,
   trashNames,
   type TrashNames,
@@ -257,6 +259,50 @@ describe('filterTrash', () => {
 
   it('keeps every row for text of invisible characters alone, as for empty text', () => {
     expect(filterTrash(ROWS, 'all', '\u{200B}\u{3164}')).toEqual(ROWS);
+  });
+});
+
+// L215: "Đang lọc" names what `filterTrash` filters by, no more.
+describe('filterParts', () => {
+  const kind = t('trash.filter.kind', { label: t('trash.kind.customer') });
+
+  it('names the kind and the text typed, trimmed', () => {
+    expect(filterParts('customer', ' Minh ')).toEqual([
+      kind,
+      t('trash.filter.query', { name: 'Minh' }),
+    ]);
+    expect(filterParts('all', 'Minh')).toEqual([t('trash.filter.query', { name: 'Minh' })]);
+  });
+
+  it('leaves out text that filters nothing: spaces or invisible characters alone', () => {
+    expect(filterParts('customer', '\u{200B}')).toEqual([kind]);
+    expect(filterParts('customer', '  ')).toEqual([kind]);
+    expect(filterParts('all', '')).toEqual([]);
+  });
+});
+
+// VA6b: what the trash shows of a row while customer names are masked.
+describe('shownRow', () => {
+  it('masks a customer, the customer of a record and the one a row waits for', () => {
+    expect(shownRow(minhAnh, true)).toEqual({ ...minhAnh, name: 'T. M. A.' });
+    const shown = shownRow(planned, true);
+    expect(ownerParts(shown).map((part) => part.text)).toEqual(['KH T. M. A.', 'RM Đỗ Khánh Linh']);
+    expect(blockedReason(shown, shown.blocked!)).toBe('Khôi phục KH T. M. A. trước.');
+    expect(restoredNotice(shownRow(met, true)).detail).toBe('KH P. G. B.');
+  });
+
+  it('tells apart, by code, two customers whose first letters are alike once masked', () => {
+    const maiAnh = { ...minhAnh, id: 'c9', name: 'Trần Mai An', code: 'K-9TMA' } as TrashRow;
+    const shown = [minhAnh, maiAnh].map((row) => shownRow(row, true));
+    expect(restoreLabel(shown[0]!, trashNames(shown), TODAY)).toContain('T. M. A. (K-7QX2)');
+    expect(restoreLabel(maiAnh, trashNames([minhAnh, maiAnh]), TODAY)).not.toContain('K-9TMA');
+  });
+
+  it('keeps people, teams, RMs and the names of another refusal; every row with no mask', () => {
+    for (const row of [mai, binhMinh, bao]) expect(shownRow(row, true)).toEqual(row);
+    expect(shownRow(blockedMet, true).blocked).toEqual(blockedMet.blocked);
+    for (const row of ROWS) expect(shownRow(row, false)).toBe(row);
+    expect(shownRow(minhAnh, true).owner).toEqual(minhAnh.owner);
   });
 });
 

@@ -3,10 +3,11 @@ import type { TrashRow } from '@p2c/db';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
+import { useNameMask } from '../shell/NameMask';
 import { ALERT } from './classes';
 import { FailureAlert } from './customers/CustomerDialogs';
 import { stageBadge } from './stage-badge';
-import { restoreRow, restoreView } from './trash-view';
+import { restoreRow, restoreView, shownRow } from './trash-view';
 
 /**
  * Mockup 11b, 11c: restoring always asks first and says what it does (TR-8). The command checks
@@ -25,9 +26,10 @@ export function RestoreDialog({
   const [failure, setFailure] = useState<string>();
   // An appointment's status as "Bản ghi" writes it, by the same day (NT-TR-07).
   const today = useToday();
-  const view = restoreView(row, today);
+  const { masked } = useNameMask();
+  const view = restoreView(shownRow(row, masked), today);
   const restore = () => {
-    const refused = restoreRow(app, row);
+    const refused = restoreRow(app, row, masked);
     if (refused === null) onRestored();
     else setFailure(refused);
   };

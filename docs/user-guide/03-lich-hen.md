@@ -45,6 +45,8 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 - Nút theo trạng thái: lịch Dự kiến có **Ghi kết quả**, **Dời lịch**, **Xóa**; lịch đã có kết quả có **Sửa kết quả**; lịch hôm nay hoặc đã qua có **Tạo lịch hẹn tiếp theo**.
 - Khối **KYC Intelligence** cho xem phân tích AI mới nhất của KH (chỉ đọc). Muốn phân tích, mở Hồ sơ KH (xem [6. KYC Intelligence](06-ai.md)).
 
+Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), danh sách, khung Trong ngày, Chi tiết và các hộp lịch hẹn ghi chữ cái đầu của tên KH ("T. M. A."); mô tả trigger, ghi chú cuộc gặp và câu của KYC Intelligence hiện "•••". Mã KH, tên RM và người phối hợp giữ nguyên. Ô **Khách hàng** của hộp Lịch hẹn mới vẫn tìm theo tên thật; gợi ý hiện đã che.
+
 ## Đặt lịch hẹn
 
 ![Hộp Lịch hẹn mới](img/03-dat-lich.png)

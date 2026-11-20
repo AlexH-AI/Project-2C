@@ -786,6 +786,9 @@ export const vi = {
   'appointments.day': 'Trong ngày {date}',
   'appointments.dayEmpty': 'Không có lịch hẹn trong ngày.',
   'appointments.dayEmptyNext': 'Chọn một ngày có chấm trên lịch để xem lịch hẹn của ngày đó.',
+  'appointments.dayNoMatch': 'Không có lịch hẹn nào khớp trong ngày.',
+  'appointments.dayNoMatchNext':
+    'Đang lọc Phối hợp: {name}. Bỏ lọc ở ô Phối hợp, hoặc chọn ngày khác.',
   // The list with no appointment in the period (mockup components.html 09): none yet, or none
   // under the filter, which the line names.
   'appointments.listEmpty': 'Chưa có lịch hẹn nào trong {period}',

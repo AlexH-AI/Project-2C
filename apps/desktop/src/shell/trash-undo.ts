@@ -1,7 +1,8 @@
 import { listTrash, type TrashRow } from '@p2c/db';
 import type { AppData } from '../data/app-data';
 import { t } from '../i18n';
-import { restoreRow, restoredNotice } from '../routes/trash-view';
+import { restoreRow, restoredNotice, shownRow } from '../routes/trash-view';
+import { nameMask } from './name-mask';
 import type { Toaster, ToastSpec } from './toast-queue';
 
 /**
@@ -20,9 +21,13 @@ export function deletedToast(
   const undo = () => {
     const row = listTrash(app.db()).find((deleted) => deleted.kind === kind && deleted.id === id);
     if (!row) return toast.show({ text: t('toast.undoGone'), tone: 'error' });
-    const refused = restoreRow(app, row);
+    // Names as the mask shows them as it runs (VA6b).
+    const masked = nameMask.masked();
+    const refused = restoreRow(app, row, masked);
     toast.show(
-      refused === null ? { text: restoredNotice(row).title } : { text: refused, tone: 'error' },
+      refused === null
+        ? { text: restoredNotice(shownRow(row, masked)).title }
+        : { text: refused, tone: 'error' },
     );
   };
   return { text: t(`toast.movedToTrash.${kind}`), action: { label: t('toast.undo'), run: undo } };

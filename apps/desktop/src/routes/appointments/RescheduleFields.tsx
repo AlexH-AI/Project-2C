@@ -3,6 +3,7 @@ import type { AppointmentRecord } from '@p2c/db';
 import { compareDates, formatDate, normalizeText, type CalendarDate } from '@p2c/domain';
 import { TextField } from '@p2c/ui';
 import { t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { ALERT } from '../classes';
 import { DateSuggestion, dateFieldError, dateReading } from './AppointmentDialog';
 import {
@@ -71,6 +72,7 @@ export function RescheduleFields({
   autoFocus?: boolean;
 }) {
   const { old, today, date, time, same } = form;
+  const masked = useMasked();
   const reason = rescheduleReason(form.reason);
   const pending = normalizeText(form.dateText) === '' && !form.attempted;
   const past = !date.ok && date.error === 'past';
@@ -138,7 +140,10 @@ export function RescheduleFields({
       </div>
       {reason !== null && (
         <p className="m-0 text-xs text-fg-2 tabular-nums">
-          {t('reschedule.historyRead', { date: dayText(old.date, today), note: reason })}
+          {t('reschedule.historyRead', {
+            date: dayText(old.date, today),
+            note: masked.text(reason),
+          })}
         </p>
       )}
     </>

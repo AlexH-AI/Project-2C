@@ -16,6 +16,7 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useTables } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
+import { useMasked } from '../../shell/NameMask';
 import { routeToHash } from '../../shell/routes';
 import { ALERT, LINK } from '../classes';
 import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
@@ -57,6 +58,7 @@ export function EditOutcomeDialog({
   onClose: () => void;
 }) {
   const app = useAppData();
+  const masked = useMasked();
   const { appointments } = useTables();
   const today = app.today();
   const a = row.appointment;
@@ -135,7 +137,7 @@ export function EditOutcomeDialog({
       closeLabel={t('dialog.close')}
       title={t('outcomeEdit.title')}
       subtitle={joinParts([
-        customer.name,
+        masked.name(customer.name),
         whenText(a),
         t(`appointmentStatus.${a.status}`),
         outcomeText(row.outcome),

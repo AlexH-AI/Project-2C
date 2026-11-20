@@ -215,6 +215,59 @@ export const pastTheWindow = (page: Page) =>
   });
 
 /**
+ * The full names of `names` the page shows (VA6a, VA6b): in its text, an open dialog's too, or in
+ * an attribute (a tooltip, a name read out). A field keeps what is typed in it (Issue #1391, "Không
+ * che"): its value is left out. A name counts as whole words, "Anh" not in "Thanh".
+ */
+export const fullNamesShown = (page: Page, names: readonly string[]) =>
+  page.evaluate((names) => {
+    const field = (element: Element) =>
+      element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement;
+    const attributes = [...document.querySelectorAll('*')].flatMap((element) =>
+      [...element.attributes]
+        .filter((a) => a.name !== 'class' && !(a.name === 'value' && field(element)))
+        .map((a) => a.value),
+    );
+    const text = [document.body.innerText, ...attributes].join('\n');
+    // A name is text, not a pattern: "(" would not compile, "gặp (lần 2)" would not match (L242).
+    const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    return names.filter(
+      (name) =>
+        text.includes(name) &&
+        new RegExp(`(?<![\\p{L}\\p{M}])${escaped(name)}(?![\\p{L}\\p{M}])`, 'u').test(text),
+    );
+  }, names);
+
+/**
+ * The name of every customer of the seed, from Khách hàng as a table with all its rows, less those
+ * a person of Team & nhân sự has too: a person's name stays when customers' are masked.
+ */
+export async function seededNames(page: Page): Promise<string[]> {
+  await gotoScreen(page, '/#/team');
+  const people = new Set<string>();
+  const teams = page.getByRole('region', { name: 'Team', exact: true }).getByRole('button');
+  await expect(teams.first()).toBeVisible();
+  for (const team of await teams.all()) {
+    await team.click();
+    await expect(team).toHaveAttribute('aria-pressed', 'true');
+    const labels = await page
+      .getByRole('button', { name: /^Sửa / })
+      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label') ?? ''));
+    for (const label of labels) people.add(label.replace(/^Sửa /u, ''));
+  }
+  await page.goto('/#/customers');
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const more = page.getByRole('button', { name: /^Hiện thêm/ });
+  while (!(await page.getByText(/^Đã hiện hết/).isVisible())) await more.click();
+  const names = await page
+    .getByRole('table', { name: 'Khách hàng' })
+    .evaluate((table: HTMLTableElement) =>
+      [...table.tBodies[0]!.rows].map((row) => row.cells[1]!.innerText),
+    );
+  return [...new Set(names)].filter((name) => !people.has(name));
+}
+
+/**
  * The link to the seeded customer `name` in the table of Khách hàng, "Hiện thêm" clicked until it
  * shows.
  */

@@ -17,6 +17,7 @@ import {
 import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { CustomerName, useMasked } from '../../shell/NameMask';
 import { rmOptions } from '../../shell/scope';
 import { routeToHash } from '../../shell/routes';
 import { ALERT, FOCUS, LINK } from '../classes';
@@ -355,7 +356,9 @@ function CustomerField({
       <div className="flex flex-col gap-1">
         <span className="font-medium">{t('appointmentForm.customer')}</span>
         <p className="m-0 flex flex-wrap items-center gap-2">
-          <b>{customer.name}</b>
+          <b>
+            <CustomerName name={customer.name} />
+          </b>
           <span className="text-fg-3 tabular-nums">{customer.code}</span>
           {stageBadge(customer.stage)}
           {!fixed && (
@@ -407,7 +410,9 @@ function CustomerField({
                 className={`${CHIP} ${FOCUS} flex w-full items-center gap-2 text-left text-sm`}
                 onClick={() => onPick(match)}
               >
-                <b>{match.name}</b>
+                <b>
+                  <CustomerName name={match.name} />
+                </b>
                 <span className="text-fg-3 tabular-nums">{match.code}</span>
                 {stageBadge(match.stage)}
               </button>
@@ -434,6 +439,7 @@ function History({
   today: CalendarDate;
   onSeeAll: (() => void) | undefined;
 }) {
+  const masked = useMasked();
   if (history.rows.length === 0) return null;
   return (
     <section aria-label={t('appointmentForm.history')} className="flex flex-col gap-1">
@@ -481,7 +487,7 @@ function History({
               )}
               {a.note && (
                 <span className="min-w-0 truncate text-fg-3">
-                  {t('sep.dot')} {t('appointmentForm.historyNote', { note: a.note })}
+                  {t('sep.dot')} {t('appointmentForm.historyNote', { note: masked.text(a.note) })}
                 </span>
               )}
             </li>
