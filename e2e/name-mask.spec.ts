@@ -29,6 +29,7 @@ const HIDDEN = '•••đã ẩn';
 
 // --accent: the gold of the button once on.
 const ACCENT = 'rgb(217, 178, 106)';
+const ACCENT_SOFT = 'rgba(217, 178, 106, 0.14)';
 // --info: the (i) of the toast.
 const INFO = 'rgb(111, 168, 255)';
 
@@ -64,6 +65,7 @@ test('on: first letters on Khách hàng, codes and RM as they were, a gold butto
   await expect(eye(page)).toHaveAttribute('aria-pressed', 'true');
   await expect(eye(page)).toHaveText('Đang che tên');
   await expect(eye(page)).toHaveCSS('color', ACCENT);
+  await expect(eye(page)).toHaveCSS('background-color', ACCENT_SOFT);
   const on = toastOf(page, 'Đang che tên khách hàng');
   await expect(on).toHaveText('Đang che tên khách hàng · bấm lại nút con mắt để hiện');
   await expect(on.locator('svg').first()).toHaveCSS('color', INFO);
@@ -118,14 +120,13 @@ test('the profile and its dialogs: the name as first letters, the code whole, a 
   const profile = page.getByRole('region', { name });
   const facts = (await profile.getByRole('paragraph').textContent()) ?? '';
   const code = facts.match(/K-\w+/)?.[0] ?? '';
-  const rm = facts.match(/RM [^·]+/)?.[0].trim() ?? '';
   expect(code).not.toBe('');
 
   await eye(page).click();
   const masked = page.getByRole('region', { name: 'T. M. A.' });
   await expect(masked.getByRole('heading', { level: 2 })).toHaveText('T. M. A.');
-  await expect(masked).toContainText(code);
-  await expect(masked).toContainText(rm);
+  // Code, gender, birth, RM, team, policies: as they were.
+  await expect(masked.getByRole('paragraph')).toHaveText(facts);
   await expect(page.getByRole('main')).not.toContainText(name);
 
   await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
@@ -218,11 +219,13 @@ test('what was typed or written by the AI shows as dots: a note, a trigger, KYC 
 const fullNamesShown = (page: Page, names: readonly string[]) =>
   page.evaluate((names) => {
     const attributes = [...document.querySelectorAll('*')].flatMap((element) =>
-      [...element.attributes].map((attribute) => attribute.value),
+      [...element.attributes].filter((a) => a.name !== 'class').map((a) => a.value),
     );
     const text = [document.body.innerText, ...attributes].join('\n');
-    return names.filter((name) =>
-      new RegExp(`(?<![\\p{L}\\p{M}])${name}(?![\\p{L}\\p{M}])`, 'u').test(text),
+    return names.filter(
+      (name) =>
+        text.includes(name) &&
+        new RegExp(`(?<![\\p{L}\\p{M}])${name}(?![\\p{L}\\p{M}])`, 'u').test(text),
     );
   }, names);
 
