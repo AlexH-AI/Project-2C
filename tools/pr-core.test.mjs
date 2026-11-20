@@ -40,8 +40,9 @@ function pathsBlocks(yml) {
   return blocks;
 }
 
-// A docs/ path of a .md file, in one string or split into string arguments: 'docs', 'a', 'b.md'.
-const DOCS_PATH = /['"`](docs(?:\/[^'"`\s]*)?(?:['"`]\s*,\s*['"`][^'"`\s]*)*?\.md)['"`]/g;
+// A docs/ path of a file, any extension, in one string or split into string arguments: 'docs', 'a',
+// 'b.md'.
+const DOCS_PATH = /['"`](docs(?:\/[^'"`\s]*)?(?:['"`]\s*,\s*['"`][^'"`\s]*)*?\.\w+)['"`]/g;
 
 // The calls that take a path from the root of the repo, where the tests run.
 const FROM_ROOT = new Set(['join', 'resolve', 'readFileSync', 'readFile']);
@@ -58,13 +59,13 @@ function callAround(text, index) {
 }
 
 /**
- * The docs/**\/*.md files the test `file` reads (R2-21): by a path relative to it (an `?raw`
- * import, a `new URL(…, import.meta.url)`), or by a path from the root (DOCS_PATH) among the
- * arguments of a FROM_ROOT call. Any other docs/….md string is data, such as the files of a PR in
- * the tests of tools/.
+ * The files under docs/ the test `file` reads, Markdown or not (R2-21, L184): by a path relative to
+ * it (an `?raw` import, a `new URL(…, import.meta.url)`), or by a path from the root (DOCS_PATH)
+ * among the arguments of a FROM_ROOT call. Any other docs/… string is data, such as the files of a
+ * PR in the tests of tools/.
  */
 function docsRead(root, file, text) {
-  const fromTest = [...text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.md)(?:\?raw)?['"`]/g)].map(
+  const fromTest = [...text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.\w+)(?:\?raw)?['"`]/g)].map(
     ([, ref]) => relative(root, join(dirname(join(root, file)), ref)).replaceAll('\\', '/'),
   );
   const fromRoot = [...text.matchAll(DOCS_PATH)]
@@ -148,7 +149,12 @@ describe('isDocsOnly', () => {
     expect(CODE_DOCS).toEqual(expect.arrayContaining(CODEMAP_DOCS));
   });
 
-  it('lists every docs/**/*.md that a test reads, and only files that exist (R2-21)', () => {
+  it('treats ui2.css as code: a unit test compares its block B with tokens.css (L184)', () => {
+    expect(isDocsOnly(['docs/design/mockups/ui2.css'])).toBe(false);
+    expect(isDocsOnly(['docs/design/mockups/chuyen-dong.html'])).toBe(true);
+  });
+
+  it('lists every docs file that a test reads, and only files that exist (R2-21, L184)', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
     const tests = execFileSync('git', ['ls-files', '*.test.*', '*.spec.*'], { cwd: root })
       .toString()
@@ -190,6 +196,13 @@ describe('isDocsOnly', () => {
     expect(read("readFileSync(join(root, 'docs', 'golden', 'ai-eval.md'), 'utf8')")).toEqual([
       'docs/golden/ai-eval.md',
     ]);
+    // Any file under docs/, not only Markdown: the mockup stylesheet whose block B tokens.test.ts
+    // compares with tokens.css (L184). Built at run time: this file is scanned too, and a docs path
+    // written in a FROM_ROOT call here would count as one it reads.
+    const sheet = ['docs/design/mockups', 'ui2.css'].join('/');
+    expect(read(`readFileSync(join(root, '${sheet}'), 'utf8')`)).toEqual([sheet]);
+    const tokens = 'packages/ui/scripts/tokens.test.ts';
+    expect(docsRead(root, tokens, readFileSync(join(root, tokens), 'utf8'))).toEqual([sheet]);
     // The files of a PR or of a commit, as tools/ tests give them, even after a join(…) closed.
     expect(read("isDocsOnly(['docs/reviews/x.md']); const path = 'docs/metrics/x.md';")).toEqual(
       [],
@@ -237,7 +250,7 @@ describe('isDocsOnly', () => {
   });
 
   // A docs-only PR merges without CI, so pnpm verify must skip what CI skips, or main turns red
-  // unseen (R2-12). CODE_DOCS are Markdown: tests read them, prettier and eslint never check them.
+  // unseen (R2-12). CODE_DOCS are docs files: tests read them, prettier and eslint never check them.
   // Loading eslint.config.js takes seconds when the whole suite runs in parallel.
   it(
     'matches what pnpm verify skips: prettier and eslint ignore every docs-only file',
