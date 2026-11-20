@@ -36,6 +36,12 @@ export type DataTableColumn<Row extends RowData> = {
 
 export type DataTableSort = ColumnSort;
 
+/** How a table is shown: its sort (null: none), and how many rows ("Hiện thêm"). */
+export interface DataTableView {
+  readonly sort: DataTableSort | null;
+  readonly limit: number;
+}
+
 /** Words of the foot under a table of over a hundred rows, from the app's i18n. */
 export interface DataTableMoreLabels {
   /** "Đang hiện 100 / 7,071 lịch" */
@@ -59,6 +65,10 @@ interface DataTableProps<Row extends RowData> {
    */
   selectedId?: string;
   initialSort?: DataTableSort;
+  /** Rows shown at first, as `onView` told them (a screen drawn again as it was left). */
+  initialLimit?: number;
+  /** Told the sort and the rows shown, at first and as they change. Keep it stable. */
+  onView?: (view: DataTableView) => void;
   moreLabels: DataTableMoreLabels;
   /** Back to the first hundred rows when this changes (period, filters); a sort keeps the count. */
   resetKey?: string;
@@ -118,6 +128,8 @@ export function DataTable<Row extends RowData>({
   getRowId,
   selectedId,
   initialSort,
+  initialLimit,
+  onView,
   moreLabels,
   resetKey,
   ref,
@@ -125,7 +137,7 @@ export function DataTable<Row extends RowData>({
   compact = false,
   empty,
 }: DataTableProps<Row>) {
-  const [limit, setLimit] = useState(SHOW_MORE_STEP);
+  const [limit, setLimit] = useState(initialLimit ?? SHOW_MORE_STEP);
   const [limitKey, setLimitKey] = useState(resetKey);
   if (limitKey !== resetKey) {
     setLimitKey(resetKey);
@@ -159,6 +171,15 @@ export function DataTable<Row extends RowData>({
   // A zero of a number column is written lighter, so the figures stand out (components.html 05).
   const zero = (column: DataTableColumn<Row>, row: Row) =>
     column.kind === 'number' && column.value(row) === 0 ? 'text-fg-3' : '';
+
+  // The sort shown now, told with the rows shown.
+  const sorted = columns
+    .map((column) => ({ id: column.id, dir: table.getColumn(column.id)?.getIsSorted() ?? false }))
+    .find((one) => one.dir);
+  const [sortId, desc] = [sorted?.id, sorted?.dir === 'desc'];
+  useEffect(() => {
+    onView?.({ sort: sortId === undefined ? null : { id: sortId, desc }, limit });
+  }, [onView, sortId, desc, limit]);
 
   const { headers, visible, foot } = tableView(
     columns,

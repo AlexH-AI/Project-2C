@@ -821,7 +821,7 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .kpi .eq { margin: 0; min-height: 36px; white-space: normal; }
 .kpi .delta { margin-top: auto; }
 .kpi .go { position: absolute; right: 12px; top: 14px; width: 14px; height: 14px; color: var(--text-3); opacity: 0; transition: opacity var(--t-1), transform var(--t-3) var(--spring-snappy); }
-.kpi:hover .go, .kpi:focus-visible .go { opacity: 1; transform: translateX(2px); color: var(--accent); }
+.kpi:hover .go, .kpi:focus-visible .go { opacity: 1; color: var(--accent); }
 
 /* The cumulative line (ý 14): this period (solid), what is expected to the end of it (dotted, from
    Forecast), the period before (faint). The script draws the SVG at the size of the box and draws it
@@ -863,7 +863,7 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .hl-i b { grid-column: 2; align-self: end; font-size: 14px; font-weight: 650; line-height: 1.35; }
 .hl-i small { grid-column: 2; align-self: start; font-size: 12.5px; line-height: 1.4; color: var(--text-2); }
 .hl-i > .ic { grid-row: 1 / 3; grid-column: 3; width: 14px; height: 14px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy), color var(--t-1); }
-.hl-i:hover > .ic { transform: translateX(2px); color: var(--accent); }
+.hl-i:hover > .ic { color: var(--accent); }
 @media (prefers-reduced-transparency: reduce) { .cum-tip { backdrop-filter: none; } }
 
 /* ============ 16. Round d (T-423): Forecast — the runway of the month, the week strip, the month grid, the list of a day ============ */

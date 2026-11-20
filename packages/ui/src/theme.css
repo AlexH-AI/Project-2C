@@ -774,11 +774,70 @@
     animation: leave var(--t-2) var(--ease-in) forwards;
   }
 }
+/* The arrow of a menu row that opens its own rows (the team row of the scope menu, `#truot`): it
+   turns 90° in --t-3 by the snappy spring; the rows under it show and go at once. */
+@utility motion-turn {
+  transition: rotate var(--t-3) var(--spring-snappy);
+}
+
+/* "Mở" (VA7b, `openFrom`; chuyen-dong.html `#mo`, ui2.css 19): for the length of the move the
+   script names its two ends "open" and marks <html> with `data-open` "in" or "back". The box
+   travels from the thing clicked to the page in --t-3 by the smooth spring, which never passes its
+   target, and back in --t-2, ease-out. What was there leaves in --t-1; the page comes in --t-2 from
+   80 ms, and on the way back the thing comes again in --t-1 from 60 ms; the rest of the window
+   fades in over the old one in --t-1. Only pictures move: the page under them is laid out once, and
+   a press goes through to it (and ends the move). */
+::view-transition {
+  pointer-events: none;
+}
+:root[data-open='in']::view-transition-group(open) {
+  animation-duration: var(--t-3);
+  animation-timing-function: var(--spring-smooth);
+}
+:root[data-open='back']::view-transition-group(open) {
+  animation-duration: var(--t-2);
+  animation-timing-function: var(--ease-out);
+}
+/* Both pictures fill the travelling box from its top left corner and are cut at its edge: the page
+   is scaled to cover it, so it zooms; the thing clicked keeps its size, its text never blown up. */
+::view-transition-old(open),
+::view-transition-new(open) {
+  height: 100%;
+  object-position: top left;
+  overflow: clip;
+  mix-blend-mode: normal;
+}
+:root[data-open='in']::view-transition-new(open),
+:root[data-open='back']::view-transition-old(open) {
+  object-fit: cover;
+}
+:root[data-open='in']::view-transition-old(open),
+:root[data-open='back']::view-transition-new(open) {
+  object-fit: none;
+}
+:root[data-open]::view-transition-old(open) {
+  animation: vanish var(--t-1) var(--ease-in) both;
+}
+:root[data-open='in']::view-transition-new(open) {
+  animation: appear var(--t-2) var(--ease-out) 80ms both;
+}
+:root[data-open='back']::view-transition-new(open) {
+  animation: appear var(--t-1) var(--ease-out) 60ms both;
+}
+:root[data-open]::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+:root[data-open]::view-transition-new(root) {
+  animation: appear var(--t-1) var(--ease-out) both;
+  mix-blend-mode: normal;
+}
 
 /* The system's "Giảm chuyển động" (no switch of the app's own), one place for every move: nothing
    moves. A new screen is there whole at once, a pill or a thumb jumps to its place, a layer, a
    dialog or a toast shows and goes at once (`calmMotion` takes it away), a press does not shrink,
-   a tick is there at once.
+   a tick is there at once, the arrow of a menu row turns at once; "Mở" changes the screen and
+   "Đếm" a number at once (`calmMotion` again).
    Colours still change under the pointer, the focus ring stays, a toast still leaves after 4.2 s. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -795,6 +854,15 @@
   }
   input[type='checkbox']::after {
     transition: none;
+  }
+  .motion-turn {
+    transition: none;
+  }
+  /* "Mở" changes the screen at once (`openFrom` starts no move); one left would not play. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 

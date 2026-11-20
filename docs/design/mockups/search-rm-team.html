@@ -38,7 +38,7 @@
       .av.lg { width: 52px; height: 52px; font-size: 16px; }
       .lnk { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text); text-align: left; }
       .lnk .ic { width: 13px; height: 13px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy); }
-      tr:hover .lnk .ic { transform: translateX(2px); color: var(--accent); }
+      tr:hover .lnk .ic { color: var(--accent); }
       .tbl tr[data-view-go] { cursor: pointer; }
       .bar-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
       /* The customer-name button of round a: an eye; once on it says so */
@@ -55,7 +55,6 @@
       .kcol > header .tot { margin-left: auto; font-size: 13px; color: var(--text-2); }
       .kcard { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); /* concentric with the column: 8 px in */ background: var(--mat-card), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-1); text-align: left; transition: transform var(--t-3) var(--spring-snappy), opacity var(--t-2), box-shadow var(--t-2); }
       [data-os='win'] .kcard { border-radius: 4px; }
-      .kcard:hover { transform: translateY(-2px); }
       .kcard b { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; white-space: nowrap; }
       .kcard b > .kh { overflow: hidden; text-overflow: ellipsis; }
       .kcard .chip { color: var(--issued); }

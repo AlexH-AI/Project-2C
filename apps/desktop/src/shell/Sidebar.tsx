@@ -1,6 +1,6 @@
-import { Fragment, useLayoutEffect, useRef } from 'react';
+import { Fragment, useRef } from 'react';
 import { formatLocalTime } from '@p2c/domain';
-import { NavIcon, glide, type NavIconName } from '@p2c/ui';
+import { NavIcon, useGlide, type NavIconName } from '@p2c/ui';
 import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
@@ -25,21 +25,16 @@ const FIRST_MANAGE_SECTION: Section = 'team';
  * The sidebar of mockup app-shell.html (`#sidebar`): the compact logo, the screens, and at its
  * foot the save state, then the slogan. The fill of the chosen item is an element of its own
  * (`data-slot="nav-pill"`), under every item: drawn in the item chosen, it glides there from the
- * one before (VA7a, `glide`).
+ * one before (VA7a, `useGlide`).
  */
 export function Sidebar({ current }: { current: Section }) {
   const nav = useRef<HTMLElement>(null);
-  const before = useRef(current);
-  useLayoutEffect(() => {
-    const was = before.current;
-    before.current = current;
-    if (was === current) return;
-    const item = (section: Section) =>
-      nav.current?.querySelector<HTMLElement>(`a[href="${routeToHash({ screen: section })}"]`);
-    const [from, to] = [item(was), item(current)];
-    const pill = to?.querySelector<HTMLElement>('[data-slot="nav-pill"]');
-    if (from && to && pill) glide(pill, { y: from.offsetTop - to.offsetTop });
-  }, [current]);
+  useGlide(
+    current,
+    (section) =>
+      nav.current?.querySelector<HTMLElement>(`a[href="${routeToHash({ screen: section })}"]`),
+    'nav-pill',
+  );
   return (
     <aside className="sidebar flex flex-none flex-col gap-3 self-start">
       {/* The top of the pane: in the macOS exe the window's three buttons sit there (VA5), and

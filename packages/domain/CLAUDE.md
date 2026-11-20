@@ -47,7 +47,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, RM_ROLE, isRm, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
 - `src/money.ts` — CURRENCY_CODES, type CurrencyCode, type Money, type Currency, CURRENCIES, maxFee, languageFor, addMoney, formatMoney, formatMoneyCompact, formatMoneyDelta, type MoneyParseError, type MoneyParseResult, parseMoney
 - `src/name-order.ts` — LATIN, byName
-- `src/number.ts` — groupDigits, formatNumber, formatPercentage, formatBytes
+- `src/number.ts` — groupDigits, formatNumber, formatPercentage, type CountStep, countFrame, formatBytes
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatLocalDayMonthTime, formatLocalTime, formatIsoDate, fromIsoDate, isIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, sameDayYearBefore, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage
 - `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotByScope, stageSnapshotSeries

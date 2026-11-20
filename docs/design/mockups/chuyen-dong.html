@@ -66,7 +66,6 @@
       .kcol .more { padding: 4px 2px 0; font-size: 12px; color: var(--text-2); }
       .kcard { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: calc((var(--r-card) - 8px) * var(--r-k)); corner-shape: var(--r-curve); background: var(--mat-card), var(--bg-0); box-shadow: var(--mat-card-edge), var(--shadow-1); text-align: left; transition: transform var(--t-3) var(--spring-snappy); }
       [data-os='win'] .kcard { border-radius: 4px; }
-      .kcard:hover { transform: translateY(-2px); }
       .kcard b { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; white-space: nowrap; }
       .kcard b > .kh { overflow: hidden; text-overflow: ellipsis; }
       .kcard .chip { color: var(--issued); }
@@ -82,7 +81,7 @@
       .rm-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
       .lnk { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text); text-align: left; }
       .lnk .ic { width: 13px; height: 13px; color: var(--text-3); transition: transform var(--t-3) var(--spring-snappy), color var(--t-1); }
-      tr:hover .lnk .ic { transform: translateX(2px); color: var(--accent); }
+      tr:hover .lnk .ic { color: var(--accent); }
       tr[data-grow] { cursor: pointer; }
       .dlg .input input { flex: 1; width: 100%; min-width: 0; border: 0; outline: 0; background: none; font-variant-numeric: tabular-nums; }
       .dlg .help { margin: 0; }
@@ -358,7 +357,7 @@
               <tr><td>--ease-in</td><td class="v">ra</td><td>Rõ → mờ, thứ bị đóng</td></tr>
               <tr><td>--spring-*</td><td class="v">3 lò xo</td><td>Êm · nhanh · nảy: mục <a href="#springs">Ba lò xo</a></td></tr>
             </table>
-            <p class="foot-note" style="margin-top: 14px">Trang này không thêm token nào. Số đo ghi ở các mục dưới đều là bội của bốn thời lượng trên, trừ khoảng cách giữa các phần (28 ms, 40 ms, 80 ms).</p>
+            <p class="foot-note" style="margin-top: 14px">Trang này không thêm token nào. Số đo ghi ở các mục dưới đều là bội của bốn thời lượng trên, trừ khoảng cách giữa các phần (28 ms, 40 ms, 60 ms, 80 ms, 100 ms).</p>
           </div>
         </div>
       </section>
@@ -535,7 +534,7 @@
             <h3>Luật của Đếm</h3>
             <ul class="rules">
               <li><b>400 ms, ease-out, không lò xo.</b> Mọi số của màn chạy cùng lúc, không so le.</li>
-              <li><b>Mỗi khung hình là một cách viết đúng ADR-0018.</b> Số đang chạy được làm tròn về ba chữ số có nghĩa, rồi viết bằng chính hàm dạng gọn của app. Đơn vị vì thế luôn là đơn vị của con số đang hiện: <span class="num">1.38 tỷ → 1.03 tỷ → 761 tr → 310 tr</span>. Không khung hình nào viết "1,231 tr".</li>
+              <li><b>Mỗi khung hình là một cách viết đúng ADR-0018.</b> Số đang chạy được làm tròn về ba chữ số có nghĩa, rồi viết bằng chính hàm dạng gọn của app. Đơn vị vì thế luôn là đơn vị của con số đang hiện: <span class="num">1.38 tỷ → 1.03 tỷ → 761 tr → 310 tr</span>. Không khung hình nào viết "1,231 tr". Số ở giữa làm tròn <b>về phía giá trị cũ</b> (số đi lên làm tròn xuống, đi xuống làm tròn lên), nên không khung nào vượt đích: <span class="num">290 tr → 310.6 tr</span> chạy "… 309 tr, 310 tr, 310.6 tr", không qua "311 tr".</li>
               <li><b>Khung cuối là giá trị thật</b>, viết đủ như lúc đứng yên (vd. <span class="num">999.99 tr</span>); ba chữ số có nghĩa chỉ áp cho các khung ở giữa.</li>
               <li><b>Số đếm</b> chạy theo số nguyên; <b>phần trăm</b> theo một số lẻ như lúc đứng yên.</li>
               <li><b>"—" ↔ một con số:</b> đổi ngay, không chạy. <b>Đổi tiếp khi số đang chạy:</b> chạy tiếp từ con số đang hiện.</li>
@@ -773,9 +772,10 @@
         const M = (tr) => Math.round(tr * 1e6); // the data below is written in triệu đồng
         const cnt = (n) => (n < 0 ? '-' : '') + grp(Math.abs(Math.round(n)));
         const pct = (v) => { const r = Math.round(Math.abs(v) * 10) / 10; return (v < 0 && r ? '-' : '') + dec(r, 1); };
-        // One frame of a running number. A value in between is rounded to three significant digits and then
-        // written by the same formatter as a number at rest, so its unit is the unit of what is on screen.
-        const frame = (v, exact) => compact(exact ? v : ui2.sig3(v));
+        // One frame of a running number. A value in between is rounded to three significant digits, towards
+        // `from` (the value the run started from; within ui2.run, that run's), and then written by the same
+        // formatter as a number at rest, so its unit is the unit of what is on screen.
+        const frame = (v, exact, from) => compact(exact ? v : ui2.sig3(v, from));
         const WRITE = {
           money: (el) => (v, exact) => { const c = frame(v, exact), u = el.nextElementSibling; el.textContent = c.n; if (u) u.textContent = c.u; if (window.motionLog) window.motionLog.push(c.n + c.gap + c.u); },
           count: (el) => (v) => { el.textContent = cnt(v); },
@@ -1094,8 +1094,8 @@
         });
         // "Đếm": a tile, cases to try, and every frame of a case written out
         const CASES = [[1380, 310], [310, 1380], [980, 1020], [620, 450], [1500, 999.99], [0.75, 2]]; // triệu đồng
-        const framesOf = (a, b, text) => { const out = []; for (let t = 0; t <= 400; t += 50) { const k = t / 400, v = k < 1 ? a + (b - a) * (1 - (1 - k) ** 3) : b; out.push([t, text(v, t === 0 || t === 400), v]); } return out; };
-        const newLaw = (v, exact) => { const c = frame(v, exact); return c.n + c.gap + c.u; };
+        const framesOf = (a, b, text) => { const out = []; for (let t = 0; t <= 400; t += 50) { const k = t / 400, v = k < 1 ? a + (b - a) * (1 - (1 - k) ** 3) : b; out.push([t, text(v, t === 0 || t === 400, a), v]); } return out; };
+        const newLaw = (v, exact, from) => { const c = frame(v, exact, from); return c.n + c.gap + c.u; };
         // What rounds c and d draw today: the unit of the target for every frame
         const oldLaw = (to) => { const u = compact(to).u; return (v) => (u === 'tỷ' ? `${dec(v / 1e9, 2)} tỷ` : u === 'tr' ? `${grp(Math.round(v / 1e6))} tr` : money(v)); };
         const strip = (list, bad) => list.map(([t, s, v]) => `<span${bad && bad(s, v) ? ' class="bad"' : ''}>${s}<small>${t} ms</small></span>`).join('');

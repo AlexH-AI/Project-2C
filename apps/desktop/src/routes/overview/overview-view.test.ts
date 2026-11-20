@@ -16,7 +16,15 @@ import {
   STAGE_TRANSITIONS,
   TEAMS,
 } from '../../../../../packages/domain/src/golden/metrics.fixture';
-import { kpiTiles, metricsScope, viewingLine, viewingText, type KpiTile } from './overview-view';
+import {
+  KPI_STEP,
+  kpiText,
+  kpiTiles,
+  metricsScope,
+  viewingLine,
+  viewingText,
+  type KpiTile,
+} from './overview-view';
 
 const GOLDEN: MetricsData = {
   people: PEOPLE,
@@ -84,6 +92,8 @@ describe('kpiTiles', () => {
 
     expect(tiles.rf).toMatchObject({
       value: '3',
+      kind: 'count',
+      amount: 3,
       delta: { tone: 'up', text: '▲ 3' },
       note: compared,
     });
@@ -92,6 +102,8 @@ describe('kpiTiles', () => {
       value: '400',
       unit: 'tr',
       unitSpaced: true,
+      kind: 'money',
+      amount: 400_000_000,
       delta: { text: '▲ 400 tr' },
     });
     expect(tiles.issued).toMatchObject({ value: '2', delta: { text: '▲ 2' } });
@@ -100,6 +112,8 @@ describe('kpiTiles', () => {
       value: '66.7',
       unit: '%',
       unitSpaced: false,
+      kind: 'percent',
+      amount: 200 / 3,
       delta: null,
       note: '— kỳ trước 0 RF, không so',
       formula: '2 HĐ phát hành ÷ 3 RF',
@@ -119,6 +133,8 @@ describe('kpiTiles', () => {
     expect(tiles.closeRate).toMatchObject({
       value: '—',
       unit: '',
+      kind: 'percent',
+      amount: null,
       delta: null,
       note: '0 RF trong kỳ · không so',
       formula: null,
@@ -221,6 +237,19 @@ describe('kpiTiles', () => {
     const data = together(closing(d(2027, 1, 10), 45, 1), closing(d(2027, 2, 10), 46, 1));
     const tiles = byKey(kpiTiles(data, periodOf('month', d(2027, 2, 1)), ALL, d(2027, 3, 15)));
     expect(tiles.closeRate).toMatchObject({ value: '2.2', delta: { tone: 'same', text: '=' } });
+  });
+
+  it('writes a number of "Đếm" as a tile writes one at rest, its unit that of the number (VA7b)', () => {
+    expect(kpiText('money', 1_030_000_000)).toEqual({
+      value: '1.03',
+      unit: 'tỷ',
+      unitSpaced: true,
+    });
+    expect(kpiText('money', 761_000_000)).toEqual({ value: '761', unit: 'tr', unitSpaced: true });
+    expect(kpiText('count', 1_204)).toEqual({ value: '1,204', unit: '', unitSpaced: false });
+    expect(kpiText('percent', 58.3)).toEqual({ value: '58.3', unit: '%', unitSpaced: false });
+    expect(kpiText('percent', null)).toEqual({ value: '—', unit: '', unitSpaced: false });
+    expect(KPI_STEP).toEqual({ count: 'whole', money: 'sig3', percent: 'tenth' });
   });
 
   it('no change reads "="', () => {

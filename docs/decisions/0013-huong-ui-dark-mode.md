@@ -116,7 +116,7 @@ Hệ quả khi ra Issue (chưa tạo, Owner 10/11: "chưa ra issue"):
    - Thông báo nổi trồi lên từ 24 px dưới mép dưới: rõ trong `--t-2`, dịch trong `--t-4` bằng lò xo nảy; rời đi trong `--t-2`; tự đi sau 4.2 giây.
    - Khối đổi theo công tắc (dải tuần ↔ lưới tháng, Bản tin ↔ Sổ số) đổi ngay.
 5. **Đếm.** Con số đang hiện chạy tới giá trị mới trong `--t-3`, `--ease-out`; mọi số của màn chạy cùng lúc. Mở một màn thì số có sẵn ngay, không đếm từ 0.
-   - Mỗi khung hình là một cách viết đúng ADR-0018: giá trị đang chạy được làm tròn về ba chữ số có nghĩa rồi viết bằng hàm dạng gọn của `packages/domain`, nên đơn vị luôn là đơn vị của con số đang hiện (1.38 tỷ → 1.03 tỷ → 761 tr → 310 tr). Khung đầu và khung cuối là giá trị thật, viết đủ.
+   - Mỗi khung hình là một cách viết đúng ADR-0018: giá trị đang chạy được làm tròn về ba chữ số có nghĩa rồi viết bằng hàm dạng gọn của `packages/domain`, nên đơn vị luôn là đơn vị của con số đang hiện (1.38 tỷ → 1.03 tỷ → 761 tr → 310 tr). Khung đầu và khung cuối là giá trị thật, viết đủ. Khung ở giữa làm tròn về phía giá trị cũ (số đi lên làm tròn xuống, đi xuống làm tròn lên), nên không khung nào vượt đích: 290 tr → 310.6 tr không đi qua "311 tr" (Owner 17/11/2026, T-466).
    - Số đếm chạy theo số nguyên, phần trăm theo một số lẻ. "—" ↔ một con số: đổi ngay. Số đổi tiếp khi đang chạy thì chạy tiếp từ con số đang hiện.
    - Chạy ở các số lớn đứng riêng: số chủ đạo và các ô chỉ số của Tổng quan, số dự kiến và ba số của Forecast, các ô số đầu trang RM. Không chạy trong bảng, trong câu, trong Báo cáo (Bản tin, Sổ số, bản in, file Excel), trong hộp thoại và thông báo nổi, ở các số nhỏ trên nhãn và nút.
    - Thanh đi kèm con số dài ra tới bề rộng mới trong `--t-4`, lò xo êm.

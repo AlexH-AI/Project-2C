@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type AnimationEvent, type KeyboardEvent } from 'react';
 import { menuMove } from './menu-keys';
-import { calmMotion, layerState, type LayerState } from './motion';
+import { GONE_MS, calmMotion, layerState, type LayerState } from './motion';
 
-/** What can take the focus a press gives: a press on one of these keeps it there. */
-const CONTROL = 'a[href], button, input, select, textarea, [tabindex]';
-
-/** Longer than any move out: a layer whose move cannot end (a page in the background) still goes. */
-const GONE_MS = 400;
+/**
+ * What can take the focus a press gives: a press on one of these keeps it there. A control turned
+ * off takes none (L246): a press on it leaves the focus on the page, and so goes back to the pill.
+ */
+const CONTROL =
+  'a[href], button:enabled, input:enabled, select:enabled, textarea:enabled, [tabindex]';
 
 /**
  * The life of a layer as `open` changes (`layerState`): drawn while open or closing; what goes on
@@ -199,7 +200,7 @@ export function MenuRows({
               {opener && (
                 <Mark
                   path="M9 6l6 6-6 6"
-                  className={`size-3 text-fg-3 ${row.expanded ? 'rotate-90' : ''}`}
+                  className={`motion-turn size-3 text-fg-3 ${row.expanded ? 'rotate-90' : ''}`}
                 />
               )}
               {/* A long name is cut in the row rather than widen the menu past the window. */}

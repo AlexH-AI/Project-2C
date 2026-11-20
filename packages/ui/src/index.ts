@@ -4,12 +4,14 @@ export { PeriodPicker, type PeriodPickerLabels } from './components/PeriodPicker
 export { periodLabel } from './components/PeriodPicker.label';
 export { PeriodPill } from './components/PeriodPill';
 export { MenuButton, MenuRows, useLayerState, type MenuRow } from './components/Menu';
-export { calmMotion, glide, riseStep, type LayerState } from './components/motion';
+export { calmMotion, openFrom, riseStep, type LayerState } from './components/motion';
+export { Count, useCount, useGlide } from './components/motion-hooks';
 export {
   DataTable,
   type DataTableColumn,
   type DataTableMoreLabels,
   type DataTableSort,
+  type DataTableView,
 } from './components/DataTable';
 export { Chart, encodeHtml, type ChartOption } from './components/Chart';
 export { Button, type ButtonVariant } from './components/Button';
