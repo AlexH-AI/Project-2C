@@ -206,9 +206,10 @@ export function AppointmentsScreen() {
         header: t('appointments.trigger'),
         kind: 'text',
         value: triggerText,
+        // Plain: the chosen row's gold tint takes --text-2 below 4.5:1 on the glass of macOS.
         cell: (r) =>
           r.appointment.triggerNote ? (
-            <TypedText text={r.appointment.triggerNote} />
+            <TypedText text={r.appointment.triggerNote} plain />
           ) : (
             triggerText(r)
           ),

@@ -335,8 +335,9 @@ export function TrashSection() {
   const done = useRef<HTMLDivElement>(null);
   const table = useRef<HTMLTableElement>(null);
   // Of every row, whatever the filter (DR6-151).
-  const names = useMemo(() => trashNames(rows), [rows]);
   const { masked } = useNameMask();
+  // As shown: two customers of one set of first letters are told apart too (VA6b).
+  const names = useMemo(() => trashNames(rows.map((row) => shownRow(row, masked))), [rows, masked]);
   const columns = useMemo(
     () => trashColumns(setRestoring, names, today, masked),
     [names, today, masked],

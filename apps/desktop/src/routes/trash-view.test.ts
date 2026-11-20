@@ -291,6 +291,13 @@ describe('shownRow', () => {
     expect(restoredNotice(shownRow(met, true)).detail).toBe('KH P. G. B.');
   });
 
+  it('tells apart, by code, two customers whose first letters are alike once masked', () => {
+    const maiAnh = { ...minhAnh, id: 'c9', name: 'Trần Mai An', code: 'K-9TMA' } as TrashRow;
+    const shown = [minhAnh, maiAnh].map((row) => shownRow(row, true));
+    expect(restoreLabel(shown[0]!, trashNames(shown), TODAY)).toContain('T. M. A. (K-7QX2)');
+    expect(restoreLabel(maiAnh, trashNames([minhAnh, maiAnh]), TODAY)).not.toContain('K-9TMA');
+  });
+
   it('keeps people, teams, RMs and the names of another refusal; every row with no mask', () => {
     for (const row of [mai, binhMinh, bao]) expect(shownRow(row, true)).toEqual(row);
     expect(shownRow(blockedMet, true).blocked).toEqual(blockedMet.blocked);

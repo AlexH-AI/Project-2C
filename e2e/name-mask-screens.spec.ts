@@ -2,14 +2,17 @@ import { maskName } from '../apps/desktop/src/shell/name-mask';
 import { expect, test, type Page } from './fixtures';
 import {
   addKycNote,
+  asExe,
   createKycCustomer,
   discoveryFacts,
   fullNamesShown,
+  gotoScreen,
   lowestContrast,
   markOs,
   panelOf,
   readWorkbook,
   seededNames,
+  setTransparency,
 } from './support';
 
 // VA6b (mockup app-shell.html #privacy): the mask of VA6a on every other screen: Lịch hẹn and its
@@ -130,13 +133,13 @@ test('masked, no full name of a seeded customer is left on any screen nor in the
 test('masked, deleting and restoring a customer, an appointment and a policy names none in full', async ({
   page,
 }) => {
-  test.setTimeout(90_000);
-  // A name no seeded customer's first letters are alike to.
+  test.setTimeout(150_000);
+  // A name no seeded customer's first letters are alike to, swept with the seed's.
   const name = 'Ửng Ỷ Thùng';
   const masked = maskName(name);
-  const names = [name];
+  const names = [name, ...(await seededNames(page))];
   // Its RM, whose delete dialog names their customers in the trash (mockup 9b).
-  await page.goto('/#/customers');
+  await gotoScreen(page, '/#/customers');
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const rmLabel =
     (await page
@@ -147,6 +150,7 @@ test('masked, deleting and restoring a customer, an appointment and a policy nam
   await page.keyboard.press('Escape');
   const [rm = '', team = ''] = rmLabel.split(' · ');
   await createKycCustomer(page, name, rmLabel);
+  await expect(page).toHaveURL(/#\/customers\/[^/]+$/);
   const profile = page.url();
   const policies = page.getByRole('region', { name: 'Hợp đồng', exact: true });
   await policies.getByRole('button', { name: '+ Hợp đồng' }).click();
@@ -174,9 +178,10 @@ test('masked, deleting and restoring a customer, an appointment and a policy nam
   dialog = page.getByRole('dialog', { name: 'Xóa HĐ nộp 10/09/2026' });
   await expect(dialog).toBeVisible();
   await noneOf(page, names, 'Xóa HĐ');
+  // Escape goes back to Sửa HĐ, then closes it.
   await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-  if (await page.getByRole('dialog').isVisible()) await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: `Sửa HĐ · ${masked}` })).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // The appointment, from Lịch hẹn: its dialog, then the toast of its deletion.
@@ -291,11 +296,6 @@ test('what was typed or written by the AI shows as dots on Lịch hẹn: a trigg
   await expect(detail(page)).not.toContainText(note);
   await expect(ai.getByRole('listitem').first()).toContainText(HIDDEN);
   await expect(ai).not.toContainText(said.slice(0, 20));
-  // The dots read at AA on both systems (VA6a: --text-2, not the mockup's --text-3).
-  for (const os of ['win', 'mac'] as const) {
-    await markOs(page, os);
-    expect(await lowestContrast(facts.last()), os).toBeGreaterThanOrEqual(4.5);
-  }
   // A new one's dialog, the customer picked: the note of the one before, in "Các lần hẹn trước".
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   dialog = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
@@ -307,12 +307,15 @@ test('what was typed or written by the AI shows as dots on Lịch hẹn: a trigg
   expect(await fullNamesShown(page, [name])).toEqual([]);
 });
 
-test('the customer search of Lịch hẹn mới finds by the real name and shows the matches masked', async ({
+test('Lịch hẹn mới finds a customer by the real name, shown masked; the dots read at AA, over the macOS glass too', async ({
   page,
 }) => {
+  await asExe(page);
   const name = 'Ửng Tìm Kiếm';
   await createKycCustomer(page, name);
   await go(page, 'Lịch hẹn');
+  await kinds(page).getByRole('radio', { name: 'Ngày' }).click();
+  await setTransparency(page, 'no-preference');
   await eye(page).click();
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const dialog = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
@@ -326,6 +329,30 @@ test('the customer search of Lịch hẹn mới finds by the real name and shows
   await matches.click();
   await expect(dialog).toContainText(maskName(name));
   expect(await fullNamesShown(page, [name])).toEqual([]);
+  await dialog.getByRole('textbox', { name: /^Ngày/ }).fill('15/9');
+  await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await dialog.getByRole('textbox', { name: /^Mô tả trigger/ }).fill('Từ KH Phạm Gia Long');
+  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(dialog).toHaveCount(0);
+  // The trigger as dots, in the list and the detail (VA6a: --text-2, not the mockup's --text-3).
+  const row = list(page)
+    .locator('tbody tr')
+    .filter({ hasText: maskName(name) });
+  const dots = [
+    row.getByRole('cell').filter({ hasText: HIDDEN }),
+    detail(page).getByRole('definition').filter({ hasText: HIDDEN }),
+  ];
+  for (const os of ['win', 'mac'] as const) {
+    await markOs(page, os);
+    for (const area of dots) expect(await lowestContrast(area), os).toBeGreaterThanOrEqual(4.5);
+  }
+  // The macOS exe over the glass at its brightest (name-mask.spec.ts, PR 1414).
+  await page.evaluate(() => {
+    document.getElementById('exe-window-stand-in')?.remove();
+    document.documentElement.dataset.backdrop = 'glass';
+    document.documentElement.style.backgroundColor = 'rgb(80, 83, 91)';
+  });
+  for (const area of dots) expect(await lowestContrast(area), 'glass').toBeGreaterThanOrEqual(4.5);
 });
 
 test('Xuất Excel of Báo cáo writes the file masked as unmasked, names in full', async ({
