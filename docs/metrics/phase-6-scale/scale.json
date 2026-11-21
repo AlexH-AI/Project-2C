@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "issue": "T-485 (#1440)",
+  "at": "2026-11-21",
+  "machine": "Home PC DESKTOP-KDURKJP, i9-12900K, 32 GB RAM, Windows 11 Pro 26200",
+  "exe": {
+    "build": "pnpm build:exe at 75b7e14 (app code = 3a34861, T-482)",
+    "bytes": 5536256,
+    "sha256": "DD14DE1721C8890CB3C1DFE92BC3E0BC56A73530FEA1001DFC0970DBE9CCC32E",
+    "folder": "C:\\perf-scale\\ (portable, Project2C-data\\)"
+  },
+  "loadData": "node tools/load-data.mjs --scale <n>, anchor 2026-10-12, seed 6",
+  "backupLimitBytes": 104857600,
+  "sizes": {
+    "x1": {
+      "tablesSha256": "7abd010fb44f7f43dc9420bca7babb058bad9de2d6f3434b5ebc262850a67996",
+      "rows": {
+        "teams": 5,
+        "people": 54,
+        "customers": 1496,
+        "appointments": 10414,
+        "policies": 1697,
+        "kyc_notes": 5672,
+        "kyc_versions": 13114,
+        "kyc_facts": 13833,
+        "stage_transitions": 4941,
+        "ai_analyses": 103,
+        "appointment_coordinators": 1510
+      },
+      "content": "4 team · 51 nhân sự · 1,481 KH · 10,255 lịch hẹn · 1,674 HĐ",
+      "backupBytes": 16034598,
+      "dbBytesImported": 14102528,
+      "nodeBuildSeconds": 6.3,
+      "loadedBy": "Nhập backup",
+      "coldStart": {
+        "runs": 3,
+        "callToPageStartMs": [
+          253,
+          254,
+          242
+        ],
+        "openDataMs": [
+          314,
+          323,
+          314
+        ],
+        "lcpMs": [
+          840,
+          880,
+          848
+        ],
+        "callToLcpMs": [
+          1093,
+          1134,
+          1090
+        ],
+        "median": {
+          "openDataMs": 314,
+          "callToLcpMs": 1093
+        }
+      }
+    },
+    "x5": {
+      "tablesSha256": "4ea75490a42c0f1bbd2d2866604f2ccaca7db4ca8aa200a7ab3f52eeafa13b90",
+      "rows": {
+        "teams": 21,
+        "people": 246,
+        "customers": 7480,
+        "appointments": 51923,
+        "policies": 8641,
+        "kyc_notes": 28345,
+        "kyc_versions": 65613,
+        "kyc_facts": 69319,
+        "stage_transitions": 24539,
+        "ai_analyses": 523,
+        "appointment_coordinators": 7688
+      },
+      "content": "20 team · 243 nhân sự · 7,405 KH · 51,135 lịch hẹn · 8,493 HĐ",
+      "backupBytes": 80175289,
+      "dbBytesImported": 69992448,
+      "dbBytesSeeded": 71974912,
+      "nodeBuildSeconds": 33.6,
+      "loadedBy": "Nhập backup (file picked by path through CDP: Playwright sends at most 50 MB)",
+      "coldStart": {
+        "runs": 3,
+        "callToPageStartMs": [
+          259,
+          236,
+          235
+        ],
+        "openDataMs": [
+          1134,
+          1095,
+          1090
+        ],
+        "lcpMs": [
+          1708,
+          1660,
+          1656
+        ],
+        "callToLcpMs": [
+          1967,
+          1896,
+          1891
+        ],
+        "median": {
+          "openDataMs": 1095,
+          "callToLcpMs": 1896
+        }
+      }
+    },
+    "x10": {
+      "tablesSha256": "32e7f36f52717b7acd6c2d3d472e37672ad9c3a8fc6d1a4d9f7196e89ef7143e",
+      "rows": {
+        "teams": 41,
+        "people": 486,
+        "customers": 14960,
+        "appointments": 103939,
+        "policies": 17675,
+        "kyc_notes": 56680,
+        "kyc_versions": 131205,
+        "kyc_facts": 138401,
+        "stage_transitions": 49202,
+        "ai_analyses": 1112,
+        "appointment_coordinators": 15408
+      },
+      "content": "40 team · 483 nhân sự · 14,810 KH · 102,181 lịch hẹn · 17,329 HĐ",
+      "backupBytes": 160675566,
+      "dbBytesSeeded": 144723968,
+      "nodeBuildSeconds": 89.5,
+      "loadedBy": "project2c.db copied into Project2C-data\\ with the exe closed (the backup is over the limit)",
+      "coldStart": {
+        "runs": 3,
+        "callToPageStartMs": [
+          265,
+          234,
+          239
+        ],
+        "openDataMs": [
+          2196,
+          2145,
+          2175
+        ],
+        "lcpMs": [
+          3752,
+          3672,
+          3736
+        ],
+        "callToLcpMs": [
+          4017,
+          3906,
+          3975
+        ],
+        "median": {
+          "openDataMs": 2175,
+          "callToLcpMs": 3975
+        }
+      },
+      "importRefused": {
+        "msToBox10b": 10.5,
+        "box": "Không nhập được file … File lớn hơn 100 MB, app không đọc"
+      },
+      "exportRefused": {
+        "msToNotice": 3259.6,
+        "runs": 1,
+        "notice": "Chưa xuất backup: dữ liệu lớn hơn 100 MB nên file sẽ không nhập lại được. …",
+        "webviewPrivateMbAfter": 1451
+      }
+    },
+    "x20": {
+      "tablesSha256": "aca2b1e64e5baa44005030d5e789c24ce8aa3d2551eb9caeab4e872d35f37fee",
+      "rows": {
+        "customers": 29920,
+        "appointments": 208075
+      },
+      "backupBytes": 321313680,
+      "nodeBuildSeconds": 244.5,
+      "note": "built only, to check --scale 20; not measured in the exe"
+    }
+  }
+}

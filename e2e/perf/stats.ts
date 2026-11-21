@@ -215,6 +215,57 @@ export function loadDataError(content: string): string | null {
   );
 }
 
+/**
+ * The most a backup file may weigh, to import or to export: `MAX_BACKUP_BYTES` of @p2c/db
+ * (packages/db/src/backup.ts). The probe does not load @p2c/db, so the number is kept here too.
+ */
+export const BACKUP_LIMIT_BYTES = 100 * 1024 * 1024;
+
+/**
+ * Why the probe neither imports nor exports a backup of the load data of this size (T-485: 10× is
+ * 160 MB), or null when it does both. Such data reaches the exe as its project2c.db (README).
+ */
+export function backupSkipped(bytes: number): string | null {
+  if (bytes <= BACKUP_LIMIT_BYTES) return null;
+  const mb = (n: number) => Math.round(n / 1024 / 1024);
+  return (
+    `The load data file is ${mb(bytes)} MB, over the ${mb(BACKUP_LIMIT_BYTES)} MB the app ` +
+    'imports or exports: backup.read, backup.import and backup.export are not measured.'
+  );
+}
+
+/** A WebView2 process (msedgewebview2.exe), as Windows lists it. */
+export interface WebviewProcess {
+  id: number;
+  parentId: number;
+  commandLine: string;
+  /** Private Bytes. */
+  privateBytes: number;
+}
+
+/**
+ * The Private Bytes, in MB, of the WebView2 processes of `exe`: all of them, and its renderer, where
+ * the page and the WebAssembly memory of sql.js live (which `memory.js-heap` leaves out). Other
+ * apps run WebView2 too: a process is the exe's when its command line names the exe, or its parent
+ * is such a process (the crash handler names none). Undefined when the exe has none.
+ */
+export function webviewMemory(
+  processes: readonly WebviewProcess[],
+  exe: string,
+): { total: number; renderer: number } | undefined {
+  const named = new Set(
+    processes.filter((p) => p.commandLine.includes(`--webview-exe-name=${exe}`)).map((p) => p.id),
+  );
+  const own = processes.filter((p) => named.has(p.id) || named.has(p.parentId));
+  if (own.length === 0) return undefined;
+  const mb = (list: readonly WebviewProcess[]) =>
+    list.reduce((sum, p) => sum + p.privateBytes, 0) / 1024 / 1024;
+  return {
+    total: mb(own),
+    renderer: mb(own.filter((p) => p.commandLine.includes('--type=renderer'))),
+  };
+}
+
 interface BackupTables {
   tables: {
     customers: readonly { id: string; deleted_at: string | null }[];

@@ -21,18 +21,30 @@ export const LOAD_SCALE = {
 
 export const LOAD_ANCHOR = '2026-10-12';
 export const LOAD_SEED = 6;
+/** The most `--scale` takes: 20× is about 30 000 customers and a 320 MB backup file. */
+export const MAX_LOAD_SCALE = 20;
 
-const USAGE = 'node tools/load-data.mjs [--out <file>] [--anchor yyyy-mm-dd] [--seed <n>]';
+const USAGE =
+  'node tools/load-data.mjs [--out <file>] [--anchor yyyy-mm-dd] [--seed <n>] [--scale <n>]';
+
+/**
+ * The load data at `times` its size (T-485): `times` as many teams, each of the same make. An RM's
+ * appointments come from the days a week they meet, not from their customers, so more customers
+ * per RM would leave the appointments at 1×; more RMs per team would make teams of 55 RMs.
+ */
+export function loadScale(times, base = LOAD_SCALE) {
+  return { ...base, teams: base.teams * times };
+}
 
 /**
  * The command's options, or `{ error }`. `today` is the machine's: a later anchor day would date
  * meetings after it, which an import refuses (spec Phase 3 §6 rule 10).
  */
 export function parseLoadArgs(argv, today) {
-  const options = { anchor: LOAD_ANCHOR, seed: LOAD_SEED, out: undefined };
+  const options = { anchor: LOAD_ANCHOR, seed: LOAD_SEED, scale: '1', out: undefined };
   for (let i = 0; i < argv.length; i += 2) {
     const [flag, value] = [argv[i], argv[i + 1]];
-    if (value === undefined || !['--out', '--anchor', '--seed'].includes(flag)) {
+    if (value === undefined || !['--out', '--anchor', '--seed', '--scale'].includes(flag)) {
       return { error: `Usage: ${USAGE}` };
     }
     options[flag.slice(2)] = value;
@@ -50,11 +62,17 @@ export function parseLoadArgs(argv, today) {
   if (!/^\d+$/.test(options.seed) || seed > 0xffff_ffff) {
     return { error: `--seed is not an integer from 0 to 4294967295: ${options.seed}` };
   }
+  const scale = Number(options.scale);
+  if (!/^\d+$/.test(options.scale) || scale < 1 || scale > MAX_LOAD_SCALE) {
+    return { error: `--scale is not an integer from 1 to ${MAX_LOAD_SCALE}: ${options.scale}` };
+  }
   const anchor = formatIsoDate(anchorDate);
+  const times = scale > 1 ? `-x${scale}` : '';
   return {
     anchorDate,
     seed,
-    out: options.out ?? `.local/load-data/load-${anchor}-seed${seed}.p2cbackup`,
+    scale,
+    out: options.out ?? `.local/load-data/load-${anchor}-seed${seed}${times}.p2cbackup`,
   };
 }
 
@@ -90,14 +108,16 @@ export function formatReport({ out, rows, hash, bytes }) {
   ].join('\n');
 }
 
-/** Runs the command; returns the exit code. */
-export async function loadDataMain({ argv, today, writeFile, log }) {
+/** Runs the command; returns the exit code. `base` is the scale of 1×; tests pass a small one. */
+export async function loadDataMain({ argv, today, writeFile, log, base = LOAD_SCALE }) {
   const options = parseLoadArgs(argv, today);
   if (options.error) {
     log(options.error);
     return 1;
   }
-  const { text, rows, hash } = await buildLoadData(options);
+  const { anchorDate, seed } = options;
+  const scale = loadScale(options.scale, base);
+  const { text, rows, hash } = await buildLoadData({ anchorDate, seed, scale });
   writeFile(options.out, text);
   log(formatReport({ out: options.out, rows, hash, bytes: Buffer.byteLength(text) }));
   return 0;

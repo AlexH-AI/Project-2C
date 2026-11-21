@@ -10,13 +10,13 @@
    node tools/load-data.mjs
    ```
 
-   Ghi `.local/load-data/load-2026-10-12-seed6.p2cbackup`. Dùng `--anchor` / `--seed` khác thì đặt `PERF_BACKUP` tới file đó ở bước 4.
+   Ghi `.local/load-data/load-2026-10-12-seed6.p2cbackup`. Dùng `--anchor` / `--seed` khác thì đặt `PERF_BACKUP` tới file đó ở bước 4. `--scale <n>` (1–20) cho dữ liệu gấp n lần: n lần số team, mỗi team như 1× (T-485); tên file thêm `-x<n>`, vd. `load-2026-10-12-seed6-x5.p2cbackup` (76,5 MB).
 
-2. **Build exe release và mở với cổng debug.** Exe portable giữ dữ liệu ở `Project2C-data\` cạnh nó: chép exe ra một thư mục riêng để không đụng dữ liệu đang dùng.
+2. **Build exe release và mở với cổng debug.** Exe chỉ giữ dữ liệu ở `Project2C-data\` cạnh nó khi thư mục đó có sẵn (chế độ portable, ADR-0019 §2); không có thì dùng `%LOCALAPPDATA%\com.heritas.lcrm\`, dữ liệu của bản cài trên máy, mà probe sẽ thay. Vì vậy chép exe ra một thư mục riêng **và tạo `Project2C-data\` cạnh nó** trước lần mở đầu, rồi kiểm đường dẫn ở Cài đặt → Dữ liệu trước khi nhập.
 
    ```powershell
    pnpm build:exe
-   New-Item -ItemType Directory -Force C:\perf-exe
+   New-Item -ItemType Directory -Force C:\perf-exe\Project2C-data
    Copy-Item apps\desktop\src-tauri\target\release\project2c.exe C:\perf-exe\
    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
    Start-Process C:\perf-exe\project2c.exe
@@ -24,7 +24,9 @@
 
    Biến môi trường chỉ có tác dụng với exe mở **từ chính cửa sổ PowerShell đó**. Kiểm: `http://127.0.0.1:9222/json/list` có một trang `http://tauri.localhost/…`. Probe báo "No WebView2 debug port" khi exe chưa chạy, hoặc chạy mà không có biến này. Cổng khác 9222 → đặt `PERF_CDP` (vd. `http://127.0.0.1:9333`).
 
-3. **Nạp dữ liệu tải** trong exe: Cài đặt → Dữ liệu → Nhập backup → chọn file của bước 1 → Backup rồi thay dữ liệu. Probe kiểm dòng "Nội dung" ở Cài đặt → Dữ liệu (ít nhất 1 400 KH và 9 000 lịch hẹn; seed demo có 1 200 KH) và dừng, báo số đang có, nếu không phải dữ liệu tải.
+3. **Nạp dữ liệu tải** trong exe: Cài đặt → Dữ liệu → Nhập backup → chọn file của bước 1 → Backup rồi thay dữ liệu. Probe kiểm dòng "Nội dung" ở Cài đặt → Dữ liệu (ít nhất 1 400 KH và 9 000 lịch hẹn; seed demo có 1 200 KH), in dòng đó, và dừng, báo số đang có, nếu không phải dữ liệu tải.
+
+   **File quá 100 MB** (`MAX_BACKUP_BYTES`; từ khoảng 6×, 10× là 160 MB): app không nhập, không xuất backup cỡ đó. Nạp như câu báo của app chỉ: đóng exe, chép file DB của cùng mốc, seed và cỡ thành `Project2C-data\project2c.db`, mở lại (cách sinh file DB: `docs/metrics/phase-6.md`, mục "Số đo dữ liệu 5× / 10×"). Vẫn đặt `PERF_BACKUP` tới file backup cùng cỡ: probe chọn KH có phân tích AI từ đó, và với file quá trần thì bỏ `backup.read`, `backup.import`, `backup.export` (in lý do), mọi lần đo dùng dữ liệu exe mở lúc đầu.
 
 4. **Chạy probe**, để cửa sổ exe **ở trên cùng, không thu nhỏ, không bị che**: WebView2 ngừng vẽ khung hình khi cửa sổ bị che, probe khi đó báo "no frame painted". Không dùng máy trong lúc đo (≈ 3–5 phút với 5 lần).
 
@@ -59,6 +61,7 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 | Tổng quan / Báo cáo: mở bảng chọn kỳ ở viên kỳ (không đo), chọn kỳ Năm rồi Tháng, số đổi ngay (từ VA4b không còn nút Lọc; tên số đo giữ `filter-…` để so với các lần đo trước, khi đó đo lần bấm Lọc); Báo cáo Theo RM | `overview.filter-year`, `-month`, `reports.filter-year`, `-month`, `reports.table-re` |
 | Thùng rác: mở (đo khi đã ngắt debugger), lọc Lịch hẹn | `trash.open`, `trash.kind-appointments` |
 | Bộ nhớ JS heap của webview sau khi đi hết các màn (sau GC; không gồm bộ nhớ WebAssembly của sql.js, nơi giữ DB) | `memory.js-heap` (MB) |
+| Ngay sau đó, Private Bytes của các tiến trình WebView2 của exe (`msedgewebview2.exe` có `--webview-exe-name=project2c.exe` trong dòng lệnh, và tiến trình con của chúng), tổng và riêng tiến trình renderer (giữ trang và bộ nhớ WebAssembly của sql.js); đọc bằng `Get-CimInstance Win32_Process` + `Get-Process` (T-485) | `memory.webview-private`, `memory.webview-renderer` (MB) |
 | Nhập backup: từ lúc chọn file tới hộp xác nhận; bấm xác nhận tới khi báo đã nhập | `backup.read`, `backup.import` |
 | Xuất Excel, Xuất backup (ghi vào `Project2C-data\exports\`, không có hộp chọn file) | `reports.export-excel`, `backup.export` |
 | Tạo lịch hẹn tiếp theo từ lịch đã gặp, chọn ở kỳ Tháng / Năm (tháng / năm nào: đoạn dưới bảng) | `appointments.next-month`, `appointments.next-year` |

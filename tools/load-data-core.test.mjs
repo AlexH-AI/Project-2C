@@ -11,8 +11,10 @@ import {
   buildLoadData,
   formatReport,
   LOAD_ANCHOR,
+  LOAD_SCALE,
   LOAD_SEED,
   loadDataMain,
+  loadScale,
   parseLoadArgs,
   tablesHash,
 } from './load-data-core.mjs';
@@ -22,23 +24,39 @@ const SMALL = { teams: 2, rmsPerTeam: 2, customersPerRm: 10, meetingDays: [3, 4]
 const SLOW = 180_000;
 
 describe('parseLoadArgs', () => {
-  it('pins the anchor day, the seed and the file by default', () => {
+  it('pins the anchor day, the seed, the scale and the file by default', () => {
     expect(parseLoadArgs([], TODAY)).toEqual({
       anchorDate: calendarDate(2026, 10, 12),
       seed: 6,
+      scale: 1,
       out: '.local/load-data/load-2026-10-12-seed6.p2cbackup',
     });
     expect([LOAD_ANCHOR, LOAD_SEED]).toEqual(['2026-10-12', 6]);
   });
 
-  it('takes another anchor day, seed and file', () => {
+  it('takes another anchor day, seed, scale and file', () => {
     expect(
       parseLoadArgs(
-        ['--seed', '0', '--anchor', '2026-02-28', '--out', 'C:/data/x.p2cbackup'],
+        ['--seed', '0', '--anchor', '2026-02-28', '--scale', '5', '--out', 'C:/data/x.p2cbackup'],
         TODAY,
       ),
-    ).toEqual({ anchorDate: calendarDate(2026, 2, 28), seed: 0, out: 'C:/data/x.p2cbackup' });
+    ).toEqual({
+      anchorDate: calendarDate(2026, 2, 28),
+      seed: 0,
+      scale: 5,
+      out: 'C:/data/x.p2cbackup',
+    });
     expect(parseLoadArgs(['--seed', '4294967295'], TODAY).seed).toBe(4_294_967_295);
+  });
+
+  it('names the default file after a scale above 1', () => {
+    expect(parseLoadArgs(['--scale', '1'], TODAY).out).toBe(
+      '.local/load-data/load-2026-10-12-seed6.p2cbackup',
+    );
+    expect(parseLoadArgs(['--scale', '10', '--seed', '2'], TODAY).out).toBe(
+      '.local/load-data/load-2026-10-12-seed2-x10.p2cbackup',
+    );
+    expect(parseLoadArgs(['--scale', '20'], TODAY).scale).toBe(20);
   });
 
   it.each([
@@ -51,6 +69,11 @@ describe('parseLoadArgs', () => {
     [['--seed', '-1'], '--seed is not an integer from 0 to 4294967295: -1'],
     [['--seed', '1.5'], '--seed is not an integer from 0 to 4294967295: 1.5'],
     [['--seed', '4294967296'], '--seed is not an integer from 0 to 4294967295: 4294967296'],
+    [['--scale', '0'], '--scale is not an integer from 1 to 20: 0'],
+    [['--scale', '-2'], '--scale is not an integer from 1 to 20: -2'],
+    [['--scale', 'five'], '--scale is not an integer from 1 to 20: five'],
+    [['--scale', '2.5'], '--scale is not an integer from 1 to 20: 2.5'],
+    [['--scale', '21'], '--scale is not an integer from 1 to 20: 21'],
   ])('refuses %j', (argv, error) => {
     expect(parseLoadArgs(argv, TODAY)).toEqual({ error });
   });
@@ -78,6 +101,48 @@ describe('buildLoadData', () => {
   );
 });
 
+describe('loadScale', () => {
+  it('is the load data itself at 1, and its teams times n above', () => {
+    expect(loadScale(1)).toEqual(LOAD_SCALE);
+    expect(loadScale(5)).toEqual({ ...LOAD_SCALE, teams: LOAD_SCALE.teams * 5 });
+    expect(loadScale(3, SMALL)).toEqual({ ...SMALL, teams: 6 });
+  });
+});
+
+describe('--scale', () => {
+  /** The tables the command writes on a small base scale, and the file it names. */
+  const run = async (argv) => {
+    const written = new Map();
+    const code = await loadDataMain({
+      argv,
+      today: TODAY,
+      base: SMALL,
+      writeFile: (path, text) => written.set(path, text),
+      log: () => {},
+    });
+    expect(code).toBe(0);
+    const [[path, text]] = written;
+    return { path, tables: JSON.parse(text).tables };
+  };
+
+  it(
+    'gives about 5 times the customers and appointments, in teams of the same make',
+    async () => {
+      const one = await run([]);
+      const five = await run(['--scale', '5']);
+      expect(five.path).toBe('.local/load-data/load-2026-10-12-seed6-x5.p2cbackup');
+      const times = (name) => five.tables[name].length / one.tables[name].length;
+      for (const name of ['customers', 'appointments']) {
+        expect(times(name), name).toBeGreaterThan(4.5);
+        expect(times(name), name).toBeLessThan(5.5);
+      }
+      // Each base team again, plus the one team of Thùng rác.
+      expect(five.tables.teams).toHaveLength(SMALL.teams * 5 + 1);
+    },
+    SLOW,
+  );
+});
+
 describe('the load data of the command', () => {
   const written = new Map();
   const logged = [];
@@ -92,6 +157,24 @@ describe('the load data of the command', () => {
     });
     ({ db } = await importBackup(written.get('.local/load-data/load-2026-10-12-seed6.p2cbackup')));
   }, SLOW);
+
+  it(
+    'writes the same tables with --scale 1',
+    async () => {
+      const again = new Map();
+      await loadDataMain({
+        argv: ['--scale', '1'],
+        today: TODAY,
+        writeFile: (path, text) => again.set(path, text),
+        log: () => {},
+      });
+      const hash = (text) => tablesHash(JSON.parse(text).tables);
+      const [[path, text]] = again;
+      expect(path).toBe('.local/load-data/load-2026-10-12-seed6.p2cbackup');
+      expect(hash(text)).toBe(hash(written.get(path)));
+    },
+    SLOW,
+  );
 
   it('writes a file the import takes and prints its rows and hash', () => {
     expect(code).toBe(0);

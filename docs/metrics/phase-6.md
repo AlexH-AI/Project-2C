@@ -459,6 +459,139 @@ Kích thước (cùng máy):
 - **So lượt 6:** exe +3 584 B; bundle JS / CSS +1 029 B, nằm cả ở `index.js` (đợt sửa lượt 6, T-390…T-399); `index.css` và tệp khác giữ nguyên.
 - **So `b139d8a`:** exe +238 592 B, bundle +5 975 B, tệp khác +172 925 B (font Playfair, ba ảnh logo, favicon PNG, đã ghi ở mục "Số đo deep review lượt 4").
 
+### Số đo dữ liệu 5× / 10× (T-485, 21/11/2026)
+
+Số đo để Owner quyết có viết ADR lưu trữ cho dữ liệu lớn trước B1a (#1441) hay không (`docs/PROJECT-STATE.md` mục 2026-11-12, điểm 4–5; ngày 21/11 Owner chọn "Đo trước, rồi ADR"). Cách lưu hiện nay theo ADR-0016: cả DB nằm trong bộ nhớ WebAssembly của sql.js trong webview, mỗi lần ghi thì ghi cả file qua Rust.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP` (i9-12900K, 32 GB RAM, Windows 11 Pro 26200). Đo một lượt liền 20:45–21:10 theo thứ tự 1×, 5×, 10×, rồi 1× lần nữa (số 1× trong các bảng dưới là của lần sau), máy rảnh, không phiên Claude nào khác chạy. Cửa sổ exe được đặt luôn ở trên cùng khi probe chạy.
+- **Exe:** build release tại máy (`pnpm build:exe`) ở `75b7e14`, code app trùng `3a34861` (T-482). File 5 536 256 byte, sha256 `DD14DE17…C32E`. Exe chạy portable ở `C:\perf-scale\` (có `Project2C-data\`). Cả ba cỡ dùng chung một exe.
+- **Dữ liệu:** `node tools/load-data.mjs --scale <n>` (neo 12/10/2026, seed 6). `--scale` nhân **số team**; mỗi team giữ như 1×: 11 RM, mỗi RM 34 KH và gặp 4 ngày một tuần, lịch sử 365 ngày.
+  - Vì sao nhân số team: lịch hẹn của một RM đến từ số ngày gặp trong tuần, không từ số KH. Nhân số KH mỗi RM thì KH lên 5× mà lịch hẹn vẫn ≈ 1×.
+  - `--scale 1` cho đúng hash `tables` như `main` (`7abd010f…`). `--scale 20` vẫn sinh được (244 s, 306 MB), nhưng không đo trên exe.
+- **Cách nạp:**
+  - 1× và 5×: Nhập backup.
+  - 10×: file backup 160,7 MB, quá trần nhập 100 MB (`MAX_BACKUP_BYTES`), nên nạp bằng `project2c.db` như câu báo `settings.backup.exportTooLarge` của app chỉ. Đóng exe, chép file DB cùng mốc, seed và cỡ vào `Project2C-data\`, rồi mở lại.
+  - File DB 10× sinh bằng `.local/make-db.mjs` (không commit; mã ở cuối mục). Hash bảng của nó trùng file backup 10× (`32e7f36f…`).
+  - File DB sinh thẳng như vậy lớn hơn file DB sau khi nhập ≈ 3 %: ở 5× là 71 974 912 so với 69 992 448 byte.
+- **Cách đo:**
+  - Mỗi cỡ: nạp dữ liệu → mở lạnh 3 lần (cách T-227: chờ rồi mới nối CDP, đọc `p2c:data-open` và LCP) → mở lại exe → probe T-218 `PERF_RUNS=5`.
+  - Kỳ đo: Năm 2026, Tháng 10/2026 (`1 back`) ở cả ba cỡ.
+  - Ở 10×, probe bỏ `backup.read`, `backup.import`, `backup.export` (file quá trần), nên `db.save` chỉ có 10 lần lưu khi tạo lịch hẹn. Hai lời từ chối backup ở 10× đo riêng một lần, bằng script nối CDP như probe.
+  - Probe chọn file backup theo đường dẫn qua lệnh CDP `DOM.setFileInputFiles`, vì `setInputFiles` của Playwright từ chối file trên 50 MB. Đo lại 1× sau khi đổi: `backup.read` 973 ms, lần trước bằng `setInputFiles` 972 ms.
+- **File JSON:** `docs/metrics/phase-6-scale/perf-x1.json`, `perf-x5.json`, `perf-x10.json` (probe); `scale.json` (số dòng, cỡ file, mở lạnh, lời từ chối ở 10×).
+
+**Kết quả: thao tác màn vẫn dưới 200 ms ở cả 10×. Mọi việc đụng tới cả file DB (mở, màn đầu sau tải lại, lưu, nhập / xuất backup) vượt ngưỡng ngay từ 5×. Từ ≈ 6,5× thì backup không nhập, không xuất được.**
+
+Dữ liệu và file:
+
+| Mục | 1× | 5× | 10× |
+|---|---:|---:|---:|
+| KH / lịch hẹn / HĐ trong file (gồm Thùng rác) | 1 496 / 10 414 / 1 697 | 7 480 / 51 923 / 8 641 | 14 960 / 103 939 / 17 675 |
+| Nhân sự / team trong file | 54 / 5 | 246 / 21 | 486 / 41 |
+| Cài đặt → Dữ liệu → Nội dung (chữ app hiện) | 4 team · 51 nhân sự · 1,481 KH · 10,255 lịch hẹn · 1,674 HĐ | 20 team · 243 nhân sự · 7,405 KH · 51,135 lịch hẹn · 8,493 HĐ | 40 team · 483 nhân sự · 14,810 KH · 102,181 lịch hẹn · 17,329 HĐ |
+| File backup `.p2cbackup` (byte) | 16 034 598 | 80 175 289 | 160 675 566 (quá trần 104 857 600) |
+| `project2c.db` (byte) | 14 102 528 | 69 992 448 | 144 723 968 (sinh thẳng) |
+| Sinh dữ liệu trong Node (`load-data.mjs`) | 6,3 s | 33,6 s | 89,5 s |
+
+Bảng probe: trung vị, min–max trong ngoặc (5 lần; `db.save` 15 lần ở 1× / 5×, 10 lần ở 10×; `app.open-data` và `memory.*` 1 lần). **Đậm ❌** là vượt ngưỡng của bảng "Thời gian thao tác" và "Bộ nhớ webview" ở trên (Owner chốt 13/10). Hai dòng `memory.webview-*` là số đo mới (T-485), chưa có ngưỡng. Riêng 1× và 5×, probe nhập backup 5 lần trước khi đo bộ nhớ; bộ nhớ WebAssembly không co lại sau lần nhập, nên số renderer ở hai cỡ này gồm cả đỉnh lúc nhập.
+
+| Thao tác | Đơn vị | Ngưỡng | 1× | 5× | 10× |
+|---|---|---|---:|---:|---:|
+| `app.open-data` | ms | ≤ 600 | 315 | **1 093** ❌ | **2 137** ❌ |
+| `backup.read` | ms | ≤ 2 000 | 973 (954–983) | **5 385** ❌ (5 021–5 621) | — (từ chối, bảng dưới) |
+| `backup.import` | ms | ≤ 500 | 49 (39–57) | 182 (150–191) | — (từ chối) |
+| `db.save` | ms | ≤ 400 | 151 (148–166) | **807** ❌ (763–1 113) | **1 527** ❌ (1 507–1 727) |
+| `reload.overview` | ms | < 500 | 388 (382–445) | **1 667** ❌ (1 651–1 717) | **3 214** ❌ (3 167–3 231) |
+| `reload.appointments` | ms | < 500 | 379 (374–397) | **1 577** ❌ (1 537–1 649) | **2 957** ❌ (2 927–2 975) |
+| `reload.customers` | ms | < 500 | 313 (312–351) | **1 277** ❌ (1 267–1 318) | **2 504** ❌ (2 482–2 524) |
+| `reload.reports` | ms | < 500 | 383 (381–387) | **1 611** ❌ (1 605–1 619) | **3 188** ❌ (3 149–3 200) |
+| `reload.team` | ms | < 500 | 366 (364–384) | **1 569** ❌ (1 536–1 582) | **3 656** ❌ (3 611–3 724) |
+| `reload.settings` | ms | < 500 | 294 (292–317) | **1 117** ❌ (1 105–1 147) | **2 208** ❌ (2 176–2 221) |
+| `appointments.period-day` | ms | < 200 | 16 (6–18) | 20 (14–33) | 20 (19–22) |
+| `appointments.period-week` | ms | < 200 | 7 (6–9) | 13 (11–19) | 19 (18–21) |
+| `appointments.period-month` | ms | < 200 | 15 (14–16) | 22 (21–25) | 28 (27–29) |
+| `appointments.period-year` | ms | < 200 | 16 (14–18) | 33 (29–38) | 55 (50–55) |
+| `appointments.sort-date-asc` | ms | < 200 | 22 (18–23) | 37 (27–41) | 61 (39–66) |
+| `appointments.sort-date-desc` | ms | < 200 | 20 (19–21) | 16 (16–23) | 28 (20–31) |
+| `appointments.select-row-year` | ms | < 200 | 16 (15–17) | 15 (11–21) | 13 (12–16) |
+| `appointments.select-day-month` | ms | < 200 | 10 (5–13) | 20 (13–22) | 30 (18–31) |
+| `appointments.select-row-month` | ms | < 200 | 7 (6–8) | 9 (7–16) | 9 (9–17) |
+| `customers.view-table` | ms | < 200 | 15 (15–25) | 23 (21–33) | 24 (23–25) |
+| `customers.sort-name` | ms | < 200 | 15 (14–20) | 33 (33–34) | 55 (51–57) |
+| `customer.open-ai` | ms | < 200 | 20 (20–23) | 59 (56–67) | 105 (101–131) |
+| `customer.ai-history` | ms | < 200 | 6 (5–15) | 11 (7–14) | 13 (4–15) |
+| `overview.filter-year` | ms | < 200 | 20 (19–27) | 64 (61–79) | 94 (92–107) |
+| `overview.filter-month` | ms | < 200 | 19 (17–20) | 49 (44–57) | 74 (74–102) |
+| `reports.filter-year` | ms | < 200 | 10 (10–11) | 43 (38–59) | 73 (72–86) |
+| `reports.filter-month` | ms | < 200 | 10 (9–11) | 37 (30–39) | 59 (58–62) |
+| `reports.table-re` | ms | < 200 | 11 (11–12) | 36 (34–41) | 60 (58–62) |
+| `trash.kind-appointments` | ms | < 200 | 9 (8–14) | 17 (13–19) | 14 (14–18) |
+| `memory.js-heap` | MB | — (≤ 21 MB là luật so mốc 1×, không dùng cho cỡ khác) | 17,2 | 30,1 | 45,0 |
+| `memory.webview-private` | MB | — | 632,9 | 721,6 | 823,0 |
+| `memory.webview-renderer` | MB | — | 239,3 | 352,9 | 442,9 |
+| `trash.open` | ms | < 200 | 34 (32–38) | 115 (108–125) | 177 (175–190) |
+| `reports.export-excel` | ms | ≤ 500 | 31 (25–76) | 39 (27–102) | 46 (34–92) |
+| `backup.export` | ms | ≤ 1 000 | 427 (415–439) | **2 420** ❌ (2 378–2 544) | — (từ chối, bảng dưới) |
+| `appointments.next-month` | ms | ≤ 300 | 113 (109–130) | **547** ❌ (526–553) | **1 021** ❌ (999–1 036) |
+| `appointments.next-year` | ms | ≤ 300 | 109 (108–116) | **605** ❌ (544–651) | **1 072** ❌ (1 057–1 103) |
+
+Đo ngoài probe (trung vị, min–max của 3 lần, trừ khi ghi khác):
+
+| Thao tác | 1× | 5× | 10× | Ngưỡng |
+|---|---|---|---|---|
+| Mở lạnh: `p2c:data-open` | 314 ms (314–323) | **1 095 ms** ❌ (1 090–1 134) | **2 175 ms** ❌ (2 145–2 196) | ≤ 600 ms |
+| Mở lạnh: gọi exe → màn đầu có số liệu (LCP, cách T-227) | 1 093 ms ⚠️ (1 090–1 134; ghi chú LCP dưới) | **1 896 ms** ❌ (1 891–1 967) | **3 975 ms** ❌ (3 906–4 017) | ≤ 1 s (ngưỡng bấm giờ mở lại; LCP là số gần đúng) |
+| Nhập backup 10×: chọn file → hộp 10b (1 lần) | — | — | 10 ms, từ chối: "File lớn hơn 100 MB, app không đọc" | — |
+| Xuất backup 10×: bấm → câu báo (1 lần, đã ngắt debugger) | — | — | 3 260 ms, từ chối: "Chưa xuất backup: dữ liệu lớn hơn 100 MB…"; sau đó tiến trình WebView2 của exe giữ 1 451 MB | — |
+
+- **LCP ở 1× chậm hơn mốc L4:** gọi exe → LCP ở 1× hôm nay ≈ 1,09 s, trong khi nghiệm thu L4 (09/11, exe `a1e6a20`) đo 717 ms. `p2c:data-open` thì nhanh hơn (314 so với 375 ms). Nghĩa là phần chậm thêm nằm sau lúc mở xong dữ liệu. Chưa tìm nguyên nhân; có thể là chuyển động của VA7 ("Đếm số lớn") dời mốc LCP. Việc này ngoài T-485, cần kiểm riêng trước khi dùng số này so với ngưỡng "mở lại ≤ 1 s".
+- **Bản `.dmg` trên MacBook:** đang chờ Owner bấm giờ ở 10× (mở app, lưu một lịch hẹn, mở Tổng quan; mỗi việc 3 lần). Bản build: artifact `Heritas-L-CRM-macos-20275b6…` của run `macos.yml` 44876312076, code app trùng `main`. Dữ liệu 10× nạp bằng `project2c.db` (backup 10× quá trần), file backup 5× để dự phòng.
+
+**Kết luận cho Owner:**
+
+- **Thao tác màn chịu được cỡ lớn.** Đổi kỳ, sắp, chọn, lọc, mở hồ sơ, Thùng rác: mọi số dưới 200 ms ở cả 10×. Chậm nhất là `trash.open` 177 ms, rồi `customer.open-ai` 105 ms. Phần tính chỉ số trong bộ nhớ (ADR-0016) không phải chỗ nghẽn.
+- **Vượt ngưỡng là những việc đụng tới cả file DB.** Các số này tăng gần tuyến tính theo cỡ file, đúng với cách lưu đọc và ghi cả file.
+  - Ở 5×: mở dữ liệu 1,1 s (ngưỡng 600 ms); màn đầu sau tải lại 1,1–1,7 s (ngưỡng 500 ms); mỗi lần lưu 0,8 s (ngưỡng 400 ms); tạo lịch hẹn 0,55–0,6 s (ngưỡng 300 ms); nhập backup 5,4 s; xuất backup 2,4 s.
+  - Ở 10×: gọi exe tới màn đầu ≈ 4 s, mỗi lần lưu 1,5 s, tạo lịch hẹn ≈ 1,05 s.
+  - Nội suy giữa 1× và 5×, ngưỡng bắt đầu vượt ở các cỡ sau: màn đầu sau tải lại ≈ 1,4–2×; nhập backup ≈ 1,9×; xuất backup ≈ 2,2×; mở dữ liệu và lưu ≈ 2,5×; tạo lịch hẹn ≈ 2,5–2,7×.
+- **Backup vấp giới hạn từ ≈ 6,5×** (mỗi 1× ≈ 16 MB). Ở 10× không nhập, không xuất được backup; app chỉ người dùng chép file `.db`. Khi nhập, hộp báo còn khuyên "kiểm tra lại file đã chọn", mà đây là backup thật của dữ liệu lớn. Xuất cũng mất 3,3 s rồi mới từ chối, và đẩy bộ nhớ WebView2 lên 1,45 GB.
+- **Bộ nhớ:** renderer 239 → 353 → 443 MB; cả nhóm tiến trình WebView2 633 → 722 → 823 MB. Máy 32 GB không thành vấn đề; máy 8 GB sẽ chật ở 10×.
+- **Về câu hỏi "cần SQLite hay nền tảng tương tự" (Owner 12/11):** app đã dùng SQLite. sql.js chính là SQLite dịch sang WebAssembly. Chỗ vượt ngưỡng không do bản thân SQLite, mà do cách dùng: đọc cả file vào bộ nhớ của webview khi mở, và ghi lại cả file sau mỗi lần lưu. Đổi sang SQLite ghi thẳng xuống đĩa từng transaction (vd. chạy trong tiến trình Rust) thì vẫn là SQLite, vẫn schema, migration và lệnh Drizzle đó. Vì vậy các Issue chỉ thêm cột, lệnh hay migration giữ nguyên được khi đổi cách lưu.
+- **Cỡ một người dùng thật có thể đạt:** dữ liệu 1× là 44 RM với lịch sử 1 năm, nên một năm dùng của 44 RM ≈ 1×; một tổ chức 30 RE (`docs/PROJECT-PLAN.md`) ≈ 0,7× mỗi năm.
+  - Ngưỡng mở / lưu (≈ 2,5×) tới sau khoảng 2,5 năm dùng với 44 RM, hay 3,5 năm với 30 RE; ngưỡng màn đầu sau tải lại tới sớm hơn, ≈ 1,5–3 năm.
+  - Giới hạn backup (≈ 6,5×) tới sau khoảng 6,5 năm với 44 RM, hay 9 năm với 30 RE.
+  - Dữ liệu thật có ghi chú dài hơn và nhiều phân tích AI hơn dữ liệu giả lập (103 phân tích mỗi 1×), nên có thể tới các mốc này sớm hơn.
+  - `--scale` làm dữ liệu "rộng" ra (thêm team, mỗi RM vẫn 1 năm), còn người dùng thật làm dữ liệu "sâu" thêm (mỗi RM, mỗi KH thêm năm). Phép đổi "N năm ≈ N×" đúng cho các việc tính theo cỡ file (mở, lưu, tải lại, backup). Riêng câu "thao tác màn chịu được" mới chỉ được kiểm trên dữ liệu rộng, chưa kiểm trên lịch sử nhiều năm của cùng một KH.
+  - Mọi số đo trên i9-12900K. Máy yếu hơn (như Office Laptop, Phase 4 / T-219) sẽ vượt ngưỡng ở cỡ nhỏ hơn.
+- **Đề xuất của Claude:**
+  - Viết ADR lưu trữ dữ liệu lớn: chọn cách lưu không phải đọc / ghi cả file mỗi lần (vd. SQLite chạy trong tiến trình Rust, ghi từng transaction), định dạng backup cho dữ liệu trên 100 MB, và mốc đo để biết lúc chuyển.
+  - **Không chặn B1a / D1.** Theo thân #1441, #1455, hai Issue này thêm cột / bảng (migration do drizzle-kit sinh), lệnh, luật Thùng rác, luật nhập backup và dữ liệu giả lập. Không Issue nào đụng đường lưu file (lớp dữ liệu của app, Rust). Phần đó giữ nguyên khi đổi cách lưu. Chỉ phần định dạng backup JSON của B1a phải làm lại nếu ADR đổi định dạng backup, và đó là phần nhỏ.
+  - Làm ADR như một việc riêng, sau đợt 5, trước khi dữ liệu thật tới ≈ 2×.
+  - Lý do không chặn: v1.0 bắt đầu từ dữ liệu trống. Với 1 năm dữ liệu của 44 RM, mọi thao tác còn trong ngưỡng.
+  - Số `.dmg` chưa có không đổi được hướng này: trên Windows, ngưỡng đã vượt từ 5×.
+  - Owner quyết (G1) một trong ba: viết ADR và không chặn (đề xuất: gỡ nhãn `gate` của #1441, #1455, tạo Issue ADR riêng); viết ADR trước B1a (thêm Issue ADR vào "Bị chặn bởi" của #1441, #1455 trước khi PR của T-485 merge); hoặc chưa viết ADR (gỡ `gate`, đo lại khi dữ liệu thật tới ≈ 2×).
+- **Owner chọn ngày 21/11/2026:** "ADR, không chặn". ADR lưu trữ là T-501 (#1458), làm sau đợt 5. #1441 và #1455 đã gỡ nhãn `gate`.
+
+Mã `.local/make-db.mjs` (sinh `project2c.db` cho dữ liệu quá 100 MB; chạy `node .local/make-db.mjs 10 .local/load-data/project2c-x10.db` từ gốc repo):
+
+```js
+/* global process, console */
+import '../tools/ts-hooks.mjs';
+import { writeFileSync } from 'node:fs';
+
+const { exportBackup, openDatabase, seedDemoData } = await import('../packages/db/src/index.ts');
+const { fromIsoDate } = await import('../packages/domain/src/period.ts');
+const { LOAD_ANCHOR, LOAD_SEED, loadScale, tablesHash } = await import('../tools/load-data-core.mjs');
+
+const [scale, out] = [Number(process.argv[2]), process.argv[3]];
+const db = await openDatabase();
+seedDemoData(db, { anchorDate: fromIsoDate(LOAD_ANCHOR), seed: LOAD_SEED, scale: loadScale(scale), trash: true });
+const bytes = db.sqlite.export();
+writeFileSync(out, bytes);
+console.log(`${out}  ${bytes.length} bytes`);
+console.log(`tables sha256  ${tablesHash(JSON.parse(exportBackup(db)).tables)}`);
+```
+
 ## Kiểm tra trên `main`
 
 _Điền cuối phase._
