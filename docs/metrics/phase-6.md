@@ -570,6 +570,7 @@ Bảng probe: trung vị, min–max trong ngoặc (5 lần; `db.save` 15 lần �
   - Lý do không chặn: v1.0 bắt đầu từ dữ liệu trống. Với 1 năm dữ liệu của 44 RM, mọi thao tác còn trong ngưỡng.
   - Số `.dmg` chưa có không đổi được hướng này: trên Windows, ngưỡng đã vượt từ 5×.
   - Owner quyết (G1) một trong ba: viết ADR và không chặn (đề xuất: gỡ nhãn `gate` của #1441, #1455, tạo Issue ADR riêng); viết ADR trước B1a (thêm Issue ADR vào "Bị chặn bởi" của #1441, #1455 trước khi PR của T-485 merge); hoặc chưa viết ADR (gỡ `gate`, đo lại khi dữ liệu thật tới ≈ 2×).
+- **Owner chọn ngày 21/11/2026:** "ADR, không chặn". ADR lưu trữ là T-501 (#1458), làm sau đợt 5. #1441 và #1455 đã gỡ nhãn `gate`.
 
 Mã `.local/make-db.mjs` (sinh `project2c.db` cho dữ liệu quá 100 MB; chạy `node .local/make-db.mjs 10 .local/load-data/project2c-x10.db` từ gốc repo):
 
