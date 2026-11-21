@@ -8,6 +8,7 @@
 mod ai;
 mod platform;
 mod storage;
+mod window;
 
 use std::io;
 use std::path::PathBuf;
@@ -196,6 +197,8 @@ fn open_chatgpt() -> Result<(), ai::AiError> {
 }
 
 pub fn run() {
+    let mut context = tauri::generate_context!();
+    window::fit_to_this_system(context.config_mut());
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             db_open,
@@ -211,7 +214,7 @@ pub fn run() {
             ai_key_status,
             open_chatgpt
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running Project-2C");
 }
 
