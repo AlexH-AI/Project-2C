@@ -39,35 +39,59 @@ interface Move {
 }
 
 /**
- * The moves now running on the elements `select` finds, read in the page as soon as `ready` holds
- * (`ready` and `select` are run in the page: plain functions of nothing else).
+ * Records in the page, from now on, the moves of the elements `select` finds (run in the page), as
+ * each move starts: one lasts 120–600 ms only, so it may be over once the action is done (L239). A
+ * move already there now is left out. Call the result once what starts the moves is done: it gives
+ * them by element, in the order of the page, once every one heard is over.
  */
-async function movesWhen(page: Page, ready: string, select: string): Promise<Move[][]> {
-  const found = await page.waitForFunction(
-    ({ ready, select }) => {
-      if (!document.querySelector(ready)) return null;
-      const nodes = [...document.querySelectorAll(select)];
-      const moves = nodes.map((node) =>
-        node.getAnimations().map((move) => {
+async function recordMoves(page: Page, select: string): Promise<() => Promise<Move[][]>> {
+  const record = await page.evaluateHandle((select) => {
+    const before = new Set(document.getAnimations());
+    const heard = new Map<Element, Map<Animation, Move>>();
+    // The end of each move, taken as it is heard: the page drops a part's move once it is over,
+    // which cancels it, and the promise of a move cancelled is a new one that never settles.
+    const ends: Promise<unknown>[] = [];
+    let onFirst = () => {};
+    const anyHeard = new Promise<void>((resolve) => (onFirst = resolve));
+    const hear = () => {
+      for (const node of document.querySelectorAll(select)) {
+        for (const move of node.getAnimations()) {
+          if (!(move instanceof CSSAnimation) || before.has(move) || heard.get(node)?.has(move))
+            continue;
           const effect = move.effect as KeyframeEffect;
           const timing = effect.getComputedTiming();
           const first: ComputedKeyframe | undefined = effect.getKeyframes()[0];
-          return {
-            name: (move as CSSAnimation).animationName,
+          if (!heard.has(node)) heard.set(node, new Map());
+          heard.get(node)!.set(move, {
+            name: move.animationName,
             start: Number(timing.delay),
             end: Math.round(Number(timing.endTime)),
             from: {
               ...(typeof first?.transform === 'string' && { transform: first.transform }),
               ...(typeof first?.opacity === 'string' && { opacity: first.opacity }),
             },
-          };
-        }),
-      );
-      return moves.some((one) => one.length > 0) ? moves : null;
-    },
-    { ready, select },
-  );
-  return (await found.jsonValue()) as Move[][];
+          });
+          ends.push(move.finished.catch(() => {}));
+          onFirst();
+        }
+      }
+    };
+    document.addEventListener('animationstart', hear, true);
+    return async () => {
+      await anyHeard;
+      // Every move heard is over, and the frame after brings no new one.
+      for (let count = -1; count !== ends.length;) {
+        count = ends.length;
+        await Promise.all(ends);
+        await new Promise(requestAnimationFrame);
+      }
+      document.removeEventListener('animationstart', hear, true);
+      return [...heard.keys()]
+        .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+        .map((node) => [...heard.get(node)!.values()]);
+    };
+  }, select);
+  return () => record.evaluate((read) => read());
 }
 
 /**
@@ -182,9 +206,13 @@ test('a new screen is there at once, its parts rise in turn and land within 0.6 
 }) => {
   await page.goto('/#/customers');
   await expect(page.getByRole('heading', { level: 1, name: 'Khách hàng' })).toBeVisible();
+  // Heard from a still page on.
+  await expect(page.locator('[data-rise]')).toHaveCount(0);
+  const rises = await recordMoves(page, 'main [data-rise]');
+  const titles = await recordMoves(page, 'h1, [data-slot="screen-sub"]');
   await nav(page, 'Tổng quan').click();
   // Tổng quan has nine parts: the tile of the appointments, six KPI, two blocks.
-  const parts = await movesWhen(page, 'main [data-rise]', 'main [data-rise]');
+  const parts = await rises();
   expect(parts).toEqual(
     [0, 1, 2, 3, 4, 5, 6, 7, 7].map((step) => [
       { ...RISE, start: step * 28, end: step * 28 + 400 },
@@ -192,7 +220,7 @@ test('a new screen is there at once, its parts rise in turn and land within 0.6 
   );
   expect(Math.max(...parts.flat().map((move) => move.end))).toBeLessThanOrEqual(600);
   // The name of the screen with the first part, the line under it 40 ms later.
-  const [name, sub] = await movesWhen(page, 'h1[data-rise]', 'h1, [data-slot="screen-sub"]');
+  const [name, sub] = await titles();
   expect(name).toEqual([{ ...RISE, start: 0, end: 400 }]);
   expect(sub).toEqual([{ ...RISE, start: 40, end: 440 }]);
   await expect(page.locator('main [data-rise]')).toHaveCount(0);
@@ -208,15 +236,10 @@ test('the pill of the sidebar and the thumb of a segmented control glide to thei
   page,
 }) => {
   await page.goto('/#/overview');
+  const pills = await recordMoves(page, '[aria-current="page"] [data-slot="nav-pill"]');
   await nav(page, 'Khách hàng').click();
   // From the item above, by the snappy spring: it starts where the pill of Tổng quan was.
-  const [pill] = (
-    await movesWhen(
-      page,
-      '[aria-current="page"][href="#/customers"]',
-      '[aria-current="page"] [data-slot="nav-pill"]',
-    )
-  ).flat();
+  const [pill] = (await pills()).flat();
   expect(pill).toMatchObject({ name: 'glide', start: 0, end: 400 });
   expect(pill?.from?.transform).toMatch(/^translate\(0px, -\d+(\.\d+)?px\)$/);
   /** The moves of `box` that move it: a change of colour under the pointer is not one. */
@@ -244,14 +267,9 @@ test('the pill of the sidebar and the thumb of a segmented control glide to thei
   await card.hover();
   await expect(card).toHaveCSS('transform', 'none');
   expect(await glides(card)).toBe(0);
+  const thumbs = await recordMoves(page, '[role="radio"][aria-checked="true"] [data-slot="thumb"]');
   await view.getByRole('radio', { name: 'Bảng' }).click();
-  const [thumb] = (
-    await movesWhen(
-      page,
-      '[role="radio"][aria-checked="true"] [data-slot="thumb"]',
-      '[role="radio"][aria-checked="true"] [data-slot="thumb"]',
-    )
-  ).flat();
+  const [thumb] = (await thumbs()).flat();
   expect(thumb).toMatchObject({ name: 'glide', start: 0, end: 400 });
   expect(thumb?.from?.transform).toMatch(/^translate\(-?\d+(\.\d+)?px(, 0px)?\)$/);
   const add = page.getByRole('button', { name: '+ Khách hàng' });
@@ -265,14 +283,15 @@ test('a dialog comes as its system brings one and goes in --t-1; focus, Esc and 
   await page.goto('/#/customers');
   const add = page.getByRole('button', { name: '+ Khách hàng' });
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
-  const opened = () => movesWhen(page, 'dialog[open]', 'dialog[open]');
+  const opening = () => recordMoves(page, 'dialog[open]');
   const COPY = 'dialog[popover][data-state="closing"]';
 
   // macOS: a sheet that drops from under the toolbar.
   await markOs(page, 'mac');
+  const sheet = await opening();
   // By the keyboard on macOS: a click there gives the button no focus to come back to.
   await pressButton(add);
-  expect((await opened())[0]).toEqual([
+  expect((await sheet())[0]).toEqual([
     { name: 'appear', start: 0, end: 220, from: { opacity: '0' } },
     { name: 'arrive', start: 0, end: 400, from: { transform: 'translateY(-36px) scale(0.98)' } },
   ]);
@@ -309,9 +328,10 @@ test('a dialog comes as its system brings one and goes in --t-1; focus, Esc and 
 
   // Windows 11: it grows in the middle of the window.
   await markOs(page, 'win');
+  const grown = await opening();
   // By the keyboard on macOS: a click there gives the button no focus to come back to.
   await pressButton(add);
-  expect((await opened())[0]?.[1]).toEqual({
+  expect((await grown())[0]?.[1]).toEqual({
     name: 'arrive',
     start: 0,
     end: 400,
@@ -327,8 +347,9 @@ test('a menu comes 6 px from its pill and goes in --t-1, the focus back on its p
   page,
 }) => {
   await page.goto('/#/overview');
+  const menus = await recordMoves(page, '[role="menu"]');
   await scopePill(page).click();
-  const [menu] = await movesWhen(page, '[role="menu"]', '[role="menu"]');
+  const [menu] = await menus();
   expect(menu).toEqual([
     { name: 'appear', start: 0, end: 220, from: { opacity: '0' } },
     { name: 'arrive', start: 0, end: 400, from: { transform: 'translateY(-6px) scale(0.98)' } },
@@ -357,8 +378,9 @@ test('a toast rises from the bottom edge by the bouncy spring, and leaves in --t
   page,
 }) => {
   await page.goto('/#/customers');
+  const toasts = await recordMoves(page, `${TOASTS} > *`);
   await page.getByRole('button', { name: 'Che tên khách hàng' }).click();
-  const [toast] = await movesWhen(page, `${TOASTS} > *`, `${TOASTS} > *`);
+  const [toast] = await toasts();
   expect(toast).toEqual([
     { name: 'appear', start: 0, end: 220, from: { opacity: '0' } },
     { name: 'arrive', start: 0, end: 600, from: { transform: 'translateY(24px) scale(0.96)' } },

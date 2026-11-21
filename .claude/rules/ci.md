@@ -5,9 +5,10 @@ paths:
 
 # CI (`.github/workflows/ci.yml`, ADR-0015 + phụ lục "Tiết kiệm phút Actions")
 
-- Thay đổi chỉ gồm `docs/**` và `**/*.md`: không chạy CI, cả ở PR lẫn push lên `main`. PR docs-only merge được không cần CI. Ngoại lệ là code (danh sách chung `CODE_DOCS` trong `tools/pr-core.mjs`; bộ lọc `paths` của workflow, cả `pull_request` lẫn `push`, giữ đúng danh sách đó — test kiểm):
+- Thay đổi chỉ gồm `docs/**` và `**/*.md`: không chạy CI, cả ở PR lẫn push lên `main`. PR docs-only merge được không cần CI. Ngoại lệ là code (danh sách chung `CODE_DOCS` trong `tools/pr-core.mjs`; bộ lọc `paths` của workflow, cả `pull_request` lẫn `push`, giữ đúng danh sách đó; mọi file dưới `docs/` mà một test đọc, `.md` hay không, phải có trong danh sách — test kiểm cả hai):
   - `CLAUDE.md` của các package có khối codemap (`CODEMAP_PACKAGES` trong `tools/codemap-core.mjs`; khối codemap do `pnpm verify` kiểm).
   - Hai tài liệu G5 mà unit test so nguyên văn với code (DR5-57): `docs/design/phase-5-prompts.md`, `docs/golden/ai-eval.md`. PR sửa G5 chạy CI như PR code.
+  - `docs/design/mockups/ui2.css`: `packages/ui/scripts/tokens.test.ts` so khối B (token Owner duyệt ở G3) với `packages/ui/src/tokens.css`. PR sửa file này chạy CI như PR code.
 - PR code (mở, push thêm, mở lại): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`; `merge-pr` chặn PR đụng file cần build exe (`EXE_PATHS` trong `tools/pr-core.mjs`) mà thiếu nhãn. Cùng các file đó còn cần nhãn `build-mac` (mục "Bản macOS").
 - Bước "Note the tested base" của job Verify ghi notice `Tested base` (`TESTED_BASE` trong `tools/pr-core.mjs`): SHA cha thứ nhất của commit gộp mà run test, tức bản `main` đã test cùng PR; Re-run giữ nguyên commit gộp của lần chạy đầu (DR6-57). `merge-pr` chặn khi `main` có commit code sau SHA đó (`gh pr update-branch <N>` → CI → review lại), và khi run xanh mà không có notice (`gh pr close <N>` + `gh pr reopen <N>`). Danh sách file của PR và danh sách commit của `main` sau SHA đó đọc bằng REST có phân trang; đọc thiếu thì chặn (commit: đọc ít hơn `total_commits`, hoặc GitHub không trả số này).
 - Job Verify đọc nhãn hiện tại của PR qua API ở cuối job (T-063). Gắn `build-exe` sau khi Verify đã qua bước đó thì CI không chạy lại (không nghe sự kiện `labeled`): push thêm hoặc `gh pr close` + `gh pr reopen`.
