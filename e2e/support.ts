@@ -445,8 +445,9 @@ export function trackConsoleErrors(page: Page): string[] {
 
 /**
  * Runs the web build as the exe: a stand-in for Tauri's IPC (`isTauri()`, `invoke`, events) whose
- * file and AI commands the test steers through `window.exe`. A new database seeds as on a first
- * start. The AI commands keep the key in memory, as Rust keeps it out of the webview.
+ * file and AI commands the test steers through `window.exe`. A new database opens the simulated
+ * data seeded beforehand, as a web page load does (T-481), and saves it as a first start does. The
+ * AI commands keep the key in memory, as Rust keeps it out of the webview.
  *
  * The page then marks itself `data-backdrop` as in the exe (VA5), and on macOS (WebKit) lets the
  * glass of the window through: a tab has none under its page, only white. The stand-in's window

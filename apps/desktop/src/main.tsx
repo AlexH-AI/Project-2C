@@ -52,8 +52,10 @@ async function start(): Promise<ReactNode> {
     storage,
     locateFile: () => wasmUrl,
     today: pinnedDay ? () => pinnedDay : undefined,
-    // e2e serves the pinned day's data already seeded (DR-79); without the file the app seeds.
-    snapshot: pinnedDay && !isTauri() ? (day) => fetchDemoSnapshot(day) : undefined,
+    // e2e serves the pinned day's data already seeded (DR-79); without the file the app seeds. The
+    // exe's stand-in opens it too (T-481): seeding in the page now and then fails on Playwright's
+    // WebKit (DS-10). Only e2e builds pin a day, so the exe itself seeds on its first start.
+    snapshot: pinnedDay ? (day) => fetchDemoSnapshot(day) : undefined,
     // OpenCode needs Rust; web mode runs the Mock only (spec Phase 5 §4.1).
     ai: isTauri() ? { opencode: tauriOpenCode(invoke) } : undefined,
   });
