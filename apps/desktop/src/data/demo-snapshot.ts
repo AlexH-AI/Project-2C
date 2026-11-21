@@ -30,7 +30,10 @@ export async function fetchDemoSnapshot(
   }
 }
 
-/** The database file a new web-mode database of `day` starts from: the same seed as the app's. */
+/**
+ * The database file a new database of `day` starts from in e2e, in web mode and on the exe's
+ * stand-in (T-481): the same seed as the app's.
+ */
 export async function buildDemoSnapshot(
   day: CalendarDate,
   seed: (db: Database, anchorDate: CalendarDate) => void = seedDemo,
