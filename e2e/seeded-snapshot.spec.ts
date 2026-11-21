@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { DEMO_ANCHOR } from './anchor';
 import { expect, test, type Page } from './fixtures';
 import { seedDuration, seedOnLoad } from './seeded-snapshot';
+import { asExe } from './support';
 
 interface Backup {
   readonly format: string;
@@ -46,6 +47,19 @@ test.describe('on the machine clock', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
     expect(await seedDuration(page)).toBeUndefined();
+  });
+
+  // Seeding in the page now and then fails on Playwright's WebKit, each time with another SQL or
+  // WebAssembly error, never on Edge (DS-10, run 44849278449: 1 start in 714). Opening the file
+  // makes the exe's first starts seed nowhere in e2e: fewer seeds there, not a cure of the engine.
+  test("the exe's first start opens that data too, and saves it as its file (T-481)", async ({
+    page,
+  }) => {
+    await asExe(page);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
+    expect(await seedDuration(page)).toBeUndefined();
+    await expect.poll(() => page.evaluate(() => window.exe.events)).toContain('save');
   });
 });
 

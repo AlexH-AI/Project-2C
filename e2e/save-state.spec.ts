@@ -54,7 +54,7 @@ test('the sidebar says when the data was saved, while it saves, and when it coul
   await asExe(page);
   await page.goto('/#/team');
   const state = saveState(page);
-  // The first start saves the simulated data it seeded.
+  // The first start saves the simulated data it opened.
   await expect(state).toHaveText(SAVED);
   expect(await lowestContrast(state)).toBeGreaterThanOrEqual(4.5);
 
