@@ -1,15 +1,19 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, expect, test, type Browser, type Locator, type Page } from '@playwright/test';
 import {
   aiCustomer,
+  backupSkipped,
   loadDataError,
   markdownTable,
   parseRun,
   toRun,
+  webviewMemory,
   type Measure,
   type Unit,
+  type WebviewProcess,
 } from './stats';
 
 // The operations of spec Phase 6 §5.2 on the exe release holding the load data (§5.1), through
@@ -347,12 +351,14 @@ async function checkPeriods(): Promise<MetYear> {
   return inYear;
 }
 
-/** Measures nothing but the load data (§5.1). */
+/** Measures nothing but the load data (§5.1); prints its counts, which tell 1× from 5× (T-485). */
 async function checkLoadData() {
   await go('#/settings');
   const content = page.getByRole('definition').filter({ hasText: / KH · / });
-  const problem = loadDataError((await content.textContent({ timeout: 5_000 })) ?? '');
+  const text = (await content.textContent({ timeout: 5_000 })) ?? '';
+  const problem = loadDataError(text);
   if (problem) throw new Error(problem);
+  process.stdout.write(`  Nội dung: ${text}\n`);
 }
 
 /** Opening the app: the page's start to its data, readable only before any reload. */
@@ -362,6 +368,20 @@ async function appOpen() {
     at: performance.getEntriesByName('p2c:data-open', 'mark')[0]?.startTime,
   }));
   if (opened.kind === 'navigate' && opened.at !== undefined) add('app.open-data', 'ms', opened.at);
+}
+
+/**
+ * Picks the load data file in Cài đặt's file input by its path, which the webview reads from disk:
+ * Playwright's setInputFiles refuses a file over 50 MB to a browser it did not launch (5× is 76 MB,
+ * T-485). The input gets its change event as from setInputFiles.
+ */
+async function pickBackup() {
+  const cdp = await page.context().newCDPSession(page);
+  const { result } = await cdp.send('Runtime.evaluate', {
+    expression: 'document.querySelector(\'input[type="file"]\')',
+  });
+  await cdp.send('DOM.setFileInputFiles', { files: [BACKUP], objectId: result.objectId });
+  await cdp.detach();
 }
 
 /** Nhập backup of the same load data: each run then measures the data as generated. */
@@ -376,7 +396,7 @@ async function importBackup() {
       once: true,
     }),
   );
-  await input.setInputFiles(BACKUP);
+  await pickBackup();
   const read = await input.evaluate(async (el) => {
     const start = Number(el.dataset.picked);
     // No change event: no start to time from, and the wait below would never end.
@@ -515,13 +535,34 @@ async function trash() {
   await records.getByRole('radio', { name: /^Tất cả/ }).click();
 }
 
-/** The webview's JavaScript heap once every screen has been opened. */
+/** The WebView2 processes Windows runs now, with their Private Bytes. */
+function webviewProcesses(): WebviewProcess[] {
+  const script =
+    'ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process -Filter "Name=\'msedgewebview2.exe\'" | ' +
+    'ForEach-Object { $p = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue; ' +
+    'if ($p) { [pscustomobject]@{ id = [int]$_.ProcessId; parentId = [int]$_.ParentProcessId; ' +
+    'commandLine = [string]$_.CommandLine; privateBytes = [long]$p.PrivateMemorySize64 } } })';
+  const args = ['-NoProfile', '-NonInteractive', '-Command', script];
+  return JSON.parse(execFileSync('powershell.exe', args, { encoding: 'utf8' })) as WebviewProcess[];
+}
+
+/**
+ * The webview's JavaScript heap once every screen has been opened; then the Private Bytes of the
+ * exe's WebView2 processes, which hold the WebAssembly memory of sql.js too (T-485).
+ */
 async function memory() {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('HeapProfiler.collectGarbage');
   const { usedSize } = await cdp.send('Runtime.getHeapUsage');
   add('memory.js-heap', 'MB', usedSize / 1024 / 1024);
   await cdp.detach();
+  const webview = webviewMemory(webviewProcesses(), 'project2c.exe');
+  if (!webview) {
+    process.stdout.write('  No WebView2 process of project2c.exe: memory.webview-* not measured\n');
+    return;
+  }
+  add('memory.webview-private', 'MB', webview.total);
+  add('memory.webview-renderer', 'MB', webview.renderer);
 }
 
 /**
@@ -536,12 +577,16 @@ async function trashOpen() {
   await detached('trash.open', trashButton(), table, false, SCREEN_LIMIT);
 }
 
-/** Xuất Excel and Xuất backup, each from its screen opened afresh: no notice of the run before. */
-async function exports() {
+/**
+ * Xuất Excel and Xuất backup, each from its screen opened afresh: no notice of the run before. Not
+ * Xuất backup of data over the backup limit, which the app refuses (backupSkipped).
+ */
+async function exports(withBackup: boolean) {
   await go('#/overview');
   await go('#/reports');
   const excel = page.getByRole('button', { name: 'Xuất Excel' });
   await detached('reports.export-excel', excel, status('Đã xuất báo cáo'));
+  if (!withBackup) return;
   await go('#/overview');
   await go('#/settings');
   const backup = page.getByRole('button', { name: 'Xuất backup' });
@@ -594,6 +639,8 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
   }
   const aiId = aiCustomer(JSON.parse(readFileSync(BACKUP, 'utf8')));
   if (!aiId) throw new Error(`${BACKUP} has no customer with an AI analysis.`);
+  const skipped = backupSkipped(statSync(BACKUP).size);
+  if (skipped) process.stdout.write(`  ${skipped}\n`);
   await connect();
   await appOpen();
   await checkLoadData();
@@ -609,8 +656,9 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
   }
   const inYear = await checkPeriods();
 
-  // Imports first: the writes at the end change the data the next run imports again.
-  for (let i = 0; i < RUNS; i++) await importBackup();
+  // Imports first: the writes at the end change the data the next run imports again. Without
+  // them (skipped), every run measures the data the exe opened with, before the writes at the end.
+  if (!skipped) for (let i = 0; i < RUNS; i++) await importBackup();
   await reloads();
   for (let i = 0; i < RUNS; i++) {
     await appointments(i, inYear);
@@ -620,7 +668,7 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
   }
   await memory();
   for (let i = 0; i < RUNS; i++) await trashOpen();
-  for (let i = 0; i < RUNS; i++) await exports();
+  for (let i = 0; i < RUNS; i++) await exports(!skipped);
   for (let i = 0; i < RUNS; i++) {
     await nextAppointment(i, 'month', inYear);
     await nextAppointment(i, 'year', inYear);
