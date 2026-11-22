@@ -81,7 +81,11 @@ test('clicking each sidebar item switches the screen and marks it current', asyn
 test('reopening the app returns to the last screen', async ({ page }) => {
   const errors = trackConsoleErrors(page);
   await page.goto('/');
-  await page.getByRole('link', { name: 'Báo cáo' }).click();
+  // The sidebar's: each KPI tile of Tổng quan is a link to Báo cáo too ("Mở … ở Báo cáo").
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Báo cáo' })
+    .click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Báo cáo');
 
   await page.goto('/');
