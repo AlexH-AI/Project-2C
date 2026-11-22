@@ -1471,8 +1471,8 @@ export const vi = {
   'policyForm.cancelDaysAfter': '{read} · {n} ngày sau khi phát hành',
   'policyForm.cancelSameDay': '{read} · cùng ngày phát hành',
   'policyForm.afterCancelled': '{date} sau ngày hủy {when}. Bỏ hủy trước, hoặc sửa ngày hủy.',
-  'policyForm.issueCancelled':
-    'HĐ đã hủy phải có ngày phát hành. Muốn xóa ngày phát hành: bỏ hủy trước.',
+  'policyForm.issueCancelled': 'HĐ đã hủy phải có ngày phát hành: gõ một ngày không sau ngày hủy.',
+  'policyForm.cancelledFypRead': '{read} · FYP hủy bằng số này',
   'policyForm.metric.cancelled': 'FYP hủy',
   'policyForm.metric.revenue': 'Doanh số',
   'policyForm.count.cancelled': 'HĐ hủy',

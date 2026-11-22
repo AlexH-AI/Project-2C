@@ -192,6 +192,20 @@ describe('openDraft and readPolicy across New Year', () => {
     expect(readPolicy(draft, NEXT_YEAR, fresh).submittedDate).toEqual({ ok: true, date: OPENED });
   });
 
+  it('keeps the cancellation day it filled in for a cancelled policy (8d of B2)', () => {
+    const saved = {
+      ...policy,
+      issuedDate: d(24, 12),
+      issuedFyp: 400 * MILLION,
+      cancelledDate: d(28, 12),
+    };
+    const edit = openDraft({ kind: 'edit', policy: saved }, OPENED);
+    expect(readPolicy(edit.draft, NEXT_YEAR, edit).policy).toMatchObject({
+      issuedDate: d(24, 12),
+      cancelledDate: d(28, 12),
+    });
+  });
+
   it('reads a day typed over the filled-in one against today', () => {
     const opened = openDraft({ kind: 'issue', policy }, OPENED);
     const draft = { ...opened.draft, issued: { date: '1/1', fyp: '400tr' } };
@@ -408,6 +422,14 @@ describe('cancellations', () => {
       'HĐ hủy chuyển từ ngày 10/09/2026 sang ngày 20/09/2026',
     ]);
     expect(within.note).toBe('Số của tháng 09/2026 không đổi; số theo ngày và theo tuần đổi theo.');
+  });
+
+  // Review of PR 1471: the month keeps its numbers only when no other line of it changes them.
+  it('says the month of a cancellation moved within it is unchanged only when it is', () => {
+    const moved = 'Số của tháng 09/2026 không đổi; số theo ngày và theo tuần đổi theo.';
+    expect(edit({ cancelled: '20/9', issued: { date: '25/8', fyp: '45tr' } }).note).toBeNull();
+    expect(edit({ cancelled: '12/9', issued: { date: '2/9', fyp: '60tr' } }).note).toBeNull();
+    expect(edit({ cancelled: '20/9', submittedDate: '20/7' }).note).toBe(moved);
   });
 
   it('moves the cancelled FYP with the issued one: the month of the issue and of the cancellation', () => {

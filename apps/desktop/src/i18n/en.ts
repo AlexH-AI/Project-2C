@@ -86,7 +86,8 @@ export const en: EnglishMessages = {
   'policyForm.afterCancelled':
     '{date} is after the cancellation date {when}. Undo the cancellation first, or change the cancellation date.',
   'policyForm.issueCancelled':
-    'A cancelled policy needs an issue date. To clear the issue date, undo the cancellation first.',
+    'A cancelled policy needs an issue date: type one on or before the cancellation date.',
+  'policyForm.cancelledFypRead': '{read} · the cancelled FYP is this amount',
   'policyForm.metric.cancelled': 'Cancelled FYP',
   'policyForm.metric.revenue': 'Total FYP',
   'policyForm.count.cancelled': 'policies cancelled',

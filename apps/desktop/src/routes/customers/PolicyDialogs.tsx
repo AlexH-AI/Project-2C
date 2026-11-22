@@ -163,6 +163,20 @@ export function PolicyDialog({
   const rm = people.find((person) => person.id === saved?.rmId);
   // The cancellation day of 8d (huy-hd.html #edit): "Bỏ hủy" empties it until "Hoàn lại".
   const cancelledOn = mode.kind === 'edit' ? mode.policy.cancelledDate : null;
+  const issuedFypRead =
+    issuedFyp === null
+      ? undefined
+      : change?.fromSubmitted
+        ? t('policyForm.fromSubmitted', {
+            read: amountRead(issuedFyp),
+            diff: formatAmountDelta(change.fromSubmitted),
+          })
+        : amountRead(issuedFyp);
+  // The cancelled FYP of a policy that stays cancelled is this one (huy-hd.html #edit).
+  const issuedFypHint =
+    issuedFypRead && draft.cancelled != null
+      ? t('policyForm.cancelledFypRead', { read: issuedFypRead })
+      : issuedFypRead;
 
   return (
     <Dialog
@@ -262,16 +276,7 @@ export function PolicyDialog({
             value={draft.issued.fyp}
             onChange={(fyp) => editIssued({ fyp })}
             refusal={issuedFypError}
-            hint={
-              issuedFyp === null
-                ? undefined
-                : change?.fromSubmitted
-                  ? t('policyForm.fromSubmitted', {
-                      read: amountRead(issuedFyp),
-                      diff: formatAmountDelta(change.fromSubmitted),
-                    })
-                  : amountRead(issuedFyp)
-            }
+            hint={issuedFypHint}
             required
           />
         </div>

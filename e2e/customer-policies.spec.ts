@@ -552,9 +552,12 @@ test('8d of a cancelled policy: Bỏ hủy until Hoàn lại, then Lưu; the iss
   await save.click();
   await expect(dialog.getByRole('alert')).toContainText('Chưa lưu được — 1 ô cần sửa');
   await expect(issued).toHaveAccessibleDescription(
-    'HĐ đã hủy phải có ngày phát hành. Muốn xóa ngày phát hành: bỏ hủy trước.',
+    'HĐ đã hủy phải có ngày phát hành: gõ một ngày không sau ngày hủy.',
   );
   await issued.fill('25/8');
+  await expect(dialog.getByRole('textbox', { name: /^FYP phát hành/ })).toHaveAccessibleDescription(
+    /· FYP hủy bằng số này$/,
+  );
 
   // Bỏ hủy shows the numbers coming back; Hoàn lại before Lưu changes nothing.
   await dialog.getByRole('button', { name: 'Bỏ hủy' }).click();

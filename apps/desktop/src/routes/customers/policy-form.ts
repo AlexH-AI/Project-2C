@@ -295,7 +295,7 @@ export function policyChange(saved: Policy, read: PolicyRead) {
   return {
     fromSubmitted: submitted !== null && issued !== null ? issued - submitted : null,
     effects,
-    note: next && cancellationNote(saved, next),
+    note: next && cancellationNote(saved, next, effects),
   };
 }
 
@@ -362,8 +362,16 @@ function cancellationEffects(before: Policy, after: Policy): Effect[] {
   return effects;
 }
 
-/** The small line under "Ảnh hưởng chỉ số": what stays as it was (mockup huy-hd.html). */
-function cancellationNote(before: Policy, after: Policy): string | null {
+/**
+ * The small line under "Ảnh hưởng chỉ số": what stays as it was (mockup huy-hd.html). A
+ * cancellation moved within its month leaves that month's numbers as they were only when no other
+ * line of the save names the month (review of PR 1471).
+ */
+function cancellationNote(
+  before: Policy,
+  after: Policy,
+  effects: readonly Effect[] = [],
+): string | null {
   const { cancelledDate: from } = before;
   const { cancelledDate: to, issuedDate: issued } = after;
   if (from && !to) return t('policyForm.note.undone');
@@ -372,9 +380,27 @@ function cancellationNote(before: Policy, after: Policy): string | null {
       ? t('policyForm.note.sameMonth', { date: formatDate(issued) })
       : t('policyForm.note.otherMonth', { month: monthOf(issued) });
   }
-  return from && to && compareDates(from, to) !== 0 && sameMonth(from, to)
+  return from &&
+    to &&
+    compareDates(from, to) !== 0 &&
+    sameMonth(from, to) &&
+    !effects.some((effect) => namesMonth(effect, to))
     ? t('policyForm.note.moved', { month: monthOf(to) })
     : null;
+}
+
+/** Whether a line of "Ảnh hưởng chỉ số" changes a number of the month of `date`. */
+function namesMonth(effect: Effect, date: CalendarDate): boolean {
+  switch (effect.kind) {
+    case 'fyp':
+      return effect.year === date.year && effect.month === date.month;
+    case 'count':
+      return sameMonth(effect.from, date) || sameMonth(effect.to, date);
+    case 'tally':
+      return sameMonth(effect.date, date);
+    case 'moved':
+      return false;
+  }
 }
 
 interface Booked {
@@ -402,19 +428,15 @@ function monthEffects(
     month: date.month,
     diff,
   });
-  const sameMonth =
-    before &&
-    after &&
-    before.date.year === after.date.year &&
-    before.date.month === after.date.month;
-  const effects = sameMonth
+  const within = before && after && sameMonth(before.date, after.date);
+  const effects = within
     ? [effect(after, after.fyp - before.fyp)]
     : [
         ...(before ? [effect(before, -before.fyp)] : []),
         ...(after ? [effect(after, after.fyp)] : []),
       ];
   const moved: Effect[] =
-    before && after && !sameMonth
+    before && after && !within
       ? [{ kind: 'count', metric, from: before.date, to: after.date }]
       : [];
   return [...effects.filter((e) => e.diff !== 0), ...moved];
