@@ -112,7 +112,11 @@ export function KpiCard({
       </p>
       <a
         href={REPORTS}
-        onClick={onOpen}
+        onClick={(event) => {
+          // Only a plain press goes to Báo cáo here: the period must not wait for a later visit.
+          const plain = !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+          if (event.button === 0 && plain) onOpen();
+        }}
         aria-label={t('overview.kpiOpen', { label: tile.label })}
         className={OPEN}
       >
