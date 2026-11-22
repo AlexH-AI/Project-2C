@@ -237,4 +237,6 @@ export const en: EnglishMessages = {
   'trash.filter.query': 'Name contains "{name}"',
   'team.noneNext': 'Press "+ Team" to create one.',
   'team.emptyNext': 'Press "+ Staff" to add an RM to this team.',
+  'outcome.invalidText':
+    'The field "{field}" has a character that cannot be saved (a NUL, or one broken in pasting): delete it, then save again.',
 };

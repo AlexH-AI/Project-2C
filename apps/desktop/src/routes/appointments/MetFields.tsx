@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import { formatDate, isRfTransition, type CustomerStage, type Person } from '@p2c/domain';
-import { Choices, SelectField, TextField } from '@p2c/ui';
+import { Choices, SelectField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { MoneyField } from '../MoneyField';
 import { amountRead, formatAmount, formRefusal } from '../money-view';
 import { stageBadge } from '../stage-badge';
+import { LinesField } from './AppointmentDialog';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
 
@@ -106,7 +107,7 @@ export function MetFields({
         onChange={set('reviewerId')}
         help={t('outcome.reviewerHelp')}
       />
-      <TextField
+      <LinesField
         label={t('outcome.nextStep')}
         value={draft.nextStep}
         onChange={set('nextStep')}

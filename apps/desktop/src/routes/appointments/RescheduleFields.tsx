@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
-import { compareDates, formatDate, normalizeText, type CalendarDate } from '@p2c/domain';
+import {
+  compareDates,
+  formatDate,
+  normalizeText,
+  type AppointmentStatus,
+  type CalendarDate,
+} from '@p2c/domain';
 import { TextField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { useMasked } from '../../shell/NameMask';
@@ -13,10 +19,65 @@ import {
   rescheduleReason,
   withTime,
 } from './appointment-form';
+import { STATUS_TONE } from './appointments-view';
 
 /** An appointment's day and time as the dialogs write it: `dd/mm/yyyy hh:mm`. */
 export const whenText = (a: Pick<AppointmentRecord, 'date' | 'time'>) =>
   withTime(formatDate(a.date), a.time);
+
+/** `text` with its `{slot}` filled by `node`, split as `KycExtraction` does. */
+const withNode = (text: string, slot: string, node: ReactNode) => {
+  const [before, after = ''] = text.split(`{${slot}}`);
+  return (
+    <>
+      {before}
+      {node}
+      {after}
+    </>
+  );
+};
+
+/** The appointment shown in "Khi lưu" (6e, 6i): `28/09 14:00`, the year when not this one. */
+export const shortWhen = (a: Pick<AppointmentRecord, 'date' | 'time'>, today: CalendarDate) =>
+  withTime(dayText(a.date, today), a.time);
+
+/**
+ * "Khi lưu" of mockups 6e, 6i: the appointment shown and its new status, in the colour of that
+ * status, then the new appointment, its day in bold.
+ */
+export function OnSave({
+  title,
+  oldLine,
+  status,
+  newLine,
+  next,
+}: {
+  title: string;
+  /** The line of the appointment shown, its `{status}` slot left to fill. */
+  oldLine: string;
+  status: AppointmentStatus;
+  /** The line of the new appointment, its `{when}` slot left to fill. */
+  newLine: string;
+  next: Pick<AppointmentRecord, 'date' | 'time'> | null;
+}) {
+  return (
+    <div className={`${ALERT} border-info`}>
+      <b>{title}</b>
+      <ul className="m-0 pl-5 tabular-nums">
+        <li>
+          {withNode(
+            oldLine,
+            'status',
+            <span className={STATUS_TONE[status]}>{t(`appointmentStatus.${status}`)}</span>,
+          )}
+        </li>
+        <li>
+          {withNode(newLine, 'when', next ? <b>{whenText(next)}</b> : t('reschedule.newDay'))}
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 /**
  * The new day of a scheduled appointment (mockup 6e), shared by "Dời lịch" and the outcome
@@ -124,20 +185,13 @@ export function RescheduleFields({
         value={form.reason}
         onChange={edit(form.setReason)}
       />
-      <div className={`${ALERT} border-info`}>
-        <b>{t('reschedule.onSave')}</b>
-        <ul className="m-0 pl-5 tabular-nums">
-          <li>{t('reschedule.oldBecomes', { when: whenText(old) })}</li>
-          <li>
-            {t('reschedule.newOne', {
-              when:
-                date.ok && time.ok
-                  ? whenText({ date: date.date, time: time.time })
-                  : t('reschedule.newDay'),
-            })}
-          </li>
-        </ul>
-      </div>
+      <OnSave
+        title={t('reschedule.onSave')}
+        oldLine={t('reschedule.oldBecomes', { when: shortWhen(old, today) })}
+        status="RESCHEDULED"
+        newLine={t('reschedule.newOne')}
+        next={date.ok && time.ok ? { date: date.date, time: time.time } : null}
+      />
       {reason !== null && (
         <p className="m-0 text-xs text-fg-2 tabular-nums">
           {t('reschedule.historyRead', {

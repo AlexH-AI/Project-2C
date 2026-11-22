@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
 import { toNewYearsEve } from './anchor';
 import { endKey } from './support';
@@ -223,6 +224,11 @@ test('no-show with a next appointment records both in one go, then shows the nex
   await o.dialog.getByRole('textbox', { name: /^Ngày hẹn tiếp/ }).fill('1/10');
   await o.dialog.getByRole('textbox', { name: /^Giờ hẹn tiếp/ }).fill('9:00');
   await expect(o.dialog).toContainText('Tạo lịch hẹn mới 01/10/2026 09:00 · Dự kiến');
+  // "Khi lưu" as mockup 6i: `dd/mm` this year, the status in its colour, the new day in bold.
+  const onSave = o.dialog.getByRole('listitem');
+  await expect(onSave.first()).toHaveText('15/09 → Không đến');
+  expect(await color(onSave.first().getByText('Không đến'))).not.toBe(await color(onSave.first()));
+  await expect(onSave.last().getByText('01/10/2026 09:00')).toHaveCSS('font-weight', '700');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả + tạo lịch' }).click();
 
   // The screen moves to the new appointment in the next month, as every other way of booking one
@@ -310,6 +316,139 @@ test('the note keeps its lines when 6f / 6c leave met (DR6-182)', async ({ page 
   await page.keyboard.type(' gấp');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
   await expect(shown).toHaveText(/^Dòng một\nDòng hai gấp$/);
+});
+
+// Review of PR 1153: a note of lines stays a box while the dialog is open. Swapped back to a
+// one-line field as its last line break went, the field lost the focus mid-typing.
+test('deleting the last line break of a note keeps the typing in it (6c)', async ({ page }) => {
+  await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  const note = o.dialog.getByRole('textbox', { name: /^Ghi chú/ });
+  await note.fill('Dòng một\n');
+  await o.status.getByRole('radio', { name: 'Không đến' }).check();
+  await note.press(endKey(page));
+  await page.keyboard.press('Backspace');
+  await page.keyboard.type(' gấp');
+  await expect(note).toHaveValue('Dòng một gấp');
+  await expect(note).toBeFocused();
+});
+
+// DR6-182, the part Issue 1138 left: text stored with lines — a lone CR in the note, LF in the
+// next step and the trigger note — comes only from a backup edited by hand. 6f opens it in boxes of
+// lines, as a one-line field drops CR and LF and editing would run the lines together.
+test('6f opens text stored with lines, a lone CR too, in boxes of lines (DR6-182)', async ({
+  page,
+}) => {
+  const name = await metToN2(page, 'Ghi chú sẽ sửa trong backup');
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Cài đặt', exact: true })
+    .click();
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  const download = page.waitForEvent('download');
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  const file = JSON.parse(await readFile(await (await download).path(), 'utf8')) as {
+    tables: Record<string, Record<string, unknown>[]>;
+  };
+  Object.assign(
+    file.tables.appointments!.find((row) => row.note === 'Ghi chú sẽ sửa trong backup')!,
+    {
+      note: 'Dòng một\rDòng hai',
+      next_step: 'Gọi lại\nGửi bảng',
+      trigger_note: 'Hội thảo\ntháng 9',
+    },
+  );
+  await backup.getByLabel('Nhập backup').setInputFiles({
+    name: 'lines.p2cbackup',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(file)),
+  });
+  await page
+    .getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' })
+    .getByRole('button', { name: 'Thay dữ liệu', exact: true })
+    .click();
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup xuất lúc');
+
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Lịch hẹn', exact: true })
+    .click();
+  await page
+    .getByRole('region', { name: `Trong ngày ${TODAY}` })
+    .getByRole('listitem')
+    .filter({ hasText: 'Đã gặp' })
+    .getByRole('button', { name })
+    .click();
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const edit = editDialog(page);
+  const tag = (field: Locator) => field.evaluate((element) => element.tagName);
+  const nextStep = edit.getByRole('textbox', { name: /^Việc tiếp theo/ });
+  await expect(nextStep).toHaveValue('Gọi lại\nGửi bảng');
+  expect(await tag(nextStep)).toBe('TEXTAREA');
+  expect(await tag(edit.getByRole('textbox', { name: /^Mô tả trigger/ }))).toBe('TEXTAREA');
+  await edit.getByRole('radio', { name: 'Hủy', exact: true }).check();
+  const note = edit.getByRole('textbox', { name: 'Ghi chú', exact: true });
+  expect(await tag(note)).toBe('TEXTAREA');
+  await note.press(endKey(page));
+  await page.keyboard.type(' (sửa)');
+  await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(edit).toHaveCount(0);
+  await expect(detail(page).getByRole('definition').filter({ hasText: 'Dòng một' })).toHaveText(
+    /^Dòng một\nDòng hai \(sửa\)$/,
+  );
+  await expect(detail(page)).toContainText('Hội thảo');
+});
+
+// DR6-189: 6c is taller than the window, Lưu at its foot and the refusal at its top. The refusal
+// comes into view and takes the focus; text the database cannot store says which field.
+test('a refused save of 6c is said in view, naming the field (DR6-189)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng\u0000minh họa');
+  await o.booking.check();
+  await o.dialog.getByRole('textbox', { name: /^Ngày hẹn tiếp/ }).fill('1/10');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả + tạo lịch' }).click();
+  const alert = o.dialog.getByRole('alert');
+  await expect(alert).toHaveText(
+    'Ô "Việc tiếp theo" có ký tự không lưu được (ký tự NUL hoặc ký tự hỏng khi dán): xóa ký tự đó rồi lưu lại.',
+  );
+  await expect(alert).toBeInViewport();
+  await expect(alert).toBeFocused();
+  // Fixed, it saves.
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả + tạo lịch' }).click();
+  await expect(o.dialog).toHaveCount(0);
+});
+
+// DR6-193: the next day of 6c offers next year as 6b, 6e and 6h do (ADR-0007 W8), and a day moved
+// into another year says which.
+test('on 31/12, 6c offers next year for 5/1 and the move says its year (DR6-193)', async ({
+  page,
+}) => {
+  await book(page, '31/12', 'N3');
+  await toNewYearsEve(page);
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.status.getByRole('radio', { name: 'Không đến' }).check();
+  await o.booking.check();
+  const nextDay = o.dialog.getByRole('textbox', { name: /^Ngày hẹn tiếp/ });
+  await nextDay.fill('5/1');
+  await o.dialog.getByRole('button', { name: 'Dùng 05/01/2027' }).click();
+  await expect(nextDay).toHaveValue('05/01/2027');
+
+  await o.status.getByRole('radio', { name: 'Dời lịch' }).check();
+  await o.dialog.getByRole('textbox', { name: /^Ngày mới/ }).fill('05/01/2027');
+  await expect(o.dialog.getByRole('listitem').first()).toHaveText(
+    '31/12 → Dời lịch (giữ lại trong lịch sử, không tính gặp)',
+  );
+  await o.dialog.getByRole('button', { name: 'Dời lịch' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  await detail(page).getByRole('button', { name: '31/12/2026' }).click();
+  await expect(detail(page)).toContainText('Dời sang 05/01/2027');
 });
 
 test('once the customer moved on, status, day and stage after are locked and delete too (D7)', async ({

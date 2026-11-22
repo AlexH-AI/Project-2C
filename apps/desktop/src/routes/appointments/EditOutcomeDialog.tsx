@@ -6,7 +6,6 @@ import {
   type CustomerRecord,
 } from '@p2c/db';
 import {
-  canAppointment,
   formatDate,
   isOutcomeStatus,
   type OutcomeStatus,
@@ -21,7 +20,13 @@ import { routeToHash } from '../../shell/routes';
 import { ALERT, LINK } from '../classes';
 import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { stageBadge } from '../stage-badge';
-import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
+import {
+  CoordinatorsField,
+  dateFieldError,
+  dateReading,
+  LinesField,
+  liveIds,
+} from './AppointmentDialog';
 import { DeleteAppointmentDialog, UndoneMoveNote } from './DeleteAppointmentDialog';
 import { MetFields, metDraftOf, EMPTY_MET } from './MetFields';
 import { DayLockNote } from './OutcomeDialog';
@@ -32,9 +37,11 @@ import {
   editedDay,
   heldStage,
   outcomeChoices,
+  outcomeDelete,
   outcomeLock,
   readOutcome,
   undoneMove,
+  unstorableField,
   withoutError,
   type OutcomeError,
 } from './outcome-form';
@@ -99,11 +106,23 @@ export function EditOutcomeDialog({
   const holding = locked ? undefined : heldStage(onDay);
   const draft = holding ? { ...metDraft, stageAfter: holding } : metDraft;
   const undone = undoneMove(lock, status, draft.stageAfter, from);
+  const deletion = outcomeDelete(a.status, locked);
+  const noteLabel = t(status === 'MET' ? 'outcome.note' : 'outcome.noteOther');
 
   const save = () => {
     const read = readOutcome({ status, ...draft, note, next: null });
     setErrors(read.ok ? [] : read.errors);
     if (!read.ok || (!locked && (!date.ok || dateError)) || !time.ok) return;
+    // The free text the save sends, by the label of its field (DR6-189).
+    const unstorable = unstorableField([
+      ...(status === 'MET' ? [[t('outcome.nextStep'), draft.nextStep] as const] : []),
+      [noteLabel, note],
+      [t('appointmentForm.triggerNote'), triggerNote],
+    ]);
+    if (unstorable) {
+      setFailure(t('outcome.invalidText', { field: unstorable }));
+      return;
+    }
     try {
       app.run((db) =>
         editMeetingOutcome(db, a.id, read.outcome, {
@@ -146,13 +165,13 @@ export function EditOutcomeDialog({
       onSubmit={save}
       actions={
         <>
-          {canAppointment(a.status, 'delete') && (
-            <Button onClick={() => setDeleting(true)} disabled={locked}>
+          {deletion.deletable && (
+            <Button onClick={() => setDeleting(true)} disabled={deletion.blocked}>
               {t('outcomeEdit.delete')}
             </Button>
           )}
           <span className="mr-auto self-center text-xs text-fg-3">
-            {locked && t('outcomeEdit.deleteBlocked')}
+            {deletion.blocked && t('outcomeEdit.deleteBlocked')}
           </span>
           <Actions onClose={onClose} save={t('outcomeEdit.save')} />
         </>
@@ -241,11 +260,11 @@ export function EditOutcomeDialog({
         />
       )}
       {undone && <UndoneMoveNote caused={undone} />}
-      <TextField
-        label={t(status === 'MET' ? 'outcome.note' : 'outcome.noteOther')}
+      <LinesField
+        label={noteLabel}
         value={note}
         onChange={edit(setNote)}
-        rows={status === 'MET' || note.includes('\n') ? 3 : undefined}
+        rows={status === 'MET' ? 3 : undefined}
       />
       <SelectField
         label={t('appointmentForm.trigger')}
@@ -254,7 +273,7 @@ export function EditOutcomeDialog({
         onChange={edit((value: string) => setTrigger(value as AppointmentTrigger))}
         required
       />
-      <TextField
+      <LinesField
         label={t('appointmentForm.triggerNote')}
         value={triggerNote}
         onChange={edit(setTriggerNote)}

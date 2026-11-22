@@ -915,7 +915,7 @@ export const vi = {
     '{date} đã qua. Ngày dời phải từ hôm nay ({today}) trở đi; ngày đã qua chỉ dùng để nhập bù.',
   'reschedule.backfill': 'Nhập bù: cuộc gặp đã diễn ra vào ngày này',
   'reschedule.onSave': 'Khi lưu',
-  'reschedule.oldBecomes': '{when} → Dời lịch (giữ lại trong lịch sử, không tính gặp)',
+  'reschedule.oldBecomes': '{when} → {status} (giữ lại trong lịch sử, không tính gặp)',
   'reschedule.newOne': 'Tạo lịch hẹn mới {when} · Dự kiến · cùng RM, trigger, người phối hợp',
   'reschedule.newDay': 'ở ngày mới',
   'reschedule.historyRead': 'Trong "Các lần hẹn trước": {date} · Dời lịch · Ghi chú: {note}',
@@ -975,6 +975,9 @@ export const vi = {
   'outcome.newOne': 'Tạo lịch hẹn mới {when} · Dự kiến',
   'outcome.save': 'Lưu kết quả',
   'outcome.saveWithNext': 'Lưu kết quả + tạo lịch',
+  // 6c, 6f: a field holding text the database cannot store as it is (DR6-189).
+  'outcome.invalidText':
+    'Ô "{field}" có ký tự không lưu được (ký tự NUL hoặc ký tự hỏng khi dán): xóa ký tự đó rồi lưu lại.',
   'appointments.edit': 'Sửa kết quả',
   'appointments.delete': 'Xóa',
   'outcomeEdit.title': 'Sửa kết quả cuộc gặp',

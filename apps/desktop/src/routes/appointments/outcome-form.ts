@@ -9,8 +9,10 @@ import {
   canAppointment,
   CLOSED_STAGES,
   compareDates,
+  isStorableText,
   normalizeText,
   PIPELINE_STAGES,
+  type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
   type MoneyParseError,
@@ -56,14 +58,38 @@ export function outcomeChoices(
 ): { readonly value: OutcomeChoice; readonly disabled: boolean }[] {
   const arrived = isPastOrToday(appointment.date, today);
   const { status } = appointment;
-  const outcome = canAppointment(status, 'record') || canAppointment(status, 'edit');
+  // Whether the status takes an outcome: recorded (a scheduled one, none yet) or edited.
+  const takesOutcome = canAppointment(status, 'record') || canAppointment(status, 'edit');
   return OUTCOME_CHOICES.map((value) => ({
     value,
     disabled:
       value === 'RESCHEDULED'
         ? !canAppointment(status, 'reschedule')
-        : !outcome || (value !== 'CANCELLED' && !arrived),
+        : !takesOutcome || (value !== 'CANCELLED' && !arrived),
   }));
+}
+
+/**
+ * 6f's "Xóa lịch hẹn": offered when the status may be deleted, and blocked, saying so, while the
+ * outcome is locked (D7). One rule for the button and the line beside it.
+ */
+export function outcomeDelete(
+  status: AppointmentStatus,
+  locked: boolean,
+): { readonly deletable: boolean; readonly blocked: boolean } {
+  const deletable = canAppointment(status, 'delete');
+  return { deletable, blocked: deletable && locked };
+}
+
+/**
+ * The label of the first field whose text the database cannot store as it is (`isStorableText`: a
+ * NUL, a lone surrogate half, most often pasted). The command refuses it as `INVALID_TEXT`, which
+ * names no field, so the dialog checks before it saves (DR6-189).
+ */
+export function unstorableField(
+  fields: readonly (readonly [label: string, text: string])[],
+): string | undefined {
+  return fields.find(([, text]) => !isStorableText(text))?.[0];
 }
 
 type MetRecord = Pick<AppointmentRecord, 'id' | 'customerId' | 'date' | 'status' | 'stageAfter'>;

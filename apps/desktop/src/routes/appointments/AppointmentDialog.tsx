@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentProps } from 'react';
 import {
   APPOINTMENT_TRIGGERS,
   scheduleAppointment,
@@ -7,9 +7,11 @@ import {
   type CustomerRecord,
 } from '@p2c/db';
 import {
+  appointmentGroup,
   formatDate,
   formatDayMonth,
   isRm,
+  LINE_BREAK,
   normalizeText,
   type CalendarDate,
   type Person,
@@ -35,7 +37,13 @@ import {
   type PriorMeetings,
   type ScheduleDate,
 } from './appointment-form';
-import { personLabel, STATUS_TONE, statusLabel, type AppointmentData } from './appointments-view';
+import {
+  addedNote,
+  personLabel,
+  STATUS_TONE,
+  statusLabel,
+  type AppointmentData,
+} from './appointments-view';
 
 const CHIP = 'cursor-pointer rounded-control border border-border bg-surface-2 px-2 py-0.5 text-xs';
 const MATCHES = 6;
@@ -197,7 +205,7 @@ export function AppointmentDialog({
         error={attempted && !trigger ? t('appointmentForm.triggerRequired') : undefined}
         required
       />
-      <TextField
+      <LinesField
         label={t('appointmentForm.triggerNote')}
         value={triggerNote}
         onChange={edit(setTriggerNote)}
@@ -205,6 +213,20 @@ export function AppointmentDialog({
       <CoordinatorsField people={data.people} ids={coordinatorIds} onChange={setCoordinatorIds} />
     </Dialog>
   );
+}
+
+/**
+ * A text field of the appointment dialogs, one line unless `rows` is set, that turns into a box of
+ * lines once its text has a line break (`LINE_BREAK`): an input drops CR and LF, so text stored
+ * with lines (a backup edited by hand) would run together once edited (DR6-182). A box it stays
+ * while the dialog is open, or deleting the last break would swap the field and drop the focus
+ * mid-typing. The one place of the rule, as `TextField` keeps its props (Issue 1138, Q5).
+ */
+export function LinesField(props: ComponentProps<typeof TextField>) {
+  const lines = LINE_BREAK.test(props.value);
+  const [hadLines, setHadLines] = useState(lines);
+  if (lines && !hadLines) setHadLines(true);
+  return <TextField {...props} rows={props.rows ?? (lines || hadLines ? 3 : undefined)} />;
 }
 
 /** The ids of people still there: a coordinator deleted since is dropped, not refused. */
@@ -222,7 +244,7 @@ export function CoordinatorsField({
   onChange: (ids: readonly string[]) => void;
 }) {
   const [picked, setPicked] = useState('');
-  const [added, setAdded] = useState('');
+  const [addedId, setAddedId] = useState('');
   // No RM coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RM never is one.
   const coordinators = people.filter((person) => ids.includes(person.id));
   const addable = people
@@ -233,7 +255,7 @@ export function CoordinatorsField({
     if (!choice) return;
     onChange([...ids, choice.value]);
     setPicked('');
-    setAdded(t('appointmentForm.coordinatorAdded', { name: choice.label }));
+    setAddedId(choice.value);
   };
   return (
     <fieldset className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-0 p-0">
@@ -265,7 +287,7 @@ export function CoordinatorsField({
         {t('appointmentForm.coordinatorAddButton')}
       </Button>
       <span role="status" className="sr-only">
-        {added}
+        {addedNote(people, ids, addedId)}
       </span>
       <span className="w-full text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
     </fieldset>
@@ -464,11 +486,15 @@ function History({
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs">
         {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => {
           const status = statusLabel(a, today);
+          // Coloured words as mockup 6a draws them; "Chưa ghi kết quả" keeps its label.
+          const unrecorded = appointmentGroup(a, today) === 'unrecorded';
           return (
             <li key={a.id} className="flex items-center gap-1 whitespace-nowrap">
               <span className="tabular-nums">{dayText(a.date, today)}</span>
               <span>{t('sep.dot')}</span>
-              <span className={status.tone || STATUS_TONE[a.status]}>{status.text}</span>
+              <span className={unrecorded ? status.tone : STATUS_TONE[a.status]}>
+                {status.text}
+              </span>
               {outcome?.kind === 'move' && (
                 <>
                   <span>{t('sep.dot')}</span>

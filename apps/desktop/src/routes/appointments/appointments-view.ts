@@ -47,7 +47,8 @@ export type Outcome =
       readonly rf: boolean;
     }
   | { readonly kind: 'keep'; readonly stage: CustomerStage }
-  | { readonly kind: 'rescheduled'; readonly to: CalendarDate }
+  /** The appointment moved `from` its day `to` a new one. */
+  | { readonly kind: 'rescheduled'; readonly from: CalendarDate; readonly to: CalendarDate }
   | null;
 
 /** The colour of each status wherever it is written. */
@@ -63,7 +64,10 @@ export const STATUS_TONE = {
 export const LOCKED =
   'm-0 flex items-center gap-1.5 rounded-control border border-dashed border-border-strong bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
 
-/** The "Kết quả" text: `Tạm hoãn → N3`, `N3 → N2 · RF`, `Giữ N3`, `Dời sang 02/10`; empty when none. */
+/**
+ * The "Kết quả" text: `Tạm hoãn → N3`, `N3 → N2 · RF`, `Giữ N3`, `Dời sang 02/10` (with the year
+ * when the new day is in another year than the appointment, DR6-193); empty when none.
+ */
 export function outcomeText(outcome: Outcome): string {
   if (!outcome) return '';
   switch (outcome.kind) {
@@ -77,7 +81,12 @@ export function outcomeText(outcome: Outcome): string {
     case 'keep':
       return t('appointments.keep', { stage: t(`stage.${outcome.stage}`) });
     case 'rescheduled':
-      return t('appointments.rescheduledTo', { date: formatDayMonth(outcome.to) });
+      return t('appointments.rescheduledTo', {
+        date:
+          outcome.to.year === outcome.from.year
+            ? formatDayMonth(outcome.to)
+            : formatDate(outcome.to),
+      });
   }
 }
 
@@ -94,13 +103,26 @@ export const DATE_TONE_CELL = {
 /** The colour of "Chưa ghi kết quả", as its badge or as text. */
 export const UNRECORDED_TONE = 'text-appt-unrecorded';
 
-/** The "Chưa ghi kết quả" badge (mockup overview.html part 2 `.badge.plain.unrec`). */
-const UNRECORDED_BADGE = `${BADGE} whitespace-nowrap ${UNRECORDED_TONE}`;
+/**
+ * The label of each status in the "Trạng thái" column (mockup components.html 07 `.st`): the group
+ * that did not take place in --text-2, as --appt-missed is below 4.5:1 on a label fill (ADR-0013
+ * appendix 11/11/2026 §7).
+ */
+const STATUS_BADGE = {
+  SCHEDULED: `${BADGE} text-info`,
+  MET: `${BADGE} text-ok`,
+  RESCHEDULED: `${BADGE} text-fg-2`,
+  CANCELLED: `${BADGE} text-fg-2`,
+  NO_SHOW: `${BADGE} text-fg-2`,
+} as const satisfies Record<AppointmentStatus, string>;
+
+/** The "Chưa ghi kết quả" label (components.html 07 `.s-todo`). */
+const UNRECORDED_BADGE = `${BADGE} ${UNRECORDED_TONE}`;
 
 /**
- * The "Trạng thái" column: a scheduled appointment before today says no outcome is recorded yet,
- * so the list matches the counts (display only, the status stays). Thùng rác writes a deleted one
- * by it too (NT-TR-07).
+ * The "Trạng thái" column, as a label: a scheduled appointment before today says no outcome is
+ * recorded yet, so the list matches the counts (display only, the status stays). Thùng rác writes
+ * a deleted one by its text too (NT-TR-07).
  */
 export function statusLabel(
   a: Pick<AppointmentRecord, 'status' | 'date'>,
@@ -108,7 +130,7 @@ export function statusLabel(
 ): { readonly text: string; readonly tone: string } {
   return appointmentGroup(a, today) === 'unrecorded'
     ? { text: t('appointments.statusUnrecorded'), tone: UNRECORDED_BADGE }
-    : { text: t(`appointmentStatus.${a.status}`), tone: '' };
+    : { text: t(`appointmentStatus.${a.status}`), tone: STATUS_BADGE[a.status] };
 }
 
 /** The count line of a period or a month: "172 lịch · 64 đã gặp", then "· 5 chưa ghi kết quả" if any. */
@@ -129,6 +151,15 @@ export function dateTone(date: CalendarDate, today: CalendarDate): DateTone {
 
 /** A coordinator as the lists show them: role, then name. */
 export const personLabel = (person: Person) => `${person.role} ${person.name}`;
+
+/**
+ * The status line of "Người phối hợp" (6a, 6f): who was added last, while they still coordinate.
+ * Removing them clears it, so adding them back is new text a screen reader reads again.
+ */
+export function addedNote(people: readonly Person[], ids: readonly string[], addedId: string) {
+  const added = ids.includes(addedId) && people.find((person) => person.id === addedId);
+  return added ? t('appointmentForm.coordinatorAdded', { name: personLabel(added) }) : '';
+}
 
 /** Who may review a met meeting's outcome (D9): every IS, TL, BDM and BD, in the given order. */
 export const reviewerChoices = (people: readonly Person[]): Person[] =>
@@ -193,7 +224,7 @@ export function outcomeResolver(
     if (tr) return { kind: 'move', from: tr.from, to: tr.to, rf: isRfTransition(tr.from, tr.to) };
     if (a.status === 'MET' && a.stageAfter) return { kind: 'keep', stage: a.stageAfter };
     const to = newDay.get(a.id);
-    return to ? { kind: 'rescheduled', to } : null;
+    return to ? { kind: 'rescheduled', from: a.date, to } : null;
   };
 }
 
@@ -373,7 +404,10 @@ const noAppointments = (): Record<AppointmentGroup, number> => ({
 /**
  * The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments by group
  * (spec Phase 4 §1, against `today`) and whether it is in the banded `period`. A day after 31/12/2100 is null: a blank cell (spec Phase 4
- * §3.4); 01/01/1900 is a Monday, so the first week is whole.
+ * §3.4); 01/01/1900 is a Monday, so the first week is whole. The calendar moves to another month
+ * by a day of the period shown in it (mockup 4d), so a custom range running on past a month that
+ * starts on a Monday or ends on a Sunday adds the week of the month next to it (DR6-192): six
+ * weeks at most still, as such a month needs five or fewer.
  */
 export function monthGrid(
   date: CalendarDate,
@@ -383,7 +417,16 @@ export function monthGrid(
 ): (DayCell | null)[][] {
   const banded = period.kind === 'week' || period.kind === 'custom';
   const month = periodOf('month', date);
-  const first = periodOf('week', month.start).start;
+  const custom = period.kind === 'custom';
+  let firstWeek = periodOf('week', month.start);
+  const fromBefore = custom && compareDates(period.start, month.start) < 0;
+  if (fromBefore && compareDates(firstWeek.start, month.start) === 0) {
+    firstWeek = shift(firstWeek, -1);
+  }
+  let lastWeek = periodOf('week', month.end);
+  const onAfter = custom && compareDates(period.end, month.end) > 0;
+  if (onAfter && compareDates(lastWeek.end, month.end) === 0) lastWeek = shift(lastWeek, 1);
+  const first = firstWeek.start;
   // The groups of each day shown, in one pass over the rows (DR-63): at most six weeks.
   const byDay = new Map<number, Record<AppointmentGroup, number>>();
   for (const { appointment: a } of rows) {
@@ -394,7 +437,7 @@ export function monthGrid(
     counts[appointmentGroup(a, today)] += 1;
   }
   const weeks: (DayCell | null)[][] = [];
-  for (let span = periodOf('week', month.start); ; span = shift(span, 1)) {
+  for (let span = firstWeek; ; span = shift(span, 1)) {
     const week: (DayCell | null)[] = [];
     const days = daysBetween(span.start, span.end) + 1;
     for (let i = 0; i < 7; i++) {
@@ -411,7 +454,7 @@ export function monthGrid(
       });
     }
     weeks.push(week);
-    if (compareDates(span.end, month.end) >= 0) return weeks;
+    if (compareDates(span.end, lastWeek.end) >= 0) return weeks;
   }
 }
 

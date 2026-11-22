@@ -1,9 +1,10 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { ErrorMark } from './FieldMarks';
 import { describedBy as describedByAll, fieldNotes, type FieldNote } from './field-notes';
 
 interface TextFieldProps {
-  label: string;
+  /** Words, or words with a part in bold (the word to type of 10c / 11i). */
+  label: ReactNode;
   value: string;
   onChange: (value: string) => void;
   /** Shown under the field and read as its description. */

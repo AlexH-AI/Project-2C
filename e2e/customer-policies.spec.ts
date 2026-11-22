@@ -56,6 +56,8 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await expect(dialog).toContainText('05/09/2026 trước ngày nộp 10/09/2026.');
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('12/9');
   await expect(dialog).toContainText('2 ngày sau khi nộp');
+  // Submitted and issued in one month: nothing to tell apart, so no line of months (DR6-194).
+  await expect(dialog).not.toContainText('vẫn tính nộp');
   // The issued FYP may differ from the submitted one (G2 D).
   await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('485.5tr');
   await expect(dialog).toContainText('485,500,000 VNĐ (485.5 tr)');
@@ -252,6 +254,10 @@ test('a policy issued across New Year keeps the day the dialog showed (8b)', asy
   await row.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026' }).click();
   dialog = page.getByRole('dialog', { name: 'Phát hành HĐ' });
   await expect(dialog.getByRole('textbox', { name: /^Ngày phát hành/ })).toHaveValue('31/12');
+  // Across months, mockup 8b says where each counts.
+  await expect(dialog).toContainText(
+    'HĐ nộp tháng 09/2026 vẫn tính nộp vào tháng 09/2026; phát hành tính vào tháng 12/2026.',
+  );
   await page.clock.fastForward(3 * 60_000);
   await dialog.getByRole('button', { name: 'Phát hành', exact: true }).click();
   await expect(dialog).toBeHidden();

@@ -24,11 +24,13 @@ import {
   meetingDay,
   OUTCOME_CHOICES,
   outcomeChoices,
+  outcomeDelete,
   outcomeLock,
   readCaseSize,
   readOutcome,
   stageAfterChoices,
   undoneMove,
+  unstorableField,
   withoutError,
   type OutcomeChoice,
   type OutcomeDraft,
@@ -437,5 +439,34 @@ describe('readCaseSize', () => {
       error: 'ambiguous',
       suggestions: ['1 tr', '1,000 tr'],
     });
+  });
+});
+
+// DR6-189: the command refuses such text as INVALID_TEXT, which names no field.
+describe('unstorableField', () => {
+  it('names the first field the database cannot store as typed', () => {
+    expect(
+      unstorableField([
+        ['Ghi chú', 'Gặp tại nhà'],
+        ['Mô tả trigger', 'A\u0000B'],
+      ]),
+    ).toBe('Mô tả trigger');
+    expect(
+      unstorableField([
+        ['Ghi chú', 'nửa \ud800'],
+        ['Mô tả trigger', 'A\u0000B'],
+      ]),
+    ).toBe('Ghi chú');
+    expect(unstorableField([['Ghi chú', 'Sao Mai 🌟\nDòng hai']])).toBeUndefined();
+  });
+});
+
+// Review of PR 1153: the button and the line saying deleting is blocked follow one rule.
+describe('outcomeDelete', () => {
+  it('blocks the delete of a locked outcome, and says so only where it is offered', () => {
+    expect(outcomeDelete('MET', true)).toEqual({ deletable: true, blocked: true });
+    expect(outcomeDelete('NO_SHOW', false)).toEqual({ deletable: true, blocked: false });
+    // A status the app never deletes has neither the button nor the line, locked or not.
+    expect(outcomeDelete('RESCHEDULED', true)).toEqual({ deletable: false, blocked: false });
   });
 });
