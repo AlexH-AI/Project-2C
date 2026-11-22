@@ -322,6 +322,21 @@ test('the labels of a stage, a policy and an appointment read 4.5:1 on a fill th
   await expectLabel(day.getByText('Chưa ghi kết quả', { exact: true }).first(), 'unrecorded');
 });
 
+// Mockup components.html 07: every status in the list of appointments is a label; the group that
+// did not take place in --text-2 (ADR-0013 appendix 11/11/2026 §7).
+test('the status labels of the list of appointments read 4.5:1 on their fill (components.html 07)', async ({
+  page,
+}) => {
+  await page.goto('/#/appointments');
+  const table = page.getByRole('table', { name: 'Danh sách lịch hẹn' });
+  const more = page.getByRole('button', { name: /^Hiện thêm/ });
+  for (const status of ['Dự kiến', 'Đã gặp', 'Dời lịch', 'Hủy', 'Không đến']) {
+    const label = table.getByRole('cell').getByText(status, { exact: true }).first();
+    while (!(await label.isVisible()) && (await more.isVisible())) await more.click();
+    await expectLabel(label, status);
+  }
+});
+
 // An issued policy has the colour of N1 (--issued), measured on the label N1 above.
 test('the label of a submitted policy reads 4.5:1 on its fill (VA2)', async ({ page }) => {
   const name = 'Hà Nhãn HĐ';

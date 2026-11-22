@@ -19,9 +19,15 @@ import { ALERT, LINK } from '../classes';
 import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { KycNoteDialog } from '../customers/KycDialogs';
 import { stageBadge } from '../stage-badge';
-import { dateFieldError, dateReading } from './AppointmentDialog';
+import { DateSuggestion, dateFieldError, dateReading, LinesField } from './AppointmentDialog';
 import { EMPTY_MET, MetFields } from './MetFields';
-import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
+import {
+  OnSave,
+  RescheduleFields,
+  shortWhen,
+  useRescheduleForm,
+  whenText,
+} from './RescheduleFields';
 import { parseTime, readScheduleDate } from './appointment-form';
 import type { AppointmentRow } from './appointments-view';
 import {
@@ -29,6 +35,7 @@ import {
   meetingDay,
   outcomeChoices,
   readOutcome,
+  unstorableField,
   withoutError,
   type OutcomeChoice,
   type OutcomeError,
@@ -83,6 +90,18 @@ export function OutcomeDialog({
   const nextTime = parseTime(nextTimeText);
   const has = (error: OutcomeError) => errors.includes(error);
 
+  const noteLabel = t(met ? 'outcome.note' : 'outcome.noteOther');
+  // Whether the free text a save sends cannot be stored, said by the label of its field (DR6-189).
+  const refuseText = () => {
+    const field = unstorableField(
+      status === 'RESCHEDULED'
+        ? [[t('reschedule.reason'), moving.reason]]
+        : [...(met ? [[t('outcome.nextStep'), draft.nextStep] as const] : []), [noteLabel, note]],
+    );
+    if (field) setFailure(t('outcome.invalidText', { field }));
+    return field !== undefined;
+  };
+
   const save = () => {
     if (status === null) {
       setNoStatus(true);
@@ -91,7 +110,7 @@ export function OutcomeDialog({
     try {
       if (status === 'RESCHEDULED') {
         const when = moving.submit();
-        if (!when) return;
+        if (!when || refuseText()) return;
         onShow(app.run((db) => rescheduleAppointment(db, a.id, when, moving.reason)));
       } else {
         const read = readOutcome({
@@ -101,7 +120,7 @@ export function OutcomeDialog({
           next: booking ? { date: nextDate, time: nextTime } : null,
         });
         setErrors(read.ok ? [] : read.errors);
-        if (!read.ok) return;
+        if (!read.ok || refuseText()) return;
         const { outcome, next } = read;
         if (next) onShow(app.run((db) => recordOutcomeWithNext(db, a.id, outcome, next)).next);
         else app.run((db) => recordMeetingOutcome(db, a.id, outcome));
@@ -182,12 +201,11 @@ export function OutcomeDialog({
         )}
         {status !== null && status !== 'RESCHEDULED' && (
           <>
-            {/* A one-line field drops line breaks: a note of lines stays a box (DR6-182). */}
-            <TextField
-              label={t(met ? 'outcome.note' : 'outcome.noteOther')}
+            <LinesField
+              label={noteLabel}
               value={note}
               onChange={edit(setNote)}
-              rows={met || note.includes('\n') ? 3 : undefined}
+              rows={met ? 3 : undefined}
             />
             {met && (
               <span className="-mt-2 text-xs text-fg-3">
@@ -232,27 +250,20 @@ export function OutcomeDialog({
                   />
                 </div>
               )}
+              {booking && (
+                <DateSuggestion date={nextDate} onUse={edit(setNextDateText)} help={false} />
+              )}
             </fieldset>
             {booking && (
-              <div className={`${ALERT} border-info`}>
-                <b>{t('outcome.onSave')}</b>
-                <ul className="m-0 pl-5 tabular-nums">
-                  <li>
-                    {t('outcome.oldBecomes', {
-                      when: whenText(a),
-                      status: t(`appointmentStatus.${status}`),
-                    })}
-                  </li>
-                  <li>
-                    {t('outcome.newOne', {
-                      when:
-                        nextDate.ok && nextTime.ok
-                          ? whenText({ date: nextDate.date, time: nextTime.time })
-                          : t('reschedule.newDay'),
-                    })}
-                  </li>
-                </ul>
-              </div>
+              <OnSave
+                title={t('outcome.onSave')}
+                oldLine={t('outcome.oldBecomes', { when: shortWhen(a, today) })}
+                status={status}
+                newLine={t('outcome.newOne')}
+                next={
+                  nextDate.ok && nextTime.ok ? { date: nextDate.date, time: nextTime.time } : null
+                }
+              />
             )}
           </>
         )}

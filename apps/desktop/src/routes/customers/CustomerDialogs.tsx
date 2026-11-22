@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   changeStageManually,
   countCustomerRecords,
@@ -92,10 +92,23 @@ export function InvalidAlert({ count }: { count: number }) {
   );
 }
 
-/** The red box a dialog shows when saving failed or its form cannot be read. */
+/**
+ * The red box a dialog shows when saving failed or its form cannot be read. It sits at the top of
+ * the dialog and Lưu at its foot, so in a dialog that scrolls it comes into view as it shows, and
+ * takes the focus unless a field has it (DR6-189); again when its message, a string, changes.
+ */
 export function FailureAlert({ children }: { children: ReactNode }) {
+  const box = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const alert = box.current;
+    if (!alert) return;
+    alert.scrollIntoView({ block: 'nearest' });
+    if (!document.activeElement?.matches('input, textarea, select')) {
+      alert.focus({ preventScroll: true });
+    }
+  }, [children]);
   return (
-    <p role="alert" className={`${ALERT} border-danger text-danger`}>
+    <p ref={box} tabIndex={-1} role="alert" className={`${ALERT} border-danger text-danger`}>
       {children}
     </p>
   );

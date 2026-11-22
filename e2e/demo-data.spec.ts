@@ -43,6 +43,9 @@ test('Settings reloads the simulated data after typing the confirmation word', a
   await expect(dialog).toContainText('Bản web không lưu file');
   const confirm = dialog.getByRole('button', { name: 'Nạp lại', exact: true });
   await expect(confirm).toBeDisabled();
+  // The word to type in bold, as mockups 10c and 11i show it (DR6-194).
+  await expect(dialog.getByRole('textbox')).toHaveAccessibleName('Gõ NẠP LẠI để xác nhận');
+  await expect(dialog.getByText('NẠP LẠI', { exact: true })).toHaveCSS('font-weight', '700');
 
   // As in the dialog of Dọn sạch Thùng rác, which it shares: the word an IME types decomposed
   // counts (review R4).

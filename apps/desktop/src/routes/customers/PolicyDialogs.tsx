@@ -281,14 +281,18 @@ export function PolicyDialog({
           />
         </div>
       )}
-      {mode.kind === 'issue' && issuedRead && read.submittedDate.ok && (
-        <p className={`${ALERT} border-info`}>
-          {t('policyForm.months', {
-            submitted: monthOf(read.submittedDate.date),
-            issued: monthOf(issuedRead.date),
-          })}
-        </p>
-      )}
+      {/* Only across months, as mockup 8b: in one month there is nothing to tell apart. */}
+      {mode.kind === 'issue' &&
+        issuedRead &&
+        read.submittedDate.ok &&
+        monthOf(read.submittedDate.date) !== monthOf(issuedRead.date) && (
+          <p className={`${ALERT} border-info`}>
+            {t('policyForm.months', {
+              submitted: monthOf(read.submittedDate.date),
+              issued: monthOf(issuedRead.date),
+            })}
+          </p>
+        )}
       {cancelledOn && (
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">

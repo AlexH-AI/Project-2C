@@ -97,11 +97,23 @@ export function ConfirmWordDialog({
     >
       {children}
       <TextField
-        label={t('settings.demo.confirmWordLabel', { word })}
+        label={<WordToType word={word} />}
         value={typed}
         disabled={running}
         onChange={setTyped}
       />
     </Dialog>
+  );
+}
+
+/** "Gõ NẠP LẠI để xác nhận", the word in bold as mockups 10c and 11i show it. */
+function WordToType({ word }: { word: string }) {
+  const [before, after = ''] = t('settings.demo.confirmWordLabel').split('{word}');
+  return (
+    <>
+      {before}
+      <b>{word}</b>
+      {after}
+    </>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  addedNote,
   APPOINTMENT_GROUPS,
   appointmentRows,
   appointmentsByRm,
@@ -169,7 +170,7 @@ describe('appointmentRows', () => {
       { kind: 'move', from: 'N3', to: 'N2', rf: true },
       { kind: 'move', from: 'N2', to: 'N1', rf: false },
       { kind: 'keep', stage: 'N3' },
-      { kind: 'rescheduled', to: day(9, 8) },
+      { kind: 'rescheduled', from: day(9, 1), to: day(9, 8) },
       null,
       null,
     ]);
@@ -360,6 +361,42 @@ describe('monthGrid', () => {
       ).toBe(false);
     }
   });
+
+  // DR6-192: the calendar moves to another month only by a day of the period shown in it, so a
+  // custom range across a month ending on a Sunday or starting on a Monday gets a week of the
+  // month next to it. 30/09/2029 is a Sunday, 01/10/2029 a Monday; 31/05/2026 a Sunday.
+  it.each([
+    [
+      { year: 2029, month: 9, day: 28 },
+      { year: 2029, month: 10, day: 5 },
+    ],
+    [day(5, 25), day(6, 10)],
+  ])('reaches both months of a custom range across them (%o to %o)', (start, end) => {
+    const period = customPeriod(start, end);
+    const otherMonths = (date: CalendarDate) =>
+      monthGrid(date, [], period, TODAY)
+        .flat()
+        .filter((c) => c?.inPeriod && !c.inMonth)
+        .map((c) => c?.date.month);
+    expect(new Set(otherMonths(start))).toEqual(new Set([end.month]));
+    expect(new Set(otherMonths(end))).toEqual(new Set([start.month]));
+  });
+
+  it('counts the appointments of a week added for a custom range', () => {
+    const rows = appointmentRows(
+      data([appointment('a', 're1', day(6, 1)), appointment('b', 're1', day(5, 31))]),
+      { kind: 'all' },
+      'any',
+    );
+    const period = customPeriod(day(5, 25), day(6, 10));
+    const june = monthGrid(day(6, 1), rows, period, TODAY);
+    expect(june).toHaveLength(6);
+    expect(june[0]?.[6]).toMatchObject({ date: day(5, 31), inMonth: false, unrecorded: 1 });
+    const may = monthGrid(day(5, 25), rows, period, TODAY);
+    expect(may.at(-1)?.[0]).toMatchObject({ date: day(6, 1), inMonth: false, unrecorded: 1 });
+    // A month or week period keeps the weeks of the month alone.
+    expect(monthGrid(day(6, 1), rows, periodOf('month', day(6, 1)), TODAY)).toHaveLength(5);
+  });
 });
 
 describe('yearGrid', () => {
@@ -480,8 +517,21 @@ describe('outcomeText', () => {
 
   it('shows a dash for an unknown starting stage, and the other kinds', () => {
     expect(outcomeText({ kind: 'move', from: null, to: 'N4', rf: false })).toBe('— → N4');
-    expect(outcomeText({ kind: 'rescheduled', to: day(10, 2) })).toBe('Dời sang 02/10');
+    expect(outcomeText({ kind: 'rescheduled', from: day(9, 28), to: day(10, 2) })).toBe(
+      'Dời sang 02/10',
+    );
     expect(outcomeText(null)).toBe('');
+  });
+
+  // DR6-193: the new day of another year than the appointment's says which.
+  it('writes the year of a new day in another year than the appointment', () => {
+    expect(
+      outcomeText({
+        kind: 'rescheduled',
+        from: day(12, 29),
+        to: { year: 2027, month: 1, day: 5 },
+      }),
+    ).toBe('Dời sang 05/01/2027');
   });
 });
 
@@ -572,14 +622,40 @@ describe('statusLabel', () => {
   });
 
   it('keeps the status of one today or after, or already recorded', () => {
-    expect(statusLabel(appointment('a', 're1', day(9, 15)), TODAY)).toEqual({
-      text: 'Dự kiến',
-      tone: '',
-    });
-    expect(statusLabel(appointment('b', 're1', day(9, 1), { status: 'MET' }), TODAY)).toEqual({
-      text: 'Đã gặp',
-      tone: '',
-    });
+    expect(statusLabel(appointment('a', 're1', day(9, 15)), TODAY).text).toBe('Dự kiến');
+    expect(statusLabel(appointment('b', 're1', day(9, 1), { status: 'MET' }), TODAY).text).toBe(
+      'Đã gặp',
+    );
+  });
+
+  // Mockup components.html 07: every status a label on its own colour; the group that did not
+  // take place in --text-2, as --appt-missed is below 4.5:1 on a label fill (ADR-0013 appendix
+  // 11/11/2026 §7).
+  it('labels every status in the colour of mockup components.html 07', () => {
+    const tone = (status: AppointmentRecord['status'], date = day(9, 1)) =>
+      statusLabel(appointment('a', 're1', date, { status }), TODAY).tone.split(' ');
+    expect(tone('SCHEDULED', day(9, 15))).toEqual(
+      expect.arrayContaining(['label-fill', 'text-info']),
+    );
+    expect(tone('MET')).toEqual(expect.arrayContaining(['label-fill', 'text-ok']));
+    expect(tone('SCHEDULED')).toEqual(
+      expect.arrayContaining(['label-fill', 'text-appt-unrecorded']),
+    );
+    for (const status of ['RESCHEDULED', 'CANCELLED', 'NO_SHOW'] as const) {
+      expect(tone(status)).toEqual(expect.arrayContaining(['label-fill', 'text-fg-2']));
+    }
+  });
+});
+
+describe('addedNote', () => {
+  const tl = people[3]!;
+  // Review of PR 1153: the line said who was added last, and adding them back after removing
+  // them set the same text, which a screen reader does not read again.
+  it('says who was added while they still coordinate, nothing once removed', () => {
+    expect(addedNote(people, [tl.id], tl.id)).toBe('Đã thêm TL Nguyễn Thu Hà');
+    expect(addedNote(people, [], tl.id)).toBe('');
+    expect(addedNote(people, [tl.id], tl.id)).toBe('Đã thêm TL Nguyễn Thu Hà');
+    expect(addedNote(people, [tl.id], '')).toBe('');
   });
 });
 
