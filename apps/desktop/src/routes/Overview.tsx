@@ -10,10 +10,13 @@ import { TeamCompare } from './overview/TeamCompare';
 import { kpiTiles, metricsScope, viewingText } from './overview/overview-view';
 import { stageBlock } from './overview/stage-view';
 import { teamCompare } from './overview/team-compare-view';
+import { openReportAt } from './reports/reports-view';
 
 /**
  * Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a–1e): appointments, KPI, customers by stage
  * and So sánh team, for the period of its pill and the scope picked; it opens on the current month.
+ * The KPI are Doanh số, then the six tiles of tong-quan.html `#tiles` (spec Phase 6 §4.4); a tile
+ * opens Báo cáo at the period viewed, the scope picked being shared.
  */
 export function Overview() {
   const today = useToday();
@@ -49,7 +52,12 @@ export function Overview() {
               the tile "Lịch hẹn", as on the screen, not under it (DR6-187). */}
           <h2 className="sr-only">{t('overview.kpis')}</h2>
           {tiles.map((tile) => (
-            <KpiCard key={tile.key} tile={tile} />
+            <KpiCard
+              key={tile.key}
+              tile={tile}
+              wide={tile.key === 'revenue'}
+              onOpen={() => openReportAt(period)}
+            />
           ))}
         </section>
       </div>

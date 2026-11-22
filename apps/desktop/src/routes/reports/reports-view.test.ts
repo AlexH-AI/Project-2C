@@ -24,17 +24,27 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { countedWindow } from '../overview/overview-view';
 import {
   APPOINTMENTS,
+  APPOINTMENTS_B,
   CUSTOMERS,
+  CUSTOMERS_B,
+  GOLDEN_B_CASES,
   PEOPLE,
   POLICIES,
+  POLICY_ROWS_B,
   STAGE_TRANSITIONS,
+  STAGE_TRANSITIONS_B,
   TEAMS,
 } from '../../../../../packages/domain/src/golden/metrics.fixture';
 import {
   REPORT_COLUMNS,
+  REPORT_GROUPS,
+  openReportAt,
   reportCells,
+  reportOpened,
+  reportPeriod,
   reportRows,
   summaryMeta,
+  type ReportColumn,
   type ReportData,
   type ReportFigures,
 } from './reports-view';
@@ -51,10 +61,43 @@ const d = calendarDate;
 const JAN_2027 = periodOf('month', d(2027, 1, 1));
 /** Seeding the demo data takes seconds, more under coverage on a busy machine. */
 const SEEDING = 60_000;
-/** Columns 5–10 of a row: Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt. */
-const results = (cells: readonly string[]) => cells.slice(5, 11);
+/** The cells of a row under the columns of `keys`, in that order. */
+const cellsOf =
+  (keys: readonly ReportColumn['key'][]) =>
+  (cells: readonly string[]): string[] =>
+    keys.map((key) => cells[REPORT_COLUMNS.findIndex((column) => column.key === key)]!);
+/** Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỷ lệ chốt: the results of Phase 4. */
+const results = cellsOf([
+  'rfCount',
+  'submittedCount',
+  'caseSize',
+  'issuedCount',
+  'revenue',
+  'closeRate',
+]);
+/** HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Doanh số, Tỷ lệ hủy (part B, golden B). */
+const cancels = cellsOf([
+  'cancelledCount',
+  'netCount',
+  'issuedFyp',
+  'cancelledFyp',
+  'revenue',
+  'cancelRate',
+]);
+/** The cells after Lịch hẹn: Kết quả and KH cuối kỳ. */
+const AFTER_APPOINTMENTS = REPORT_COLUMNS.length - 5;
 const APPOINTMENT_KEYS = ['met', 'missed', 'unrecorded', 'planned', 'total'];
-const RESULT_KEYS = ['rfCount', 'submittedCount', 'caseSize', 'issuedCount', 'revenue'];
+const RESULT_KEYS = [
+  'rfCount',
+  'submittedCount',
+  'caseSize',
+  'issuedCount',
+  'cancelledCount',
+  'netCount',
+  'issuedFyp',
+  'cancelledFyp',
+  'revenue',
+];
 /** Each key added over the parts. */
 const total = (parts: readonly object[], keys = APPOINTMENT_KEYS) =>
   Object.fromEntries(
@@ -142,7 +185,7 @@ describe('reportRows', () => {
 
     expect(rows.summary.appointments.total).toBeGreaterThan(0);
     expect(cells.slice(0, 5)).toEqual(reportCells(rows.summary).slice(0, 5));
-    expect(cells.slice(5)).toEqual(Array(12).fill('—'));
+    expect(cells.slice(5)).toEqual(Array(AFTER_APPOINTMENTS).fill('—'));
   });
 
   it('a team without RM: Tổng of the empty Theo RM matches Tổng hợp, "—" or 0', () => {
@@ -152,18 +195,98 @@ describe('reportRows', () => {
     const notStarted = reportRows(data, JAN_2027, scope, d(2026, 12, 20));
     expect(notStarted.byRm?.rows).toEqual([]);
     expect(reportCells(notStarted.byRm!.total)).toEqual(reportCells(notStarted.summary));
-    expect(reportCells(notStarted.byRm!.total).slice(5)).toEqual(Array(12).fill('—'));
+    expect(reportCells(notStarted.byRm!.total).slice(5)).toEqual(
+      Array(AFTER_APPOINTMENTS).fill('—'),
+    );
 
     const past = reportRows(data, JAN_2027, scope, d(2027, 3, 15));
     expect(reportCells(past.byRm!.total)).toEqual(reportCells(past.summary));
-    expect(reportCells(past.byRm!.total).slice(5, 11)).toEqual([
-      '0',
-      '0',
+    expect(results(reportCells(past.byRm!.total))).toEqual(['0', '0', '0 VNĐ', '0', '0 VNĐ', '—']);
+  });
+});
+
+describe('reportRows, cancelled policies (golden B)', () => {
+  const GOLDEN_B: ReportData = {
+    people: PEOPLE,
+    teams: TEAMS,
+    customers: CUSTOMERS_B,
+    policies: POLICY_ROWS_B.filter((row) => !row.deleted).map((row) => row.policy),
+    appointments: APPOINTMENTS_B,
+    transitions: STAGE_TRANSITIONS_B,
+  };
+  const rowsOf = (id: string) => {
+    const golden = GOLDEN_B_CASES.find((row) => row.id === id)!;
+    return reportRows(GOLDEN_B, golden.period, golden.scope, d(2028, 3, 15));
+  };
+
+  it('has the five columns of part B after HĐ phát hành, in Kết quả (spec Phase 6 §4.4)', () => {
+    const { first, span } = REPORT_GROUPS.find((group) => group.group === 'results')!;
+    expect(REPORT_COLUMNS.slice(first, first + span).map(({ label }) => label)).toEqual([
+      'Chuyển RF',
+      'HĐ nộp',
+      'Case size',
+      'HĐ phát hành',
+      'HĐ hủy',
+      'Tổng số HĐ',
+      'FYP phát hành',
+      'FYP hủy',
+      'Doanh số',
+      'Tỷ lệ hủy',
+      'Tỷ lệ chốt',
+    ]);
+    expect(REPORT_COLUMNS).toHaveLength(22);
+  });
+
+  it('Tổng of Team A has Tỷ lệ hủy Σ hủy ÷ Σ phát hành = 2/3, not a mean of 50% and 100% (G30)', () => {
+    const rows = rowsOf('G30');
+    const byRm = rows.byRm!;
+
+    expect(byRm.rows.map((row) => [row.name, ...cancels(reportCells(row))])).toEqual([
+      ['An', '1', '1', '400 tr', '100 tr', '300 tr', '50%'],
+      ['Bình', '1', '0', '500 tr', '500 tr', '0 VNĐ', '100%'],
+    ]);
+    expect(byRm.total.metrics?.cancelRate).toEqual({ numerator: 2, denominator: 3 });
+    expect(cancels(reportCells(byRm.total))).toEqual([
+      '2',
+      '1',
+      '900 tr',
+      '600 tr',
+      '300 tr',
+      '66.7%',
+    ]);
+    expect(reportCells(byRm.total)).toEqual(reportCells(rows.summary));
+  });
+
+  it('below 0 with "-" first, and "—" for a cancel rate without HĐ phát hành (G24, G28)', () => {
+    expect(cancels(reportCells(rowsOf('G24').summary))).toEqual([
+      '1',
+      '-1',
       '0 VNĐ',
-      '0',
-      '0 VNĐ',
+      '200 tr',
+      '-200 tr',
       '—',
     ]);
+    const g28 = rowsOf('G28').summary;
+    expect(cancels(reportCells(g28))).toEqual(['2', '-1', '250 tr', '780 tr', '-530 tr', '200%']);
+    // Excel keeps the numbers: below 0, and the cancel rate a fraction.
+    const value = (key: ReportColumn['key']) =>
+      REPORT_COLUMNS.find((column) => column.key === key)!.value(g28);
+    expect([value('netCount'), value('revenue'), value('cancelRate')]).toEqual([-1, -530e6, 2]);
+  });
+});
+
+describe('the period Báo cáo opens on', () => {
+  const today = d(2026, 9, 15);
+
+  it('is the month of today, or once the period a tile of Tổng quan opened it at', () => {
+    expect(reportPeriod(today)).toEqual(periodOf('month', today));
+
+    const week = periodOf('week', d(2026, 8, 3));
+    openReportAt(week);
+    expect(reportPeriod(today)).toEqual(week);
+    reportOpened();
+    // A later visit, from the sidebar, opens on the month again.
+    expect(reportPeriod(today)).toEqual(periodOf('month', today));
   });
 });
 
@@ -229,7 +352,7 @@ describe('reportRows Theo mốc', () => {
     for (const future of marks.slice(3)) {
       expect(future.metrics).toBeNull();
       expect(future.stages).toBeNull();
-      expect(reportCells(future).slice(5)).toEqual(Array(12).fill('—'));
+      expect(reportCells(future).slice(5)).toEqual(Array(AFTER_APPOINTMENTS).fill('—'));
     }
     expect(marksOf(periodOf('week', d(2027, 1, 13)), d(2027, 1, 13))[2]?.name).toBe(
       'T4 13/01 (hôm nay)',
@@ -313,7 +436,9 @@ describe('reportRows on the demo data', () => {
     expect(marks).toHaveLength(12);
     expect(counted).toHaveLength(9);
     expect(marks[8]?.name).toBe('Tháng 9 (tới 15/09)');
-    expect(added(marks).slice(0, 10)).toEqual(numbers(rows.summary).slice(0, 10));
+    // Lịch hẹn and Kết quả add up; the six of KH cuối kỳ, last, are a snapshot.
+    const sums = KEYS.length - 6;
+    expect(added(marks).slice(0, sums)).toEqual(numbers(rows.summary).slice(0, sums));
     expect(counted.at(-1)?.stages).toEqual(rows.summary.stages);
   });
 

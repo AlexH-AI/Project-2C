@@ -105,12 +105,12 @@ describe('buildReportWorkbook', () => {
   it('heads the columns as the screen does, money in đồng', async () => {
     const sheet = (await read(ALL)).getWorksheet('Theo team')!;
 
-    expect(['B2', 'G2', 'M2'].map((address) => sheet.getCell(address).text)).toEqual([
+    expect(['B2', 'G2', 'R2'].map((address) => sheet.getCell(address).text)).toEqual([
       'Lịch hẹn · cả kỳ',
       'Kết quả · tới hôm nay',
       'KH cuối kỳ',
     ]);
-    expect(sheet.getCell('L2').master.address).toBe('G2');
+    expect(sheet.getCell('Q2').master.address).toBe('G2');
     // `values` starts at index 1, as the columns do.
     expect((sheet.getRow(3).values as unknown[]).slice(1)).toEqual([
       'Team',
@@ -123,8 +123,13 @@ describe('buildReportWorkbook', () => {
       'HĐ nộp',
       'Case size (VNĐ)',
       'HĐ phát hành',
+      'HĐ hủy',
+      'Tổng số HĐ',
+      'FYP phát hành (VNĐ)',
+      'FYP hủy (VNĐ)',
       'Doanh số (VNĐ)',
-      'Tỉ lệ chốt',
+      'Tỷ lệ hủy',
+      'Tỷ lệ chốt',
       'N4',
       'N3',
       'N2',
@@ -169,19 +174,59 @@ describe('buildReportWorkbook', () => {
     ).toEqual(headers('col').map(({ text }) => text));
   });
 
-  it('keeps real numbers: money in đồng, the close rate as a percentage', async () => {
+  it('keeps real numbers: money in đồng, the two rates as a percentage', async () => {
     const sheet = (await read(ALL)).getWorksheet('Theo team')!;
     const cell = (address: string) => sheet.getCell(address);
 
     expect(cell('B4').value).toBe(22);
     expect(cell('I4').value).toBe(150_000_000);
     expect(cell('I4').numFmt).toBe('#,##0');
-    expect(cell('K4').value).toBe(165_000_000);
-    expect(cell('K4').numFmt).toBe('#,##0');
-    expect(cell('L4').value).toBe(0.6);
-    expect(cell('L4').numFmt).toBe('0.0%');
-    expect(cell('M4').value).toBe(6);
-    expect(cell('R4').value).toBe(1);
+    expect(cell('M4').value).toBe(165_000_000);
+    expect(cell('M4').numFmt).toBe('#,##0');
+    expect(cell('O4').value).toBe(165_000_000);
+    expect(cell('O4').numFmt).toBe('#,##0');
+    expect(cell('P4').value).toBe(0);
+    expect(cell('P4').numFmt).toBe('0.0%');
+    expect(cell('Q4').value).toBe(0.6);
+    expect(cell('Q4').numFmt).toBe('0.0%');
+    expect(cell('R4').value).toBe(6);
+    expect(cell('W4').value).toBe(1);
+  });
+
+  it('Tổng has Tỷ lệ hủy Σ hủy ÷ Σ phát hành, below 0 a number below 0 (G30, G28)', async () => {
+    // An (G32) and Bình (G33) of Team A, Tháng 01/2028; Tổng is G30, not the mean of 50% and 100%.
+    const results = (issued: number, cancelled: number, fyp: number, cancelledFyp: number) => ({
+      ...FIGURES,
+      metrics: {
+        ...FIGURES.metrics!,
+        issuedCount: issued,
+        cancelledCount: cancelled,
+        netCount: issued - cancelled,
+        issuedFyp: fyp,
+        cancelledFyp,
+        revenue: fyp - cancelledFyp,
+        cancelRate: { numerator: cancelled, denominator: issued },
+      },
+    });
+    const byRm = {
+      rows: [
+        row('An', 'Team A', results(2, 1, 400e6, 100e6)),
+        row('Bình', 'Team A', results(1, 1, 500e6, 500e6)),
+      ],
+      total: row('Tổng', null, results(3, 2, 900e6, 600e6)),
+    };
+    const g28 = row('Toàn bộ', null, results(1, 2, 250e6, 780e6));
+    const workbook = await read({ ...ALL, summary: g28, byTeam: null, byRm });
+    // HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Doanh số, Tỷ lệ hủy: columns L … Q of Theo RM.
+    const cancels = (sheet: string, index: number) =>
+      (workbook.getWorksheet(sheet)!.getRow(index).values as unknown[]).slice(12, 18);
+
+    expect(cancels('Theo RM', 6)).toEqual([2, 1, 900e6, 600e6, 300e6, 2 / 3]);
+    expect(workbook.getWorksheet('Theo RM')!.getCell('Q6').numFmt).toBe('0.0%');
+    // `values` of Tổng hợp start one column earlier: it has one name column.
+    expect(
+      (workbook.getWorksheet('Tổng hợp')!.getRow(4).values as unknown[]).slice(11, 17),
+    ).toEqual([2, -1, 250e6, 780e6, -530e6, 2]);
   });
 
   it('leaves the cells of "—" empty: no results or stages yet, no RF for a close rate', async () => {
@@ -194,7 +239,19 @@ describe('buildReportWorkbook', () => {
 
     expect(values(4).slice(2, 7)).toEqual([22, 3, 1, 4, 30]);
     expect(values(4).slice(7)).toEqual([]);
-    expect(values(5).slice(7, 13)).toEqual([0, 4, 150_000_000, 3, 165_000_000, undefined]);
+    expect(values(5).slice(7, 18)).toEqual([
+      0,
+      4,
+      150_000_000,
+      3,
+      0,
+      3,
+      165_000_000,
+      0,
+      165_000_000,
+      0,
+      undefined,
+    ]);
   });
 
   it('writes team and RM names as they are: text, never a formula or a number', async () => {

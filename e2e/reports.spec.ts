@@ -33,6 +33,25 @@ test('Toàn bộ: Tổng hợp over Theo team, and Theo RM can be chosen', async
   await expect(summary.getByRole('rowheader')).toHaveText(['Toàn bộ']);
   await expect(summary.getByRole('columnheader', { name: 'Kết quả · tới hôm nay' })).toBeVisible();
   await expect(summary.getByRole('columnheader', { name: 'Mất cơ hội' })).toBeVisible();
+  // Part B after HĐ phát hành; Doanh số is FYP phát hành − FYP hủy (spec Phase 6 §4.4).
+  const columns = await summary.getByRole('row').nth(1).getByRole('columnheader').allTextContents();
+  expect(columns.slice(columns.indexOf('HĐ phát hành'), columns.indexOf('Tỷ lệ chốt') + 1)).toEqual(
+    [
+      'HĐ phát hành',
+      'HĐ hủy',
+      'Tổng số HĐ',
+      'FYP phát hành',
+      'FYP hủy',
+      'Doanh số',
+      'Tỷ lệ hủy',
+      'Tỷ lệ chốt',
+    ],
+  );
+  const cells = await summary.getByRole('row').nth(2).getByRole('cell').allTextContents();
+  const cell = (name: string) => cells[columns.indexOf(name)]!;
+  const count = (name: string) => Number(cell(name).replace(/,/g, ''));
+  expect(cell('Tỷ lệ hủy')).toMatch(/^[\d.,]+%$/);
+  expect(count('Tổng số HĐ')).toBe(count('HĐ phát hành') - count('HĐ hủy'));
 
   await expect(tables.getByRole('radio')).toHaveText(['Theo team', 'Theo RM', 'Theo mốc']);
   await expect(tables.getByRole('radio', { checked: true })).toHaveText('Theo team');
@@ -125,7 +144,7 @@ test('RM · Năm: Tổng hợp and Theo mốc of 12 months, the months after tod
   // A month after today: its appointments counted (Dự kiến), the results and KH "—".
   const december = byMark.getByRole('row', { name: /^Tháng 12/ }).getByRole('cell');
   await expect(december.nth(4)).not.toHaveText('—');
-  for (let index = 5; index < 17; index += 1) await expect(december.nth(index)).toHaveText('—');
+  for (let index = 5; index < 22; index += 1) await expect(december.nth(index)).toHaveText('—');
   const august = byMark.getByRole('row', { name: /^Tháng 8/ }).getByRole('cell');
   await expect(august.nth(5)).not.toHaveText('—');
   expect(errors).toEqual([]);

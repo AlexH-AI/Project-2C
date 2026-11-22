@@ -50,18 +50,21 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| **HĐ** | Hợp đồng bảo hiểm. Một KH có nhiều HĐ. Hai bước: **Đã nộp** (KH đã đóng phí) → **Đã phát hành** |
+| **HĐ** | Hợp đồng bảo hiểm. Một KH có nhiều HĐ. Ba trạng thái: **Đã nộp** (KH đã đóng phí) → **Đã phát hành** → **Đã hủy** (chỉ HĐ đã phát hành mới hủy được) |
 | **FYP** | Phí năm đầu. **FYP nộp** ghi khi nộp; **FYP phát hành** mặc định bằng FYP nộp, sửa tay được. Mỗi phí tối đa 100 tỷ đồng |
 | **Chuyển RF** (Refer) | Cuộc gặp Đã gặp đưa KH từ N4 / N3 lên N2 / N1. Tính vào ngày gặp, tối đa 1 lần mỗi cuộc gặp, cho RM ghi trên lịch hẹn. RF chỉ đo hiệu quả cuộc gặp |
 | **HĐ nộp** | Số HĐ có ngày nộp trong kỳ |
 | **Case size** | Tổng FYP nộp của các HĐ nộp trong kỳ (tổng, không trung bình) |
 | **Case size dự kiến** | Số RM ước lượng khi ghi kết quả Đã gặp; chỉ để tham khảo, không tính vào chỉ số |
-| **HĐ phát hành** | Số HĐ có ngày phát hành trong kỳ |
-| **Doanh số** | Tổng FYP phát hành của các HĐ phát hành trong kỳ |
-| **Tỉ lệ chốt** | HĐ phát hành trong kỳ ÷ Chuyển RF trong kỳ, không lũy kế. Kỳ có 0 RF hiện "—" |
+| **HĐ phát hành** | Số HĐ có ngày phát hành trong kỳ, kể cả HĐ bị hủy sau đó. **FYP phát hành** của kỳ là tổng FYP phát hành của các HĐ này |
+| **HĐ hủy** | Số HĐ có ngày hủy trong kỳ: tính vào kỳ của ngày hủy, không phải kỳ phát hành. **FYP hủy** của kỳ là tổng FYP phát hành của các HĐ này |
+| **Tổng số HĐ** | HĐ phát hành − HĐ hủy trong kỳ; có thể âm |
+| **Doanh số** | FYP phát hành − FYP hủy trong kỳ; có thể âm |
+| **Tỷ lệ chốt** | HĐ phát hành trong kỳ ÷ Chuyển RF trong kỳ, không lũy kế, không trừ HĐ hủy. Kỳ có 0 RF hiện "—" |
+| **Tỷ lệ hủy** | HĐ hủy trong kỳ ÷ HĐ phát hành trong kỳ, không lũy kế; có thể vượt 100%. Kỳ có 0 HĐ phát hành hiện "—". Dòng Tổng = tổng HĐ hủy ÷ tổng HĐ phát hành |
 | **Kỳ** | Ngày, Tuần (Thứ Hai → Chủ nhật), Tháng, Năm hoặc Tùy chọn (tối đa 3 tháng) |
 | **MTD** | Month to date: từ ngày 1 của tháng tới hôm nay |
-| **KPI** | 6 chỉ số của kỳ: Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt |
+| **KPI** | Các ô chỉ số của kỳ ở Tổng quan: Doanh số, Tổng số HĐ, Tỷ lệ hủy, Tỷ lệ chốt, Chuyển RF, HĐ nộp, Case size |
 
 ## KYC
 

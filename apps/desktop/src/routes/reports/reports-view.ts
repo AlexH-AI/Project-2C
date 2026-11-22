@@ -3,7 +3,6 @@ import {
   appointmentCountsByMark,
   appointmentCountsByScope,
   compareDates,
-  formatNumber,
   formatDate,
   formatDayMonth,
   formatDayOfMonth,
@@ -11,6 +10,7 @@ import {
   isRm,
   periodMetricsByMark,
   periodMetricsByScope,
+  periodOf,
   reportMarks,
   snapshotDate,
   stageSnapshotByScope,
@@ -31,7 +31,7 @@ import {
 } from '@p2c/domain';
 import { joinParts, t } from '../../i18n';
 import { rmOptions, scopeName } from '../../shell/scope';
-import { closeRateText, countedWindow } from '../overview/overview-view';
+import { countedWindow, formatCount, rateText } from '../overview/overview-view';
 import { eachMark } from '../overview/stage-view';
 import { formatAmountCompact } from '../money-view';
 
@@ -81,6 +81,26 @@ export interface ReportRows {
   readonly byMark: readonly ReportMarkRow[];
 }
 
+/** The period a tile of Tổng quan asked Báo cáo to open on, until Báo cáo has opened on it. */
+let asked: Period | null = null;
+
+/** A tile of Tổng quan opens Báo cáo at the period viewed (mockup tong-quan.html `#tiles`). */
+export function openReportAt(period: Period): void {
+  asked = period;
+}
+
+/**
+ * The period Báo cáo opens on: the one a tile of Tổng quan asked for, else the month of today.
+ * Read as the screen is first drawn; `reportOpened` then forgets it, so the sidebar opens on the
+ * month as before.
+ */
+export const reportPeriod = (today: CalendarDate): Period => asked ?? periodOf('month', today);
+
+/** Báo cáo is open: a later visit opens on the month of today again. */
+export function reportOpened(): void {
+  asked = null;
+}
+
 /** The six stages of KH cuối kỳ, in the order of the columns. */
 const REPORT_STAGES = [
   'N4',
@@ -92,7 +112,16 @@ const REPORT_STAGES = [
 ] as const satisfies readonly CustomerStage[];
 
 /** The Kết quả columns that are a count or a sum of money. */
-type MetricSum = 'rfCount' | 'submittedCount' | 'caseSize' | 'issuedCount' | 'revenue';
+type MetricSum =
+  | 'rfCount'
+  | 'submittedCount'
+  | 'caseSize'
+  | 'issuedCount'
+  | 'cancelledCount'
+  | 'netCount'
+  | 'issuedFyp'
+  | 'cancelledFyp'
+  | 'revenue';
 const APPOINTMENT_SUMS = ['met', 'missed', 'unrecorded', 'planned', 'total'] as const;
 
 const total = <K extends string>(
@@ -285,8 +314,10 @@ export function reportRows(
 /** The groups of the figure columns, in their order: Lịch hẹn · Kết quả · KH cuối kỳ. */
 type ReportGroup = 'appointments' | 'results' | 'stages';
 
+type RateKey = 'cancelRate' | 'closeRate';
+
 type ReportColumnKey =
-  (typeof APPOINTMENT_SUMS)[number] | MetricSum | 'closeRate' | (typeof REPORT_STAGES)[number];
+  (typeof APPOINTMENT_SUMS)[number] | MetricSum | RateKey | (typeof REPORT_STAGES)[number];
 
 /**
  * A figure column of the report tables. The table on screen (`ReportTable`, `reportCells`) and the
@@ -297,15 +328,18 @@ export interface ReportColumn {
   readonly key: ReportColumnKey;
   readonly group: ReportGroup;
   readonly label: string;
-  /** How Excel writes the number: money in đồng (its heading says so), the close rate in %. */
+  /** How Excel writes the number: money in đồng (its heading says so), a rate in %. */
   readonly format: 'count' | 'money' | 'percent';
-  /** The number Excel adds up; null leaves its cell empty, where the screen shows "—". */
+  /**
+   * The number Excel adds up, below 0 for more cancelled than issued (the screen writes it in red);
+   * null leaves its cell empty, where the screen shows "—".
+   */
   readonly value: (figures: ReportFigures) => number | null;
   /** The cell on screen: money short (`1.9 tỷ`), "—" for a number not there yet. */
   readonly text: (figures: ReportFigures) => string;
 }
 
-/** A column of a count, or of money, written short on screen. */
+/** A column of a count, or of money, written short on screen; "-" first below 0 (ADR-0018). */
 function figureColumn(
   key: ReportColumnKey,
   group: ReportGroup,
@@ -313,7 +347,7 @@ function figureColumn(
   value: (figures: ReportFigures) => number | null,
   format: 'count' | 'money' = 'count',
 ): ReportColumn {
-  const write = format === 'money' ? formatAmountCompact : formatNumber;
+  const write = format === 'money' ? formatAmountCompact : formatCount;
   const text = (figures: ReportFigures) => {
     const figure = value(figures);
     return figure === null ? t('overview.none') : write(figure);
@@ -325,10 +359,25 @@ function figureColumn(
 const result = (key: MetricSum, label: string, format?: 'money') =>
   figureColumn(key, 'results', label, ({ metrics }) => metrics?.[key] ?? null, format);
 
+/** A rate of Kết quả: Excel keeps the fraction and shows it as %; nothing to divide by, "—". */
+const rate = (key: RateKey): ReportColumn => ({
+  key,
+  group: 'results',
+  label: t(`overview.kpi.${key}`),
+  format: 'percent',
+  value: ({ metrics }) => {
+    const fraction = metrics?.[key];
+    return fraction ? fraction.numerator / fraction.denominator : null;
+  },
+  text: ({ metrics }) => rateText(metrics?.[key] ?? null),
+});
+
 /**
- * The 17 figure columns: Lịch hẹn over the whole period (Đã gặp, Dời – hủy – không đến, Chưa ghi
- * kết quả, Dự kiến, Tổng) · Kết quả up to today (Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh
- * số, Tỉ lệ chốt) · KH cuối kỳ (N4, N3, N2, N1, Tạm hoãn, Mất cơ hội).
+ * The 22 figure columns: Lịch hẹn over the whole period (Đã gặp, Dời – hủy – không đến, Chưa ghi
+ * kết quả, Dự kiến, Tổng) · Kết quả up to today (Chuyển RF, HĐ nộp, Case size, HĐ phát hành, then
+ * part B: HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Doanh số = FYP phát hành − FYP hủy, Tỷ lệ
+ * hủy; then Tỷ lệ chốt, in the order of bao-cao.html Kết quả) · KH cuối kỳ (N4, N3, N2, N1, Tạm
+ * hoãn, Mất cơ hội).
  */
 export const REPORT_COLUMNS: readonly ReportColumn[] = [
   ...APPOINTMENT_SUMS.map((key) =>
@@ -338,17 +387,13 @@ export const REPORT_COLUMNS: readonly ReportColumn[] = [
   result('submittedCount', t('overview.kpi.submitted')),
   result('caseSize', t('overview.kpi.caseSize'), 'money'),
   result('issuedCount', t('overview.kpi.issued')),
+  result('cancelledCount', t('overview.kpi.cancelled')),
+  result('netCount', t('overview.kpi.net')),
+  result('issuedFyp', t('overview.kpi.issuedFyp'), 'money'),
+  result('cancelledFyp', t('overview.kpi.cancelledFyp'), 'money'),
   result('revenue', t('overview.kpi.revenue'), 'money'),
-  {
-    key: 'closeRate',
-    group: 'results',
-    label: t('overview.kpi.closeRate'),
-    format: 'percent',
-    // Excel keeps the fraction and shows it as %; no RF, no rate: "—" (§4.1).
-    value: ({ metrics }) =>
-      metrics?.closeRate ? metrics.closeRate.numerator / metrics.closeRate.denominator : null,
-    text: ({ metrics }) => closeRateText(metrics?.closeRate ?? null),
-  },
+  rate('cancelRate'),
+  rate('closeRate'),
   ...REPORT_STAGES.map((stage) =>
     figureColumn(stage, 'stages', t(`stage.${stage}`), ({ stages }) => stages?.[stage] ?? null),
   ),
@@ -363,7 +408,7 @@ interface ReportGroupHeading {
   readonly span: number;
 }
 
-/** The headings of the groups, read off `REPORT_COLUMNS`: 5 · 6 · 6 columns. */
+/** The headings of the groups, read off `REPORT_COLUMNS`: 5 · 11 · 6 columns. */
 export const REPORT_GROUPS: readonly ReportGroupHeading[] = REPORT_COLUMNS.reduce<
   ReportGroupHeading[]
 >((groups, { group }, index) => {

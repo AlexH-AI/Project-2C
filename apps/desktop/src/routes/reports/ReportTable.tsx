@@ -50,7 +50,7 @@ export type ReportLead = 'scope' | 'team' | 'rm' | 'mark';
 /**
  * A report table (mockup reports.html 2a–2e): the name column(s), then Lịch hẹn · Kết quả · KH
  * cuối kỳ. Theo RM has Team before RM, a rule where the team changes, and the RM name stays put.
- * Theo mốc marks the mark holding today. A "—" is dimmed.
+ * Theo mốc marks the mark holding today. A "—" is dimmed, a number below 0 red.
  */
 export function ReportTable({
   label,
@@ -68,11 +68,14 @@ export function ReportTable({
   const none = t('overview.none');
   const nameIndex = leads.length - 1;
 
+  // "—" is dimmed; a number below 0, more cancelled than issued, is red (ADR-0018).
+  const tone = (row: ReportRow, index: number, cell: string) =>
+    cell === none ? 'text-fg-3' : (REPORT_COLUMNS[index]?.value(row) ?? 0) < 0 ? 'text-danger' : '';
   const figures = (row: ReportRow, extra: string) =>
     reportCells(row).map((cell, index) => (
       <td
         key={REPORT_COLUMNS[index]?.key}
-        className={`${CELL} ${extra} text-right ${GROUP_STARTS.has(index) ? RULE : ''} ${cell === none ? 'text-fg-3' : ''}`}
+        className={`${CELL} ${extra} text-right ${GROUP_STARTS.has(index) ? RULE : ''} ${tone(row, index, cell)}`}
       >
         {cell}
       </td>

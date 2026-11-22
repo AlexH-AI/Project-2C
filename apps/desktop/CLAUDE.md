@@ -33,7 +33,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 | route | screen | view |
 |---|---|---|
-| `overview` | `src/routes/Overview.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/overview/stage-view.ts`, `src/routes/overview/team-compare-view.ts` |
+| `overview` | `src/routes/Overview.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/overview/stage-view.ts`, `src/routes/overview/team-compare-view.ts`, `src/routes/reports/reports-view.ts` |
 | `appointments` | `src/routes/appointments/AppointmentsScreen.tsx` | `src/routes/appointments/appointments-view.ts` |
 | `customers` | `src/routes/customers/CustomersScreen.tsx` | `src/routes/customers/customers-view.ts` |
 | `reports` | `src/routes/reports/ReportsScreen.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/reports/reports-view.ts` |

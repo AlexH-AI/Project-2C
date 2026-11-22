@@ -1,6 +1,7 @@
 import {
   MAX_YEAR,
   MIN_YEAR,
+  appointmentCounts,
   closeRatePercent,
   compareDates,
   comparisonWindows,
@@ -13,12 +14,12 @@ import {
   metricDeltas,
   periodMetrics,
   type CalendarDate,
-  type CloseRate,
   type MetricDeltas,
   type MetricsData,
   type Period,
   type PeriodMetrics,
   type Person,
+  type Rate,
   type Scope,
   type Team,
   type CountStep,
@@ -28,10 +29,13 @@ import { scopeName } from '../../shell/scope';
 import type { FilterSelection } from '../applied-filter';
 import { formatAmountCompact } from '../money-view';
 
-export type KpiKey = 'rf' | 'submitted' | 'caseSize' | 'issued' | 'revenue' | 'closeRate';
+/** Doanh số (until D8 makes it the lead number), then the six tiles of tong-quan.html `#tiles`. */
+export type KpiKey =
+  'revenue' | 'net' | 'cancelRate' | 'closeRate' | 'rf' | 'submitted' | 'caseSize';
 
 export interface KpiDelta {
-  readonly tone: 'up' | 'down' | 'same';
+  /** For the better (ok colour), the worse (danger) or no change: a rise of Tỷ lệ hủy is worse. */
+  readonly tone: 'good' | 'bad' | 'same';
   readonly text: string;
 }
 
@@ -53,34 +57,32 @@ export interface KpiText {
   readonly unitSpaced: boolean;
 }
 
-/** One of the six KPI tiles of Tổng quan (mockup overview.html 1a, 1e): its number, written. */
+/** A tile of Tổng quan (mockup tong-quan.html `#tiles`, `#states`): its number, written. */
 export interface KpiTile extends KpiText {
   readonly key: KpiKey;
   readonly label: string;
   readonly kind: KpiKind;
   /** The number itself, which "Đếm" runs from one value to the next; null for `—`. */
   readonly amount: number | null;
+  /** Below 0, more cancelled than issued (Tổng số HĐ, Doanh số): written in red (ADR-0018). */
+  readonly negative: boolean;
   /** Change against the previous window; null when not compared. */
   readonly delta: KpiDelta | null;
   /** "so với …" after the change, or the reason it is not compared. */
   readonly note: string;
-  /** The close rate's "x HĐ phát hành ÷ y RF"; null for the other tiles or without a rate. */
+  /**
+   * Under the number, how it is worked out ("4 phát hành − 2 hủy", "2 hủy ÷ 4 phát hành"), even
+   * for a rate of "—", or what it counts ("HĐ có ngày nộp trong kỳ"); null before the period starts.
+   */
   readonly formula: string | null;
 }
 
-const COUNTS = ['rf', 'submitted', 'issued'] as const;
-const AMOUNTS = ['caseSize', 'revenue'] as const;
+/** A count that may be below 0 (Tổng số HĐ): "-" first, as for money (ADR-0018 §4). */
+export const formatCount = (count: number): string =>
+  count < 0 ? `-${formatNumber(-count)}` : formatNumber(count);
 
-const METRIC = {
-  rf: 'rfCount',
-  submitted: 'submittedCount',
-  issued: 'issuedCount',
-  caseSize: 'caseSize',
-  revenue: 'revenue',
-} as const satisfies Record<Exclude<KpiKey, 'closeRate'>, keyof PeriodMetrics & keyof MetricDeltas>;
-
-/** A close rate in a table cell: `66.7%`, or "—" without RF (§4.1). */
-export const closeRateText = (rate: CloseRate | null): string =>
+/** A rate in a table cell: `66.7%`, or "—" with nothing to divide by (§4.1, golden B). */
+export const rateText = (rate: Rate | null): string =>
   rate
     ? `${formatPercentage(closeRatePercent(rate))}${t('overview.percentUnit')}`
     : t('overview.none');
@@ -99,16 +101,21 @@ function splitUnit(text: string): KpiText {
 export function kpiText(kind: KpiKind, amount: number | null): KpiText {
   if (amount === null) return { value: t('overview.none'), unit: '', unitSpaced: false };
   if (kind === 'money') return splitUnit(formatAmountCompact(amount));
-  if (kind === 'count') return { value: formatNumber(amount), unit: '', unitSpaced: false };
+  if (kind === 'count') return { value: formatCount(amount), unit: '', unitSpaced: false };
   return { value: formatPercentage(amount), unit: t('overview.percentUnit'), unitSpaced: false };
 }
 
-function delta(change: number, text: (magnitude: number) => string): KpiDelta {
+/** ▲ ▼ = and the size of the change; a rise is for the better, but for Tỷ lệ hủy (`rise` bad). */
+function delta(
+  change: number,
+  text: (magnitude: number) => string,
+  rise: 'good' | 'bad' = 'good',
+): KpiDelta {
   if (change === 0) return { tone: 'same', text: t('overview.same') };
   const value = text(Math.abs(change));
   return change > 0
-    ? { tone: 'up', text: t('overview.up', { value }) }
-    : { tone: 'down', text: t('overview.down', { value }) };
+    ? { tone: rise, text: t('overview.up', { value }) }
+    : { tone: rise === 'good' ? 'bad' : 'good', text: t('overview.down', { value }) };
 }
 
 /** The previous window as the tiles name it; its year only when it differs from the period's. */
@@ -134,8 +141,9 @@ function notComparedReason(period: Period, today: CalendarDate): string {
 }
 
 /**
- * The six KPI tiles for `period` and `scope` viewed on `today` (spec Phase 4 §4.1, §4.2): counted
- * up to today, each against the previous window when there is one.
+ * Doanh số and the six tiles of `#tiles` for `period` and `scope` viewed on `today` (spec Phase 4
+ * §4.1, §4.2; Phase 6 §4.4): counted up to today, each against the previous window when there is
+ * one, each with how it is worked out or what it counts.
  */
 export function kpiTiles(
   data: MetricsData,
@@ -151,63 +159,138 @@ export function kpiTiles(
   const note = windows
     ? t('overview.comparedWith', { value: windowText(windows.previous, period) })
     : notComparedReason(period, today);
+  const met =
+    counted && appointmentCounts(data.appointments, counted, scope, data.people, today).met;
+  /** What the metrics of the period give; null before it starts. */
+  const of = <T>(read: (metrics: PeriodMetrics) => T): T | null => (current ? read(current) : null);
   const tile = (
-    key: KpiKey,
-    kind: KpiKind,
-    amount: number | null,
-    change: KpiDelta | null,
-  ): KpiTile => ({
-    key,
-    label: t(`overview.kpi.${key}`),
-    kind,
-    amount,
-    ...kpiText(kind, amount),
-    delta: change,
-    note,
-    formula: null,
-  });
+    key: Exclude<KpiKey, RateKey>,
+    kind: 'count' | 'money',
+    metric: keyof PeriodMetrics & keyof MetricDeltas,
+    formula: string | null,
+  ): KpiTile => {
+    const amount = of((metrics) => metrics[metric]);
+    const write = kind === 'money' ? formatAmountCompact : formatNumber;
+    return {
+      key,
+      label: t(`overview.kpi.${key}`),
+      kind,
+      amount,
+      ...kpiText(kind, amount),
+      negative: amount !== null && amount < 0,
+      delta: deltas && delta(deltas[metric], write),
+      note,
+      formula,
+    };
+  };
+  const rate = (key: RateKey) => rateTile(RATES[key], current, previous, deltas, note);
 
-  const counts = COUNTS.map((key) =>
+  return [
     tile(
-      key,
-      'count',
-      current && current[METRIC[key]],
-      deltas && delta(deltas[METRIC[key]], formatNumber),
-    ),
-  );
-  const amounts = AMOUNTS.map((key) =>
-    tile(
-      key,
+      'revenue',
       'money',
-      current && current[METRIC[key]],
-      deltas && delta(deltas[METRIC[key]], formatAmountCompact),
+      'revenue',
+      of(({ issuedFyp, cancelledFyp }) =>
+        t('overview.formula.revenue', {
+          issued: formatAmountCompact(issuedFyp),
+          cancelled: formatAmountCompact(cancelledFyp),
+        }),
+      ),
     ),
-  );
-  const [rf, submitted, issued] = counts as [KpiTile, KpiTile, KpiTile];
-  const [caseSize, revenue] = amounts as [KpiTile, KpiTile];
-  return [rf, submitted, caseSize, issued, revenue, closeRateTile(current, previous, deltas, note)];
+    tile(
+      'net',
+      'count',
+      'netCount',
+      of(({ issuedCount, cancelledCount }) =>
+        t('overview.formula.net', {
+          issued: formatNumber(issuedCount),
+          cancelled: formatNumber(cancelledCount),
+        }),
+      ),
+    ),
+    rate('cancelRate'),
+    rate('closeRate'),
+    tile('rf', 'count', 'rfCount', met === null ? null : t('overview.formula.rf', { met })),
+    tile(
+      'submitted',
+      'count',
+      'submittedCount',
+      of(() => t('overview.formula.submitted')),
+    ),
+    tile(
+      'caseSize',
+      'money',
+      'caseSize',
+      of(({ submittedCount }) => t('overview.formula.caseSize', { policies: submittedCount })),
+    ),
+  ];
 }
 
-function closeRateTile(
+type RateKey = 'cancelRate' | 'closeRate';
+
+/** How a tile of a rate reads its rate, its change and its division, and why it may have none. */
+interface RateSpec {
+  readonly key: RateKey;
+  readonly rate: (metrics: PeriodMetrics) => Rate | null;
+  readonly points: (deltas: MetricDeltas) => number | null;
+  /** Whether a rise is for the better: not for Tỷ lệ hủy (mockup `#tiles`). */
+  readonly rise: 'good' | 'bad';
+  readonly formula: (metrics: PeriodMetrics) => string;
+  /** No denominator in the period, or in the window before: "không so". */
+  readonly none: 'overview.noIssued' | 'overview.noRf';
+  readonly noneBefore: 'overview.previousNoIssued' | 'overview.previousNoRf';
+}
+
+const RATES: Readonly<Record<RateKey, RateSpec>> = {
+  cancelRate: {
+    key: 'cancelRate',
+    rate: (metrics) => metrics.cancelRate,
+    points: (deltas) => deltas.cancelRatePoints,
+    rise: 'bad',
+    formula: ({ cancelledCount, issuedCount }) =>
+      t('overview.formula.cancelRate', {
+        cancelled: formatNumber(cancelledCount),
+        issued: formatNumber(issuedCount),
+      }),
+    none: 'overview.noIssued',
+    noneBefore: 'overview.previousNoIssued',
+  },
+  closeRate: {
+    key: 'closeRate',
+    rate: (metrics) => metrics.closeRate,
+    points: (deltas) => deltas.closeRatePoints,
+    rise: 'good',
+    formula: ({ issuedCount, rfCount }) =>
+      t('overview.formula', { issued: formatNumber(issuedCount), count: rfCount }),
+    none: 'overview.noRf',
+    noneBefore: 'overview.previousNoRf',
+  },
+};
+
+/**
+ * Tỷ lệ hủy or Tỷ lệ chốt, in percent, its change in points; "—" with nothing to divide by, the
+ * division still written (mockup `#tiles`: "1 hủy ÷ 0 phát hành") and the reason it is not compared.
+ */
+function rateTile(
+  spec: RateSpec,
   current: PeriodMetrics | null,
   previous: PeriodMetrics | null,
   deltas: MetricDeltas | null,
   comparedNote: string,
 ): KpiTile {
-  const rate = current?.closeRate ?? null;
-  const base = { key: 'closeRate', label: t('overview.kpi.closeRate'), kind: 'percent' } as const;
-  if (!current || !rate) {
-    const note = current && previous ? t('overview.noRf') : comparedNote;
-    return {
-      ...base,
-      amount: null,
-      ...kpiText('percent', null),
-      delta: null,
-      note,
-      formula: null,
-    };
+  const rate = current && spec.rate(current);
+  const base = {
+    key: spec.key,
+    label: t(`overview.kpi.${spec.key}`),
+    kind: 'percent',
+    negative: false,
+    formula: current && spec.formula(current),
+  } as const;
+  if (!rate) {
+    const note = current && previous ? t(spec.none) : comparedNote;
+    return { ...base, amount: null, ...kpiText('percent', null), delta: null, note };
   }
-  const points = deltas?.closeRatePoints ?? null;
+  const points = deltas && spec.points(deltas);
   const roundsToZero = points !== null && formatPercentage(points) === '0';
   const amount = closeRatePercent(rate);
   return {
@@ -217,14 +300,12 @@ function closeRateTile(
     delta:
       points === null
         ? null
-        : delta(roundsToZero ? 0 : points, (magnitude) =>
-            t('overview.points', { value: formatPercentage(magnitude) }),
+        : delta(
+            roundsToZero ? 0 : points,
+            (magnitude) => t('overview.points', { value: formatPercentage(magnitude) }),
+            spec.rise,
           ),
-    note: previous && !previous.closeRate ? t('overview.previousNoRf') : comparedNote,
-    formula: t('overview.formula', {
-      issued: formatNumber(rate.numerator),
-      count: rate.denominator,
-    }),
+    note: previous && !spec.rate(previous) ? t(spec.noneBefore) : comparedNote,
   };
 }
 

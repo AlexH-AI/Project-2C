@@ -22,7 +22,7 @@ async function openOverview(page: Page) {
   };
 }
 
-test('opens on the current month to date with the appointments tile and six KPI', async ({
+test('opens on the current month to date with the appointments tile, Doanh số and six KPI', async ({
   page,
 }) => {
   const errors = trackConsoleErrors(page);
@@ -33,9 +33,9 @@ test('opens on the current month to date with the appointments tile and six KPI'
   await expect(scopePill(page)).toHaveText('Toàn bộ');
   // A period or scope picked applies at once: no "Lọc" (ADR-0013 appendix 11/11/2026 §5).
   await expect(page.getByRole('button', { name: 'Lọc', exact: true })).toHaveCount(0);
-  // The six KPI have a heading of their own, beside the tile "Lịch hẹn" and not under it, as on
-  // the screen (DR6-187): each is a level 3 under "Chỉ số của kỳ".
-  await expect(kpis.getByRole('heading', { level: 3 })).toHaveCount(6);
+  // Doanh số and the six KPI have a heading of their own, beside the tile "Lịch hẹn" and not under
+  // it, as on the screen (DR6-187): each is a level 3 under "Chỉ số của kỳ".
+  await expect(kpis.getByRole('heading', { level: 3 })).toHaveCount(7);
   expect(
     await page
       .locator('main')
@@ -43,18 +43,23 @@ test('opens on the current month to date with the appointments tile and six KPI'
       .evaluateAll((headings) =>
         headings.slice(0, 3).map((heading) => `${heading.tagName} ${heading.textContent}`),
       ),
-  ).toEqual(['H2 Lịch hẹn · cả tháng', 'H2 Chỉ số của kỳ', 'H3 Chuyển RF']);
+  ).toEqual(['H2 Lịch hẹn · cả tháng', 'H2 Chỉ số của kỳ', 'H3 Doanh số']);
   await expect(page.getByRole('region', { name: 'Lịch hẹn · cả tháng' })).toContainText(
     'đã gặp / tổng lịch',
   );
-  await expect(kpis.getByRole('region')).toHaveCount(6);
-  await expect(kpis.getByRole('region', { name: 'Chuyển RF' })).toContainText(
-    'so với 01/08 – 15/08',
-  );
-  await expect(kpis.getByRole('region', { name: 'Tỉ lệ chốt' })).toContainText(
-    /\d+ HĐ phát hành ÷ \d+ RF/,
-  );
-  // ▲ reads in the ok colour and ▼ in the danger colour (mockup 1a).
+  // Each tile writes how its number is worked out, or what it counts (tong-quan.html #tiles).
+  const kpi = (name: string) => kpis.getByRole('region', { name });
+  await expect(kpis.getByRole('region')).toHaveCount(7);
+  await expect(kpi('Doanh số')).toContainText(/FYP phát hành [\d.]+ (tr|tỷ) − FYP hủy [\d.]+ /);
+  await expect(kpi('Tổng số HĐ')).toContainText(/\d+ phát hành − \d+ hủy/);
+  await expect(kpi('Tỷ lệ hủy')).toContainText(/\d+ hủy ÷ \d+ phát hành/);
+  await expect(kpi('Tỷ lệ chốt')).toContainText(/\d+ HĐ phát hành ÷ \d+ RF/);
+  await expect(kpi('Chuyển RF')).toContainText(/từ \d+ buổi đã gặp/);
+  await expect(kpi('Chuyển RF')).toContainText('so với 01/08 – 15/08');
+  await expect(kpi('HĐ nộp')).toContainText('HĐ có ngày nộp trong kỳ');
+  await expect(kpi('Case size')).toContainText(/FYP nộp của \d+ HĐ/);
+  // ▲ reads in the ok colour and ▼ in the danger colour (mockup 1a); for Tỷ lệ hủy the other way
+  // round: a rise is for the worse (#tiles).
   const tones = await kpis.evaluate((section) => {
     const colour = (token: string) => {
       const probe = document.createElement('i');
@@ -64,10 +69,14 @@ test('opens on the current month to date with the appointments tile and six KPI'
       probe.remove();
       return value;
     };
-    const tone = { '▲': colour('--ok'), '▼': colour('--danger') };
+    const [ok, danger] = [colour('--ok'), colour('--danger')];
     return [...section.querySelectorAll('span')]
       .filter((span) => /^[▲▼]/.test(span.textContent ?? ''))
-      .map((span) => getComputedStyle(span).color === tone[span.textContent![0] as '▲' | '▼']);
+      .map((span) => {
+        const rise = span.textContent![0] === '▲';
+        const worse = span.closest('section')?.getAttribute('aria-label') === 'Tỷ lệ hủy';
+        return getComputedStyle(span).color === (rise !== worse ? ok : danger);
+      });
   });
   expect(tones.length).toBeGreaterThan(0);
   expect(tones).not.toContain(false);
@@ -111,6 +120,39 @@ test('a new period applies at once: the line under the name and the numbers chan
   await expect(
     page.getByRole('region', { name: 'Chỉ số của kỳ' }).getByRole('region', { name: 'Chuyển RF' }),
   ).toContainText('so với 01/01 – 15/09/2025');
+});
+
+test('a KPI tile opens Báo cáo at the period and scope viewed; the sidebar, on the month', async ({
+  page,
+}) => {
+  await openOverview(page);
+  await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+  await pickFirstRm(page);
+  await expect(periodName(page)).toHaveText('Tháng 08/2026');
+  const scope = (await scopePill(page).textContent()) ?? '';
+  const net = page
+    .getByRole('region', { name: 'Chỉ số của kỳ' })
+    .getByRole('region', { name: 'Tổng số HĐ' });
+  const shown = (await net.getByRole('paragraph').first().textContent()) ?? '';
+
+  // The whole tile is the link (mockup tong-quan.html #tiles): a press in its middle opens it.
+  await net.click();
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Báo cáo');
+  await expect(periodName(page)).toHaveText('Tháng 08/2026');
+  await expect(scopePill(page)).toHaveText(scope);
+  // Tổng hợp has the number of the tile under Tổng số HĐ.
+  const summary = page.getByRole('table', { name: 'Tổng hợp' });
+  const columns = await summary.getByRole('row').nth(1).getByRole('columnheader').allTextContents();
+  await expect(
+    summary.getByRole('row').nth(2).getByRole('cell').nth(columns.indexOf('Tổng số HĐ')),
+  ).toHaveText(shown);
+
+  // Báo cáo reached another way opens on the month of today, as before.
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  await nav.getByRole('link', { name: 'Tổng quan' }).click();
+  await nav.getByRole('link', { name: 'Báo cáo' }).click();
+  await expect(periodName(page)).toHaveText('Tháng 09/2026');
 });
 
 test('‹ › on the pill step one period, and "Hôm nay" comes back to the one of today', async ({

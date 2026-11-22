@@ -46,6 +46,28 @@ export const en: EnglishMessages = {
   'period.pick': 'Choose a period',
   'period.applies': 'A choice updates the numbers at once',
   'overview.mtdRange': '{range} (MTD)',
+  // B3: the tiles of part B (mockup tong-quan.html #tiles) and the columns of Báo cáo, in the terms
+  // of `CONTEXT.md` § Thuật ngữ tiếng Anh. The other tiles come with Tổng quan (G-12 … G-16).
+  'overview.kpi.cancelled': 'Policies cancelled',
+  'overview.kpi.net': 'Total policies',
+  'overview.kpi.issuedFyp': 'Issued FYP',
+  'overview.kpi.cancelledFyp': 'Cancelled FYP',
+  'overview.kpi.cancelRate': 'Cancellation rate',
+  'overview.kpiOpen': 'Open {label} in Reports',
+  'overview.formula.revenue': 'Issued FYP {issued} − cancelled FYP {cancelled}',
+  'overview.formula.net': '{issued} issued − {cancelled} cancelled',
+  'overview.formula.cancelRate': '{cancelled} cancelled ÷ {issued} issued',
+  'overview.formula.rf': {
+    one: 'from {met} appointment met',
+    other: 'from {met} appointments met',
+  },
+  'overview.formula.submitted': 'Policies with a submission date in the period',
+  'overview.formula.caseSize': {
+    one: 'Submitted FYP of {policies} policy',
+    other: 'Submitted FYP of {policies} policies',
+  },
+  'overview.noIssued': '0 policies issued in the period · not compared',
+  'overview.previousNoIssued': '— 0 policies issued in the previous period, not compared',
   // A money field (G-03b): the words of mockup ngon-ngu-tien-te.html #money, tied to the codes of
   // the reading (ADR-0018 §5); "whole cents" chosen by the Owner 14/11/2026.
   'money.read': '{amount} ({compact})',

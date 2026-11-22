@@ -211,10 +211,10 @@ test('a new screen is there at once, its parts rise in turn and land within 0.6 
   const rises = await recordMoves(page, 'main [data-rise]');
   const titles = await recordMoves(page, 'h1, [data-slot="screen-sub"]');
   await nav(page, 'Tổng quan').click();
-  // Tổng quan has nine parts: the tile of the appointments, six KPI, two blocks.
+  // Tổng quan has ten parts: the tile of the appointments, Doanh số and six KPI, two blocks.
   const parts = await rises();
   expect(parts).toEqual(
-    [0, 1, 2, 3, 4, 5, 6, 7, 7].map((step) => [
+    [0, 1, 2, 3, 4, 5, 6, 7, 7, 7].map((step) => [
       { ...RISE, start: step * 28, end: step * 28 + 400 },
     ]),
   );
@@ -518,20 +518,21 @@ async function recordNumbers(page: Page) {
 
 const UNITS: Readonly<Record<string, number>> = { K: 1e3, tr: 1e6, tỷ: 1e9 };
 
-/** What a number of a tile reads as: `1.03 tỷ`, `761 tr`, `66.7%`, `1,204`, `12 / 30` (12). */
+/** What a number of a tile reads as: `1.03 tỷ`, `-530 tr`, `66.7%`, `1,204`, `12 / 30` (12). */
 const amountOf = (text: string) => {
-  const [, digits = '', unit = ''] = /^([\d.,]+)\s*(\S*)/.exec(text) ?? [];
+  const [, digits = '', unit = ''] = /^(-?[\d.,]+)\s*(\S*)/.exec(text) ?? [];
   return Number(digits.replace(/,/g, '')) * (UNITS[unit] ?? 1);
 };
 
-/** The six KPI of Tổng quan and its tile of appointments. */
+/** Doanh số, the six KPI of Tổng quan and its tile of appointments. */
 const NUMBERS = [
+  'Doanh số',
+  'Tổng số HĐ',
+  'Tỷ lệ hủy',
+  'Tỷ lệ chốt',
   'Chuyển RF',
   'HĐ nộp',
   'Case size',
-  'HĐ phát hành',
-  'Doanh số',
-  'Tỉ lệ chốt',
   'Lịch hẹn · cả tháng',
 ];
 
@@ -786,14 +787,14 @@ test.describe('under "Giảm chuyển động"', () => {
     await nav(page, 'Tổng quan').click();
     await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan' })).toBeFocused();
     expect(await moving('main, header, nav')).toEqual([]);
-    // The parts are the ones the shell gives a step of "Hiện" (`--rise-step`), all nine of them:
+    // The parts are the ones the shell gives a step of "Hiện" (`--rise-step`), all ten of them:
     // none is shifted (L239).
     const parts = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('main *')]
         .filter((part) => part.style.getPropertyValue('--rise-step') !== '')
         .map((part) => getComputedStyle(part).transform),
     );
-    expect(parts).toEqual(Array(9).fill('none'));
+    expect(parts).toEqual(Array(10).fill('none'));
 
     await scopePill(page).click();
     await expect(scopeMenu(page)).toBeVisible();
