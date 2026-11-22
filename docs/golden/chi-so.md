@@ -144,7 +144,7 @@ Người như mục 1: An, Bình (Team A), Chi, Dũng (Team B). Ngày không ghi
 
 #### Khách hàng và cuộc hẹn
 
-Mọi KH được tạo ngày 03/01/2028 ở nhóm ghi trong cột "Tạo". Mỗi cuộc hẹn dưới là một cuộc gặp chuyển RF (Đã gặp, N4/N3 → N2/N1), để Tỷ lệ chốt có số ở tháng có HĐ hủy; mỗi cuộc hẹn do RM của KH đó ghi, nên RF tính cho RM ở cột "RM".
+Mọi KH được tạo ngày 03/01/2028 ở nhóm ghi trong cột "Tạo". Mỗi cuộc hẹn dưới là một cuộc gặp chuyển RF (Đã gặp, N4/N3 → N2/N1), để Tỷ lệ chốt có số ở tháng có HĐ hủy; mỗi cuộc hẹn do RM của KH đó ghi.
 
 | KH | RM | Tạo | Cuộc gặp chuyển RF | Nhóm hiện tại |
 |---|---|---|---|---|
