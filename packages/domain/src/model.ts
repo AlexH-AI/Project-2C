@@ -110,6 +110,11 @@ export interface Policy {
   readonly issuedDate: CalendarDate | null;
   /** Defaults to `submittedFyp` when issued; the Owner may overwrite it by hand (G2 D). */
   readonly issuedFyp: Money | null;
+  /**
+   * Null unless cancelled; only an issued policy is, on its issue day at the earliest. The
+   * cancelled FYP is `issuedFyp` (golden `docs/golden/chi-so.md` mục 4.4).
+   */
+  readonly cancelledDate: CalendarDate | null;
 }
 
 /** Góc nhìn: everyone, one team, or one RM. */

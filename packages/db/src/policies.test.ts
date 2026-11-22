@@ -1,7 +1,14 @@
 import { maxFee } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import {
+  createCustomer,
+  listCustomers,
+  listStageTransitions,
+  softDeleteCustomer,
+  updateCustomerProfile,
+} from './customers';
+import {
+  cancelPolicy,
   issuePolicy,
   listPolicies,
   restorePolicy,
@@ -11,7 +18,7 @@ import {
 } from './policies';
 import { setCurrency } from './settings';
 import { restorePerson, softDeletePerson, updatePerson } from './team';
-import { byId, codeOf, d, setup } from './test-support';
+import { byId, codeOf, d, errorOf, setup } from './test-support';
 
 const MILLION = 1_000_000;
 
@@ -46,6 +53,7 @@ describe('policies', () => {
       submittedFyp: 300 * MILLION,
       issuedDate: null,
       issuedFyp: null,
+      cancelledDate: null,
     });
 
     const issued = issuePolicy(db, policy.id, { issuedDate: d(2, 2) });
@@ -224,5 +232,180 @@ describe('policies', () => {
     expect(codeOf(() => restorePolicy(db, id))).toBe('RM_REQUIRED');
     expect(byId(listPolicies(db), id)).toBeUndefined();
     expect(persist).toHaveBeenCalledTimes(2);
+  });
+});
+
+// B1a (spec Phase 6 phản hồi §4.2; golden `docs/golden/chi-so.md` mục 4.4, points 2–6).
+describe('cancelling a policy', () => {
+  /** A policy submitted 31/01, issued on `issuedDate` with its submitted FYP, 300 tr. */
+  async function issued(issuedDate = d(2, 2)) {
+    const ctx = await withCustomer();
+    const { id } = ctx.submit();
+    issuePolicy(ctx.db, id, { issuedDate });
+    return { ...ctx, id };
+  }
+
+  it('cancels an issued policy, on its issue day too (G39), and moves no stage', async () => {
+    const { db, customer, id, submit } = await issued();
+    const transitions = listStageTransitions(db);
+
+    expect(cancelPolicy(db, id, d(2, 2))).toMatchObject({
+      issuedDate: d(2, 2),
+      issuedFyp: 300 * MILLION,
+      cancelledDate: d(2, 2),
+    });
+    const later = submit();
+    issuePolicy(db, later.id, { issuedDate: d(2, 2) });
+    cancelPolicy(db, later.id, d(23, 2));
+
+    expect(listPolicies(db).map((p) => [p.id, p.cancelledDate])).toEqual([
+      [id, d(2, 2)],
+      [later.id, d(23, 2)],
+    ]);
+    expect(listStageTransitions(db)).toEqual(transitions);
+    expect(byId(listCustomers(db), customer.id)?.stage).toBe('N1');
+  });
+
+  it('refuses a policy not issued or already cancelled, deleted, or of a deleted customer', async () => {
+    const { db, customer, id, submit, persist } = await issued();
+    const submitted = submit();
+    cancelPolicy(db, id, d(10, 2));
+    const gone = submit();
+    issuePolicy(db, gone.id, { issuedDate: d(2, 2) });
+    softDeletePolicy(db, gone.id);
+    persist.mockClear();
+
+    expect(codeOf(() => cancelPolicy(db, submitted.id, d(10, 2)))).toBe('POLICY_NOT_ISSUED');
+    expect(errorOf(() => cancelPolicy(db, id, d(12, 2)))).toMatchObject({
+      code: 'POLICY_ALREADY_CANCELLED',
+      params: { date: '10/02/2026' },
+    });
+    expect(codeOf(() => cancelPolicy(db, gone.id, d(10, 2)))).toBe('POLICY_NOT_FOUND');
+    expect(codeOf(() => cancelPolicy(db, 'x', d(10, 2)))).toBe('POLICY_NOT_FOUND');
+    expect(persist).not.toHaveBeenCalled();
+    expect(byId(listPolicies(db), id)?.cancelledDate).toEqual(d(10, 2));
+
+    const other = submit();
+    issuePolicy(db, other.id, { issuedDate: d(2, 2) });
+    softDeleteCustomer(db, customer.id);
+    expect(codeOf(() => cancelPolicy(db, other.id, d(10, 2)))).toBe('CUSTOMER_NOT_FOUND');
+  });
+
+  it('refuses a day before the issue, after today, or outside 1900–2100, and takes today', async () => {
+    const { db, id, persist } = await issued();
+    persist.mockClear();
+
+    expect(errorOf(() => cancelPolicy(db, id, d(1, 2)))).toMatchObject({
+      code: 'CANCELLED_BEFORE_ISSUED',
+      params: { date: '02/02/2026' },
+    });
+    expect(errorOf(() => cancelPolicy(db, id, d(27, 9)))).toMatchObject({
+      code: 'DATE_IN_FUTURE',
+      params: { date: '27/09/2026', field: 'cancelled' },
+    });
+    for (const date of [
+      { year: 1899, month: 12, day: 31 },
+      { year: 2101, month: 1, day: 1 },
+      { year: 2026, month: 2, day: 30 },
+    ]) {
+      expect(codeOf(() => cancelPolicy(db, id, date))).toBe('INVALID_DATE');
+    }
+    expect(persist).not.toHaveBeenCalled();
+    expect(byId(listPolicies(db), id)?.cancelledDate).toBeNull();
+
+    expect(cancelPolicy(db, id, d(26, 9)).cancelledDate).toEqual(d(26, 9));
+  });
+
+  it('changes the cancellation day and undoes the cancellation through updatePolicy', async () => {
+    const { db, id } = await issued();
+    cancelPolicy(db, id, d(10, 2));
+
+    expect(updatePolicy(db, id, { cancelledDate: d(20, 2) }).cancelledDate).toEqual(d(20, 2));
+    expect(codeOf(() => updatePolicy(db, id, { cancelledDate: d(1, 2) }))).toBe(
+      'CANCELLED_BEFORE_ISSUED',
+    );
+    expect(codeOf(() => updatePolicy(db, id, { cancelledDate: d(27, 9) }))).toBe('DATE_IN_FUTURE');
+    // The cancelled FYP is the issued one: a new issued FYP keeps the cancellation as it is.
+    expect(updatePolicy(db, id, { issuedFyp: 280 * MILLION })).toMatchObject({
+      issuedFyp: 280 * MILLION,
+      cancelledDate: d(20, 2),
+    });
+    expect(updatePolicy(db, id, {}).cancelledDate).toEqual(d(20, 2));
+
+    // Undone: issued again, with no trace of the cancellation.
+    expect(updatePolicy(db, id, { cancelledDate: null })).toMatchObject({
+      issuedDate: d(2, 2),
+      issuedFyp: 280 * MILLION,
+      cancelledDate: null,
+    });
+    expect(db.sqlite.exec('SELECT cancelled_date FROM policies')[0]!.values).toEqual([[null]]);
+    // A cancellation day given to an issued policy cancels it, by the same rules.
+    expect(updatePolicy(db, id, { cancelledDate: d(3, 2) }).cancelledDate).toEqual(d(3, 2));
+  });
+
+  it('refuses to clear the issue of a cancelled policy, or move it past the cancellation', async () => {
+    const { db, id, submit, persist } = await issued();
+    cancelPolicy(db, id, d(10, 2));
+    persist.mockClear();
+
+    const refusal = { code: 'POLICY_CANCELLED', params: { date: '10/02/2026' } };
+    expect(
+      errorOf(() => updatePolicy(db, id, { issuedDate: null, issuedFyp: null })),
+    ).toMatchObject(refusal);
+    expect(errorOf(() => updatePolicy(db, id, { issuedDate: d(11, 2) }))).toMatchObject(refusal);
+    expect(errorOf(() => issuePolicy(db, id, { issuedDate: d(11, 2) }))).toMatchObject(refusal);
+    expect(persist).not.toHaveBeenCalled();
+    expect(byId(listPolicies(db), id)).toMatchObject({
+      issuedDate: d(2, 2),
+      cancelledDate: d(10, 2),
+    });
+
+    // Up to the cancellation day itself, the issue day moves.
+    expect(updatePolicy(db, id, { issuedDate: d(10, 2) }).issuedDate).toEqual(d(10, 2));
+    expect(updatePolicy(db, id, { issuedDate: d(5, 2) }).issuedDate).toEqual(d(5, 2));
+    // Undone in the same save (Bỏ hủy, then the issue cleared, mockup `huy-hd.html`): submitted.
+    expect(
+      updatePolicy(db, id, { issuedDate: null, issuedFyp: null, cancelledDate: null }),
+    ).toMatchObject({ issuedDate: null, issuedFyp: null, cancelledDate: null });
+
+    const submitted = submit();
+    expect(codeOf(() => updatePolicy(db, submitted.id, { cancelledDate: d(10, 2) }))).toBe(
+      'POLICY_NOT_ISSUED',
+    );
+  });
+
+  // Golden B (`docs/golden/chi-so.md` mục 4.1): `hd-18` of KH 16, cancelled on 08/02/2028 and then
+  // the cancellation undone — the walk B1b reads G36 and then G37 on.
+  it('B: cancels hd-18 on 08/02/2028, then undoes it', async () => {
+    const { db, rm } = await setup(d(29, 2, 2028));
+    const kh16 = createCustomer(db, {
+      name: 'KH 16',
+      rmId: rm.id,
+      stage: 'N3',
+      date: d(3, 1, 2028),
+    });
+    const hd18 = submitPolicy(db, {
+      customerId: kh16.id,
+      rmId: rm.id,
+      submittedDate: d(1, 2, 2028),
+      submittedFyp: 200 * MILLION,
+    });
+    issuePolicy(db, hd18.id, { issuedDate: d(3, 2, 2028) });
+    const read = () => byId(listPolicies(db), hd18.id);
+    expect(read()?.cancelledDate).toBeNull();
+
+    cancelPolicy(db, hd18.id, d(8, 2, 2028));
+    expect(read()).toMatchObject({
+      issuedDate: d(3, 2, 2028),
+      issuedFyp: 200 * MILLION,
+      cancelledDate: d(8, 2, 2028),
+    });
+
+    updatePolicy(db, hd18.id, { cancelledDate: null });
+    expect(read()).toMatchObject({
+      issuedDate: d(3, 2, 2028),
+      issuedFyp: 200 * MILLION,
+      cancelledDate: null,
+    });
   });
 });

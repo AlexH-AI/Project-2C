@@ -9,6 +9,8 @@ import {
 import {
   APPOINTMENT_STATUSES,
   calendarDate,
+  compareDates,
+  daysBetween,
   evaluateKycGate,
   formatIsoDate,
   KYC_GATE_STATES,
@@ -99,7 +101,9 @@ const DEMO_ROW_COUNTS = {
 // UTC−12 to UTC+11 the data is the very data of UTC.
 // A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RE.
 // G-04 (T-442) on purpose too: the same rows, and the currency key the seed writes (ADR-0018 §7).
-const DEMO_HASH = 'b7b5ec5cd48c21d922c750050a6a87323c56596d805594ce313940bf80fad320';
+// B1a (T-486) on purpose: the column of the cancellation day, and one issued policy in 20 cancelled
+// with a stream and a clock of its own — every other value of every row as it was.
+const DEMO_HASH = '44b566bca73137e0b5a2b44cbadffa790236a05e1fb51ab9fcaee8f851668cfd';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
@@ -232,6 +236,19 @@ describe('seedDemoData', () => {
       expect(issued.some((p) => p.issuedDate!.month !== p.submittedDate.month)).toBe(true);
       expect(issued.some((p) => p.issuedFyp !== p.submittedFyp)).toBe(true);
       expect(listPolicies(db).some((p) => p.issuedDate === null)).toBe(true);
+    });
+
+    // B1a (spec Phase 6 phản hồi §4.4): about 5% of the issued policies cancelled within 21 days.
+    it('cancels 3–7% of the issued policies, 0–21 days after the issue and by the anchor day', () => {
+      const issued = listPolicies(db).filter((p) => p.issuedDate !== null);
+      const cancelled = issued.filter((p) => p.cancelledDate !== null);
+      expect(cancelled.length / issued.length).toBeGreaterThanOrEqual(0.03);
+      expect(cancelled.length / issued.length).toBeLessThanOrEqual(0.07);
+      const days = cancelled.map((p) => daysBetween(p.issuedDate!, p.cancelledDate!));
+      expect(Math.min(...days)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...days)).toBeLessThanOrEqual(21);
+      expect(new Set(days).size).toBeGreaterThan(5);
+      expect(cancelled.every((p) => compareDates(p.cancelledDate!, ANCHOR) <= 0)).toBe(true);
     });
 
     it('gives each customer 1-5 KYC notes and covers every gate state and both kinds of conflict', () => {

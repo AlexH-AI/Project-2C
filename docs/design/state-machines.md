@@ -1,6 +1,6 @@
 # State machine trong app — danh mục
 
-Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật: trạng thái nào có, đi sang đâu được, **luật nằm ở đâu**. Đọc trước khi thêm trạng thái / lệnh / nút cho một thực thể, hay sửa một luồng bận / hủy / lỗi. Rà ngày 09/11/2026 trên `main` `95f5e20` (code cuối `a1e6a20`). Tên hàm và hằng ổn định hơn số dòng: tìm bằng tên. Mã D1–D7, R1–R6, U1–U8, P1–P3 là của riêng file này, khác mã quyết định D1–D10 của `docs/design/phase-3-du-lieu.md` mà comment trong code hay trích ("(D3)", "(D7)"); file này ghi mã của spec kèm tên spec ("khóa D7 của spec Phase 3").
+Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật: trạng thái nào có, đi sang đâu được, **luật nằm ở đâu**. Đọc trước khi thêm trạng thái / lệnh / nút cho một thực thể, hay sửa một luồng bận / hủy / lỗi. Rà ngày 09/11/2026 trên `main` `95f5e20` (code cuối `a1e6a20`); máy HĐ (D3, §7) và R7 thêm 22/11/2026 (T-486, B1a: HĐ hủy). Tên hàm và hằng ổn định hơn số dòng: tìm bằng tên. Mã D1–D7, R1–R7, U1–U8, P1–P3 là của riêng file này, khác mã quyết định D1–D10 của `docs/design/phase-3-du-lieu.md` mà comment trong code hay trích ("(D3)", "(D7)"); file này ghi mã của spec kèm tên spec ("khóa D7 của spec Phase 3").
 
 - **Tường minh:** luật ở một chỗ (hàm thuần, union, bảng), chỗ khác đọc chỗ đó.
 - **Ngầm:** luật là các `if` lặp lại ở nhiều nơi, hoặc trạng thái là tổ hợp của nhiều biến cờ.
@@ -12,10 +12,10 @@ Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật:
 |---|---|---|---|---|
 | D1 | Nhóm KH (`CustomerStage`) | N4, N3, N2, N1, `ON_HOLD`, `LOST` | **Tường minh — mẫu chuẩn** | `assertValidTransition` (`packages/domain/src/customer-lifecycle.ts`): lệnh db (`checkTransition` ở `packages/db/src/customers.ts`), nhập backup và UI (`allowedStages` ở `apps/desktop/src/routes/customers/customers-view.ts`) cùng gọi một hàm |
 | D2 | Cuộc hẹn (`AppointmentStatus`) | `SCHEDULED`, `MET`, `RESCHEDULED`, `CANCELLED`, `NO_SHOW` | Tường minh (T-403) | `appointmentActions` / `canAppointment` (`packages/domain/src/appointment-lifecycle.ts`): lệnh db, `outcomeChoices`, nút của `Detail` và hộp 6f cùng đọc một bảng — xem §4 |
-| D3 | HĐ (`Policy`) | đã nộp → phát hành (UI không cho về lại; `updatePolicy` cho) | Ngầm, đủ chặn | Không có trường trạng thái: suy từ cặp `issuedDate` / `issuedFyp`. CHECK `policies_issued_pair`, `policies_issued`; `validate` ở `packages/db/src/policies.ts` (`ISSUE_INCOMPLETE`, `ISSUED_BEFORE_SUBMITTED`); UI giữ union `issued: null \| {…}` (`openDraft`, `policyStatusText` ở `apps/desktop/src/routes/customers/policy-form.ts`). Kiểu `Policy` của domain cho phép nửa cặp, CHECK chặn |
+| D3 | HĐ (`Policy`) | đã nộp → phát hành → đã hủy; bỏ hủy về phát hành (UI không cho phát hành về đã nộp; `updatePolicy` cho khi HĐ chưa hủy) | Suy từ ngày; luật của lệnh ở một hàm | Không có trường trạng thái: suy từ `issuedDate` / `cancelledDate` (golden `docs/golden/chi-so.md` mục 4.4). CHECK `policies_issued_pair`, `policies_issued`, `policies_cancelled`; `validate` ở `packages/db/src/policies.ts`, mọi lệnh HĐ và khôi phục cùng gọi (`ISSUE_INCOMPLETE`, `ISSUED_BEFORE_SUBMITTED`, `POLICY_NOT_ISSUED`, `CANCELLED_BEFORE_ISSUED`, `POLICY_CANCELLED`); `cancelPolicy` (`POLICY_ALREADY_CANCELLED`); UI giữ union `issued: null \| {…}` (`openDraft`, `policyStatusText` ở `apps/desktop/src/routes/customers/policy-form.ts`), chưa có đã hủy (B2). Kiểu `Policy` của domain cho phép nửa cặp, CHECK chặn. Xem §7 |
 | D4 | Dữ kiện KYC (`KycFactStatus`), theo từng trường | chưa có → `active`; `active` → `superseded` + `active` mới; `active` → `conflict`; `conflict` → một `active`, còn lại `superseded` | Tường minh | Phép thuần `confirmFact`, `markConflict`, `resolveConflict` (`packages/domain/src/kyc.ts`); db `confirmKycFact`, `markKycConflict`, `resolveKycConflict` lưu phần khác; nhập backup đếm `active` / `conflict` mỗi trường |
 | D5 | Phân tích AI (`ai_analyses`) | `ACCEPTED` / `REJECTED` lưu; `CURRENT` / `STALE` / `REJECTED` suy ra | Tường minh, không đổi sau khi ghi | Chỉ thêm (trigger chặn sửa / xóa); CHECK theo `status`; `listAiAnalyses` suy `AiAnalysisState` (`packages/db/src/ai-analyses.ts`) |
-| D6 | Xóa mềm (KH, cuộc hẹn, HĐ, nhân sự, team) | còn → đã xóa (`deleted_at`) → khôi phục, hoặc xóa hẳn | Tường minh | `softDelete*`, `restore*` + `checkRestore*` từng thực thể; `previewPurge` / `purgeTrash` / `keptRecords` (`packages/db/src/purge.ts`) |
+| D6 | Xóa mềm (KH, cuộc hẹn, HĐ, nhân sự, team) | còn → đã xóa (`deleted_at`) → khôi phục, hoặc xóa hẳn | Tường minh | `softDelete*`, `restore*` + `checkRestore*` từng thực thể; `previewPurge` / `purgeTrash` / `keptRecords` (`packages/db/src/purge.ts`); xóa → Hoàn tác trên thông báo (`deletedToast` của `apps/desktop/src/shell/trash-undo.ts`): khôi phục qua `restoreRow` của Thùng rác, không qua hộp khôi phục |
 | D7 | Cổng KYC (`KycGateState`) | `CONFLICT_RESOLUTION` > `KYC_INSUFFICIENT` > `PROFILE_DISCOVERY` > `PAIN_POINT_ANALYSIS` | Hàm phân loại, không nhớ trạng thái | `evaluateKycGate` (`packages/domain/src/kyc-gate.ts`) |
 
 ## 2. Lúc chạy (bộ nhớ, Rust)
@@ -28,6 +28,7 @@ Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật:
 | R4 | Job AI (phân tích theo KH, trích xuất theo ghi chú) | không có → đang chạy → (Hủy) đang hủy → không có; kết quả giữ theo `generation` | Tường minh | `createAiJobs` (`apps/desktop/src/data/ai-jobs.ts`), `useAiJob` (`apps/desktop/src/routes/customers/use-ai-job.ts`) → `AiJobPhase`; union `AiPanelRun` + `runAfter` / `panelRun` (`apps/desktop/src/routes/customers/ai-panel-view.ts`) |
 | R5 | Rust: một request AI, một lệnh file | rảnh / bận | Tường minh | `ai::Busy` + guard `Running` (`apps/desktop/src-tauri/src/ai.rs`); `storage::DataLock` (`Mutex<Held>`, `page` của lần `open` cuối; `apps/desktop/src-tauri/src/storage.rs`) |
 | R6 | Khởi động | đang mở → app / trang lỗi | Tường minh | `openAppData(...).then(App, StartupError)` (`apps/desktop/src/main.tsx`), `startupMessage` (`apps/desktop/src/shell/startup-error.ts`) |
+| R7 | Hàng thông báo (toast) | không có / thông báo thường (tự đi sau `TOAST_MS`, 4,2 giây; đứng lại khi con trỏ hay focus ở trong) / thông báo lỗi (ở lại tới khi đóng); thông báo mới thay thông báo đang hiện, cả thông báo lỗi | Gói kín, một kho `current()` | `createToastQueue` (`apps/desktop/src/shell/toast-queue.ts`) |
 
 ## 3. UI
 
@@ -35,11 +36,11 @@ Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật:
 |---|---|---|---|---|
 | U1 | Phiên ChatGPT web (`KycIntelligence` ở `apps/desktop/src/routes/customers/KycIntelligence.tsx`) | một union `AiPanelWebState` (`idle \| starting \| open \| failed`), đọc qua `webShown` với `generation`; `webEnded` (câu báo cho trình đọc màn hình, DR5-33) giữ riêng như `ended` của `useAiJob` | Tường minh | Đã sửa (P3, T-405 #1179): trước đó bốn biến `startingWeb`, `webFailed`, `kept` (+ `generation`), `webEnded`, và tổ hợp vô lý (`webFailed` cùng phiên đang mở) chỉ bị giấu bằng điều kiện render. Hàm chuyển thuần `webStarted` (kết quả `startChatGptWeb`), `webShown` (phiên của dữ liệu đã thay đọc ra rảnh, DR6-15), `webChanged` (phiên đổi / kết thúc) ở `ai-panel-view.ts`, cạnh `AiPanelRun`, có unit test |
 | U2 | Cài đặt → Dữ liệu (`DataFileSection`, `BackupSection`, `DemoSection`) | thông báo chung (DR6-45, `noticeOf`); bận chung `busy: DataBusy` (`'export' \| 'read' \| null`) ở `DataSections` như thông báo: `BackupSection` đặt, `DemoSection` tắt "Nạp lại…" khi khác `null`; `confirming` (10c) và `running` của `ConfirmWordDialog` / `ImportDialog` nằm trong hộp modal | Tường minh | **DR6-200** đã sửa (P2, T-404 #1178): trước đó "Nạp lại…" bấm được lúc đang đọc file backup, 10a chồng 10c, 10c giữ số đếm cũ. Dữ liệu vốn an toàn nhờ R2 |
-| U3 | Xuất / nhập backup (`BackupSection`) | `busy: 'export' \| 'read' \| null`, `chosen`, `refused` | Gần tường minh | `chosen` và `refused` loại trừ nhau theo luồng `readFile` |
+| U3 | Xuất / nhập backup (`BackupSection`) | `chosen`, `refused`; `busy` là prop của `DataSections` (`DataBusy`, xem U2), `BackupSection` chỉ đặt | Gần tường minh | `chosen` và `refused` loại trừ nhau theo luồng `readFile` |
 | U4 | API key (`KeyCard` ở `apps/desktop/src/routes/SettingsAi.tsx`) | `stored`, `text`, `fieldError`, `outcome`, `working`, `confirming` + bộ đếm `actions` | Ngầm, nhỏ | `actions` là thẻ chống kết quả đọc cũ (DR5-37, R2-14); nhất quán |
 | U5 | Hộp thoại "một trong N" | `AppointmentsScreen`: `creating`, `moving`, `recording`, `editing`, `deleting`; `CustomerProfile`: `editing`, `confirming`, `appointing`, `policyMode`, `marked`; `SettingsTrash`: `restoring`, `purging` | Ngầm, không tới được | Kiểu cho phép hai hộp mở cùng lúc, nhưng hộp là modal nên không bấm được nút thứ hai |
-| U6 | Xác nhận hai bước | `asked` / `final` (`PersonDialogs`, `TeamDialogs`), `deleting` (`EditOutcomeDialog`, `PolicyDialogs`, `CustomerDialogs`) | Cục bộ | Nhỏ, một component |
-| U7 | Hộp 6c / 6f (`OutcomeDialog`, `EditOutcomeDialog`) | `status`, `booking`, `noStatus`, `kycNote`, `errors` | Form | Lựa chọn trạng thái đọc `outcomeChoices` (D2) |
+| U6 | Xác nhận hai bước | `asked` / `final` (`PersonDialogs`), `final` (`TeamDialogs`), `deleting` (`EditOutcomeDialog`, `PolicyDialogs`, `CustomerDialogs`) | Cục bộ | Nhỏ, một component |
+| U7 | Hộp 6c / 6f (`OutcomeDialog`, `EditOutcomeDialog`) | `OutcomeDialog`: `status`, `booking`, `noStatus`, `kycNote`, `errors`; `EditOutcomeDialog`: `status`, `errors` | Form | Lựa chọn trạng thái đọc `outcomeChoices` (D2) |
 | U8 | Xuất Excel (`ReportExport`) | `busy` + kết quả union `{ kind: 'failed', step: ExportStep }` | Tường minh | |
 
 ## 4. D2 — cuộc hẹn
@@ -75,16 +76,18 @@ Chỗ đọc bảng:
 
 - `packages/db/src/appointments.ts`: `recordOutcomeWithNext` (`record`), `editMeetingOutcome` (`edit`), đều mã `INVALID_STATUS`; `rescheduleAppointment` (`reschedule`, mã `APPOINTMENT_NOT_SCHEDULED`); `outcomeFields` (đích: `isOutcomeStatus`, `stageAfter` / `nextStep` / người đánh giá chỉ khi `MET`). Hai lệnh rộng hơn UI, có chú thích lý do: `recordMeetingOutcome` nhận `record` hoặc `edit` (6c chỉ bày nó trên lịch `SCHEDULED`: UI, và `recordOutcomeWithNext` khi đặt lịch kế; test ghi lại kết quả của lịch đã có kết quả), `softDeleteAppointment` nhận mọi trạng thái (app không xóa lịch Dời lịch, #171, nhưng file nhập có thể giữ một lịch như vậy đã xóa, và test xóa / khôi phục mọi lịch của seed).
 - `apps/desktop/src/routes/appointments/outcome-form.ts`: `outcomeChoices` (lựa chọn nào tắt).
+- `apps/desktop/src/routes/appointments/OutcomeDialog.tsx` (hộp 6c): lựa chọn trạng thái từ `outcomeChoices`; trạng thái **đích** người dùng chọn quyết định lệnh và khung: `RESCHEDULED` → `rescheduleAppointment` (khung dời lịch), trạng thái khác → `recordMeetingOutcome` / `recordOutcomeWithNext` (khung kết quả).
 - `apps/desktop/src/routes/appointments/AppointmentsScreen.tsx`: các nút Ghi kết quả, Dời lịch, Sửa, Xóa của `Detail`. Lịch đã có kết quả xóa trong 6f (nói trước chuyển nhóm bị rút lại, khóa D7 chặn), nên khung Chi tiết chỉ bày Xóa khi `delete` mà không `edit`.
 - `apps/desktop/src/routes/appointments/EditOutcomeDialog.tsx`: trạng thái của 6f (`OutcomeStatus`), nút Xóa.
 - Test bảng: `packages/domain/src/appointment-lifecycle.test.ts` (5 trạng thái × 4 thao tác), ca "the status rule of the commands (T-403)" của `packages/db/src/appointments.test.ts` (5 lệnh × 5 trạng thái, cùng mã lỗi), ca T-403 của `outcome-form.test.ts`. Thêm một trạng thái thì bảng `ACTIONS` không biên dịch tới khi có dòng của nó.
 
 Giữ ở chỗ cũ (ngoài P1):
 
-- `packages/db/src/appointments.ts`: `requireOutcomeDay`; `checkRestoreAppointment`.
+- Luật ngày (`MET` và `NO_SHOW` không ở tương lai), bốn chỗ: `requireOutcomeDay` (`packages/db/src/appointments.ts`); `outcomeChoices` (`apps/desktop/src/routes/appointments/outcome-form.ts`, hộp 6c); `held` của `apps/desktop/src/routes/appointments/EditOutcomeDialog.tsx` (hộp 6f chặn Lưu với `OUTCOME_IN_FUTURE`); `futureRule` (`packages/db/src/backup-validation.ts`, luật 10 khi nhập).
+- `packages/db/src/appointments.ts`: `checkRestoreAppointment`.
 - `packages/db/src/schema.ts`: CHECK `appointments_status`, `appointments_stage_after`, `appointments_met_outcome`, `appointments_outcome_reviewer`.
 - `packages/db/src/backup-validation.ts`: chuỗi dời lịch (`rescheduled_from_id` trỏ tới lịch `RESCHEDULED` cùng KH), lịch `MET` với chuyển nhóm của nó.
-- `apps/desktop/src/routes/appointments/outcome-form.ts`: luật ngày trong `outcomeChoices`, `outcomeLock` (khóa D7 của spec Phase 3).
+- `apps/desktop/src/routes/appointments/outcome-form.ts`: `outcomeLock` (khóa D7 của spec Phase 3).
 
 Xét theo trạng thái, UI không bày nút nào mà lệnh từ chối; luật ngày và khóa D7 của spec Phase 3 vẫn có thể bị lệnh từ chối kèm câu báo, đúng thiết kế.
 
@@ -92,7 +95,7 @@ Xét theo trạng thái, UI không bày nút nào mà lệnh từ chối; luật
 
 **Sửa ba máy ngầm P1–P3, giữ nguyên phần còn lại.** Owner 09/11/2026 mở đóng băng K49 cho ba việc này ("mở đóng băng code để sửa tiếp"; `docs/PROJECT-STATE.md`, mục 2026-11-09). Các mục [sau v1.0] khác của sổ giữ nguyên.
 
-- Không chỗ nào để dữ liệu lưu vào trạng thái sai: D1–D6 có CHECK + lệnh db + kiểm khi nhập (D7 là hàm phân loại, không lưu gì). Trạng thái UI sai tới được duy nhất là DR6-200 (P2).
+- Không chỗ nào để dữ liệu lưu vào trạng thái sai: D1–D6 có CHECK + lệnh db + kiểm khi nhập (D7 là hàm phân loại, không lưu gì). Trạng thái UI sai tới được duy nhất lúc rà (09/11/2026) là DR6-200 (P2), đã sửa (T-404 #1178).
 - P1 và P3 không đổi hành vi: chỉ dời luật về một chỗ, test hiện có phải xanh mà không sửa ca nào.
 - Không dùng thư viện state machine (XState…): dependency mới (G4); app đã có hai mẫu tường minh tự viết đủ dùng: hàm luật thuần của domain (D1) và union + hàm chuyển thuần trong `*-view.ts` (R4 `AiPanelRun`).
 
@@ -102,7 +105,7 @@ Xét theo trạng thái, UI không bày nút nào mà lệnh từ chối; luật
 | P2 | U2: đưa trạng thái bận của Cài đặt → Dữ liệu lên cha như đã làm với thông báo (DR6-45) | Sửa DR6-200 | T-404 #1178, `risk:low`; **đã làm**: `DataBusy` ở `DataSections` (`apps/desktop/src/routes/Settings.tsx`), xem §3 dòng U2 |
 | P3 | U1: một union `idle \| starting \| open \| failed` + hàm chuyển thuần trong `ai-panel-view.ts`, cạnh `AiPanelRun` | Bỏ tổ hợp vô lý; có unit test thay vì chỉ e2e | T-405 #1179, `risk:low`; **đã làm**: `AiPanelWebState` ở `ai-panel-view.ts`, xem §3 dòng U1 |
 
-Không sửa: D3 (CHECK đã chặn; đổi kiểu `Policy` lan sang chỉ số và golden, vùng G2), U5 (modal đã chặn), R1–R6 (đã tường minh hoặc gói kín, có test).
+Không sửa: D3 (CHECK đã chặn; đổi kiểu `Policy` lan sang chỉ số và golden, vùng G2; trạng thái Đã hủy của B1a thêm theo cùng cách, suy từ ngày, §7), U5 (modal đã chặn), R1–R7 (đã tường minh hoặc gói kín, có test).
 
 ## 6. Khi thêm trạng thái hay lệnh mới
 
@@ -111,3 +114,37 @@ Không sửa: D3 (CHECK đã chặn; đổi kiểu `Policy` lan sang chỉ số 
 3. UI suy nút / lựa chọn từ cùng hàm (mẫu `allowedStages`), không viết lại điều kiện.
 4. Nhiều cờ cùng tả một tiến trình bất đồng bộ → một union `{ phase: … }` + hàm chuyển thuần trong `*-view.ts` có unit test (mẫu `AiPanelRun` / `runAfter`).
 5. Cập nhật bảng ở file này.
+
+## 7. D3 — hợp đồng
+
+Phase 6 phần B (B1a, T-486): HĐ có thêm Đã hủy. Mô hình dữ liệu Owner duyệt G2 ngày 13/11/2026 (golden `docs/golden/chi-so.md` mục 4.4, phụ lục "HĐ hủy" của ADR-0007): không cột trạng thái, trạng thái suy từ ngày; FYP hủy là FYP phát hành; bỏ hủy là xóa ngày hủy, không giữ dấu vết.
+
+```mermaid
+stateDiagram-v2
+  [*] --> DaNop: submitPolicy
+  DaNop --> DaPhatHanh: issuePolicy / updatePolicy (ngày và FYP phát hành)
+  DaPhatHanh --> DaNop: updatePolicy (xóa ngày và FYP phát hành)
+  DaPhatHanh --> DaHuy: cancelPolicy
+  DaHuy --> DaHuy: updatePolicy (sửa ngày hủy)
+  DaHuy --> DaPhatHanh: updatePolicy (bỏ hủy, xóa ngày hủy)
+  note right of DaHuy
+    Ngày phát hành ≤ ngày hủy ≤ hôm nay.
+    Hủy không đổi nhóm KH.
+  end note
+```
+
+(`DaNop`, `DaPhatHanh`, `DaHuy`: Đã nộp, Đã phát hành, Đã hủy. Xóa mềm và khôi phục (D6) đi từ mọi trạng thái, không vẽ.)
+
+| Trạng thái | Suy từ | Hủy (`cancelPolicy`) | Sửa ngày hủy, bỏ hủy (`updatePolicy`) | Xóa hay dời ngày phát hành (`updatePolicy`) |
+|---|---|---|---|---|
+| Đã nộp | không `issuedDate` | `POLICY_NOT_ISSUED` | một ngày hủy: `POLICY_NOT_ISSUED` | — |
+| Đã phát hành | `issuedDate`, không `cancelledDate` | có: không trước ngày phát hành (`CANCELLED_BEFORE_ISSUED`), không sau hôm nay (`DATE_IN_FUTURE`) | một ngày hủy là hủy, cùng luật | có |
+| Đã hủy | `cancelledDate` | `POLICY_ALREADY_CANCELLED` | có; ngày mới theo luật của hủy | HĐ còn hủy ở ngày cũ: xóa ngày phát hành, hay dời nó sang sau ngày hủy → `POLICY_CANCELLED`; bỏ hủy trong cùng lần lưu thì được |
+
+Khôi phục từ Thùng rác giữ ngày hủy và kiểm lại mọi ngày như khi ghi (`checkRestorePolicy` gọi `validate`, DR-25). Luật nằm ở:
+
+- `packages/db/src/schema.ts`: CHECK `policies_issued_pair`, `policies_issued`, `policies_cancelled` (ngày hủy chỉ khi đã phát hành, không trước ngày phát hành).
+- `packages/db/src/policies.ts`: `validate` (mọi lệnh HĐ và `checkRestorePolicy`; HĐ giữ ngày hủy cũ thì báo `POLICY_CANCELLED`), `cancelPolicy` (đã phát hành, chưa hủy).
+- `packages/db/src/backup-validation.ts`: `futureRule` (luật 10, ngày hủy của HĐ chưa xóa); CHECK của bảng chặn ngay khi nạp, cả HĐ đã xóa.
+- `packages/db/src/seed.ts`: `cancelSimulation` (dữ liệu giả lập: một trong mỗi 20 HĐ phát hành, 0–21 ngày sau ngày phát hành, không sau ngày neo).
+- UI: chưa có (B2). `PolicyValues` của `apps/desktop/src/routes/customers/policy-form.ts` không mang `cancelledDate`, nên hộp Sửa hiện nay giữ nguyên ngày hủy. Khi B2 thêm nút Hủy / Bỏ hủy và hộp Sửa của HĐ đã hủy, nút và lựa chọn suy từ cùng luật (§6).

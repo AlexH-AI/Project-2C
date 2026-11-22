@@ -405,6 +405,16 @@ describe('importBackup — rules across tables', () => {
         b.tables.policies![0]!.issued_fyp = 20_000_000;
       },
     ],
+    // B1a: cancelled on its issue day (G39), the day of the import.
+    [
+      'a policy issued and cancelled today, the day of the import',
+      (b) =>
+        Object.assign(b.tables.policies![0]!, {
+          issued_date: TODAY,
+          issued_fyp: 20_000_000,
+          cancelled_date: TODAY,
+        }),
+    ],
     [
       'appointments booked or cancelled after today',
       (b) => {
@@ -826,6 +836,38 @@ describe('importBackup — rules across tables', () => {
     [
       '10: a policy issued after today',
       (b) => Object.assign(b.tables.policies![0]!, { issued_date: TOMORROW, issued_fyp: 1 }),
+    ],
+    // B1a (golden `docs/golden/chi-so.md` mục 4.4 point 8): the CHECK of the table on every policy,
+    // rule 10 on the cancellation day of a live one.
+    [
+      'CHECK: a policy cancelled before it was issued',
+      (b) => (b.tables.policies![0]!.cancelled_date = TODAY),
+    ],
+    [
+      'CHECK: a policy cancelled before its issue day',
+      (b) =>
+        Object.assign(b.tables.policies![0]!, {
+          issued_date: TODAY,
+          issued_fyp: 1,
+          cancelled_date: '2026-09-25',
+        }),
+    ],
+    [
+      'CHECK: a deleted policy cancelled before it was issued',
+      (b) =>
+        Object.assign(b.tables.policies![0]!, {
+          cancelled_date: TODAY,
+          deleted_at: '2026-09-26T11:00:00.000Z',
+        }),
+    ],
+    [
+      '10: a policy cancelled after today',
+      (b) =>
+        Object.assign(b.tables.policies![0]!, {
+          issued_date: TODAY,
+          issued_fyp: 1,
+          cancelled_date: TOMORROW,
+        }),
     ],
     [
       '10: a meeting missed after today',
@@ -1336,6 +1378,19 @@ describe('restoring a deleted record dated after today', () => {
       Object.assign(policyRow(backup), { issued_date: TOMORROW, issued_fyp: 20_000_000 }),
     );
     expect(codeOf(() => restorePolicy(issued.db, issued.policy))).toBe('DATE_IN_FUTURE');
+
+    // B1a: and cancelled after today, which the import lets a deleted policy be.
+    const cancelled = await imported((backup) =>
+      Object.assign(policyRow(backup), {
+        issued_date: TODAY,
+        issued_fyp: 20_000_000,
+        cancelled_date: TOMORROW,
+      }),
+    );
+    expect(errorOf(() => restorePolicy(cancelled.db, cancelled.policy))).toMatchObject({
+      code: 'DATE_IN_FUTURE',
+      params: { date: '27/09/2026', field: 'cancelled' },
+    });
 
     const fine = await imported();
     restorePolicy(fine.db, fine.policy);

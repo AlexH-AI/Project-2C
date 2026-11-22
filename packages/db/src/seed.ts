@@ -59,7 +59,13 @@ import {
   markKycConflict,
   resolveKycConflict,
 } from './kyc';
-import { issuePolicy, listPolicies, softDeletePolicy, submitPolicy } from './policies';
+import {
+  cancelPolicy,
+  issuePolicy,
+  listPolicies,
+  softDeletePolicy,
+  submitPolicy,
+} from './policies';
 import { setCurrency } from './settings';
 import {
   APPOINTMENT_TIMES,
@@ -138,6 +144,11 @@ const KYC_SETTLE_CHANCE = 0.25;
 const AI_ANALYSIS_CHANCE = 0.02;
 /** Mixed into the seed for the AI analyses' own random stream. */
 const AI_STREAM = 0x5eed_a1;
+/** One issued policy in this many is cancelled (5%), at most `CANCEL_DAYS` after its issue (B1a). */
+const CANCEL_EVERY = 20;
+const CANCEL_DAYS = 21;
+/** Mixed into the seed for the cancellations' own random stream. */
+const CANCEL_STREAM = 0x5eed_ca;
 /** Of the customers, appointments and policies, the share the load data deletes. */
 const TRASH_SHARE = 0.01;
 /** The team the load data closes, named apart from those `teamName` gives. */
@@ -178,6 +189,8 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
   const rng = createRng(options.seed);
   // Its own stream, so the AI analyses leave the rest of the data as it was before them.
   const aiRng = createRng(options.seed ^ AI_STREAM);
+  // The cancellations too (B1a).
+  const cancelRng = createRng(options.seed ^ CANCEL_STREAM);
   const anchor = dayNumber(options.anchorDate);
   const { start, end } = simulatedDays(anchor);
   let today = start;
@@ -192,7 +205,7 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
       if (listTeams(db).length > 0 || listPeople(db).length > 0) {
         throw new DbError('SEED_DATABASE_NOT_EMPTY');
       }
-      const simulate = simulation(db, rng, aiRng, anchor, scale);
+      const simulate = simulation(db, { rng, aiRng, cancelRng }, anchor, scale);
       for (; today <= end; today++) simulate.day(today);
       // The clock is back on the anchor day.
       if (options.trash) simulate.fillTrash();
@@ -232,7 +245,12 @@ function simulatedDays(anchor: number): { start: number; end: number } {
   };
 }
 
-function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: SeedScale) {
+function simulation(
+  db: Database,
+  { rng, aiRng, cancelRng }: { rng: Rng; aiRng: Rng; cancelRng: Rng },
+  anchor: number,
+  scale: SeedScale,
+) {
   const { start, end } = simulatedDays(anchor);
   const coordinators = new Map<string, Person[]>();
   const customers = new Map<string, SimCustomer[]>();
@@ -245,6 +263,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
   const born = birthYears(rng, toDate(anchor).year);
   const kyc = kycSimulation(db, rng, born);
   const ai = aiSimulation(db, aiRng);
+  const cancelAfterIssue = cancelSimulation(db, cancelRng, anchor);
   const names = new Set<string>();
   const staffName = (): string => {
     const name = personName(rng);
@@ -386,6 +405,7 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
         issuedDate: toDate(day),
         ...(rng.chance(0.1) ? { issuedFyp: Math.round(fyp * 0.9) } : {}),
       });
+      cancelAfterIssue(id, day);
     }
     for (const slot of agenda.get(day) ?? []) {
       const booked = slot.booked ?? book(slot.rm, day);
@@ -536,6 +556,28 @@ function kycSimulation(db: Database, rng: Rng, born: () => number | null) {
   };
 
   return { learn, afterMeeting };
+}
+
+/**
+ * About 5% of the issued policies cancelled, 0–21 days after the issue and by the anchor day (spec
+ * Phase 6 phản hồi §4.4). As the AI analyses, with its own random stream and a clock that does not
+ * tick, so every other record stays as it was without it. Cancelled right after the issue, on the
+ * clock of the cancellation day: no later step of the simulation reads or writes the policy before
+ * that day.
+ */
+function cancelSimulation(db: Database, rng: Rng, anchor: number) {
+  // One in each run of 20 issues, at a random place in it: 5% at any seed and scale, where a 5%
+  // chance for each issue gave 7.3% on the demo's seed.
+  let issues = 0;
+  let place = 0;
+  return (id: string, issueDay: number) => {
+    if (issues % CANCEL_EVERY === 0) place = rng.int(0, CANCEL_EVERY - 1);
+    if (issues++ % CANCEL_EVERY !== place) return;
+    const day = issueDay + rng.int(0, Math.min(CANCEL_DAYS, anchor - issueDay));
+    db.withSources({ now: () => new Date(middayOf(day)), random: rng.fill }, () =>
+      cancelPolicy(db, id, toDate(day)),
+    );
+  };
 }
 
 /**

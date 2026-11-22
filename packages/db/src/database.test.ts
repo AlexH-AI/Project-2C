@@ -391,6 +391,33 @@ describe('schema constraints', () => {
     expect(() => insert('h7', 1, '2026-03-10', 0)).toThrow(/CHECK/);
   });
 
+  // B1a (golden `docs/golden/chi-so.md` mục 4.4 point 2): cancelled only once issued, on its issue
+  // day at the earliest (G39).
+  it('keeps a cancellation day only on an issued policy, not before its issue', async () => {
+    const db = await withCustomer();
+    const insert = (id: string, issuedDate: string | null, cancelledDate: string | null) =>
+      db.sqlite.run(
+        "INSERT INTO policies (id, customer_id, rm_id, submitted_date, submitted_fyp, issued_date, issued_fyp, cancelled_date, created_at, updated_at) VALUES (?, 'c', 'p', '2026-03-10', 1, ?, ?, ?, 'x', 'x')",
+        [id, issuedDate, issuedDate === null ? null : 1, cancelledDate],
+      );
+
+    insert('h1', '2026-03-12', null);
+    insert('h2', '2026-03-12', '2026-03-12');
+    insert('h3', '2026-03-12', '2026-04-02');
+    expect(() => insert('h4', null, '2026-03-12')).toThrow(
+      /CHECK constraint failed: policies_cancelled/,
+    );
+    expect(() => insert('h5', '2026-03-12', '2026-03-11')).toThrow(
+      /CHECK constraint failed: policies_cancelled/,
+    );
+    expect(() =>
+      db.sqlite.run("UPDATE policies SET issued_date = NULL, issued_fyp = NULL WHERE id = 'h2'"),
+    ).toThrow(/CHECK constraint failed: policies_cancelled/);
+    expect(() =>
+      db.sqlite.run("UPDATE policies SET issued_date = '2026-04-03' WHERE id = 'h3'"),
+    ).toThrow(/CHECK constraint failed: policies_cancelled/);
+  });
+
   it('checks KYC sources, trường, fact statuses and the material flag', async () => {
     const db = await withCustomer();
     const note = (id: string, seq: number, source: string) =>
@@ -429,6 +456,11 @@ describe('migrating a saved database', () => {
   /** Rows saved before migration 0013 as it leaves them: a role or a KYC note source RE is RM (A2). */
   const withRm = (rows: ReturnType<typeof rowsOf>) =>
     rows.map((row) => row.map((value) => (value === 'RE' ? 'RM' : value)));
+  /** Where migration 0018 puts the cancellation day of a policy (B1a): after the issued FYP. */
+  const CANCELLED_AT = 7;
+  /** Rows of `table` saved before B1a as its migrations leave them: a policy not cancelled. */
+  const notCancelled = (table: string, rows: ReturnType<typeof rowsOf>) =>
+    table === 'policies' ? rows.map((row) => row.toSpliced(CANCELLED_AT, 0, null)) : rows;
   /** How SQLite runs `query`, one step a line. */
   const queryPlan = (db: Database, query: string) =>
     db.sqlite
@@ -532,7 +564,9 @@ describe('migrating a saved database', () => {
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(
+      before.map((rows, i) => notCancelled(tables[i]!, rows)),
+    );
     // Thùng rác, the profile and 5f look these up per record: an index, no scan of the table.
     const plan = (query: string) => queryPlan(db, query);
     expect(plan("SELECT COUNT(*) FROM appointments WHERE customer_id = 'c'")).toMatch(
@@ -801,11 +835,16 @@ describe('migrating a saved database', () => {
       ['h1', 'an'],
       ['h2', 'binh'],
     ]);
-    // Only the name of the column changes, in its place: every row is the same, value for value.
-    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
-    expect(OWNED.map((table) => columnNames(db, table))).toEqual(
-      columnsBefore.map((columns) => columns.map((c) => (c === 're_id' ? 'rm_id' : c))),
+    // Only the name of the column changes, in its place: every row is the same, value for value
+    // (and a policy not cancelled, B1a).
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(
+      before.map((rows, i) => notCancelled(tables[i]!, rows)),
     );
+    const renamed = columnsBefore.map((columns) =>
+      columns.map((c) => (c === 're_id' ? 'rm_id' : c)),
+    );
+    renamed[OWNED.indexOf('policies')]!.splice(CANCELLED_AT, 0, 'cancelled_date');
+    expect(OWNED.map((table) => columnNames(db, table))).toEqual(renamed);
     for (const table of OWNED) expect(foreignKeys(db, table)).toContain('rm_id->people.id');
     expect(foreignKeys(db, 'appointments')).toEqual([
       'customer_id->customers.id',
@@ -819,6 +858,53 @@ describe('migrating a saved database', () => {
     expect(schemaOf(db.sqlite, 'index')).toEqual(indexes);
     expect(schemaOf(db.sqlite, 'trigger')).toEqual(triggers);
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  /** The schema version of a file saved before the cancellation day of a policy (B1a). */
+  const beforeB1a = MIGRATIONS.find((m) => m.tag === '0017_policies_cancelled_date')!.id - 1;
+
+  it('B1a: adds the cancellation day to a database with data, every policy not cancelled', async () => {
+    const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= beforeB1a) });
+    old.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('an', 'An', 'RM', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, rm_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 'an', 'N1', 'x', 'x');
+      INSERT INTO policies (id, customer_id, rm_id, submitted_date, submitted_fyp, issued_date,
+          issued_fyp, created_at, updated_at, deleted_at) VALUES
+        ('h1', 'c', 'an', '2026-09-12', 24000000, '2026-09-20', 24000000, 'x', 'x', NULL),
+        ('h2', 'c', 'an', '2026-09-15', 12000000, NULL, NULL, 'x', 'x', NULL),
+        ('h3', 'c', 'an', '2026-09-16', 10000000, '2026-09-18', 9000000, 'x', 'x', 'y');
+    `);
+    const before = rowsOf(old.sqlite, 'policies');
+    const columnsBefore = columnNames(old, 'policies');
+    const indexes = schemaOf(old.sqlite, 'index');
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(listPolicies(db).map((p) => [p.id, p.cancelledDate])).toEqual([
+      ['h1', null],
+      ['h2', null],
+    ]);
+    // Every row keeps its values, with an empty cancellation day after the issued FYP.
+    expect(columnsBefore[CANCELLED_AT - 1]).toBe('issued_fyp');
+    expect(columnNames(db, 'policies')).toEqual(
+      columnsBefore.toSpliced(CANCELLED_AT, 0, 'cancelled_date'),
+    );
+    expect(rowsOf(db.sqlite, 'policies')).toEqual(notCancelled('policies', before));
+    expect(foreignKeys(db, 'policies')).toEqual(['customer_id->customers.id', 'rm_id->people.id']);
+    expect(schemaOf(db.sqlite, 'index')).toEqual(indexes);
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+    // The table of a migrated database checks the day as a new one does.
+    expect(() =>
+      db.sqlite.run("UPDATE policies SET cancelled_date = '2026-09-19' WHERE id = 'h1'"),
+    ).toThrow(/CHECK constraint failed: policies_cancelled/);
+    expect(() =>
+      db.sqlite.run("UPDATE policies SET cancelled_date = '2026-09-20' WHERE id = 'h2'"),
+    ).toThrow(/CHECK constraint failed: policies_cancelled/);
+    db.sqlite.run("UPDATE policies SET cancelled_date = '2026-09-20' WHERE id = 'h1'");
   });
 
   it('A3: checks the RM of a customer, an appointment and a policy by rm_id, and purges as before', async () => {

@@ -839,8 +839,15 @@ describe('the ai_analyses migration', () => {
       copyRows(seeded, old);
       expect(old.schemaVersion()).toBe(first - 1);
       const tables = ['customers', 'kyc_versions', 'kyc_facts', 'appointments', 'policies'];
-      const rows = (database: Database, table: string) =>
-        database.sqlite.exec(`SELECT * FROM ${table} ORDER BY rowid`)[0]?.values ?? [];
+      const rows = (database: Database, table: string, columns = '*') =>
+        database.sqlite.exec(`SELECT ${columns} FROM ${table} ORDER BY rowid`)[0]?.values ?? [];
+      // The columns of the old table, re_id by its name since A3: a later migration may add one,
+      // as B1a adds the cancellation day of a policy.
+      const oldColumns = (table: string) =>
+        old.sqlite
+          .exec(`SELECT name FROM pragma_table_info('${table}') ORDER BY cid`)[0]!
+          .values.map(([name]) => (name === 're_id' ? 'rm_id' : String(name)))
+          .join(', ');
       const saved = Object.fromEntries(tables.map((table) => [table, rows(old, table)]));
 
       const migrated = await openDatabase({
@@ -849,7 +856,10 @@ describe('the ai_analyses migration', () => {
       });
 
       expect(migrated.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-      for (const table of tables) expect(rows(migrated, table)).toEqual(saved[table]);
+      for (const table of tables) {
+        expect(rows(migrated, table, oldColumns(table))).toEqual(saved[table]);
+      }
+      expect(rows(migrated, 'policies', 'cancelled_date').flat().filter(Boolean)).toEqual([]);
       const [customerId, versionId] = migrated.sqlite.exec(
         `SELECT v.customer_id, v.id FROM kyc_versions v JOIN customers c ON c.id = v.customer_id
        WHERE c.deleted_at IS NULL ORDER BY v.rowid DESC LIMIT 1`,

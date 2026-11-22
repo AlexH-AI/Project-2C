@@ -19,6 +19,8 @@ import m0013 from '../migrations/0013_role_rm.sql?raw';
 import m0014 from '../migrations/0014_kyc_notes_append_only_rebuilt.sql?raw';
 import m0015 from '../migrations/0015_rm_id.sql?raw';
 import m0016 from '../migrations/0016_settings_currency.sql?raw';
+import m0017 from '../migrations/0017_policies_cancelled_date.sql?raw';
+import m0018 from '../migrations/0018_policies_cancelled.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -45,6 +47,10 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: 15, tag: '0014_kyc_notes_append_only_rebuilt', sql: m0014 },
   { id: 16, tag: '0015_rm_id', sql: m0015 },
   { id: 17, tag: '0016_settings_currency', sql: m0016 },
+  // B1a: the column, then its CHECK. drizzle-kit's one step rebuilt the table reading the new
+  // column from the old one, as for 0004; two generated steps need no hand edit.
+  { id: 18, tag: '0017_policies_cancelled_date', sql: m0017 },
+  { id: 19, tag: '0018_policies_cancelled', sql: m0018 },
 ];
 
 /** The highest schema version a list of migrations reaches. */

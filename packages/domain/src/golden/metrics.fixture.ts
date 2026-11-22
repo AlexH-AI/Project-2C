@@ -125,7 +125,17 @@ const policy = (
   submittedFyp: number,
   issuedDate: CalendarDate | null,
   issuedFyp: number | null,
-): Policy => ({ id, customerId, rmId, submittedDate, submittedFyp, issuedDate, issuedFyp });
+): Policy => ({
+  id,
+  customerId,
+  rmId,
+  submittedDate,
+  submittedFyp,
+  issuedDate,
+  issuedFyp,
+  // Section 1 has no cancelled policy (golden `chi-so.md` mục 4.2, B1a).
+  cancelledDate: null,
+});
 
 export const POLICIES: readonly Policy[] = [
   policy('hd-01', 'kh-01', 're-an', d(30, 12, 2026), 500 * MILLION, d(5, 1, 2027), 500 * MILLION),
