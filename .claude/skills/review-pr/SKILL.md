@@ -63,7 +63,7 @@ git diff --stat origin/<baseRefName>...<headRefOid>
 | `*.ps1`, `.githooks/**`, `.github/workflows/**`, `.claude/settings.json`, `.claude/hooks/**` | med |
 | Vượt ngưỡng ~400 dòng code sản phẩm / ~800 dòng tổng diff (không tính file sinh tự động PR đã liệt kê) | med |
 
-PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Correctness (không gọi `code-review`). Ngoại lệ: file trong `CODE_DOCS` (`tools/pr-core.mjs`: `CLAUDE.md` của package, `docs/design/phase-5-prompts.md`, `docs/golden/ai-eval.md`) tính là code — review như PR code, theo nhãn `risk:*` và bảng nâng mức trên.
+PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Correctness (không gọi `code-review`). Ngoại lệ: file trong `CODE_DOCS` của `tools/pr-core.mjs` (đọc danh sách ở đó, không chép ra đây) tính là code — review như PR code, theo nhãn `risk:*` và bảng nâng mức trên.
 
 ## 3. Chạy theo mức
 

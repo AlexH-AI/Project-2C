@@ -6,7 +6,7 @@ on:
     # Docs-only PRs skip CI entirely (ADR-0015).
     # Package CLAUDE.md files are code: pnpm verify checks their codemap block (DR-74).
     # The G5 docs are code too: unit tests compare code with them word for word (DR5-57).
-    # So is ui2.css: a unit test compares its block B with tokens.css (L184).
+    # So is ui2.css: a unit test compares its block B with tokens.css (review #1398).
     # Keep in step with CODE_DOCS of tools/pr-core.mjs (a test checks).
     paths:
       - '**'
@@ -25,7 +25,7 @@ on:
     # Docs-only pushes to main skip CI too (ADR-0015, Actions minutes addendum).
     # Package CLAUDE.md files are code: pnpm verify checks their codemap block (DR-74).
     # The G5 docs are code too: unit tests compare code with them word for word (DR5-57).
-    # So is ui2.css: a unit test compares its block B with tokens.css (L184).
+    # So is ui2.css: a unit test compares its block B with tokens.css (review #1398).
     # Keep in step with CODE_DOCS of tools/pr-core.mjs (a test checks).
     paths:
       - '**'

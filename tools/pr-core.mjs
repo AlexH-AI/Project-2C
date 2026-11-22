@@ -30,7 +30,7 @@ export const CODEMAP_DOCS = [
 // Every docs file (under docs/ or .md) that CI treats as code: the package CLAUDE.md files, plus
 // every file under docs/ that a unit test reads, Markdown or not (a test checks): the G5 docs it
 // compares code with word for word (prompts, retry, web@1; eval profiles, DR5-57), and the mockup
-// stylesheet whose block B it compares with tokens.css (L184). ci.yml lists exactly these files
+// CSS file whose block B it compares to tokens.css (review #1398). ci.yml lists exactly these files
 // in both of its `paths` filters (a test checks).
 export const CODE_DOCS = [
   ...CODEMAP_DOCS,

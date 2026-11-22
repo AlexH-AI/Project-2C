@@ -59,13 +59,13 @@ function callAround(text, index) {
 }
 
 /**
- * The files under docs/ the test `file` reads, Markdown or not (R2-21, L184): by a path relative to
- * it (an `?raw` import, a `new URL(…, import.meta.url)`), or by a path from the root (DOCS_PATH)
+ * The docs/ files the test `file` reads, of any type (R2-21, review #1398): by a path relative to
+ * it (any import, a `new URL(…, import.meta.url)`), or by a path from the root (DOCS_PATH)
  * among the arguments of a FROM_ROOT call. Any other docs/… string is data, such as the files of a
  * PR in the tests of tools/.
  */
 function docsRead(root, file, text) {
-  const fromTest = [...text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.\w+)(?:\?raw)?['"`]/g)].map(
+  const fromTest = [...text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.\w+)(?:\?[^'"`\s]*)?['"`]/g)].map(
     ([, ref]) => relative(root, join(dirname(join(root, file)), ref)).replaceAll('\\', '/'),
   );
   const fromRoot = [...text.matchAll(DOCS_PATH)]
@@ -149,12 +149,12 @@ describe('isDocsOnly', () => {
     expect(CODE_DOCS).toEqual(expect.arrayContaining(CODEMAP_DOCS));
   });
 
-  it('treats ui2.css as code: a unit test compares its block B with tokens.css (L184)', () => {
+  it('treats ui2.css as code: a unit test compares its block B with tokens.css (review #1398)', () => {
     expect(isDocsOnly(['docs/design/mockups/ui2.css'])).toBe(false);
     expect(isDocsOnly(['docs/design/mockups/chuyen-dong.html'])).toBe(true);
   });
 
-  it('lists every docs file that a test reads, and only files that exist (R2-21, L184)', () => {
+  it('lists every docs file that a test reads, and only files that exist (R2-21, review #1398)', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
     const tests = execFileSync('git', ['ls-files', '*.test.*', '*.spec.*'], { cwd: root })
       .toString()
@@ -197,10 +197,15 @@ describe('isDocsOnly', () => {
       'docs/golden/ai-eval.md',
     ]);
     // Any file under docs/, not only Markdown: the mockup stylesheet whose block B tokens.test.ts
-    // compares with tokens.css (L184). Built at run time: this file is scanned too, and a docs path
-    // written in a FROM_ROOT call here would count as one it reads.
+    // compares with tokens.css (review #1398). Built at run time: this file is scanned too, and a
+    // docs path written in a FROM_ROOT call here would count as one it reads.
     const sheet = ['docs/design/mockups', 'ui2.css'].join('/');
     expect(read(`readFileSync(join(root, '${sheet}'), 'utf8')`)).toEqual([sheet]);
+    // A path from the test with any query after the extension, not only ?raw (review #1431): Vite
+    // also takes ?inline, ?url and queries of several parts, such as ?worker&url.
+    for (const query of ['', '?raw', '?inline', '?url', '?worker&url']) {
+      expect(read(`import css from '../${sheet}${query}';`), query).toEqual([sheet]);
+    }
     const tokens = 'packages/ui/scripts/tokens.test.ts';
     expect(docsRead(root, tokens, readFileSync(join(root, tokens), 'utf8'))).toEqual([sheet]);
     // The files of a PR or of a commit, as tools/ tests give them, even after a join(…) closed.
