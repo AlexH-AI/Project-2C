@@ -44,7 +44,8 @@ export function CustomerName({ name }: { name: string }) {
 export function TypedText({ text }: { text: string }) {
   const { masked } = useNameMask();
   if (!masked || !text) return text;
-  // --text-2, not the mockup's --text-3: on the glass of macOS --text-3 is below 4.5:1.
+  // --text-2, not the mockup's --text-3: chosen in VA6a, when --text-3 was below 4.5:1 on the glass
+  // of macOS (it reads 4.5:1 on a card since L188).
   return (
     <span className="text-fg-2 italic">
       <span aria-hidden="true">{t('nameMask.dots')}</span>
