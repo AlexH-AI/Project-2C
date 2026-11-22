@@ -561,6 +561,15 @@ Chuyển màn bằng sidebar (đo thêm ngày 22/11, sau khi Owner thấy Team &
 
 - **Lần đầu vào Tổng quan sau khi mở exe** (số max ở 5× / 10×): 585 ms ở 5×, 1 125 ms ở 10×. Các lần sau nhanh như các màn khác. Ở 1×, lần đầu không nằm trong 5 lần đo (đã vào Tổng quan trước đó).
 - **Team & nhân sự tăng gần bình phương:** 15 → 79 → 293 ms (×5,3 từ 1× lên 5×, ×3,7 từ 5× lên 10×). Theo đà này, màn vượt 200 ms ở khoảng 8× trên máy này. Mac ở 10×: ≈ 2 s (dưới). Màn chỉ đọc dữ liệu đã có trong bộ nhớ, nên chỗ chậm nằm ở phần tính của màn, không do cách lưu: ADR lưu trữ không sửa được việc này. Chưa tìm nguyên nhân.
+- **Đo lại sau T-502 (#1459, 22/11/2026):** chỗ chậm là hàm tính ba cột số của RM (`staffMetrics`): hàm lọc lại cả danh sách KH, lịch hẹn và HĐ cho từng RM. T-502 đổi thành một lượt qua mỗi danh sách. Cùng máy, cùng dữ liệu 10× (`project2c.db` sinh thẳng), cùng cách đo trên. Exe cũ (`DD14DE17…`, như các bảng trên) và exe build tại máy ở `5f4ab86` (sha256 `1634AC79…`, code app là `3a34861` thêm phần sửa của T-502), mỗi exe một thư mục portable riêng, đo liền nhau khi máy rảnh:
+
+  | Bấm ở sidebar, 10× (trung vị, min–max) | Exe cũ, đo lại | Sau T-502 | Ngưỡng |
+  |---|---:|---:|---|
+  | **Team & nhân sự** | **292 ms** ❌ (291–298) | 17 ms (15–21) | < 200 ms |
+  | Năm màn còn lại | 30–86 ms | 29–87 ms | < 200 ms |
+
+  - Bảng "Thành viên team…" của cả 40 team (440 RM) giống hệt nhau trên hai exe.
+  - Mac chưa đo lại.
 
 - **Bản `.dmg` trên MacBook** (Owner bấm giờ ngày 22/11/2026, dữ liệu 10× nạp bằng `project2c.db`). Bản build: artifact `Heritas-L-CRM-macos-20275b6…` của run `macos.yml` 44876312076, code app trùng `main`. Máy: MacBook Pro 16" M5 Pro, macOS Golden Gate 27.2.1 (Owner ghi). Số do Owner ghi:
 

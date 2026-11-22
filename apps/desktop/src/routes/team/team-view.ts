@@ -69,12 +69,13 @@ function last30Days(today: CalendarDate): Period {
   return customPeriod(addDays(today, -29), today);
 }
 
-/** The records a person is the RM of. */
-function ownedBy<T extends { readonly rmId: string }>(list: readonly T[], personId: string) {
-  return list.filter((record) => record.rmId === personId);
-}
+type Counts = { -readonly [K in keyof StaffMetrics]: StaffMetrics[K] };
 
-/** The member columns of each RM among `people`; other roles have none (G2 G). */
+/**
+ * The member columns of each RM among `people`; other roles have none (G2 G). Each list is read
+ * once, each record counted to its RM (T-502): filtering every list again for each RM grew with
+ * RM × records, ≈ 0.3 s on Windows and ≈ 2 s on a Mac at 10× the load data.
+ */
 export function staffMetrics(
   people: readonly Person[],
   records: StaffRecords,
@@ -82,21 +83,24 @@ export function staffMetrics(
 ): Map<string, StaffMetrics> {
   const recent = last30Days(today);
   const year = periodOf('year', today);
-  return new Map(
-    people.filter(isRm).map((person) => {
-      const metrics: StaffMetrics = {
-        openCustomers: ownedBy(records.customers, person.id).filter((c) => isPipelineStage(c.stage))
-          .length,
-        appointments30: ownedBy(records.appointments, person.id).filter((a) =>
-          isInPeriod(a.date, recent),
-        ).length,
-        issuedThisYear: ownedBy(records.policies, person.id).filter(
-          (p) => p.issuedDate && isInPeriod(p.issuedDate, year),
-        ).length,
-      };
-      return [person.id, metrics];
-    }),
+  const counts = new Map<string, Counts>(
+    people
+      .filter(isRm)
+      .map((person) => [person.id, { openCustomers: 0, appointments30: 0, issuedThisYear: 0 }]),
   );
+  for (const customer of records.customers) {
+    const rm = counts.get(customer.rmId);
+    if (rm && isPipelineStage(customer.stage)) rm.openCustomers++;
+  }
+  for (const appointment of records.appointments) {
+    const rm = counts.get(appointment.rmId);
+    if (rm && isInPeriod(appointment.date, recent)) rm.appointments30++;
+  }
+  for (const policy of records.policies) {
+    const rm = counts.get(policy.rmId);
+    if (rm && policy.issuedDate && isInPeriod(policy.issuedDate, year)) rm.issuedThisYear++;
+  }
+  return counts;
 }
 
 /** At most this many customers of the trash are named in mockup 9b; the others are counted. */
