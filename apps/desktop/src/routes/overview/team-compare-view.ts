@@ -15,7 +15,7 @@ import {
 } from '@p2c/domain';
 import { t } from '../../i18n';
 import { teamRms } from '../../shell/scope';
-import { closeRateText, countedWindow } from './overview-view';
+import { countedWindow, rateText } from './overview-view';
 import { formatAmountCompact } from '../money-view';
 
 export interface TeamCompareData extends MetricsData {
@@ -30,7 +30,7 @@ export interface CompareRow {
   readonly met: number;
   /** The results up to today (§4.1); null before the period starts. */
   readonly metrics: PeriodMetrics | null;
-  /** Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt, as shown. */
+  /** Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỷ lệ chốt, as shown. */
   readonly cells: readonly string[];
 }
 
@@ -56,7 +56,7 @@ function cells(met: number, metrics: PeriodMetrics | null): string[] {
     formatAmountCompact(metrics.caseSize),
     formatNumber(metrics.issuedCount),
     formatAmountCompact(metrics.revenue),
-    closeRateText(metrics.closeRate),
+    rateText(metrics.closeRate),
   ];
 }
 

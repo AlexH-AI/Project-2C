@@ -10,10 +10,14 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   APPOINTMENTS,
+  APPOINTMENTS_B,
+  GOLDEN_B_CASES,
   MTD_VIEWING_DATE,
   PEOPLE,
   POLICIES,
+  POLICY_ROWS_B,
   STAGE_TRANSITIONS,
+  STAGE_TRANSITIONS_B,
   TEAMS,
 } from '../../../../../packages/domain/src/golden/metrics.fixture';
 import {
@@ -33,8 +37,23 @@ const GOLDEN: MetricsData = {
   transitions: STAGE_TRANSITIONS,
 };
 const EMPTY: MetricsData = { people: [], policies: [], appointments: [], transitions: [] };
+/** Golden B (`chi-so.md` §4): the final state, the policy deleted after it was cancelled left out. */
+const GOLDEN_B: MetricsData = {
+  people: PEOPLE,
+  policies: POLICY_ROWS_B.filter((row) => !row.deleted).map((row) => row.policy),
+  appointments: APPOINTMENTS_B,
+  transitions: STAGE_TRANSITIONS_B,
+};
+/** After every day of golden B: each of its periods is counted whole. */
+const AFTER_B = calendarDate(2028, 3, 15);
 const ALL: Scope = { kind: 'all' };
 const d = calendarDate;
+
+/** The six tiles and Doanh số for the period and scope of a golden B row. */
+function tilesOfB(id: string) {
+  const golden = GOLDEN_B_CASES.find((row) => row.id === id)!;
+  return byKey(kpiTiles(GOLDEN_B, golden.period, golden.scope, AFTER_B));
+}
 
 const byKey = (tiles: readonly KpiTile[]) =>
   Object.fromEntries(tiles.map((tile) => [tile.key, tile]));
@@ -95,7 +114,7 @@ describe('kpiTiles', () => {
       value: '3',
       kind: 'count',
       amount: 3,
-      delta: { tone: 'up', text: '▲ 3' },
+      delta: { tone: 'good', text: '▲ 3' },
       note: compared,
     });
     expect(tiles.submitted).toMatchObject({ value: '2', delta: { text: '▲ 2' }, note: compared });
@@ -107,7 +126,7 @@ describe('kpiTiles', () => {
       amount: 400_000_000,
       delta: { text: '▲ 400 tr' },
     });
-    expect(tiles.issued).toMatchObject({ value: '2', delta: { text: '▲ 2' } });
+    expect(tiles.net).toMatchObject({ value: '2', delta: { text: '▲ 2' } });
     expect(tiles.revenue).toMatchObject({ value: '900', unit: 'tr', delta: { text: '▲ 900 tr' } });
     expect(tiles.closeRate).toMatchObject({
       value: '66.7',
@@ -126,11 +145,12 @@ describe('kpiTiles', () => {
 
     expect(tiles.rf).toMatchObject({
       value: '0',
-      delta: { tone: 'down', text: '▼ 5' },
+      delta: { tone: 'bad', text: '▼ 5' },
       note: 'so với 01/01 – 31/01',
     });
     expect(tiles.caseSize).toMatchObject({ value: '0', unit: 'VNĐ', delta: { text: '▼ 1.9 tỷ' } });
-    expect(tiles.issued).toMatchObject({ value: '1', delta: { text: '▼ 4' } });
+    expect(tiles.net).toMatchObject({ value: '1', delta: { text: '▼ 4' } });
+    // No RF, no rate: "—", but the division is still written, to show why (mockup #tiles).
     expect(tiles.closeRate).toMatchObject({
       value: '—',
       unit: '',
@@ -138,7 +158,111 @@ describe('kpiTiles', () => {
       amount: null,
       delta: null,
       note: '0 RF trong kỳ · không so',
-      formula: null,
+      formula: '1 HĐ phát hành ÷ 0 RF',
+    });
+  });
+
+  it('G27: Tổng số HĐ, Tỷ lệ hủy, Doanh số with their formulas; a tile for what each counts', () => {
+    const tiles = tilesOfB('G27');
+    const compared = 'so với 03/01 – 09/01';
+
+    expect(tiles.revenue).toMatchObject({
+      value: '1',
+      unit: 'tỷ',
+      negative: false,
+      formula: 'FYP phát hành 1.3 tỷ − FYP hủy 300 tr',
+      delta: { tone: 'good', text: '▲ 520 tr' },
+      note: compared,
+    });
+    expect(tiles.net).toMatchObject({
+      value: '2',
+      kind: 'count',
+      negative: false,
+      formula: '4 phát hành − 2 hủy',
+      delta: { tone: 'same', text: '=' },
+      note: compared,
+    });
+    expect(tiles.cancelRate).toMatchObject({
+      label: 'Tỷ lệ hủy',
+      value: '50',
+      unit: '%',
+      kind: 'percent',
+      amount: 50,
+      formula: '2 hủy ÷ 4 phát hành',
+      // 0% the week before: a rise of the cancel rate is for the worse.
+      delta: { tone: 'bad', text: '▲ 50 điểm %' },
+      note: compared,
+    });
+    expect(tiles.closeRate).toMatchObject({
+      label: 'Tỷ lệ chốt',
+      value: '400',
+      formula: '4 HĐ phát hành ÷ 1 RF',
+      delta: { tone: 'good', text: '▲ 333.3 điểm %' },
+    });
+    expect(tiles.rf).toMatchObject({ value: '1', formula: 'từ 1 buổi đã gặp' });
+    expect(tiles.submitted).toMatchObject({ value: '2', formula: 'HĐ có ngày nộp trong kỳ' });
+    expect(tiles.caseSize).toMatchObject({ value: '650', unit: 'tr', formula: 'FYP nộp của 2 HĐ' });
+  });
+
+  it('G28: more cancelled than issued: a cancel rate over 100%, Tổng số HĐ and Doanh số below 0', () => {
+    const tiles = tilesOfB('G28');
+
+    expect(tiles.cancelRate).toMatchObject({
+      value: '200',
+      unit: '%',
+      formula: '2 hủy ÷ 1 phát hành',
+      delta: { tone: 'bad', text: '▲ 150 điểm %' },
+    });
+    expect(tiles.net).toMatchObject({
+      value: '-1',
+      amount: -1,
+      negative: true,
+      formula: '1 phát hành − 2 hủy',
+      delta: { tone: 'bad', text: '▼ 3' },
+    });
+    expect(tiles.revenue).toMatchObject({
+      value: '-530',
+      unit: 'tr',
+      negative: true,
+      formula: 'FYP phát hành 250 tr − FYP hủy 780 tr',
+      delta: { tone: 'bad', text: '▼ 1.53 tỷ' },
+    });
+  });
+
+  it('G24: cancelled, none issued: "—" with its division and "không so"; below 0 in red', () => {
+    const tiles = tilesOfB('G24');
+
+    expect(tiles.cancelRate).toMatchObject({
+      value: '—',
+      amount: null,
+      formula: '1 hủy ÷ 0 phát hành',
+      delta: null,
+      note: '0 HĐ phát hành trong kỳ · không so',
+    });
+    expect(tiles.closeRate).toMatchObject({ value: '—', formula: '0 HĐ phát hành ÷ 0 RF' });
+    expect(tiles.net).toMatchObject({
+      value: '-1',
+      negative: true,
+      formula: '0 phát hành − 1 hủy',
+    });
+    expect(tiles.revenue).toMatchObject({ value: '-200', unit: 'tr', negative: true });
+    expect(tiles.rf).toMatchObject({ value: '0', negative: false, formula: 'từ 0 buổi đã gặp' });
+  });
+
+  it('a cancel rate is not compared when the period before had none issued (G23)', () => {
+    expect(tilesOfB('G23').cancelRate).toMatchObject({
+      value: '0',
+      formula: '0 hủy ÷ 1 phát hành',
+      delta: null,
+      note: '— kỳ trước 0 HĐ phát hành, không so',
+    });
+  });
+
+  it('a fall of the cancel rate is for the better: green (G37 against G32)', () => {
+    expect(tilesOfB('G37').cancelRate).toMatchObject({
+      value: '0',
+      delta: { tone: 'good', text: '▼ 50 điểm %' },
+      note: 'so với 01/01 – 31/01',
     });
   });
 
@@ -203,21 +327,22 @@ describe('kpiTiles', () => {
 
     expect(tiles.closeRate).toMatchObject({
       value: '120',
-      delta: { tone: 'up', text: '▲ 120 điểm %' },
+      delta: { tone: 'good', text: '▲ 120 điểm %' },
       note: 'so với 01/01 – 31/12/2026',
       formula: '6 HĐ phát hành ÷ 5 RF',
     });
   });
 
-  it('lists the six tiles in the order of the screen (mockup 1a)', () => {
+  it('lists Doanh số, then the six tiles in the order of the screen (mockup tong-quan.html #tiles)', () => {
     const tiles = kpiTiles(GOLDEN, periodOf('month', MTD_VIEWING_DATE), ALL, MTD_VIEWING_DATE);
-    expect(tiles.map((tile) => tile.key)).toEqual([
-      'rf',
-      'submitted',
-      'caseSize',
-      'issued',
-      'revenue',
-      'closeRate',
+    expect(tiles.map((tile) => [tile.key, tile.label])).toEqual([
+      ['revenue', 'Doanh số'],
+      ['net', 'Tổng số HĐ'],
+      ['cancelRate', 'Tỷ lệ hủy'],
+      ['closeRate', 'Tỷ lệ chốt'],
+      ['rf', 'Chuyển RF'],
+      ['submitted', 'HĐ nộp'],
+      ['caseSize', 'Case size'],
     ]);
   });
 
@@ -250,6 +375,9 @@ describe('kpiTiles', () => {
     });
     expect(kpiText('money', 761_000_000)).toEqual({ value: '761', unit: 'tr', unitSpaced: true });
     expect(kpiText('count', 1_204)).toEqual({ value: '1,204', unit: '', unitSpaced: false });
+    // Below 0, "-" first (ADR-0018): Tổng số HĐ, and every frame of it on its way there.
+    expect(kpiText('count', -1_204)).toEqual({ value: '-1,204', unit: '', unitSpaced: false });
+    expect(kpiText('money', -530_000_000)).toEqual({ value: '-530', unit: 'tr', unitSpaced: true });
     expect(kpiText('percent', 58.3)).toEqual({ value: '58.3', unit: '%', unitSpaced: false });
     expect(kpiText('percent', null)).toEqual({ value: '—', unit: '', unitSpaced: false });
     expect(KPI_STEP).toEqual({ count: 'whole', money: 'sig3', percent: 'tenth' });

@@ -11,8 +11,9 @@ test('app shell shows the brand and the overview with its KPI', async ({ page })
   await expect(sidebar).not.toContainText('2C');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
 
+  // Doanh số and the six KPI (mockup tong-quan.html #tiles).
   await expect(page.getByRole('region', { name: 'Chỉ số của kỳ' }).getByRole('region')).toHaveCount(
-    6,
+    7,
   );
 });
 

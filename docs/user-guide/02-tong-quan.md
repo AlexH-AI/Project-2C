@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn này cho biết số lịch hẹn, 6 chỉ số chính, KH theo nhóm và so sánh giữa các team của một kỳ. Lần mở app đầu tiên trên một máy vào màn này; các lần sau app mở lại màn dùng lần cuối (xem [1. Bắt đầu](01-bat-dau.md#mở-app-bản-máy-tính)).
+Màn này cho biết số lịch hẹn, Doanh số và 6 chỉ số chính, KH theo nhóm và so sánh giữa các team của một kỳ. Lần mở app đầu tiên trên một máy vào màn này; các lần sau app mở lại màn dùng lần cuối (xem [1. Bắt đầu](01-bat-dau.md#mở-app-bản-máy-tính)).
 
 ![Tổng quan, kỳ Tháng 09/2026, góc nhìn Toàn bộ](img/02-tong-quan.png)
 
@@ -37,20 +37,27 @@ Dòng dưới tên màn cho biết số trên màn thuộc kỳ và góc nhìn n
 
 Một lịch dời là hai bản ghi: lịch cũ tính ở nhóm Dời lịch, lịch mới tính ở ngày mới.
 
-## 6 chỉ số của kỳ
+## Doanh số và 6 chỉ số của kỳ
 
-| Ô | Nghĩa |
-|---|---|
-| **Chuyển RF** | Số cuộc gặp đưa KH từ N4 / N3 lên N2 / N1, tính vào ngày gặp |
-| **HĐ nộp** | Số HĐ có ngày nộp trong kỳ |
-| **Case size** | Tổng FYP nộp của các HĐ nộp trong kỳ |
-| **HĐ phát hành** | Số HĐ có ngày phát hành trong kỳ |
-| **Doanh số** | Tổng FYP phát hành của các HĐ phát hành trong kỳ |
-| **Tỉ lệ chốt** | HĐ phát hành ÷ Chuyển RF trong cùng kỳ (dòng nhỏ ghi phép chia). Kỳ không có RF thì hiện "—" |
+Ô **Doanh số** nằm trên cùng, rồi tới 6 ô chỉ số. Dưới mỗi số là một dòng nhỏ ghi phép tính của số đó, hoặc số đó đếm gì:
 
-Với kỳ chưa hết, 6 chỉ số tính **tới hôm nay**.
+| Ô | Nghĩa | Dòng nhỏ, ví dụ |
+|---|---|---|
+| **Doanh số** | FYP phát hành − FYP hủy trong kỳ; có thể âm | "FYP phát hành 1.38 tỷ − FYP hủy 50 tr" |
+| **Tổng số HĐ** | HĐ phát hành − HĐ hủy trong kỳ; có thể âm | "33 phát hành − 1 hủy" |
+| **Tỷ lệ hủy** | HĐ hủy ÷ HĐ phát hành trong cùng kỳ; có thể vượt 100%. Kỳ không có HĐ phát hành thì hiện "—" | "1 hủy ÷ 33 phát hành" |
+| **Tỷ lệ chốt** | HĐ phát hành ÷ Chuyển RF trong cùng kỳ, không trừ HĐ hủy. Kỳ không có RF thì hiện "—" | "33 HĐ phát hành ÷ 25 RF" |
+| **Chuyển RF** | Số cuộc gặp đưa KH từ N4 / N3 lên N2 / N1, tính vào ngày gặp | "từ 40 buổi đã gặp" |
+| **HĐ nộp** | Số HĐ có ngày nộp trong kỳ | "HĐ có ngày nộp trong kỳ" |
+| **Case size** | Tổng FYP nộp của các HĐ nộp trong kỳ | "FYP nộp của 12 HĐ" |
 
-Dòng nhỏ dưới mỗi số so với kỳ trước, **cùng số ngày**: ví dụ hôm nay 15/09, Tháng 09 (MTD) so với 01/08 – 15/08. ▲ là tăng, ▼ là giảm, "=" là bằng; Tỉ lệ chốt so bằng **điểm %**. Không so khi kỳ là Tùy chọn, kỳ chưa bắt đầu, hoặc kỳ trước có 0 RF (Tỉ lệ chốt).
+HĐ hủy tính vào kỳ chứa **ngày hủy**, không phải kỳ phát hành. Vì vậy một kỳ ngắn có thể ra Tổng số HĐ hay Doanh số âm (ghi "-1", "-50 tr", chữ đỏ), hoặc Tỷ lệ hủy trên 100%. Tỷ lệ "—" vẫn có dòng phép chia (ví dụ "1 hủy ÷ 0 phát hành") để thấy vì sao.
+
+Với kỳ chưa hết, các chỉ số tính **tới hôm nay**.
+
+Dòng nhỏ cuối mỗi ô so với kỳ trước, **cùng số ngày**: ví dụ hôm nay 15/09, Tháng 09 (MTD) so với 01/08 – 15/08. ▲ là tăng, ▼ là giảm, "=" là bằng; chữ xanh là tốt hơn, chữ đỏ là kém đi, nên **Tỷ lệ hủy tăng là đỏ**. Hai tỷ lệ so bằng **điểm %**. Không so khi kỳ là Tùy chọn, kỳ chưa bắt đầu, hoặc khi một tỷ lệ không có số để chia ở kỳ này hay kỳ trước (0 RF với Tỷ lệ chốt, 0 HĐ phát hành với Tỷ lệ hủy): dòng nhỏ ghi "không so".
+
+Bấm một ô để mở [Báo cáo](07-bao-cao.md) ở cùng kỳ và góc nhìn. Riêng góc nhìn **Mọi team**: Báo cáo không có góc nhìn này, nên mở ở một team (team chọn lần trước ở màn khác, chưa chọn thì team đầu tiên); chọn **Toàn bộ** ở Báo cáo để xem mọi team cạnh nhau.
 
 Định nghĩa đầy đủ các chỉ số ở [11. Thuật ngữ](11-thuat-ngu.md#hợp-đồng-và-chỉ-số).
 
@@ -68,7 +75,7 @@ Trình đọc màn hình (ví dụ Narrator) đọc được số của biểu �
 
 ![Bảng So sánh team](img/02-tong-quan-so-sanh-team.png)
 
-Bảng **So sánh team** (góc nhìn Toàn bộ và Mọi team) đặt các team cạnh nhau: Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng **Tổng** cộng mọi team (Tỉ lệ chốt dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình).
+Bảng **So sánh team** (góc nhìn Toàn bộ và Mọi team) đặt các team cạnh nhau: Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỷ lệ chốt; dòng **Tổng** cộng mọi team (Tỷ lệ chốt dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình).
 
 Bấm một team để xem các RM của team ngay bên dưới; bấm lại để thu. Bảng không so với kỳ trước. Góc nhìn RM không có bảng này.
 

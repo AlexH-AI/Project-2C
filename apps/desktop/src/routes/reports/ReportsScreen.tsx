@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { periodOf } from '@p2c/domain';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Segmented } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -10,7 +9,14 @@ import { FilterBar } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
 import { ExportNoticeLine, useReportExport } from './ReportExport';
 import { ReportTable, type ReportLead } from './ReportTable';
-import { reportRows, summaryMeta, type ReportRow, type ReportRows } from './reports-view';
+import {
+  reportOpened,
+  reportPeriod,
+  reportRows,
+  summaryMeta,
+  type ReportRow,
+  type ReportRows,
+} from './reports-view';
 
 type TableKey = 'byTeam' | 'byRm' | 'byMark';
 
@@ -18,13 +24,16 @@ type TableKey = 'byTeam' | 'byRm' | 'byMark';
  * Báo cáo (spec Phase 4 §4.4, mockup reports.html 2a–2e): Tổng hợp always, and one of Theo team /
  * Theo RM / Theo mốc under it, for the period of its pill and the scope picked; it opens on the
  * current month. A table that would repeat Tổng hợp is left out. Xuất Excel exports every table
- * shown, one sheet each (2f): the period and scope on screen.
+ * shown, one sheet each (2f): the period and scope on screen. A tile of Tổng quan opens it at the
+ * period of Tổng quan (`openReportAt`); the scope is the one picked, shared by both screens.
  */
 export function ReportsScreen() {
   const today = useToday();
   const { picked } = useScopeState();
   const data = useTables();
-  const [period, setPeriod] = useState(() => periodOf('month', today));
+  const [period, setPeriod] = useState(() => reportPeriod(today));
+  // Once drawn: the period a tile asked for is not the one of the next visit.
+  useEffect(() => reportOpened(), []);
   const selection = useMemo(() => ({ period, scope: picked }), [period, picked]);
   const [chosenTable, setTable] = useState<TableKey>('byTeam');
   const exporter = useReportExport(selection);

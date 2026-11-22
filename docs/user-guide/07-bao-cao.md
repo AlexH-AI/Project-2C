@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn Báo cáo đặt số liệu của một kỳ thành bảng: lịch hẹn, kết quả (6 chỉ số) và KH theo nhóm, chia theo team, theo RM hoặc theo từng mốc thời gian. Mọi bảng xuất được ra Excel.
+Màn Báo cáo đặt số liệu của một kỳ thành bảng: lịch hẹn, kết quả (các chỉ số của Tổng quan và các số của HĐ hủy) và KH theo nhóm, chia theo team, theo RM hoặc theo từng mốc thời gian. Mọi bảng xuất được ra Excel.
 
 ![Báo cáo, kỳ Tháng 09/2026, góc nhìn Toàn bộ](img/07-bao-cao.png)
 
@@ -12,6 +12,8 @@ Viên **kỳ** và viên **góc nhìn** trên thanh công cụ dùng như ở T�
 
 Khác Tổng quan: ở Báo cáo, menu góc nhìn chọn được một team (**Cả team**), và bảng chỉ tính team đó.
 
+Bấm một ô chỉ số ở [Tổng quan](02-tong-quan.md#doanh-số-và-6-chỉ-số-của-kỳ) là mở Báo cáo ở cùng kỳ và góc nhìn của Tổng quan. Mở Báo cáo từ sidebar thì vẫn là tháng hiện tại.
+
 ## Các cột
 
 Mọi bảng có cùng ba nhóm cột:
@@ -19,10 +21,10 @@ Mọi bảng có cùng ba nhóm cột:
 | Nhóm cột | Cột | Tính thế nào |
 |---|---|---|
 | **Lịch hẹn · cả kỳ** | Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến · Tổng | Mọi lịch hẹn trong cả kỳ, kể cả lịch sau hôm nay; 4 nhóm như ô Lịch hẹn của [Tổng quan](02-tong-quan.md#ô-lịch-hẹn) |
-| **Kết quả · tới hôm nay** | Chuyển RF · HĐ nộp · Case size · HĐ phát hành · Doanh số · Tỉ lệ chốt | 6 chỉ số như [Tổng quan](02-tong-quan.md#6-chỉ-số-của-kỳ), tính tới hôm nay |
+| **Kết quả · tới hôm nay** | Chuyển RF · HĐ nộp · Case size · HĐ phát hành · HĐ hủy · Tổng số HĐ · FYP phát hành · FYP hủy · Doanh số · Tỷ lệ hủy · Tỷ lệ chốt | Như các ô của [Tổng quan](02-tong-quan.md#doanh-số-và-6-chỉ-số-của-kỳ), tính tới hôm nay; thêm HĐ phát hành, HĐ hủy (HĐ có ngày hủy trong kỳ), FYP phát hành và FYP hủy. Doanh số = FYP phát hành − FYP hủy |
 | **KH cuối kỳ** | N4 · N3 · N2 · N1 · Tạm hoãn · Mất cơ hội | Số KH ở mỗi nhóm vào cuối ngày cuối kỳ (kỳ chưa hết: hôm nay), kể cả nhóm đã đóng |
 
-Kỳ chưa bắt đầu thì Kết quả và KH cuối kỳ hiện "—". Tỉ lệ chốt hiện "—" khi không có RF.
+Kỳ chưa bắt đầu thì Kết quả và KH cuối kỳ hiện "—". Tỷ lệ chốt hiện "—" khi không có RF, Tỷ lệ hủy khi không có HĐ phát hành. Tổng số HĐ và Doanh số âm (hủy nhiều hơn phát hành trong kỳ) ghi dấu "-" đứng đầu, chữ đỏ.
 
 ## Tổng hợp
 
@@ -36,7 +38,7 @@ Bảng thứ hai chọn bằng ô **Theo team** / **Theo RM** / **Theo mốc**:
 - **Theo RM**: mỗi RM một dòng (cột Team, RM), xếp theo team rồi tên, dòng **Tổng** ở cuối.
 - **Theo mốc**: mỗi mốc thời gian của kỳ một dòng, cho góc nhìn đang xem. Không có dòng Tổng: cộng các mốc ra đúng bảng Tổng hợp.
 
-Dòng **Tổng** cộng các dòng trên; Tỉ lệ chốt của dòng Tổng = tổng HĐ phát hành ÷ tổng RF, không lấy trung bình.
+Dòng **Tổng** cộng các dòng trên; hai tỷ lệ của dòng Tổng tính từ tổng, không lấy trung bình: Tỷ lệ chốt = tổng HĐ phát hành ÷ tổng RF, Tỷ lệ hủy = tổng HĐ hủy ÷ tổng HĐ phát hành.
 
 Bảng nào trùng Tổng hợp thì không có: góc nhìn Team không có Theo team; góc nhìn RM chỉ có Theo mốc.
 
@@ -59,7 +61,7 @@ Mốc có hôm nay được đánh dấu và ghi "tới …" (ví dụ "14–20/
 1. Chọn kỳ và góc nhìn: file xuất đúng kỳ và góc nhìn đang xem.
 2. Bấm **Xuất Excel** (bên phải thanh công cụ). Nút ghi "Đang xuất…" trong lúc tạo file.
 
-File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các bảng của góc nhìn): Toàn bộ 4 sheet, Team 3 sheet, RM 2 sheet. Dòng đầu mỗi sheet ghi tên bảng, kỳ, góc nhìn và ngày xuất. Ô giữ số thật (tiền theo đồng, tỉ lệ dạng %) để tính tiếp trong Excel.
+File `.xlsx` có mỗi bảng đang có một sheet (Tổng hợp, rồi các bảng của góc nhìn): Toàn bộ 4 sheet, Team 3 sheet, RM 2 sheet. Dòng đầu mỗi sheet ghi tên bảng, kỳ, góc nhìn và ngày xuất. Ô giữ số thật (tiền theo đồng, số âm vẫn là số âm, hai tỷ lệ dạng %) để tính tiếp trong Excel.
 
 Khi đang [che tên KH](01-bat-dau.md#che-tên-kh-khi-chiếu-màn-hình), file vẫn ghi tên đầy đủ, như khi không che. Bảng báo cáo trên màn không ghi tên KH.
 

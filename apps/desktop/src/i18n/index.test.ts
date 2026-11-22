@@ -14,6 +14,8 @@ import { vi } from './vi';
 const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'age',
   'amount',
+  // What is cancelled beside what is issued, a count or an amount, written (B3).
+  'cancelled',
   'code',
   'compact',
   'currency',

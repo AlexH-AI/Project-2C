@@ -1,6 +1,7 @@
 import { formatNumber, type AppointmentCounts, type PeriodKind } from '@p2c/domain';
 import { Count } from '@p2c/ui';
 import { t } from '../../i18n';
+import { routeToHash } from '../../shell/routes';
 import { APPOINTMENT_GROUPS } from '../appointments/appointments-view';
 import { CARD_SKIN } from '../classes';
 import { KPI_STEP, kpiText, type KpiTile } from './overview-view';
@@ -10,7 +11,16 @@ const LABEL = 'text-sm text-fg-2';
 const VALUE = 'text-2xl leading-tight font-semibold tabular-nums';
 const UNIT = 'text-md font-medium text-fg-3';
 const FOOT = 'text-xs text-fg-3 tabular-nums';
-const TONE = { up: 'text-ok', down: 'text-danger', same: 'text-fg-2' } as const;
+const FORMULA = 'text-xs text-fg-2 tabular-nums';
+const TONE = { good: 'text-ok', bad: 'text-danger', same: 'text-fg-2' } as const;
+/**
+ * The link of a tile covers the whole of it (its `::after`, over the card, which is `relative`), so
+ * a press anywhere on the tile opens it; its focus ring goes round the tile.
+ */
+const OPEN =
+  'after:absolute after:inset-0 after:rounded-card focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent';
+const GO = 'absolute top-4.5 right-5 text-md text-fg-3';
+const REPORTS = routeToHash({ screen: 'reports' });
 
 /**
  * "Lịch hẹn": met of all, a bar of the four groups and their counts (mockup overview.html 1a). The
@@ -61,15 +71,26 @@ export function AppointmentsTile({
 }
 
 /**
- * One KPI with its change against the previous window, or why there is none (mockup 1a, 1e). Its
- * number runs to a new value ("Đếm", VA7b), each frame written as the number at rest; the line
- * under it, a sentence, changes at once.
+ * One KPI (mockup tong-quan.html `#tiles`, `#states`): under its number how it is worked out or
+ * what it counts, then its change against the previous window, green for the better and red for
+ * the worse, or why there is none. Its number runs to a new value ("Đếm", VA7b), each frame written
+ * as the number at rest, red below 0; the lines under it change at once. The whole tile opens Báo
+ * cáo at the period and scope viewed (`onOpen` keeps the period). Doanh số, until D8 makes it the
+ * lead number, spans the row (`wide`).
  */
-export function KpiCard({ tile }: { tile: KpiTile }) {
+export function KpiCard({
+  tile,
+  wide,
+  onOpen,
+}: {
+  tile: KpiTile;
+  wide: boolean;
+  onOpen: () => void;
+}) {
   return (
-    <section aria-label={tile.label} className={TILE}>
+    <section aria-label={tile.label} className={`${TILE} ${wide ? 'col-span-3' : ''}`}>
       <h3 className={`m-0 font-normal ${LABEL}`}>{tile.label}</h3>
-      <p className={`m-0 ${VALUE}`}>
+      <p className={`m-0 ${VALUE} ${tile.negative ? 'text-danger' : ''}`}>
         <Count
           value={tile.amount}
           step={KPI_STEP[tile.kind]}
@@ -84,11 +105,25 @@ export function KpiCard({ tile }: { tile: KpiTile }) {
           }}
         />
       </p>
+      {tile.formula && <p className={`m-0 ${FORMULA}`}>{tile.formula}</p>}
       <p className={`m-0 ${FOOT}`}>
         {tile.delta && <span className={TONE[tile.delta.tone]}>{tile.delta.text} </span>}
         {tile.note}
-        {tile.formula && <span>{` ${t('sep.dot')} ${tile.formula}`}</span>}
       </p>
+      <a
+        href={REPORTS}
+        onClick={(event) => {
+          // Only a plain press goes to Báo cáo here: the period must not wait for a later visit.
+          const plain = !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+          if (event.button === 0 && plain) onOpen();
+        }}
+        aria-label={t('overview.kpiOpen', { label: tile.label })}
+        className={OPEN}
+      >
+        <span aria-hidden="true" className={GO}>
+          {t('sep.arrow')}
+        </span>
+      </a>
     </section>
   );
 }

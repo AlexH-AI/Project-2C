@@ -24,16 +24,21 @@ const CUSTOMER = 'Khải Trọn Vòng';
 // What the round records for the team in September: one meeting met on 15/09 moving N4 → N2 (an
 // RF), one appointment planned on 22/09, one deleted; a policy submitted 500 tr on 10/09 and issued
 // 485.5 tr on 12/09, another submitted 120 tr on 14/09 and not issued.
-/** So sánh team: Đã gặp · Chuyển RF · HĐ nộp · Case size · HĐ phát hành · Doanh số · Tỉ lệ chốt. */
+/** So sánh team: Đã gặp · Chuyển RF · HĐ nộp · Case size · HĐ phát hành · Doanh số · Tỷ lệ chốt. */
 const COMPARED = ['1', '1', '2', '620 tr', '1', '485.5 tr', '100%'];
 /**
- * Tổng hợp: Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến · Tổng, then the columns of
- * COMPARED from Chuyển RF, then the customers at the end of the day N4 · N3 · N2 · N1 · Tạm hoãn ·
+ * Tổng hợp: Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến · Tổng, then Chuyển RF ·
+ * HĐ nộp · Case size · HĐ phát hành · HĐ hủy · Tổng số HĐ · FYP phát hành · FYP hủy · Doanh số ·
+ * Tỷ lệ hủy · Tỷ lệ chốt, then the customers at the end of the day N4 · N3 · N2 · N1 · Tạm hoãn ·
  * Mất cơ hội.
  */
-const SUMMARY = ['1', '0', '0', '1', '2', ...COMPARED.slice(1), '0', '0', '1', '0', '0', '0'];
+const SUMMARY = [
+  ...['1', '0', '0', '1', '2'],
+  ...['1', '2', '620 tr', '1', '0', '1', '485.5 tr', '0 VNĐ', '485.5 tr', '0%', '100%'],
+  ...['0', '0', '1', '0', '0', '0'],
+];
 /** The Tổng hợp columns that So sánh team shows too, in its order. */
-const SUMMARY_OF_COMPARED = [0, 5, 6, 7, 8, 9, 10];
+const SUMMARY_OF_COMPARED = [0, 5, 6, 7, 8, 13, 15];
 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Điều hướng chính' });
 const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
