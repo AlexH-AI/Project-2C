@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "at": "2026-11-21T14:03:27.542Z",
+  "note": "T-485 10x, Home PC DESKTOP-KDURKJP, exe release built at 75b7e14 (app code 3a34861), sha256 DD14DE17...C32E",
+  "ops": {
+    "app.open-data": {
+      "unit": "ms",
+      "runs": 1,
+      "median": 2136.5,
+      "min": 2136.5,
+      "max": 2136.5
+    },
+    "reload.overview": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 3213.6,
+      "min": 3167.4,
+      "max": 3231.3
+    },
+    "reload.appointments": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 2957.1,
+      "min": 2926.9,
+      "max": 2974.6
+    },
+    "reload.customers": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 2503.9,
+      "min": 2481.6,
+      "max": 2523.5
+    },
+    "reload.reports": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 3187.9,
+      "min": 3149.3,
+      "max": 3200.3
+    },
+    "reload.team": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 3656.2,
+      "min": 3611.1,
+      "max": 3724.4
+    },
+    "reload.settings": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 2207.9,
+      "min": 2176.2,
+      "max": 2221.2
+    },
+    "appointments.period-day": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 19.5,
+      "min": 19.1,
+      "max": 22,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.period-week": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 18.5,
+      "min": 17.8,
+      "max": 20.8,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.period-month": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 27.7,
+      "min": 27.3,
+      "max": 28.9,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.period-year": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 54.6,
+      "min": 49.6,
+      "max": 55.3,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.sort-date-asc": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 60.7,
+      "min": 39.4,
+      "max": 65.8,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.sort-date-desc": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 27.5,
+      "min": 19.5,
+      "max": 31.3,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.select-row-year": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 12.9,
+      "min": 11.9,
+      "max": 15.5,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.select-day-month": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 29.6,
+      "min": 17.9,
+      "max": 30.8,
+      "limit": 200,
+      "within": true
+    },
+    "appointments.select-row-month": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 9.3,
+      "min": 8.8,
+      "max": 17.1,
+      "limit": 200,
+      "within": true
+    },
+    "customers.view-table": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 24.1,
+      "min": 23.4,
+      "max": 24.8,
+      "limit": 200,
+      "within": true
+    },
+    "customers.sort-name": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 55,
+      "min": 51.4,
+      "max": 57.3,
+      "limit": 200,
+      "within": true
+    },
+    "customer.open-ai": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 104.5,
+      "min": 100.9,
+      "max": 130.6,
+      "limit": 200,
+      "within": true
+    },
+    "customer.ai-history": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 12.5,
+      "min": 3.6,
+      "max": 15.2,
+      "limit": 200,
+      "within": true
+    },
+    "overview.filter-year": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 94.4,
+      "min": 91.6,
+      "max": 106.7,
+      "limit": 200,
+      "within": true
+    },
+    "overview.filter-month": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 74.2,
+      "min": 73.5,
+      "max": 101.6,
+      "limit": 200,
+      "within": true
+    },
+    "reports.filter-year": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 73,
+      "min": 71.8,
+      "max": 85.7,
+      "limit": 200,
+      "within": true
+    },
+    "reports.filter-month": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 59.3,
+      "min": 57.5,
+      "max": 61.8,
+      "limit": 200,
+      "within": true
+    },
+    "reports.table-re": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 59.8,
+      "min": 58.4,
+      "max": 62.2,
+      "limit": 200,
+      "within": true
+    },
+    "trash.kind-appointments": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 14.2,
+      "min": 13.7,
+      "max": 18.2,
+      "limit": 200,
+      "within": true
+    },
+    "memory.js-heap": {
+      "unit": "MB",
+      "runs": 1,
+      "median": 45,
+      "min": 45,
+      "max": 45
+    },
+    "memory.webview-private": {
+      "unit": "MB",
+      "runs": 1,
+      "median": 823,
+      "min": 823,
+      "max": 823
+    },
+    "memory.webview-renderer": {
+      "unit": "MB",
+      "runs": 1,
+      "median": 442.9,
+      "min": 442.9,
+      "max": 442.9
+    },
+    "trash.open": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 177.4,
+      "min": 174.8,
+      "max": 189.9,
+      "limit": 200,
+      "within": true
+    },
+    "reports.export-excel": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 46.4,
+      "min": 34.3,
+      "max": 92.1
+    },
+    "appointments.next-month": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 1020.8,
+      "min": 998.6,
+      "max": 1036.3
+    },
+    "db.save": {
+      "unit": "ms",
+      "runs": 10,
+      "median": 1526.5,
+      "min": 1506.6,
+      "max": 1727
+    },
+    "appointments.next-year": {
+      "unit": "ms",
+      "runs": 5,
+      "median": 1072.4,
+      "min": 1057.3,
+      "max": 1102.8
+    }
+  }
+}

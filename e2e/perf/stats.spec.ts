@@ -1,12 +1,15 @@
 import { expect, test } from '../fixtures';
 import {
   aiCustomer,
+  backupSkipped,
+  BACKUP_LIMIT_BYTES,
   compareRuns,
   loadDataError,
   markdownTable,
   parseRun,
   summarize,
   toRun,
+  webviewMemory,
   type PerfRun,
 } from './stats';
 
@@ -215,4 +218,37 @@ test('aiCustomer picks a live customer with the most AI analyses', () => {
   ).toBe('c3');
   expect(aiCustomer({ tables: { customers, ai_analyses: analyses('c2') } })).toBeUndefined();
   expect(aiCustomer({ tables: { customers, ai_analyses: [] } })).toBeUndefined();
+});
+
+test('backupSkipped lets a file up to the app limit through and names one over it', () => {
+  expect(BACKUP_LIMIT_BYTES).toBe(100 * 1024 * 1024);
+  expect(backupSkipped(16_034_517)).toBeNull();
+  expect(backupSkipped(BACKUP_LIMIT_BYTES)).toBeNull();
+  expect(backupSkipped(160_675_566)).toBe(
+    'The load data file is 153 MB, over the 100 MB the app imports or exports: backup.read, ' +
+      'backup.import and backup.export are not measured.',
+  );
+});
+
+test('webviewMemory sums the Private Bytes of the WebView2 processes of the exe alone', () => {
+  const MB = 1024 * 1024;
+  const process = (id: number, parentId: number, type: string, exe: string | null, mb: number) => ({
+    id,
+    parentId,
+    commandLine: `msedgewebview2.exe${type ? ` --type=${type}` : ''}${exe ? ` --webview-exe-name=${exe}` : ''}`,
+    privateBytes: mb * MB,
+  });
+  const processes = [
+    // Another app's WebView2, with a renderer of its own.
+    process(10, 1, '', 'SearchHost.exe', 31),
+    process(11, 10, 'renderer', 'SearchHost.exe', 61),
+    process(12, 10, 'crashpad-handler', null, 3),
+    // The exe's: the crash handler names no exe, its parent does.
+    process(20, 2, '', 'project2c.exe', 33),
+    process(21, 20, 'crashpad-handler', null, 2.5),
+    process(22, 20, 'gpu-process', 'project2c.exe', 134.5),
+    process(23, 20, 'renderer', 'project2c.exe', 158),
+  ];
+  expect(webviewMemory(processes, 'project2c.exe')).toEqual({ total: 328, renderer: 158 });
+  expect(webviewMemory(processes.slice(0, 3), 'project2c.exe')).toBeUndefined();
 });
