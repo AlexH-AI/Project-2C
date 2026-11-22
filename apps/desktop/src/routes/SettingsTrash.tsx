@@ -77,7 +77,7 @@ function RecordCell({
         </span>
         {badge && 'stage' in badge && stageBadge(badge.stage, badge.text)}
       </b>
-      {badge && 'issued' in badge && <PolicyBadge issued={badge.issued} label={badge.text} />}
+      {badge && 'status' in badge && <PolicyBadge status={badge.status} label={badge.text} />}
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
         <span id={reasonId(row)} className="mt-1 block text-xs wrap-anywhere text-warn">

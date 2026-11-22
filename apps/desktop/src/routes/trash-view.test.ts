@@ -141,6 +141,7 @@ const policy: TrashRow = {
   submittedFyp: 24_000_000,
   issuedDate: null,
   issuedFyp: null,
+  cancelledDate: null,
   owner: { customer: customerRef('Hoàng Ngọc Lan', 'K-2HNL'), rm: ref('Hoàng Nhật Minh') },
   effect: { kind: 'none' },
 };
@@ -395,8 +396,11 @@ describe('recordBadge (spec Phase 6 §4.2 "Bản ghi")', () => {
       text: 'Tạm hoãn',
       stage: 'ON_HOLD',
     });
-    expect(recordBadge(policy)).toEqual({ text: 'Đã nộp', issued: false });
-    expect(recordBadge(issuedPolicy)).toEqual({ text: 'Đã phát hành', issued: true });
+    expect(recordBadge(policy)).toEqual({ text: 'Đã nộp', status: 'submitted' });
+    expect(recordBadge(issuedPolicy)).toEqual({ text: 'Đã phát hành', status: 'issued' });
+    // B2 (huy-hd.html #row): the red badge of a cancelled policy, with its day.
+    const cancelled = { ...issuedPolicy, cancelledDate: calendarDate(2026, 9, 25) } as TrashRow;
+    expect(recordBadge(cancelled)).toEqual({ text: 'Đã hủy 25/09/2026', status: 'cancelled' });
   });
 
   it('an appointment, a person or a team: none, its status or role being written out', () => {
@@ -839,6 +843,13 @@ describe('blockedReason (mockup 11d)', () => {
     expect(
       reason(policy, { code: 'DATE_IN_FUTURE', params: { date: '12/10/2026', field: 'issued' } }),
     ).toBe('Ngày phát hành 12/10/2026 sau hôm nay.');
+    // B1a, from an imported file only: the day said, as of the other two (review log L244).
+    expect(
+      reason(issuedPolicy, {
+        code: 'DATE_IN_FUTURE',
+        params: { date: '14/10/2026', field: 'cancelled' },
+      }),
+    ).toBe('Ngày hủy 14/10/2026 sau hôm nay.');
   });
 
   it('E14: the team deleted', () => {
@@ -1019,6 +1030,11 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
     expect(restoreView(issued, TODAY).facts).toEqual([
       { term: 'FYP nộp', text: '24,000,000 VNĐ' },
       { term: 'Trạng thái', text: 'Đã phát hành 30/09/2026 · 20,000,000 VNĐ' },
+    ]);
+    const cancelled = { ...issued, cancelledDate: calendarDate(2026, 10, 2) } as TrashRow;
+    expect(restoreView(cancelled, TODAY).facts).toEqual([
+      { term: 'FYP nộp', text: '24,000,000 VNĐ' },
+      { term: 'Trạng thái', text: 'Đã hủy 02/10/2026 · phát hành 30/09/2026 · 20,000,000 VNĐ' },
     ]);
     const lan = { ...mai, owner: { team: ref('Bình Minh') }, blocked: undefined } as TrashRow;
     expect(restoreView(lan, TODAY)).toEqual({

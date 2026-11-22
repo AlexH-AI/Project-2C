@@ -27,7 +27,7 @@ import { errorMessage, joinParts, t } from '../i18n';
 import { maskName } from '../shell/name-mask';
 import { routeToHash } from '../shell/routes';
 import { statusLabel } from './appointments/appointments-view';
-import { policyStatusText } from './customers/policy-form';
+import { policyStatus, policyStatusText, type PolicyStatus } from './customers/policy-form';
 import { formatAmount } from './money-view';
 
 /** The kinds of the filter of Thùng rác, in the order of mockup 11a. */
@@ -144,13 +144,13 @@ export function recordBadge(
   row: TrashRow,
 ):
   | { readonly text: string; readonly stage: CustomerStage }
-  | { readonly text: string; readonly issued: boolean }
+  | { readonly text: string; readonly status: PolicyStatus }
   | null {
   switch (row.kind) {
     case 'customer':
       return { text: stage(row.stage), stage: row.stage };
     case 'policy':
-      return { text: policyStatusText(row), issued: row.issuedDate !== null };
+      return { text: policyStatusText(row), status: policyStatus(row) };
     default:
       return null;
   }
@@ -399,7 +399,9 @@ function reasonSentence(
       : null;
   }
   if (code === 'DATE_IN_FUTURE') {
-    return field === 'submitted' || field === 'issued' ? t(`trash.blocked.${field}`, params) : null;
+    return field === 'submitted' || field === 'issued' || field === 'cancelled'
+      ? t(`trash.blocked.${field}`, params)
+      : null;
   }
   if (code === 'INVALID_TRANSITION') {
     return typeof from === 'string' && typeof to === 'string'
@@ -494,7 +496,7 @@ export function restoreView(row: TrashRow, today: CalendarDate): RestoreView {
             text:
               row.issuedDate === null
                 ? policyStatusText(row)
-                : t('trash.restore.issued', {
+                : t(row.cancelledDate ? 'trash.restore.cancelled' : 'trash.restore.issued', {
                     status: policyStatusText(row),
                     date: formatDate(row.issuedDate),
                     fyp: formatAmount(row.issuedFyp ?? 0),

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from './fixtures';
 import { ANCHOR_YEAR, toNewYearsEve } from './anchor';
-import { createKycCustomer, openProfile } from './support';
+import { createKycCustomer, gotoScreen, openProfile } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 
@@ -413,4 +413,173 @@ test('by the keyboard, Lưu HĐ from the empty card, Phát hành and Xóa HĐ le
   await expect(confirm).toBeHidden();
   await expect(card).toContainText('Chưa có HĐ.');
   await expect(heading).toBeFocused();
+});
+
+/** A policy of the profile open, submitted on `day` (dd/mm) for `fyp`, then issued on `issued`. */
+async function addPolicy(page: Page, day: string, fyp: string, issued?: string) {
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill(day);
+  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill(fyp);
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(dialog).toBeHidden();
+  if (!issued) return;
+  await card
+    .getByRole('button', { name: new RegExp(`^Phát hành HĐ nộp ${day}/${ANCHOR_YEAR}`) })
+    .click();
+  const issue = page.getByRole('dialog', { name: 'Phát hành HĐ' });
+  await issue.getByRole('textbox', { name: /^Ngày phát hành/ }).fill(issued);
+  await issue.getByRole('button', { name: 'Phát hành', exact: true }).click();
+  await expect(issue).toBeHidden();
+}
+
+// B2, mockup huy-hd.html #cancel, #effect, #row, #count, #states (G3 13/11/2026).
+test('cancels an issued policy: today filled in, the FYP locked, what the metrics do (B2)', async ({
+  page,
+}) => {
+  const name = 'Hà Hủy Hợp Đồng';
+  await createKycCustomer(page, name);
+  const header = page.locator('section').filter({ has: page.locator('#customer-name') });
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await addPolicy(page, '20/08', '60tr', '25/08');
+  const row = card.getByRole('listitem').filter({ hasText: 'Nộp 20/08 · 60 tr' });
+  await row.getByRole('button', { name: 'Hủy HĐ nộp 20/08/2026 · 60,000,000 VNĐ' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Hủy HĐ' });
+  await expect(dialog).toContainText(`${name} · phát hành 25/08/2026 · FYP phát hành 60 tr`);
+  const day = dialog.getByRole('textbox', { name: /^Ngày hủy/ });
+  await expect(day).toHaveValue('15/09');
+  await expect(day).toHaveAccessibleDescription('Thứ Ba 15/09/2026 · 21 ngày sau khi phát hành');
+  const fyp = dialog.getByRole('textbox', { name: /^FYP hủy/ });
+  await expect(fyp).toBeDisabled();
+  await expect(fyp).toHaveValue('60,000,000 VNĐ');
+  // Cancelled in another month than the issue: the issue month keeps its numbers.
+  const effect = dialog.getByRole('definition');
+  await expect(effect.locator('span')).toHaveText([
+    /^Doanh số tháng 09\/2026 của RM .+ giảm 60 tr$/,
+    'tháng 09/2026: +1 HĐ hủy',
+  ]);
+  await expect(effect).toContainText(
+    'HĐ phát hành tháng 08/2026 vẫn tính phát hành vào tháng 08/2026: số của tháng đó không đổi.',
+  );
+
+  // A wrong day: the sentence of the command's code, the button off, no numbers (#states).
+  const confirm = dialog.getByRole('button', { name: 'Hủy HĐ', exact: true });
+  await day.fill('24/8');
+  await expect(day).toHaveAccessibleDescription('Ngày hủy trước ngày phát hành 25/08/2026.');
+  await expect(confirm).toBeDisabled();
+  await expect(effect).toHaveCount(0);
+  await day.fill('16/9');
+  await expect(day).toHaveAccessibleDescription(
+    'Ngày này sau hôm nay. Ngày của năm trước: gõ đủ dd/mm/yyyy.',
+  );
+  await expect(confirm).toBeDisabled();
+  await day.fill('15/9');
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+
+  // The toast, in the polite live region a screen reader reads out (VA3b).
+  await expect(page.locator('[aria-live="polite"]').filter({ hasText: 'Đã hủy HĐ' })).toHaveText(
+    /^Đã hủy HĐ · Doanh số tháng 09\/2026 của RM .+ giảm 60 tr · bỏ hủy ở nút Sửa$/,
+  );
+  await expect(row).toContainText('Đã hủy 15/09/2026');
+  await expect(row.getByRole('button')).toHaveText(['Sửa']);
+  // Every policy of the customer cancelled: no "Đã có HĐ", on the profile or its card (#count).
+  await expect(card).toContainText('0 HĐ · 1 đã hủy');
+  await expect(header).toContainText('Chưa có HĐ');
+  await gotoScreen(page, '/#/customers');
+  const kanbanCard = page.getByRole('link', { name: new RegExp(name) });
+  await expect(kanbanCard).not.toContainText('HĐ');
+  await kanbanCard.click();
+
+  // A submitted policy has no "Hủy HĐ", and counts.
+  await addPolicy(page, '10/09', '40tr');
+  const submitted = card.getByRole('listitem').filter({ hasText: 'Nộp 10/09 · 40 tr' });
+  await expect(submitted.getByRole('button')).toHaveText(['Phát hành', 'Sửa']);
+  await expect(card).toContainText('1 HĐ · 1 đã hủy');
+  await expect(header).toContainText('Đã có HĐ (1)');
+});
+
+// DR6-38 for the cancel dialog: today filled in as dd/mm reads in the year the dialog opened in.
+test('a policy cancelled across New Year keeps the day the dialog showed (B2)', async ({
+  page,
+}) => {
+  await createKycCustomer(page, 'Hà Giao Thừa');
+  await addPolicy(page, '10/09', '317tr', '10/09');
+  const row = page.getByRole('region', { name: 'Hợp đồng', exact: true }).getByRole('listitem');
+
+  // Opened at 23:58 on 31/12/2026, saved past midnight.
+  await toNewYearsEve(page);
+  await row.getByRole('button', { name: /^Hủy HĐ nộp/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Hủy HĐ' });
+  await expect(dialog.getByRole('textbox', { name: /^Ngày hủy/ })).toHaveValue('31/12');
+  await page.clock.fastForward(3 * 60_000);
+  await dialog.getByRole('button', { name: 'Hủy HĐ', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Đã hủy 31/12/2026');
+});
+
+// B2, mockup huy-hd.html #edit; golden chi-so.md mục 4.4 points 4, 5.
+test('8d of a cancelled policy: Bỏ hủy until Hoàn lại, then Lưu; the issue stays before it (B2)', async ({
+  page,
+}) => {
+  const name = 'Hà Bỏ Hủy';
+  await createKycCustomer(page, name);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await addPolicy(page, '20/08', '60tr', '25/08');
+  const row = card.getByRole('listitem').filter({ hasText: 'Nộp 20/08 · 60 tr' });
+  await row.getByRole('button', { name: /^Hủy HĐ nộp/ }).click();
+  let dialog = page.getByRole('dialog', { name: 'Hủy HĐ' });
+  await dialog.getByRole('textbox', { name: /^Ngày hủy/ }).fill('10/9');
+  await dialog.getByRole('button', { name: 'Hủy HĐ', exact: true }).click();
+  await expect(row).toContainText('Đã hủy 10/09/2026');
+
+  const edit = row.getByRole('button', { name: /^Sửa HĐ nộp 20\/08\/2026/ });
+  await edit.click();
+  dialog = page.getByRole('dialog', { name: `Sửa HĐ · ${name}` });
+  await expect(dialog).toContainText('Đã hủy 10/09/2026');
+  const day = dialog.getByRole('textbox', { name: /^Ngày hủy/ });
+  await expect(day).toHaveValue('10/09');
+  const save = dialog.getByRole('button', { name: 'Lưu', exact: true });
+  // The issue is neither cleared nor moved past the cancellation: the sentence says how.
+  const issued = dialog.getByRole('textbox', { name: /^Ngày phát hành/ });
+  await issued.fill('12/9');
+  await expect(issued).toHaveAccessibleDescription(
+    '12/09/2026 sau ngày hủy 10/09/2026. Bỏ hủy trước, hoặc sửa ngày hủy.',
+  );
+  await issued.fill('');
+  await save.click();
+  await expect(dialog.getByRole('alert')).toContainText('Chưa lưu được — 1 ô cần sửa');
+  await expect(issued).toHaveAccessibleDescription(
+    'HĐ đã hủy phải có ngày phát hành: gõ một ngày không sau ngày hủy.',
+  );
+  await issued.fill('25/8');
+  await expect(dialog.getByRole('textbox', { name: /^FYP phát hành/ })).toHaveAccessibleDescription(
+    /· FYP hủy bằng số này$/,
+  );
+
+  // Bỏ hủy shows the numbers coming back; Hoàn lại before Lưu changes nothing.
+  await dialog.getByRole('button', { name: 'Bỏ hủy' }).click();
+  const effect = dialog.getByRole('definition');
+  await expect(effect.locator('span')).toHaveText([
+    /^Doanh số tháng 09\/2026 của RM .+ tăng 60 tr$/,
+    'tháng 09/2026: −1 HĐ hủy',
+  ]);
+  await expect(effect).toContainText('HĐ trở lại Đã phát hành. App không giữ dấu vết lần hủy này.');
+  await dialog.getByRole('button', { name: 'Hoàn lại 10/09/2026' }).click();
+  await expect(day).toHaveValue('10/09');
+  await expect(effect).toHaveCount(0);
+  await save.click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Đã hủy 10/09/2026');
+
+  // Bỏ hủy, then Lưu: issued again, counted again.
+  await edit.click();
+  await dialog.getByRole('button', { name: 'Bỏ hủy' }).click();
+  await save.click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Đã phát hành');
+  await expect(row.getByRole('button')).toHaveText(['Hủy HĐ', 'Sửa']);
+  await expect(card.getByText('1 HĐ', { exact: true })).toBeVisible();
 });
