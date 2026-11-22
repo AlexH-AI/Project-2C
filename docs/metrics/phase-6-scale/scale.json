@@ -177,5 +177,157 @@
       "nodeBuildSeconds": 244.5,
       "note": "built only, to check --scale 20; not measured in the exe"
     }
+  },
+  "sidebarNavigation": {
+    "at": "2026-11-22",
+    "how": "click the sidebar link, to the frame after the screen shows its main content; from Cài đặt (Cài đặt from Tổng quan); 5 runs each; debugger detached",
+    "limitMs": 200,
+    "ms": {
+      "x1": {
+        "overview": [
+          33,
+          28,
+          24,
+          25,
+          23
+        ],
+        "appointments": [
+          28,
+          27,
+          26,
+          26,
+          26
+        ],
+        "customers": [
+          12,
+          8,
+          15,
+          15,
+          7
+        ],
+        "reports": [
+          18,
+          13,
+          17,
+          13,
+          18
+        ],
+        "team": [
+          17,
+          10,
+          18,
+          15,
+          10
+        ],
+        "settings": [
+          17,
+          17,
+          18,
+          10,
+          10
+        ]
+      },
+      "x5": {
+        "overview": [
+          585,
+          55,
+          50,
+          52,
+          49
+        ],
+        "appointments": [
+          63,
+          48,
+          49,
+          44,
+          45
+        ],
+        "customers": [
+          24,
+          17,
+          19,
+          16,
+          17
+        ],
+        "reports": [
+          45,
+          36,
+          35,
+          36,
+          33
+        ],
+        "team": [
+          85,
+          78,
+          79,
+          78,
+          79
+        ],
+        "settings": [
+          34,
+          34,
+          34,
+          34,
+          35
+        ]
+      },
+      "x10": {
+        "overview": [
+          1125,
+          92,
+          86,
+          83,
+          85
+        ],
+        "appointments": [
+          91,
+          72,
+          73,
+          72,
+          69
+        ],
+        "customers": [
+          34,
+          28,
+          28,
+          28,
+          29
+        ],
+        "reports": [
+          78,
+          69,
+          66,
+          67,
+          68
+        ],
+        "team": [
+          296,
+          287,
+          297,
+          290,
+          293
+        ],
+        "settings": [
+          87,
+          86,
+          86,
+          88,
+          87
+        ]
+      }
+    },
+    "note": "x5 / x10: the first Tổng quan run is the first visit after the exe opened"
+  },
+  "macDmg": {
+    "at": "2026-11-22",
+    "size": "x10 (project2c.db)",
+    "build": "macos.yml run 44876312076, artifact Heritas-L-CRM-macos-20275b6…, app code = main",
+    "machine": "Owner MacBook (model, chip, macOS: not recorded yet)",
+    "byOwnerStopwatch": {
+      "openToOverviewS": "2-2.3",
+      "saveAppointmentS": "1",
+      "overviewFromSidebarS": "0.3-0.5",
+      "teamFromAnyScreenS": "2"
+    }
   }
 }

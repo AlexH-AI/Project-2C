@@ -478,9 +478,9 @@ Số đo để Owner quyết có viết ADR lưu trữ cho dữ liệu lớn tr�
   - Kỳ đo: Năm 2026, Tháng 10/2026 (`1 back`) ở cả ba cỡ.
   - Ở 10×, probe bỏ `backup.read`, `backup.import`, `backup.export` (file quá trần), nên `db.save` chỉ có 10 lần lưu khi tạo lịch hẹn. Hai lời từ chối backup ở 10× đo riêng một lần, bằng script nối CDP như probe.
   - Probe chọn file backup theo đường dẫn qua lệnh CDP `DOM.setFileInputFiles`, vì `setInputFiles` của Playwright từ chối file trên 50 MB. Đo lại 1× sau khi đổi: `backup.read` 973 ms, lần trước bằng `setInputFiles` 972 ms.
-- **File JSON:** `docs/metrics/phase-6-scale/perf-x1.json`, `perf-x5.json`, `perf-x10.json` (probe); `scale.json` (số dòng, cỡ file, mở lạnh, lời từ chối ở 10×).
+- **File JSON:** `docs/metrics/phase-6-scale/perf-x1.json`, `perf-x5.json`, `perf-x10.json` (probe); `scale.json` (số dòng, cỡ file, mở lạnh, lời từ chối ở 10×, chuyển màn bằng sidebar, số `.dmg`).
 
-**Kết quả: thao tác màn vẫn dưới 200 ms ở cả 10×. Mọi việc đụng tới cả file DB (mở, màn đầu sau tải lại, lưu, nhập / xuất backup) vượt ngưỡng ngay từ 5×. Từ ≈ 6,5× thì backup không nhập, không xuất được.**
+**Kết quả: thao tác màn của probe vẫn dưới 200 ms ở cả 10×. Riêng chuyển sang Team & nhân sự (đo thêm, bảng dưới) tăng gần bình phương và vượt 200 ms ở 10×. Mọi việc đụng tới cả file DB (mở, màn đầu sau tải lại, lưu, nhập / xuất backup) vượt ngưỡng ngay từ 5×. Từ ≈ 6,5× thì backup không nhập, không xuất được.**
 
 Dữ liệu và file:
 
@@ -545,11 +545,41 @@ Bảng probe: trung vị, min–max trong ngoặc (5 lần; `db.save` 15 lần �
 | Xuất backup 10×: bấm → câu báo (1 lần, đã ngắt debugger) | — | — | 3 260 ms, từ chối: "Chưa xuất backup: dữ liệu lớn hơn 100 MB…"; sau đó tiến trình WebView2 của exe giữ 1 451 MB | — |
 
 - **LCP ở 1× chậm hơn mốc L4:** gọi exe → LCP ở 1× hôm nay ≈ 1,09 s, trong khi nghiệm thu L4 (09/11, exe `a1e6a20`) đo 717 ms. `p2c:data-open` thì nhanh hơn (314 so với 375 ms). Nghĩa là phần chậm thêm nằm sau lúc mở xong dữ liệu. Chưa tìm nguyên nhân; có thể là chuyển động của VA7 ("Đếm số lớn") dời mốc LCP. Việc này ngoài T-485, cần kiểm riêng trước khi dùng số này so với ngưỡng "mở lại ≤ 1 s".
-- **Bản `.dmg` trên MacBook:** đang chờ Owner bấm giờ ở 10× (mở app, lưu một lịch hẹn, mở Tổng quan; mỗi việc 3 lần). Bản build: artifact `Heritas-L-CRM-macos-20275b6…` của run `macos.yml` 44876312076, code app trùng `main`. Dữ liệu 10× nạp bằng `project2c.db` (backup 10× quá trần), file backup 5× để dự phòng.
+Chuyển màn bằng sidebar (đo thêm ngày 22/11, sau khi Owner thấy Team & nhân sự chậm trên Mac). Probe không đo việc này, chỉ đo màn đầu sau tải lại. Cách đo:
+- Cùng exe, cùng máy. Bấm link của màn ở sidebar, tính tới khung hình sau khi màn hiện nội dung chính: bảng "So sánh team" và biểu đồ của Tổng quan; bảng "Danh sách lịch hẹn"; cột N4; bảng "Theo team"; bảng "Thành viên team…"; mục "File dữ liệu".
+- Đi từ Cài đặt (riêng Cài đặt thì từ Tổng quan), mỗi màn 5 lần. Đo khi đã ngắt debugger, như probe đo lệnh ghi.
+- 1× đo trên dữ liệu vừa qua probe; 5× nhập backup rồi mở lại exe; 10× là `project2c.db` 10× vừa mở.
+
+| Bấm ở sidebar (trung vị, min–max) | 1× | 5× | 10× | Ngưỡng |
+|---|---:|---:|---:|---|
+| Tổng quan | 25 ms (23–33) | 52 ms (49–585) | 86 ms (83–1 125) | < 200 ms |
+| Lịch hẹn | 26 ms (26–28) | 48 ms (44–63) | 72 ms (69–91) | < 200 ms |
+| Khách hàng | 12 ms (7–15) | 17 ms (16–24) | 28 ms (28–34) | < 200 ms |
+| Báo cáo | 17 ms (13–18) | 36 ms (33–45) | 68 ms (66–78) | < 200 ms |
+| **Team & nhân sự** | 15 ms (10–18) | 79 ms (78–85) | **293 ms** ❌ (287–297) | < 200 ms |
+| Cài đặt | 17 ms (10–18) | 34 ms (34–35) | 87 ms (86–88) | < 200 ms |
+
+- **Lần đầu vào Tổng quan sau khi mở exe** (số max ở 5× / 10×): 585 ms ở 5×, 1 125 ms ở 10×. Các lần sau nhanh như các màn khác. Ở 1×, lần đầu không nằm trong 5 lần đo (đã vào Tổng quan trước đó).
+- **Team & nhân sự tăng gần bình phương:** 15 → 79 → 293 ms (×5,3 từ 1× lên 5×, ×3,7 từ 5× lên 10×). Theo đà này, màn vượt 200 ms ở khoảng 8× trên máy này. Mac ở 10×: ≈ 2 s (dưới). Màn chỉ đọc dữ liệu đã có trong bộ nhớ, nên chỗ chậm nằm ở phần tính của màn, không do cách lưu: ADR lưu trữ không sửa được việc này. Chưa tìm nguyên nhân.
+
+- **Bản `.dmg` trên MacBook** (Owner bấm giờ ngày 22/11/2026, dữ liệu 10× nạp bằng `project2c.db`). Bản build: artifact `Heritas-L-CRM-macos-20275b6…` của run `macos.yml` 44876312076, code app trùng `main`. Máy: MacBook của Owner (model, chip, bản macOS: chờ Owner ghi). Số do Owner ghi:
+
+  | Việc (Owner bấm giờ, 10×) | MacBook | Windows, Home PC, 10× (cùng mục này) |
+  |---|---|---|
+  | Mở app: nhấp mở → Tổng quan có số liệu; giữa hai lần thoát hẳn bằng ⌘Q | ≈ 2–2,3 s | gọi exe → LCP 3 975 ms (3 906–4 017) |
+  | Lưu một lịch hẹn: bấm lưu → hộp đóng, lịch hiện | ≈ 1 s | `appointments.next-*` 1 021–1 072 ms |
+  | Mở Tổng quan từ màn khác ở sidebar | ≈ 0,3–0,5 s ("rất nhanh") | 86 ms |
+  | Bấm Team & nhân sự từ bất kỳ màn nào (Owner ghi thêm) | ≈ 2 s | 293 ms |
+
+  - Mở app trên Mac nhanh hơn Windows. Lưu ngang Windows (≈ 1 s, ngưỡng 300 ms cho tạo lịch hẹn / 400 ms cho lưu file).
+  - Tổng quan "rất nhanh" (số bấm tay gồm cả thời gian phản xạ).
+  - Team & nhân sự chậm hơn Windows gần 7 lần.
 
 **Kết luận cho Owner:**
 
-- **Thao tác màn chịu được cỡ lớn.** Đổi kỳ, sắp, chọn, lọc, mở hồ sơ, Thùng rác: mọi số dưới 200 ms ở cả 10×. Chậm nhất là `trash.open` 177 ms, rồi `customer.open-ai` 105 ms. Phần tính chỉ số trong bộ nhớ (ADR-0016) không phải chỗ nghẽn.
+- **Thao tác màn phần lớn chịu được cỡ lớn, trừ màn Team & nhân sự.**
+  - Đổi kỳ, sắp, chọn, lọc, mở hồ sơ, Thùng rác và chuyển sang các màn khác: mọi số dưới 200 ms ở cả 10× trên Windows. Chậm nhất là `trash.open` 177 ms, rồi `customer.open-ai` 105 ms.
+  - Riêng chuyển sang Team & nhân sự tăng gần bình phương: 15 → 79 → 293 ms trên Windows, ≈ 2 s trên Mac ở 10×. Đây là phần tính của màn, không do cách lưu; cần một việc riêng, ngoài ADR lưu trữ.
 - **Vượt ngưỡng là những việc đụng tới cả file DB.** Các số này tăng gần tuyến tính theo cỡ file, đúng với cách lưu đọc và ghi cả file.
   - Ở 5×: mở dữ liệu 1,1 s (ngưỡng 600 ms); màn đầu sau tải lại 1,1–1,7 s (ngưỡng 500 ms); mỗi lần lưu 0,8 s (ngưỡng 400 ms); tạo lịch hẹn 0,55–0,6 s (ngưỡng 300 ms); nhập backup 5,4 s; xuất backup 2,4 s.
   - Ở 10×: gọi exe tới màn đầu ≈ 4 s, mỗi lần lưu 1,5 s, tạo lịch hẹn ≈ 1,05 s.
@@ -568,7 +598,7 @@ Bảng probe: trung vị, min–max trong ngoặc (5 lần; `db.save` 15 lần �
   - **Không chặn B1a / D1.** Theo thân #1441, #1455, hai Issue này thêm cột / bảng (migration do drizzle-kit sinh), lệnh, luật Thùng rác, luật nhập backup và dữ liệu giả lập. Không Issue nào đụng đường lưu file (lớp dữ liệu của app, Rust). Phần đó giữ nguyên khi đổi cách lưu. Chỉ phần định dạng backup JSON của B1a phải làm lại nếu ADR đổi định dạng backup, và đó là phần nhỏ.
   - Làm ADR như một việc riêng, sau đợt 5, trước khi dữ liệu thật tới ≈ 2×.
   - Lý do không chặn: v1.0 bắt đầu từ dữ liệu trống. Với 1 năm dữ liệu của 44 RM, mọi thao tác còn trong ngưỡng.
-  - Số `.dmg` chưa có không đổi được hướng này: trên Windows, ngưỡng đã vượt từ 5×.
+  - Số `.dmg` (22/11) không đổi hướng này: Mac mở nhanh hơn Windows, nhưng ở 10× mỗi lần lưu vẫn ≈ 1 s.
   - Owner quyết (G1) một trong ba: viết ADR và không chặn (đề xuất: gỡ nhãn `gate` của #1441, #1455, tạo Issue ADR riêng); viết ADR trước B1a (thêm Issue ADR vào "Bị chặn bởi" của #1441, #1455 trước khi PR của T-485 merge); hoặc chưa viết ADR (gỡ `gate`, đo lại khi dữ liệu thật tới ≈ 2×).
 - **Owner chọn ngày 21/11/2026:** "ADR, không chặn". ADR lưu trữ là T-501 (#1458), làm sau đợt 5. #1441 và #1455 đã gỡ nhãn `gate`.
 
