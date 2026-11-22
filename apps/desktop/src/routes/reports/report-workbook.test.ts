@@ -29,8 +29,13 @@ const FIGURES: ReportFigures = {
     submittedCount: 4,
     caseSize: 150_000_000,
     issuedCount: 3,
+    cancelledCount: 0,
+    netCount: 3,
+    issuedFyp: 165_000_000,
+    cancelledFyp: 0,
     revenue: 165_000_000,
     closeRate: { numerator: 3, denominator: 5 },
+    cancelRate: { numerator: 0, denominator: 3 },
   },
   stages: { N4: 6, N3: 5, N2: 4, N1: 3, ON_HOLD: 2, LOST: 1 },
 };

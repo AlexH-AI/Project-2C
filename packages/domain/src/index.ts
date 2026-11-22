@@ -79,6 +79,7 @@ export {
 } from './appointment-lifecycle';
 export type { AppointmentAction, OutcomeStatus } from './appointment-lifecycle';
 export {
+  cancelRate,
   closeRate,
   closeRatePercent,
   inScope,
@@ -89,8 +90,16 @@ export {
   policyMetrics,
   rfCount,
   scopeMatcher,
+  sumMetrics,
 } from './stats';
-export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
+export type {
+  CancelRate,
+  CloseRate,
+  MetricsData,
+  PeriodMetrics,
+  PolicyMetrics,
+  Rate,
+} from './stats';
 export { comparisonWindows, metricDeltas } from './compare';
 export type { ComparisonWindows, MetricDeltas } from './compare';
 export {

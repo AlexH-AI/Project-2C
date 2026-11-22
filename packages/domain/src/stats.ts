@@ -1,6 +1,8 @@
 /**
- * Stats engine (ADR-0007, golden examples approved at G2 in T-028). Every metric is computed for
- * one period and one scope from the raw records; nothing is accumulated across periods.
+ * Stats engine (ADR-0007, golden examples approved at G2 in T-028; cancelled policies by its
+ * appendix "HĐ hủy", golden B). Every metric is computed for one period and one scope from the raw
+ * records; nothing is accumulated across periods. A policy counts on each of its days that falls
+ * in the period: submitted, issued, cancelled.
  * FYP amounts are whole numbers of the currency's smallest unit (`Money`), so sums stay exact;
  * `addMoney` refuses a sum past a safe integer rather than round it (DR-23).
  */
@@ -14,11 +16,19 @@ export interface PolicyMetrics {
   /** HĐ đã nộp: policies with `submittedDate` in the period. */
   readonly submittedCount: number;
   /** Case size: Σ `submittedFyp` of the submitted policies. */
-  readonly caseSize: number;
-  /** HĐ phát hành: policies with `issuedDate` in the period. */
+  readonly caseSize: Money;
+  /** HĐ phát hành: policies with `issuedDate` in the period, cancelled later or not. */
   readonly issuedCount: number;
-  /** Doanh số: Σ `issuedFyp` of the issued policies. */
-  readonly revenue: number;
+  /** HĐ hủy: policies with `cancelledDate` in the period, for the RM on the policy. */
+  readonly cancelledCount: number;
+  /** Tổng số HĐ: `issuedCount − cancelledCount`; below 0 when more are cancelled than issued. */
+  readonly netCount: number;
+  /** FYP phát hành: Σ issued FYP of the issued policies (Doanh số before golden B). */
+  readonly issuedFyp: Money;
+  /** FYP hủy: Σ issued FYP of the cancelled policies; a cancelled FYP is never entered. */
+  readonly cancelledFyp: Money;
+  /** Doanh số: `issuedFyp − cancelledFyp`; below 0 when more is cancelled than issued. */
+  readonly revenue: Money;
 }
 
 /*
@@ -87,7 +97,79 @@ export function inScope(people: readonly Person[], rmId: string, scope: Scope): 
   return scopeMatcher(people, scope)(rmId);
 }
 
-const sum = (values: readonly Money[]) => values.reduce(addMoney, 0);
+/**
+ * The figures that add up, record by record and RM by RM; Tổng số HĐ, Doanh số and the two rates
+ * come from them (`totals`), so a total row takes its rates from its sums.
+ */
+type Tally = {
+  -readonly [
+    K in
+      | 'submittedCount'
+      | 'caseSize'
+      | 'issuedCount'
+      | 'issuedFyp'
+      | 'cancelledCount'
+      | 'cancelledFyp'
+      | 'rfCount'
+  ]: number;
+};
+
+const noTally = (): Tally => ({
+  submittedCount: 0,
+  caseSize: 0,
+  issuedCount: 0,
+  issuedFyp: 0,
+  cancelledCount: 0,
+  cancelledFyp: 0,
+  rfCount: 0,
+});
+
+/** Adds `part` into `total`: counts as they are, money by `addMoney`. */
+function addTally(total: Tally, part: Readonly<Tally>): void {
+  total.submittedCount += part.submittedCount;
+  total.caseSize = addMoney(total.caseSize, part.caseSize);
+  total.issuedCount += part.issuedCount;
+  total.issuedFyp = addMoney(total.issuedFyp, part.issuedFyp);
+  total.cancelledCount += part.cancelledCount;
+  total.cancelledFyp = addMoney(total.cancelledFyp, part.cancelledFyp);
+  total.rfCount += part.rfCount;
+}
+
+/**
+ * Adds one policy to the tally of each of its days: submitted, issued, cancelled. `tallyOf` gives
+ * the tally a day counts in, or undefined when it counts nowhere. The FYP cancelled is the one
+ * issued, the FYP submitted when it has none of its own; only an issued policy has one.
+ */
+function tallyPolicy(policy: Policy, tallyOf: (date: CalendarDate) => Tally | undefined): void {
+  const submitted = tallyOf(policy.submittedDate);
+  if (submitted) {
+    submitted.submittedCount += 1;
+    submitted.caseSize = addMoney(submitted.caseSize, policy.submittedFyp);
+  }
+  if (policy.issuedDate === null) return;
+  const fyp = policy.issuedFyp ?? policy.submittedFyp;
+  const issued = tallyOf(policy.issuedDate);
+  if (issued) {
+    issued.issuedCount += 1;
+    issued.issuedFyp = addMoney(issued.issuedFyp, fyp);
+  }
+  const cancelled = policy.cancelledDate && tallyOf(policy.cancelledDate);
+  if (cancelled) {
+    cancelled.cancelledCount += 1;
+    cancelled.cancelledFyp = addMoney(cancelled.cancelledFyp, fyp);
+  }
+}
+
+const policyTotals = (tally: Readonly<Tally>): PolicyMetrics => ({
+  submittedCount: tally.submittedCount,
+  caseSize: tally.caseSize,
+  issuedCount: tally.issuedCount,
+  cancelledCount: tally.cancelledCount,
+  netCount: tally.issuedCount - tally.cancelledCount,
+  issuedFyp: tally.issuedFyp,
+  cancelledFyp: tally.cancelledFyp,
+  revenue: addMoney(tally.issuedFyp, -tally.cancelledFyp),
+});
 
 export function policyMetrics(
   data: { readonly people: readonly Person[]; readonly policies: readonly Policy[] },
@@ -95,17 +177,12 @@ export function policyMetrics(
   scope: Scope,
 ): PolicyMetrics {
   const matches = scopeMatcher(data.people, scope);
-  const policies = data.policies.filter((policy) => matches(policy.rmId));
-  const submitted = policies.filter((policy) => isInPeriod(policy.submittedDate, period));
-  const issued = policies.filter(
-    (policy) => policy.issuedDate !== null && isInPeriod(policy.issuedDate, period),
-  );
-  return {
-    submittedCount: submitted.length,
-    caseSize: sum(submitted.map((policy) => policy.submittedFyp)),
-    issuedCount: issued.length,
-    revenue: sum(issued.map((policy) => policy.issuedFyp ?? policy.submittedFyp)),
-  };
+  const tally = noTally();
+  const inPeriod = (date: CalendarDate) => (isInPeriod(date, period) ? tally : undefined);
+  for (const policy of data.policies) {
+    if (matches(policy.rmId)) tallyPolicy(policy, inPeriod);
+  }
+  return policyTotals(tally);
 }
 
 /**
@@ -138,30 +215,52 @@ export function rfCount(
   ).length;
 }
 
-/** An exact fraction; it may exceed 1 (more policies issued than RF in the period). */
-export interface CloseRate {
+/** An exact fraction; it may exceed 1. */
+export interface Rate {
   readonly numerator: number;
   readonly denominator: number;
 }
 
-/** Tỉ lệ chốt = issued ÷ RF in the same period (G2 F); null — shown "—" — when there is no RF. */
+/** Tỷ lệ chốt; above 1 when more policies are issued than RF in the period. */
+export type CloseRate = Rate;
+
+/** Tỷ lệ hủy; above 1 when more policies are cancelled than issued in the period. */
+export type CancelRate = Rate;
+
+/** Tỷ lệ chốt = issued ÷ RF in the same period (G2 F); null — shown "—" — when there is no RF. */
 export function closeRate(issuedCount: number, rfCount: number): CloseRate | null {
   return rfCount === 0 ? null : { numerator: issuedCount, denominator: rfCount };
 }
 
 /**
- * The close rate in percent, unrounded: the KPI shows it, its delta is the difference in points.
+ * Tỷ lệ hủy = cancelled ÷ issued in the same period, cancelled ones included in the issued
+ * (golden B); null — shown "—" — when no policy was issued.
+ */
+export function cancelRate(cancelledCount: number, issuedCount: number): CancelRate | null {
+  return issuedCount === 0 ? null : { numerator: cancelledCount, denominator: issuedCount };
+}
+
+/**
+ * A rate in percent, unrounded: the KPI shows it, its delta is the difference in points.
  * Multiplied before it is divided, so a rate at half a tenth is exact and rounds up: 23 ÷ 80 is
  * 28.75, not 28.749999999999996.
  */
-export function closeRatePercent({ numerator, denominator }: CloseRate): number {
+export function closeRatePercent({ numerator, denominator }: Rate): number {
   return (numerator * 100) / denominator;
 }
 
 export interface PeriodMetrics extends PolicyMetrics {
   readonly rfCount: number;
   readonly closeRate: CloseRate | null;
+  readonly cancelRate: CancelRate | null;
 }
+
+const totals = (tally: Readonly<Tally>): PeriodMetrics => ({
+  ...policyTotals(tally),
+  rfCount: tally.rfCount,
+  closeRate: closeRate(tally.issuedCount, tally.rfCount),
+  cancelRate: cancelRate(tally.cancelledCount, tally.issuedCount),
+});
 
 export interface MetricsData {
   readonly people: readonly Person[];
@@ -174,7 +273,23 @@ export interface MetricsData {
 export function periodMetrics(data: MetricsData, period: Period, scope: Scope): PeriodMetrics {
   const policies = policyMetrics(data, period, scope);
   const rf = rfCount(data, period, scope);
-  return { ...policies, rfCount: rf, closeRate: closeRate(policies.issuedCount, rf) };
+  return {
+    ...policies,
+    rfCount: rf,
+    closeRate: closeRate(policies.issuedCount, rf),
+    cancelRate: cancelRate(policies.cancelledCount, policies.issuedCount),
+  };
+}
+
+/**
+ * The total row of several rows of one period (Tổng of So sánh team and Báo cáo): counts and money
+ * add up, and each rate comes from the sums, Σ issued ÷ Σ RF and Σ cancelled ÷ Σ issued, never a
+ * mean of the rows' rates (golden G10 + G11 = G09; G30, G31).
+ */
+export function sumMetrics(rows: readonly PeriodMetrics[]): PeriodMetrics {
+  const total = noTally();
+  for (const row of rows) addTally(total, row);
+  return totals(total);
 }
 
 /**
@@ -190,26 +305,17 @@ export function periodMetricsByMark(
   const matches = scopeMatcher(data.people, scope);
   const markOf = markIndexer(marks);
   const isRf = rfMatcher(data.transitions);
-  const parts = marks.map(noParts);
+  const parts = marks.map(noTally);
+  const partOf = (date: CalendarDate) => parts[markOf(date)];
   for (const policy of data.policies) {
-    if (!matches(policy.rmId)) continue;
-    const submitted = parts[markOf(policy.submittedDate)];
-    if (submitted) {
-      submitted.submittedCount += 1;
-      submitted.caseSize = addMoney(submitted.caseSize, policy.submittedFyp);
-    }
-    const issued = policy.issuedDate && parts[markOf(policy.issuedDate)];
-    if (issued) {
-      issued.issuedCount += 1;
-      issued.revenue = addMoney(issued.revenue, policy.issuedFyp ?? policy.submittedFyp);
-    }
+    if (matches(policy.rmId)) tallyPolicy(policy, partOf);
   }
   for (const appointment of data.appointments) {
     if (!matches(appointment.rmId) || !isRf(appointment)) continue;
-    const part = parts[markOf(appointment.date)];
+    const part = partOf(appointment.date);
     if (part) part.rfCount += 1;
   }
-  return parts.map(withCloseRate);
+  return parts.map(totals);
 }
 
 /**
@@ -222,23 +328,14 @@ export function periodMetricsByScope(
   period: Period,
 ): (scope: Scope) => PeriodMetrics {
   const isRf = rfMatcher(data.transitions);
-  const byRm = new Map<string, MetricParts>();
+  const byRm = new Map<string, Tally>();
   const partOf = (rmId: string) => {
-    const part = byRm.get(rmId) ?? noParts();
+    const part = byRm.get(rmId) ?? noTally();
     byRm.set(rmId, part);
     return part;
   };
   for (const policy of data.policies) {
-    if (isInPeriod(policy.submittedDate, period)) {
-      const part = partOf(policy.rmId);
-      part.submittedCount += 1;
-      part.caseSize = addMoney(part.caseSize, policy.submittedFyp);
-    }
-    if (policy.issuedDate && isInPeriod(policy.issuedDate, period)) {
-      const part = partOf(policy.rmId);
-      part.issuedCount += 1;
-      part.revenue = addMoney(part.revenue, policy.issuedFyp ?? policy.submittedFyp);
-    }
+    tallyPolicy(policy, (date) => (isInPeriod(date, period) ? partOf(policy.rmId) : undefined));
   }
   for (const appointment of data.appointments) {
     if (isInPeriod(appointment.date, period) && isRf(appointment)) {
@@ -247,30 +344,10 @@ export function periodMetricsByScope(
   }
   return (scope) => {
     const matches = scopeMatcher(data.people, scope);
-    const total = noParts();
+    const total = noTally();
     for (const [rmId, part] of byRm) {
-      if (!matches(rmId)) continue;
-      total.submittedCount += part.submittedCount;
-      total.caseSize = addMoney(total.caseSize, part.caseSize);
-      total.issuedCount += part.issuedCount;
-      total.revenue = addMoney(total.revenue, part.revenue);
-      total.rfCount += part.rfCount;
+      if (matches(rmId)) addTally(total, part);
     }
-    return withCloseRate(total);
+    return totals(total);
   };
 }
-
-type MetricParts = { -readonly [K in keyof Omit<PeriodMetrics, 'closeRate'>]: number };
-
-const noParts = (): MetricParts => ({
-  submittedCount: 0,
-  caseSize: 0,
-  issuedCount: 0,
-  revenue: 0,
-  rfCount: 0,
-});
-
-const withCloseRate = (part: MetricParts): PeriodMetrics => ({
-  ...part,
-  closeRate: closeRate(part.issuedCount, part.rfCount),
-});

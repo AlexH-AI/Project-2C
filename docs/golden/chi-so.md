@@ -140,11 +140,11 @@ Cách viết "Tỷ lệ" cho cả hai chỉ số, Tỷ lệ hủy và Tỷ lệ 
 
 ### 4.1 Dữ liệu kịch bản B
 
-Người như mục 1: An, Bình (Team A), Chi, Dũng (Team B). Ngày không ghi năm là năm **2028**. Tuần của tháng 01/2028: 03/01 – 09/01, 10/01 – 16/01, 17/01 – 23/01, 24/01 – 30/01 (01/01 và 02/01/2028 thuộc tuần 27/12/2027 – 02/01/2028; kịch bản B không có gì trong hai ngày đó).
+Người như mục 1: An, Bình (Team A), Chi, Dũng (Team B). Ngày không ghi năm là năm **2028**. Tuần của tháng 01/2028: 03/01 – 09/01, 10/01 – 16/01, 17/01 – 23/01, 24/01 – 30/01 (01/01 và 02/01/2028 thuộc tuần 27/12/2027 – 02/01/2028, 31/01 thuộc tuần 31/01 – 06/02/2028; kịch bản B không có gì trong ba ngày đó).
 
 #### Khách hàng và cuộc hẹn
 
-Mọi KH được tạo ngày 03/01/2028 ở nhóm ghi trong cột "Tạo". Mỗi cuộc hẹn dưới là một cuộc gặp chuyển RF (Đã gặp, N4/N3 → N2/N1), để Tỷ lệ chốt có số ở tháng có HĐ hủy.
+Mọi KH được tạo ngày 03/01/2028 ở nhóm ghi trong cột "Tạo". Mỗi cuộc hẹn dưới là một cuộc gặp chuyển RF (Đã gặp, N4/N3 → N2/N1), để Tỷ lệ chốt có số ở tháng có HĐ hủy; mỗi cuộc hẹn do RM của KH đó ghi.
 
 | KH | RM | Tạo | Cuộc gặp chuyển RF | Nhóm hiện tại |
 |---|---|---|---|---|

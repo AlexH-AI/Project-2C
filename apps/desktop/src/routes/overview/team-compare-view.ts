@@ -1,11 +1,11 @@
 import {
   byName,
   appointmentCountsByScope,
-  closeRate,
   customPeriod,
   formatNumber,
   formatPeriodValue,
   periodMetricsByScope,
+  sumMetrics,
   type CalendarDate,
   type MetricsData,
   type Period,
@@ -69,27 +69,14 @@ const row = (key: string, name: string, met: number, metrics: PeriodMetrics | nu
 });
 
 /**
- * Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11). Whether
- * there are results comes from the period, so no teams still sum to 0 once it has started.
+ * Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11), the cancel
+ * rate Σ cancelled ÷ Σ issued (`sumMetrics`, golden G30, G31). Whether there are results comes
+ * from the period, so no teams still sum to 0 once it has started.
  */
 function sum(rows: readonly CompareRow[], counted: boolean): Pick<CompareRow, 'met' | 'metrics'> {
   const met = rows.reduce((total, { met }) => total + met, 0);
   if (!counted) return { met, metrics: null };
-  const add = (key: 'rfCount' | 'submittedCount' | 'caseSize' | 'issuedCount' | 'revenue') =>
-    rows.reduce((total, { metrics }) => total + (metrics?.[key] ?? 0), 0);
-  const rfCount = add('rfCount');
-  const issuedCount = add('issuedCount');
-  return {
-    met,
-    metrics: {
-      rfCount,
-      submittedCount: add('submittedCount'),
-      caseSize: add('caseSize'),
-      issuedCount,
-      revenue: add('revenue'),
-      closeRate: closeRate(issuedCount, rfCount),
-    },
-  };
+  return { met, metrics: sumMetrics(rows.flatMap(({ metrics }) => (metrics ? [metrics] : []))) };
 }
 
 /**

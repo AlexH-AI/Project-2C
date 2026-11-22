@@ -1,8 +1,9 @@
 /**
- * Golden examples for the metrics (ADR-0007, approved by the Owner at G2). One scenario, two teams,
- * December 2026 – February 2027. Expected results are written by hand and mirrored 1–1 in
- * `docs/golden/chi-so.md`. Stats engine tests must pass against this file; never edit it to make a
- * test green — a change needs the Owner's approval again.
+ * Golden examples for the metrics (ADR-0007, approved by the Owner at G2). Two scenarios, the same
+ * two teams: section 1 (December 2026 – February 2027, G01–G22) and scenario B of cancelled
+ * policies (2028, G23–G41; approved at G2 on 13/11/2026). Expected results are written by hand and
+ * mirrored 1–1 in `docs/golden/chi-so.md`. Stats engine tests must pass against this file; never
+ * edit it to make a test green — a change needs the Owner's approval again.
  */
 import type { Appointment, Customer, Person, Policy, Scope, StageTransition, Team } from '../model';
 import { calendarDate, customPeriod, periodOf } from '../period';
@@ -166,19 +167,32 @@ export const EXPECTED_RF_APPOINTMENT_IDS: readonly string[] = [
   'ap-11',
 ];
 
+/** An exact fraction as the golden table writes it: `4/7` is `{ numerator: 4, denominator: 7 }`. */
+type Fraction = { readonly numerator: number; readonly denominator: number };
+
 export interface ExpectedMetrics {
   /** HĐ đã nộp: policies with `submittedDate` in the period. */
   readonly submittedCount: number;
   /** Case size: Σ `submittedFyp` of those policies. */
   readonly caseSize: number;
-  /** HĐ phát hành: policies with `issuedDate` in the period. */
+  /** HĐ phát hành: policies with `issuedDate` in the period, cancelled later or not. */
   readonly issuedCount: number;
-  /** Doanh số: Σ `issuedFyp` of those policies. */
+  /** HĐ hủy: policies with `cancelledDate` in the period. */
+  readonly cancelledCount: number;
+  /** Tổng số HĐ = issuedCount − cancelledCount; may be below 0. */
+  readonly netCount: number;
+  /** FYP phát hành: Σ `issuedFyp` of the issued policies (Doanh số before golden B). */
+  readonly issuedFyp: number;
+  /** FYP hủy: Σ `issuedFyp` of the cancelled policies. */
+  readonly cancelledFyp: number;
+  /** Doanh số = issuedFyp − cancelledFyp; may be below 0. */
   readonly revenue: number;
   /** Cuộc gặp chuyển RF with the meeting day in the period. */
   readonly rfCount: number;
-  /** Tỉ lệ chốt = issuedCount ÷ rfCount as an exact fraction; null (shown "—") when rfCount is 0. */
-  readonly closeRate: { readonly numerator: number; readonly denominator: number } | null;
+  /** Tỷ lệ chốt = issuedCount ÷ rfCount as an exact fraction; null (shown "—") when rfCount is 0. */
+  readonly closeRate: Fraction | null;
+  /** Tỷ lệ hủy = cancelledCount ÷ issuedCount; null (shown "—") when issuedCount is 0. */
+  readonly cancelRate: Fraction | null;
 }
 
 export interface GoldenCase {
@@ -196,6 +210,11 @@ const ALL: Scope = { kind: 'all' };
 const team = (teamId: string): Scope => ({ kind: 'team', teamId });
 const rm = (rmId: string): Scope => ({ kind: 'rm', rmId });
 
+/**
+ * A row of section 2. Its columns of golden B follow the rule at the end of mục 4.2, as section 1
+ * has no cancelled policy: Hủy 0, Tổng số HĐ = PH, FYP PH = Doanh số, FYP hủy 0, Tỷ lệ hủy 0/PH
+ * (0%), or "—" when PH is 0.
+ */
 const expected = (
   submittedCount: number,
   caseSizeMillions: number,
@@ -206,9 +225,14 @@ const expected = (
   submittedCount,
   caseSize: caseSizeMillions * MILLION,
   issuedCount,
+  cancelledCount: 0,
+  netCount: issuedCount,
+  issuedFyp: revenueMillions * MILLION,
+  cancelledFyp: 0,
   revenue: revenueMillions * MILLION,
   rfCount,
   closeRate: rfCount === 0 ? null : { numerator: issuedCount, denominator: rfCount },
+  cancelRate: issuedCount === 0 ? null : { numerator: 0, denominator: issuedCount },
 });
 
 const DAY_02_01 = periodOf('day', d(2, 1, 2027));
@@ -252,4 +276,215 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     expected: expected(3, 1_500, 3, 1_780, 3),
   },
   { id: 'G22', period: YEAR_2027, scope: team('team-b'), expected: expected(2, 400, 3, 800, 2) },
+];
+
+/*
+ * Scenario B — cancelled policies (golden `chi-so.md` mục 4). A data set of its own, every day in
+ * 2028, with the people and teams of section 1. Section 1 has nothing in 2028, so G23–G41 come out
+ * the same on scenario B alone or on section 1 and scenario B together (mục 4.3).
+ */
+
+/** A day of 2028, the year of scenario B. */
+const b = (day: number, month: number): CalendarDate => calendarDate(2028, month, day);
+
+/** Every customer of scenario B is created on 03/01/2028, at the stage of the column "Tạo". */
+const CREATED_B = b(3, 1);
+
+export const CUSTOMERS_B: readonly Customer[] = [
+  { id: 'kh-11', name: 'KH 11', rmId: 're-dung', stage: 'N1' },
+  { id: 'kh-12', name: 'KH 12', rmId: 're-chi', stage: 'N1' },
+  { id: 'kh-13', name: 'KH 13', rmId: 're-an', stage: 'N2' },
+  { id: 'kh-14', name: 'KH 14', rmId: 're-binh', stage: 'N2' },
+  { id: 'kh-15', name: 'KH 15', rmId: 're-chi', stage: 'N1' },
+  { id: 'kh-16', name: 'KH 16', rmId: 're-an', stage: 'N2' },
+];
+
+/** Each one a cuộc gặp chuyển RF, recorded by the RM of its customer. */
+export const APPOINTMENTS_B: readonly Appointment[] = [
+  meeting('ap-21', 'kh-12', 're-chi', b(4, 1), 'MET', 'N1'),
+  meeting('ap-22', 'kh-13', 're-an', b(5, 1), 'MET', 'N2'),
+  meeting('ap-23', 'kh-14', 're-binh', b(7, 1), 'MET', 'N2'),
+  meeting('ap-24', 'kh-15', 're-chi', b(11, 1), 'MET', 'N1'),
+  meeting('ap-25', 'kh-16', 're-an', b(19, 1), 'MET', 'N2'),
+];
+
+export const STAGE_TRANSITIONS_B: readonly StageTransition[] = [
+  move('st-31', 'kh-11', null, 'N1', CREATED_B),
+  move('st-32', 'kh-12', null, 'N3', CREATED_B),
+  move('st-33', 'kh-12', 'N3', 'N1', b(4, 1), 'ap-21'),
+  move('st-34', 'kh-13', null, 'N4', CREATED_B),
+  move('st-35', 'kh-13', 'N4', 'N2', b(5, 1), 'ap-22'),
+  move('st-36', 'kh-14', null, 'N3', CREATED_B),
+  move('st-37', 'kh-14', 'N3', 'N2', b(7, 1), 'ap-23'),
+  move('st-38', 'kh-15', null, 'N4', CREATED_B),
+  move('st-39', 'kh-15', 'N4', 'N1', b(11, 1), 'ap-24'),
+  move('st-40', 'kh-16', null, 'N3', CREATED_B),
+  move('st-41', 'kh-16', 'N3', 'N2', b(19, 1), 'ap-25'),
+];
+
+/** Appointments of scenario B that are a chuyển RF: all five. */
+export const EXPECTED_RF_APPOINTMENT_IDS_B: readonly string[] = [
+  'ap-21',
+  'ap-22',
+  'ap-23',
+  'ap-24',
+  'ap-25',
+];
+
+/**
+ * A policy of scenario B. Deletion lives outside `Policy`: the repository never returns a deleted
+ * policy, so the tests drop those rows the same way (as `K-26` of `stage-snapshot.fixture.ts`).
+ */
+export interface GoldenPolicyRow {
+  readonly policy: Policy;
+  readonly deleted: boolean;
+}
+
+const policyB = (
+  id: string,
+  customerId: string,
+  rmId: string,
+  submitted: readonly [date: CalendarDate, fypMillions: number],
+  issued: readonly [date: CalendarDate, fypMillions: number],
+  cancelledDate: CalendarDate | null,
+  extra: { readonly deleted?: boolean } = {},
+): GoldenPolicyRow => ({
+  policy: {
+    id,
+    customerId,
+    rmId,
+    submittedDate: submitted[0],
+    submittedFyp: submitted[1] * MILLION,
+    issuedDate: issued[0],
+    issuedFyp: issued[1] * MILLION,
+    cancelledDate,
+  },
+  deleted: extra.deleted ?? false,
+});
+
+/** The final state, after `hd-18` was cancelled on 08/02 and that cancellation undone. */
+export const POLICY_ROWS_B: readonly GoldenPolicyRow[] = [
+  // Issued in week 1, cancelled in week 2 (spec §4.1).
+  policyB('hd-11', 'kh-11', 're-dung', [b(3, 1), 200], [b(4, 1), 200], b(12, 1)),
+  // Issued FYP corrected by hand, so the FYP cancelled is 280.
+  policyB('hd-12', 'kh-12', 're-chi', [b(4, 1), 300], [b(6, 1), 280], b(20, 1)),
+  policyB('hd-13', 'kh-13', 're-an', [b(5, 1), 300], [b(10, 1), 300], null),
+  // Issued and cancelled in the same week.
+  policyB('hd-14', 'kh-13', 're-an', [b(5, 1), 100], [b(11, 1), 100], b(14, 1)),
+  policyB('hd-15', 'kh-14', 're-binh', [b(7, 1), 500], [b(12, 1), 500], b(19, 1)),
+  // Issued in January, cancelled in February.
+  policyB('hd-16', 'kh-15', 're-chi', [b(11, 1), 400], [b(13, 1), 400], b(7, 2)),
+  policyB('hd-17', 'kh-15', 're-chi', [b(14, 1), 250], [b(18, 1), 250], null),
+  // Cancelled on 08/02, then the cancellation undone (`HD_18_CANCELLATION`, G36).
+  policyB('hd-18', 'kh-16', 're-an', [b(1, 2), 200], [b(3, 2), 200], null),
+  // Deleted (soft delete) after it was cancelled.
+  policyB('hd-19', 'kh-14', 're-binh', [b(2, 2), 150], [b(4, 2), 150], b(9, 2), { deleted: true }),
+  // Cancelled on its issue day.
+  policyB('hd-20', 'kh-11', 're-dung', [b(14, 2), 100], [b(15, 2), 100], b(15, 2)),
+];
+
+/** A cancellation the final state no longer has. */
+export interface PolicyCancellation {
+  readonly policyId: string;
+  readonly cancelledDate: CalendarDate;
+}
+
+/** `hd-18` before its cancellation was undone: G36 counts the data with it. */
+export const HD_18_CANCELLATION: PolicyCancellation = { policyId: 'hd-18', cancelledDate: b(8, 2) };
+
+/** A row of mục 4.2; `variant` is a cancellation added to the final state before counting. */
+export interface GoldenBCase extends GoldenCase {
+  readonly variant: PolicyCancellation | null;
+}
+
+type Rate = readonly [numerator: number, denominator: number] | null;
+
+/** "—": the rate has nothing to divide by. */
+const NONE: Rate = null;
+
+const fraction = (rate: Rate): Fraction | null =>
+  rate === null ? null : { numerator: rate[0], denominator: rate[1] };
+
+type Counts = readonly [
+  submitted: number,
+  caseSize: number,
+  issued: number,
+  cancelled: number,
+  net: number,
+];
+type Fyps = readonly [issued: number, cancelled: number, revenue: number];
+
+/** A row of mục 4.2 with every column as the table writes it, money in millions. */
+const caseB = (
+  id: string,
+  period: Period,
+  scope: Scope,
+  [submittedCount, caseSizeMillions, issuedCount, cancelledCount, netCount]: Counts,
+  [issuedFypMillions, cancelledFypMillions, revenueMillions]: Fyps,
+  rfCount: number,
+  closeRate: Rate,
+  cancelRate: Rate,
+  variant: PolicyCancellation | null = null,
+): GoldenBCase => ({
+  id,
+  period,
+  scope,
+  expected: {
+    submittedCount,
+    caseSize: caseSizeMillions * MILLION,
+    issuedCount,
+    cancelledCount,
+    netCount,
+    issuedFyp: issuedFypMillions * MILLION,
+    cancelledFyp: cancelledFypMillions * MILLION,
+    revenue: revenueMillions * MILLION,
+    rfCount,
+    closeRate: fraction(closeRate),
+    cancelRate: fraction(cancelRate),
+  },
+  variant,
+});
+
+// The periods of scenario B: weeks 1–3 of 01/2028, 01/2028, 02/2028, 15/02/2028, 2028.
+const B_W1 = periodOf('week', b(3, 1));
+const B_W2 = periodOf('week', b(10, 1));
+const B_W3 = periodOf('week', b(17, 1));
+const B_JAN = periodOf('month', b(1, 1));
+const B_FEB = periodOf('month', b(1, 2));
+const B_15_02 = periodOf('day', b(15, 2));
+const B_YEAR = periodOf('year', b(1, 1));
+
+export const GOLDEN_B_CASES: readonly GoldenBCase[] = [
+  // id, period, scope, [Nộp, Case size tr, PH, Hủy, Tổng số HĐ], [FYP PH tr, FYP hủy tr,
+  // Doanh số tr], RF, Tỷ lệ chốt, Tỷ lệ hủy
+  caseB('G23', B_W1, rm('re-dung'), [1, 200, 1, 0, 1], [200, 0, 200], 0, NONE, [0, 1]),
+  caseB('G24', B_W2, rm('re-dung'), [0, 0, 0, 1, -1], [0, 200, -200], 0, NONE, NONE),
+  caseB('G25', B_JAN, rm('re-dung'), [1, 200, 1, 1, 0], [200, 200, 0], 0, NONE, [1, 1]),
+  caseB('G26', B_W1, ALL, [5, 1_400, 2, 0, 2], [480, 0, 480], 3, [2, 3], [0, 2]),
+  caseB('G27', B_W2, ALL, [2, 650, 4, 2, 2], [1_300, 300, 1_000], 1, [4, 1], [2, 4]),
+  caseB('G28', B_W3, ALL, [0, 0, 1, 2, -1], [250, 780, -530], 1, [1, 1], [2, 1]),
+  caseB('G29', B_JAN, ALL, [7, 2_050, 7, 4, 3], [2_030, 1_080, 950], 5, [7, 5], [4, 7]),
+  caseB('G30', B_JAN, team('team-a'), [3, 900, 3, 2, 1], [900, 600, 300], 3, [3, 3], [2, 3]),
+  caseB('G31', B_JAN, team('team-b'), [4, 1_150, 4, 2, 2], [1_130, 480, 650], 2, [4, 2], [2, 4]),
+  caseB('G32', B_JAN, rm('re-an'), [2, 400, 2, 1, 1], [400, 100, 300], 2, [2, 2], [1, 2]),
+  caseB('G33', B_JAN, rm('re-binh'), [1, 500, 1, 1, 0], [500, 500, 0], 1, [1, 1], [1, 1]),
+  caseB('G34', B_JAN, rm('re-chi'), [3, 950, 3, 1, 2], [930, 280, 650], 2, [3, 2], [1, 3]),
+  caseB('G35', B_FEB, rm('re-chi'), [0, 0, 0, 1, -1], [0, 400, -400], 0, NONE, NONE),
+  // A variant: `hd-18` still cancelled on 08/02.
+  caseB(
+    'G36',
+    B_FEB,
+    rm('re-an'),
+    [1, 200, 1, 1, 0],
+    [200, 200, 0],
+    0,
+    NONE,
+    [1, 1],
+    HD_18_CANCELLATION,
+  ),
+  caseB('G37', B_FEB, rm('re-an'), [1, 200, 1, 0, 1], [200, 0, 200], 0, NONE, [0, 1]),
+  caseB('G38', B_FEB, rm('re-binh'), [0, 0, 0, 0, 0], [0, 0, 0], 0, NONE, NONE),
+  caseB('G39', B_15_02, rm('re-dung'), [0, 0, 1, 1, 0], [100, 100, 0], 0, NONE, [1, 1]),
+  caseB('G40', B_FEB, ALL, [2, 300, 2, 2, 0], [300, 500, -200], 0, NONE, [2, 2]),
+  caseB('G41', B_YEAR, ALL, [9, 2_350, 9, 6, 3], [2_330, 1_580, 750], 5, [9, 5], [6, 9]),
 ];
