@@ -11,7 +11,6 @@ import {
   formatDate,
   formatDayMonth,
   isRm,
-  LINE_BREAK,
   normalizeText,
   type CalendarDate,
   type Person,
@@ -215,15 +214,19 @@ export function AppointmentDialog({
   );
 }
 
+/** The line breaks a one-line input drops (CR, LF); it keeps the others of `LINE_BREAK`. */
+const DROPPED_BREAK = /[\r\n]/;
+
 /**
  * A text field of the appointment dialogs, one line unless `rows` is set, that turns into a box of
- * lines once its text has a line break (`LINE_BREAK`): an input drops CR and LF, so text stored
- * with lines (a backup edited by hand) would run together once edited (DR6-182). A box it stays
- * while the dialog is open, or deleting the last break would swap the field and drop the focus
- * mid-typing. The one place of the rule, as `TextField` keeps its props (Issue 1138, Q5).
+ * lines once its text has a break the input would drop (CR or LF, a lone CR too): text stored with
+ * lines (a backup edited by hand) would run together once edited (DR6-182). An input never holds
+ * one, so pasting into it never swaps the field. A box it stays while the dialog is open, or
+ * deleting the last break would swap the field and drop the focus mid-typing. The one place of
+ * the rule, as `TextField` keeps its props (Issue 1138, Q5).
  */
 export function LinesField(props: ComponentProps<typeof TextField>) {
-  const lines = LINE_BREAK.test(props.value);
+  const lines = DROPPED_BREAK.test(props.value);
   const [hadLines, setHadLines] = useState(lines);
   if (lines && !hadLines) setHadLines(true);
   return <TextField {...props} rows={props.rows ?? (lines || hadLines ? 3 : undefined)} />;

@@ -19,7 +19,7 @@ import {
   rescheduleReason,
   withTime,
 } from './appointment-form';
-import { STATUS_TONE } from './appointments-view';
+import { STATUS_BADGE } from './appointments-view';
 
 /** An appointment's day and time as the dialogs write it: `dd/mm/yyyy hh:mm`. */
 export const whenText = (a: Pick<AppointmentRecord, 'date' | 'time'>) =>
@@ -42,8 +42,8 @@ export const shortWhen = (a: Pick<AppointmentRecord, 'date' | 'time'>, today: Ca
   withTime(dayText(a.date, today), a.time);
 
 /**
- * "Khi lưu" of mockups 6e, 6i: the appointment shown and its new status, in the colour of that
- * status, then the new appointment, its day in bold.
+ * "Khi lưu" of mockups 6e, 6i: the appointment shown and its new status as a label (mockup
+ * `.badge`, drawn as the labels of components.html 07), then the new appointment, its day in bold.
  */
 export function OnSave({
   title,
@@ -68,7 +68,7 @@ export function OnSave({
           {withNode(
             oldLine,
             'status',
-            <span className={STATUS_TONE[status]}>{t(`appointmentStatus.${status}`)}</span>,
+            <span className={STATUS_BADGE[status]}>{t(`appointmentStatus.${status}`)}</span>,
           )}
         </li>
         <li>

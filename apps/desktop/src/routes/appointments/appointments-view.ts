@@ -108,7 +108,7 @@ export const UNRECORDED_TONE = 'text-appt-unrecorded';
  * that did not take place in --text-2, as --appt-missed is below 4.5:1 on a label fill (ADR-0013
  * appendix 11/11/2026 §7).
  */
-const STATUS_BADGE = {
+export const STATUS_BADGE = {
   SCHEDULED: `${BADGE} text-info`,
   MET: `${BADGE} text-ok`,
   RESCHEDULED: `${BADGE} text-fg-2`,

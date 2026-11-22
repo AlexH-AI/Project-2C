@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
 import { toNewYearsEve } from './anchor';
-import { endKey } from './support';
+import { endKey, lowestContrast } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -224,10 +224,15 @@ test('no-show with a next appointment records both in one go, then shows the nex
   await o.dialog.getByRole('textbox', { name: /^Ngày hẹn tiếp/ }).fill('1/10');
   await o.dialog.getByRole('textbox', { name: /^Giờ hẹn tiếp/ }).fill('9:00');
   await expect(o.dialog).toContainText('Tạo lịch hẹn mới 01/10/2026 09:00 · Dự kiến');
-  // "Khi lưu" as mockup 6i: `dd/mm` this year, the status in its colour, the new day in bold.
+  // "Khi lưu" as mockup 6i: `dd/mm` this year, the status a label (`.badge`, drawn as the labels
+  // of components.html 07: a fill, 4.5:1), the new day in bold.
   const onSave = o.dialog.getByRole('listitem');
   await expect(onSave.first()).toHaveText('15/09 → Không đến');
-  expect(await color(onSave.first().getByText('Không đến'))).not.toBe(await color(onSave.first()));
+  const label = onSave.first().getByText('Không đến');
+  expect(await label.evaluate((node) => getComputedStyle(node).backgroundColor)).toMatch(
+    /^(rgb\(|color\(srgb [\d. ]+\)$)/,
+  );
+  expect(await lowestContrast(label)).toBeGreaterThanOrEqual(4.5);
   await expect(onSave.last().getByText('01/10/2026 09:00')).toHaveCSS('font-weight', '700');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả + tạo lịch' }).click();
 
@@ -332,6 +337,32 @@ test('deleting the last line break of a note keeps the typing in it (6c)', async
   await page.keyboard.type(' gấp');
   await expect(note).toHaveValue('Dòng một gấp');
   await expect(note).toBeFocused();
+});
+
+// Review of PR 1475: a one-line field keeps the breaks it does not drop (VT, U+2028…), so pasting
+// one into it leaves it a one-line field and the typing goes on in it.
+test('pasting a VT or U+2028 into a one-line field keeps the typing in it (6c)', async ({
+  page,
+}) => {
+  await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  const tag = (field: Locator) => field.evaluate((element) => element.tagName);
+  await o.nextStep.click();
+  await page.keyboard.insertText('Gọi lại gửi bảng');
+  await page.keyboard.type(' sau');
+  await expect(o.nextStep).toHaveValue('Gọi lại gửi bảng sau');
+  await expect(o.nextStep).toBeFocused();
+  expect(await tag(o.nextStep)).toBe('INPUT');
+
+  await o.status.getByRole('radio', { name: 'Không đến' }).check();
+  const note = o.dialog.getByRole('textbox', { name: 'Ghi chú', exact: true });
+  await note.click();
+  await page.keyboard.insertText('KH bận\u000bgọi lại');
+  await page.keyboard.type(' sau');
+  await expect(note).toHaveValue('KH bận\u000bgọi lại sau');
+  await expect(note).toBeFocused();
+  expect(await tag(note)).toBe('INPUT');
 });
 
 // DR6-182, the part Issue 1138 left: text stored with lines — a lone CR in the note, LF in the
