@@ -105,6 +105,100 @@ describe('staffMetrics', () => {
 
     expect(staffMetrics(people, records, TODAY).size).toBe(0);
   });
+
+  it('gives each RM their own counts when the records of several RM interleave (T-502)', () => {
+    const people = [
+      person('re1', 'RM', 't1'),
+      person('re2', 'RM', 't1'),
+      person('re3', 'RM', 't2'),
+      person('tl1', 'TL', 't1'),
+    ];
+    const interleaved = {
+      customers: [
+        { rmId: 're1', stage: 'N4' as const },
+        { rmId: 're2', stage: 'N3' as const },
+        { rmId: 're3', stage: 'LOST' as const },
+        { rmId: 're1', stage: 'N2' as const },
+        { rmId: 're2', stage: 'ON_HOLD' as const },
+        { rmId: 're3', stage: 'N1' as const },
+        { rmId: 're1', stage: 'LOST' as const },
+        { rmId: 're2', stage: 'N1' as const },
+        { rmId: 're3', stage: 'ON_HOLD' as const },
+        { rmId: 're1', stage: 'N1' as const },
+      ],
+      // The 30 days up to 28/09 start on 30/08: 29/08 and 29/09 fall outside.
+      appointments: [
+        { rmId: 're1', date: day(8, 30) },
+        { rmId: 're2', date: day(8, 29) },
+        { rmId: 're3', date: day(9, 28) },
+        { rmId: 're1', date: day(9, 29) },
+        { rmId: 're2', date: day(9, 15) },
+        { rmId: 're3', date: day(8, 29) },
+        { rmId: 're1', date: day(9, 1) },
+        { rmId: 're2', date: day(9, 28) },
+        { rmId: 're3', date: day(10, 1) },
+        { rmId: 're1', date: day(8, 30) },
+        { rmId: 're2', date: day(9, 28, 2025) },
+      ],
+      policies: [
+        { rmId: 're1', issuedDate: day(1, 1) },
+        { rmId: 're2', issuedDate: day(12, 31, 2025) },
+        { rmId: 're3', issuedDate: null },
+        { rmId: 're1', issuedDate: day(12, 31) },
+        { rmId: 're2', issuedDate: day(6, 15) },
+        { rmId: 're3', issuedDate: day(1, 1, 2027) },
+        { rmId: 're1', issuedDate: null },
+        { rmId: 're2', issuedDate: day(9, 28) },
+        { rmId: 're3', issuedDate: day(3, 3) },
+        { rmId: 're1', issuedDate: day(1, 1, 2025) },
+        { rmId: 're2', issuedDate: day(2, 2) },
+      ],
+    };
+
+    const metrics = staffMetrics(people, interleaved, TODAY);
+
+    expect([...metrics.keys()]).toEqual(['re1', 're2', 're3']);
+    expect(metrics.get('re1')).toEqual({ openCustomers: 3, appointments30: 3, issuedThisYear: 2 });
+    expect(metrics.get('re2')).toEqual({ openCustomers: 2, appointments30: 2, issuedThisYear: 3 });
+    expect(metrics.get('re3')).toEqual({ openCustomers: 1, appointments30: 1, issuedThisYear: 1 });
+  });
+
+  it('leaves out the records of a TL, a supporter or an RM not listed, and gives zeros to an RM without any (T-502)', () => {
+    const people = [
+      person('re1', 'RM', 't1'),
+      person('re4', 'RM', 't1'),
+      person('tl1', 'TL', 't1'),
+      person('is', 'IS', null),
+    ];
+    const others = {
+      customers: [
+        { rmId: 'tl1', stage: 'N4' as const },
+        { rmId: 're1', stage: 'N4' as const },
+        { rmId: 'is', stage: 'N3' as const },
+        { rmId: 'gone', stage: 'N2' as const },
+      ],
+      appointments: [
+        { rmId: 'tl1', date: day(9, 28) },
+        { rmId: 'is', date: day(9, 20) },
+        { rmId: 're1', date: day(9, 28) },
+        { rmId: 'gone', date: day(9, 1) },
+      ],
+      policies: [
+        { rmId: 'gone', issuedDate: day(1, 1) },
+        { rmId: 'tl1', issuedDate: day(5, 5) },
+        { rmId: 're1', issuedDate: day(5, 5) },
+      ],
+    };
+    const none = { openCustomers: 0, appointments30: 0, issuedThisYear: 0 };
+
+    const metrics = staffMetrics(people, others, TODAY);
+
+    expect([...metrics.keys()]).toEqual(['re1', 're4']);
+    expect(metrics.get('re1')).toEqual({ openCustomers: 1, appointments30: 1, issuedThisYear: 1 });
+    expect(metrics.get('re4')).toEqual(none);
+    const empty = { customers: [], appointments: [], policies: [] };
+    expect(staffMetrics(people, empty, TODAY).get('re1')).toEqual(none);
+  });
 });
 
 describe('inUseHelp (mockup 9b)', () => {
