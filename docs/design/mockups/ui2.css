@@ -39,7 +39,8 @@
   /* Text */
   --text: #e8edf4;
   --text-2: #aeb9c8;
-  --text-3: #8c99ac;
+  /* 4.5:1 on a card over the brightest glass of macOS, the measure the Owner chose (L188) */
+  --text-3: #97a4b7;
 
   /* Single accent: champagne gold (primary actions, focus, selection) */
   --accent: #d9b26a;
@@ -89,6 +90,7 @@
   --fs-sm: 12.5px;
   --fs-md: 14px;
   --fs-lg: 16px;
+  --fs-title: 18px; /* the title of a dialog (components.html 06) */
   --fs-xl: 20px;
   --fs-2xl: 26px;
   /* Named --corner-* (mockup: --radius-*) so theme.css can map them onto Tailwind's --radius-* without a self-reference */

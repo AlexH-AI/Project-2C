@@ -69,10 +69,10 @@ export function TextField({
   const Input = rows ? 'textarea' : 'input';
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="font-medium">
+      <label htmlFor={id} className="field-label">
         {label}
         {required && (
-          <span aria-hidden="true" className="text-danger">
+          <span aria-hidden="true" className="text-accent">
             {' *'}
           </span>
         )}

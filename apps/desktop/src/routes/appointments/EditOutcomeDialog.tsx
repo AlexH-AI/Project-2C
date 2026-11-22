@@ -286,7 +286,7 @@ export function EditOutcomeDialog({
 function Locked({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-medium">{label}</span>
+      <span className="field-label">{label}</span>
       <p className={LOCKED}>
         {children} {t('outcomeEdit.lockMark')}
       </p>

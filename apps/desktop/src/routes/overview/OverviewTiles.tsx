@@ -3,10 +3,10 @@ import { Count } from '@p2c/ui';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { APPOINTMENT_GROUPS } from '../appointments/appointments-view';
-import { CARD_SKIN } from '../classes';
+import { CARD_SKIN, ROOMY } from '../classes';
 import { KPI_STEP, kpiText, type KpiTile } from './overview-view';
 
-const TILE = `${CARD_SKIN} flex flex-col gap-2 px-5 py-4.5`;
+const TILE = `${CARD_SKIN} flex flex-col gap-2 ${ROOMY}`;
 const LABEL = 'text-sm text-fg-2';
 const VALUE = 'text-2xl leading-tight font-semibold tabular-nums';
 const UNIT = 'text-md font-medium text-fg-3';
@@ -14,11 +14,11 @@ const FOOT = 'text-xs text-fg-3 tabular-nums';
 const FORMULA = 'text-xs text-fg-2 tabular-nums';
 const TONE = { good: 'text-ok', bad: 'text-danger', same: 'text-fg-2' } as const;
 /**
- * The link of a tile covers the whole of it (its `::after`, over the card, which is `relative`), so
- * a press anywhere on the tile opens it; its focus ring goes round the tile.
+ * The link of a tile covers the whole of it (out of the flow, over the card, which is `relative`),
+ * so a press anywhere on the tile opens it, and it takes no room of its own there (L235); its focus
+ * ring goes round the tile.
  */
-const OPEN =
-  'after:absolute after:inset-0 after:rounded-card focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent';
+const OPEN = 'absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-accent';
 const GO = 'absolute top-4.5 right-5 text-md text-fg-3';
 const REPORTS = routeToHash({ screen: 'reports' });
 

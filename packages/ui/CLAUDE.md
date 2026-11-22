@@ -35,11 +35,11 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/Choices.tsx` — type Choice, Choices
 - `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, type DataTableView, type DataTableMoreLabels, DataTable
 - `src/components/Dialog.tsx` — DialogFocusFallback, Dialog
-- `src/components/FieldMarks.tsx` — ErrorMark, ListArrow
+- `src/components/FieldMarks.tsx` — MARKS, Mark, ErrorMark, ListArrow
 - `src/components/Menu.tsx` — useLayerState, useLayer, LAYER, type MenuRow, MenuRows, MenuButton
 - `src/components/NavIcon.tsx` — type NavIconName, NavIcon
 - `src/components/PeriodPicker.label.ts` — type PeriodLabelTemplates, periodLabel
-- `src/components/PeriodPicker.tsx` — type PeriodPickerLabels, PeriodPicker
+- `src/components/PeriodPicker.tsx` — type PeriodPickerLabels, PeriodStep, PeriodPicker
 - `src/components/PeriodPill.tsx` — PeriodPill
 - `src/components/PolicyBadge.tsx` — PolicyBadge
 - `src/components/Segmented.tsx` — type SegmentedOption, Segmented
@@ -50,7 +50,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/Toast.tsx` — Toast
 - `src/components/chart-theme.ts` — SERIES_TOKENS, chartTheme
 - `src/components/compare-cells.ts` — type CellValues, type CellKind, compareCells, compareCellsThen
-- `src/components/dialog-focus.ts` — focusBack
+- `src/components/dialog-focus.ts` — openingFocus, focusBack
 - `src/components/field-notes.ts` — type FieldNote, fieldNotes, describedBy
 - `src/components/menu-keys.ts` — menuMove
 - `src/components/motion-hooks.tsx` — useGlide, useCount, Count

@@ -175,7 +175,6 @@ export function RescheduleFields({
             type="checkbox"
             checked={form.backfill}
             onChange={(event) => form.setBackfill(event.target.checked)}
-            className="accent-accent"
           />
           {t('reschedule.backfill')}
         </label>

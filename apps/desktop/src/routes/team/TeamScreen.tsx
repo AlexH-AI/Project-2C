@@ -172,8 +172,8 @@ export function TeamScreen() {
             {view.teams.map((entry) => {
               const on = entry === selected;
               // The name breaks, even with no space; the count stays whole, by the name's first line
-              // (DR6-148). On the gold tint of the chosen team `chosen-tint` writes it one step
-              // lighter: --text-3 is under 4.5:1 there (ADR-0013 appendix 11/11/2026 §7).
+              // (DR6-148). On the gold tint of the chosen team `chosen-tint` writes it in --text:
+              // --text-3 is under 4.5:1 there (ADR-0013 appendix 11/11/2026 §7, L188).
               return (
                 <button
                   key={entry.team.id}
@@ -351,6 +351,8 @@ function Members({
           // The table is not made anew for each team: this takes another team back to its first
           // hundred rows (DR6-32).
           resetKey={entry.team.id}
+          // At 1 100 px it runs past its card already: no further, until C3 (L170).
+          narrow
           empty={
             <StateNote
               size="table"

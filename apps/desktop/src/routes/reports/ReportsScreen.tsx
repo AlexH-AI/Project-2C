@@ -61,10 +61,13 @@ export function ReportsScreen() {
         today={today}
         viewing={viewing}
         actions={
+          // Off by `aria-disabled` while it writes, which keeps the focus on it (DR6-186).
           <Button
             variant="primary"
-            disabled={exporter.busy}
-            onClick={() => void exporter.run({ rows, period, viewing, today })}
+            aria-disabled={exporter.busy || undefined}
+            onClick={() => {
+              if (!exporter.busy) void exporter.run({ rows, period, viewing, today });
+            }}
           >
             {exporter.busy ? t('reports.exporting') : t('reports.export')}
           </Button>

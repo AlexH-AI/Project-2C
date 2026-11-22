@@ -1,5 +1,33 @@
 import { describe, expect, it, vi } from 'vitest';
-import { focusBack } from './dialog-focus';
+import { focusBack, openingFocus } from './dialog-focus';
+
+/** A control's stand-in, in the head of the dialog (its ×) or after it. */
+const control = (inHead: boolean) => ({
+  closest: (selector: string) => (inHead && selector === '[data-dialog-head]' ? {} : null),
+});
+/** A dialog's stand-in: what it marks to focus, and the controls Tab reaches, in order. */
+const dialogOf = (marked: unknown, reachable: unknown[]) =>
+  ({
+    querySelector: (selector: string) => (selector === '[data-autofocus]' ? marked : null),
+    querySelectorAll: () => reachable,
+  }) as unknown as ParentNode;
+
+// L157: the × heads the dialog, first in the Tab order, yet a dialog opens on a field or a button.
+describe('openingFocus', () => {
+  it('opens on what the dialog marks', () => {
+    const marked = control(false);
+    expect(openingFocus(dialogOf(marked, [control(true), control(false)]))).toBe(marked);
+  });
+
+  it('opens on the first control after the head, not on its ×', () => {
+    const first = control(false);
+    expect(openingFocus(dialogOf(null, [control(true), first, control(false)]))).toBe(first);
+  });
+
+  it('finds nothing when the × is all there is', () => {
+    expect(openingFocus(dialogOf(null, [control(true)]))).toBeNull();
+  });
+});
 
 /** An element's stand-in: on the page or not, and what focusing it was asked. */
 const element = (isConnected: boolean) => ({ isConnected, focus: vi.fn() });

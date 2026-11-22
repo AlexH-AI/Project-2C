@@ -44,10 +44,10 @@ export function Choices<T extends string>({
       aria-required={required}
       aria-describedby={describedByAll(describedBy, help && `${name}-help`)}
     >
-      <legend className="mb-1 p-0 font-medium">
+      <legend className="field-label mb-1 p-0">
         {label}
         {required && (
-          <span aria-hidden="true" className="text-danger">
+          <span aria-hidden="true" className="text-accent">
             {' *'}
           </span>
         )}
@@ -56,7 +56,7 @@ export function Choices<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="choice press relative inline-flex min-h-7.5 cursor-pointer items-center gap-1.5 rounded-chip px-3 has-disabled:cursor-default has-disabled:line-through has-disabled:opacity-40 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
+            className="choice press relative inline-flex min-h-7.5 cursor-pointer items-center gap-1.5 rounded-chip px-3 text-sm has-disabled:cursor-default has-disabled:line-through has-disabled:opacity-40 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
           >
             <input
               type="radio"

@@ -7,7 +7,8 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { focusBack } from './dialog-focus';
+import { focusBack, openingFocus } from './dialog-focus';
+import { Mark } from './FieldMarks';
 import { GONE_MS, calmMotion } from './motion';
 
 /**
@@ -39,8 +40,9 @@ interface DialogProps {
 
 function open(node: HTMLDialogElement) {
   node.showModal();
-  // React's own autoFocus runs before showModal(), while the dialog cannot take focus (DR-59).
-  node.querySelector<HTMLElement>('[data-autofocus]')?.focus();
+  // React's own autoFocus runs before showModal(), while the dialog cannot take focus (DR-59);
+  // showModal() itself would focus the ×, first in the dialog.
+  openingFocus(node)?.focus();
 }
 
 const WIDTH = { confirm: 'w-100', form: 'w-120' } as const;
@@ -103,12 +105,13 @@ function leaveBehind(dialog: HTMLDialogElement, held: Held) {
  * Modal dialog, the focus layer (mockup components.html 06, `.dlg` of ui2.css): opens on mount;
  * the caller unmounts it to close. Three parts: the head (title, a line of context, the ×), the
  * body, which scrolls when long and breaks a word longer than its line (DR6-183), and the foot
- * with the actions; head and foot stay where they are. A click on what is dimmed behind does not
- * close it. Focus goes to the field or button marked `[data-autofocus]` (`Button` / `TextField`
- * with `autoFocus`), and back to whatever had it before once the dialog is gone, or to
- * `DialogFocusFallback` when that went too. The × comes last in the dialog, so a dialog that marks
- * nothing still opens on its first field or button. It comes as its system brings one, and goes in
- * --t-1 (`motion-dialog`, `leaveBehind`).
+ * with the actions; head and foot stay where they are. Text 14 px, the title 18 px. A click on what
+ * is dimmed behind does not close it. Focus goes to the field or button marked `[data-autofocus]`
+ * (`Button` / `TextField` with `autoFocus`), else to the first one after the head, whose × heads
+ * the Tab order; and back to whatever had it before once the dialog is gone, or to
+ * `DialogFocusFallback` when that went too. On macOS it stands under the toolbar, in the middle on
+ * Windows 11 (`dialog-place`); it comes as its system brings one, and goes in --t-1
+ * (`motion-dialog`, `leaveBehind`).
  */
 export function Dialog({
   title,
@@ -159,7 +162,7 @@ export function Dialog({
     <dialog
       ref={dialog}
       aria-labelledby={titleId}
-      className={`pop motion-dialog m-auto ${WIDTH[size]} flex-col rounded-pop p-0 text-fg open:flex`}
+      className={`pop motion-dialog dialog-place ${WIDTH[size]} flex-col rounded-pop p-0 text-fg open:flex`}
       onCancel={(event) => {
         // The browser would close the dialog behind React's back; the caller decides instead.
         // A cancel it will not let us refuse ends in `close` instead.
@@ -175,18 +178,30 @@ export function Dialog({
       }}
     >
       <form
-        className="flex min-h-0 flex-col text-sm"
+        className="flex min-h-0 flex-col text-md"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit?.();
         }}
       >
-        {/* A name in the title or the subtitle breaks, even with no space (DR6-148). */}
-        <div className={`px-5.5 pt-5 pb-3 wrap-anywhere ${closes ? 'pr-14' : ''}`}>
-          <h2 id={titleId} className="m-0 text-lg font-semibold">
-            {title}
-          </h2>
-          {subtitle && <p className="m-0 mt-0.5 text-fg-3 tabular-nums">{subtitle}</p>}
+        <div data-dialog-head className="flex items-start gap-2.5 px-5.5 pt-5 pb-3">
+          {/* A name in the title or the subtitle breaks, even with no space (DR6-148). */}
+          <div className="min-w-0 flex-1 wrap-anywhere">
+            <h2 id={titleId} className="m-0 text-title font-semibold">
+              {title}
+            </h2>
+            {subtitle && <p className="m-0 mt-0.5 text-sm text-fg-3 tabular-nums">{subtitle}</p>}
+          </div>
+          {closes && (
+            <button
+              type="button"
+              aria-label={closeLabel}
+              onClick={onClose}
+              className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-chip text-fg-3 hover:bg-fill-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <Mark of="close" className="size-3.25" />
+            </button>
+          )}
         </div>
         {/* Positioned: what it holds out of the flow (a line for screen readers only) scrolls with it. */}
         <div className="relative flex min-h-0 flex-col gap-3 overflow-x-hidden overflow-y-auto px-5.5 pt-1 pb-4 wrap-anywhere">
@@ -195,26 +210,6 @@ export function Dialog({
         <div className="flex items-center justify-end gap-2 border-t border-hairline px-5.5 pt-3.5 pb-4.5">
           {actions}
         </div>
-        {closes && (
-          <button
-            type="button"
-            aria-label={closeLabel}
-            onClick={onClose}
-            className="absolute top-4.5 right-4.5 grid size-7 cursor-pointer place-items-center rounded-chip text-fg-3 hover:bg-fill-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              className="size-3.5"
-            >
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        )}
       </form>
     </dialog>
   );

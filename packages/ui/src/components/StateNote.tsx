@@ -1,18 +1,20 @@
 import type { ReactNode } from 'react';
+import { MARKS } from './FieldMarks';
 
 /**
  * The icons of a mark, from the approved mockups (`#i-*` of components.html), each as one path on
- * the 24-unit grid: a circle, an ellipse and a rounded box are drawn as arcs.
+ * the 24-unit grid: a circle, an ellipse and a rounded box are drawn as arcs. The alert and the (i)
+ * are those of a toast.
  */
 const ICONS = {
   calendar:
     'M6 4.5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-10a3 3 0 0 1 3-3zM3 9.5h18M8 3v3M16 3v3',
   search: 'M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M20 20l-4.2-4.2',
-  info: 'M3.5 12a8.5 8.5 0 1 0 17 0a8.5 8.5 0 1 0-17 0M12 11v5.5M12 7.5v.01',
+  info: MARKS.info,
   people:
     'M5.8 8a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4',
   trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
-  alert: 'M12 4l9 16H3zM12 10v4M12 17v.01',
+  alert: MARKS.alert,
   data: 'M5 6a7 3 0 1 0 14 0a7 3 0 1 0-14 0M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6',
 } as const;
 

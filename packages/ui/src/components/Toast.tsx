@@ -1,3 +1,5 @@
+import { Mark } from './FieldMarks';
+
 interface ToastButton {
   label: string;
   onClick: () => void;
@@ -18,36 +20,12 @@ interface ToastProps {
   close?: ToastButton;
 }
 
-/**
- * The marks of a toast (mockups' `#i-check`, `#i-info`, `#i-alert`, `#i-x`), no text for a screen
- * reader.
- */
-const MARKS = {
-  done: { path: 'M5 12.5l4.5 4.5L19 7.5', look: 'size-4.25 shrink-0 text-ok' },
-  info: {
-    path: 'M12 3.5a8.5 8.5 0 1 1 0 17a8.5 8.5 0 1 1 0-17zM12 11v5.5M12 7.5v.01',
-    look: 'size-4.25 shrink-0 text-info',
-  },
-  error: { path: 'M12 4l9 16H3zM12 10v4M12 17v.01', look: 'size-4.25 shrink-0 text-danger' },
-  close: { path: 'M6 6l12 12M18 6L6 18', look: 'size-3.5' },
+/** The mark before the text of each tone, and its colour. */
+const TONES = {
+  done: { of: 'check', look: 'size-4.25 shrink-0 text-ok' },
+  info: { of: 'info', look: 'size-4.25 shrink-0 text-info' },
+  error: { of: 'alert', look: 'size-4.25 shrink-0 text-danger' },
 } as const;
-
-function Mark({ of }: { of: keyof typeof MARKS }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={MARKS[of].look}
-    >
-      <path d={MARKS[of].path} />
-    </svg>
-  );
-}
 
 const BUTTON =
   'shrink-0 cursor-pointer rounded-chip focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
@@ -66,11 +44,13 @@ export function Toast({ text, detail, tone = 'done', action, close }: ToastProps
         action || close ? 'pr-2' : 'pr-4'
       }`}
     >
-      <Mark of={tone} />
+      <Mark of={TONES[tone].of} stroke={2} className={TONES[tone].look} />
       <span className="min-w-0 wrap-anywhere">
         {text}
         {detail && <small className="text-sm text-fg-2 tabular-nums"> {detail}</small>}
       </span>
+      {/* Not a `Button`: the toast's own chip, its corner concentric with the toast's
+          (`rounded-chip`, ui2.css section 10), where a `Button` of this size takes the control's. */}
       {action && (
         <button
           type="button"
@@ -87,7 +67,7 @@ export function Toast({ text, detail, tone = 'done', action, close }: ToastProps
           onClick={close.onClick}
           className={`grid size-7 place-items-center text-fg-3 hover:bg-fill-2 hover:text-fg ${BUTTON}`}
         >
-          <Mark of="close" />
+          <Mark of="close" stroke={2} className="size-3.5" />
         </button>
       )}
     </div>

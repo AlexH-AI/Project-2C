@@ -120,6 +120,14 @@ export function AppointmentsScreen() {
   useEffect(() => {
     if (shownByLink > 0) toDetail()?.focus();
   }, [shownByLink, toDetail]);
+  // A month of the year grid goes with the grid it opens: the focus goes to the day picked in the
+  // calendar of that month (DR6-186).
+  const calendar = useRef<HTMLElement>(null);
+  const [monthPicked, setMonthPicked] = useState(0);
+  useEffect(() => {
+    if (monthPicked > 0)
+      calendar.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.focus();
+  }, [monthPicked]);
 
   const pickedRows = useMemo(
     () => appointmentRows(data, picked, coordinator),
@@ -206,10 +214,9 @@ export function AppointmentsScreen() {
         header: t('appointments.trigger'),
         kind: 'text',
         value: triggerText,
-        // Plain: the chosen row's gold tint takes --text-2 below 4.5:1 on the glass of macOS.
         cell: (r) =>
           r.appointment.triggerNote ? (
-            <TypedText text={r.appointment.triggerNote} plain />
+            <TypedText text={r.appointment.triggerNote} />
           ) : (
             triggerText(r)
           ),
@@ -355,13 +362,21 @@ export function AppointmentsScreen() {
             <YearGrid
               cells={yearCells}
               year={period.start.year}
-              onPickMonth={(month) =>
-                changePeriod(periodOf('month', { year: period.start.year, month, day: 1 }))
-              }
+              onPickMonth={(month) => {
+                changePeriod(periodOf('month', { year: period.start.year, month, day: 1 }));
+                setMonthPicked((count) => count + 1);
+              }}
             />
           ) : (
             <>
-              <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
+              <MonthCalendar
+                ref={calendar}
+                period={period}
+                day={day}
+                today={today}
+                rows={rows}
+                onPick={pick}
+              />
               <DayTable
                 day={day}
                 today={today}
@@ -450,12 +465,14 @@ export function AppointmentsScreen() {
 }
 
 function MonthCalendar({
+  ref,
   period,
   day,
   today,
   rows,
   onPick,
 }: {
+  ref: Ref<HTMLElement>;
   period: Period;
   day: CalendarDate;
   today: CalendarDate;
@@ -467,7 +484,7 @@ function MonthCalendar({
   const days = weeks.flat().filter((cell): cell is DayCell => cell?.inMonth === true);
   const sum = (count: (cell: DayCell) => number) => days.reduce((n, cell) => n + count(cell), 0);
   return (
-    <section aria-labelledby="appointments-calendar" className={CARD}>
+    <section ref={ref} aria-labelledby="appointments-calendar" className={CARD}>
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h2 id="appointments-calendar" className={HEADING}>
           {t('appointments.calendar', { month })}

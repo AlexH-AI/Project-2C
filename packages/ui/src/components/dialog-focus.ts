@@ -7,6 +7,25 @@ interface Focusable {
 const takesFocus = (node: unknown): node is Focusable =>
   typeof (node as Partial<Focusable> | null)?.focus === 'function';
 
+/** What a person reaches by Tab. */
+const REACHABLE =
+  'a[href], button:enabled, input:enabled, select:enabled, textarea:enabled, [tabindex]:not([tabindex="-1"])';
+
+/**
+ * What a dialog opens on: the field or button it marks (`data-autofocus`), else the first one a
+ * person reaches after its head, whose × comes first in the Tab order (L157), as before the ×
+ * moved there.
+ */
+export function openingFocus(dialog: ParentNode): HTMLElement | null {
+  return (
+    dialog.querySelector<HTMLElement>('[data-autofocus]') ??
+    [...dialog.querySelectorAll<HTMLElement>(REACHABLE)].find(
+      (control) => !control.closest('[data-dialog-head]'),
+    ) ??
+    null
+  );
+}
+
 /**
  * Gives the focus back as a dialog goes: to what had it when the dialog opened, without scrolling,
  * since a dialog may have just moved the page on purpose ("Xem tất cả"). Once that has left the

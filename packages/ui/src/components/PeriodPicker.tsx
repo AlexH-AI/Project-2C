@@ -56,12 +56,16 @@ interface PeriodPickerProps {
 /** Why typed custom dates were refused: not dates, start after end, or past the 3-month cap. */
 type DraftError = 'invalid' | 'reversed' | 'too-long';
 
-/** Text typed in the custom range fields, not yet applied. */
+/** Text typed in the custom range fields, not yet applied, over the period it was typed on. */
 interface Draft {
   start: string;
   end: string;
   error: DraftError | null;
+  on: string;
 }
+
+/** A period by its dates: what was typed holds only while they stay. */
+const datesOf = (period: Period) => `${formatDate(period.start)} ${formatDate(period.end)}`;
 
 function tryCustomPeriod(start: string, end: string): Period | DraftError {
   const from = parseDate(start);
@@ -72,17 +76,50 @@ function tryCustomPeriod(start: string, end: string): Period | DraftError {
 }
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent';
-const stepClass = `cursor-pointer rounded-control-sm px-1.5 py-0.5 text-lg leading-none text-fg-3 hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:text-fg-3 ${focusRing}`;
+const STEP_ROOM = 'px-1.5 py-0.5';
 
 /**
- * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping;
- * a step that would leave 1900–2100 (or a custom range's 3-month cap) is disabled; "Hôm nay"
- * (always enabled) goes to the period containing today.
+ * ‹ or ›: one period back or on, in the screen and on the pill of the toolbar alike. A step that
+ * would leave 1900–2100 (or a custom range's 3-month cap) is off by `aria-disabled`, which keeps
+ * the focus it has: `disabled` would drop it to the page (DR6-186). `room` is its padding.
+ */
+export function PeriodStep({
+  value,
+  by,
+  label,
+  onStep,
+  room,
+}: {
+  value: Period;
+  by: -1 | 1;
+  label: string;
+  onStep: (period: Period) => void;
+  room: string;
+}) {
+  const off = !canShift(value, by);
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-disabled={off}
+      onClick={() => {
+        if (!off) onStep(shift(value, by));
+      }}
+      className={`cursor-pointer rounded-control-sm text-lg leading-none text-fg-2 hover:text-fg focus-visible:outline-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:text-fg-2 ${room} ${focusRing}`}
+    >
+      {by < 0 ? '‹' : '›'}
+    </button>
+  );
+}
+
+/**
+ * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping
+ * (`PeriodStep`); "Hôm nay" (always enabled) goes to the period containing today.
  * "Hôm nay" is the compact button: beside the name of the period, the height of that box.
  * Custom dates are typed as dd/mm/yyyy (not `<input type="date">`, whose format follows the OS
  * locale) and applied on Enter or once the focus leaves both fields, not on Tab from one to the other
  * (R4); a date that does not exist, a start after the end or a range over 3 months is refused with a
- * note the fields point to.
+ * note the fields point to. What was typed goes once the period moves from outside (the pill).
  */
 export function PeriodPicker({ value, onChange, today, labels, onToday }: PeriodPickerProps) {
   const titleId = useId();
@@ -94,16 +131,19 @@ export function PeriodPicker({ value, onChange, today, labels, onToday }: Period
     onChange(period);
   };
 
-  const shown = draft ?? {
+  // Typed on another period, as one ‹ › of the pill moved to (L177), it is gone.
+  const typed = draft?.on === datesOf(value) ? draft : null;
+  const shown = typed ?? {
     start: formatDate(value.start),
     end: formatDate(value.end),
     error: null,
+    on: datesOf(value),
   };
 
   const apply = () => {
-    if (!draft) return;
-    const period = tryCustomPeriod(draft.start, draft.end);
-    if (typeof period === 'string') setDraft({ ...draft, error: period });
+    if (!typed) return;
+    const period = tryCustomPeriod(typed.start, typed.end);
+    if (typeof period === 'string') setDraft({ ...typed, error: period });
     else change(period);
   };
 
@@ -192,30 +232,14 @@ export function PeriodPicker({ value, onChange, today, labels, onToday }: Period
         {labels.title}
       </span>
       {kinds}
-      <button
-        type="button"
-        aria-label={labels.previous}
-        disabled={!canShift(value, -1)}
-        onClick={() => change(shift(value, -1))}
-        className={stepClass}
-      >
-        ‹
-      </button>
+      <PeriodStep value={value} by={-1} label={labels.previous} onStep={change} room={STEP_ROOM} />
       <output
         aria-live="polite"
         className="rounded-control-sm border border-border bg-surface-2 px-2.5 py-1 text-sm whitespace-nowrap text-fg tabular-nums"
       >
         {periodLabel(value, labels)}
       </output>
-      <button
-        type="button"
-        aria-label={labels.next}
-        disabled={!canShift(value, 1)}
-        onClick={() => change(shift(value, 1))}
-        className={stepClass}
-      >
-        ›
-      </button>
+      <PeriodStep value={value} by={1} label={labels.next} onStep={change} room={STEP_ROOM} />
       {todayButton}
       {custom}
     </div>

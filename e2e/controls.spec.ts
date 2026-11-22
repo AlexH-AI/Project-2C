@@ -155,7 +155,7 @@ test('a field carries its edge as its system does, keeps its fill under the poin
     await page.mouse.move(0, 0);
     await expect(field).toHaveCSS('background-color', fill);
     await field.hover();
-    await expect(field).toHaveCSS('border-top-color', os === 'mac' ? /^rgb\(140, 153/ : HAIRLINE);
+    await expect(field).toHaveCSS('border-top-color', os === 'mac' ? /^rgb\(151, 164/ : HAIRLINE);
     await expect(field).toHaveCSS('background-color', fill);
     expect(await lowestContrast(field, 'border'), os).toBeGreaterThanOrEqual(3);
   }
@@ -266,6 +266,71 @@ test('the chosen segment has a thumb of its own under its words, the others none
   // The same weight on or off: a segment keeps its width when chosen.
   await expect(chosen).toHaveCSS('font-weight', '550');
   await expect(other).toHaveCSS('font-weight', '550');
+});
+
+/** The label of a field as mockup components.html 02 draws it, its * gold. */
+async function expectFieldLabel(page: Page, label: Locator, at: string, required = false) {
+  await expect(label, at).toHaveCSS('font-size', '12.5px');
+  await expect(label, at).toHaveCSS('font-weight', '600');
+  await expect(label, at).toHaveCSS('color', await painted(page, '--text-2'));
+  if (required) await expect(label.getByText('*'), at).toHaveCSS('color', ACCENT);
+}
+
+// ui2.css `.field > label`, `.field .req` (L154): in the shared fields and in the labels the
+// dialogs of Lịch hẹn write themselves. A ticked box is drawn by the theme, not `accent-color`.
+test('the label of a field is 12.5 px, 600, --text-2, its * gold, wherever a dialog of Lịch hẹn has one', async ({
+  page,
+}) => {
+  const booking = await openBooking(page);
+  const label = (dialog: Locator, name: RegExp) =>
+    dialog.locator('label').filter({ hasText: name });
+  await expectFieldLabel(page, label(booking, /^Khách hàng/), 'a text field', true);
+  await expectFieldLabel(page, label(booking, /^Trigger/), 'a list', true);
+  await expectFieldLabel(
+    page,
+    booking.getByRole('group', { name: /^Người phối hợp/ }).locator('legend'),
+    'Người phối hợp',
+  );
+  await page.keyboard.press('Escape');
+
+  // A meeting of today (6c), then one of 01/09 whose customer moved on since: its status shows
+  // locked (6f, D7).
+  const rows = page.getByRole('table', { name: 'Danh sách lịch hẹn' }).locator('tbody tr');
+  const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+  await page
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Ngày' })
+    .click();
+  await rows.filter({ hasText: 'Dự kiến' }).first().getByRole('button').first().click();
+  await detail.getByRole('button', { name: 'Ghi kết quả' }).click();
+  const outcome = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
+  await expectFieldLabel(
+    page,
+    outcome.getByRole('radiogroup', { name: 'Trạng thái' }).locator('legend'),
+    'a row of choices',
+  );
+  const booked = outcome.getByRole('checkbox', { name: 'Hẹn lần tiếp theo' });
+  await expectFieldLabel(page, booked.locator('..'), 'Hẹn lần tiếp theo');
+  await expect(booked).toHaveCSS('accent-color', 'auto');
+  await page.keyboard.press('Escape');
+
+  await page
+    .getByRole('region', { name: /^Lịch tháng/ })
+    .getByRole('button', { name: /^01\/09\/2026:/ })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Trong ngày 01/09/2026' })).toBeVisible();
+  const met = rows.filter({ hasText: 'Đã gặp' });
+  const edit = page.getByRole('dialog', { name: 'Sửa kết quả cuộc gặp' });
+  for (let index = 0; ; index++) {
+    expect(index, 'a meeting whose outcome is locked').toBeLessThan(6);
+    await met.nth(index).getByRole('button').first().click();
+    await detail.getByRole('button', { name: 'Sửa kết quả' }).click();
+    await expect(edit).toBeVisible();
+    if (await edit.getByText('Khóa 3 ô').isVisible()) break;
+    await page.keyboard.press('Escape');
+    await expect(edit).toHaveCount(0);
+  }
+  await expectFieldLabel(page, edit.getByText('Trạng thái', { exact: true }), 'a locked field');
 });
 
 /** `label` reads 4.5:1 on a fill of its own that nothing shows through. */
