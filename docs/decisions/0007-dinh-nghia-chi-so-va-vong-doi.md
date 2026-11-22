@@ -1,6 +1,6 @@
 # ADR-0007: Định nghĩa chỉ số và vòng đời khách hàng / hợp đồng
 
-- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): Accepted (G2, 13/11/2026); phụ lục Forecast (Phase 6 phần D): Accepted (G2, 13/11/2026)
+- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2; phụ lục HĐ hủy (Phase 6 phần B): Accepted (G2, 13/11/2026); phụ lục Forecast (Phase 6 phần D): Accepted (G2, 13/11/2026); phụ lục Team & nhân sự (Phase 6 phần C): Accepted (G2, 21/11/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W3, W4, W5, W8), §2.3, §4.4, §7 (Q3–Q7)
 - **Commit / PR:** `20e9c5e` · G2: #28
@@ -162,3 +162,24 @@ Nguồn: phản hồi dùng thử exe `5215b2e` của Owner ngày 10/11/2026 (ý
 - Người tư vấn tên **RM** (Relationship Manager) thay RE ở mọi nơi, cả code lẫn dữ liệu lưu: vai trò `RM`, nguồn ghi chú KYC `RM`, trường `rmId`, cột `rm_id` (spec §3.1–§3.3).
 - Nghĩa không đổi: RM là người tư vấn, phụ trách KH, cuộc hẹn và HĐ; chỉ RM có chỉ số; TL / IS / BD / BDM giữ nguyên. Mọi định nghĩa chỉ số ở trên và ở các phụ lục trước giữ nguyên.
 - "RE" ở thân ADR này và các phụ lục trước nghĩa là RM; thân và các phụ lục đó không sửa (spec §3.4). Golden fixtures chỉ đổi tên trường và giá trị vai trò, không đổi con số nào (Owner duyệt G2 cùng phần A).
+
+## Phụ lục — Team & nhân sự (Phase 6 phần C; Owner duyệt G2 21/11/2026)
+
+Nguồn: câu trả lời của Owner khi ra Issue đợt 5, ngày 21/11/2026 (chat ở Home PC, hộp câu hỏi của Claude), spec `docs/design/phase-6-phan-hoi-dung-thu.md` §5, §10.1; mockup `docs/design/mockups/search-rm-team.html` `#team` (Owner duyệt G3 12/11/2026); ghi chú sổ L17 (DR6-185).
+
+Phụ lục này thêm hai luật dữ liệu của team và nhân sự, không đổi chỉ số nào: G01–G41 và F01–F41 giữ nguyên, không thêm dòng golden. Ca kiểm là test chấp nhận của C2b (#1451, T-496) và C3 (#1452, T-497); cách làm chi tiết (khóa so, mã lỗi, khôi phục từ Thùng rác) ở thân hai Issue đó.
+
+- **Tên trùng trong một team** (Owner: "Cấm trùng trong team (Recommended)"):
+  - không cho hai người cùng họ tên trong một team; so không dấu, không phân biệt hoa thường; người ở hai team khác nhau vẫn được trùng tên;
+  - người dùng tự thêm chữ phân biệt vào họ tên; app không thêm nhãn phân biệt;
+  - áp ở lệnh tạo, sửa, chuyển team của nhân sự và khi nhập backup; mã lỗi do C2b đặt. Dữ liệu là giả lập (`CLAUDE.md`): không migration hay UI sửa dữ liệu cũ;
+  - phương án bỏ: cho trùng, thêm nhãn phân biệt ở các ô chọn người (cần mockup mới, G3).
+- **Màu và icon của team** (ý 33, C3; Owner: "Duyệt G2 (Recommended)"):
+  - bảng `teams` thêm hai cột tùy chọn `color`, `icon`; trống là kiểu mặc định;
+  - `color` lưu tên một trong 6 màu của mockup: `accent` Champagne, `info` Xanh dương, `n2` Tím, `submitted` Xanh ngọc, `ok` Xanh lá, `warn` Cam. Lưu tên, không lưu mã màu;
+  - `icon` lưu tên một trong 8 icon: `star`, `sunrise`, `sun`, `mountain`, `leaf`, `flame`, `shield`, `anchor`;
+  - lệnh tạo / sửa team và nhập backup từ chối giá trị ngoài danh sách;
+  - team xóa mềm giữ màu / icon; khôi phục thì có lại;
+  - dữ liệu giả lập: vài team có màu / icon, ít nhất một team kiểu mặc định;
+  - phương án bỏ: màu tự do (mã màu bất kỳ, luật tương phản khi lưu, mockup mới G3).
+- **Duyệt G2:** Owner ngày 21/11/2026, chat ở Home PC (phiên thường, Opus), chọn phương án đề xuất ở hai câu trên. Ghi bởi T-484 (#1439); `docs/PROJECT-STATE.md` mục 2026-11-21 run 5.
