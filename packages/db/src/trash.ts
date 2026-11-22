@@ -96,6 +96,7 @@ export type TrashRow =
       readonly submittedFyp: Money;
       readonly issuedDate: CalendarDate | null;
       readonly issuedFyp: Money | null;
+      readonly cancelledDate: CalendarDate | null;
     });
 
 const NONE: TrashEffect = { kind: 'none' };
@@ -173,6 +174,7 @@ export function listTrash(db: Database): TrashRow[] {
         submittedFyp: row.submittedFyp,
         issuedDate: row.issuedDate === null ? null : fromIsoDate(row.issuedDate),
         issuedFyp: row.issuedFyp,
+        cancelledDate: row.cancelledDate === null ? null : fromIsoDate(row.cancelledDate),
         owner: { customer: ref.customer(row.customerId), rm: ref.person(row.rmId) },
         effect: NONE,
       }),

@@ -35,7 +35,7 @@ import { KycCard, Timeline } from './CustomerKyc';
 import { KycIntelligence } from './KycIntelligence';
 import { ConfirmFactDialog, KycNoteDialog, ResolveKycDialog } from './KycDialogs';
 import { NoteEvent } from './KycExtraction';
-import { PolicyDialog, type PolicyMode } from './PolicyDialogs';
+import { CancelPolicyDialog, PolicyDialog, type PolicyMode } from './PolicyDialogs';
 import { ageOn, birthLabel, profileSince } from './customers-view';
 import { factAnchor } from './kyc-view';
 import { expectedCaseSize } from './policy-form';
@@ -95,6 +95,7 @@ export function CustomerProfile({ id }: { id: string }) {
   } | null>(null);
   const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
   const [policyMode, setPolicyMode] = useState<PolicyMode | null>(null);
+  const [cancelling, setCancelling] = useState<Policy | null>(null);
   const policiesHeading = useRef<HTMLHeadingElement>(null);
   const factsHeading = useRef<HTMLHeadingElement>(null);
   // The ChatGPT web session of the panel: AI trích xuất is off while it waits (§3.1 item 4).
@@ -149,15 +150,15 @@ export function CustomerProfile({ id }: { id: string }) {
   const since = profileSince(customer.id, transitions);
   const birth = customer.birthDate;
   const caseSize = expectedCaseSize(appointmentData.appointments);
+  // "Đã có HĐ" counts the policies not cancelled (golden mục 4.4 point 10).
+  const live = policies.filter((policy) => policy.cancelledDate === null).length;
   const facts = [
     customer.code,
     customer.gender && t(`gender.${customer.gender}`),
     birth && t('customer.birth', { date: birthLabel(birth), age: ageOn(birth, today) }),
     rm && t('customers.rm', { name: rm.name }),
     team && t('customer.team', { name: team.name }),
-    policies.length > 0
-      ? t('customer.hasPolicies', { count: policies.length })
-      : t('customer.noPolicies'),
+    live > 0 ? t('customer.hasPolicies', { count: live }) : t('customer.noPolicies'),
   ].filter(Boolean);
 
   return (
@@ -201,6 +202,7 @@ export function CustomerProfile({ id }: { id: string }) {
             heading={policiesHeading}
             onNew={() => setPolicyMode({ kind: 'new' })}
             onIssue={onIssue}
+            onCancel={setCancelling}
             onEdit={onEditPolicy}
           />
         </div>
@@ -265,6 +267,14 @@ export function CustomerProfile({ id }: { id: string }) {
             teams={appointmentData.teams}
             caseSize={caseSize}
             onClose={() => setPolicyMode(null)}
+          />
+        )}
+        {cancelling && (
+          <CancelPolicyDialog
+            customer={customer}
+            policy={cancelling}
+            people={appointmentData.people}
+            onClose={() => setCancelling(null)}
           />
         )}
       </DialogFocusFallback>

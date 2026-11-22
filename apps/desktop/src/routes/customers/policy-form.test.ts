@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { calendarDate, type Appointment, type Policy } from '@p2c/domain';
+import { calendarDate, periodOf, policyMetrics, type Appointment, type Policy } from '@p2c/domain';
 import {
+  cancelChange,
   effectText,
   expectedCaseSize,
   openDraft,
   policyChange,
   policyStatusText,
+  readCancelledDate,
   readFyp,
   readPolicy,
   type Effect,
@@ -49,8 +51,15 @@ describe('effectText', () => {
 // names of their buttons, the subtitle of 8d (review of PR 748).
 describe('policyStatusText', () => {
   it('words a policy submitted, then issued, as its badge does', () => {
-    expect(policyStatusText({ issuedDate: null })).toBe('Đã nộp');
-    expect(policyStatusText({ issuedDate: d(18, 9) })).toBe('Đã phát hành');
+    expect(policyStatusText({ issuedDate: null, cancelledDate: null })).toBe('Đã nộp');
+    expect(policyStatusText({ issuedDate: d(18, 9), cancelledDate: null })).toBe('Đã phát hành');
+  });
+
+  // B2, mockup huy-hd.html #row: the red badge says the day.
+  it('words a cancelled policy with its cancellation day', () => {
+    expect(policyStatusText({ issuedDate: d(18, 9), cancelledDate: d(22, 9) })).toBe(
+      'Đã hủy 22/09/2026',
+    );
   });
 });
 
@@ -91,6 +100,7 @@ describe('readPolicy', () => {
       submittedFyp: 400 * MILLION,
       issuedDate: null,
       issuedFyp: null,
+      cancelledDate: null,
     });
   });
 
@@ -163,6 +173,7 @@ describe('openDraft and readPolicy across New Year', () => {
       submittedFyp: 400 * MILLION,
       issuedDate: d(31, 12),
       issuedFyp: 400 * MILLION,
+      cancelledDate: null,
     });
   });
 
@@ -174,6 +185,7 @@ describe('openDraft and readPolicy across New Year', () => {
       submittedFyp: 400 * MILLION,
       issuedDate: d(28, 12),
       issuedFyp: 380 * MILLION,
+      cancelledDate: null,
     });
     const fresh = openDraft({ kind: 'new' }, OPENED);
     const draft = { ...fresh.draft, submittedFyp: '1tr' };
@@ -291,6 +303,144 @@ describe('policyChange', () => {
     expect(policyChange(notIssued, read)).toEqual({
       fromSubmitted: null,
       effects: [fyp('submitted', 8, 50 * MILLION)],
+      note: null,
+    });
+  });
+});
+
+// B2 (mockup huy-hd.html #cancel, #effect, #edit; golden chi-so.md mục 4.4): what cancelling,
+// undoing or moving a cancellation does to the metrics, as `policyMetrics` counts them.
+describe('cancellations', () => {
+  const issuedPolicy: Policy = {
+    id: 'p',
+    customerId: 'c',
+    rmId: 'rm',
+    submittedDate: d(20, 8),
+    submittedFyp: 60 * MILLION,
+    issuedDate: d(25, 8),
+    issuedFyp: 60 * MILLION,
+    cancelledDate: null,
+  };
+  const cancelled: Policy = { ...issuedPolicy, cancelledDate: d(10, 9) };
+  const words = (effects: readonly Effect[]) => effects.map((effect) => effectText(effect, 'Linh'));
+  const opened = openDraft({ kind: 'edit', policy: cancelled }, TODAY);
+  const read = (changes: Partial<PolicyDraft>) =>
+    readPolicy({ ...opened.draft, ...changes }, TODAY, opened);
+  const edit = (changes: Partial<PolicyDraft>) => policyChange(cancelled, read(changes));
+
+  it('reads the day of the cancel dialog: on or after the issue, today at the latest', () => {
+    expect(readCancelledDate('25/8', TODAY, d(25, 8))).toEqual({
+      ok: true,
+      date: d(25, 8),
+      daysAfter: 0,
+    });
+    expect(readCancelledDate('24/8', TODAY, d(25, 8))).toEqual({
+      ok: false,
+      error: 'beforeIssued',
+      date: d(24, 8),
+      issued: d(25, 8),
+    });
+    expect(readCancelledDate('27/9', TODAY, d(25, 8))).toEqual({ ok: false, error: 'future' });
+  });
+
+  it('takes the FYP off the revenue of the month of the cancellation, the issue month unchanged', () => {
+    const change = cancelChange(issuedPolicy, d(10, 9));
+    expect(words(change.effects)).toEqual([
+      'Doanh số tháng 09/2026 của RM Linh giảm 60 tr',
+      'tháng 09/2026: +1 HĐ hủy',
+    ]);
+    expect(change.note).toBe(
+      'HĐ phát hành tháng 08/2026 vẫn tính phát hành vào tháng 08/2026: số của tháng đó không đổi.',
+    );
+    expect(cancelChange(issuedPolicy, d(31, 8)).note).toBe(
+      'HĐ phát hành và FYP phát hành của ngày 25/08/2026 giữ nguyên.',
+    );
+  });
+
+  it('gives the numbers the metrics change by, among the other policies of the month', () => {
+    const others: Policy[] = [
+      { ...issuedPolicy, id: 'q', issuedDate: d(2, 9), issuedFyp: 90 * MILLION },
+      { ...issuedPolicy, id: 'r', rmId: 'other', issuedDate: d(3, 9), cancelledDate: d(5, 9) },
+    ];
+    const day = d(10, 9);
+    const metrics = (policy: Policy) =>
+      policyMetrics({ people: [], policies: [...others, policy] }, periodOf('month', day), {
+        kind: 'rm',
+        rmId: 'rm',
+      });
+    const before = metrics(issuedPolicy);
+    const after = metrics({ ...issuedPolicy, cancelledDate: day });
+    expect(cancelChange(issuedPolicy, day).effects).toEqual([
+      {
+        kind: 'fyp',
+        metric: 'revenue',
+        year: 2026,
+        month: 9,
+        diff: after.revenue - before.revenue,
+      },
+      {
+        kind: 'tally',
+        metric: 'cancelled',
+        date: day,
+        diff: after.cancelledCount - before.cancelledCount,
+      },
+    ]);
+  });
+
+  it('undoes: the revenue comes back, one cancellation less, no trace kept', () => {
+    const change = edit({ cancelled: null });
+    expect(words(change.effects)).toEqual([
+      'Doanh số tháng 09/2026 của RM Linh tăng 60 tr',
+      'tháng 09/2026: −1 HĐ hủy',
+    ]);
+    expect(change.note).toBe('HĐ trở lại Đã phát hành. App không giữ dấu vết lần hủy này.');
+    expect(edit({})).toEqual({ fromSubmitted: 0, effects: [], note: null });
+  });
+
+  it('moves the cancellation to another month, or within its month', () => {
+    expect(words(edit({ cancelled: '30/8' }).effects)).toEqual([
+      'Doanh số tháng 09/2026 của RM Linh tăng 60 tr',
+      'Doanh số tháng 08/2026 của RM Linh giảm 60 tr',
+      'tháng 09/2026: −1 HĐ hủy · tháng 08/2026: +1 HĐ hủy',
+    ]);
+    const within = edit({ cancelled: '20/9' });
+    expect(words(within.effects)).toEqual([
+      'HĐ hủy chuyển từ ngày 10/09/2026 sang ngày 20/09/2026',
+    ]);
+    expect(within.note).toBe('Số của tháng 09/2026 không đổi; số theo ngày và theo tuần đổi theo.');
+  });
+
+  it('moves the cancelled FYP with the issued one: the month of the issue and of the cancellation', () => {
+    expect(words(edit({ issued: { date: '25/8', fyp: '45tr' } }).effects)).toEqual([
+      'FYP phát hành tháng 08/2026 của RM Linh giảm 15 tr',
+      'FYP hủy tháng 09/2026 của RM Linh giảm 15 tr',
+      'Doanh số tháng 09/2026 của RM Linh tăng 15 tr',
+      'Doanh số tháng 08/2026 của RM Linh giảm 15 tr',
+    ]);
+  });
+
+  // Golden mục 4.4 point 5: one field carries the refusal.
+  it('refuses an issue after the cancellation or none, and a cancellation before the issue', () => {
+    expect(read({ issued: { date: '12/9', fyp: '60tr' } })).toMatchObject({
+      issuedDate: { ok: false, error: 'afterCancelled', date: d(12, 9), cancelled: d(10, 9) },
+      cancelledDate: { ok: true, date: d(10, 9) },
+      policy: null,
+    });
+    expect(read({ issued: { date: ' ', fyp: '60tr' } })).toMatchObject({
+      issuedDate: { ok: false, error: 'cancelled' },
+      policy: null,
+    });
+    expect(read({ cancelled: '20/8' })).toMatchObject({
+      issuedDate: { ok: true, date: d(25, 8) },
+      cancelledDate: { ok: false, error: 'beforeIssued', date: d(20, 8), issued: d(25, 8) },
+      policy: null,
+    });
+    expect(read({ cancelled: '27/9' }).cancelledDate).toEqual({ ok: false, error: 'future' });
+    expect(read({}).policy).toMatchObject({ cancelledDate: d(10, 9) });
+    // Undone in the same save, the issue may move past the old day (B1a).
+    expect(read({ cancelled: null, issued: { date: '12/9', fyp: '60tr' } }).policy).toMatchObject({
+      issuedDate: d(12, 9),
+      cancelledDate: null,
     });
   });
 });

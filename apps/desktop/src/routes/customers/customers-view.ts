@@ -27,7 +27,7 @@ export interface CustomerCard {
   readonly rm: Person | undefined;
   /** Day of the latest stage change: the day the customer entered its current stage. */
   readonly since: CalendarDate;
-  /** Submitted policies, issued or not ("Đã có HĐ"). */
+  /** Policies submitted, issued or not, never a cancelled one ("Đã có HĐ"; golden mục 4.4 point 10). */
   readonly policies: number;
 }
 
@@ -86,6 +86,7 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
   const since = stageSince(data.transitions);
   const policies = new Map<string, number>();
   for (const policy of data.policies) {
+    if (policy.cancelledDate !== null) continue;
     policies.set(policy.customerId, (policies.get(policy.customerId) ?? 0) + 1);
   }
 

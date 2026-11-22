@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  cancelPolicy,
   issuePolicy,
   softDeletePolicy,
   submitPolicy,
@@ -17,21 +18,31 @@ import {
 } from '@p2c/domain';
 import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
-import { errorMessage, t } from '../../i18n';
+import { errorMessage, joinParts, t } from '../../i18n';
 import { useMasked } from '../../shell/NameMask';
 import { rmOptions } from '../../shell/scope';
-import { useTrashUndo } from '../../shell/Toasts';
+import { useToast, useTrashUndo } from '../../shell/Toasts';
+import { dayText } from '../appointments/appointment-form';
 import { ALERT } from '../classes';
 import { MoneyField } from '../MoneyField';
-import { amountRead, formatAmountCompact, formatAmountDelta, formRefusal } from '../money-view';
+import {
+  amountRead,
+  formatAmount,
+  formatAmountCompact,
+  formatAmountDelta,
+  formRefusal,
+} from '../money-view';
 import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
+  cancelChange,
   effectText,
   monthOf,
   openDraft,
   policyChange,
   policyStatusText,
+  readCancelledDate,
   readPolicy,
+  type CancelledDateResult,
   type FypResult,
   type IssuedDateResult,
   type PolicyDraft,
@@ -98,12 +109,17 @@ export function PolicyDialog({
     draft.issued && read.issuedFyp && shown(draft.issued.fyp)
       ? fypRefusal(read.issuedFyp, draft.issued.fyp)
       : undefined;
+  const cancelledError =
+    draft.cancelled != null && read.cancelledDate && shown(draft.cancelled)
+      ? cancelledDateMessage(read.cancelledDate)
+      : undefined;
   const rmError = attempted && rmId === '' ? t('error.RM_REQUIRED') : undefined;
   const errorCount = [
     submittedDateError,
     submittedFypError,
     issuedDateError,
     issuedFypError,
+    cancelledError,
     rmError,
   ].filter(Boolean).length;
 
@@ -145,6 +161,8 @@ export function PolicyDialog({
   const issuedFyp = read.issuedFyp?.ok ? read.issuedFyp.amount : null;
   const change = mode.kind === 'edit' ? policyChange(mode.policy, read) : null;
   const rm = people.find((person) => person.id === saved?.rmId);
+  // The cancellation day of 8d (huy-hd.html #edit): "Bỏ hủy" empties it until "Hoàn lại".
+  const cancelledOn = mode.kind === 'edit' ? mode.policy.cancelledDate : null;
 
   return (
     <Dialog
@@ -156,10 +174,12 @@ export function PolicyDialog({
       }
       subtitle={
         mode.kind === 'edit'
-          ? t('policyForm.editSub', {
-              status: policyStatusText(mode.policy),
-              date: formatDate(mode.policy.issuedDate ?? mode.policy.submittedDate),
-            })
+          ? mode.policy.cancelledDate
+            ? policyStatusText(mode.policy)
+            : t('policyForm.editSub', {
+                status: policyStatusText(mode.policy),
+                date: formatDate(mode.policy.issuedDate ?? mode.policy.submittedDate),
+              })
           : saved
             ? t('policyForm.sub', {
                 customer: masked.name(customer.name),
@@ -264,21 +284,184 @@ export function PolicyDialog({
           })}
         </p>
       )}
+      {cancelledOn && (
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            {draft.cancelled != null ? (
+              <TextField
+                label={t('policyForm.cancelledDate')}
+                value={draft.cancelled}
+                onChange={(cancelled) => edit({ cancelled })}
+                error={cancelledError}
+                hint={read.cancelledDate?.ok ? cancelledDateRead(read.cancelledDate) : undefined}
+                required
+              />
+            ) : (
+              <TextField
+                label={t('policyForm.cancelledDate')}
+                value={t('policyForm.notCancelled')}
+                onChange={() => undefined}
+                hint={t('policyForm.undoneRead')}
+                disabled
+              />
+            )}
+          </div>
+          <Button
+            className="mt-6"
+            onClick={() =>
+              edit({ cancelled: draft.cancelled == null ? opened.draft.cancelled : null })
+            }
+          >
+            {draft.cancelled == null
+              ? t('policyForm.keepCancel', { date: formatDate(cancelledOn) })
+              : t('policyForm.undoCancel')}
+          </Button>
+        </div>
+      )}
       {change && change.effects.length > 0 && (
-        <dl className="m-0 flex gap-3 tabular-nums">
-          <dt className="shrink-0 text-fg-3">{t('policyForm.effect')}</dt>
-          <dd className="m-0 flex flex-col gap-0.5">
-            {/* Keyed by its words: one line per month and metric, one per count moved. */}
-            {change.effects
-              .map((effect) => effectText(effect, rm?.name))
-              .map((line) => (
-                <span key={line}>{line}</span>
-              ))}
-          </dd>
-        </dl>
+        <EffectBlock
+          lines={change.effects.map((effect) => effectText(effect, rm?.name))}
+          note={change.note}
+        />
       )}
     </Dialog>
   );
+}
+
+/**
+ * "Ảnh hưởng chỉ số" (8d; huy-hd.html #effect): one line per month and metric, one per count
+ * moved, keyed by its words; then what stays as it was, lighter.
+ */
+function EffectBlock({ lines, note }: { lines: readonly string[]; note: string | null }) {
+  return (
+    <dl className="m-0 flex gap-3 tabular-nums">
+      <dt className="shrink-0 text-fg-3">{t('policyForm.effect')}</dt>
+      <dd className="m-0 flex flex-col gap-0.5">
+        {lines.map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+        {note && <small className="text-xs text-fg-3">{note}</small>}
+      </dd>
+    </dl>
+  );
+}
+
+/**
+ * Mockup huy-hd.html #cancel: the cancellation day (today to start with), the cancelled FYP as a
+ * locked field, and what the metrics of the RM do, before "Hủy HĐ"; the toast after it says the
+ * number and where to undo it. Undoing and changing the day are in 8d.
+ */
+export function CancelPolicyDialog({
+  customer,
+  policy,
+  people,
+  onClose,
+}: {
+  customer: CustomerRecord;
+  policy: Policy;
+  people: readonly Person[];
+  onClose: () => void;
+}) {
+  const app = useAppData();
+  const masked = useMasked();
+  const toast = useToast();
+  const today = app.today();
+  // The day it opened on: left as filled in, it reads in that year past New Year (DR6-38).
+  const [opened] = useState(() => ({ text: dayText(today, today), on: today }));
+  const [text, setText] = useState(opened.text);
+  const [failure, setFailure] = useState<string>();
+  // Only an issued policy has the button (golden mục 4.4 point 6).
+  const issuedDate = policy.issuedDate!;
+  const fyp = policy.issuedFyp!;
+  const read = readCancelledDate(text, text === opened.text ? opened.on : today, issuedDate);
+  const rm = people.find((person) => person.id === policy.rmId)?.name;
+  const change = read.ok ? cancelChange(policy, read.date) : null;
+
+  const save = () => {
+    if (!read.ok) return;
+    try {
+      app.run((db) => cancelPolicy(db, policy.id, read.date));
+      const revenue = change?.effects.find((effect) => effect.kind === 'fyp');
+      toast.show({
+        text: joinParts([t('cancelForm.done'), revenue && effectText(revenue, rm)]),
+        detail: t('cancelForm.doneUndo'),
+      });
+      onClose();
+    } catch (error) {
+      setFailure(errorMessage(error));
+    }
+  };
+
+  return (
+    <Dialog
+      closeLabel={t('dialog.close')}
+      title={t('policies.cancel')}
+      subtitle={t('cancelForm.sub', {
+        customer: masked.name(customer.name),
+        date: formatDate(issuedDate),
+        fyp: formatAmountCompact(fyp),
+      })}
+      onClose={onClose}
+      onSubmit={save}
+      actions={
+        <>
+          <Button onClick={onClose}>{t('cancelForm.close')}</Button>
+          <Button type="submit" variant="danger" disabled={!read.ok}>
+            {t('policies.cancel')}
+          </Button>
+        </>
+      }
+    >
+      {failure && <FailureAlert>{failure}</FailureAlert>}
+      <div className="grid grid-cols-2 gap-3">
+        <TextField
+          label={t('policyForm.cancelledDate')}
+          value={text}
+          onChange={(value) => {
+            setText(value);
+            setFailure(undefined);
+          }}
+          error={read.ok ? undefined : cancelledDateMessage(read)}
+          hint={read.ok ? cancelledDateRead(read) : undefined}
+          required
+          autoFocus
+        />
+        <TextField
+          label={t('cancelForm.fyp')}
+          value={formatAmount(fyp)}
+          onChange={() => undefined}
+          hint={t('cancelForm.fypRead', { amount: formatAmountCompact(fyp) })}
+          disabled
+        />
+      </div>
+      {change && (
+        <EffectBlock
+          lines={change.effects.map((effect) => effectText(effect, rm))}
+          note={change.note}
+        />
+      )}
+      <span className="text-xs text-fg-3">{t('cancelForm.help')}</span>
+    </Dialog>
+  );
+}
+
+/**
+ * Why a cancellation day is refused: before the issue in the words of the command's code (B1a,
+ * `CANCELLED_BEFORE_ISSUED`), any other as every date field words it.
+ */
+function cancelledDateMessage(read: CancelledDateResult) {
+  if (read.ok) return undefined;
+  return read.error === 'beforeIssued'
+    ? t('error.CANCELLED_BEFORE_ISSUED', { date: formatDate(read.issued) })
+    : t(`date.error.${read.error}`);
+}
+
+function cancelledDateRead(read: Extract<CancelledDateResult, { ok: true }>) {
+  const day = dayRead(read.date);
+  if (read.daysAfter === null) return day;
+  return read.daysAfter === 0
+    ? t('policyForm.cancelSameDay', { read: day })
+    : t('policyForm.cancelDaysAfter', { read: day, n: read.daysAfter });
 }
 
 function issuedDateMessage(read: IssuedDateResult, submitted: CalendarDate | null) {
@@ -289,6 +472,14 @@ function issuedDateMessage(read: IssuedDateResult, submitted: CalendarDate | nul
       submitted: submitted ? formatDate(submitted) : '',
     });
   }
+  // A policy that stays cancelled keeps its issue: how to do it otherwise (golden mục 4.4 point 5).
+  if (read.error === 'afterCancelled') {
+    return t('policyForm.afterCancelled', {
+      date: formatDate(read.date),
+      when: formatDate(read.cancelled),
+    });
+  }
+  if (read.error === 'cancelled') return t('policyForm.issueCancelled');
   return t(`date.error.${read.error}`);
 }
 

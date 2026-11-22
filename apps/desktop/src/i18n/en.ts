@@ -67,6 +67,49 @@ export const en: EnglishMessages = {
   'error.CANCELLED_BEFORE_ISSUED': 'The cancellation date is before the issue date {date}.',
   'error.POLICY_CANCELLED':
     'A policy cancelled on {date} needs an issue date on or before it. To clear the issue date, undo the cancellation first.',
+  // B2: cancelling a policy (mockup huy-hd.html), in the terms of `CONTEXT.md` § Thuật ngữ tiếng Anh.
+  'policies.cancelledCount': '{count} cancelled',
+  'policies.cancel': 'Cancel policy',
+  'policies.cancelLabel': 'Cancel the policy submitted {date} · {fyp}',
+  'policies.issuedOn': 'Issued {date}',
+  'policyStatus.cancelled': 'Cancelled {date}',
+  'policyForm.cancelledDate': 'Cancellation date',
+  'policyForm.undoCancel': 'Undo cancellation',
+  'policyForm.keepCancel': 'Revert to {date}',
+  'policyForm.notCancelled': 'not cancelled',
+  'policyForm.undoneRead': 'The policy goes back to Issued on saving',
+  'policyForm.cancelDaysAfter': {
+    one: '{read} · {n} day after the issue',
+    other: '{read} · {n} days after the issue',
+  },
+  'policyForm.cancelSameDay': '{read} · on the issue date',
+  'policyForm.afterCancelled':
+    '{date} is after the cancellation date {when}. Undo the cancellation first, or change the cancellation date.',
+  'policyForm.issueCancelled':
+    'A cancelled policy needs an issue date. To clear the issue date, undo the cancellation first.',
+  'policyForm.metric.cancelled': 'Cancelled FYP',
+  'policyForm.metric.revenue': 'Total FYP',
+  'policyForm.count.cancelled': 'policies cancelled',
+  'policyForm.countUp': '{month}: +1 {label}',
+  'policyForm.countDown': '{month}: −1 {label}',
+  'policyForm.cancelMoved': 'The cancellation moves from {from} to {to}',
+  'policyForm.note.sameMonth': 'The issue and the issued FYP of {date} stay as they are.',
+  'policyForm.note.otherMonth':
+    'The policy still counts as issued in {month}: the figures of that month do not change.',
+  'policyForm.note.undone':
+    'The policy goes back to Issued. The app keeps no trace of this cancellation.',
+  'policyForm.note.moved':
+    'The figures of {month} do not change; those by day and by week follow the new date.',
+  'cancelForm.sub': '{customer} · issued {date} · issued FYP {fyp}',
+  'cancelForm.fyp': 'Cancelled FYP · the issued FYP',
+  'cancelForm.fypRead': '{amount} · not entered separately',
+  'cancelForm.help':
+    'To undo the cancellation or change its date later: the Edit button on this policy’s row.',
+  'cancelForm.close': 'Close',
+  'cancelForm.done': 'Policy cancelled',
+  'cancelForm.doneUndo': 'undo with the Edit button',
+  'trash.blocked.cancelled': 'Cancellation date {date} is after today.',
+  'trash.restore.cancelled': '{status} · issued {date} · {fyp}',
   // A backup of another currency (G-04), the mockup's dialog.
   'settings.backup.otherCurrency': 'The file uses {file}; the open data uses {expected}',
   'settings.backup.otherCurrencyHelp':

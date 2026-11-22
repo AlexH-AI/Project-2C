@@ -114,6 +114,23 @@ describe('customerBoard', () => {
     expect(board.open.N2[0]).toMatchObject({ since: day(7, 5), policies: 2 });
   });
 
+  // B2 (golden chi-so.md mục 4.4 point 10): "Đã có HĐ" counts the policies not cancelled, a
+  // submitted one too; a customer whose every policy is cancelled has none.
+  it('does not count a cancelled policy', () => {
+    const cancelled = {
+      ...policy('an'),
+      issuedDate: day(9, 2),
+      issuedFyp: 1,
+      cancelledDate: day(9, 3),
+    };
+    const board = customerBoard(
+      { ...data, policies: [policy('chi'), { ...cancelled, customerId: 'chi' }, cancelled] },
+      { kind: 'all' },
+    );
+    expect(board.open.N2[0]).toMatchObject({ policies: 1 });
+    expect(board.open.N4.find((card) => card.customer.id === 'an')).toMatchObject({ policies: 0 });
+  });
+
   it('keeps only the customers of the RM in scope, through their team or directly', () => {
     const team = customerBoard(data, { kind: 'team', teamId: 't2' });
     expect(team.open.N4.map((card) => card.customer.id)).toEqual(['em']);

@@ -599,6 +599,7 @@ describe('listTrash: policies (TR-2, TR-5)', () => {
       submittedFyp: 24_000_000,
       issuedDate: null,
       issuedFyp: null,
+      cancelledDate: null,
       owner: {
         customer: { id: lan.id, name: 'Hoàng Ngọc Lan', code: lan.code, deleted: false },
         rm: { name: 'Đỗ Khánh Linh', deleted: false },
@@ -648,6 +649,8 @@ describe('listTrash: policies (TR-2, TR-5)', () => {
     cancelPolicy(db, policy.id, d(5, 10));
     softDeletePolicy(db, policy.id);
 
+    // Its row says it, for the badge "Đã hủy {ngày}" of Thùng rác (B2).
+    expect(row(policy.id)).toMatchObject({ issuedDate: d(20, 9), cancelledDate: d(5, 10) });
     expect(restored(row(policy.id))).toBeUndefined();
     expect(byId(listPolicies(db), policy.id)).toMatchObject({
       issuedDate: d(20, 9),
