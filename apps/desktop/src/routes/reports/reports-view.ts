@@ -2,7 +2,6 @@ import {
   byName,
   appointmentCountsByMark,
   appointmentCountsByScope,
-  closeRate,
   compareDates,
   formatNumber,
   formatDate,
@@ -16,6 +15,7 @@ import {
   snapshotDate,
   stageSnapshotByScope,
   stageSnapshotSeries,
+  sumMetrics,
   weekdayOf,
   type AppointmentCounts,
   type CalendarDate,
@@ -91,7 +91,8 @@ const REPORT_STAGES = [
   'LOST',
 ] as const satisfies readonly CustomerStage[];
 
-const METRIC_SUMS = ['rfCount', 'submittedCount', 'caseSize', 'issuedCount', 'revenue'] as const;
+/** The Kết quả columns that are a count or a sum of money. */
+type MetricSum = 'rfCount' | 'submittedCount' | 'caseSize' | 'issuedCount' | 'revenue';
 const APPOINTMENT_SUMS = ['met', 'missed', 'unrecorded', 'planned', 'total'] as const;
 
 const total = <K extends string>(
@@ -103,25 +104,22 @@ const total = <K extends string>(
   ) as Record<K, number>;
 
 /**
- * Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11). Whether
- * there are results and stages yet comes from the period, not the rows, so a table without rows
- * still matches Tổng hợp: 0 once the period has started, "—" before.
+ * Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11), the cancel
+ * rate Σ cancelled ÷ Σ issued (`sumMetrics`, golden G30, G31). Whether there are results and
+ * stages yet comes from the period, not the rows, so a table without rows still matches Tổng hợp:
+ * 0 once the period has started, "—" before.
  */
 function sumFigures(
   rows: readonly ReportFigures[],
   has: { readonly results: boolean; readonly stages: boolean },
 ): ReportFigures {
-  const summed = total(
-    METRIC_SUMS,
-    rows.flatMap((row) => (row.metrics ? [row.metrics] : [])),
-  );
   return {
     appointments: total(
       APPOINTMENT_SUMS,
       rows.map((row) => row.appointments),
     ),
     metrics: has.results
-      ? { ...summed, closeRate: closeRate(summed.issuedCount, summed.rfCount) }
+      ? sumMetrics(rows.flatMap((row) => (row.metrics ? [row.metrics] : [])))
       : null,
     stages: has.stages
       ? total(
@@ -288,10 +286,7 @@ export function reportRows(
 type ReportGroup = 'appointments' | 'results' | 'stages';
 
 type ReportColumnKey =
-  | (typeof APPOINTMENT_SUMS)[number]
-  | (typeof METRIC_SUMS)[number]
-  | 'closeRate'
-  | (typeof REPORT_STAGES)[number];
+  (typeof APPOINTMENT_SUMS)[number] | MetricSum | 'closeRate' | (typeof REPORT_STAGES)[number];
 
 /**
  * A figure column of the report tables. The table on screen (`ReportTable`, `reportCells`) and the
@@ -327,7 +322,7 @@ function figureColumn(
 }
 
 /** Kết quả, there once the period has started. */
-const result = (key: (typeof METRIC_SUMS)[number], label: string, format?: 'money') =>
+const result = (key: MetricSum, label: string, format?: 'money') =>
   figureColumn(key, 'results', label, ({ metrics }) => metrics?.[key] ?? null, format);
 
 /**

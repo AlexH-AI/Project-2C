@@ -10,7 +10,7 @@ import {
   type CalendarDate,
   type Period,
 } from './period';
-import type { CloseRate, PeriodMetrics } from './stats';
+import type { PeriodMetrics, Rate } from './stats';
 
 const earlier = (a: CalendarDate, b: CalendarDate) => (compareDates(a, b) <= 0 ? a : b);
 
@@ -47,16 +47,22 @@ export function comparisonWindows(period: Period, today: CalendarDate): Comparis
 
 /**
  * Change of each compared KPI from the previous window to the current one (spec Phase 4 §4.2):
- * signed counts and VND (positive = ▲, negative = ▼, 0 = "="); the close rate in percentage
- * points, null — shown "—" — when either window has no close rate (0 RF).
+ * signed counts and money (positive = ▲, negative = ▼, 0 = "="); each rate in percentage points,
+ * null — shown "—" — when either window has none: no RF for the close rate, no policy issued for
+ * the cancel rate (golden B).
  */
 export interface MetricDeltas {
   readonly rfCount: number;
   readonly submittedCount: number;
   readonly caseSize: Money;
   readonly issuedCount: number;
+  readonly cancelledCount: number;
+  readonly netCount: number;
+  readonly issuedFyp: Money;
+  readonly cancelledFyp: Money;
   readonly revenue: Money;
   readonly closeRatePoints: number | null;
+  readonly cancelRatePoints: number | null;
 }
 
 /**
@@ -64,7 +70,8 @@ export interface MetricDeltas {
  * a tenth is exact and rounds up: 1/3 against 31/48 is −31.25, where two `closeRatePercent` taken
  * apart give −31.249999999999993.
  */
-function pointsBetween(current: CloseRate, previous: CloseRate): number {
+function pointsBetween(current: Rate | null, previous: Rate | null): number | null {
+  if (!current || !previous) return null;
   const numerator =
     current.numerator * previous.denominator - previous.numerator * current.denominator;
   return (numerator * 100) / (current.denominator * previous.denominator);
@@ -76,10 +83,12 @@ export function metricDeltas(current: PeriodMetrics, previous: PeriodMetrics): M
     submittedCount: current.submittedCount - previous.submittedCount,
     caseSize: current.caseSize - previous.caseSize,
     issuedCount: current.issuedCount - previous.issuedCount,
+    cancelledCount: current.cancelledCount - previous.cancelledCount,
+    netCount: current.netCount - previous.netCount,
+    issuedFyp: current.issuedFyp - previous.issuedFyp,
+    cancelledFyp: current.cancelledFyp - previous.cancelledFyp,
     revenue: current.revenue - previous.revenue,
-    closeRatePoints:
-      current.closeRate && previous.closeRate
-        ? pointsBetween(current.closeRate, previous.closeRate)
-        : null,
+    closeRatePoints: pointsBetween(current.closeRate, previous.closeRate),
+    cancelRatePoints: pointsBetween(current.cancelRate, previous.cancelRate),
   };
 }

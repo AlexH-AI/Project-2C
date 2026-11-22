@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { comparisonWindows, metricDeltas } from './compare';
 import {
   APPOINTMENTS,
+  APPOINTMENTS_B,
   MTD_VIEWING_DATE,
   PEOPLE,
   POLICIES,
+  POLICY_ROWS_B,
   STAGE_TRANSITIONS,
+  STAGE_TRANSITIONS_B,
 } from './golden/metrics.fixture';
 import { formatPercentage } from './number';
 import {
@@ -16,7 +19,7 @@ import {
   type CalendarDate,
   type Period,
 } from './period';
-import { closeRate, periodMetrics, type PeriodMetrics } from './stats';
+import { cancelRate, closeRate, periodMetrics, type PeriodMetrics } from './stats';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 
@@ -192,8 +195,49 @@ describe('metricDeltas (spec Phase 4 §4.2)', () => {
       submittedCount: 2,
       caseSize: 400 * MILLION,
       issuedCount: 2,
+      cancelledCount: 0,
+      netCount: 2,
+      issuedFyp: 900 * MILLION,
+      cancelledFyp: 0,
       revenue: 900 * MILLION,
       closeRatePoints: null,
+      cancelRatePoints: null,
+    });
+  });
+
+  it('golden B, 02/2028 against 01/2028 (G40 against G29): ▼ on Doanh số into the negative', () => {
+    const data = {
+      people: PEOPLE,
+      policies: POLICY_ROWS_B.filter((row) => !row.deleted).map((row) => row.policy),
+      appointments: APPOINTMENTS_B,
+      transitions: STAGE_TRANSITIONS_B,
+    };
+    const all = { kind: 'all' } as const;
+    const february = periodOf('month', d(1, 2, 2028));
+    // Viewed once February is over, so both months count in full.
+    const found = comparisonWindows(february, d(1, 3, 2028));
+    if (!found) throw new Error('02/2028 must be compared');
+    expect(span(found.current)).toBe('01/02/2028 – 29/02/2028');
+    expect(span(found.previous)).toBe('01/01/2028 – 31/01/2028');
+
+    const deltas = metricDeltas(
+      periodMetrics(data, found.current, all),
+      periodMetrics(data, found.previous, all),
+    );
+    expect(deltas).toEqual({
+      rfCount: -5,
+      submittedCount: -5,
+      caseSize: -1_750 * MILLION,
+      issuedCount: -5,
+      cancelledCount: -2,
+      netCount: -3,
+      issuedFyp: -1_730 * MILLION,
+      cancelledFyp: -580 * MILLION,
+      revenue: -1_150 * MILLION,
+      // G40 has no RF.
+      closeRatePoints: null,
+      // 2/2 = 100% after 4/7 ≈ 57.1%: ▲ 300/7 points.
+      cancelRatePoints: expect.closeTo(300 / 7, 10) as number,
     });
   });
 
@@ -201,9 +245,36 @@ describe('metricDeltas (spec Phase 4 §4.2)', () => {
     submittedCount: 0,
     caseSize: 0,
     issuedCount,
+    cancelledCount: 0,
+    netCount: issuedCount,
+    issuedFyp: revenue,
+    cancelledFyp: 0,
     revenue,
     rfCount,
     closeRate: closeRate(issuedCount, rfCount),
+    cancelRate: cancelRate(0, issuedCount),
+  });
+
+  /** A period of `issuedCount` issued and `cancelledCount` cancelled, nothing else. */
+  const cancelled = (cancelledCount: number, issuedCount: number): PeriodMetrics => ({
+    ...metrics(0, issuedCount),
+    cancelledCount,
+    netCount: issuedCount - cancelledCount,
+    cancelRate: cancelRate(cancelledCount, issuedCount),
+  });
+
+  it('gives the cancel-rate change in percentage points: 2/1 = 200% after 2/4 = 50% is ▲ 150', () => {
+    expect(metricDeltas(cancelled(2, 1), cancelled(2, 4))).toMatchObject({
+      issuedCount: -3,
+      cancelledCount: 0,
+      netCount: -3,
+      cancelRatePoints: 150,
+    });
+  });
+
+  it('gives no cancel-rate change when either window issued nothing (G24, G35)', () => {
+    expect(metricDeltas(cancelled(1, 0), cancelled(1, 1)).cancelRatePoints).toBeNull();
+    expect(metricDeltas(cancelled(0, 1), cancelled(1, 0)).cancelRatePoints).toBeNull();
   });
 
   it('gives the close-rate change in percentage points: 3/4 = 75% after 1/2 = 50% is ▲ 25', () => {
