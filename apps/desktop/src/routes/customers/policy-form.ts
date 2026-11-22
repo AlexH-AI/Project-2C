@@ -90,7 +90,8 @@ export function openDraft(mode: PolicyMode, today: CalendarDate): OpenedDraft {
   return { draft, on: today };
 }
 
-export type PolicyValues = Omit<Policy, 'id' | 'customerId' | 'rmId'>;
+/** The fields of dialogs 8a–8d; the cancellation day is left to B2 (`updatePolicy` keeps it). */
+export type PolicyValues = Omit<Policy, 'id' | 'customerId' | 'rmId' | 'cancelledDate'>;
 
 /**
  * Reads every field of the draft, and the policy when all of them are right. Days are today or

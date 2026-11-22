@@ -29,8 +29,9 @@ export const DB_ERROR_CODES = [
   'INVALID_DATE',
   /**
    * A day after today for something that already happened: a customer's creation, a manual stage
-   * change, a policy's submission or issue, a KYC note, fact or version, a birth date. Params
-   * `date` (as shown), and `field` for a policy's day: `submitted` or `issued`.
+   * change, a policy's submission, issue or cancellation, a KYC note, fact or version, a birth
+   * date. Params `date` (as shown), and `field` for a policy's day: `submitted`, `issued` or
+   * `cancelled`.
    */
   'DATE_IN_FUTURE',
   'INVALID_TIME',
@@ -86,6 +87,17 @@ export const DB_ERROR_CODES = [
   'POLICY_NOT_FOUND',
   'ISSUED_BEFORE_SUBMITTED',
   'ISSUE_INCOMPLETE',
+  /** A cancellation of a policy not issued (golden `docs/golden/chi-so.md` mục 4.4). */
+  'POLICY_NOT_ISSUED',
+  /** A cancellation of a policy cancelled already; params `date` (its cancellation day, as shown). */
+  'POLICY_ALREADY_CANCELLED',
+  /** A cancellation day before the issue day; params `date` (the issue day, as shown). */
+  'CANCELLED_BEFORE_ISSUED',
+  /**
+   * The issue of a policy that stays cancelled cleared, or moved after its cancellation day
+   * (golden mục 4.4 point 5); params `date` (the cancellation day, as shown).
+   */
+  'POLICY_CANCELLED',
   'KYC_NOTE_EMPTY',
   'KYC_NOTE_NOT_FOUND',
   /** A fact given a `SYSTEM` note: only the customer profile writes there (D2). */

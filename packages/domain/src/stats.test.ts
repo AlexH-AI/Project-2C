@@ -49,6 +49,7 @@ describe('policyMetrics', () => {
     submittedFyp: 100,
     issuedDate,
     issuedFyp: issuedDate ? 90 : null,
+    cancelledDate: null,
   });
 
   it('returns zeros for a period without policies', () => {
@@ -187,6 +188,7 @@ describe('periodMetricsByMark', () => {
       submittedFyp: 100,
       issuedDate: d(12, 1, 2027),
       issuedFyp: null,
+      cancelledDate: null,
     };
     const marks = reportMarks(periodOf('month', d(1, 1, 2027)));
     const policies = { ...data, policies: [issued] };
@@ -321,6 +323,7 @@ describe('totals of large fees', () => {
     submittedFyp: fyp,
     issuedDate: d(5, 10, 2026),
     issuedFyp: fyp,
+    cancelledDate: null,
   });
   const data = (policies: readonly Policy[]) => ({
     people,

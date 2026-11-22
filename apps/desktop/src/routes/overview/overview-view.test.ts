@@ -72,6 +72,7 @@ function closing(day: CalendarDate, rf: number, issued: number): MetricsData {
       submittedFyp: 1_000_000,
       issuedDate: day,
       issuedFyp: 1_000_000,
+      cancelledDate: null,
     })),
   };
 }
@@ -153,6 +154,7 @@ describe('kpiTiles', () => {
           submittedFyp: 100_000_000,
           issuedDate: null,
           issuedFyp: null,
+          cancelledDate: null,
         },
       ],
     };
@@ -174,6 +176,7 @@ describe('kpiTiles', () => {
       submittedFyp,
       issuedDate: null,
       issuedFyp: null,
+      cancelledDate: null,
     });
     const tiles = (fyp: number) =>
       byKey(

@@ -150,6 +150,7 @@ describe('openDraft and readPolicy across New Year', () => {
     submittedFyp: 400 * MILLION,
     issuedDate: null,
     issuedFyp: null,
+    cancelledDate: null,
   };
 
   it('issues on the day filled in and keeps the submission day it does not show (8b)', () => {
@@ -203,6 +204,7 @@ describe('policyChange', () => {
     submittedFyp: 400 * MILLION,
     issuedDate: d(18, 9),
     issuedFyp: 400 * MILLION,
+    cancelledDate: null,
   };
   const change = (
     issued: { date: string; fyp: string },

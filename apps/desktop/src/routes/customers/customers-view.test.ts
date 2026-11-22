@@ -59,6 +59,7 @@ const policy = (customerId: string): Policy => ({
   submittedFyp: 10_000_000 as Policy['submittedFyp'],
   issuedDate: null,
   issuedFyp: null,
+  cancelledDate: null,
 });
 
 const data = {

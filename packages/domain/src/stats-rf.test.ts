@@ -191,6 +191,7 @@ describe('closeRate', () => {
         submittedFyp: 100,
         issuedDate: d(3, 2, 2027),
         issuedFyp: 100,
+        cancelledDate: null,
       },
     ];
     const february = periodOf('month', d(1, 2, 2027));

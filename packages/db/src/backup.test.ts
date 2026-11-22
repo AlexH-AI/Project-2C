@@ -12,7 +12,13 @@ import { openDatabase } from './database';
 import { DbError } from './errors';
 import { addKycNote, recordKycNote } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
-import { submitPolicy } from './policies';
+import {
+  cancelPolicy,
+  issuePolicy,
+  listPolicies,
+  softDeletePolicy,
+  submitPolicy,
+} from './policies';
 import { seedDemoData } from './seed';
 import { getCurrency, getSetting, putSetting } from './settings';
 import { createPerson, createTeam, listTeams, renameTeam } from './team';
@@ -287,6 +293,18 @@ describe('importBackup', () => {
       return file.tables[table].filter((row) => 're_id' in row && !('rm_id' in row)).length;
     });
 
+  /**
+   * `file` as an app before B1a (migration 0017) saved it: no cancellation day of a policy. Returns
+   * the days it held, none on a file of `small()`.
+   */
+  const withoutCancelledDate = (file: BackupJson) => {
+    const days = file.tables.policies!.map((row) => row.cancelled_date);
+    file.tables.policies = file.tables.policies!.map((row) =>
+      Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'cancelled_date')),
+    );
+    return days;
+  };
+
   // A2, A3 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM (version 13, after
   // migration 0012) imports as it was saved, through the migrations of A2 and A3.
   it('A2, A3: imports a file of migration 0012, with RM in place of the role and the note source RE, and rm_id of re_id', async () => {
@@ -300,6 +318,7 @@ describe('importBackup', () => {
     expect(asSaved(file.tables.kyc_notes!, 'source')).toBe(1);
     expect(file.tables.kyc_notes!.map((note) => note.source).sort()).toEqual(['RE', 'SYSTEM']);
     expect(withReId(file)).toEqual([2, 1, 1]);
+    expect(withoutCancelledDate(file)).toEqual([null]);
 
     const imported = await importBackup(JSON.stringify(file));
 
@@ -316,6 +335,7 @@ describe('importBackup', () => {
     const before = MIGRATIONS.find((m) => m.tag === '0015_rm_id')!.id - 1;
     file.schemaVersion = before;
     expect(withReId(file)).toEqual([2, 1, 1]);
+    expect(withoutCancelledDate(file)).toEqual([null]);
     expect(Object.keys(file.tables.customers![0]!)).toEqual([
       'id',
       'code',
@@ -625,6 +645,59 @@ describe('importBackup', () => {
     const { db: imported } = await importBackup(first);
 
     expect((JSON.parse(exportBackup(imported)) as BackupJson).tables).toEqual(tables);
+  });
+
+  // B1a (golden `docs/golden/chi-so.md` mục 4.4): a cancelled policy, deleted or not, stays so.
+  it('keeps the cancellation day of a policy, or none, through export and import', async () => {
+    const { db, rm } = await setup();
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N1', date: d(1, 9) });
+    const policy = () =>
+      submitPolicy(db, {
+        customerId: lan.id,
+        rmId: rm.id,
+        submittedDate: d(2, 9),
+        submittedFyp: 20_000_000,
+      }).id;
+    const [kept, cancelled, gone] = [policy(), policy(), policy()];
+    for (const id of [kept, cancelled, gone]) issuePolicy(db, id, { issuedDate: d(5, 9) });
+    cancelPolicy(db, cancelled, d(12, 9));
+    cancelPolicy(db, gone, d(26, 9));
+    softDeletePolicy(db, gone);
+    const first = exportBackup(db);
+    const { tables } = JSON.parse(first) as BackupJson;
+    expect(tables.policies!.map((p) => [p.id, p.cancelled_date])).toEqual(
+      expect.arrayContaining([
+        [kept, null],
+        [cancelled, '2026-09-12'],
+        [gone, '2026-09-26'],
+      ]),
+    );
+
+    const { db: imported } = await importBackup(first);
+
+    expect(listPolicies(imported).map((p) => [p.id, p.cancelledDate])).toEqual([
+      [kept, null],
+      [cancelled, d(12, 9)],
+    ]);
+    expect((JSON.parse(exportBackup(imported)) as BackupJson).tables).toEqual(tables);
+  });
+
+  it('B1a: imports a file saved before the cancellation day, every policy not cancelled', async () => {
+    const db = await small();
+    issuePolicy(db, listPolicies(db)[0]!.id, { issuedDate: d(5, 9) });
+    const latest = exportBackup(db);
+    const file = JSON.parse(latest) as BackupJson;
+    const before = MIGRATIONS.find((m) => m.tag === '0017_policies_cancelled_date')!.id - 1;
+    file.schemaVersion = before;
+    expect(withoutCancelledDate(file)).toEqual([null]);
+    expect(Object.keys(file.tables.policies![0]!)).not.toContain('cancelled_date');
+
+    const imported = await importBackup(JSON.stringify(file));
+
+    expect(imported.schemaVersion).toBe(before);
+    expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(listPolicies(imported.db).map((p) => p.cancelledDate)).toEqual([null]);
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
   });
 
   it('accepts a birth year alone, no time and a soft-deleted row with valid values', async () => {

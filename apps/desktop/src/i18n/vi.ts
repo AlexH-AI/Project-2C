@@ -1462,6 +1462,13 @@ export const vi = {
   'error.POLICY_NOT_FOUND': 'HĐ không còn trong dữ liệu (có thể đã bị xóa).',
   'error.ISSUE_INCOMPLETE': 'Phát hành cần cả ngày và FYP phát hành.',
   'error.ISSUED_BEFORE_SUBMITTED': 'Ngày phát hành trước ngày nộp.',
+  // B1a: cancelling a policy (golden `docs/golden/chi-so.md` mục 4.4; mockup `huy-hd.html`).
+  'error.POLICY_NOT_ISSUED': 'Chỉ hủy được HĐ đã phát hành.',
+  'error.POLICY_ALREADY_CANCELLED':
+    'HĐ này đã hủy ngày {date}. Sửa ngày hủy hoặc bỏ hủy trong hộp Sửa của HĐ.',
+  'error.CANCELLED_BEFORE_ISSUED': 'Ngày hủy trước ngày phát hành {date}.',
+  'error.POLICY_CANCELLED':
+    'HĐ đã hủy ngày {date} phải có ngày phát hành, và ngày đó không sau ngày hủy. Muốn xóa ngày phát hành: bỏ hủy trước.',
 } as const;
 
 export type MessageKey = keyof typeof vi;

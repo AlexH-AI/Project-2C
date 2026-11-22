@@ -58,6 +58,7 @@ export type {
   NextAppointment,
 } from './appointments';
 export {
+  cancelPolicy,
   issuePolicy,
   listPolicies,
   restorePolicy,

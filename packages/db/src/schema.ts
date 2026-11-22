@@ -233,6 +233,8 @@ export const policies = sqliteTable(
     submittedFyp: integer('submitted_fyp').notNull(),
     issuedDate: text('issued_date'),
     issuedFyp: integer('issued_fyp'),
+    /** Null until cancelled; the cancelled FYP is the issued one (golden `chi-so.md` mục 4.4). */
+    cancelledDate: text('cancelled_date'),
     ...timestamps,
   },
   (t) => [
@@ -242,6 +244,11 @@ export const policies = sqliteTable(
     check(
       'policies_issued',
       sql`${t.issuedDate} IS NULL OR (${t.issuedFyp} > 0 AND ${t.issuedDate} >= ${t.submittedDate})`,
+    ),
+    // Cancelled only once issued, on the issue day at the earliest (G39).
+    check(
+      'policies_cancelled',
+      sql`${t.cancelledDate} IS NULL OR (${t.issuedDate} IS NOT NULL AND ${t.cancelledDate} >= ${t.issuedDate})`,
     ),
   ],
 );

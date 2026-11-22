@@ -60,6 +60,13 @@ export const en: EnglishMessages = {
   // The cap of a fee (G-04), the mockup's sentence "Quá trần phí".
   'error.AMOUNT_TOO_LARGE': 'The maximum is {max} VNĐ.',
   'error.AMOUNT_TOO_LARGE.cents': 'The maximum is {max}.',
+  // Cancelling a policy (B1a), in the terms of `CONTEXT.md` § Thuật ngữ tiếng Anh.
+  'error.POLICY_NOT_ISSUED': 'Only an issued policy can be cancelled.',
+  'error.POLICY_ALREADY_CANCELLED':
+    'This policy was cancelled on {date}. Change the cancellation date or undo the cancellation in the policy’s Edit dialog.',
+  'error.CANCELLED_BEFORE_ISSUED': 'The cancellation date is before the issue date {date}.',
+  'error.POLICY_CANCELLED':
+    'A policy cancelled on {date} needs an issue date on or before it. To clear the issue date, undo the cancellation first.',
   // A backup of another currency (G-04), the mockup's dialog.
   'settings.backup.otherCurrency': 'The file uses {file}; the open data uses {expected}',
   'settings.backup.otherCurrencyHelp':

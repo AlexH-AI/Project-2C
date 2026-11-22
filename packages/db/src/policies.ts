@@ -1,5 +1,16 @@
-/** Policies (spec §3.7, §4): submitted, then issued with the submitted FYP unless changed (G2 D). */
-import { compareDates, fromIsoDate, type CalendarDate, type Money, type Policy } from '@p2c/domain';
+/**
+ * Policies (spec §3.7, §4): submitted, then issued with the submitted FYP unless changed (G2 D),
+ * then maybe cancelled (golden `docs/golden/chi-so.md` mục 4.4). No column holds the status: it
+ * reads from the days.
+ */
+import {
+  compareDates,
+  formatDate,
+  fromIsoDate,
+  type CalendarDate,
+  type Money,
+  type Policy,
+} from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
   liveCustomer,
@@ -45,7 +56,7 @@ export function submitPolicy(db: Database, input: NewPolicy): Policy {
     const row: PolicyRow = {
       id: ulid(db.now(), db.random),
       customerId: input.customerId,
-      ...validate(db, { ...input, issuedDate: null, issuedFyp: null }),
+      ...validate(db, { ...input, issuedDate: null, issuedFyp: null, cancelledDate: null }),
       createdAt: at,
       updatedAt: at,
       deletedAt: null,
@@ -71,7 +82,13 @@ export function issuePolicy(
   });
 }
 
-/** `undefined` keeps a field; the issued date and FYP must end up both set or both null. */
+/**
+ * `undefined` keeps a field; the issued date and FYP must end up both set or both null. A null
+ * cancellation day undoes the cancellation, leaving no trace of it; a day given to an issued
+ * policy changes it, or cancels the policy by the rules of `cancelPolicy`. A policy that stays
+ * cancelled on its day keeps an issue on or before it (`POLICY_CANCELLED`, golden mục 4.4 point 5);
+ * its cancelled FYP is the issued one, so it follows a new issued FYP.
+ */
 export function updatePolicy(db: Database, id: string, changes: PolicyChanges): Policy {
   return db.transaction(() => {
     const current = toPolicy(livePolicy(db, id));
@@ -79,7 +96,24 @@ export function updatePolicy(db: Database, id: string, changes: PolicyChanges): 
     for (const [key, value] of Object.entries(changes)) {
       if (value !== undefined) Object.assign(merged, { [key]: value });
     }
-    updateRow(db, policies, id, validate(db, merged));
+    updateRow(db, policies, id, validate(db, merged, current.cancelledDate));
+    return toPolicy(livePolicy(db, id));
+  });
+}
+
+/**
+ * Cancels an issued policy on `cancelledDate` (golden `docs/golden/chi-so.md` mục 4.4 point 6): on
+ * or after its issue day, today at the latest. The cancelled FYP is the issued one; no stage moves.
+ * Changing the day or undoing it goes through `updatePolicy`.
+ */
+export function cancelPolicy(db: Database, id: string, cancelledDate: CalendarDate): Policy {
+  return db.transaction(() => {
+    const current = toPolicy(livePolicy(db, id));
+    if (current.issuedDate === null) throw new DbError('POLICY_NOT_ISSUED');
+    if (current.cancelledDate !== null) {
+      throw new DbError('POLICY_ALREADY_CANCELLED', { date: formatDate(current.cancelledDate) });
+    }
+    updateRow(db, policies, id, validate(db, { ...current, cancelledDate }));
     return toPolicy(livePolicy(db, id));
   });
 }
@@ -108,20 +142,44 @@ export function checkRestorePolicy(db: Database, row: PolicyRow): void {
 
 // ---- helpers --------------------------------------------------------------
 
-function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
-  const { issuedDate, issuedFyp } = policy;
+/**
+ * The columns of a policy as stored: the CHECKs of the table as errors of their own, each day a
+ * stored past day. The cancellation day reads the clock only when there is one, so a policy never
+ * cancelled reads it as before (the seed's clock ticks on each read). An issue that no longer fits
+ * the cancellation `kept` from before the change is `POLICY_CANCELLED`: judged on what the save
+ * leaves, not on the fields sent, as the dialog sends the whole form.
+ */
+function validate(
+  db: Database,
+  policy: Omit<Policy, 'id' | 'customerId'>,
+  kept: CalendarDate | null = null,
+) {
+  const { issuedDate, issuedFyp, cancelledDate } = policy;
   const currency = getCurrency(db);
   if ((issuedDate === null) !== (issuedFyp === null)) throw new DbError('ISSUE_INCOMPLETE');
   if (issuedDate !== null && compareDates(issuedDate, policy.submittedDate) < 0) {
     throw new DbError('ISSUED_BEFORE_SUBMITTED');
   }
-  return {
+  const stored = {
     rmId: requireRm(db, policy.rmId),
     submittedDate: storedPastDate(db, policy.submittedDate, 'submitted'),
     submittedFyp: requireAmount(policy.submittedFyp, currency),
     issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate, 'issued'),
     issuedFyp: issuedFyp === null ? null : requireAmount(issuedFyp, currency),
+    cancelledDate: cancelledDate === null ? null : storedPastDate(db, cancelledDate, 'cancelled'),
   };
+  // After storing, so a day outside 1900–2100 is `INVALID_DATE`, not compared.
+  if (
+    cancelledDate !== null &&
+    (issuedDate === null || compareDates(cancelledDate, issuedDate) < 0)
+  ) {
+    if (kept !== null && compareDates(cancelledDate, kept) === 0) {
+      throw new DbError('POLICY_CANCELLED', { date: formatDate(cancelledDate) });
+    }
+    if (issuedDate === null) throw new DbError('POLICY_NOT_ISSUED');
+    throw new DbError('CANCELLED_BEFORE_ISSUED', { date: formatDate(issuedDate) });
+  }
+  return stored;
 }
 
 function livePolicy(db: Database, id: string): PolicyRow {
@@ -139,5 +197,6 @@ function toPolicy(row: PolicyRow): Policy {
     submittedFyp: row.submittedFyp,
     issuedDate: row.issuedDate === null ? null : fromIsoDate(row.issuedDate),
     issuedFyp: row.issuedFyp,
+    cancelledDate: row.cancelledDate === null ? null : fromIsoDate(row.cancelledDate),
   };
 }

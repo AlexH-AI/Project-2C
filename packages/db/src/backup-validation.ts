@@ -494,9 +494,9 @@ function staffRule(read: (sql: string) => Row[]): Rule | null {
 
 /**
  * Rule 10 (F-11): what already happened is dated today at the latest, by the clock of the import —
- * a live transition (a customer's creation too), a policy's submission and issue, a meeting held
- * or missed, a KYC note, fact or version, a birth date (DR-42). Only a booked or cancelled
- * appointment may lie ahead. A birth year alone (`YYYY`) sorts before every day of its year, so the
+ * a live transition (a customer's creation too), a policy's submission, issue and cancellation
+ * (B1a), a meeting held or missed, a KYC note, fact or version, a birth date (DR-42). Only a booked
+ * or cancelled appointment may lie ahead. A birth year alone (`YYYY`) sorts before every day of its year, so the
  * same comparison of text holds for it.
  */
 function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
@@ -504,7 +504,7 @@ function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
   const broken = read(
     [
       `SELECT 1 FROM stage_transitions WHERE deleted_at IS NULL AND date > ${after}`,
-      `SELECT 1 FROM policies WHERE deleted_at IS NULL AND (submitted_date > ${after} OR issued_date > ${after})`,
+      `SELECT 1 FROM policies WHERE deleted_at IS NULL AND (submitted_date > ${after} OR issued_date > ${after} OR cancelled_date > ${after})`,
       `SELECT 1 FROM appointments WHERE deleted_at IS NULL AND status IN ('MET', 'NO_SHOW') AND date > ${after}`,
       `SELECT 1 FROM kyc_notes WHERE created_date > ${after}`,
       `SELECT 1 FROM kyc_facts WHERE confirmed_date > ${after}`,

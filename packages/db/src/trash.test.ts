@@ -17,7 +17,14 @@ import {
 } from './customers';
 import type { Database } from './database';
 import { addKycNote } from './kyc';
-import { listPolicies, restorePolicy, softDeletePolicy, submitPolicy } from './policies';
+import {
+  cancelPolicy,
+  issuePolicy,
+  listPolicies,
+  restorePolicy,
+  softDeletePolicy,
+  submitPolicy,
+} from './policies';
 import {
   createPerson,
   createTeam,
@@ -629,6 +636,36 @@ describe('listTrash: policies (TR-2, TR-5)', () => {
     expect(r.blocked).toEqual({
       code: 'DATE_IN_FUTURE',
       params: { date: '12/10/2026', field: 'issued' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  // B1a (golden `docs/golden/chi-so.md` mục 4.4 point 7): a cancelled policy comes back cancelled.
+  it('restores a cancelled policy with its cancellation day', async () => {
+    const { db, linh, customer, row, restored } = await trash();
+    const policy = submit(db, customer().id, linh.id);
+    issuePolicy(db, policy.id, { issuedDate: d(20, 9) });
+    cancelPolicy(db, policy.id, d(5, 10));
+    softDeletePolicy(db, policy.id);
+
+    expect(restored(row(policy.id))).toBeUndefined();
+    expect(byId(listPolicies(db), policy.id)).toMatchObject({
+      issuedDate: d(20, 9),
+      cancelledDate: d(5, 10),
+    });
+  });
+
+  it('B1a: blocks a policy cancelled after today in an imported file (DR-25)', async () => {
+    const { db, linh, customer, row, restored } = await trash();
+    const policy = submit(db, customer().id, linh.id);
+    issuePolicy(db, policy.id, { issuedDate: d(20, 9) });
+    softDeletePolicy(db, policy.id);
+    db.sqlite.run("UPDATE policies SET cancelled_date = '2026-10-14' WHERE id = ?", [policy.id]);
+
+    const r = row(policy.id);
+    expect(r.blocked).toEqual({
+      code: 'DATE_IN_FUTURE',
+      params: { date: '14/10/2026', field: 'cancelled' },
     });
     expect(restored(r)).toEqual(r.blocked);
   });

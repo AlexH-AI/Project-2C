@@ -5,6 +5,8 @@
 import {
   calendarDate,
   compareDates,
+  daysBetween,
+  fromIsoDate,
   isPipelineStage,
   KYC_FIELDS,
   kycHash,
@@ -136,6 +138,20 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
           expect(p.issuedFyp).toBeGreaterThan(0);
           expect(compareDates(p.issuedDate, p.submittedDate)).toBeGreaterThanOrEqual(0);
         }
+      }
+    });
+
+    // B1a: deleted policies too, as the import reads them all (golden `chi-so.md` mục 4.4 point 8).
+    it('cancels only issued policies, 0–21 days after the issue and by the anchor day', () => {
+      const rows = db.sqlite.exec(
+        'SELECT issued_date, cancelled_date FROM policies WHERE cancelled_date IS NOT NULL',
+      )[0]!.values;
+      expect(rows.length).toBeGreaterThan(0);
+      for (const [issued, cancelled] of rows.map((row) => row.map(String))) {
+        const days = daysBetween(fromIsoDate(issued!), fromIsoDate(cancelled!));
+        expect(days).toBeGreaterThanOrEqual(0);
+        expect(days).toBeLessThanOrEqual(21);
+        expect(compareDates(fromIsoDate(cancelled!), ANCHOR)).toBeLessThanOrEqual(0);
       }
     });
   });
