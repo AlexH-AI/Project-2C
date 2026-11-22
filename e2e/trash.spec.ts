@@ -491,6 +491,7 @@ const deletedPolicy = (id: string, customer: BackupRow, submitted: string, delet
   submitted_fyp: 24_000_000,
   issued_date: null,
   issued_fyp: null,
+  cancelled_date: null,
   created_at: deletedAt,
   updated_at: deletedAt,
   deleted_at: deletedAt,
