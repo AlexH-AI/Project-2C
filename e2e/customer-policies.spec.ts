@@ -501,6 +501,25 @@ test('cancels an issued policy: today filled in, the FYP locked, what the metric
   await expect(header).toContainText('Đã có HĐ (1)');
 });
 
+// DR6-38 for the cancel dialog: today filled in as dd/mm reads in the year the dialog opened in.
+test('a policy cancelled across New Year keeps the day the dialog showed (B2)', async ({
+  page,
+}) => {
+  await createKycCustomer(page, 'Hà Giao Thừa');
+  await addPolicy(page, '10/09', '317tr', '10/09');
+  const row = page.getByRole('region', { name: 'Hợp đồng', exact: true }).getByRole('listitem');
+
+  // Opened at 23:58 on 31/12/2026, saved past midnight.
+  await toNewYearsEve(page);
+  await row.getByRole('button', { name: /^Hủy HĐ nộp/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Hủy HĐ' });
+  await expect(dialog.getByRole('textbox', { name: /^Ngày hủy/ })).toHaveValue('31/12');
+  await page.clock.fastForward(3 * 60_000);
+  await dialog.getByRole('button', { name: 'Hủy HĐ', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Đã hủy 31/12/2026');
+});
+
 // B2, mockup huy-hd.html #edit; golden chi-so.md mục 4.4 points 4, 5.
 test('8d of a cancelled policy: Bỏ hủy until Hoàn lại, then Lưu; the issue stays before it (B2)', async ({
   page,
