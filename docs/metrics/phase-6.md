@@ -562,7 +562,7 @@ Chuyển màn bằng sidebar (đo thêm ngày 22/11, sau khi Owner thấy Team &
 - **Lần đầu vào Tổng quan sau khi mở exe** (số max ở 5× / 10×): 585 ms ở 5×, 1 125 ms ở 10×. Các lần sau nhanh như các màn khác. Ở 1×, lần đầu không nằm trong 5 lần đo (đã vào Tổng quan trước đó).
 - **Team & nhân sự tăng gần bình phương:** 15 → 79 → 293 ms (×5,3 từ 1× lên 5×, ×3,7 từ 5× lên 10×). Theo đà này, màn vượt 200 ms ở khoảng 8× trên máy này. Mac ở 10×: ≈ 2 s (dưới). Màn chỉ đọc dữ liệu đã có trong bộ nhớ, nên chỗ chậm nằm ở phần tính của màn, không do cách lưu: ADR lưu trữ không sửa được việc này. Chưa tìm nguyên nhân.
 
-- **Bản `.dmg` trên MacBook** (Owner bấm giờ ngày 22/11/2026, dữ liệu 10× nạp bằng `project2c.db`). Bản build: artifact `Heritas-L-CRM-macos-20275b6…` của run `macos.yml` 44876312076, code app trùng `main`. Máy: MacBook của Owner (model, chip, bản macOS: chờ Owner ghi). Số do Owner ghi:
+- **Bản `.dmg` trên MacBook** (Owner bấm giờ ngày 22/11/2026, dữ liệu 10× nạp bằng `project2c.db`). Bản build: artifact `Heritas-L-CRM-macos-20275b6…` của run `macos.yml` 44876312076, code app trùng `main`. Máy: MacBook Pro 16" M5 Pro, macOS Golden Gate 27.2.1 (Owner ghi). Số do Owner ghi:
 
   | Việc (Owner bấm giờ, 10×) | MacBook | Windows, Home PC, 10× (cùng mục này) |
   |---|---|---|
@@ -573,7 +573,7 @@ Chuyển màn bằng sidebar (đo thêm ngày 22/11, sau khi Owner thấy Team &
 
   - Mở app trên Mac nhanh hơn Windows. Lưu ngang Windows (≈ 1 s, ngưỡng 300 ms cho tạo lịch hẹn / 400 ms cho lưu file).
   - Tổng quan "rất nhanh" (số bấm tay gồm cả thời gian phản xạ).
-  - Team & nhân sự chậm hơn Windows gần 7 lần.
+  - Team & nhân sự chậm hơn Windows gần 7 lần, dù M5 Pro không yếu hơn i9-12900K. Vậy khác biệt nhiều khả năng nằm ở WKWebView chạy phần tính của màn này, không ở máy (chưa đo trong WKWebView để chắc).
 
 **Kết luận cho Owner:**
 

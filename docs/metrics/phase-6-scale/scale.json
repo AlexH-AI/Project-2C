@@ -322,7 +322,7 @@
     "at": "2026-11-22",
     "size": "x10 (project2c.db)",
     "build": "macos.yml run 44876312076, artifact Heritas-L-CRM-macos-20275b6…, app code = main",
-    "machine": "Owner MacBook (model, chip, macOS: not recorded yet)",
+    "machine": "MacBook Pro 16\" M5 Pro, macOS Golden Gate 27.2.1 (recorded by the Owner)",
     "byOwnerStopwatch": {
       "openToOverviewS": "2-2.3",
       "saveAppointmentS": "1",
