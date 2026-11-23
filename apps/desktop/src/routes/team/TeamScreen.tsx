@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
   formatDayMonth,
   type CalendarDate,
@@ -147,6 +147,19 @@ function memberColumns(
     },
   ];
 }
+
+/**
+ * The window under 1 280 px, where `max-xl:` takes the list of teams to 220 px: the member table
+ * takes cells of 6 px there, the narrow rule of the mockup (`#team`, @container 1240). With cells
+ * of 10 px it still ran past its card at 1 100 px on WebKit, by about 5 px with the tokens of
+ * Windows and 13 px with those of macOS (L205).
+ */
+const XL = 1280;
+const onResize = (change: () => void) => {
+  addEventListener('resize', change);
+  return () => removeEventListener('resize', change);
+};
+const narrowWindow = () => innerWidth < XL;
 
 /** Team & nhân sự as last left: the team shown, the sort and rows of its members. */
 let left: { teamId?: string; table?: DataTableView } = {};
@@ -422,6 +435,7 @@ function Members({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const narrow = useSyncExternalStore(onResize, narrowWindow);
   return (
     <section
       aria-label={t('team.members', { name: entry.team.name })}
@@ -471,9 +485,10 @@ function Members({
           // The table is not made anew for each team: this takes another team back to its first
           // hundred rows (DR6-32).
           resetKey={entry.team.id}
-          // Cells 10 px from their edges: with the list of teams 220 px under 1 280 (C3), the
-          // table fits its card at 1 100 px, every Sửa whole (L205; e2e team.spec.ts).
-          narrow
+          // Cells 10 px from their edges, 6 px under 1 280 px: the table fits its card at 1 100 px,
+          // every Sửa whole (L205; e2e team.spec.ts).
+          narrow={!narrow}
+          compact={narrow}
           empty={
             <StateNote
               size="table"
