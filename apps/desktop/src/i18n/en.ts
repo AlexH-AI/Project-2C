@@ -226,6 +226,17 @@ export const en: EnglishMessages = {
   'appointments.toThisMonth': 'Back to this month',
   'customers.empty': 'No customers yet in this view',
   'customers.emptyNext': 'Press "+ Customer" to add one.',
+  'customers.search.label': 'Find customer',
+  'customers.search.placeholder': 'Find a customer by name or ID, accents optional',
+  'customers.search.list': 'Matching customers',
+  'customers.search.found': { one: '{count} match', other: '{count} matches' },
+  'customers.search.inView': 'In the view {scope}',
+  'customers.search.outOfView': 'Outside the view · opens the profile, the Kanban stays',
+  'customers.search.sub': '– RM {rm} – {team}',
+  'customers.search.none': 'No customer matches "{text}"',
+  'customers.search.noneNext':
+    'Find by name, accents optional, or by customer ID such as K-4H2N. The search covers every customer, closed ones too.',
+  'customers.search.clear': 'Clear search',
   'customer.notFoundNext':
     'Go back to Customers to pick another customer. A deleted customer is in Settings → Trash and can be restored.',
   'customer.noAppointmentsNext': 'Press "+ Appointment" at the top of the profile to create one.',

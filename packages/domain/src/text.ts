@@ -1,3 +1,5 @@
+import { asciiDigits } from './name-order';
+
 /**
  * Typed text as stored (DR-49, DR6-49): text the screens show the same is the same text, and text
  * with nothing to see is empty. Names and KYC values are one line; a KYC note keeps its line breaks
@@ -64,17 +66,18 @@ export function stripDiacritics(text: string): string {
 /**
  * Text as a search box compares it: read as names are stored (`normalizeText`: no invisible
  * character, each run of white space one space), accents and case ignored, so a name pasted with a
- * U+200B or a no-break space finds the stored one (DR6-172). The customer box of 6b and "Tìm theo
- * tên" of Thùng rác alike.
+ * U+200B or a no-break space finds the stored one (DR6-172), and each digit as an ASCII one, so
+ * "KH 2" finds "KH ２" as `byName` puts them side by side (DR6-197). The search of Khách hàng, the
+ * customer box of 6b and "Tìm theo tên" of Thùng rác alike.
  */
 export function searchText(text: string): string {
-  return stripDiacritics(normalizeText(text).toLowerCase());
+  return stripDiacritics(asciiDigits(normalizeText(text)).toLowerCase());
 }
 
 /**
  * The text composed (NFC) with each run of white space one space, so that text typed decomposed or
- * spaced another way compares equal; the ends and the case are kept. How V7 finds a quote in its
- * note, and the extraction panel a value the KH already has.
+ * spaced another way compares equal; the ends and the case are kept. How the extraction panel finds
+ * a value the KH already has.
  */
 export function collapseSpaces(text: string): string {
   return text.normalize('NFC').replace(/\s+/gu, ' ');

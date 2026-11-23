@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { CustomerRecord } from '@p2c/db';
 import {
   CLOSED_STAGES,
@@ -23,12 +23,14 @@ import { routeToHash } from '../../shell/routes';
 import { isReturning } from '../../shell/useRoute';
 import { CustomerName, useMasked } from '../../shell/NameMask';
 import { RmPicker } from '../../shell/RmPicker';
-import { teamRms } from '../../shell/scope';
+import { scopeName, teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { ScreenBar } from '../../shell/ScreenBar';
 import { ALERT, BADGE, CARD_SKIN, CELL_NAME, FOCUS, LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerFormDialog } from './CustomerDialogs';
+import { CustomerSearch } from './CustomerSearch';
+import { customerIndex, customerMatches } from './customer-search';
 import {
   birthLabel,
   birthSortKey,
@@ -59,6 +61,25 @@ const CLOSED_LIMIT = 5;
 
 /** The card of one stage, a kanban column or a closed list: less room around its rows. */
 const STAGE_CARD = `${CARD_SKIN} p-3`;
+
+/**
+ * A card or a closed row while searching (mockup search-rm-team.html `.finding`), `lit` whether it
+ * matches: a match edged in gold; the others at 70 %, less colour, in place and still a link.
+ */
+const findLook = (lit: boolean | undefined) =>
+  lit === undefined ? '' : lit ? 'inset-ring inset-ring-accent' : 'opacity-70 saturate-30';
+
+/**
+ * The colour of a text of a card or a closed row: dimmed, a text in --text-3 or a colour takes a
+ * lighter one to stay at AA over the brightest glass of macOS (L188): a card's second line
+ * --text-2, its "n HĐ" and the day of a closed row --text.
+ */
+const tone = (lit: boolean | undefined, shown: string, dimmed: string) =>
+  lit === false ? dimmed : shown;
+
+/** The ids of the customers a search matches; undefined while nothing is searched. */
+type FoundIds = ReadonlySet<string> | undefined;
+type Cards = readonly CustomerCard[];
 
 const profileHref = (card: CustomerCard) =>
   routeToHash({ screen: 'customer', id: card.customer.id });
@@ -176,6 +197,18 @@ export function CustomersScreen() {
       ? created.customer
       : null;
   const masked = useMasked();
+  // C1: every customer, whatever the view, read once a search starts; the board lights those of its
+  // view as the typing lets it (one letter lights thousands of cards at 10× the data).
+  const [query, setQuery] = useState('');
+  const field = useRef<HTMLInputElement>(null);
+  const searching = query !== '';
+  const index = useMemo(() => (searching ? customerIndex(data) : null), [data, searching]);
+  const found = useMemo(() => index && customerMatches(index, query, scope), [index, query, scope]);
+  const lit = useDeferredValue(found)?.ids;
+  const clear = () => {
+    setQuery('');
+    field.current?.focus();
+  };
 
   return (
     <>
@@ -207,8 +240,19 @@ export function CustomersScreen() {
           </Button>
         }
       />
-      <div data-part className="flex justify-end">
-        <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
+      {/* Over the board, which the list under the field opens on; under the toolbar (z-10), which
+          the screen scrolls under and whose menus open over this row (review of PR 1483). */}
+      <div data-part className="relative z-1 flex items-center gap-3">
+        <CustomerSearch
+          query={query}
+          onQuery={setQuery}
+          found={found}
+          view={scopeName(scope, data.teams, data.people)}
+          field={field}
+        />
+        <span className="ml-auto">
+          <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
+        </span>
       </div>
       {creating && (
         <CustomerFormDialog
@@ -229,7 +273,18 @@ export function CustomersScreen() {
         </p>
       )}
       {/* The table, or the board, rises as one part: not its rows, nor its cards (VA7a). */}
-      {view === 'table' ? (
+      {lit?.size === 0 ? (
+        <div data-part role="status" className={STAGE_CARD}>
+          <StateNote
+            size="card"
+            icon="search"
+            // What is typed may hold a name: masked, it shows as dots, as typed text does.
+            title={t('customers.search.none', { text: masked.text(query.trim()) })}
+            next={t('customers.search.noneNext')}
+            action={<Button onClick={clear}>{t('customers.search.clear')}</Button>}
+          />
+        </div>
+      ) : view === 'table' ? (
         <div data-part className="flex flex-col gap-4.5">
           <DataTable
             ref={table}
@@ -256,7 +311,7 @@ export function CustomersScreen() {
         <div data-part className="flex items-start gap-3.5">
           <div className="grid min-w-0 flex-1 grid-cols-4 gap-3">
             {PIPELINE_STAGES.map((stage) => {
-              const { shown, more } = kanbanColumn(board.open[stage]);
+              const { shown, more, found: matched } = kanbanColumn(board.open[stage], lit);
               return (
                 <section
                   key={stage}
@@ -266,10 +321,11 @@ export function CustomersScreen() {
                   <StageHead
                     stage={stage}
                     count={board.open[stage].length}
+                    found={matched}
                     className="gap-2 pb-2"
                   />
                   {shown.map((card) => (
-                    <Card key={card.customer.id} card={card} />
+                    <Card key={card.customer.id} card={card} lit={lit?.has(card.customer.id)} />
                   ))}
                   {more > 0 && (
                     <button type="button" onClick={showTable} className={`${LINK} text-xs`}>
@@ -282,7 +338,7 @@ export function CustomersScreen() {
           </div>
           <div className="flex w-64 shrink-0 flex-col gap-3">
             {CLOSED_STAGES.map((stage) => (
-              <Closed key={stage} stage={stage} cards={board.closed[stage]} />
+              <Closed key={stage} stage={stage} cards={board.closed[stage]} lit={lit} />
             ))}
           </div>
         </div>
@@ -291,43 +347,56 @@ export function CustomersScreen() {
   );
 }
 
-/** The head of a kanban column or closed block: the stage and its count, thousands grouped. */
+/** The head of a kanban column or closed block: the stage, "n khớp" while searching, its count. */
 export function StageHead({
   stage,
   count,
+  found,
   className,
 }: {
   stage: CustomerStage;
   count: number;
+  found?: number;
   className: string;
 }) {
   return (
     <div className={`flex items-center ${className}`}>
       {stageBadge(stage)}
-      <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatNumber(count)}</span>
+      {found !== undefined && (
+        <span className="ml-auto text-xs font-semibold text-accent">
+          {t('customers.search.found', { count: found })}
+        </span>
+      )}
+      <span
+        className={`${found === undefined ? 'ml-auto' : 'ml-2'} text-sm text-fg-2 tabular-nums`}
+      >
+        {formatNumber(count)}
+      </span>
     </div>
   );
 }
 
 /** A customer on the board: a click grows the card into the profile (VA7b, "Mở"). */
-function Card({ card }: { card: CustomerCard }) {
+function Card({ card, lit }: { card: CustomerCard; lit: boolean | undefined }) {
   return (
     <a
       href={profileHref(card)}
       data-open
-      className={`press-card flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
+      className={`press-card flex flex-col gap-1 rounded-control border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${lit ? 'border-accent' : 'border-border'} ${FOCUS} ${findLook(lit)}`}
     >
       <span className="flex items-center justify-between gap-1.5">
         <b className="truncate font-semibold">
           <CustomerName name={card.customer.name} />
         </b>
         {card.policies > 0 && (
-          <span className={`${BADGE} whitespace-nowrap text-issued`}>
+          <span className={`${BADGE} whitespace-nowrap ${tone(lit, 'text-issued', 'text-fg')}`}>
             {t('customers.policies', { count: card.policies })}
           </span>
         )}
       </span>
-      <span className="flex justify-between gap-1.5 text-xs whitespace-nowrap text-fg-3">
+      <span
+        className={`flex justify-between gap-1.5 text-xs whitespace-nowrap ${tone(lit, 'text-fg-3', 'text-fg-2')}`}
+      >
         <span className="truncate">{t('customers.rm', { name: card.rm?.name ?? '' })}</span>
         <span className="tabular-nums">{personal(card)}</span>
       </span>
@@ -335,15 +404,17 @@ function Card({ card }: { card: CustomerCard }) {
   );
 }
 
-function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly CustomerCard[] }) {
+function Closed({ stage, cards, lit }: { stage: ClosedStage; cards: Cards; lit: FoundIds }) {
+  const { shown, found } = kanbanColumn(cards, lit, CLOSED_LIMIT);
+  const on = (card: CustomerCard) => lit?.has(card.customer.id);
   return (
     <section aria-label={t(`stage.${stage}`)} className={STAGE_CARD}>
-      <StageHead stage={stage} count={cards.length} className="mb-1" />
+      <StageHead stage={stage} count={cards.length} found={found} className="mb-1" />
       <ul className="m-0 list-none p-0 text-sm">
-        {cards.slice(0, CLOSED_LIMIT).map((card) => (
+        {shown.map((card) => (
           <li
             key={card.customer.id}
-            className="flex gap-2 border-b border-border py-1.5 last:border-b-0"
+            className={`flex gap-2 border-b border-border py-1.5 last:border-b-0 ${on(card) ? '-mx-1 rounded-control-sm px-1' : ''} ${findLook(on(card))}`}
           >
             <a
               href={profileHref(card)}
@@ -352,7 +423,9 @@ function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly Customer
             >
               <CustomerName name={card.customer.name} />
             </a>
-            <span className="ml-auto text-fg-3 tabular-nums">{formatDate(card.since)}</span>
+            <span className={`ml-auto tabular-nums ${tone(on(card), 'text-fg-3', 'text-fg')}`}>
+              {formatDate(card.since)}
+            </span>
           </li>
         ))}
       </ul>

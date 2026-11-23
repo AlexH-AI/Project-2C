@@ -206,6 +206,14 @@ describe('searchText', () => {
     }
   });
 
+  // DR6-197: a digit of another script reads as the ASCII one, as `byName` sorts it.
+  it('reads a full-width or an Arabic-Indic digit as the ASCII one', () => {
+    expect(searchText('KH ２')).toBe('kh 2');
+    expect(searchText('Team ٣٠')).toBe('team 30');
+    expect(searchText('ＫＨ ２').includes(searchText('kh 2'))).toBe(false);
+    expect(searchText('KH ２').includes(searchText('KH 2'))).toBe(true);
+  });
+
   it('is empty for text of invisible characters or white space alone', () => {
     expect(searchText('\u{200B}\u{2060}\u{3164}')).toBe('');
     expect(searchText('\u{00A0}\u{0085} ')).toBe('');
