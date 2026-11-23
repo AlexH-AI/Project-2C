@@ -1,4 +1,4 @@
-import { useId, useState, type KeyboardEvent } from 'react';
+import { useId, useState, type KeyboardEvent, type RefObject } from 'react';
 import { NavIcon } from '@p2c/ui';
 import { t } from '../../i18n';
 import { CustomerName, useNameMask } from '../../shell/NameMask';
@@ -32,13 +32,20 @@ function Lit({ text, query }: { text: string; query: string }) {
  * ↑ ↓ pick, Enter opens the profile, Esc clears what is typed; the focus stays in the field. A
  * masked name is found by the real one and shown masked, never lit.
  */
-export function CustomerSearch(props: {
+export function CustomerSearch({
+  query,
+  onQuery,
+  found,
+  view,
+  field,
+}: {
   query: string;
   onQuery: (query: string) => void;
   found: CustomerFound | null;
   view: string;
+  /** The field, which "Bỏ tìm" gives the focus back to. */
+  field: RefObject<HTMLInputElement | null>;
 }) {
-  const { query, onQuery, found } = props;
   const id = useId();
   const { masked } = useNameMask();
   const [focused, setFocused] = useState(false);
@@ -93,7 +100,7 @@ export function CustomerSearch(props: {
     hits.length > 0 && (
       <div role="group" aria-labelledby={`${id}-${label}`} className="flex flex-col">
         <span id={`${id}-${label}`} className="px-2.5 pt-2 pb-1 text-xs font-semibold text-fg-3">
-          {t(`customers.search.${label}`, { scope: props.view })}
+          {t(`customers.search.${label}`, { scope: view })}
         </span>
         {options(hits)}
       </div>
@@ -105,6 +112,7 @@ export function CustomerSearch(props: {
         <NavIcon name="search" />
       </span>
       <input
+        ref={field}
         type="text"
         role="combobox"
         aria-label={t('customers.search.label')}
@@ -131,7 +139,7 @@ export function CustomerSearch(props: {
           role="listbox"
           aria-label={t('customers.search.list')}
           // A press on the list keeps the focus in the field: its blur would close the list first.
-          onPointerDown={(event) => event.preventDefault()}
+          onMouseDown={(event) => event.preventDefault()}
           className="pop absolute top-full left-0 z-20 mt-1.5 flex w-120 max-w-screen flex-col rounded-menu p-1.5"
         >
           {found!.outside.length > 0 ? (

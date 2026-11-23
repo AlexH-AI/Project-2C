@@ -400,4 +400,8 @@ test('masked, the search of Khách hàng finds a customer by the real name, list
   // The field shows what is typed (Issue #1391, "Không che"); nothing else names the customer.
   await expect(field).toHaveValue(name);
   expect(await fullNamesShown(page, [name])).toEqual([]);
+  // Found by none, what was typed shows as dots in the note too.
+  await field.fill(`${name} xyzq`);
+  await expect(page.getByRole('status').filter({ hasText: 'Không có KH nào khớp' })).toBeVisible();
+  expect(await fullNamesShown(page, [name])).toEqual([]);
 });

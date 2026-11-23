@@ -215,7 +215,7 @@ test('the search lights a match at the top of its column, one past "+ n KH" too;
   await expect(cards(page, 'N3')).toHaveCount(7);
   await expect(cards(page, 'N3').first().locator('b')).toHaveText(name);
   await expect(cards(page, 'N3').first()).toHaveCSS('opacity', '1');
-  // The others dim and keep their place, a click still opens them.
+  // The others dim and keep their place.
   await expect(cards(page, 'N3').nth(1)).toHaveCSS('opacity', '0.7');
   await expect(cards(page, 'N2').first()).toHaveCSS('opacity', '0.7');
   await expect(column(page, 'N3')).toContainText('1 khớp');
@@ -292,6 +292,7 @@ test('a search that finds no customer says so, with "Bỏ tìm" and no button to
 
   await note.getByRole('button', { name: 'Bỏ tìm' }).click();
   await expect(field(page)).toHaveValue('');
+  await expect(field(page)).toBeFocused();
   await expect(cards(page, 'N3')).toHaveCount(6);
 });
 
@@ -299,7 +300,7 @@ test('a dimmed card and a dimmed closed row read at AA on both systems, the macO
   page,
 }) => {
   await asExe(page);
-  await page.goto('/#/customers');
+  await page.reload(); // the exe of asExe: beforeEach opened the page before it
   await setTransparency(page, 'no-preference');
   const name = (await cards(page, 'N3').first().locator('b').textContent()) ?? '';
   await field(page).fill(name);

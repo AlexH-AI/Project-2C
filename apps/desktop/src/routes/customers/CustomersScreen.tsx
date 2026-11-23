@@ -192,12 +192,18 @@ export function CustomersScreen() {
       ? created.customer
       : null;
   const masked = useMasked();
-  // C1: every customer, whatever the view; the board lights those of its view, as the typing lets
-  // it (one letter lights thousands of cards at 10× the data).
+  // C1: every customer, whatever the view, read once a search starts; the board lights those of its
+  // view as the typing lets it (one letter lights thousands of cards at 10× the data).
   const [query, setQuery] = useState('');
-  const index = useMemo(() => customerIndex(data), [data]);
-  const found = useMemo(() => customerMatches(index, query, scope), [index, query, scope]);
+  const field = useRef<HTMLInputElement>(null);
+  const searching = query !== '';
+  const index = useMemo(() => (searching ? customerIndex(data) : null), [data, searching]);
+  const found = useMemo(() => index && customerMatches(index, query, scope), [index, query, scope]);
   const lit = useDeferredValue(found)?.ids;
+  const clear = () => {
+    setQuery('');
+    field.current?.focus();
+  };
 
   return (
     <>
@@ -236,6 +242,7 @@ export function CustomersScreen() {
           onQuery={setQuery}
           found={found}
           view={scopeName(scope, data.teams, data.people)}
+          field={field}
         />
         <span className="ml-auto">
           <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
@@ -265,9 +272,10 @@ export function CustomersScreen() {
           <StateNote
             size="card"
             icon="search"
-            title={t('customers.search.none', { text: query.trim() })}
+            // What is typed may hold a name: masked, it shows as dots, as typed text does.
+            title={t('customers.search.none', { text: masked.text(query.trim()) })}
             next={t('customers.search.noneNext')}
-            action={<Button onClick={() => setQuery('')}>{t('customers.search.clear')}</Button>}
+            action={<Button onClick={clear}>{t('customers.search.clear')}</Button>}
           />
         </div>
       ) : view === 'table' ? (
