@@ -310,10 +310,13 @@ test('the note keeps its lines when 6f / 6c leave met (DR6-182)', async ({ page 
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const o = outcome(page);
   const note = o.dialog.getByRole('textbox', { name: /^Ghi chú/ });
-  // One line, not met: the one-line field of the mockup.
+  // One line, not met: the one-line field of the mockup, Hủy or Không đến (Issue #1138).
+  const tag = () => note.evaluate((field) => field.tagName);
   await o.status.getByRole('radio', { name: 'Hủy', exact: true }).check();
   await note.fill('Một dòng');
-  expect(await note.evaluate((field) => field.tagName)).toBe('INPUT');
+  expect(await tag()).toBe('INPUT');
+  await o.status.getByRole('radio', { name: 'Không đến' }).check();
+  expect(await tag()).toBe('INPUT');
   await o.status.getByRole('radio', { name: 'Đã gặp' }).check();
   await note.fill('Dòng một\nDòng hai');
   await o.status.getByRole('radio', { name: 'Không đến' }).check();
@@ -321,6 +324,16 @@ test('the note keeps its lines when 6f / 6c leave met (DR6-182)', async ({ page 
   await page.keyboard.type(' gấp');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
   await expect(shown).toHaveText(/^Dòng một\nDòng hai gấp$/);
+
+  // 6f: a note of one line leaving met takes the one-line field too, Hủy or Không đến.
+  await metToN2(page, 'Một dòng');
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const field = edit.getByRole('textbox', { name: /^Ghi chú/ });
+  expect(await field.evaluate((element) => element.tagName)).toBe('TEXTAREA');
+  for (const status of ['Hủy', 'Không đến']) {
+    await edit.getByRole('radio', { name: status, exact: true }).check();
+    expect(await field.evaluate((element) => element.tagName), status).toBe('INPUT');
+  }
 });
 
 // Review of PR 1153: a note of lines stays a box while the dialog is open. Swapped back to a
@@ -349,9 +362,9 @@ test('pasting a VT or U+2028 into a one-line field keeps the typing in it (6c)',
   const o = outcome(page);
   const tag = (field: Locator) => field.evaluate((element) => element.tagName);
   await o.nextStep.click();
-  await page.keyboard.insertText('Gọi lại gửi bảng');
+  await page.keyboard.insertText('Gọi lại\u2028gửi bảng');
   await page.keyboard.type(' sau');
-  await expect(o.nextStep).toHaveValue('Gọi lại gửi bảng sau');
+  await expect(o.nextStep).toHaveValue('Gọi lại\u2028gửi bảng sau');
   await expect(o.nextStep).toBeFocused();
   expect(await tag(o.nextStep)).toBe('INPUT');
 

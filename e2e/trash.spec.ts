@@ -711,6 +711,56 @@ test('two customers of one name and one stage have restore buttons named with th
   expect(new Set(labels).size).toBe(2);
 });
 
+// T-380, DR6-206: two deleted teams of one name are told apart by when each was deleted on the
+// screen too, not only in the restore buttons: in the line of the RM a team keeps blocked and in
+// "Thuộc", of every row whatever the filter, the teams' own rows filtered out.
+test('two deleted teams of one name: the line and "Thuộc" of the RM each keeps blocked say when it went (T-380)', async ({
+  page,
+}) => {
+  await page.goto('/#/team');
+  const members = page.getByRole('region', { name: 'Thành viên team Sao Khuê' });
+  const confirm = (title: string) =>
+    page.getByRole('dialog', { name: title }).getByRole('button', { name: 'Xóa', exact: true });
+  for (const [rm, minute] of [
+    ['Vũ Văn Hai', 0],
+    ['Vũ Văn Ba', 5],
+  ] as const) {
+    await page.clock.pauseAt(new Date(2026, 8, 15, 10, minute));
+    await page.getByRole('button', { name: '+ Team' }).click();
+    const team = page.getByRole('dialog', { name: 'Team mới' });
+    await team.getByRole('textbox', { name: 'Tên team' }).fill('Sao Khuê');
+    await team.getByRole('button', { name: 'Tạo team' }).click();
+    await page.getByRole('button', { name: '+ Nhân sự' }).click();
+    const person = page.getByRole('dialog', { name: 'Nhân sự mới' });
+    await person.getByRole('textbox', { name: 'Họ tên' }).fill(rm);
+    await person.getByRole('radio', { name: 'RM', exact: true }).check();
+    await person.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Sao Khuê' });
+    await person.getByRole('button', { name: 'Thêm' }).click();
+    await members.getByRole('button', { name: `Sửa ${rm}` }).click();
+    await page
+      .getByRole('dialog', { name: 'Sửa nhân sự' })
+      .getByRole('button', { name: 'Xóa nhân sự' })
+      .click();
+    await confirm(`Xóa ${rm}?`).click();
+    await members.getByRole('button', { name: 'Xóa team' }).click();
+    await confirm('Xóa team Sao Khuê?').click();
+    await expect(members).toHaveCount(0);
+  }
+
+  await openTrash(page);
+  await kinds(page)
+    .getByRole('radio', { name: /^Nhân sự/ })
+    .click();
+  for (const [rm, at] of [
+    ['Vũ Văn Hai', '15/09/2026 10:00'],
+    ['Vũ Văn Ba', '15/09/2026 10:05'],
+  ] as const) {
+    const row = table(page).getByRole('row').filter({ hasText: rm });
+    await expect(row).toContainText(`Khôi phục team Sao Khuê (xóa lúc ${at}) trước.`);
+    await expect(row).toContainText(`Team Sao Khuê (đã xóa lúc ${at})`);
+  }
+});
+
 // TR-11, 11i: while the purge runs the dialog stays, so nothing writes to the data it is replacing.
 // The exe's backup is held, as a slow disk would (DR6-128).
 test('the dialog of a purge that runs stays: Escape does not close it, Hủy is off (TR-11; 11i)', async ({

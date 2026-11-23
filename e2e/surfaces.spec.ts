@@ -188,8 +188,9 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
 });
 
 /**
- * How far `table` runs past the box that scrolls it sideways, if any: with its cells as they are,
- * and with the 10 px at their sides of before L157.
+ * How far `table` runs past the box that scrolls it sideways, or with none (Danh sách lịch hẹn,
+ * Khách hàng) past the content of the narrowest box around it, its card or the window (L235):
+ * with its cells as they are, and with the 10 px at their sides of before L157.
  */
 const pastItsBox = (table: Locator) =>
   table.evaluate((node) => {
@@ -198,7 +199,17 @@ const pastItsBox = (table: Locator) =>
       while (box && !['auto', 'scroll'].includes(getComputedStyle(box).overflowX)) {
         box = box.parentElement;
       }
-      return box ? box.scrollWidth - box.clientWidth : 0;
+      if (box) return box.scrollWidth - box.clientWidth;
+      let edge = Infinity;
+      for (let around = node.parentElement; around; around = around.parentElement) {
+        const style = getComputedStyle(around);
+        const inner =
+          around.getBoundingClientRect().right -
+          parseFloat(style.borderRightWidth) -
+          parseFloat(style.paddingRight);
+        edge = Math.min(edge, inner);
+      }
+      return Math.max(0, Math.round(node.getBoundingClientRect().right - edge));
     };
     const now = past();
     const cells = [...node.querySelectorAll<HTMLElement>('th, td')];

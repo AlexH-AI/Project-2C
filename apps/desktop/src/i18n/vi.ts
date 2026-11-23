@@ -1040,7 +1040,7 @@ export const vi = {
   'error.INVALID_STATUS': 'Lịch này không nhận kết quả đó (có thể đã có kết quả hoặc đã dời).',
   'error.INVALID_AMOUNT': 'Số tiền phải lớn hơn 0, không có số lẻ dưới 1 đồng (hay 1 cent).',
   // The cap in the compact form of the data's currency (ADR-0018 §3; mockup #money "Quá trần phí").
-  'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa {max} VNĐ.',
+  'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa {max} đồng.',
   'error.AMOUNT_TOO_LARGE.cents': 'Số tiền tối đa {max}.',
   // The line under the name of Tổng quan and Báo cáo: the days counted of a month in progress.
   'overview.mtdRange': '{range} (MTD)',

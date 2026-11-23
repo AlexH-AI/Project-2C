@@ -595,3 +595,44 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await expect(kyc.getByRole('button')).toHaveCount(0);
   await expect(timeline.first()).toContainText('kyc v4');
 });
+
+// DR6-206 (CLR6-D14): on a trường that is not cốt lõi, "Đánh dấu là thay đổi quan trọng" of 7a and
+// of 7d goes down with the save: the version on the timeline says so; left off, it does not.
+test('the box of a change that matters, in 7a and 7d, marks the version it saves (DR6-206)', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
+  const latest = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem').first();
+  const matters = /^Đánh dấu là thay đổi quan trọng/;
+  const note = async (text: string, value: string, ticked: boolean) => {
+    await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+    const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+    await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill(text);
+    await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+    await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(value);
+    if (!ticked) await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
+    await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+    if (ticked) await dialog.getByRole('checkbox', { name: matters }).check();
+    await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+    await expect(dialog).toBeHidden();
+  };
+
+  // 7a: ticked, then a second value left unticked, flagged as a conflict.
+  await note('Khách chuyển nhà', 'Huế', true);
+  await expect(latest).toContainText('kyc v2');
+  await expect(latest).toContainText('thay đổi quan trọng');
+  await note('Vợ nói vẫn ở Đà Nẵng', 'Đà Nẵng', false);
+  await expect(latest).toContainText('kyc v3');
+  await expect(latest).not.toContainText('thay đổi quan trọng');
+
+  // 7d: the value kept, ticked.
+  await kyc.getByRole('button', { name: 'Giải quyết · Nơi sinh sống' }).click();
+  const resolve = page.getByRole('dialog', { name: 'Giải quyết · Nơi sinh sống' });
+  await resolve.getByRole('radio', { name: /^"Huế"/ }).check();
+  await resolve.getByRole('checkbox', { name: matters }).check();
+  await resolve.getByRole('button', { name: 'Giải quyết', exact: true }).click();
+  await expect(resolve).toBeHidden();
+  await expect(latest).toContainText('kyc v4');
+  await expect(latest).toContainText('thay đổi quan trọng');
+});

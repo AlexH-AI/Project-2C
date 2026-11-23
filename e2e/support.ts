@@ -21,6 +21,29 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
 }
 
 /**
+ * The WCAG contrast of two colours, 1 to 21: the one formula of luminance of the e2e (L172). Each
+ * is an `rgb(…)` / `rgba(…)` as a browser writes it, painted on a white page; another syntax fails
+ * the test (read it through a canvas, as `lowestContrast` does, which also runs this in the page
+ * from its text: it uses nothing from outside itself).
+ */
+export function contrast(color: string, ground: string): number {
+  const luminance = (value: string) => {
+    const parts = /^rgba?\(([^()]*)\)$/.exec(value.trim())?.[1] ?? '';
+    const [r, g, b, a = 1] = (parts.match(/[^\s,/]+/g) ?? []).map(Number);
+    if (b === undefined || [r, g, b, a].some(Number.isNaN)) {
+      throw new Error(`not a colour of rgb(): ${value}`);
+    }
+    const [lr = 0, lg = 0, lb = 0] = [r!, g!, b!].map((channel) => {
+      const c = (channel * a + 255 * (1 - a)) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+  };
+  const [light = 0, dark = 0] = [luminance(color), luminance(ground)].sort((x, y) => y - x);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+/**
  * The lowest WCAG contrast of the text shown in `area`, each against what is painted behind it,
  * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). A material
  * painted as a gradient (a card) counts at its lightest stop. Disabled
@@ -32,7 +55,8 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
  * whatever their syntax (`oklab(…)`, `color(srgb …)` of Tailwind's `bg-x/10`).
  */
 export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): Promise<number> {
-  return area.evaluate(async (root, of) => {
+  const asked = { of, formula: contrast.toString() };
+  return area.evaluate(async (root, { of, formula }) => {
     // A control changes its light in --t-1 (VA2), a button that becomes the primary one too: the
     // colours are read once they have settled, not halfway between two states.
     await Promise.all(
@@ -60,6 +84,11 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
       );
       return { rgb, a };
     };
+    // `contrast` of this file, made here from its text: the page has nothing of the module.
+    const ratio = new Function(`return ${formula}`)() as (color: string, ground: string) => number;
+    const css = ({ rgb, a }: Paint) => `rgba(${rgb.join(', ')}, ${a})`;
+    const contrast = (one: Paint, other: Paint) => ratio(css(one), css(other));
+    const black: Paint = { rgb: [0, 0, 0], a: 1 }; // the lightest stands out most from it
     // What the blocks of `chain` paint from `from` on, then the colour `top` reads off the last one
     // (its text, its border): a block with an opacity paints its group first, then fades it as a
     // whole over what is below.
@@ -87,23 +116,11 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
         );
         if (stops.length > 0) {
           color = stops.reduce((lightest, lit) =>
-            luminance(lit) > luminance(lightest) ? lit : lightest,
+            contrast(lit, black) > contrast(lightest, black) ? lit : lightest,
           );
         }
       }
       return top ? over(read(top(getComputedStyle(chain.at(-1)!))), color) : color;
-    };
-    const page: Paint = { rgb: [255, 255, 255], a: 1 };
-    const luminance = (painted: Paint) => {
-      const [r = 0, g = 0, b = 0] = over(painted, page).rgb.map((value) => {
-        const c = value / 255;
-        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-      });
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    const contrast = (a: Paint, b: Paint) => {
-      const [light = 0, dark = 0] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-      return (light + 0.05) / (dark + 0.05);
     };
     const chainTo = (element: Element) => {
       const chain: Element[] = [];
@@ -134,7 +151,7 @@ export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): P
       );
     }
     return lowest;
-  }, of);
+  }, asked);
 }
 
 /** The value of a token of `tokens.css` as the page has it now. */
@@ -174,9 +191,46 @@ export async function drawnCorner(page: Page, nominal: { win: number; mac: numbe
 /** Where the right edge of `box` is in the window. */
 export const right = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().right);
 
-/** `box` scrolls sideways: something of it is past its edge, text included. */
-export const scrolls = (box: Locator) =>
-  box.evaluate((node) => node.scrollWidth > node.clientWidth);
+/**
+ * What of `box` ends past its right edge: a word that does not break, a line that does not wrap.
+ * A text field or a list keeps what it holds inside its box, a value longer than it scrolled out of
+ * sight: it counts by its box, whatever its `overflow` reads (`clip` on Chromium, `visible` on
+ * WebKit, where its `scrollWidth` is the width of the whole value). So do the boxes that hold a
+ * list: WebKit counts its cut choice in their scrolling width too (Mac-7b).
+ */
+export const sticksOut = (box: Locator) =>
+  box.evaluate((node) => {
+    const edge = Math.round(node.getBoundingClientRect().right);
+    return [...node.querySelectorAll('*')].flatMap((part) => {
+      const rect = part.getBoundingClientRect();
+      const shows =
+        getComputedStyle(part).overflowX === 'visible' &&
+        !part.matches('input, textarea, select') &&
+        !part.querySelector('select');
+      const end = Math.round(
+        shows ? Math.max(rect.right, rect.left + part.scrollWidth) : rect.right,
+      );
+      if (!part.checkVisibility() || end <= edge) return [];
+      const text = (part.textContent ?? '').slice(0, 40);
+      return [`${part.tagName.toLowerCase()} "${text}" ends ${end - edge}px past`];
+    });
+  });
+
+/**
+ * `box` scrolls sideways: something of it is past its edge, text included. A dialog (`Dialog`)
+ * scrolls in its body, the part under its head, which cuts what is past its edge (`overflow-x:
+ * hidden`): the dialog itself never sees that, so for a dialog it is what of its body ends past the
+ * body's edge too (L157). That counts a list by its box (`sticksOut`): WebKit counts the whole
+ * choice of a list in the scrolling width of what holds it (Mac-7b).
+ */
+export async function scrolls(box: Locator): Promise<boolean> {
+  const { past, dialog } = await box.evaluate((node) => ({
+    past: node.scrollWidth > node.clientWidth,
+    dialog: node instanceof HTMLDialogElement,
+  }));
+  if (past || !dialog) return past;
+  return (await sticksOut(box.locator('[data-dialog-head] + *'))).length > 0;
+}
 
 /**
  * What pushes the page sideways: when it scrolls sideways, the elements whose box, or what shows

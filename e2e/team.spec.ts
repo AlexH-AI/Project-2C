@@ -281,8 +281,19 @@ test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', a
   await confirm.getByRole('button', { name: 'Đóng', exact: true }).click();
   await expect(table.getByRole('row', { name: /Trần Hải Yến/ })).toBeVisible();
 
-  // Typed back to what is saved, a role there and back with it: nothing to ask.
+  // The team alone changed is a change too (DR6-206): asked first, the team picked kept.
+  const team = edit.getByRole('combobox', { name: 'Team' });
   await table.getByRole('button', { name: 'Sửa Trần Hải Yến', exact: true }).click();
+  await team.selectOption({ label: 'Sao Mai' });
+  await remove.click();
+  await expect(edit.getByRole('alert')).toHaveText(
+    'Có thay đổi chưa lưu: Lưu để giữ, hoặc bỏ thay đổi để xóa nhân sự.',
+  );
+  await expect(confirm).toHaveCount(0);
+  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
+
+  // Typed back to what is saved, a role and a team there and back with it: nothing to ask.
+  await team.selectOption({ label: 'Hừng Đông' });
   await name.fill('Trần Hải Âu');
   await name.fill('Trần Hải Yến');
   await edit.getByRole('radio', { name: 'IS', exact: true }).check();

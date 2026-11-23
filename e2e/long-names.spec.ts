@@ -12,6 +12,7 @@ import {
   scopePill,
   screenSub,
   scrolls,
+  sticksOut,
 } from './support';
 
 // DR6-148: a name has no length cap (the commands refuse only an empty one), so a name with no
@@ -440,6 +441,18 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
       reasoning: 'DEFAULT',
     },
   );
+  // Settings → AI on a model of 160 letters no list has: the warning of Cài đặt → AI names it (L153).
+  const stored = unbroken('V', 160);
+  const ai = {
+    provider: 'OPENCODE_GO',
+    opencodePlan: 'CREDIT',
+    model: stored,
+    reasoning: 'DEFAULT',
+  };
+  file.tables.settings = [
+    ...rows('settings').filter((row) => row.key !== 'ai'),
+    { key: 'ai', value_json: JSON.stringify(ai), updated_at: '2026-09-15T08:00:00.000Z' },
+  ];
   await backup.getByLabel('Nhập backup').setInputFiles({
     name: 'long-names.p2cbackup',
     mimeType: 'application/json',
@@ -450,6 +463,9 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
     .getByRole('button', { name: 'Thay dữ liệu', exact: true })
     .click();
   await expect(backup.getByRole('status')).toContainText('Đã nhập backup xuất lúc');
+  await settingsSection(page, 'AI');
+  const warning = page.getByRole('note').filter({ hasText: stored });
+  await expectHolds(page, warning, 'the warning of Cài đặt → AI');
 
   // Lịch hẹn: the list and the detail of an appointment of the customer, in each scope.
   await open(page, 'Lịch hẹn');
@@ -599,28 +615,6 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
   for (const name of [customer, gone, `RM ${rm}`]) await expect(records).toContainText(name);
   await sweep(page, 'Thùng rác');
 });
-
-/**
- * What of `box` ends past its right edge: a word that does not break, a line that does not wrap.
- * A text field or a list keeps what it holds inside its box, a value longer than it scrolled out of
- * sight: it counts by its box, whatever its `overflow` reads (`clip` on Chromium, `visible` on
- * WebKit, where its `scrollWidth` is the width of the whole value).
- */
-const sticksOut = (box: Locator) =>
-  box.evaluate((node) => {
-    const edge = Math.round(node.getBoundingClientRect().right);
-    return [...node.querySelectorAll('*')].flatMap((part) => {
-      const rect = part.getBoundingClientRect();
-      const shows =
-        getComputedStyle(part).overflowX === 'visible' && !part.matches('input, textarea, select');
-      const end = Math.round(
-        shows ? Math.max(rect.right, rect.left + part.scrollWidth) : rect.right,
-      );
-      if (!part.checkVisibility() || end <= edge) return [];
-      const text = (part.textContent ?? '').slice(0, 40);
-      return [`${part.tagName.toLowerCase()} "${text}" ends ${end - edge}px past`];
-    });
-  });
 
 /**
  * How many pixels of the bottom of `box` do not show: a box around it that does not let what it
@@ -826,4 +820,126 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
     .evaluate((line, model) => line.append(` ${model}`), model);
   await expectHolds(page, running, 'the line of an analysis that runs');
   await page.evaluate(() => window.exe.releaseAi());
+});
+
+// L153: the bodies of the dialogs of Issue #1385 the case above does not open (6b, 6h, 6f, 8d, 9a),
+// and the line of Khách hàng after a customer made out of the scope, with a customer, an RM, a team
+// and an IS of 160 letters: in the customer matched and picked, a coordinator, "Khi lưu", a list.
+test('names of 160 letters break in the body of 6b, 6h, 6f, 8d and 9a, and in the line of a customer made out of the scope', async ({
+  page,
+}) => {
+  test.setTimeout(LONG_SWEEP);
+  const customer = unbroken('K', 160);
+  const rm = unbroken('R', 160);
+  const team = unbroken('T', 160);
+  const is = unbroken('S', 160);
+  await page.goto('/#/team');
+  await renameTeam(page, 'Bình Minh', team);
+  const members = page.getByRole('region', { name: `Thành viên team ${team}` });
+  const firstRm = members.getByRole('table').getByRole('button', { name: /^Sửa / }).first();
+  await renamePerson(page, firstRm, rm);
+  const support = page.getByRole('region', { name: 'Người hỗ trợ' }).getByRole('listitem');
+  const isRow = support.filter({ has: page.getByText('IS', { exact: true }) }).first();
+  await renamePerson(page, isRow.getByRole('button', { name: /^Sửa / }), is);
+
+  // 9a: a person added to the team shown, its list Team on the team of 160 letters.
+  await page.getByRole('button', { name: '+ Nhân sự' }).click();
+  const add = page.getByRole('dialog', { name: 'Nhân sự mới' });
+  await add.getByRole('radio', { name: 'RM', exact: true }).check();
+  const teamField = add.getByRole('combobox', { name: /^Team/ });
+  await expect(teamField.locator('option:checked')).toHaveText(team);
+  await expectHolds(page, add, '9a');
+  await add.getByRole('button', { name: 'Hủy' }).click();
+  await expect(add).toBeHidden();
+
+  // Khách hàng in the scope of another team: the line said after the customer names it and its RM.
+  await open(page, 'Khách hàng');
+  await pickScope(page, { team: 'Sao Mai' });
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const person = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await person.getByRole('textbox', { name: 'Họ tên' }).fill(customer);
+  const rmList = person.getByRole('combobox', { name: 'RM phụ trách' });
+  await rmList.selectOption({
+    label: (await rmList.locator('option', { hasText: rm }).textContent())!,
+  });
+  await person.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
+  await person.getByRole('radio', { name: 'Nữ' }).check();
+  await person.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(person).toBeHidden();
+  const outside = page.getByRole('status').filter({ hasText: 'ngoài góc nhìn' });
+  await expect(outside).toContainText(`Đã tạo KH ${customer} cho ${rm}.`);
+  await expectHolds(page, outside, 'the line of a customer made out of the scope');
+
+  // 6b on a day past, for 6h and 6f below: the IS as coordinator, then the customer matched, then
+  // picked. The IS goes first: while the list of coordinators offers a name of 160 letters, the
+  // list takes its width and runs past the body (a note of the review of T-492).
+  await open(page, 'Lịch hẹn');
+  await pickScope(page, 'all');
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  const pick = booking.getByRole('combobox', { name: 'Thêm người phối hợp' });
+  await pick.selectOption({
+    label: (await pick.locator('option', { hasText: is }).textContent())!,
+  });
+  await booking.getByRole('button', { name: 'Thêm', exact: true }).click();
+  await expect(booking.getByRole('button', { name: `Bỏ IS ${is}` })).toBeVisible();
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(customer);
+  const match = booking.getByRole('list', { name: 'KH khớp' }).getByRole('button');
+  await expect(match.filter({ hasText: customer })).toBeVisible();
+  await expectHolds(page, booking, '6b, the matches and a coordinator');
+  await match.filter({ hasText: customer }).click();
+  await expectHolds(page, booking, '6b, the customer picked and a coordinator');
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('14/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toBeHidden();
+  const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+  await expect(detail).toContainText(`${rm} · ${team}`);
+
+  // 6h: the next appointment of that day past, its coordinator taken from it.
+  await detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' }).click();
+  const next = page.getByRole('dialog', { name: 'Lịch hẹn tiếp theo' });
+  await expect(next.getByRole('button', { name: `Bỏ IS ${is}` })).toBeVisible();
+  await expectHolds(page, next, '6h');
+  await next.getByRole('button', { name: 'Hủy' }).click();
+  await expect(next).toBeHidden();
+
+  // 6f: the meeting met (its stage after kept: the customer was made the day after, D10), then its
+  // outcome edited, its coordinator there.
+  await detail.getByRole('button', { name: 'Ghi kết quả' }).click();
+  const outcome = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
+  await outcome.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gửi bảng minh họa');
+  await outcome.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(outcome).toBeHidden();
+  await detail.getByRole('button', { name: 'Sửa kết quả' }).click();
+  const edit = page.getByRole('dialog', { name: 'Sửa kết quả cuộc gặp' });
+  await expect(edit.getByRole('button', { name: `Bỏ IS ${is}` })).toBeVisible();
+  await expectHolds(page, edit, '6f');
+  await edit.getByRole('button', { name: 'Hủy' }).click();
+  await expect(edit).toBeHidden();
+
+  // 8d: a policy of the customer issued, then its issued FYP corrected: the line "Khi lưu" names
+  // the RM.
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  const policies = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await policies.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  const submit = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await submit.getByRole('textbox', { name: /^Ngày nộp/ }).fill('1/9');
+  await submit.getByRole('textbox', { name: /^FYP nộp/ }).fill('400tr');
+  await submit.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(submit).toBeHidden();
+  const row = policies.getByRole('listitem').filter({ hasText: 'Nộp 01/09 · 400 tr' });
+  await row.getByRole('button', { name: 'Phát hành HĐ nộp 01/09/2026' }).click();
+  await page
+    .getByRole('dialog', { name: 'Phát hành HĐ' })
+    .getByRole('button', { name: 'Phát hành', exact: true })
+    .click();
+  await expect(row).toContainText('Đã phát hành');
+  await row.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
+  const policy = page.getByRole('dialog', { name: `Sửa HĐ · ${customer}` });
+  await policy.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385.5tr');
+  await expect(policy).toContainText(`FYP phát hành tháng 09/2026 của RM ${rm} giảm 14.5 tr`);
+  await expectHolds(page, policy, '8d');
+  await policy.getByRole('button', { name: 'Hủy' }).click();
+  await expect(policy).toBeHidden();
 });
