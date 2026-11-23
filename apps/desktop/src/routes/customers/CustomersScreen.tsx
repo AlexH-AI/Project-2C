@@ -63,17 +63,22 @@ const CLOSED_LIMIT = 5;
 const STAGE_CARD = `${CARD_SKIN} p-3`;
 
 /**
- * A card or a closed row while searching (mockup search-rm-team.html `.finding`): a match edged in
- * gold; the others at 70 %, less colour, in place and still a link. Dimmed, a text in --text-3 or
- * a colour takes a lighter one to stay at AA over the brightest glass of macOS (L188): a card's
- * second line --text-2, its "n HĐ" and the day of a closed row --text.
+ * A card or a closed row while searching (mockup search-rm-team.html `.finding`), `lit` whether it
+ * matches: a match edged in gold; the others at 70 %, less colour, in place and still a link.
  */
-const FIND = {
-  true: 'border-accent inset-ring inset-ring-accent',
-  false: 'opacity-70 saturate-30',
-  undefined: '',
-};
-type Lit = ReadonlySet<string> | undefined;
+const findLook = (lit: boolean | undefined) =>
+  lit === undefined ? '' : lit ? 'inset-ring inset-ring-accent' : 'opacity-70 saturate-30';
+
+/**
+ * The colour of a text of a card or a closed row: dimmed, a text in --text-3 or a colour takes a
+ * lighter one to stay at AA over the brightest glass of macOS (L188): a card's second line
+ * --text-2, its "n HĐ" and the day of a closed row --text.
+ */
+const tone = (lit: boolean | undefined, shown: string, dimmed: string) =>
+  lit === false ? dimmed : shown;
+
+/** The ids of the customers a search matches; undefined while nothing is searched. */
+type FoundIds = ReadonlySet<string> | undefined;
 type Cards = readonly CustomerCard[];
 
 const profileHref = (card: CustomerCard) =>
@@ -235,8 +240,9 @@ export function CustomersScreen() {
           </Button>
         }
       />
-      {/* Over the board: the list under the field opens on it. */}
-      <div data-part className="relative z-10 flex items-center gap-3">
+      {/* Over the board, which the list under the field opens on; under the toolbar (z-10), which
+          the screen scrolls under and whose menus open over this row (review of PR 1483). */}
+      <div data-part className="relative z-1 flex items-center gap-3">
         <CustomerSearch
           query={query}
           onQuery={setQuery}
@@ -376,22 +382,20 @@ function Card({ card, lit }: { card: CustomerCard; lit: boolean | undefined }) {
     <a
       href={profileHref(card)}
       data-open
-      className={`press-card flex flex-col gap-1 rounded-control border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS} ${FIND[`${lit}`]}`}
+      className={`press-card flex flex-col gap-1 rounded-control border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${lit ? 'border-accent' : 'border-border'} ${FOCUS} ${findLook(lit)}`}
     >
       <span className="flex items-center justify-between gap-1.5">
         <b className="truncate font-semibold">
           <CustomerName name={card.customer.name} />
         </b>
         {card.policies > 0 && (
-          <span
-            className={`${BADGE} whitespace-nowrap ${lit === false ? 'text-fg' : 'text-issued'}`}
-          >
+          <span className={`${BADGE} whitespace-nowrap ${tone(lit, 'text-issued', 'text-fg')}`}>
             {t('customers.policies', { count: card.policies })}
           </span>
         )}
       </span>
       <span
-        className={`flex justify-between gap-1.5 text-xs whitespace-nowrap ${lit === false ? 'text-fg-2' : 'text-fg-3'}`}
+        className={`flex justify-between gap-1.5 text-xs whitespace-nowrap ${tone(lit, 'text-fg-3', 'text-fg-2')}`}
       >
         <span className="truncate">{t('customers.rm', { name: card.rm?.name ?? '' })}</span>
         <span className="tabular-nums">{personal(card)}</span>
@@ -400,7 +404,7 @@ function Card({ card, lit }: { card: CustomerCard; lit: boolean | undefined }) {
   );
 }
 
-function Closed({ stage, cards, lit }: { stage: ClosedStage; cards: Cards; lit: Lit }) {
+function Closed({ stage, cards, lit }: { stage: ClosedStage; cards: Cards; lit: FoundIds }) {
   const { shown, found } = kanbanColumn(cards, lit, CLOSED_LIMIT);
   const on = (card: CustomerCard) => lit?.has(card.customer.id);
   return (
@@ -410,7 +414,7 @@ function Closed({ stage, cards, lit }: { stage: ClosedStage; cards: Cards; lit: 
         {shown.map((card) => (
           <li
             key={card.customer.id}
-            className={`flex gap-2 border-b border-border py-1.5 last:border-b-0 ${on(card) ? '-mx-1 rounded-control-sm px-1' : ''} ${FIND[`${on(card)}`]}`}
+            className={`flex gap-2 border-b border-border py-1.5 last:border-b-0 ${on(card) ? '-mx-1 rounded-control-sm px-1' : ''} ${findLook(on(card))}`}
           >
             <a
               href={profileHref(card)}
@@ -419,9 +423,7 @@ function Closed({ stage, cards, lit }: { stage: ClosedStage; cards: Cards; lit: 
             >
               <CustomerName name={card.customer.name} />
             </a>
-            <span
-              className={`ml-auto tabular-nums ${on(card) === false ? 'text-fg' : 'text-fg-3'}`}
-            >
+            <span className={`ml-auto tabular-nums ${tone(on(card), 'text-fg-3', 'text-fg')}`}>
               {formatDate(card.since)}
             </span>
           </li>

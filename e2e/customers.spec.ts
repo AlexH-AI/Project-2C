@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test, type Locator, type Page } from './fixtures';
 import {
   asExe,
   lowestContrast,
@@ -215,6 +215,15 @@ test('the search lights a match at the top of its column, one past "+ n KH" too;
   await expect(cards(page, 'N3')).toHaveCount(7);
   await expect(cards(page, 'N3').first().locator('b')).toHaveText(name);
   await expect(cards(page, 'N3').first()).toHaveCSS('opacity', '1');
+  // Edged in gold, the border too (review #1483: it had kept --border).
+  const accent = await page.evaluate(() => {
+    const probe = document.body.appendChild(document.createElement('i'));
+    probe.style.color = 'var(--accent)';
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  await expect(cards(page, 'N3').first()).toHaveCSS('border-top-color', accent);
   // The others dim and keep their place.
   await expect(cards(page, 'N3').nth(1)).toHaveCSS('opacity', '0.7');
   await expect(cards(page, 'N2').first()).toHaveCSS('opacity', '0.7');
@@ -323,4 +332,34 @@ test('a dimmed card and a dimmed closed row read at AA on both systems, the macO
   });
   for (const area of dimmed)
     expect(await lowestContrast(area), 'glass').toBeGreaterThanOrEqual(4.5);
+});
+
+// Review #1483: the row of the search lies under the toolbar, so the menu of the scope opened over
+// it, and the toolbar scrolled over it, take the press.
+test('the search row stays under the toolbar and the menu of the scope', async ({ page }) => {
+  /** The text of those of `items` in sight that something else covers at their centre. */
+  const covered = (items: Locator) =>
+    items.evaluateAll((all) =>
+      all
+        .filter((item) => {
+          const box = item.getBoundingClientRect();
+          const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+          // A row of the menu scrolled out of its sight is not one to press.
+          const sight = item.closest('[role="menu"]')?.getBoundingClientRect();
+          if (sight && (y < sight.top || y > sight.bottom)) return false;
+          return !item.contains(document.elementFromPoint(x, y));
+        })
+        .map((item) => item.textContent),
+    );
+  await pickScope(page, { team: 'Bình Minh' });
+  await scopePill(page).click();
+  expect(
+    await covered(page.getByRole('menu', { name: 'Góc nhìn' }).getByRole('menuitemradio')),
+  ).toHaveLength(0);
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  await page.mouse.move(640, 500);
+  await page.mouse.wheel(0, 60);
+  await expect.poll(() => covered(page.getByRole('banner').getByRole('button'))).toHaveLength(0);
 });
