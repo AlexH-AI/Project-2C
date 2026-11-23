@@ -1,10 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Person, PersonRole, Team } from '@p2c/domain';
-import { Button, DataTable, DialogFocusFallback, StateNote, type DataTableColumn } from '@p2c/ui';
+import {
+  Button,
+  DataTable,
+  DialogFocusFallback,
+  StateNote,
+  type DataTableColumn,
+  type DataTableView,
+} from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
+import { routeToHash } from '../../shell/routes';
 import { ScreenBar } from '../../shell/ScreenBar';
+import { isReturning } from '../../shell/useRoute';
 import { CARD, FOCUS, HEADING, LINK } from '../classes';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
@@ -92,7 +101,13 @@ function memberColumns(
       header: t('team.colName'),
       kind: 'text',
       value: (person) => person.name,
-      cell: (person) => <PersonName person={person} />,
+      // "Mở": the row grows into the page of the RM, which goes back here (VA7b). Only the name:
+      // "Sửa" of the row opens the dialog alone (mockup team.html, phase-3-feedback.html B1).
+      cell: (person) => (
+        <a href={routeToHash({ screen: 'rm', id: person.id })} data-open="row" className={LINK}>
+          <PersonName person={person} />
+        </a>
+      ),
     },
     {
       id: 'role',
@@ -117,14 +132,31 @@ function memberColumns(
   ];
 }
 
-/** Team & staff (mockup team.html): teams, their members, and the shared support staff. */
+/** Team & nhân sự as last left: the team shown, the sort and rows of its members. */
+let left: { teamId?: string; table?: DataTableView } = {};
+
+const keepTable = (table: DataTableView) => {
+  left = { ...left, table };
+};
+
+/**
+ * Team & staff (mockup team.html): teams, their members, and the shared support staff. The way
+ * back from the page of an RM draws it as it was left (VA7b, "Mở").
+ */
 export function TeamScreen() {
   const tables = useTables();
   const view = useMemo(() => teamsView(tables), [tables]);
   const today = useToday();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [back] = useState(() => (isReturning() ? left : null));
+  const [selectedId, setSelectedId] = useState<string | null>(back?.teamId ?? null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const selected = view.teams.find((entry) => entry.team.id === selectedId) ?? view.teams[0];
+  // The team shown stays the one shown: a team renamed or added never moves it (CLR6-D6). One
+  // gone gives way to the first.
+  if (selected && selected.team.id !== selectedId) setSelectedId(selected.team.id);
+  useEffect(() => {
+    left = { ...left, teamId: selected?.team.id };
+  }, [selected]);
   const tlCount = view.teams.reduce((sum, entry) => sum + entry.tl, 0);
   const rmCount = view.teams.reduce((sum, entry) => sum + entry.rm, 0);
   const teams = view.teams.map((entry) => entry.team);
@@ -198,6 +230,7 @@ export function TeamScreen() {
           <Members
             entry={selected}
             columns={columns}
+            back={back?.table}
             onEditLead={editPerson}
             onAddLead={() =>
               setEditing({ kind: 'addPerson', teamId: selected.team.id, role: 'TL' })
@@ -286,6 +319,7 @@ function SharedSupport({
 function Members({
   entry,
   columns,
+  back,
   onEditLead,
   onAddLead,
   onRename,
@@ -293,6 +327,8 @@ function Members({
 }: {
   entry: TeamEntry;
   columns: ReadonlyArray<DataTableColumn<Person>>;
+  /** The sort and rows of the table as left, drawn again by the way back of "Mở". */
+  back: DataTableView | undefined;
   onEditLead: (person: Person) => void;
   onAddLead: () => void;
   onRename: () => void;
@@ -346,7 +382,9 @@ function Members({
           columns={columns}
           rows={entry.reps}
           getRowId={(person) => person.id}
-          initialSort={{ id: 'name', desc: false }}
+          initialSort={back ? (back.sort ?? undefined) : { id: 'name', desc: false }}
+          initialLimit={back?.limit}
+          onView={keepTable}
           moreLabels={tableMore('people')}
           // The table is not made anew for each team: this takes another team back to its first
           // hundred rows (DR6-32).

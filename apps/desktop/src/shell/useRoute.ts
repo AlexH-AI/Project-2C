@@ -60,21 +60,54 @@ export function returnTo(change: () => void): void {
 /** Whether the screen being drawn is the one the way back of "Mở" returns to (`returnTo`). */
 export const isReturning = () => returning;
 
+/** The way back of "Mở": the screen a page was opened from, how far it was scrolled, the page. */
+export interface WayBack {
+  readonly from: string;
+  readonly scroll: number;
+  readonly to: string;
+}
+
+/**
+ * The ways back of "Mở", the page opened last on top: Team → an RM → a customer keeps two, so each
+ * page goes back to the one it was opened from, and that one back again (spec Phase 6 §5).
+ */
+const ways: WayBack[] = [];
+
+/** A page opened by "Mở" from the screen shown (`AppShell`). */
+export const openWay = (way: WayBack): void => void ways.push(way);
+
+/** The way back of the page `hash` when it was opened by "Mở", which going back by takes off. */
+export function wayBack(hash: string, take = false): WayBack | undefined {
+  const way = ways.at(-1);
+  if (way?.to !== hash) return undefined;
+  if (take) ways.pop();
+  return way;
+}
+
+/** A screen reached another way (the sidebar, any other link) forgets every way back. */
+export function forgetWays(hash: string): void {
+  if (ways.at(-1)?.to !== hash) ways.length = 0;
+}
+
+/** The screen the page `hash` was opened from by "Mở", where its link back goes; else null. */
+export const openedFrom = (hash: string): string | null => wayBack(hash)?.from ?? null;
+
 const getHash = () => window.location.hash;
 
 /**
- * The current screen, from the URL hash (`#/overview`…). An empty or unknown hash opens the last
- * screen used, or the overview; the address bar is then corrected to match.
+ * The current screen, from the URL hash (`#/overview`…), as `resolve` finds it in the data. An
+ * empty or unknown hash opens the last screen used, or the overview; the address bar is then
+ * corrected to match, also when what it holds reads as the screen already shown (CLR6-D9).
  */
-export function useRoute(): Route {
+export function useRoute(resolve: (route: Route) => Route = (route) => route): Route {
   const hash = useSyncExternalStore(subscribe, getHash);
-  const route = parseHash(hash) ?? readStored() ?? DEFAULT_ROUTE;
+  const route = resolve(parseHash(hash) ?? readStored() ?? DEFAULT_ROUTE);
   const canonical = routeToHash(route);
 
   useEffect(() => {
     if (window.location.hash !== canonical) window.history.replaceState(null, '', canonical);
     store(canonical);
-  }, [canonical]);
+  }, [canonical, hash]);
 
   return route;
 }

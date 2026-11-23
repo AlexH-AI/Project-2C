@@ -18,12 +18,13 @@ import {
 } from '@p2c/db';
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
 import { Button, DialogFocusFallback, StateNote } from '@p2c/ui';
-import { useQuery, useToday } from '../../data/AppDataContext';
+import { useQuery, useTables, useToday } from '../../data/AppDataContext';
 import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { CustomerName } from '../../shell/NameMask';
-import { routeToHash } from '../../shell/routes';
+import { parseHash, routeToHash, screenTitle } from '../../shell/routes';
 import { useToast } from '../../shell/Toasts';
+import { openedFrom } from '../../shell/useRoute';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
 import { createdToast } from '../appointments/appointment-form';
 import { LINK } from '../classes';
@@ -73,11 +74,21 @@ function readProfile(db: Database, id: string) {
 
 const MARK_MS = 2000;
 
-const BACK = (
-  <a href={routeToHash({ screen: 'customers' })} className={`${LINK} self-start text-sm`}>
-    {t('customer.back')}
-  </a>
-);
+/**
+ * The link back to the screen the profile was opened from by "Mở": Khách hàng or the page of an
+ * RM, which the profile then shrinks back to. Else to Khách hàng.
+ */
+function Back({ id }: { id: string }) {
+  const { people } = useTables();
+  const customers = routeToHash({ screen: 'customers' });
+  const href = openedFrom(routeToHash({ screen: 'customer', id })) ?? customers;
+  const to = parseHash(href) ?? { screen: 'customers' };
+  return (
+    <a href={href} className={`${LINK} self-start text-sm`}>
+      {t('nav.back', { name: screenTitle(to, people) })}
+    </a>
+  );
+}
 
 /** Customer profile (mockup customer.html): the basics, KYC and policies, timeline and appointments. */
 export function CustomerProfile({ id }: { id: string }) {
@@ -122,7 +133,7 @@ export function CustomerProfile({ id }: { id: string }) {
   if (!profile) {
     return (
       <>
-        {BACK}
+        <Back id={id} />
         <StateNote
           size="screen"
           icon="search"
@@ -163,7 +174,7 @@ export function CustomerProfile({ id }: { id: string }) {
 
   return (
     <>
-      {BACK}
+      <Back id={id} />
       <section aria-labelledby="customer-name" className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
           <h2 id="customer-name" className="m-0 min-w-0 text-lg font-semibold wrap-anywhere">

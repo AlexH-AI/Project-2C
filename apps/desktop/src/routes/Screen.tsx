@@ -5,6 +5,7 @@ import { CustomersScreen } from './customers/CustomersScreen';
 import { Overview } from './Overview';
 import { ReportsScreen } from './reports/ReportsScreen';
 import { Settings } from './Settings';
+import { RmPage } from './team/RmPage';
 import { TeamScreen } from './team/TeamScreen';
 
 /** Screen bodies, one for every screen of `Route`; a new screen fails to compile until added. */
@@ -17,5 +18,6 @@ export function Screen({ route }: { route: Route }) {
   if (route.screen === 'customers') return <CustomersScreen />;
   if (route.screen === 'reports') return <ReportsScreen />;
   if (route.screen === 'customer') return <CustomerProfile key={route.id} id={route.id} />;
+  if (route.screen === 'rm') return <RmPage key={route.id} id={route.id} />;
   return route.screen satisfies never;
 }

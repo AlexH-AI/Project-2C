@@ -31,6 +31,17 @@ export function resolveScope(
 }
 
 /**
+ * The choice that names the team or RM `scope` shows, once `resolveScope` gave it: then a team or
+ * RM renamed or added never takes its place (CLR6-D6). A team gone gives way to the first, and the
+ * RM picked in it goes with it. A choice that already names it, or shows everyone, is kept as is.
+ */
+export function pinChoice(choice: ScopeChoice, scope: Scope): ScopeChoice {
+  const id = scope.kind === 'team' ? scope.teamId : scope.kind === 'rm' ? scope.rmId : undefined;
+  if (id === undefined || scope.kind !== choice.kind || id === choice.id) return choice;
+  return { ...choice, id, rmInTeam: choice.id === undefined ? choice.rmInTeam : undefined };
+}
+
+/**
  * A click on a kind of scope. The kind already chosen keeps its team or RM; compare with the
  * choice, not the resolved scope, which shows everyone while there is no team or RM to pick.
  */

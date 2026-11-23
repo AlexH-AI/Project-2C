@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   chooseKind,
   narrowScope,
+  pinChoice,
   rmOptions,
   resolveScope,
   scopeName,
@@ -52,6 +53,47 @@ describe('resolveScope', () => {
   it('shows everyone when there is no team or RM to pick', () => {
     expect(resolveScope({ kind: 'team' }, [], people)).toEqual({ kind: 'all' });
     expect(resolveScope({ kind: 'rm' }, teams, [])).toEqual({ kind: 'all' });
+  });
+});
+
+describe('pinChoice', () => {
+  it('pins the team shown when none was chosen, so a name changed or added never moves it', () => {
+    const choice: ScopeChoice = { kind: 'team', rmInTeam: 're1' };
+    const pinned = pinChoice(choice, resolveScope(choice, teams, people));
+    expect(pinned).toEqual({ kind: 'team', id: 't1', rmInTeam: 're1' });
+    // Bình Minh renamed Xuân Thu, then An Phú created: both now sort before it.
+    const later: Team[] = [{ id: 't0', name: 'An Phú' }, teams[1]!, { id: 't1', name: 'Xuân Thu' }];
+    expect(resolveScope(pinned, later, people)).toEqual({ kind: 'team', teamId: 't1' });
+    expect(narrowScope(resolveScope(pinned, later, people), pinned.rmInTeam, people)).toEqual({
+      kind: 'rm',
+      rmId: 're1',
+    });
+  });
+
+  it('pins the RM shown when none was chosen', () => {
+    const choice: ScopeChoice = { kind: 'rm' };
+    expect(pinChoice(choice, resolveScope(choice, teams, people))).toEqual({
+      kind: 'rm',
+      id: 're1',
+    });
+  });
+
+  it('leaves a choice that names what is shown, or shows everyone, as it is', () => {
+    const team: ScopeChoice = { kind: 'team', id: 't2' };
+    expect(pinChoice(team, resolveScope(team, teams, people))).toBe(team);
+    const all: ScopeChoice = { kind: 'all' };
+    expect(pinChoice(all, { kind: 'all' })).toBe(all);
+    // No team to pick: everyone is shown, and the first team created is the one shown.
+    const none: ScopeChoice = { kind: 'team' };
+    expect(pinChoice(none, resolveScope(none, [], people))).toBe(none);
+  });
+
+  it('moves a team gone to the first one, without the RM picked in the team gone', () => {
+    const choice: ScopeChoice = { kind: 'team', id: 'gone', rmInTeam: 're9' };
+    expect(pinChoice(choice, resolveScope(choice, teams, people))).toEqual({
+      kind: 'team',
+      id: 't1',
+    });
   });
 });
 

@@ -823,7 +823,7 @@
           const s = win._teamSort || { k: 'name', desc: false };
           const list = teamRms(win._team).sort(SORT_TEAM[s.k]);
           if (s.desc) list.reverse();
-          return list.map((r) => `<tr data-view-go="rm" data-rm="${r.i}"><td><button class="lnk">${esc(r.name)}${ic('chev')}</button></td><td class="l"><span class="role">RM</span></td><td>${r.open}</td><td>${r.appt}</td><td>${r.polYear}</td><td><button class="btn quiet sm" data-run="person">Sửa</button></td></tr>`).join('');
+          return list.map((r) => `<tr><td><button class="lnk" data-view-go="rm" data-rm="${r.i}">${esc(r.name)}${ic('chev')}</button></td><td class="l"><span class="role">RM</span></td><td>${r.open}</td><td>${r.appt}</td><td>${r.polYear}</td><td><button class="btn quiet sm" data-run="person">Sửa</button></td></tr>`).join('');
         }
         // The list of teams on the left: sorted by name, one row a team (Owner 12/11 on more than 3 teams)
         const teamItem = (x, on, rmCount) => `<button class="tl-i${on ? ' on' : ''}" data-team-pick="${x.i}" aria-pressed="${on}">${tmark(x)}${tname(x)}<span class="n num">${x.tl ? 'TL' : 'chưa có TL'} · ${rmCount} RM</span></button>`;

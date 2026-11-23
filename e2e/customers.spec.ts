@@ -117,6 +117,35 @@ test('a card opens the customer profile with its code, stage and policies', asyn
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Khách hàng');
 });
 
+// Review of PR 1422: the way back draws the table as left, once; within the visit, the table comes
+// back as last shown, not as the way back drew it. Another visit starts it anew.
+test('back on the table from a profile, a sort picked then holds through Kanban and back', async ({
+  page,
+}) => {
+  const view = (name: string) => page.getByRole('radio', { name, exact: true });
+  const table = page.getByRole('table', { name: 'Khách hàng' });
+  const header = (name: string) =>
+    table.getByRole('columnheader', { name: new RegExp(`^${name}`) });
+  await view('Bảng').click();
+  await header('Họ tên').getByRole('button').click();
+  await table.getByRole('row').nth(5).getByRole('link').click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(header('Họ tên')).toHaveAttribute('aria-sort', 'ascending');
+
+  await header('Nhóm').getByRole('button').click();
+  await expect(header('Nhóm')).toHaveAttribute('aria-sort', 'ascending');
+  await view('Kanban').click();
+  await view('Bảng').click();
+  await expect(header('Nhóm')).toHaveAttribute('aria-sort', 'ascending');
+  await expect(header('Họ tên')).toHaveAttribute('aria-sort', 'none');
+
+  await page.getByRole('link', { name: 'Tổng quan' }).click();
+  await page.getByRole('link', { name: 'Khách hàng' }).click();
+  await view('Bảng').click();
+  await expect(header('Từ ngày')).toHaveAttribute('aria-sort', 'descending');
+});
+
 test('an unknown customer shows a message instead of a profile', async ({ page }) => {
   await page.goto('/#/customers/nobody');
   await expect(page.getByText('Không tìm thấy KH này (có thể đã bị xóa).')).toBeVisible();

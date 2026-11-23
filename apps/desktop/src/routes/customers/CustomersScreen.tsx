@@ -56,6 +56,17 @@ const keepTable = (table: DataTableView) => {
   left = { ...left, table };
 };
 
+/**
+ * Khách hàng as the way back of "Mở" left it, else null. Any other visit starts its table anew;
+ * within a visit, the table comes back as it was last shown, whatever the views between (review
+ * of PR 1422: not as the way back drew it).
+ */
+function arrive(): typeof left | null {
+  if (isReturning()) return left;
+  left = { ...left, table: undefined };
+  return null;
+}
+
 /** Names per closed list (cards per kanban column: `kanbanColumn`); the table shows everyone. */
 const CLOSED_LIMIT = 5;
 
@@ -169,12 +180,12 @@ export function CustomersScreen() {
     [board],
   );
   // Drawn by the way back of "Mở": as it was left. Else the board, and a table of the newest first.
-  const [back] = useState(() => (isReturning() ? left : null));
+  const [back] = useState(arrive);
   const [view, setView] = useState<View>(back?.view ?? 'kanban');
   useEffect(() => {
     left = { ...left, view };
   }, [view]);
-  const tableBack = back?.view === 'table' ? back.table : undefined;
+  const tableBack = left.table;
   // "+ n KH" goes with the kanban it is on: the focus goes to the table it opens (DR6-35). A count,
   // so each click moves it.
   const table = useRef<HTMLTableElement>(null);

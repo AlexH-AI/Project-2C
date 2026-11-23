@@ -6,6 +6,7 @@ import {
   pickCustomPeriod,
   pickFirstRm,
   pickPeriodKind,
+  pickScope,
   scopePill,
   screenSub,
 } from './support';
@@ -292,10 +293,11 @@ test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', a
   await expect(confirm).toHaveCount(0);
   await expect(team.locator('option:checked')).toHaveText('Sao Mai');
 
-  // Typed back to what is saved, a role and a team there and back with it: nothing to ask.
+  // Typed back to what is saved, a role and a team there and back with it: nothing to ask. A space
+  // at the end of the name is none of a change: saving drops it (CLR6-D10).
   await team.selectOption({ label: 'Hừng Đông' });
   await name.fill('Trần Hải Âu');
-  await name.fill('Trần Hải Yến');
+  await name.fill('Trần Hải Yến ');
   await edit.getByRole('radio', { name: 'IS', exact: true }).check();
   await edit.getByRole('radio', { name: 'RM', exact: true }).check();
   await remove.click();
@@ -782,4 +784,158 @@ test('by the keyboard, Xóa team leaves the focus on the list of teams, not on t
 
   // The first team shows next, with a "Xóa team" of its own: React would keep the deleted team's.
   await expect(cardTop(teamList(page), 'Team')).toBeFocused();
+});
+
+// C2a (spec Phase 6 §5; mockup search-rm-team.html #rm, #states): the page of an RM.
+const rmList = (page: Page) => page.getByRole('table', { name: 'Khách hàng phụ trách' });
+const STATS = ['Doanh số', 'Tổng số HĐ', 'Tỷ lệ hủy', 'Tỷ lệ chốt'];
+const statsOf = (page: Page) =>
+  Promise.all(STATS.map((name) => page.getByRole('region', { name, exact: true }).textContent()));
+
+test('the name of an RM opens their page; the way back returns to it, then to Team, each as left', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await teamButton(page, 'Sao Mai').click();
+  const table = members(page, 'Sao Mai').getByRole('table');
+  const byOpen = table.getByRole('columnheader', { name: 'KH đang mở', exact: true });
+  await byOpen.getByRole('button').click();
+  await expect(byOpen).toHaveAttribute('aria-sort', 'ascending');
+  const name = table.getByRole('row').last().getByRole('link');
+  const rm = (await name.textContent())!;
+  await name.click();
+
+  await expect(page).toHaveURL(/#\/team\/rm\/[^/]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(rm);
+  await expect(
+    page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', {
+      name: 'Team & nhân sự',
+    }),
+  ).toHaveAttribute('aria-current', 'page');
+  await expect(screenSub(page)).toContainText(/^RM · Team Sao Mai · Tháng \d\d\/\d{4}/);
+  for (const stat of STATS) {
+    await expect(page.getByRole('region', { name: stat, exact: true })).toBeVisible();
+  }
+  const list = rmList(page);
+  await expect(list.getByRole('columnheader', { name: /^Gặp gần nhất/ })).toHaveAttribute(
+    'aria-sort',
+    'ascending',
+  );
+  // Every customer listed is one this RM is in charge of: KH đang mở of the Team table.
+  const open = page.getByRole('radio', { name: 'Đang mở' });
+  await expect(open).toBeChecked();
+  const policies = list.getByRole('columnheader', { name: /^Số HĐ/ });
+  await policies.getByRole('button').click();
+  await policies.getByRole('button').click();
+  await expect(policies).toHaveAttribute('aria-sort', 'descending');
+
+  const customer = list.getByRole('row').nth(12).getByRole('link');
+  await customer.scrollIntoViewIfNeeded();
+  const [href, scroll] = [await customer.getAttribute('href'), await page.evaluate(() => scrollY)];
+  await customer.click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
+  await expect(page).toHaveURL(new RegExp(`${href}$`));
+  await page.getByRole('link', { name: `← ${rm}` }).click();
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(rm);
+  await expect(policies).toHaveAttribute('aria-sort', 'descending');
+  await expect(list.getByRole('row').nth(12).getByRole('link')).toBeFocused();
+  await expect(list.getByRole('row').nth(12).getByRole('link')).toHaveAttribute('href', href!);
+  expect(await page.evaluate(() => scrollY)).toBe(scroll);
+
+  await page.getByRole('link', { name: '← Team & nhân sự' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');
+  await expect(teamButton(page, 'Sao Mai')).toHaveAttribute('aria-pressed', 'true');
+  await expect(byOpen).toHaveAttribute('aria-sort', 'ascending');
+  await expect(table.getByRole('link', { name: rm, exact: true })).toBeFocused();
+});
+
+test('Sửa on the row of an RM opens the staff dialog alone, not their page', async ({ page }) => {
+  const table = members(page, 'Bình Minh').getByRole('table');
+  await table.getByRole('button', { name: /^Sửa / }).first().click();
+
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  await expect(edit).toBeVisible();
+  await expect(page).toHaveURL(/#\/team$/);
+  await edit.getByRole('button', { name: 'Hủy' }).click();
+  await expect(edit).toBeHidden();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');
+});
+
+test('the period of the toolbar gives the four numbers of the RM page at once', async ({
+  page,
+}) => {
+  const table = members(page, 'Bình Minh').getByRole('table');
+  await table.getByRole('row').nth(1).getByRole('link').click();
+  await expect(rmList(page)).toBeVisible();
+  const month = await statsOf(page);
+
+  await pickPeriodKind(page, 'Năm');
+  await expect(screenSub(page)).toContainText(`Năm ${ANCHOR_YEAR}`);
+  await expect.poll(() => statsOf(page)).not.toEqual(month);
+  const net = page.getByRole('region', { name: 'Tổng số HĐ', exact: true });
+  await expect(net).toContainText(/\d+ phát hành − \d+ hủy/);
+});
+
+test('an RM in charge of no customer yet: the page says so, with a way to add one', async ({
+  page,
+}) => {
+  await addRm(page, 'Trần Hải Yến', 'Hừng Đông');
+  await members(page, 'Hừng Đông').getByRole('link', { name: 'Trần Hải Yến' }).click();
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Trần Hải Yến');
+  const list = rmList(page);
+  await expect(list.getByRole('columnheader', { name: /^Khách hàng/ })).toBeVisible();
+  await expect(list.getByRole('row').nth(1)).toContainText('RM Trần Hải Yến chưa phụ trách KH nào');
+  await expect(list.getByRole('row').nth(1)).toContainText(
+    'KH hiện ở đây khi hồ sơ KH ghi RM này là RM phụ trách.',
+  );
+  await list.getByRole('button', { name: '+ Khách hàng' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  const assigned = dialog.getByRole('combobox', { name: 'RM phụ trách' });
+  await expect(assigned.locator('option:checked')).toContainText('Trần Hải Yến');
+});
+
+test('a page of an RM gone goes to Team & nhân sự, as an unknown address does', async ({
+  page,
+}) => {
+  await page.goto('/#/team/rm/nobody');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');
+  await expect(page).toHaveURL(/#\/team$/);
+});
+
+// CLR6-D6: the team shown stays the one shown when a name changes or one is added.
+test('renaming the team shown first keeps it shown, on Team and in the scope of Khách hàng', async ({
+  page,
+}) => {
+  await expect(page.getByRole('heading', { name: 'Team Bình Minh' })).toBeVisible();
+  const rename = async (from: string, to: string) => {
+    await members(page, from).getByRole('button', { name: 'Đổi tên team' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Đổi tên team' });
+    await dialog.getByRole('textbox', { name: 'Tên team' }).fill(to);
+    await dialog.getByRole('button', { name: 'Lưu' }).click();
+    await expect(dialog).toBeHidden();
+  };
+  await rename('Bình Minh', 'Xuân Thu');
+  await expect(page.getByRole('heading', { name: 'Team Xuân Thu' })).toBeVisible();
+  await expect(teamButton(page, 'Xuân Thu')).toHaveAttribute('aria-pressed', 'true');
+
+  // Every team together on Tổng quan: on Khách hàng the first one, Hừng Đông, then an RM of it.
+  await page.getByRole('link', { name: 'Tổng quan' }).click();
+  await pickScope(page, 'teams');
+  await page.getByRole('link', { name: 'Khách hàng' }).click();
+  const strip = page.getByRole('region', { name: 'RM của team Hừng Đông' });
+  const chip = strip.getByRole('button').nth(1);
+  const rm = (await chip.locator('span').first().textContent())!;
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+
+  // Hừng Đông renamed after Ánh Dương, and An Phú added: both now sort before Sao Mai.
+  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
+  await teamButton(page, 'Hừng Đông').click();
+  await rename('Hừng Đông', 'Ánh Dương');
+  await createTeam(page, 'An Phú');
+  await page.getByRole('link', { name: 'Khách hàng' }).click();
+  const kept = page.getByRole('region', { name: 'RM của team Ánh Dương' });
+  await expect(kept.getByRole('button', { pressed: true })).toContainText(rm);
 });

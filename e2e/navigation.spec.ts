@@ -296,6 +296,17 @@ test('an unknown address falls back to the overview', async ({ page }) => {
   await expect(page).toHaveURL(/#\/overview$/);
 });
 
+// CLR6-D9: an odd address that reads as the screen shown is corrected as any other.
+test('an odd address of the screen already shown is corrected too', async ({ page }) => {
+  await page.goto('/#/team');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');
+  for (const odd of ['#/team//', '#//team', '#/TEAM']) {
+    await page.evaluate((hash) => (location.hash = hash), odd);
+    await expect(page).toHaveURL(/#\/team$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');
+  }
+});
+
 test('the scope pill names the scope shown and says it opens a menu', async ({ page }) => {
   await page.goto('/#/customers');
   const pill = scopePill(page);
