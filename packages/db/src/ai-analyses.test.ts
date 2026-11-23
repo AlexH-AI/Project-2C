@@ -13,7 +13,7 @@ import * as db from './index';
 import { addKycNote, confirmKycFact, listKycVersions } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { seedDemoData } from './seed';
-import { createPerson, createTeam } from './team';
+import { createPerson } from './team';
 import { codeOf, d, setup } from './test-support';
 import type { Database } from './database';
 import type { KycField } from '@p2c/domain';
@@ -874,7 +874,12 @@ describe('the ai_analyses migration', () => {
     const now = () => new Date(Date.UTC(2026, 8, 26, 11));
     const before = MIGRATIONS.findIndex((m) => m.tag === '0006_ai_analyses_append_only') + 1;
     const old = await openDatabase({ migrations: MIGRATIONS.slice(0, before), now });
-    const team = createTeam(old, { name: 'Sao Mai' });
+    // The command writes the colour and icon of a team, which a file before C3 (0019) lacks.
+    old.sqlite.run(
+      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', ?, ?)",
+      [now().toISOString(), now().toISOString()],
+    );
+    const team = { id: 't' };
     // The command writes RM, which the CHECK of a file before A2 (0013) refuses: past it, here, then
     // RE again once the customer has its RM, as such a file holds it (0010 copies it under that CHECK).
     old.sqlite.run('PRAGMA ignore_check_constraints = ON');

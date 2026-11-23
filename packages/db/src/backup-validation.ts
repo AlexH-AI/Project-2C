@@ -30,6 +30,7 @@ import { stagesOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
+import { isTeamLook } from './team';
 import {
   PERSON_REFERENCE_KINDS,
   PERSON_REFERENCES,
@@ -68,6 +69,9 @@ export function validateBackupValues(db: Database, currency: CurrencyCode): void
         throw new DbError('BACKUP_INVALID');
       }
       if (NAMED.has(table) && !storedAs(requireName, row.name)) throw new DbError('BACKUP_INVALID');
+      // C3: the colour and icon of a team, deleted or not, as the commands store them.
+      if (table === 'teams' && !isTeamLook(row.color, row.icon))
+        throw new DbError('BACKUP_INVALID');
       if (table === 'appointments' && !appointmentTextStored(row)) {
         throw new DbError('BACKUP_INVALID');
       }

@@ -7,6 +7,7 @@ import {
   updateCustomerProfile,
 } from './customers';
 import { openDatabase } from './database';
+import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { DbError } from './errors';
 import { softDeletePolicy, submitPolicy } from './policies';
 import {
@@ -17,7 +18,7 @@ import {
   listTeams,
   ownsRecords,
   personUsage,
-  renameTeam,
+  updateTeam,
   restorePerson,
   restoreTeam,
   softDeletePerson,
@@ -50,7 +51,12 @@ describe('teams', () => {
 
     const team = createTeam(db, { name: '  Sao Mai ' });
 
-    expect(team).toEqual({ id: expect.stringMatching(/^[0-9A-Z]{26}$/), name: 'Sao Mai' });
+    expect(team).toEqual({
+      id: expect.stringMatching(/^[0-9A-Z]{26}$/),
+      name: 'Sao Mai',
+      color: null,
+      icon: null,
+    });
     expect(byId(listTeams(db), team.id)).toEqual(team);
     expect(listTeams(db)).toEqual([team]);
   });
@@ -70,8 +76,8 @@ describe('teams', () => {
 
     expect(codeOf(() => createTeam(db, { name: '   ' }))).toBe('NAME_REQUIRED');
     expect(codeOf(() => createTeam(db, { name: 'Sao Mai' }))).toBe('TEAM_NAME_TAKEN');
-    expect(codeOf(() => renameTeam(db, other.id, 'Sao Mai'))).toBe('TEAM_NAME_TAKEN');
-    expect(renameTeam(db, team.id, 'Sao Mai')).toEqual(team);
+    expect(codeOf(() => updateTeam(db, other.id, { name: 'Sao Mai' }))).toBe('TEAM_NAME_TAKEN');
+    expect(updateTeam(db, team.id, { name: 'Sao Mai' })).toEqual(team);
   });
 
   // DR-49: the command itself composes the name, so a decomposed copy is the same name.
@@ -82,7 +88,7 @@ describe('teams', () => {
 
     expect(codeOf(() => createTeam(db, { name: decomposed }))).toBe('TEAM_NAME_TAKEN');
     expect(createTeam(db, { name: 'Bình Minh'.normalize('NFD') }).name).toBe('Bình Minh');
-    expect(renameTeam(db, team.id, decomposed)).toEqual(team);
+    expect(updateTeam(db, team.id, { name: decomposed })).toEqual(team);
   });
 
   // DR6-49: a name the screens show the same is the same name, and an invisible one is empty.
@@ -96,7 +102,7 @@ describe('teams', () => {
     }
     expect(codeOf(() => createTeam(db, { name: '​' }))).toBe('NAME_REQUIRED');
     expect(codeOf(() => createTeam(db, { name: ' ⁠ ﻿' }))).toBe('NAME_REQUIRED');
-    expect(renameTeam(db, team.id, 'Bình　 Minh')).toEqual(team);
+    expect(updateTeam(db, team.id, { name: 'Bình　 Minh' })).toEqual(team);
     expect(createTeam(db, { name: 'Hừng​  Đông' }).name).toBe('Hừng Đông');
   });
 
@@ -115,7 +121,7 @@ describe('teams', () => {
         'NAME_REQUIRED',
       );
     }
-    expect(renameTeam(db, team.id, 'Sao Mai\u{2800}')).toEqual(team);
+    expect(updateTeam(db, team.id, { name: 'Sao Mai\u{2800}' })).toEqual(team);
   });
 
   // DR6-111 (Q2 a): a control character shows nothing, and the report's Excel file drops it.
@@ -145,14 +151,14 @@ describe('teams', () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
 
-    expect(renameTeam(db, team.id, 'Hừng Đông')).toEqual({ id: team.id, name: 'Hừng Đông' });
+    expect(updateTeam(db, team.id, { name: 'Hừng Đông' })).toEqual({ ...team, name: 'Hừng Đông' });
     expect(byId(listTeams(db), team.id)?.name).toBe('Hừng Đông');
   });
 
   it('reports an unknown team', async () => {
     const { db } = await setup();
 
-    expect(codeOf(() => renameTeam(db, 'nope', 'X'))).toBe('TEAM_NOT_FOUND');
+    expect(codeOf(() => updateTeam(db, 'nope', { name: 'X' }))).toBe('TEAM_NOT_FOUND');
     expect(codeOf(() => softDeleteTeam(db, 'nope'))).toBe('TEAM_NOT_FOUND');
     expect(codeOf(() => restoreTeam(db, 'nope'))).toBe('TEAM_NOT_FOUND');
     expect(byId(listTeams(db), 'nope')).toBeUndefined();
@@ -165,7 +171,7 @@ describe('teams', () => {
     softDeleteTeam(db, team.id);
     expect(listTeams(db)).toEqual([]);
     expect(byId(listTeams(db), team.id)).toBeUndefined();
-    expect(codeOf(() => renameTeam(db, team.id, 'X'))).toBe('TEAM_NOT_FOUND');
+    expect(codeOf(() => updateTeam(db, team.id, { name: 'X' }))).toBe('TEAM_NOT_FOUND');
     // The name is free again while the team is deleted.
     const reused = createTeam(db, { name: 'Sao Mai' });
 
@@ -185,6 +191,74 @@ describe('teams', () => {
     softDeletePerson(db, rm.id);
     softDeleteTeam(db, team.id);
     expect(listTeams(db)).toEqual([]);
+  });
+});
+
+describe('the colour and icon of a team (C3, ADR-0007 "Team & nhân sự")', () => {
+  it('takes a colour and an icon of the lists on create and edit; null is the default look', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai', color: 'accent', icon: 'star' });
+
+    expect(team).toMatchObject({ color: 'accent', icon: 'star' });
+    expect(byId(listTeams(db), team.id)).toEqual(team);
+    // Left out, each stays as it is; null takes it back to the default look.
+    expect(updateTeam(db, team.id, { name: 'Sao Khuê' })).toEqual({ ...team, name: 'Sao Khuê' });
+    expect(updateTeam(db, team.id, { name: 'Sao Khuê', color: 'warn' })).toMatchObject({
+      color: 'warn',
+      icon: 'star',
+    });
+    expect(updateTeam(db, team.id, { name: 'Sao Khuê', color: null, icon: null })).toMatchObject({
+      color: null,
+      icon: null,
+    });
+    expect(byId(listTeams(db), team.id)).toMatchObject({ color: null, icon: null });
+  });
+
+  it('refuses a colour or an icon outside its list, the database untouched', async () => {
+    const { db, persist } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai', color: 'info', icon: 'leaf' });
+    persist.mockClear();
+    // A colour code or a token not in the list: names only, as the dialog offers them.
+    const odd = (value: string) => value as never;
+
+    expect(codeOf(() => createTeam(db, { name: 'Bình Minh', color: odd('#d9b26a') }))).toBe(
+      'TEAM_STYLE_INVALID',
+    );
+    expect(codeOf(() => createTeam(db, { name: 'Bình Minh', icon: odd('team') }))).toBe(
+      'TEAM_STYLE_INVALID',
+    );
+    expect(codeOf(() => updateTeam(db, team.id, { name: 'Sao Mai', color: odd('danger') }))).toBe(
+      'TEAM_STYLE_INVALID',
+    );
+    expect(codeOf(() => updateTeam(db, team.id, { name: 'Sao Mai', icon: odd('') }))).toBe(
+      'TEAM_STYLE_INVALID',
+    );
+    expect(listTeams(db)).toEqual([team]);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('keeps them through a soft delete and a restore', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Bình Minh', color: 'warn', icon: 'sunrise' });
+
+    softDeleteTeam(db, team.id);
+    restoreTeam(db, team.id);
+
+    expect(listTeams(db)).toEqual([team]);
+  });
+
+  it('opens a database saved before the two columns, every team in the default look', async () => {
+    const style = MIGRATIONS.find((m) => m.tag === '0019_teams_style')!;
+    const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < style.id) });
+    old.sqlite.run(
+      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t1', 'Sao Mai', ?, ?)",
+      ['2026-11-01T08:00:00.000Z', '2026-11-01T08:00:00.000Z'],
+    );
+
+    const migrated = await openDatabase({ bytes: old.export() });
+
+    expect(migrated.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(listTeams(migrated)).toEqual([{ id: 't1', name: 'Sao Mai', color: null, icon: null }]);
   });
 });
 
@@ -487,7 +561,7 @@ describe('commands and the save port', () => {
   it('stamps created, updated and deleted times from the clock', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
-    renameTeam(db, team.id, 'Bình Minh');
+    updateTeam(db, team.id, { name: 'Bình Minh' });
     softDeleteTeam(db, team.id);
 
     const row = db.sqlite.exec('SELECT created_at, updated_at, deleted_at FROM teams')[0];

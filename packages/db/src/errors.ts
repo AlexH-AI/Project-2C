@@ -12,6 +12,8 @@ export const DB_ERROR_CODES = [
   'TEAM_NOT_FOUND',
   /** Params `name`. */
   'TEAM_NAME_TAKEN',
+  /** A colour or an icon of a team outside its list (C3): a bug of the caller, as INVALID_CHOICE. */
+  'TEAM_STYLE_INVALID',
   'TEAM_HAS_MEMBERS',
   'TEAM_REQUIRED',
   /** A team already has a live TL; params `name` (that TL's). */

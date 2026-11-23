@@ -378,10 +378,10 @@ test('a dialog is the focus layer: × and Escape close it, a click on the dimmed
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
 
-  // A question to confirm is the narrow one.
+  // A question to confirm is the narrow one; Tạo / Sửa team is a form since C3 (mockup #team).
   await page.goto('/#/team');
-  await page.getByRole('button', { name: '+ Team' }).click();
-  await expect(page.getByRole('dialog', { name: 'Team mới' })).toHaveCSS('width', '400px');
+  await page.getByRole('button', { name: 'Xóa team' }).click();
+  await expect(page.getByRole('dialog', { name: /^Xóa team / })).toHaveCSS('width', '400px');
 });
 
 test('a dialog longer than the window scrolls its body; its head and its foot stay', async ({

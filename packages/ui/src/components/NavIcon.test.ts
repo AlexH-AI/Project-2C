@@ -43,6 +43,35 @@ const MOCKUP: ReadonlyArray<[NavIconName, string, string]> = [
     '<path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6l-1.9-4.9L4 9.8l5.1-1.9zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />',
   ],
   ['trash', '#i-trash', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />'],
+  // The eight icons of a team, those of search-rm-team.html (G3 12/11/2026, C3).
+  [
+    'star',
+    '#i-star',
+    '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" />',
+  ],
+  [
+    'sunrise',
+    '#i-sunrise',
+    '<path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" />',
+  ],
+  [
+    'sun',
+    '#i-sun',
+    '<circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" />',
+  ],
+  ['mountain', '#i-mountain', '<path d="M3 19l6-10 3.5 5.5L15 11l6 8z" />'],
+  ['leaf', '#i-leaf', '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7" />'],
+  [
+    'flame',
+    '#i-flame',
+    '<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 .8-3.2 2-4.3.2 2 1 3 2 3.3-.3-3 .2-6 1-9z" />',
+  ],
+  ['shield', '#i-shield', '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" />'],
+  [
+    'anchor',
+    '#i-anchor',
+    '<circle cx="12" cy="5.5" r="2" /><path d="M12 7.5V21M5 13c0 4 3 7 7 8 4-1 7-4 7-8M8.5 11h7" />',
+  ],
 ];
 
 describe('NavIcon (mockup app-shell.html)', () => {

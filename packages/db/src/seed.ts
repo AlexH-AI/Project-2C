@@ -82,6 +82,7 @@ import {
   NEXT_STEPS,
   OUTCOMES,
   STARTING_STAGES,
+  TEAM_LOOKS,
   TEAM_NAMES,
   TRIGGER_NOTES,
   TRIGGERS,
@@ -278,7 +279,9 @@ function simulation(
   );
   const rms: Person[] = [];
   for (let t = 0; t < scale.teams; t++) {
-    const team = createTeam(db, { name: teamName(t) });
+    // By the index, never the stream: every later row stays as it was (C3).
+    const look = TEAM_LOOKS[t % TEAM_LOOKS.length];
+    const team = createTeam(db, { name: teamName(t), ...look });
     const tl = createPerson(db, { name: staffName(), role: 'TL', teamId: team.id });
     for (let i = 0; i < scale.rmsPerTeam; i++) {
       const rm = createPerson(db, { name: staffName(), role: 'RM', teamId: team.id });

@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Person, PersonRole, Team } from '@p2c/domain';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  formatDayMonth,
+  type CalendarDate,
+  type Person,
+  type PersonRole,
+  type Team,
+} from '@p2c/domain';
 import {
   Button,
   DataTable,
@@ -15,14 +21,24 @@ import { routeToHash } from '../../shell/routes';
 import { ScreenBar } from '../../shell/ScreenBar';
 import { isReturning } from '../../shell/useRoute';
 import { CARD, FOCUS, HEADING, LINK } from '../classes';
+import { formatAmountCompact } from '../money-view';
+import { formatCount } from '../overview/overview-view';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { RmSearch } from './RmSearch';
-import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
-import { groupByTeam, staffMetrics, type StaffMetrics, type TeamEntry } from './team-view';
+import { DeleteTeamDialog, TeamDialog } from './TeamDialogs';
+import { TeamMark, TeamTop, teamNameClass } from './TeamLook';
+import {
+  groupByTeam,
+  staffMetrics,
+  teamBrief,
+  type StaffMetrics,
+  type TeamBrief,
+  type TeamEntry,
+} from './team-view';
 
 type Editing =
   | { readonly kind: 'create' }
-  | { readonly kind: 'rename'; readonly team: Team }
+  | { readonly kind: 'edit'; readonly entry: TeamEntry }
   | { readonly kind: 'delete'; readonly team: Team }
   | { readonly kind: 'addPerson'; readonly teamId?: string; readonly role?: PersonRole }
   | { readonly kind: 'editPerson'; readonly person: Person }
@@ -133,6 +149,19 @@ function memberColumns(
   ];
 }
 
+/**
+ * The window under 1 280 px, where `max-xl:` takes the list of teams to 220 px: the member table
+ * takes cells of 6 px there, the narrow rule of the mockup (`#team`, @container 1240). With cells
+ * of 10 px it still ran past its card at 1 100 px on WebKit, by about 5 px with the tokens of
+ * Windows and 13 px with those of macOS (L205).
+ */
+const XL = 1280;
+const onResize = (change: () => void) => {
+  addEventListener('resize', change);
+  return () => removeEventListener('resize', change);
+};
+const underXl = () => innerWidth < XL;
+
 /** Team & nhân sự as last left: the team shown, the sort and rows of its members. */
 let left: { teamId?: string; table?: DataTableView } = {};
 
@@ -152,6 +181,22 @@ export function TeamScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(back?.teamId ?? null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const selected = view.teams.find((entry) => entry.team.id === selectedId) ?? view.teams[0];
+  const brief = useMemo(
+    () => selected && teamBrief(tables, selected.team.id, today),
+    [tables, selected, today],
+  );
+  const list = useRef<HTMLDivElement>(null);
+  // From about 8 teams the list scrolls in its card; the team shown stays in sight (mockup #team),
+  // also when a name changes and the list, sorted by name, puts it elsewhere.
+  useEffect(() => {
+    const box = list.current;
+    const on = box?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!box || !on) return;
+    const below = on.offsetTop + on.offsetHeight > box.scrollTop + box.clientHeight;
+    if (on.offsetTop < box.scrollTop || below) {
+      box.scrollTop = on.offsetTop - (box.clientHeight - on.offsetHeight) / 2;
+    }
+  }, [selected?.team.id, view.teams]);
   // The team shown stays the one shown: a team renamed or added never moves it (CLR6-D6). One
   // gone gives way to the first.
   if (selected && selected.team.id !== selectedId) setSelectedId(selected.team.id);
@@ -193,7 +238,8 @@ export function TeamScreen() {
         <RmSearch people={view.people} teams={teams} />
       </div>
       <div className="flex items-start gap-4">
-        <div className="flex w-64 shrink-0 flex-col gap-4">
+        {/* 220 px under 1 280 (mockup @container 1240): the member table fits 1 100 (L205). */}
+        <div className="flex w-64 shrink-0 flex-col gap-4 max-xl:w-55">
           <section aria-labelledby={LIST_TITLE} className={CARD}>
             <h2 id={LIST_TITLE} tabIndex={-1} className={`${HEADING} mb-2`}>
               {t('team.list')}
@@ -206,48 +252,58 @@ export function TeamScreen() {
                 next={t('team.noneNext')}
               />
             )}
-            {view.teams.map((entry) => {
-              const on = entry === selected;
-              // The name breaks, even with no space; the count stays whole, by the name's first line
-              // (DR6-148). On the gold tint of the chosen team `chosen-tint` writes it in --text:
-              // --text-3 is under 4.5:1 there (ADR-0013 appendix 11/11/2026 §7, L188).
-              return (
-                <button
-                  key={entry.team.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setSelectedId(entry.team.id)}
-                  className={`flex w-full cursor-pointer items-baseline gap-2 rounded-control-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
-                    on ? 'chosen-tint font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
-                  }`}
-                >
-                  {entry.team.name}
-                  <span className="ml-auto shrink-0 font-normal text-fg-3 tabular-nums">
-                    {t(entry.lead ? 'team.count' : 'team.countNoLead', { rm: entry.rm })}
-                  </span>
-                </button>
-              );
-            })}
+            <div ref={list} className="relative -mx-1.5 max-h-78 overflow-y-auto px-1.5 py-0.5">
+              {view.teams.map((entry) => {
+                const on = entry === selected;
+                // The name breaks, even with no space; the count stays whole, by the name's first line
+                // (DR6-148). On the gold tint of the chosen team both are in --text: --text-3 is under
+                // 4.5:1 there, and so are four of the six team colours over the brightest glass of
+                // macOS (ADR-0013 appendix 11/11/2026 §7, L188); its icon keeps the colour (C3).
+                return (
+                  <button
+                    key={entry.team.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setSelectedId(entry.team.id)}
+                    className={`flex w-full cursor-pointer items-baseline gap-2 rounded-control-sm px-2 py-2 text-left text-sm font-semibold wrap-anywhere ${FOCUS} ${
+                      on ? 'chosen-tint' : 'hover:bg-surface-2'
+                    }`}
+                  >
+                    <TeamMark team={entry.team} className="self-start" />
+                    <span className={`min-w-0 ${on ? 'text-fg' : teamNameClass(entry.team)}`}>
+                      {entry.team.name}
+                    </span>
+                    <span
+                      className={`ml-auto shrink-0 text-xs font-normal tabular-nums ${on ? 'text-fg' : 'text-fg-3'}`}
+                    >
+                      {t(entry.lead ? 'team.count' : 'team.countNoLead', { rm: entry.rm })}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </section>
           <SharedSupport people={view.shared} onEdit={editPerson} />
         </div>
         {selected && (
           <Members
             entry={selected}
+            brief={brief!}
+            today={today}
             columns={columns}
             back={back?.table}
             onEditLead={editPerson}
             onAddLead={() =>
               setEditing({ kind: 'addPerson', teamId: selected.team.id, role: 'TL' })
             }
-            onRename={() => setEditing({ kind: 'rename', team: selected.team })}
+            onEdit={() => setEditing({ kind: 'edit', entry: selected })}
             onDelete={() => setEditing({ kind: 'delete', team: selected.team })}
           />
         )}
       </div>
       <DialogFocusFallback value={() => document.getElementById(cardTitleOf(editing))}>
         {editing?.kind === 'create' && (
-          <TeamNameDialog
+          <TeamDialog
             onClose={close}
             onSaved={(team) => {
               setSelectedId(team.id);
@@ -255,8 +311,14 @@ export function TeamScreen() {
             }}
           />
         )}
-        {editing?.kind === 'rename' && (
-          <TeamNameDialog team={editing.team} onClose={close} onSaved={close} />
+        {editing?.kind === 'edit' && (
+          <TeamDialog
+            team={editing.entry.team}
+            lead={editing.entry.lead?.name}
+            rm={editing.entry.rm}
+            onClose={close}
+            onSaved={close}
+          />
         )}
         {editing?.kind === 'delete' && <DeleteTeamDialog team={editing.team} onClose={close} />}
         {(editing?.kind === 'addPerson' || editing?.kind === 'editPerson') && (
@@ -321,24 +383,56 @@ function SharedSupport({
   );
 }
 
+/**
+ * Doanh số and Số HĐ of the month running, bold in champagne (mockup `#team` `.brief`); its third
+ * column waits for Forecast tuần (D6).
+ */
+function Brief({ brief, today }: { brief: TeamBrief; today: CalendarDate }) {
+  const when = t('team.brief.when', { month: today.month, date: formatDayMonth(today) });
+  const numbers = [
+    [t('overview.kpi.revenue'), formatAmountCompact(brief.revenue), brief.revenue < 0],
+    [t('team.brief.net'), formatCount(brief.net), brief.net < 0],
+  ] as const;
+  return (
+    <dl className="my-4 grid grid-cols-3 gap-3 border-y border-hairline py-3.5 tabular-nums">
+      {numbers.map(([label, value, negative]) => (
+        <div key={label} className="flex flex-col">
+          <dt className="text-sm text-fg-2">{label}</dt>
+          <dd
+            className={`order-first m-0 text-2xl leading-tight font-bold tracking-tight whitespace-nowrap max-xl:text-xl ${negative ? 'text-danger' : 'text-accent'}`}
+          >
+            {value}
+          </dd>
+          <dd className="m-0 text-xs text-fg-2">{when}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function Members({
   entry,
+  brief,
+  today,
   columns,
   back,
   onEditLead,
   onAddLead,
-  onRename,
+  onEdit,
   onDelete,
 }: {
   entry: TeamEntry;
+  brief: TeamBrief;
+  today: CalendarDate;
   columns: ReadonlyArray<DataTableColumn<Person>>;
   /** The sort and rows of the table as left, drawn again by the way back of "Mở". */
   back: DataTableView | undefined;
   onEditLead: (person: Person) => void;
   onAddLead: () => void;
-  onRename: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
+  const smallWindow = useSyncExternalStore(onResize, underXl);
   return (
     <section
       aria-label={t('team.members', { name: entry.team.name })}
@@ -350,35 +444,29 @@ function Members({
           (review of PR 744). It wraps as the mockup's `.members-head`: a team or TL name too long
           for the line takes a line of its own and breaks there, even with no space, rather than
           push the buttons out or squeeze the other name (DR6-148). */}
-      <div key={entry.team.id} className="mb-2 flex flex-wrap items-center gap-2">
-        <h2 id={MEMBERS_TITLE} tabIndex={-1} className={`${HEADING} min-w-0 wrap-anywhere`}>
-          {t('team.heading', { name: entry.team.name })}
-        </h2>
-        <span className="text-fg-3">{t('sep.dot')}</span>
-        {entry.lead ? (
-          <>
-            <span className="min-w-0 text-sm text-fg-2 wrap-anywhere">
-              <span className={`${ROLE} mr-1.5`}>{t('team.leadOf')}</span>
-              {entry.lead.name}
-            </span>
-            <span className="text-fg-3">{t('sep.dot')}</span>
+      <div key={entry.team.id}>
+        <TeamTop
+          team={entry.team}
+          id={MEMBERS_TITLE}
+          lead={
+            entry.lead?.name ?? <span className="font-normal text-fg-3">{t('team.noLead')}</span>
+          }
+        >
+          {entry.lead ? (
             <EditLink person={entry.lead} onEdit={onEditLead} />
-          </>
-        ) : (
-          <>
-            <span className="text-sm text-fg-3">{t('team.noLead')}</span>
-            <span className="text-fg-3">{t('sep.dot')}</span>
+          ) : (
             <button type="button" onClick={onAddLead} className={`${LINK} text-xs`}>
               {t('team.addLead')}
             </button>
-          </>
-        )}
-        {/* Together at the right, on the last line when the names take more than one. */}
-        <div className="ml-auto flex gap-2">
-          <Button onClick={onRename}>{t('team.rename')}</Button>
-          <Button onClick={onDelete}>{t('team.delete')}</Button>
-        </div>
+          )}
+          {/* Together at the right, on the last line when the names take more than one. */}
+          <div className="ml-auto flex gap-2">
+            <Button onClick={onEdit}>{t('team.edit')}</Button>
+            <Button onClick={onDelete}>{t('team.delete')}</Button>
+          </div>
+        </TeamTop>
       </div>
+      <Brief brief={brief} today={today} />
       {/* Kept for a team without RM, its headers over the note: the sort holds for the team shown
           after. */}
       <div className="overflow-x-auto">
@@ -394,8 +482,10 @@ function Members({
           // The table is not made anew for each team: this takes another team back to its first
           // hundred rows (DR6-32).
           resetKey={entry.team.id}
-          // At 1 100 px it runs past its card already: no further, until C3 (L170).
-          narrow
+          // Cells 10 px from their edges, 6 px under 1 280 px: the table fits its card at 1 100 px,
+          // every Sửa whole (L205; e2e team.spec.ts).
+          narrow={!smallWindow}
+          compact={smallWindow}
           empty={
             <StateNote
               size="table"

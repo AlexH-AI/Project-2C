@@ -860,7 +860,12 @@ describe('the migration of the purge (0011)', () => {
     const now = () => new Date(Date.UTC(2026, 9, 11, 11));
     const purge = MIGRATIONS.find((m) => m.tag === '0011_trash_purge')!;
     const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < purge.id), now });
-    const team = createTeam(old, { name: 'Sao Mai' });
+    // The command writes the colour and icon of a team, which a file before C3 (0019) lacks.
+    old.sqlite.run(
+      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', ?, ?)",
+      [now().toISOString(), now().toISOString()],
+    );
+    const team = { id: 't' };
     // The commands write RM, the role and the note source, which the CHECKs of a file before A2
     // (0013) refuse: past them, here. The rows go through 0013 as they are. They name the column
     // of the RM rm_id too, which such a file calls re_id (A3): runBeforeA3.
@@ -880,9 +885,13 @@ describe('the migration of the purge (0011)', () => {
     const migrated = await openDatabase({ bytes: old.export(), now });
 
     expect(migrated.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    // Every row kept; the one added is the currency of 0016 (ADR-0018 §7).
+    // Every row kept; the one added is the currency of 0016 (ADR-0018 §7), the two columns of a
+    // team's look of 0019 empty (C3).
     const { settings, ...rest } = dump(migrated);
-    expect({ ...rest, settings: settings!.filter((row) => row[0] !== 'currency') }).toEqual(saved);
+    expect({ ...rest, settings: settings!.filter((row) => row[0] !== 'currency') }).toEqual({
+      ...saved,
+      teams: saved.teams!.map((row) => [...row, null, null]),
+    });
     expect(purgeTrash(migrated).counts).toMatchObject({
       customers: 1,
       customerRecords: { kycNotes: 1, aiAnalyses: 1 },

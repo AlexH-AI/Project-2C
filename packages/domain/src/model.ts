@@ -6,9 +6,35 @@ import type { Money } from './money';
 import type { CalendarDate } from './period';
 import type { PipelineStage } from './pipeline-stage';
 
+/**
+ * The colours a team's name may take, each the name of a token of the app (C3; ADR-0007 appendix
+ * "Team & nhân sự"): Champagne, Xanh dương, Tím, Xanh ngọc, Xanh lá, Cam. Stored by name.
+ */
+export const TEAM_COLORS = ['accent', 'info', 'n2', 'submitted', 'ok', 'warn'] as const;
+export type TeamColor = (typeof TEAM_COLORS)[number];
+
+/** The icons a team may take beside its name (C3, as `TEAM_COLORS`). */
+export const TEAM_ICONS = [
+  'star',
+  'sunrise',
+  'sun',
+  'mountain',
+  'leaf',
+  'flame',
+  'shield',
+  'anchor',
+] as const;
+export type TeamIcon = (typeof TEAM_ICONS)[number];
+
 export interface Team {
   readonly id: string;
   readonly name: string;
+  /**
+   * Null: the default look, the name in the colour of the text and the shared team icon. The
+   * database always gives both; the metrics need neither, so their fixtures leave them out.
+   */
+  readonly color?: TeamColor | null;
+  readonly icon?: TeamIcon | null;
 }
 
 /** Only RM have metrics; the other roles take part in appointments as coordinators (G2 G). */

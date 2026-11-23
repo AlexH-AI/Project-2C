@@ -103,8 +103,10 @@ const DEMO_ROW_COUNTS = {
 // A2 (T-432) moved it on purpose: the same rows, with RM in place of the role and note source RE.
 // G-04 (T-442) on purpose too: the same rows, and the currency key the seed writes (ADR-0018 §7).
 // B1a (T-486) on purpose: the column of the cancellation day, and one issued policy in 20 cancelled
-// with a stream and a clock of its own — every other value of every row as it was.
-const DEMO_HASH = '44b566bca73137e0b5a2b44cbadffa790236a05e1fb51ab9fcaee8f851668cfd';
+// with a stream and a clock of its own — every other value of every row as it was, apart from the
+// updated_at of the cancelled policies.
+// C3 (T-497) on purpose: the two columns of a team's colour and icon, given to two teams.
+const DEMO_HASH = 'c0ce0bc840b3b4bb50a47ba38f96f8b3ec8e5cec8dceee861cb94c32dd223bd0';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
@@ -189,6 +191,16 @@ describe('seedDemoData', () => {
       for (const role of ['IS', 'BD', 'BDM']) {
         expect(people.find((p) => p.role === role)?.teamId).toBeNull();
       }
+    });
+
+    // C3 (ADR-0007 "Team & nhân sự"): two teams in a colour and an icon of the mockup, one default.
+    it('gives two teams a colour and an icon, and leaves one in the default look', () => {
+      const looks = Object.fromEntries(listTeams(db).map((t) => [t.name, [t.color, t.icon]]));
+      expect(looks).toEqual({
+        'Sao Mai': ['accent', 'star'],
+        'Bình Minh': ['warn', 'sunrise'],
+        'Hừng Đông': [null, null],
+      });
     });
 
     it('has about 1,200 customers, 6,000 appointments and 1,000 policies', () => {
