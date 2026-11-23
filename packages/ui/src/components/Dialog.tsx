@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { focusBack, openingFocus } from './dialog-focus';
 import { Mark } from './FieldMarks';
@@ -102,6 +103,26 @@ function leaveBehind(dialog: HTMLDialogElement, held: Held) {
 }
 
 /**
+ * A modal `<dialog>` taken away by its caller leaves its copy for its move out (`leaveBehind`):
+ * `Dialog`, and the command bar of the app (VA8).
+ */
+export function useLeaveBehind(dialog: RefObject<HTMLDialogElement | null>) {
+  useLayoutEffect(() => {
+    const node = dialog.current;
+    // In the commit that takes the dialog away, while it is still on the page; the copy comes
+    // once the commit is over, before the page is painted without the dialog, and only from a
+    // dialog that did leave the page (not from the second run of StrictMode).
+    return () => {
+      if (!node || !leavesBehind(node)) return;
+      const held = heldOf(node);
+      queueMicrotask(() => {
+        if (!node.isConnected) leaveBehind(node, held);
+      });
+    };
+  }, [dialog]);
+}
+
+/**
  * Modal dialog, the focus layer (mockup components.html 06, `.dlg` of ui2.css): opens on mount;
  * the caller unmounts it to close. Three parts: the head (title, a line of context, the ×), the
  * body, which scrolls when long and breaks a word longer than its line (DR6-183), and the foot
@@ -144,19 +165,7 @@ export function Dialog({
     return () => focusBack(opener.current, fallback.current);
   }, []);
 
-  useLayoutEffect(() => {
-    const node = dialog.current;
-    // In the commit that takes the dialog away, while it is still on the page; the copy comes
-    // once the commit is over, before the page is painted without the dialog, and only from a
-    // dialog that did leave the page (not from the second run of StrictMode).
-    return () => {
-      if (!node || !leavesBehind(node)) return;
-      const held = heldOf(node);
-      queueMicrotask(() => {
-        if (!node.isConnected) leaveBehind(node, held);
-      });
-    };
-  }, []);
+  useLeaveBehind(dialog);
 
   return (
     <dialog

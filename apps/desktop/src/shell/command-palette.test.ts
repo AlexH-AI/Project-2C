@@ -2,7 +2,7 @@ import type { CustomerRecord } from '@p2c/db';
 import { calendarDate, type Person, type Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { customerIndex } from '../routes/customers/customer-search';
-import { paletteResults } from './command-palette';
+import { isPaletteKey, paletteResults } from './command-palette';
 
 const teams: Team[] = [
   { id: 't1', name: 'Sao Mai' },
@@ -100,6 +100,27 @@ describe('paletteResults (the command box, mockup search-rm-team.html `#palette`
       screens: ['overview', 'appointments', 'customers', 'reports', 'team', 'settings'],
       commands: ['appointment', 'customer', 'team'],
     });
+  });
+
+  it('opens on ⌘K on macOS, Ctrl K on Windows, with no other modifier', () => {
+    const key = (
+      key: string,
+      held: Partial<Record<'meta' | 'ctrl' | 'alt' | 'shift', boolean>>,
+    ) => ({
+      key,
+      metaKey: !!held.meta,
+      ctrlKey: !!held.ctrl,
+      altKey: !!held.alt,
+      shiftKey: !!held.shift,
+    });
+    expect(isPaletteKey(key('k', { meta: true }), true)).toBe(true);
+    expect(isPaletteKey(key('K', { ctrl: true }), false)).toBe(true);
+    // Ctrl K in a field of macOS cuts the line; ⌘ is the Windows key on Windows.
+    expect(isPaletteKey(key('k', { ctrl: true }), true)).toBe(false);
+    expect(isPaletteKey(key('k', { meta: true }), false)).toBe(false);
+    expect(isPaletteKey(key('k', { ctrl: true, shift: true }), false)).toBe(false);
+    expect(isPaletteKey(key('k', { ctrl: true, alt: true }), false)).toBe(false);
+    expect(isPaletteKey(key('j', { ctrl: true }), false)).toBe(false);
   });
 
   it('finds nothing for "xyz"', () => {

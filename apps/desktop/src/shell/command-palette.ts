@@ -13,7 +13,18 @@ import {
   type CustomerIndex,
 } from '../routes/customers/customer-search';
 import { rmMatches, type RmHit } from '../routes/team/rm-search';
+import { isMac } from './platform';
 import { SECTIONS, type Section } from './routes';
+
+/** ⌘K on macOS, Ctrl K on Windows, with no other modifier: the key of the command bar. */
+export const isPaletteKey = (
+  event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>,
+  mac = isMac(),
+) =>
+  event.key.toLowerCase() === 'k' &&
+  (mac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey) &&
+  !event.altKey &&
+  !event.shiftKey;
 
 /** The six commands of v1.0 (mockup search-rm-team.html `#ask` 2), in the order of the mockup. */
 export const COMMANDS = ['appointment', 'customer', 'team', 'export', 'backup', 'mask'] as const;

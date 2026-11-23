@@ -9,12 +9,14 @@ import {
   type RefObject,
 } from 'react';
 import { flushSync } from 'react-dom';
-import { openFrom, riseStep } from '@p2c/ui';
+import { IconButton, openFrom, riseStep } from '@p2c/ui';
 import { useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { lightCard } from '../routes/classes';
 import { Screen } from '../routes/Screen';
 import type { AppWindow } from './CloseGuard';
+import { isPaletteKey } from './command-palette';
+import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { NameMaskButton } from './NameMask';
 import { SaveWarning } from './SaveWarning';
@@ -208,6 +210,8 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
     [],
   );
   const scopeState = useMemo(() => ({ picked, scope, pickRm }), [picked, scope, pickRm]);
+  const [palette, setPalette] = useState(false);
+  usePaletteKey(setPalette);
 
   return (
     <div className="flex min-h-screen">
@@ -234,6 +238,12 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
                   onChange={setChoice}
                 />
               )}
+              {/* The magnifier opens the command bar on both systems (VA8; Owner 21/11/2026). */}
+              <IconButton
+                icon="search"
+                label={t('palette.open')}
+                onClick={() => setPalette(true)}
+              />
             </>
           }
         >
@@ -252,6 +262,25 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
         </Toolbar>
       </div>
       <ToastRegion heading={heading} />
+      {palette && <CommandPalette onClose={() => setPalette(false)} />}
     </div>
   );
+}
+
+/**
+ * ⌘K / Ctrl K opens the command bar on every screen, a field being typed in too, and closes it
+ * (VA8): heard before any field, and only that key is taken. Not over another dialog.
+ */
+function usePaletteKey(setPalette: (change: (open: boolean) => boolean) => void) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!isPaletteKey(event)) return;
+      const modal = document.querySelector('dialog:modal');
+      if (modal && !modal.hasAttribute('data-palette')) return;
+      event.preventDefault();
+      setPalette((open) => !open);
+    };
+    addEventListener('keydown', onKey, true);
+    return () => removeEventListener('keydown', onKey, true);
+  }, [setPalette]);
 }
