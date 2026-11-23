@@ -43,6 +43,20 @@ const MOCKUP: ReadonlyArray<[NavIconName, string, string]> = [
     '<path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6l-1.9-4.9L4 9.8l5.1-1.9zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />',
   ],
   ['trash', '#i-trash', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />'],
+  // The eye of the mask of names (`#privacy`) and the icons of the commands of the command bar
+  // (search-rm-team.html `#palette`, VA8).
+  [
+    'eye',
+    '#i-eye',
+    '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" />',
+  ],
+  [
+    'eyeOff',
+    '#i-eye-off',
+    '<path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" />',
+  ],
+  ['plus', '#i-plus', '<path d="M12 5v14M5 12h14" />'],
+  ['export', '#i-export', '<path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" />'],
   // The eight icons of a team, those of search-rm-team.html (G3 12/11/2026, C3).
   [
     'star',

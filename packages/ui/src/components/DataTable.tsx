@@ -82,8 +82,8 @@ interface DataTableProps<Row extends RowData> {
   /** Cells 6 px from the column's edges instead of 12, as in a narrow card of the mockups. */
   compact?: boolean;
   /**
-   * Cells 10 px from the column's edges instead of 12: a table that would run further past its
-   * card at the smallest window (the members of a team until C3, L170).
+   * Cells 10 px from the column's edges instead of 12: a table that would run past a narrow card
+   * (the members of a team from 1 280 px; under it they take `compact`).
    */
   narrow?: boolean;
   /**

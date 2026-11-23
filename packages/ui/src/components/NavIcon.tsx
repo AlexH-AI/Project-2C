@@ -2,7 +2,8 @@
  * The icons of mockup app-shell.html (`<symbol>` `#i-*`, ADR-0013 appendix 11/11/2026 §4): 24-unit
  * grid, 18 px, a stroke of 1.7 px in the colour of the text beside them. Those of the sidebar;
  * Forecast and the magnifier, for the item of Forecast (D4), the search of customers (C1) and the
- * command box (VA8); the eight a team may take beside its name (C3, mockup search-rm-team.html); the
+ * command box (VA8); the eye of the mask of names, and the plus and the export of the commands of
+ * the command box (VA8); the eight a team may take beside its name (C3, mockup search-rm-team.html); the
  * three of Cài đặt, each on its tile (F1, `tile-*` of theme.css).
  */
 const PATHS = {
@@ -54,6 +55,17 @@ const PATHS = {
       <path d="M20 20l-4.2-4.2" />
     </>
   ),
+  eye: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  eyeOff: (
+    <path d="M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  export: <path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" />,
   data: (
     <>
       <ellipse cx="12" cy="6" rx="7" ry="3" />

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { IconButton } from '@p2c/ui';
 import { t } from '../i18n';
 import { maskName, nameMask as mask } from './name-mask';
 import { useToast } from './Toasts';
@@ -54,14 +55,22 @@ export function TypedText({ text }: { text: string }) {
   );
 }
 
-/** The eye of the mockup (`#i-eye`, `#i-eye-off`), as one path each. */
-const EYE = {
-  open: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z',
-  shut: 'M9.5 6c.8-.3 1.6-.5 2.5-.5 6 0 9.5 6.5 9.5 6.5s-1 1.9-3 3.7M14.5 18.1c-.8.3-1.6.4-2.5.4-6 0-9.5-6.5-9.5-6.5s1.3-2.4 3.8-4.3M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2',
-};
-
-const BOX =
-  'press inline-flex h-8.5 flex-none cursor-pointer items-center justify-center gap-1.5 rounded-control text-md whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+/**
+ * Masks the names, or shows them again, and a toast says what was done: the eye of the toolbar,
+ * and "Che / hiện tên khách hàng" of the command bar (VA8).
+ */
+export function useMaskToggle(): () => void {
+  const { masked, toggle } = useNameMask();
+  const toast = useToast();
+  return () => {
+    toggle();
+    toast.show(
+      masked
+        ? { text: t('nameMask.offToast') }
+        : { text: t('nameMask.onToast'), detail: t('nameMask.onToastDetail'), tone: 'info' },
+    );
+  };
+}
 
 /**
  * The button of the mask, first on the right of the toolbar on every screen (mockup app-shell.html
@@ -69,37 +78,17 @@ const BOX =
  * toast says what one click did.
  */
 export function NameMaskButton() {
-  const { masked, toggle } = useNameMask();
-  const toast = useToast();
+  const { masked } = useNameMask();
+  const onClick = useMaskToggle();
   return (
-    <button
-      type="button"
-      aria-pressed={masked}
-      aria-label={t('nameMask.button')}
+    <IconButton
+      icon={masked ? 'eyeOff' : 'eye'}
+      label={t('nameMask.button')}
       title={t(masked ? 'nameMask.onTitle' : 'nameMask.button')}
-      onClick={() => {
-        toggle();
-        toast.show(
-          masked
-            ? { text: t('nameMask.offToast') }
-            : { text: t('nameMask.onToast'), detail: t('nameMask.onToastDetail'), tone: 'info' },
-        );
-      }}
-      className={`${BOX} ${masked ? 'btn-quiet bg-accent-soft pr-3 pl-2.5 inset-ring inset-ring-accent/45' : 'btn-default w-8.5'}`}
+      on={masked}
+      onClick={onClick}
     >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-4 shrink-0"
-      >
-        <path d={masked ? EYE.shut : EYE.open} />
-      </svg>
       {masked && t('nameMask.on')}
-    </button>
+    </IconButton>
   );
 }
