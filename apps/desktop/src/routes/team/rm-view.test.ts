@@ -17,7 +17,17 @@ import {
   POLICY_ROWS_B,
   STAGE_TRANSITIONS_B,
 } from '../../../../../packages/domain/src/golden/metrics.fixture';
-import { rmView, type RmCustomer } from './rm-view';
+import {
+  NO_DAY,
+  appointmentsByCustomer,
+  cadence,
+  cadenceLabel,
+  cadenceWeekTitle,
+  lastMetKey,
+  nextKey,
+  rmView,
+  type RmCustomer,
+} from './rm-view';
 
 const record = (customer: Customer): CustomerRecord => ({
   ...customer,
@@ -203,5 +213,101 @@ describe('rmView, the customers in charge', () => {
     const bình = view.open.find((row) => row.card.customer.id === 'Bình')!;
     expect(bình.lastMet?.date).toEqual(day(10, 13));
     expect(bình.next?.date).toEqual(day(11, 12));
+  });
+
+  // L231: the table writes a 0 of a number column light, as it does "Chưa gặp" and "Chưa hẹn".
+  it('sorts a meeting or an appointment of today by a key that is no 0', () => {
+    const row = (id: string) => view.open.find((one) => one.card.customer.id === id)!;
+    expect(lastMetKey(row('Dũng')) === 0 || nextKey(row('Chi')) === 0).toBe(false);
+    expect(lastMetKey(row('An'))).toBeLessThan(lastMetKey(row('Dũng')));
+    expect(nextKey(row('Chi'))).toBeLessThan(nextKey(row('Bình')));
+    expect(lastMetKey(row('Chi'))).toBe(NO_DAY);
+  });
+});
+
+describe('cadence, the strip "Nhịp gặp · 8 tuần" (mockup search-rm-team.html #rm, #ask 8)', () => {
+  const day = (month: number, dayOfMonth: number) => calendarDate(2026, month, dayOfMonth);
+  /** Tuesday 10/11/2026: the strip runs from Monday 21/09 to Sunday 15/11. */
+  const today = day(11, 10);
+  let seq = 0;
+  const on = (
+    date: CalendarDate,
+    status: Appointment['status'],
+    customerId = 'c',
+    rmId = 'rm-a',
+  ): AppointmentRecord =>
+    asRecord({
+      id: `cad${++seq}`,
+      customerId,
+      rmId,
+      coordinatorIds: [],
+      date,
+      status,
+      stageAfter: null,
+      expectedCaseSize: null,
+      nextStep: null,
+      note: '',
+    });
+  const appointments = [
+    on(day(9, 20), 'MET'), // the Sunday before the strip
+    on(day(9, 22), 'MET'),
+    on(day(9, 30), 'SCHEDULED'), // past, no outcome yet
+    on(day(10, 6), 'CANCELLED'),
+    // A week of many: the first shape of the order wins.
+    on(day(10, 21), 'NO_SHOW'),
+    on(day(10, 22), 'SCHEDULED'),
+    on(day(10, 20), 'MET'),
+    on(day(10, 27), 'RESCHEDULED'),
+    on(day(10, 28), 'SCHEDULED'),
+    // Another RM's meeting, another customer's: not this RM's strip of this customer.
+    on(day(11, 3), 'MET', 'c', 'rm-b'),
+    on(day(11, 4), 'MET', 'other'),
+    on(day(11, 9), 'CANCELLED'),
+    on(today, 'SCHEDULED'),
+    on(day(11, 16), 'SCHEDULED'), // next Monday
+  ];
+  const weeks = cadence(appointments, 'c', 'rm-a', today);
+
+  it('gives eight weeks Monday to Sunday, the oldest first, this week last', () => {
+    expect(weeks.map((week) => [week.start, week.end])).toEqual([
+      [day(9, 21), day(9, 27)],
+      [day(9, 28), day(10, 4)],
+      [day(10, 5), day(10, 11)],
+      [day(10, 12), day(10, 18)],
+      [day(10, 19), day(10, 25)],
+      [day(10, 26), day(11, 1)],
+      [day(11, 2), day(11, 8)],
+      [day(11, 9), day(11, 15)],
+    ]);
+  });
+
+  it('shows each week by its first shape: met, past with no outcome, ahead, did not take place', () => {
+    expect(weeks.map((week) => week.mark)).toEqual([
+      'met',
+      'unrecorded',
+      'missed',
+      'none',
+      'met',
+      'unrecorded',
+      'none',
+      'planned',
+    ]);
+  });
+
+  it('gives a customer of no appointment eight empty weeks; the RM’s own, read by customer', () => {
+    expect(cadence([], 'none', 'rm-a', today).map((week) => week.mark)).toEqual(
+      Array(8).fill('none'),
+    );
+    const own = appointmentsByCustomer(appointments, 'rm-a');
+    expect([...own.keys()]).toEqual(['c', 'other']);
+    expect(cadence(own.get('c')!, 'c', 'rm-a', today)).toEqual(weeks);
+  });
+
+  it('reads the strip as one sentence, and each week by its days', () => {
+    expect(cadenceLabel(weeks)).toBe(
+      'Nhịp gặp 8 tuần, 21/09 – 15/11: 2 tuần đã gặp, 1 tuần không diễn ra, 2 tuần chưa ghi kết quả, 1 tuần có lịch',
+    );
+    expect(cadenceWeekTitle(weeks[0]!)).toBe('Tuần 21/09 – 27/09: đã gặp');
+    expect(cadenceWeekTitle(weeks[3]!)).toBe('Tuần 12/10 – 18/10: không có lịch');
   });
 });

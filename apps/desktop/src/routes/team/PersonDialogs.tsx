@@ -80,7 +80,8 @@ export function PersonDialog({
       const code = failure instanceof DbError ? failure.code : undefined;
       const params = failure instanceof DbError ? failure.params : undefined;
       const message = errorMessage(failure, { role, ...params });
-      if (code === 'NAME_REQUIRED') setErrors({ name: message });
+      // A name another of the team has (C2b) is the name's to change, as one left empty.
+      if (code === 'NAME_REQUIRED' || code === 'PERSON_NAME_TAKEN') setErrors({ name: message });
       else if (code === 'TEAM_REQUIRED' || code === 'TEAM_NOT_FOUND' || code === 'TEAM_NOT_ALLOWED')
         setErrors({ team: message });
       else setErrors({ form: message });

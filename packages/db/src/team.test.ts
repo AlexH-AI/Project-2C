@@ -387,6 +387,89 @@ describe('one TL per team (B1b)', () => {
   });
 });
 
+// C2b (ADR-0007 phụ lục "Team & nhân sự", Owner G2 21/11/2026): accents, case and spacing aside.
+describe('one name per team (C2b)', () => {
+  async function withHung() {
+    const { db, persist } = await setup();
+    const saoMai = createTeam(db, { name: 'Sao Mai' });
+    const binhMinh = createTeam(db, { name: 'Bình Minh' });
+    const hung = createPerson(db, { name: 'Nguyễn Văn Hùng', role: 'RM', teamId: saoMai.id });
+    persist.mockClear();
+    return { db, persist, saoMai, binhMinh, hung };
+  }
+
+  function errorOf(fn: () => unknown): DbError | undefined {
+    try {
+      fn();
+    } catch (error) {
+      if (error instanceof DbError) return error;
+      throw error;
+    }
+    return undefined;
+  }
+
+  it('refuses a new person of the team by the name of another, naming both, the database untouched', async () => {
+    const { db, persist, saoMai, hung } = await withHung();
+
+    const error = errorOf(() =>
+      createPerson(db, { name: 'Nguyen Van Hung', role: 'RM', teamId: saoMai.id }),
+    );
+
+    expect(error?.code).toBe('PERSON_NAME_TAKEN');
+    expect(error?.params).toEqual({ name: 'Nguyễn Văn Hùng', team: 'Sao Mai' });
+    expect(
+      codeOf(() => createPerson(db, { name: ' NGUYỄN  VĂN HÙNG', role: 'TL', teamId: saoMai.id })),
+    ).toBe('PERSON_NAME_TAKEN');
+    expect(listPeople(db)).toEqual([hung]);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('takes the name in another team, a name told apart by a word, and shared staff alike', async () => {
+    const { db, saoMai, binhMinh } = await withHung();
+
+    expect(
+      createPerson(db, { name: 'Nguyễn Văn Hùng', role: 'RM', teamId: binhMinh.id }).name,
+    ).toBe('Nguyễn Văn Hùng');
+    expect(
+      createPerson(db, { name: 'Nguyễn Văn Hùng B', role: 'RM', teamId: saoMai.id }).name,
+    ).toBe('Nguyễn Văn Hùng B');
+    createPerson(db, { name: 'Lê Thu', role: 'IS', teamId: null });
+    expect(createPerson(db, { name: 'Lê Thu', role: 'BD', teamId: null }).role).toBe('BD');
+  });
+
+  it('refuses a new name another has, but lets a person keep or re-case their own', async () => {
+    const { db, saoMai, hung } = await withHung();
+    const an = createPerson(db, { name: 'An', role: 'RM', teamId: saoMai.id });
+
+    expect(codeOf(() => updatePerson(db, an.id, { name: 'nguyễn văn hùng' }))).toBe(
+      'PERSON_NAME_TAKEN',
+    );
+    expect(byId(listPeople(db), an.id)?.name).toBe('An');
+    expect(updatePerson(db, hung.id, { role: 'TL' }).role).toBe('TL');
+    expect(updatePerson(db, hung.id, { name: 'NGUYỄN VĂN HÙNG' }).name).toBe('NGUYỄN VĂN HÙNG');
+  });
+
+  it('refuses a move into a team that has the name', async () => {
+    const { db, saoMai, binhMinh } = await withHung();
+    const other = createPerson(db, { name: 'Nguyen Van Hung', role: 'RM', teamId: binhMinh.id });
+
+    expect(codeOf(() => updatePerson(db, other.id, { teamId: saoMai.id }))).toBe(
+      'PERSON_NAME_TAKEN',
+    );
+    expect(byId(listPeople(db), other.id)?.teamId).toBe(binhMinh.id);
+  });
+
+  it('does not count a deleted person, but checks again on restore', async () => {
+    const { db, saoMai, hung } = await withHung();
+    softDeletePerson(db, hung.id);
+
+    expect(createPerson(db, { name: 'Nguyen Van Hung', role: 'RM', teamId: saoMai.id }).role).toBe(
+      'RM',
+    );
+    expect(codeOf(() => restorePerson(db, hung.id))).toBe('PERSON_NAME_TAKEN');
+  });
+});
+
 describe('commands and the save port', () => {
   it('persists once per successful command and never on a rejected one', async () => {
     const { db, persist } = await setup();

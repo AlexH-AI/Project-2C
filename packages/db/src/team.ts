@@ -8,6 +8,7 @@ import {
   PERSON_ROLES,
   REVIEWER_ROLES,
   ROLES_WITH_TEAM,
+  searchText,
   type Person,
   type PersonRole,
   type Team,
@@ -313,10 +314,37 @@ function validatePerson(db: Database, input: PersonInput, selfId: string | null)
   } else if (!ROLES_WITH_TEAM.includes(role)) {
     throw new DbError('TEAM_NOT_ALLOWED');
   } else {
-    liveTeam(db, input.teamId);
+    const team = liveTeam(db, input.teamId);
     if (role === 'TL') assertNoOtherLead(db, input.teamId, selfId);
+    assertNameFreeInTeam(db, name, team, selfId);
   }
   return { name, role, teamId: input.teamId };
+}
+
+/**
+ * No two live people of a team by one name, accents, case and spacing aside: the user adds a word
+ * to tell them apart (C2b; ADR-0007 "Team & nhân sự", Owner G2 21/11/2026). Import rule 9 (iv).
+ */
+function assertNameFreeInTeam(
+  db: Database,
+  name: string,
+  team: TeamRow,
+  selfId: string | null,
+): void {
+  const key = searchText(name);
+  const clash = db.orm
+    .select({ name: people.name })
+    .from(people)
+    .where(
+      and(
+        eq(people.teamId, team.id),
+        isNull(people.deletedAt),
+        selfId === null ? isNotNull(people.id) : ne(people.id, selfId),
+      ),
+    )
+    .all()
+    .find((other) => searchText(other.name) === key);
+  if (clash) throw new DbError('PERSON_NAME_TAKEN', { name: clash.name, team: team.name });
 }
 
 /** A team has at most one live TL (Owner, G3 01/10/2026). */

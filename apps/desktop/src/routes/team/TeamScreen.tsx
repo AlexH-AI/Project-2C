@@ -16,6 +16,7 @@ import { ScreenBar } from '../../shell/ScreenBar';
 import { isReturning } from '../../shell/useRoute';
 import { CARD, FOCUS, HEADING, LINK } from '../classes';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
+import { RmSearch } from './RmSearch';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
 import { groupByTeam, staffMetrics, type StaffMetrics, type TeamEntry } from './team-view';
 
@@ -187,6 +188,10 @@ export function TeamScreen() {
           </>
         }
       />
+      {/* Over the cards, which its list opens on; under the toolbar (z-10), as on Khách hàng. */}
+      <div data-part className="relative z-1 flex items-center">
+        <RmSearch people={view.people} teams={teams} />
+      </div>
       <div className="flex items-start gap-4">
         <div className="flex w-64 shrink-0 flex-col gap-4">
           <section aria-labelledby={LIST_TITLE} className={CARD}>

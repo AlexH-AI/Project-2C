@@ -122,7 +122,7 @@ describe('--scale', () => {
     });
     expect(code).toBe(0);
     const [[path, text]] = written;
-    return { path, tables: JSON.parse(text).tables };
+    return { path, text, tables: JSON.parse(text).tables };
   };
 
   it(
@@ -130,6 +130,8 @@ describe('--scale', () => {
     async () => {
       const one = await run([]);
       const five = await run(['--scale', '5']);
+      // The import takes it: no two people of one name in a team, accents and case aside (C2b).
+      await expect(importBackup(five.text)).resolves.toBeDefined();
       expect(five.path).toBe('.local/load-data/load-2026-10-12-seed6-x5.p2cbackup');
       const times = (name) => five.tables[name].length / one.tables[name].length;
       for (const name of ['customers', 'appointments']) {
