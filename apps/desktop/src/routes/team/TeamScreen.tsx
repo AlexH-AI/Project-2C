@@ -471,7 +471,8 @@ function Members({
           // The table is not made anew for each team: this takes another team back to its first
           // hundred rows (DR6-32).
           resetKey={entry.team.id}
-          // At 1 100 px it runs past its card already: no further, until C3 (L170).
+          // Cells 10 px from their edges: with the list of teams 220 px under 1 280 (C3), the
+          // table fits its card at 1 100 px, every Sửa whole (L205; e2e team.spec.ts).
           narrow
           empty={
             <StateNote
