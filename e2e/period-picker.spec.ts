@@ -269,7 +269,7 @@ test('the appointments calendar shows December 2100 with blank cells after it', 
 test('‹ › of the pill clear what was typed in the layer; Esc and a press outside take the dates', async ({
   page,
 }) => {
-  const { kinds, label, picker, previous } = await openPicker(page);
+  const { kinds, label, picker, previous, next } = await openPicker(page);
   await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
   const start = picker.getByRole('textbox', { name: 'Từ ngày' });
   const end = picker.getByRole('textbox', { name: 'Đến ngày' });
@@ -279,6 +279,13 @@ test('‹ › of the pill clear what was typed in the layer; Esc and a press out
   await expect(label).toHaveText('02/08 – 31/08/2026');
   await expect(start).toHaveValue('02/08/2026');
   await expect(end).toHaveValue('31/08/2026');
+  await expect(picker).not.toContainText('Ngày không có thật');
+  // Gone for good: back on the period it was typed on, the fields hold that period's dates.
+  await next.click();
+  await expect(label).toHaveText('01/09 – 30/09/2026');
+  await expect(start).toHaveValue('01/09/2026');
+  await expect(end).toHaveValue('30/09/2026');
+  await expect(start).not.toHaveAttribute('aria-invalid', 'true');
   await expect(picker).not.toContainText('Ngày không có thật');
 
   await start.fill('01/08/2026');

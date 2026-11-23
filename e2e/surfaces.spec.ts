@@ -139,6 +139,7 @@ test('the light of a card follows the pointer over it', async ({ page }) => {
 test('the row of the appointment open in Chi tiết is the current one, painted as chosen (L21)', async ({
   page,
 }) => {
+  await asExe(page);
   await page.goto('/#/appointments');
   const table = page.getByRole('table', { name: 'Danh sách lịch hẹn' });
   const current = table.locator('tbody tr[aria-current="true"]');
@@ -171,6 +172,18 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
       ).toBe(await token(page, '--text'));
     }
     expect(await lowestContrast(row), `row ${index}`).toBeGreaterThanOrEqual(TEXT_CONTRAST);
+  }
+  // The standard the Owner chose: the chosen rows over the brightest glass of macOS (L188), names
+  // masked, so the trigger typed on row 1 is dots in --text-2 straight on the tint.
+  await onBrightestGlass(page);
+  await page.getByRole('button', { name: 'Che tên khách hàng' }).click();
+  await expect(rows.nth(1).getByText('đã ẩn')).toHaveCount(1);
+  for (const index of [1, 0]) {
+    const row = rows.nth(index);
+    await row.getByRole('button').click();
+    await expect(row).toHaveAttribute('aria-current', 'true');
+    await page.mouse.move(0, 0);
+    expect(await lowestContrast(row), `row ${index}, glass`).toBeGreaterThanOrEqual(TEXT_CONTRAST);
   }
 });
 

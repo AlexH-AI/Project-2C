@@ -131,13 +131,16 @@ export function PeriodPicker({ value, onChange, today, labels, onToday }: Period
     onChange(period);
   };
 
-  // Typed on another period, as one ‹ › of the pill moved to (L177), it is gone.
-  const typed = draft?.on === datesOf(value) ? draft : null;
+  // Typed on another period, as one ‹ › of the pill moved to (L177), it is gone for good: also
+  // once the pill steps back to the period it was typed on.
+  const on = datesOf(value);
+  if (draft && draft.on !== on) setDraft(null);
+  const typed = draft?.on === on ? draft : null;
   const shown = typed ?? {
     start: formatDate(value.start),
     end: formatDate(value.end),
     error: null,
-    on: datesOf(value),
+    on,
   };
 
   const apply = () => {
