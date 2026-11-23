@@ -16,14 +16,14 @@ export {
   listTeams,
   ownsRecords,
   personUsage,
-  renameTeam,
   restorePerson,
   restoreTeam,
   softDeletePerson,
   softDeleteTeam,
   updatePerson,
+  updateTeam,
 } from './team';
-export type { PersonInput, PersonUsage } from './team';
+export type { PersonInput, PersonUsage, TeamInput } from './team';
 export {
   changeStageManually,
   createCustomer,

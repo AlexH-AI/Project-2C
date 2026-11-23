@@ -12,6 +12,8 @@ import {
   ROLES_WITH_TEAM,
   type KycField,
   type KycGateState,
+  type TeamColor,
+  type TeamIcon,
 } from '@p2c/domain';
 import {
   AI_ANALYSIS_NO_MODEL,
@@ -46,6 +48,10 @@ export const teams = sqliteTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     ...timestamps,
+    // C3, after the stamps as migration 0019 adds them: null is the default look; the commands and
+    // the import take only a name of the lists.
+    color: text('color').$type<TeamColor>(),
+    icon: text('icon').$type<TeamIcon>(),
   },
   (t) => [
     uniqueIndex('teams_active_name')

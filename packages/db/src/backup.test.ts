@@ -21,8 +21,15 @@ import {
 } from './policies';
 import { seedDemoData } from './seed';
 import { getCurrency, getSetting, putSetting } from './settings';
-import { createPerson, createTeam, listTeams, renameTeam } from './team';
-import { clockSetBack, d, setup } from './test-support';
+import {
+  createPerson,
+  createTeam,
+  listTeams,
+  restoreTeam,
+  softDeleteTeam,
+  updateTeam,
+} from './team';
+import { byId, clockSetBack, d, setup } from './test-support';
 
 const SLOW = 60_000;
 const EXPORTED_AT = new Date(Date.UTC(2026, 8, 30, 7, 45, 0));
@@ -255,7 +262,7 @@ describe('importBackup', () => {
     const fake = {
       id: LATEST_SCHEMA_VERSION + 1,
       tag: 'fake',
-      sql: "ALTER TABLE teams ADD COLUMN color text DEFAULT 'blue';",
+      sql: "ALTER TABLE teams ADD COLUMN motto text DEFAULT 'blue';",
     };
 
     const imported = await importBackup(exportBackup(old), {
@@ -267,7 +274,7 @@ describe('importBackup', () => {
     expect(listTeams(imported.db).map((t) => t.name)).toEqual(['Sao Mai']);
     const after = JSON.parse(exportBackup(imported.db)) as BackupJson;
     expect(after.tables.teams).toEqual([
-      expect.objectContaining({ id: 't', color: 'blue' }) as unknown,
+      expect.objectContaining({ id: 't', motto: 'blue' }) as unknown,
     ]);
     expect(
       imported.db.sqlite
@@ -305,6 +312,18 @@ describe('importBackup', () => {
     return days;
   };
 
+  /**
+   * `file` as an app before C3 (migration 0019) saved it: no colour or icon of a team. Returns the
+   * ones it held, none on a file of `small()`.
+   */
+  const withoutTeamStyle = (file: BackupJson) => {
+    const styles = file.tables.teams!.map((row) => [row.color, row.icon]);
+    file.tables.teams = file.tables.teams!.map((row) =>
+      Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'color' && key !== 'icon')),
+    );
+    return styles;
+  };
+
   // A2, A3 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM (version 13, after
   // migration 0012) imports as it was saved, through the migrations of A2 and A3.
   it('A2, A3: imports a file of migration 0012, with RM in place of the role and the note source RE, and rm_id of re_id', async () => {
@@ -319,6 +338,7 @@ describe('importBackup', () => {
     expect(file.tables.kyc_notes!.map((note) => note.source).sort()).toEqual(['RE', 'SYSTEM']);
     expect(withReId(file)).toEqual([2, 1, 1]);
     expect(withoutCancelledDate(file)).toEqual([null]);
+    expect(withoutTeamStyle(file)).toEqual([[null, null]]);
 
     const imported = await importBackup(JSON.stringify(file));
 
@@ -336,6 +356,7 @@ describe('importBackup', () => {
     file.schemaVersion = before;
     expect(withReId(file)).toEqual([2, 1, 1]);
     expect(withoutCancelledDate(file)).toEqual([null]);
+    expect(withoutTeamStyle(file)).toEqual([[null, null]]);
     expect(Object.keys(file.tables.customers![0]!)).toEqual([
       'id',
       'code',
@@ -690,6 +711,7 @@ describe('importBackup', () => {
     const before = MIGRATIONS.find((m) => m.tag === '0017_policies_cancelled_date')!.id - 1;
     file.schemaVersion = before;
     expect(withoutCancelledDate(file)).toEqual([null]);
+    expect(withoutTeamStyle(file)).toEqual([[null, null]]);
     expect(Object.keys(file.tables.policies![0]!)).not.toContain('cancelled_date');
 
     const imported = await importBackup(JSON.stringify(file));
@@ -697,6 +719,64 @@ describe('importBackup', () => {
     expect(imported.schemaVersion).toBe(before);
     expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(listPolicies(imported.db).map((p) => p.cancelledDate)).toEqual([null]);
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
+  });
+
+  // C3 (ADR-0007 "Team & nhân sự"): the colour and icon of a team, deleted or not, stay.
+  it('C3: keeps the colour and icon of a team, or none, through export and import', async () => {
+    const { db, team } = await setup();
+    const styled = createTeam(db, { name: 'Bình Minh', color: 'warn', icon: 'sunrise' });
+    const closed = createTeam(db, { name: 'Ánh Dương', color: 'info', icon: 'leaf' });
+    softDeleteTeam(db, closed.id);
+    const first = exportBackup(db);
+    const { tables } = JSON.parse(first) as BackupJson;
+    expect(tables.teams!.map((row) => [row.color, row.icon])).toEqual(
+      expect.arrayContaining([
+        [null, null],
+        ['warn', 'sunrise'],
+        ['info', 'leaf'],
+      ]),
+    );
+
+    const { db: imported } = await importBackup(first);
+
+    expect(listTeams(imported)).toEqual(expect.arrayContaining([team, styled]));
+    restoreTeam(imported, closed.id);
+    expect(byId(listTeams(imported), closed.id)).toEqual(closed);
+    expect((JSON.parse(exportBackup(imported)) as BackupJson).tables.teams).toEqual(
+      (JSON.parse(exportBackup(db)) as BackupJson).tables.teams!.map((row) =>
+        row.id === closed.id ? { ...row, deleted_at: null, updated_at: expect.any(String) } : row,
+      ),
+    );
+  });
+
+  it('C3: refuses a colour or an icon of a team outside its list', async () => {
+    const backup = await smallBackup();
+    for (const [column, value] of [
+      ['color', '#d9b26a'],
+      ['color', 'danger'],
+      ['icon', 'team'],
+      ['icon', ''],
+    ] as const) {
+      const teams = backup.tables.teams!.map((row) => ({ ...row, [column]: value }));
+      const file = JSON.stringify({ ...backup, tables: { ...backup.tables, teams } });
+      await expect(importBackup(file), `${column} ${value}`).rejects.toMatchObject({
+        code: 'BACKUP_INVALID',
+      });
+    }
+  });
+
+  it('C3: imports a file saved before the colour and icon of a team, each in the default look', async () => {
+    const latest = exportBackup(await small());
+    const file = JSON.parse(latest) as BackupJson;
+    const before = MIGRATIONS.find((m) => m.tag === '0019_teams_style')!.id - 1;
+    file.schemaVersion = before;
+    expect(withoutTeamStyle(file)).toEqual([[null, null]]);
+
+    const imported = await importBackup(JSON.stringify(file));
+
+    expect(imported.schemaVersion).toBe(before);
+    expect(listTeams(imported.db).map((t) => [t.color, t.icon])).toEqual([[null, null]]);
     expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
   });
 
@@ -806,7 +886,7 @@ describe('importBackup — text as the commands store it', () => {
       for (let i = 0; i < 30; i++) {
         const typed = next();
         for (const text of new Set([typed, normalizeText(typed), normalizeNote(typed)])) {
-          const name = stored(() => renameTeam(db, team, text).name);
+          const name = stored(() => updateTeam(db, team, { name: text }).name);
           const note = stored(() => addKycNote(db, customer, { text, date: d(1, 9) }).text);
           const taken = [
             await imports(withRow(backup, 'teams', (r) => ({ ...r, name: text }))),

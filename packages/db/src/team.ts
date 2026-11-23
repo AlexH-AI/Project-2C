@@ -9,9 +9,13 @@ import {
   REVIEWER_ROLES,
   ROLES_WITH_TEAM,
   searchText,
+  TEAM_COLORS,
+  TEAM_ICONS,
   type Person,
   type PersonRole,
   type Team,
+  type TeamColor,
+  type TeamIcon,
 } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 import {
@@ -143,7 +147,15 @@ export function isPersonInUse(usage: PersonCounts): boolean {
 
 // ---- team commands --------------------------------------------------------
 
-export function createTeam(db: Database, input: { readonly name: string }): Team {
+/** A team as Tạo / Sửa team gives it (C3). */
+export interface TeamInput {
+  readonly name: string;
+  /** Null is the default look; left out, none on create and as it was on edit. */
+  readonly color?: TeamColor | null;
+  readonly icon?: TeamIcon | null;
+}
+
+export function createTeam(db: Database, input: TeamInput): Team {
   return db.transaction(() => {
     const name = requireName(input.name);
     assertTeamNameFree(db, name, null);
@@ -151,6 +163,7 @@ export function createTeam(db: Database, input: { readonly name: string }): Team
     const row: TeamRow = {
       id: ulid(at, db.random),
       name,
+      ...teamLook(input, { color: null, icon: null }),
       createdAt: at.toISOString(),
       updatedAt: at.toISOString(),
       deletedAt: null,
@@ -160,14 +173,33 @@ export function createTeam(db: Database, input: { readonly name: string }): Team
   });
 }
 
-export function renameTeam(db: Database, id: string, newName: string): Team {
+/** Sửa team (C3): its name, colour and icon. */
+export function updateTeam(db: Database, id: string, input: TeamInput): Team {
   return db.transaction(() => {
-    liveTeam(db, id);
-    const name = requireName(newName);
+    const row = liveTeam(db, id);
+    const name = requireName(input.name);
     assertTeamNameFree(db, name, id);
-    updateRow(db, teams, id, { name });
+    updateRow(db, teams, id, { name, ...teamLook(input, row) });
     return toTeam(liveTeam(db, id));
   });
+}
+
+/**
+ * The colour and icon of `input`, those of `was` for the ones left out; one outside its list is
+ * refused (ADR-0007 "Team & nhân sự").
+ */
+function teamLook(input: TeamInput, was: Pick<Team, 'color' | 'icon'>) {
+  const color = input.color === undefined ? (was.color ?? null) : input.color;
+  const icon = input.icon === undefined ? (was.icon ?? null) : input.icon;
+  if (!isTeamLook(color, icon)) throw new DbError('TEAM_STYLE_INVALID');
+  return { color, icon };
+}
+
+/** Whether `color` and `icon` are each none or a name of its list: the commands and the import. */
+export function isTeamLook(color: unknown, icon: unknown): boolean {
+  const named = (value: unknown, list: readonly string[]) =>
+    value === null || (typeof value === 'string' && list.includes(value));
+  return named(color, TEAM_COLORS) && named(icon, TEAM_ICONS);
 }
 
 export function softDeleteTeam(db: Database, id: string): void {
@@ -274,7 +306,7 @@ export function checkRestorePerson(db: Database, row: PersonRow): void {
 // ---- helpers --------------------------------------------------------------
 
 function toTeam(row: TeamRow): Team {
-  return { id: row.id, name: row.name };
+  return { id: row.id, name: row.name, color: row.color, icon: row.icon };
 }
 
 function toPerson(row: PersonRow): Person {

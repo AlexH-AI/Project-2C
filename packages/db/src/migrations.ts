@@ -21,6 +21,7 @@ import m0015 from '../migrations/0015_rm_id.sql?raw';
 import m0016 from '../migrations/0016_settings_currency.sql?raw';
 import m0017 from '../migrations/0017_policies_cancelled_date.sql?raw';
 import m0018 from '../migrations/0018_policies_cancelled.sql?raw';
+import m0019 from '../migrations/0019_teams_style.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -51,6 +52,8 @@ export const MIGRATIONS: readonly Migration[] = [
   // column from the old one, as for 0004; two generated steps need no hand edit.
   { id: 18, tag: '0017_policies_cancelled_date', sql: m0017 },
   { id: 19, tag: '0018_policies_cancelled', sql: m0018 },
+  // C3: two columns a team may leave empty, no CHECK; the commands and the import check them.
+  { id: 20, tag: '0019_teams_style', sql: m0019 },
 ];
 
 /** The highest schema version a list of migrations reaches. */

@@ -1,5 +1,5 @@
 /** Static lists and weights the simulated data picks from (spec §7). Data only, no logic. */
-import type { CustomerStage, KycCategory, KycField, KycValue } from '@p2c/domain';
+import type { CustomerStage, KycCategory, KycField, KycValue, Team } from '@p2c/domain';
 import type { AppointmentTrigger } from './appointments';
 
 /** Values with relative weights. */
@@ -43,6 +43,13 @@ export const TRIGGERS: Weighted<AppointmentTrigger> = [
 ];
 
 export const TEAM_NAMES = ['Sao Mai', 'Bình Minh', 'Hừng Đông'] as const;
+
+/** The look of each of `TEAM_NAMES` as mockup search-rm-team.html draws it (C3); Hừng Đông the default. */
+export const TEAM_LOOKS: readonly Pick<Team, 'color' | 'icon'>[] = [
+  { color: 'accent', icon: 'star' },
+  { color: 'warn', icon: 'sunrise' },
+  { color: null, icon: null },
+];
 
 export const FAMILY_NAMES = [
   'Nguyễn',

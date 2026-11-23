@@ -194,11 +194,11 @@ describe('openDatabase', () => {
 
   it('runs the given migrations instead of the app ones (tests pass fake ones)', async () => {
     const id = LATEST_SCHEMA_VERSION + 1;
-    const fake = { id, tag: 'fake', sql: 'ALTER TABLE teams ADD COLUMN color text;' };
+    const fake = { id, tag: 'fake', sql: 'ALTER TABLE teams ADD COLUMN motto text;' };
     const db = await openDatabase({ migrations: [...MIGRATIONS, fake] });
 
     expect(db.schemaVersion()).toBe(id);
-    expect(columnNames(db, 'teams')).toContain('color');
+    expect(columnNames(db, 'teams')).toContain('motto');
   });
 
   it('rejects with the error of a failing migration, saving nothing', async () => {
@@ -458,9 +458,16 @@ describe('migrating a saved database', () => {
     rows.map((row) => row.map((value) => (value === 'RE' ? 'RM' : value)));
   /** Where migration 0018 puts the cancellation day of a policy (B1a): after the issued FYP. */
   const CANCELLED_AT = 7;
-  /** Rows of `table` saved before B1a as its migrations leave them: a policy not cancelled. */
+  /**
+   * Rows of `table` saved before B1a and C3 as their migrations leave them: a policy not cancelled,
+   * a team in the default look (0019 adds its colour and icon last).
+   */
   const notCancelled = (table: string, rows: ReturnType<typeof rowsOf>) =>
-    table === 'policies' ? rows.map((row) => row.toSpliced(CANCELLED_AT, 0, null)) : rows;
+    table === 'policies'
+      ? rows.map((row) => row.toSpliced(CANCELLED_AT, 0, null))
+      : table === 'teams'
+        ? rows.map((row) => [...row, null, null])
+        : rows;
   /** How SQLite runs `query`, one step a line. */
   const queryPlan = (db: Database, query: string) =>
     db.sqlite
@@ -725,7 +732,9 @@ describe('migrating a saved database', () => {
     expect(column('SELECT role FROM people ORDER BY rowid')).toEqual(['RM', 'RM', 'TL', 'IS']);
     expect(column('SELECT source FROM kyc_notes ORDER BY rowid')).toEqual(['SYSTEM', 'RM']);
     // Every other value, every id and every reference stays.
-    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before.map(withRm));
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(
+      before.map((rows, i) => notCancelled(tables[i]!, withRm(rows))),
+    );
     expect(foreignKeys(db, 'people')).toContain('team_id->teams.id');
     expect(foreignKeys(db, 'kyc_notes')).toContain('customer_id->customers.id');
     expect(foreignKeys(db, 'kyc_facts')).toContain('note_id->kyc_notes.id');
@@ -947,11 +956,13 @@ describe('migrating a saved database', () => {
         \`created_at\` text NOT NULL,
         \`updated_at\` text NOT NULL,
         \`deleted_at\` text,
+        \`color\` text,
+        \`icon\` text,
         CONSTRAINT "teams_name_filled" CHECK(length("__new_teams"."name") > 0)
       );
       --> statement-breakpoint
-      INSERT INTO \`__new_teams\`("id", "name", "created_at", "updated_at", "deleted_at")
-        SELECT "id", "name", "created_at", "updated_at", "deleted_at" FROM \`teams\`;--> statement-breakpoint
+      INSERT INTO \`__new_teams\`("id", "name", "created_at", "updated_at", "deleted_at", "color", "icon")
+        SELECT "id", "name", "created_at", "updated_at", "deleted_at", "color", "icon" FROM \`teams\`;--> statement-breakpoint
       DROP TABLE \`teams\`;--> statement-breakpoint
       ALTER TABLE \`__new_teams\` RENAME TO \`teams\`;--> statement-breakpoint
       PRAGMA foreign_keys=ON;--> statement-breakpoint

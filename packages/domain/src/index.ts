@@ -150,6 +150,8 @@ export {
   REVIEWER_ROLES,
   RM_ROLE,
   ROLES_WITH_TEAM,
+  TEAM_COLORS,
+  TEAM_ICONS,
 } from './model';
 export type {
   Appointment,
@@ -163,4 +165,6 @@ export type {
   Scope,
   StageTransition,
   Team,
+  TeamColor,
+  TeamIcon,
 } from './model';
