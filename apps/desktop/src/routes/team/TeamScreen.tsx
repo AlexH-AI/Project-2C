@@ -21,7 +21,8 @@ import { routeToHash } from '../../shell/routes';
 import { ScreenBar } from '../../shell/ScreenBar';
 import { isReturning } from '../../shell/useRoute';
 import { CARD, FOCUS, HEADING, LINK } from '../classes';
-import { formatCount, kpiText } from '../overview/overview-view';
+import { formatAmountCompact } from '../money-view';
+import { formatCount } from '../overview/overview-view';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { RmSearch } from './RmSearch';
 import { DeleteTeamDialog, TeamDialog } from './TeamDialogs';
@@ -387,14 +388,9 @@ function SharedSupport({
  * column waits for Forecast tuần (D6).
  */
 function Brief({ brief, today }: { brief: TeamBrief; today: CalendarDate }) {
-  const money = kpiText('money', brief.revenue);
   const when = t('team.brief.when', { month: today.month, date: formatDayMonth(today) });
   const numbers = [
-    [
-      t('overview.kpi.revenue'),
-      `${money.value}${money.unitSpaced ? ' ' : ''}${money.unit}`,
-      brief.revenue < 0,
-    ],
+    [t('overview.kpi.revenue'), formatAmountCompact(brief.revenue), brief.revenue < 0],
     [t('team.brief.net'), formatCount(brief.net), brief.net < 0],
   ] as const;
   return (

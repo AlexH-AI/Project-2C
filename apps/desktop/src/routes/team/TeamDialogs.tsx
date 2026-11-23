@@ -79,10 +79,13 @@ const swatch = (color: TeamColor | null) => (
   />
 );
 
-/** What a choice of the icon looks like: the icon on a square, gold once picked. */
+/**
+ * What a choice of the icon looks like: the icon on a square, gold once picked, under the pointer
+ * too (mockup `.icon-pick button.on`): `peer-checked:hover:` outweighs `hover:`.
+ */
 const iconChoice = (icon: TeamIcon | null) => (
   <span
-    className={`grid size-8.5 cursor-pointer place-items-center rounded-control bg-fill-2 text-fg-2 hover:bg-fill-3 hover:text-fg peer-checked:bg-accent-soft peer-checked:text-accent peer-checked:inset-ring-2 peer-checked:inset-ring-accent peer-focus-visible:outline-2 peer-focus-visible:outline-accent`}
+    className={`grid size-8.5 cursor-pointer place-items-center rounded-control bg-fill-2 text-fg-2 hover:bg-fill-3 hover:text-fg peer-checked:bg-accent-soft peer-checked:text-accent peer-checked:inset-ring-2 peer-checked:inset-ring-accent peer-checked:hover:bg-accent-soft peer-checked:hover:text-accent peer-focus-visible:outline-2 peer-focus-visible:outline-accent`}
   >
     <NavIcon name={icon ?? 'team'} />
   </span>

@@ -1088,6 +1088,12 @@ const choice = (dialog: Locator, group: 'Màu' | 'Icon', name: string) =>
     .getByRole('group', { name: group === 'Màu' ? /^Màu chữ của tên team/ : /^Icon/ })
     .getByRole('radio', { name, exact: true });
 
+/** The shapes of the first icon drawn in `box`, which tell one icon of a team from another. */
+const iconIn = (box: Locator) => box.locator('svg').first().innerHTML();
+
+/** The icon a choice of Tạo / Sửa team draws, to compare with where the team shows. */
+const iconOf = (radio: Locator) => iconIn(radio.locator('..'));
+
 /**
  * The contrast of the ring of a colour picked in Tạo / Sửa team with what is behind it in the
  * dialog (WCAG 1.4.11: at least 3:1): a letter in the colour of the ring, put beside its swatch,
@@ -1137,7 +1143,16 @@ test('Sửa team: a colour and an icon show in the preview, then at once on the 
   );
   await pick(choice(dialog, 'Màu', 'Cam'));
   expect(await ringContrast(choice(dialog, 'Màu', 'Cam')), 'Cam').toBeGreaterThanOrEqual(3);
+  const plain = await iconOf(choice(dialog, 'Icon', 'Mặc định'));
+  const mountain = await iconOf(choice(dialog, 'Icon', 'Núi'));
+  expect(mountain).not.toBe(plain);
+  expect(await iconIn(preview)).toBe(plain);
   await pick(choice(dialog, 'Icon', 'Núi'));
+  await expect.poll(() => iconIn(preview)).toBe(mountain);
+  // Under the pointer the icon picked stays gold (mockup `.icon-pick button.on`).
+  const mountainChoice = choice(dialog, 'Icon', 'Núi').locator('xpath=following-sibling::span');
+  await mountainChoice.hover();
+  await expect(mountainChoice).toHaveCSS('color', await tokenColor(page, '--accent'));
   const orange = await tokenColor(page, '--warn');
   await expect(named).toHaveCSS('color', orange);
   await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Hừng Đông 2');
@@ -1147,15 +1162,31 @@ test('Sửa team: a colour and an icon show in the preview, then at once on the 
   await expect(dialog).toBeHidden();
 
   await expect(heading).toHaveCSS('color', orange);
+  expect(await iconIn(card)).toBe(mountain);
   // In the list the name of the team chosen stays in the colour of the text on its gold tint
-  // (L188); the row of a team not chosen takes the colour.
-  const listed = teamButton(page, 'Hừng Đông').getByText('Hừng Đông', { exact: true });
+  // (L188); the row of a team not chosen takes the colour. The icon is the one picked in both.
+  const row = teamButton(page, 'Hừng Đông');
+  const listed = row.getByText('Hừng Đông', { exact: true });
   await expect(listed).toHaveCSS('color', text);
+  expect(await iconIn(row)).toBe(mountain);
   await teamButton(page, 'Sao Mai').click();
   await expect(listed).toHaveCSS('color', orange);
   await teamButton(page, 'Hừng Đông').click();
+  // Tìm RM shows the icon of the team of each RM it finds.
+  const rm = await card.getByRole('link').first().innerText();
+  const field = page.getByRole('combobox', { name: 'Tìm RM' });
+  await field.fill(rm);
+  const found = page
+    .getByRole('listbox', { name: 'RM khớp' })
+    .getByRole('option')
+    .filter({ hasText: 'Hừng Đông' })
+    .first();
+  expect(await iconIn(found)).toBe(mountain);
+  await field.press('Escape');
   await card.getByRole('link').first().click();
-  await expect(page.getByText('Hừng Đông', { exact: true })).toHaveCSS('color', orange);
+  const team = page.getByText('Hừng Đông', { exact: true });
+  await expect(team).toHaveCSS('color', orange);
+  expect(await iconIn(team.locator('..'))).toBe(mountain);
   await page.getByRole('link', { name: '← Team & nhân sự' }).click();
 
   await card.getByRole('button', { name: 'Sửa team' }).click();
@@ -1165,6 +1196,8 @@ test('Sửa team: a colour and an icon show in the preview, then at once on the 
   await pick(choice(dialog, 'Icon', 'Mặc định'));
   await dialog.getByRole('button', { name: 'Lưu' }).click();
   await expect(heading).toHaveCSS('color', text);
+  expect(await iconIn(card)).toBe(plain);
+  expect(await iconIn(row)).toBe(plain);
 });
 
 test('the top of a team: its icon, its name in its colour, the TL on its line as large, Doanh số and Số HĐ of the month (C3)', async ({
@@ -1195,6 +1228,15 @@ test('the top of a team: its icon, its name in its colour, the TL on its line as
   const card = members(page, 'Sao Mai');
   const heading = card.getByRole('heading', { name: 'Sao Mai', exact: true });
   await expect(heading).toHaveCSS('color', await tokenColor(page, '--accent'));
+  // The icon of the seed, Sao, as its choice in Sửa team draws it.
+  await card.getByRole('button', { name: 'Sửa team' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa team' });
+  const star = choice(dialog, 'Icon', 'Sao');
+  await expect(star).toBeChecked();
+  const [drawn, plain] = [await iconOf(star), await iconOf(choice(dialog, 'Icon', 'Mặc định'))];
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+  expect(drawn).not.toBe(plain);
+  expect(await iconIn(card)).toBe(drawn);
   const lead = card.locator('b').first();
   const [name, tl] = await Promise.all([heading.boundingBox(), lead.boundingBox()]);
   expect(Math.abs(name!.y + name!.height / 2 - (tl!.y + tl!.height / 2))).toBeLessThan(2);

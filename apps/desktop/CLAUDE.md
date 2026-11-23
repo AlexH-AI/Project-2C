@@ -37,7 +37,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 | `appointments` | `src/routes/appointments/AppointmentsScreen.tsx` | `src/routes/appointments/appointments-view.ts` |
 | `customers` | `src/routes/customers/CustomersScreen.tsx` | `src/routes/customers/customers-view.ts` |
 | `reports` | `src/routes/reports/ReportsScreen.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/reports/reports-view.ts` |
-| `team` | `src/routes/team/TeamScreen.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/team/team-view.ts` |
+| `team` | `src/routes/team/TeamScreen.tsx` | `src/routes/money-view.ts`, `src/routes/overview/overview-view.ts`, `src/routes/team/team-view.ts` |
 | `settings` | `src/routes/Settings.tsx` | — |
 | `customer` | `src/routes/customers/CustomerProfile.tsx` | `src/routes/customers/customers-view.ts`, `src/routes/customers/kyc-view.ts` |
 | `rm` | `src/routes/team/RmPage.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/team/rm-view.ts` |
