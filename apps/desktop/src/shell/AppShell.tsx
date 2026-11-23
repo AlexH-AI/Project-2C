@@ -18,26 +18,45 @@ import type { AppWindow } from './CloseGuard';
 import { ErrorBoundary } from './ErrorBoundary';
 import { NameMaskButton } from './NameMask';
 import { SaveWarning } from './SaveWarning';
-import { routeToHash, sectionOf, teamPickerShown, usesScope, type Route } from './routes';
-import { narrowScope, resolveScope, type ScopeChoice } from './scope';
+import {
+  resolveRoute,
+  routeToHash,
+  screenTitle,
+  sectionOf,
+  teamPickerShown,
+  usesScope,
+  type Route,
+} from './routes';
+import { narrowScope, pinChoice, resolveScope, type ScopeChoice } from './scope';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
 import { Toolbar } from './ScreenBar';
 import { Sidebar } from './Sidebar';
 import { ToastProvider, ToastRegion } from './Toasts';
-import { navigate, returnTo, useRoute } from './useRoute';
+import { forgetWays, navigate, openWay, returnTo, useRoute, wayBack } from './useRoute';
+
+/**
+ * The link on the screen shown to the page `href`: one of "Mở" (`data-open`) first, the one a page
+ * opened by it shrinks back to, else any. The focus and the way back of "Mở" find the same one.
+ */
+function linkTo(main: HTMLElement | null, href: string): HTMLElement | undefined {
+  const links = [...(main?.querySelectorAll<HTMLElement>('a[href]') ?? [])].filter(
+    (link) => link.getAttribute('href') === href,
+  );
+  return links.find((link) => link.hasAttribute('data-open')) ?? links[0];
+}
 
 /**
  * A new screen says so (DR6-35): the window takes its name, and the focus, gone with the screen
- * before, goes to its heading; back on Customers from a profile, to the card or row of that customer
- * when shown. Opening the app leaves the focus alone. The screens share one page, which keeps the
- * scroll of the screen before: a new one opens at its top (DR6-81), the card just seen in view.
+ * before, goes to its heading; back on a screen from a page it opened by "Mở", to its card or row
+ * when shown, and on Customers to any link of the customer. Opening the app leaves the focus alone.
+ * The screens share one page, which keeps the scroll of the screen before: a new one opens at its
+ * top (DR6-81), the card just seen in view.
  * The exe's title bar does not follow the page's title (Tauri 2): its window is given the name too.
  */
-function useScreenFocus(route: Route, appWindow: AppWindow | undefined) {
+function useScreenFocus(route: Route, name: string, appWindow: AppWindow | undefined) {
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
-  const name = t(`screen.${route.screen}`);
   useEffect(() => {
     const title = joinParts([name, t('app.title')]);
     document.title = title;
@@ -50,12 +69,8 @@ function useScreenFocus(route: Route, appWindow: AppWindow | undefined) {
     const before = shown.current;
     shown.current = hash;
     if (before === hash) return;
-    const seen = onCustomers
-      ? [...(main.current?.querySelectorAll<HTMLElement>('a[href]') ?? [])].find(
-          (link) => link.getAttribute('href') === before,
-        )
-      : undefined;
-    if (seen) seen.focus();
+    const seen = linkTo(main.current, before);
+    if (seen && (onCustomers || seen.hasAttribute('data-open'))) seen.focus();
     else {
       window.scrollTo(0, 0);
       heading.current?.focus({ preventScroll: true });
@@ -107,31 +122,22 @@ function useRise(
   }, [main, heading, hash, still]);
 }
 
-/** A card of the board of Khách hàng grows itself; a name in the table, its row (`data-open="row"`). */
+/** A card of the board of Khách hàng grows itself; a name in a table, its row (`data-open="row"`). */
 const grower = (link: HTMLElement): HTMLElement =>
   (link.dataset.open === 'row' && link.closest('tr')) || link;
-
-/** The way back of "Mở": the screen a page was opened from, how far it was scrolled, the page. */
-interface WayBack {
-  readonly from: string;
-  readonly scroll: number;
-  readonly to: string;
-}
 
 /**
  * "Mở" (VA7b, `openFrom`; chuyen-dong.html `#mo`): a link marked `data-open` grows into the page
  * it opens, the whole of `main`; the link back to the screen it came from then shrinks the page to
  * it again, that screen as it was left: as far scrolled, the focus on the link (`useScreenFocus`).
- * The new screen is drawn in `flushSync`, so the move pictures it. Another way to a screen (the
- * sidebar, any other link) forgets the way back. Gives the click handler of `main`, and `still`:
- * set while "Mở" draws a screen, which comes as one block ("Hiện" does not play).
+ * A page opened so may open another (Team → an RM → a customer): each goes back to the one before
+ * (`wayBack`). The new screen is drawn in `flushSync`, so the move pictures it. Another way to a
+ * screen (the sidebar, any other link) forgets the ways back. Gives the click handler of `main`,
+ * and `still`: set while "Mở" draws a screen, which comes as one block ("Hiện" does not play).
  */
 function useOpen(main: RefObject<HTMLElement | null>, hash: string) {
   const still = useRef(false);
-  const way = useRef<WayBack | null>(null);
-  useEffect(() => {
-    if (way.current?.to !== hash) way.current = null;
-  }, [hash]);
+  useEffect(() => forgetWays(hash), [hash]);
   const go = (to: string, moving: boolean) => {
     still.current = moving;
     try {
@@ -146,18 +152,17 @@ function useOpen(main: RefObject<HTMLElement | null>, hash: string) {
     const link = event.target instanceof Element ? event.target.closest('a') : null;
     const to = link?.getAttribute('href');
     if (!link || !to) return;
-    const back = way.current;
+    const back = wayBack(hash);
     if (link.hasAttribute('data-open')) {
       event.preventDefault();
-      way.current = { from: hash, scroll: window.scrollY, to };
+      openWay({ from: hash, scroll: window.scrollY, to });
       openFrom(grower(link), (moving) => go(to, moving), { to: () => main.current });
     } else if (back && to === back.from) {
       event.preventDefault();
-      way.current = null;
+      wayBack(hash, true);
       // The link of the page on the screen returned to, if it is still there.
       const shown = () => {
-        const links = main.current?.querySelectorAll<HTMLElement>('a[data-open]') ?? [];
-        const link = [...links].find((one) => one.getAttribute('href') === back.to);
+        const link = linkTo(main.current, back.to);
         return link ? grower(link) : null;
       };
       const change = (moving: boolean) => {
@@ -183,13 +188,17 @@ export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
 }
 
 function Shell({ appWindow }: { appWindow?: AppWindow }) {
-  const route = useRoute();
-  const { heading, main } = useScreenFocus(route, appWindow);
+  const { teams, people } = useTables();
+  const route = useRoute((parsed) => resolveRoute(parsed, people));
+  const title = screenTitle(route, people);
+  const { heading, main } = useScreenFocus(route, title, appWindow);
   const { onOpen, still } = useOpen(main, routeToHash(route));
   useRise(main, heading, routeToHash(route), still);
-  const { teams, people } = useTables();
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
+  // The team or RM shown stays the one shown: a name changed or added never moves it (CLR6-D6).
+  const pinned = pinChoice(choice, picked);
+  if (pinned !== choice) setChoice(pinned);
   const scope = useMemo(
     () => narrowScope(picked, choice.rmInTeam, people),
     [picked, choice.rmInTeam, people],
@@ -210,7 +219,7 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
       <div className="flex min-w-0 flex-1 flex-col win:border-l win:border-transparent">
         <SaveWarning heading={heading} />
         <Toolbar
-          title={t(`screen.${route.screen}`)}
+          title={title}
           heading={heading}
           tools={
             <>

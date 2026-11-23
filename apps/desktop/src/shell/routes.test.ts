@@ -1,9 +1,12 @@
+import type { Person } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ROUTE,
   SECTIONS,
   parseHash,
+  resolveRoute,
   routeToHash,
+  screenTitle,
   sectionOf,
   teamPickerShown,
   usesScope,
@@ -36,8 +39,18 @@ describe('parseHash', () => {
     expect(parseHash('#/settings/trash/x')).toBeNull();
   });
 
+  it('reads the page of an RM, under Team & nhân sự (spec Phase 6 §5)', () => {
+    expect(parseHash('#/team/rm/re-7')).toEqual({ screen: 'rm', id: 're-7' });
+    expect(parseHash('#/team/rm/Nguy%E1%BB%85n')).toEqual({ screen: 'rm', id: 'Nguyễn' });
+    expect(parseHash('#/team/rm')).toBeNull();
+    expect(parseHash('#/team/x/re-7')).toBeNull();
+    expect(parseHash('#/team/rm/re-7/x')).toBeNull();
+    expect(parseHash('#/team/rm/%E0%A4%A')).toBeNull();
+  });
+
   it('ignores a trailing slash', () => {
     expect(parseHash('#/customers/')).toEqual({ screen: 'customers' });
+    expect(parseHash('#/team/rm/re-7/')).toEqual({ screen: 'rm', id: 're-7' });
   });
 
   it('returns null for an empty or unknown hash', () => {
@@ -59,6 +72,7 @@ describe('routeToHash', () => {
       { screen: 'settings' },
       { screen: 'settings', section: 'ai' },
       { screen: 'settings', section: 'trash' },
+      { screen: 'rm', id: 'Nguyễn 1' },
     ] as const) {
       expect(parseHash(routeToHash(route))).toEqual(route);
     }
@@ -70,6 +84,44 @@ describe('sectionOf', () => {
     expect(sectionOf({ screen: 'customer', id: 'x' })).toBe('customers');
     expect(sectionOf({ screen: 'team' })).toBe('team');
     expect(sectionOf({ screen: 'settings', section: 'ai' })).toBe('settings');
+  });
+
+  it('keeps Team & nhân sự selected on the page of an RM', () => {
+    expect(sectionOf({ screen: 'rm', id: 're-7' })).toBe('team');
+  });
+});
+
+describe('resolveRoute', () => {
+  const people: Person[] = [
+    { id: 're-7', name: 'Hoàng Văn Tùng', role: 'RM', teamId: 't1' },
+    { id: 'tl-1', name: 'Lý Gia Trang', role: 'TL', teamId: 't1' },
+  ];
+
+  it('keeps the page of an RM there is', () => {
+    expect(resolveRoute({ screen: 'rm', id: 're-7' }, people)).toEqual({
+      screen: 'rm',
+      id: 're-7',
+    });
+  });
+
+  it('takes the page of an RM gone, or of a person who is no RM, to Team & nhân sự', () => {
+    expect(resolveRoute({ screen: 'rm', id: 'gone' }, people)).toEqual({ screen: 'team' });
+    expect(resolveRoute({ screen: 'rm', id: 'tl-1' }, people)).toEqual({ screen: 'team' });
+  });
+
+  it('leaves the other screens alone', () => {
+    const route = { screen: 'customer', id: 'gone' } as const;
+    expect(resolveRoute(route, people)).toBe(route);
+  });
+});
+
+describe('screenTitle', () => {
+  const people: Person[] = [{ id: 're-7', name: 'Hoàng Văn Tùng', role: 'RM', teamId: 't1' }];
+
+  it('names the page of an RM by the RM, the other screens by their name', () => {
+    expect(screenTitle({ screen: 'rm', id: 're-7' }, people)).toBe('Hoàng Văn Tùng');
+    expect(screenTitle({ screen: 'team' }, people)).toBe('Team & nhân sự');
+    expect(screenTitle({ screen: 'customer', id: 'x' }, people)).toBe('Hồ sơ khách hàng');
   });
 });
 

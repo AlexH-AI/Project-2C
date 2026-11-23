@@ -122,6 +122,16 @@ test('masked, no full name of a seeded customer is left on any screen nor in the
     await team.click();
     await noneOf(page, names, `Team ${await team.textContent()}`);
   }
+  // The page of an RM: the customers in charge, open, then closed (C2a).
+  await page
+    .getByRole('region', { name: /^Thành viên team / })
+    .getByRole('link')
+    .first()
+    .click();
+  await expect(page.getByRole('table', { name: 'Khách hàng phụ trách' })).toBeVisible();
+  await noneOf(page, names, 'Trang RM, Đang mở');
+  await page.getByRole('radio', { name: 'Đã đóng', exact: true }).click();
+  await noneOf(page, names, 'Trang RM, Đã đóng');
   await go(page, 'Cài đặt');
   await page
     .getByRole('navigation', { name: 'Mục cài đặt' })

@@ -11,6 +11,7 @@ import {
 import {
   PERSON_ROLES,
   ROLES_WITH_TEAM,
+  normalizeText,
   type Person,
   type PersonRole,
   type Team,
@@ -56,11 +57,14 @@ export function PersonDialog({
   const [errors, setErrors] = useState<Errors>({});
   // "Xóa nhân sự" leaves the dialog for 9b, and with it the changes not saved: it asks first (issue
   // 144). Going on is a button of its own, in the question: clicked again, or twice at once, "Xóa
-  // nhân sự" only asks (review of PR 841).
+  // nhân sự" only asks (review of PR 841). The name as saving keeps it: a space at its end is no
+  // change (CLR6-D10).
   const [asked, setAsked] = useState(false);
   const changed =
     person !== undefined &&
-    (name !== person.name || role !== person.role || teamId !== (person.teamId ?? ''));
+    (normalizeText(name) !== person.name ||
+      role !== person.role ||
+      teamId !== (person.teamId ?? ''));
   const edited = () => {
     setErrors({});
     setAsked(false);
