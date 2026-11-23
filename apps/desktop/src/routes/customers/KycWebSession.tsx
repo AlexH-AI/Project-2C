@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
-import { modParams } from '../../shell/platform';
 import { ALERT } from '../classes';
 import { webAfter, webChip, webFailure, type AiPanelIssue, type AiPanelWeb } from './ai-panel-view';
 
@@ -130,7 +129,7 @@ export function KycWebSession({
       {web.manual !== null && (
         <>
           <p role="alert" className={`${ALERT} border-warn`}>
-            {t(web.openFailed ? 'aiPanel.web.bothFailed' : 'aiPanel.web.copyFailed', modParams())}
+            {t(web.openFailed ? 'aiPanel.web.bothFailed' : 'aiPanel.web.copyFailed')}
           </p>
           <textarea
             readOnly
@@ -160,7 +159,6 @@ export function KycWebSession({
           }}
           placeholder={t(
             second ? 'aiPanel.web.pasteRetryPlaceholder' : 'aiPanel.web.pastePlaceholder',
-            modParams(),
           )}
           error={
             web.refused

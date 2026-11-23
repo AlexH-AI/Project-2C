@@ -1,5 +1,3 @@
-import { t } from '../i18n';
-
 /** The client hints of a Chromium webview (WebView2): Windows says its version only there. */
 interface ClientHints {
   getHighEntropyValues(hints: string[]): Promise<{ platformVersion?: string }>;
@@ -55,14 +53,6 @@ export const modKey = (nav?: Nav): '⌘' | 'Ctrl' => (isMac(nav) ? '⌘' : 'Ctrl
 
 /**
  * The `{mod}` of a message that names a shortcut, written right before its key, as each platform
- * writes one: `⌘A` on macOS, `Ctrl+A` on Windows.
+ * writes one: `⌘A` on macOS, `Ctrl+A` on Windows. `t()` fills it in every message.
  */
-export const modParams = (nav?: Nav) => ({ mod: isMac(nav) ? modKey(nav) : `${modKey(nav)}+` });
-
-/**
- * The `{store}` of a message about the AI key: the system's key store that keeps it (ADR-0019 §4),
- * the Keychain on macOS, the Credential Manager on Windows.
- */
-export const storeParams = (nav?: Nav) => ({
-  store: t(isMac(nav) ? 'settingsAi.keyStore.mac' : 'settingsAi.keyStore.windows'),
-});
+export const modPrefix = (nav?: Nav): string => (isMac(nav) ? modKey(nav) : `${modKey(nav)}+`);

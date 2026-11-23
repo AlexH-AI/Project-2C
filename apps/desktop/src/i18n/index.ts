@@ -1,6 +1,7 @@
 import { DbError } from '@p2c/db';
 import { formatMoneyCompact, formatNumber, maxFee } from '@p2c/domain';
 import type { DataTableMoreLabels } from '@p2c/ui';
+import { isMac, modPrefix } from '../shell/platform';
 import { en, type PluralMessage } from './en';
 import { appLanguage, dataCurrency } from './language';
 import { vi, type MessageKey } from './vi';
@@ -60,12 +61,26 @@ export function formatMessage(message: string | PluralMessage, params?: MessageP
   return params ? fillSlots(text, params) : text;
 }
 
+const PLATFORM_SLOT = /\{(?:mod|store)\}/;
+
+/**
+ * The words of the platform, which `t()` fills in every message that has their slots, so that no
+ * caller has to (L170): `{mod}` written right before its key (`⌘A` on macOS, `Ctrl+A` on Windows),
+ * `{store}` the system's store of the AI key (ADR-0019 §4). A caller's own params come first.
+ */
+function withPlatform(message: string | PluralMessage, params?: MessageParams) {
+  if (!PLATFORM_SLOT.test(typeof message === 'string' ? message : message.other)) return params;
+  const store = t(isMac() ? 'settingsAi.keyStore.mac' : 'settingsAi.keyStore.windows');
+  return { mod: modPrefix(), store, ...params };
+}
+
 /**
  * Look up a UI string in the language of this run and fill its `{name}` slots; English shows the
  * Vietnamese of a key it lacks. Keys are typed, so a missing key fails typecheck.
  */
 export function t(key: MessageKey, params?: MessageParams): string {
-  return formatMessage((appLanguage() === 'en' ? en[key] : undefined) ?? vi[key], params);
+  const message = (appLanguage() === 'en' ? en[key] : undefined) ?? vi[key];
+  return formatMessage(message, withPlatform(message, params));
 }
 
 /** The known parts of one line, apart by the `sep.*` mark: `Nữ · 1991`, `N2 → N1`. */
