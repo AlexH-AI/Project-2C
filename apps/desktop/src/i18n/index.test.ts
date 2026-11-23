@@ -222,9 +222,10 @@ describe('errorMessage', () => {
     expect(errorMessage(new DbError('NAME_REQUIRED'))).toBe('Chưa nhập tên.');
   });
 
-  // ADR-0018 §3, mockup #money "Quá trần phí": the cap of the data's currency, in its compact form.
+  // ADR-0018 §3, mockup #money "Quá trần phí": the cap of the data's currency, in its compact form,
+  // "đồng" in Vietnamese as the mockup writes it (L125).
   it('names the fee cap of the currency of the data', () => {
-    expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('Số tiền tối đa 100 tỷ VNĐ.');
+    expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('Số tiền tối đa 100 tỷ đồng.');
     try {
       setDataCurrency('USD', 'vi');
       expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('The maximum is $100 Bil.');

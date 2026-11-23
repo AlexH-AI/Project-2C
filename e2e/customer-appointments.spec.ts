@@ -272,6 +272,17 @@ test('"Xem tất cả" in the dialog opened on the profile shows the appointment
     await create(page, `${day}/9`, null);
   }
 
+  // NT-LH-17 (DR6-206): more than five, the list keeps the five latest, newest first.
+  const all = Number(/\((\d+)\)/.exec((await seeAll.textContent()) ?? '')?.[1]);
+  expect(all).toBeGreaterThan(5);
+  const history = dialog.getByRole('region', { name: 'Các lần hẹn trước' }).getByRole('listitem');
+  await expect(history).toHaveCount(5);
+  const days = (await history.allTextContents()).map((text) => {
+    const [, day = '', month = ''] = /(\d\d)\/(\d\d)/.exec(text) ?? [];
+    return month + day;
+  });
+  expect(days).toEqual([...days].sort().reverse());
+
   await seeAll.click();
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/#\/customers\//);

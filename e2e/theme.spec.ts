@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator } from './fixtures';
 import {
   addKycNote,
+  contrast,
   createKycCustomer,
   discoveryFacts,
   drawnCorner,
@@ -243,31 +244,17 @@ test('the options of a native list read at AA on a solid ground of their own', a
   const list = page
     .getByRole('dialog', { name: 'Khách hàng mới' })
     .getByRole('combobox', { name: 'RM phụ trách' });
-  const options = await list.evaluate((select: HTMLSelectElement) => {
-    const channels = (color: string) => (color.match(/[\d.]+/g) ?? []).map(Number);
-    const luminance = (color: string) => {
-      const [r = 0, g = 0, b = 0] = channels(color).map((value) => {
-        const c = value / 255;
-        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-      });
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    return [...select.options].map((option) => {
+  const options = await list.evaluate((select: HTMLSelectElement) =>
+    [...select.options].map((option) => {
       const { backgroundColor, color } = getComputedStyle(option);
-      const [light = 0, dark = 0] = [luminance(color), luminance(backgroundColor)].sort(
-        (x, y) => y - x,
-      );
-      return {
-        option: option.text,
-        alpha: channels(backgroundColor)[3] ?? 1,
-        contrast: (light + 0.05) / (dark + 0.05),
-      };
-    });
-  });
+      return { option: option.text, backgroundColor, color };
+    }),
+  );
   expect(options.length).toBeGreaterThan(1);
-  for (const { option, alpha, contrast } of options) {
-    expect(alpha, option).toBe(1);
-    expect(contrast, option).toBeGreaterThanOrEqual(4.5);
+  for (const { option, backgroundColor, color } of options) {
+    // Solid: an `rgb(…)`, with no alpha below 1.
+    expect(backgroundColor, option).toMatch(/^rgb\(|^rgba\(.*,\s*1\)$/);
+    expect(contrast(color, backgroundColor), option).toBeGreaterThanOrEqual(4.5);
   }
 });
 
