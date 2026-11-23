@@ -32,7 +32,7 @@ const TILE = {
   trash: 'tile-n4',
 } as const satisfies Record<Section, string>;
 
-const NAV_ITEM = `flex items-center gap-3 rounded-control-sm px-2.25 py-2 text-left text-sm font-control transition-colors ${FOCUS}`;
+const NAV_ITEM = `flex items-center gap-3 rounded-control-sm px-2.25 py-2 text-left text-sm font-control transition-colors duration-(--t-1) ${FOCUS}`;
 
 /**
  * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
