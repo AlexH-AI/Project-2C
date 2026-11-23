@@ -6,27 +6,20 @@ import { BADGE } from '../classes';
 
 // Each colour a team's name may take (C3, ADR-0007 "Team & nhân sự"), as literal classes Tailwind
 // reads: the text, and the tint of the square of the icon (mockup `.tmark`, 16 %).
-const TEXT: Record<TeamColor, string> = {
-  accent: 'text-accent',
-  info: 'text-info',
-  n2: 'text-n2',
-  submitted: 'text-submitted',
-  ok: 'text-ok',
-  warn: 'text-warn',
-};
-const TINT: Record<TeamColor, string> = {
-  accent: 'bg-accent/16',
-  info: 'bg-info/16',
-  n2: 'bg-n2/16',
-  submitted: 'bg-submitted/16',
-  ok: 'bg-ok/16',
-  warn: 'bg-warn/16',
+const LOOK: Record<TeamColor, { text: string; tint: string }> = {
+  accent: { text: 'text-accent', tint: 'bg-accent/16' },
+  info: { text: 'text-info', tint: 'bg-info/16' },
+  n2: { text: 'text-n2', tint: 'bg-n2/16' },
+  submitted: { text: 'text-submitted', tint: 'bg-submitted/16' },
+  ok: { text: 'text-ok', tint: 'bg-ok/16' },
+  warn: { text: 'text-warn', tint: 'bg-warn/16' },
 };
 
 type Look = Pick<Team, 'color' | 'icon'>;
 
 /** The colour of a team's name: that of the text in the default look (mockup `.tname`). */
-export const teamNameClass = ({ color }: Look): string => (color ? TEXT[color] : 'text-fg');
+export const teamNameClass = ({ color }: Pick<Team, 'color'>): string =>
+  color ? LOOK[color].text : 'text-fg';
 
 /**
  * The icon of a team on its tinted square, before its name (mockup `.tmark`; `large` at the top of
@@ -41,7 +34,9 @@ export function TeamMark({
   large?: boolean;
   className?: string;
 }) {
-  const tone = team.color ? `${TEXT[team.color]} ${TINT[team.color]}` : 'bg-fg-2/16 text-fg-2';
+  const tone = team.color
+    ? `${LOOK[team.color].text} ${LOOK[team.color].tint}`
+    : 'bg-fg-2/16 text-fg-2';
   return (
     <span
       aria-hidden="true"

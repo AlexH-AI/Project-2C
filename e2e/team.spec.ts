@@ -1088,6 +1088,33 @@ const choice = (dialog: Locator, group: 'Màu' | 'Icon', name: string) =>
     .getByRole('group', { name: group === 'Màu' ? /^Màu chữ của tên team/ : /^Icon/ })
     .getByRole('radio', { name, exact: true });
 
+/**
+ * The contrast of the ring of a colour picked in Tạo / Sửa team with what is behind it in the
+ * dialog (WCAG 1.4.11: at least 3:1): a letter in the colour of the ring, put beside its swatch,
+ * read as `lowestContrast` reads text.
+ */
+async function ringContrast(radio: Locator): Promise<number> {
+  const label = radio.locator('..');
+  await label.evaluate((node) => {
+    const probe = node.appendChild(document.createElement('span'));
+    probe.dataset.ring = '';
+    probe.textContent = 'O';
+    probe.style.color = getComputedStyle(node.querySelector('span')!).outlineColor;
+  });
+  const probe = label.locator('[data-ring]');
+  const ratio = await lowestContrast(probe);
+  await probe.evaluate((node) => node.remove());
+  return ratio;
+}
+
+/** `row` of the list of teams shows whole in its frame, which scrolls from about eight teams. */
+const inSight = (row: Locator, frame: Locator) =>
+  expect(async () => {
+    const [box, sight] = await Promise.all([row.boundingBox(), frame.boundingBox()]);
+    expect(box!.y).toBeGreaterThanOrEqual(sight!.y - 1);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(sight!.y + sight!.height + 1);
+  }).toPass({ timeout: 2_000 });
+
 test('Sửa team: a colour and an icon show in the preview, then at once on the top, the list and the RM page; Mặc định takes them back (C3)', async ({
   page,
 }) => {
@@ -1104,7 +1131,12 @@ test('Sửa team: a colour and an icon show in the preview, then at once on the 
   const named = preview.getByText('Hừng Đông', { exact: true });
   await expect(choice(dialog, 'Màu', 'Mặc định')).toBeChecked();
   await expect(choice(dialog, 'Icon', 'Mặc định')).toBeChecked();
+  // The ring of the colour picked stands out from the dialog, Mặc định's too (mockup --text-2).
+  expect(await ringContrast(choice(dialog, 'Màu', 'Mặc định')), 'Mặc định').toBeGreaterThanOrEqual(
+    3,
+  );
   await pick(choice(dialog, 'Màu', 'Cam'));
+  expect(await ringContrast(choice(dialog, 'Màu', 'Cam')), 'Cam').toBeGreaterThanOrEqual(3);
   await pick(choice(dialog, 'Icon', 'Núi'));
   const orange = await tokenColor(page, '--warn');
   await expect(named).toHaveCSS('color', orange);
@@ -1187,7 +1219,7 @@ test('the top of a team: its icon, its name in its colour, the TL on its line as
 
 // The row chosen writes the name in the colour of the text: four of the six colours are under 4.5:1
 // on its gold tint over the brightest glass of macOS (L188, held by surfaces.spec.ts).
-test('team names: each of the six colours over 4.5:1 on the app, the card, a row of the list and the dialog, the row picked too; nine teams scroll in their list, the one picked in sight (C3)', async ({
+test('team names: each of the six colours over 4.5:1 on the app, the card, a row of the list and the dialog, the row picked too; nine teams scroll in their list, the one picked in sight, renamed too (C3)', async ({
   page,
 }) => {
   const app = await tokenColor(page, '--bg-0');
@@ -1215,10 +1247,7 @@ test('team names: each of the six colours over 4.5:1 on the app, the card, a row
     expect(contrast(await colorOf(heading), app), `${color} on the app`).toBeGreaterThanOrEqual(
       4.5,
     );
-    // The row picked is in sight in the list, which scrolls from about eight teams.
-    const [row, frame] = await Promise.all([picked.boundingBox(), box.boundingBox()]);
-    expect(row!.y).toBeGreaterThanOrEqual(frame!.y - 1);
-    expect(row!.y + row!.height).toBeLessThanOrEqual(frame!.y + frame!.height + 1);
+    await inSight(picked, box);
   }
   await expect(list.getByRole('button')).toHaveCount(9);
   expect(await box.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
@@ -1228,6 +1257,15 @@ test('team names: each of the six colours over 4.5:1 on the app, the card, a row
     const row = teamButton(page, `Zeta ${index + 1}`);
     expect(await lowestContrast(row), `Zeta ${index + 1} not picked`).toBeGreaterThanOrEqual(4.5);
   }
+  // Renamed, the team picked goes from the top of the list to its foot, still in sight.
+  await inSight(teamButton(page, 'Bình Minh'), box);
+  await members(page, 'Bình Minh').getByRole('button', { name: 'Sửa team' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa team' });
+  await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Zz Bình Minh');
+  await dialog.getByRole('button', { name: 'Lưu' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(list.getByRole('button').last()).toHaveAttribute('aria-pressed', 'true');
+  await inSight(teamButton(page, 'Zz Bình Minh'), box);
 });
 
 test('at 1 100 × 700 the member table fits its card: every Sửa of an RM shows whole, nothing scrolls sideways (L205)', async ({

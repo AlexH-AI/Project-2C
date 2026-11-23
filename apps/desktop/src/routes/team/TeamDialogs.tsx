@@ -13,17 +13,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { useTrashUndo } from '../../shell/Toasts';
 import { retriesDelete } from './team-view';
-import { TeamTop } from './TeamLook';
-
-/** The swatch of each colour (mockup `.swatches`), in the colour itself: literal classes. */
-const SWATCH: Record<TeamColor, string> = {
-  accent: 'text-accent',
-  info: 'text-info',
-  n2: 'text-n2',
-  submitted: 'text-submitted',
-  ok: 'text-ok',
-  warn: 'text-warn',
-};
+import { teamNameClass, TeamTop } from './TeamLook';
 
 /**
  * A row of choices of Tạo / Sửa team, Mặc định first (mockup `.swatches`, `.icon-pick`): radios
@@ -74,11 +64,17 @@ function LookChoices<T extends string>({
   );
 }
 
-/** What a choice of the colour looks like: a dot of it, ringed once picked. */
+/**
+ * What a choice of the colour looks like: a dot of it, ringed once picked, in its colour. Mặc định is
+ * a dot of --fill-3, too faint for a ring, so its ring is --text-2 (mockup `.swatches .none.on`,
+ * over 3:1 on the dialog).
+ */
 const swatch = (color: TeamColor | null) => (
   <span
-    className={`block size-7 cursor-pointer rounded-full bg-current outline-offset-2 peer-checked:outline-2 peer-checked:outline-current peer-focus-visible:ring-2 peer-focus-visible:ring-fg ${
-      color ? SWATCH[color] : 'text-fill-3 inset-ring inset-ring-border-control'
+    className={`block size-7 cursor-pointer rounded-full bg-current outline-offset-2 peer-checked:outline-2 peer-focus-visible:ring-2 peer-focus-visible:ring-fg ${
+      color
+        ? `${teamNameClass({ color })} peer-checked:outline-current`
+        : 'text-fill-3 inset-ring inset-ring-border-control peer-checked:outline-fg-2'
     }`}
   />
 );

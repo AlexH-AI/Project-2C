@@ -159,7 +159,7 @@ const onResize = (change: () => void) => {
   addEventListener('resize', change);
   return () => removeEventListener('resize', change);
 };
-const narrowWindow = () => innerWidth < XL;
+const underXl = () => innerWidth < XL;
 
 /** Team & nhân sự as last left: the team shown, the sort and rows of its members. */
 let left: { teamId?: string; table?: DataTableView } = {};
@@ -185,7 +185,8 @@ export function TeamScreen() {
     [tables, selected, today],
   );
   const list = useRef<HTMLDivElement>(null);
-  // From about 8 teams the list scrolls in its card; the team shown stays in sight (mockup #team).
+  // From about 8 teams the list scrolls in its card; the team shown stays in sight (mockup #team),
+  // also when a name changes and the list, sorted by name, puts it elsewhere.
   useEffect(() => {
     const box = list.current;
     const on = box?.querySelector<HTMLElement>('[aria-pressed="true"]');
@@ -194,7 +195,7 @@ export function TeamScreen() {
     if (on.offsetTop < box.scrollTop || below) {
       box.scrollTop = on.offsetTop - (box.clientHeight - on.offsetHeight) / 2;
     }
-  }, [selected?.team.id, view.teams.length]);
+  }, [selected?.team.id, view.teams]);
   // The team shown stays the one shown: a team renamed or added never moves it (CLR6-D6). One
   // gone gives way to the first.
   if (selected && selected.team.id !== selectedId) setSelectedId(selected.team.id);
@@ -435,7 +436,7 @@ function Members({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const narrow = useSyncExternalStore(onResize, narrowWindow);
+  const smallWindow = useSyncExternalStore(onResize, underXl);
   return (
     <section
       aria-label={t('team.members', { name: entry.team.name })}
@@ -487,8 +488,8 @@ function Members({
           resetKey={entry.team.id}
           // Cells 10 px from their edges, 6 px under 1 280 px: the table fits its card at 1 100 px,
           // every Sửa whole (L205; e2e team.spec.ts).
-          narrow={!narrow}
-          compact={narrow}
+          narrow={!smallWindow}
+          compact={smallWindow}
           empty={
             <StateNote
               size="table"
