@@ -653,6 +653,18 @@ export const vi = {
   'customers.createdOutside':
     'Đã tạo KH {name} cho {rm}. RM này nằm ngoài góc nhìn hiện tại nên KH không hiện ở đây; đổi góc nhìn để xem.',
   'customers.createdProfile': 'Hồ sơ KH →',
+  // C1, mockup search-rm-team.html #customers, #states, #ask 6.
+  'customers.search.label': 'Tìm khách hàng',
+  'customers.search.placeholder': 'Tìm KH theo tên hoặc mã, không cần dấu',
+  'customers.search.list': 'KH khớp',
+  'customers.search.found': '{count} khớp',
+  'customers.search.inView': 'Trong góc nhìn {scope}',
+  'customers.search.outOfView': 'Ngoài góc nhìn · chỉ mở hồ sơ, kanban không đổi',
+  'customers.search.sub': '– RM {rm} – {team}',
+  'customers.search.none': 'Không có KH nào khớp "{text}"',
+  'customers.search.noneNext':
+    'Tìm theo tên không cần dấu, hoặc mã KH như K-4H2N. Ô tìm xem mọi KH, kể cả KH đã đóng.',
+  'customers.search.clear': 'Bỏ tìm',
   'customerForm.newTitle': 'Khách hàng mới',
   'customerForm.newSub': 'Mã KH (vd. K-9A1C) sinh khi lưu',
   'customerForm.editTitle': 'Sửa hồ sơ · {name}',

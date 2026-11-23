@@ -382,3 +382,22 @@ test('Xuất Excel of Báo cáo writes the file masked as unmasked, names in ful
   expect(masked).toEqual(shown);
   expect(masked.join('\n')).toContain(rm);
 });
+
+test('masked, the search of Khách hàng finds a customer by the real name, listed and lit masked', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  const n3 = page.getByRole('region', { name: 'N3', exact: true }).getByRole('link');
+  const name = (await n3.first().locator('b').textContent()) ?? '';
+  expect(name).not.toBe('');
+  await eye(page).click();
+  const field = page.getByRole('combobox', { name: 'Tìm khách hàng' });
+  await field.fill(name);
+  const options = page.getByRole('listbox', { name: 'KH khớp' }).getByRole('option');
+  await expect(options.first()).toContainText(maskName(name));
+  await expect(n3.first().locator('b')).toHaveText(maskName(name));
+  await expect(n3.first()).toHaveCSS('opacity', '1');
+  // The field shows what is typed (Issue #1391, "Không che"); nothing else names the customer.
+  await expect(field).toHaveValue(name);
+  expect(await fullNamesShown(page, [name])).toEqual([]);
+});

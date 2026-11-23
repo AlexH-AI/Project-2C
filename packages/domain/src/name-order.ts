@@ -28,6 +28,12 @@ function asciiDigit(digit: string): string {
 }
 
 /**
+ * The text with each decimal digit of another script as the ASCII one ("KH ２" → "KH 2"): how
+ * names are ordered here, and how `searchText` finds them (DR6-197). Not part of `index.ts`.
+ */
+export const asciiDigits = (text: string): string => text.replace(OTHER_DIGIT, asciiDigit);
+
+/**
  * The one order of names on every screen (DR-48, DR-88): Vietnamese collation, so "Đ…" comes after
  * "D…" and not after "Z", and the numbers inside a name by value ("Team 2" before "Team 10"). Each
  * decimal digit reads as an ASCII one first: the collation goes round on names mixing them ("01 2"
@@ -54,7 +60,7 @@ function keyOf(name: string): string {
   let key = keys.get(name);
   if (key === undefined) {
     if (keys.size >= MAX_KEYS) keys.clear();
-    key = LATIN.test(name) ? name : name.replace(OTHER_DIGIT, asciiDigit);
+    key = LATIN.test(name) ? name : asciiDigits(name);
     keys.set(name, key);
   }
   return key;

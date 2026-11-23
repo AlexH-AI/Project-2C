@@ -115,12 +115,22 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
 
 const COLUMN_LIMIT = 6;
 
-/** The cards a kanban column shows, and how many more its "+ n KH" link counts. */
-export function kanbanColumn(cards: readonly CustomerCard[]): {
-  readonly shown: readonly CustomerCard[];
-  readonly more: number;
-} {
-  return { shown: cards.slice(0, COLUMN_LIMIT), more: Math.max(0, cards.length - COLUMN_LIMIT) };
+/**
+ * The cards a kanban column (or a closed list, of `limit` names) shows, and how many more its
+ * "+ n KH" link counts. While searching (`found`: the ids matched), every match goes to the top,
+ * one past `limit` too, and the cards shown before follow in their order, dimmed by the screen;
+ * `found` then counts the matches of the column (mockup search-rm-team.html `#customers`).
+ */
+export function kanbanColumn(
+  cards: readonly CustomerCard[],
+  found?: ReadonlySet<string>,
+  limit = COLUMN_LIMIT,
+): { readonly shown: readonly CustomerCard[]; readonly more: number; readonly found?: number } {
+  const first = cards.slice(0, limit);
+  if (!found) return { shown: first, more: cards.length - first.length };
+  const lit = cards.filter((card) => found.has(card.customer.id));
+  const shown = [...lit, ...first.filter((card) => !found.has(card.customer.id))];
+  return { shown, more: cards.length - shown.length, found: lit.length };
 }
 
 function byStage<S extends CustomerRecord['stage']>(

@@ -1,5 +1,13 @@
 import { expect, test, type Page } from './fixtures';
-import { pickFirstRm, pickScope, scopePill } from './support';
+import {
+  asExe,
+  lowestContrast,
+  markOs,
+  pickFirstRm,
+  pickScope,
+  scopePill,
+  setTransparency,
+} from './support';
 
 const OPEN = ['N4', 'N3', 'N2', 'N1'];
 const CLOSED = ['Tạm hoãn', 'Mất cơ hội'];
@@ -170,4 +178,148 @@ test('another team drops the RM picked in the strip', async ({ page }) => {
   await pickScope(page, { team: 'Bình Minh' });
   const strip = page.getByRole('region', { name: 'RM của team Bình Minh' });
   await expect(strip.getByRole('button', { pressed: true })).toHaveText(/^Cả team/);
+});
+
+// C1 (spec Phase 6 phản hồi §5; mockup search-rm-team.html #customers, #states, #ask 6): the
+// search of Khách hàng lights what it finds on the board and lists it under the field.
+const field = (page: Page) => page.getByRole('combobox', { name: 'Tìm khách hàng' });
+const list = (page: Page) => page.getByRole('listbox', { name: 'KH khớp' });
+const cards = (page: Page, stage: string) => column(page, stage).getByRole('link');
+
+/** A customer of N3 past the six cards its column shows, read from the table: name and code. */
+async function pastTheColumn(page: Page): Promise<{ name: string; code: string }> {
+  const shown = new Set(await cards(page, 'N3').locator('b').allTextContents());
+  expect(shown.size).toBeGreaterThan(0);
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const table = page.getByRole('table', { name: 'Khách hàng' });
+  for (;;) {
+    const rows = await table.evaluate((t: HTMLTableElement) =>
+      [...t.tBodies[0]!.rows].map((row) => [...row.cells].slice(0, 3).map((c) => c.innerText)),
+    );
+    const row = rows.find(([, name, stage]) => stage === 'N3' && !shown.has(name ?? ''));
+    if (row) {
+      await page.getByRole('radio', { name: 'Kanban' }).click();
+      return { code: row[0] ?? '', name: row[1] ?? '' };
+    }
+    await page.getByRole('button', { name: /^Hiện thêm/ }).click();
+  }
+}
+
+test('the search lights a match at the top of its column, one past "+ n KH" too; Esc clears it', async ({
+  page,
+}) => {
+  const { name, code } = await pastTheColumn(page);
+  await expect(cards(page, 'N3')).toHaveCount(6);
+
+  await field(page).fill(code);
+  await expect(cards(page, 'N3')).toHaveCount(7);
+  await expect(cards(page, 'N3').first().locator('b')).toHaveText(name);
+  await expect(cards(page, 'N3').first()).toHaveCSS('opacity', '1');
+  // The others dim and keep their place, a click still opens them.
+  await expect(cards(page, 'N3').nth(1)).toHaveCSS('opacity', '0.7');
+  await expect(cards(page, 'N2').first()).toHaveCSS('opacity', '0.7');
+  await expect(column(page, 'N3')).toContainText('1 khớp');
+  await expect(column(page, 'N2')).toContainText('0 khớp');
+  await expect(list(page).getByRole('option')).toHaveCount(1);
+  await expect(list(page).getByRole('option')).toContainText(name);
+  await expect(list(page).getByRole('option')).toContainText(code);
+  // The sum of the columns still adds up to the summary.
+  const [open] = await summary(page);
+  expect(sum(await counts(page, OPEN))).toBe(open);
+
+  await field(page).press('Escape');
+  await expect(field(page)).toHaveValue('');
+  await expect(list(page)).toHaveCount(0);
+  for (const stage of OPEN) {
+    await expect(cards(page, stage)).toHaveCount(6);
+    await expect(column(page, stage)).not.toContainText('khớp');
+    await expect(cards(page, stage).first()).toHaveCSS('opacity', '1');
+  }
+});
+
+test('↓ Enter on the list opens the customer picked', async ({ page }) => {
+  await field(page).fill('nguyen');
+  const options = list(page).getByRole('option');
+  await expect(options).toHaveCount(8);
+  await expect(field(page)).toHaveAttribute('aria-expanded', 'true');
+  await field(page).press('ArrowDown');
+  const picked = list(page).locator(
+    `[id="${await field(page).getAttribute('aria-activedescendant')}"]`,
+  );
+  await expect(picked).toHaveAttribute('aria-selected', 'true');
+  await expect(options.nth(1)).toHaveAttribute('aria-selected', 'true');
+  const name = (await picked.locator('b').textContent()) ?? '';
+  expect(name).toMatch(/^Nguyễn /);
+
+  await field(page).press('Enter');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
+  await expect(page.getByRole('region', { name })).toBeVisible();
+});
+
+test('a customer out of the view is listed apart and opens, the board keeping its view', async ({
+  page,
+}) => {
+  await pickScope(page, { team: 'Bình Minh' });
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const cells = page.getByRole('table', { name: 'Khách hàng' }).locator('tbody tr').first();
+  const code = await cells.getByRole('cell').nth(0).innerText();
+  const name = await cells.getByRole('cell').nth(1).innerText();
+  await pickScope(page, { team: 'Sao Mai' });
+  await page.getByRole('radio', { name: 'Kanban' }).click();
+
+  await field(page).fill(code);
+  const outside = list(page).getByRole('group', { name: /^Ngoài góc nhìn/ });
+  await expect(outside.getByRole('option')).toHaveCount(1);
+  await expect(outside.getByRole('option')).toContainText(name);
+  await expect(outside.getByRole('option')).toContainText('Bình Minh');
+  await expect(list(page).getByRole('group', { name: /^Trong góc nhìn/ })).toHaveCount(0);
+  for (const stage of OPEN) await expect(column(page, stage)).toContainText('0 khớp');
+
+  await outside.getByRole('option').click();
+  await expect(page.getByRole('region', { name })).toBeVisible();
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(scopePill(page)).toHaveAccessibleName(/Sao Mai/);
+});
+
+test('a search that finds no customer says so, with "Bỏ tìm" and no button to add one', async ({
+  page,
+}) => {
+  await field(page).fill('tran van xyzq');
+  const note = page.getByRole('status').filter({ hasText: 'Không có KH nào khớp "tran van xyzq"' });
+  await expect(note).toBeVisible();
+  await expect(note.getByRole('button')).toHaveText(['Bỏ tìm']);
+  await expect(column(page, 'N3')).toHaveCount(0);
+
+  await note.getByRole('button', { name: 'Bỏ tìm' }).click();
+  await expect(field(page)).toHaveValue('');
+  await expect(cards(page, 'N3')).toHaveCount(6);
+});
+
+test('a dimmed card and a dimmed closed row read at AA on both systems, the macOS glass too', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/customers');
+  await setTransparency(page, 'no-preference');
+  const name = (await cards(page, 'N3').first().locator('b').textContent()) ?? '';
+  await field(page).fill(name);
+  await expect(column(page, 'N3')).toContainText('khớp');
+  // The name and the second line of a card, its "n HĐ", the name and the day of a closed row.
+  const dimmed = [
+    cards(page, 'N4').first(),
+    cards(page, 'N2').filter({ hasText: /\d HĐ/ }).first(),
+    column(page, 'Tạm hoãn').getByRole('listitem').first(),
+  ];
+  for (const area of dimmed) await expect(area).toHaveCSS('opacity', '0.7');
+  for (const os of ['win', 'mac'] as const) {
+    await markOs(page, os);
+    for (const area of dimmed) expect(await lowestContrast(area), os).toBeGreaterThanOrEqual(4.5);
+  }
+  await page.evaluate(() => {
+    document.getElementById('exe-window-stand-in')?.remove();
+    document.documentElement.dataset.backdrop = 'glass';
+    document.documentElement.style.backgroundColor = 'rgb(80, 83, 91)';
+  });
+  for (const area of dimmed)
+    expect(await lowestContrast(area), 'glass').toBeGreaterThanOrEqual(4.5);
 });

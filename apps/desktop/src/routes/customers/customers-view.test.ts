@@ -244,6 +244,36 @@ describe('kanbanColumn', () => {
     expect(kanbanColumn(six)).toEqual({ shown: six, more: 0 });
     expect(kanbanColumn([])).toEqual({ shown: [], more: 0 });
   });
+
+  // C1, mockup search-rm-team.html #customers: a match goes to the top of its column, one in
+  // "+ n KH" too; the cards shown before keep their place after the matches, dimmed.
+  it('lifts every match to the top while searching, the six shown before kept after them', () => {
+    const ten = cards(10);
+    expect(kanbanColumn(ten, new Set(['c2', 'c8', 'c9']))).toEqual({
+      shown: [ten[2], ten[8], ten[9], ten[0], ten[1], ten[3], ten[4], ten[5]],
+      more: 2,
+      found: 3,
+    });
+  });
+
+  it('keeps the column as it was for a search it has no match of, counting 0 found', () => {
+    const eight = cards(8);
+    expect(kanbanColumn(eight, new Set(['other']))).toEqual({
+      shown: eight.slice(0, 6),
+      more: 2,
+      found: 0,
+    });
+  });
+
+  it('shows a closed list to its own length', () => {
+    const seven = cards(7);
+    expect(kanbanColumn(seven, undefined, 5)).toEqual({ shown: seven.slice(0, 5), more: 2 });
+    expect(kanbanColumn(seven, new Set(['c6']), 5)).toEqual({
+      shown: [seven[6], ...seven.slice(0, 5)],
+      more: 1,
+      found: 1,
+    });
+  });
 });
 
 describe('birthLabel', () => {
