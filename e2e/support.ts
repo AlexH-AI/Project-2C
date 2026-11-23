@@ -195,7 +195,8 @@ export const right = (box: Locator) => box.evaluate((node) => node.getBoundingCl
  * What of `box` ends past its right edge: a word that does not break, a line that does not wrap.
  * A text field or a list keeps what it holds inside its box, a value longer than it scrolled out of
  * sight: it counts by its box, whatever its `overflow` reads (`clip` on Chromium, `visible` on
- * WebKit, where its `scrollWidth` is the width of the whole value).
+ * WebKit, where its `scrollWidth` is the width of the whole value). So do the boxes that hold a
+ * list: WebKit counts its cut choice in their scrolling width too (Mac-7b).
  */
 export const sticksOut = (box: Locator) =>
   box.evaluate((node) => {
@@ -203,7 +204,9 @@ export const sticksOut = (box: Locator) =>
     return [...node.querySelectorAll('*')].flatMap((part) => {
       const rect = part.getBoundingClientRect();
       const shows =
-        getComputedStyle(part).overflowX === 'visible' && !part.matches('input, textarea, select');
+        getComputedStyle(part).overflowX === 'visible' &&
+        !part.matches('input, textarea, select') &&
+        !part.querySelector('select');
       const end = Math.round(
         shows ? Math.max(rect.right, rect.left + part.scrollWidth) : rect.right,
       );
