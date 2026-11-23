@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from './fixtures';
 import {
   asExe,
+  contrast,
   drawnCorner,
   lowestContrast,
   markOs,
@@ -75,6 +76,84 @@ test('the sidebar: the compact logo in a row, an icon on every item, the save st
 });
 
 const colourOf = (node: Element) => getComputedStyle(node).color;
+
+// F1: each section of Cài đặt has its icon on a tile of a colour of the theme (Kiểu A, `.sq` of
+// app-shell.html, G3 11/11/2026; ADR-0013 appendix 11/11/2026 §4). The colours only decorate:
+// --info, --n2, --n4. The icon is --bg-0 on them, as in the mockup.
+const TILES = [
+  { name: 'Dữ liệu', colour: 'rgba(111, 168, 255, 1)' },
+  { name: 'AI', colour: 'rgba(180, 154, 251, 1)' },
+  { name: 'Thùng rác', colour: 'rgba(148, 163, 184, 1)' },
+];
+const BG_0 = 'rgba(11, 16, 23, 1)';
+
+/**
+ * The colour of the icon on `tile` and each stop of the tile's fill, top to bottom, read through
+ * a canvas as `rgba(…)`: a stop may be written `color(srgb …)`, which `contrast` does not read.
+ */
+const tilePaint = (tile: Locator) =>
+  tile.evaluate((node) => {
+    const context = document
+      .createElement('canvas')
+      .getContext('2d', { willReadFrequently: true })!;
+    const read = (color: string) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [r = 0, g = 0, b = 0, a = 0] = context.getImageData(0, 0, 1, 1).data;
+      return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+    };
+    const STOP = /(?:rgba?|color|oklab|oklch|lab|lch|hsla?)\([^()]*\)/g;
+    return {
+      icon: read(getComputedStyle(node.querySelector('svg')!).color),
+      stops: (getComputedStyle(node).backgroundImage.match(STOP) ?? []).map(read),
+    };
+  });
+
+test('the sections of Cài đặt: an icon on a tile of its own colour, 3:1 at least, on both systems (F1)', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  // Neither the order nor the names of the items of the sidebar and of Cài đặt change.
+  await expect(nav(page).getByRole('link')).toHaveText([
+    'Tổng quan',
+    'Lịch hẹn',
+    'Khách hàng',
+    'Báo cáo',
+    'Team & nhân sự',
+    'Cài đặt',
+  ]);
+  const sections = page.getByRole('navigation', { name: 'Mục cài đặt' }).getByRole('button');
+  await expect(sections).toHaveText(TILES.map((tile) => tile.name));
+  // The chosen one on the fill of the mockup's `.set-i.on`.
+  await expect(sections.first()).toHaveAttribute('aria-current', 'page');
+  await expect(sections.first()).toHaveCSS('background-color', FILL_2);
+
+  for (const [index, { name, colour }] of TILES.entries()) {
+    const section = sections.nth(index);
+    // The icon only decorates: the section is named by its words.
+    await expect(section).toHaveAccessibleName(name);
+    const icon = section.locator('svg');
+    await expect(icon).toHaveCount(1);
+    await expect(icon).toHaveAttribute('aria-hidden', 'true');
+    await expect(icon).toHaveCSS('width', '16px');
+    const tile = icon.locator('xpath=..');
+    await expect(tile).toHaveCSS('width', '30px');
+    await expect(tile).toHaveCSS('height', '30px');
+    for (const os of ['win', 'mac'] as const) {
+      await markOs(page, os);
+      const { icon: drawn, stops } = await tilePaint(tile);
+      expect(drawn).toBe(BG_0);
+      // Lighter at the top, the colour of the section at its foot.
+      expect(stops).toHaveLength(2);
+      expect(stops[1], `${name} on ${os}`).toBe(colour);
+      // A graphic, not text: 3:1 on every part of the fill (WCAG 1.4.11).
+      const lowest = Math.min(...stops.map((stop) => contrast(drawn, stop)));
+      expect(lowest, `${name} on ${os}`).toBeGreaterThanOrEqual(3);
+      await expect(tile).toHaveCSS('border-radius', await drawnCorner(page, { win: 6, mac: 7 }));
+    }
+  }
+});
 
 /** The bar of the chosen item, drawn by its pill; `content` is `none` where there is no bar. */
 const barOf = (pill: Locator) =>

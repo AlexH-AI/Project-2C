@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatDate } from '@p2c/domain';
-import { Button } from '@p2c/ui';
+import { Button, NavIcon } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
@@ -25,13 +25,22 @@ const SECTIONS = ['data', 'ai', 'trash'] as const;
 
 type Section = (typeof SECTIONS)[number];
 
-const NAV_ITEM = `rounded-control-sm px-2.5 py-2 text-left text-sm ${FOCUS}`;
+/** The colour of the tile of each section (Kiểu A): a colour of the theme that only decorates. */
+const TILE = {
+  data: 'tile-info',
+  ai: 'tile-n2',
+  trash: 'tile-n4',
+} as const satisfies Record<Section, string>;
+
+const NAV_ITEM = `flex items-center gap-3 rounded-control-sm px-2.25 py-2 text-left text-sm font-control transition-colors duration-(--t-1) ${FOCUS}`;
 
 /**
  * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
  * file (T-070), backup files (T-052), then the simulated data (T-045). AI: Settings → AI (T-167),
  * also `#/settings/ai`, where "Cài đặt → AI" of an AI error goes (mockup ai.html 2f). Thùng rác: the
- * deleted records (spec Phase 6 §4.2), also `#/settings/trash`.
+ * deleted records (spec Phase 6 §4.2), also `#/settings/trash`. Each section is named by its words,
+ * its icon on a tile of its colour beside them, the chosen one on a fill (app-shell.html `.set-i`,
+ * F1).
  */
 export function Settings({ section: linked }: { section?: SettingsSection }) {
   const [section, setSection] = useState<Section>(linked ?? 'data');
@@ -47,10 +56,14 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
             type="button"
             aria-current={item === section ? 'page' : undefined}
             onClick={() => setSection(item)}
-            className={`${NAV_ITEM} ${
-              item === section ? 'bg-accent-soft font-semibold text-accent' : 'text-fg-2'
-            }`}
+            className={`${NAV_ITEM} ${item === section ? 'bg-fill-2' : 'hover:bg-fill-1'}`}
           >
+            <span
+              aria-hidden="true"
+              className={`grid size-7.5 flex-none place-items-center ${TILE[item]}`}
+            >
+              <NavIcon name={item} />
+            </span>
             {t(`settings.nav.${item}`)}
           </button>
         ))}
