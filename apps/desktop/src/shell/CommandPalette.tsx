@@ -80,12 +80,15 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const found = paletteResults(query, { index, people, teams, today });
   useLeaveBehind(dialog);
 
+  // Kept from the first run, as `Dialog` keeps it: StrictMode runs the effect again once the focus
+  // is in the field.
+  const opener = useRef<Element | null>(null);
   useEffect(() => {
-    const node = dialog.current;
-    const opener = document.activeElement;
-    node?.showModal();
+    opener.current ??= document.activeElement;
+    dialog.current?.showModal();
     return () => {
-      if (opener instanceof HTMLElement) opener.focus({ preventScroll: true });
+      const back = opener.current;
+      if (back instanceof HTMLElement) back.focus({ preventScroll: true });
     };
   }, []);
 
