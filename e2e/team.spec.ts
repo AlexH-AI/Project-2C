@@ -803,6 +803,9 @@ test('the name of an RM opens their page; the way back returns to it, then to Te
   await expect(byOpen).toHaveAttribute('aria-sort', 'ascending');
   const name = table.getByRole('row').last().getByRole('link');
   const rm = (await name.textContent())!;
+  const openCount = Number(
+    await table.getByRole('row').last().getByRole('cell').nth(2).innerText(),
+  );
   await name.click();
 
   await expect(page).toHaveURL(/#\/team\/rm\/[^/]+$/);
@@ -821,9 +824,10 @@ test('the name of an RM opens their page; the way back returns to it, then to Te
     'aria-sort',
     'ascending',
   );
-  // Every customer listed is one this RM is in charge of: KH đang mở of the Team table.
+  // Every customer listed is one this RM is in charge of: KH đang mở of the Team table (L233).
   const open = page.getByRole('radio', { name: 'Đang mở' });
   await expect(open).toBeChecked();
+  await expect(list.getByRole('row')).toHaveCount(1 + openCount);
   const policies = list.getByRole('columnheader', { name: /^Số HĐ/ });
   await policies.getByRole('button').click();
   await policies.getByRole('button').click();
@@ -894,6 +898,105 @@ test('an RM in charge of no customer yet: the page says so, with a way to add on
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   const assigned = dialog.getByRole('combobox', { name: 'RM phụ trách' });
   await expect(assigned.locator('option:checked')).toContainText('Trần Hải Yến');
+});
+
+// C2b (mockup search-rm-team.html #rm): a week by its shape, the strip read as one sentence.
+test('the RM page shows the 8 weeks of each customer, with their key', async ({ page }) => {
+  await members(page, 'Bình Minh')
+    .getByRole('table')
+    .getByRole('row')
+    .nth(1)
+    .getByRole('link')
+    .click();
+  const list = rmList(page);
+  await expect(list.getByRole('columnheader', { name: 'Nhịp gặp · 8 tuần' })).toBeVisible();
+  await expect(
+    page.getByRole('list', { name: 'Chú giải nhịp gặp' }).getByRole('listitem'),
+  ).toHaveText([
+    'đã gặp',
+    'đã qua, chưa ghi kết quả',
+    'có lịch, chưa tới ngày',
+    'có hẹn nhưng không diễn ra',
+    'không có lịch',
+  ]);
+  const strip = list
+    .getByRole('row')
+    .nth(1)
+    .getByRole('img', { name: /^Nhịp gặp/ });
+  await expect(strip).toHaveAccessibleName(
+    /^Nhịp gặp 8 tuần, \d\d\/\d\d – \d\d\/\d\d: \d+ tuần đã gặp, \d+ tuần không diễn ra, \d+ tuần chưa ghi kết quả, \d+ tuần có lịch$/,
+  );
+  await expect(strip.locator('i')).toHaveCount(8);
+  await expect(strip.locator('i').last()).toHaveAttribute(
+    'title',
+    /^Tuần \d\d\/\d\d – \d\d\/\d\d: /,
+  );
+});
+
+// C2b (mockup search-rm-team.html #team): as the search of Khách hàng finds a customer.
+test('Tìm RM finds an RM typed without accents; ↓ Enter opens their page, Esc clears', async ({
+  page,
+}) => {
+  await addRm(page, 'Nguyễn Văn Hùng Sơn', 'Sao Mai');
+  const field = page.getByRole('combobox', { name: 'Tìm RM' });
+  const options = page.getByRole('listbox', { name: 'RM khớp' }).getByRole('option');
+  await field.fill('nguyen van hung s');
+  await expect(options).toHaveCount(1);
+  await expect(options).toContainText('RM Nguyễn Văn Hùng Sơn – Sao Mai');
+  await expect(options).toContainText('Trang RM');
+  await field.fill('xyz');
+  await expect(page.getByText('Không có RM nào khớp "xyz"')).toBeVisible();
+  await field.press('Escape');
+  await expect(field).toHaveValue('');
+
+  await field.fill('nguyen van hu');
+  await expect(options.first()).toBeVisible();
+  const count = await options.count();
+  await field.press('ArrowDown');
+  const picked = options.nth(1 % count);
+  await expect(picked).toHaveAttribute('aria-selected', 'true');
+  const name = (await picked.locator('b').textContent())!;
+  await field.press('Enter');
+  await expect(page).toHaveURL(/#\/team\/rm\/[^/]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+  await expect(rmList(page).getByRole('columnheader', { name: 'Nhịp gặp · 8 tuần' })).toBeVisible();
+});
+
+// C2b (ADR-0007 "Team & nhân sự"): no two of one name in a team, accents and case aside.
+test('a name another of the team has is refused at Họ tên, so no picker lists two alike', async ({
+  page,
+}) => {
+  const table = members(page, 'Bình Minh').getByRole('table');
+  const first = (await table.getByRole('row').nth(1).getByRole('link').textContent())!;
+  const plain = first.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/giu, 'd').toUpperCase();
+  const refused = `Team Bình Minh đã có ${first}. Thêm một chữ vào họ tên để phân biệt hai người.`;
+
+  const dialog = await openPersonDialog(page);
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(plain);
+  await dialog.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Bình Minh' });
+  await dialog.getByRole('button', { name: 'Thêm' }).click();
+  await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveAccessibleDescription(
+    refused,
+  );
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+
+  await table.getByRole('button', { name: /^Sửa / }).nth(1).click();
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  await edit.getByRole('textbox', { name: 'Họ tên' }).fill(first);
+  await edit.getByRole('button', { name: 'Lưu' }).click();
+  await expect(edit.getByRole('textbox', { name: 'Họ tên' })).toHaveAccessibleDescription(refused);
+  await edit.getByRole('button', { name: 'Hủy' }).click();
+  await expect(table.getByRole('link', { name: first, exact: true })).toHaveCount(1);
+
+  // L17: the pickers of a person list each "Họ tên · Team" once.
+  await page.getByRole('link', { name: 'Khách hàng' }).click();
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const picker = page
+    .getByRole('dialog', { name: 'Khách hàng mới' })
+    .getByRole('combobox', { name: 'RM phụ trách' });
+  const labels = await picker.locator('option').allTextContents();
+  expect(labels.length).toBeGreaterThan(30);
+  expect(new Set(labels).size).toBe(labels.length);
 });
 
 test('a page of an RM gone goes to Team & nhân sự, as an unknown address does', async ({

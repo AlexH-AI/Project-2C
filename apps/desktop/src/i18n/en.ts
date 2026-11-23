@@ -272,6 +272,44 @@ export const en: EnglishMessages = {
   'rmPage.noOpen': 'This RM has no open customer.',
   'rmPage.noClosed': 'This RM has no closed customer.',
   'rmPage.foot': 'Click a customer to open the profile · sorted by default: longest unmet first',
+  'rmPage.colCadence': 'Meeting cadence · 8 weeks',
+  'rmPage.cadence.legend': 'Key to the meeting cadence',
+  'rmPage.cadence.met': 'met',
+  'rmPage.cadence.unrecorded': 'past, outcome not recorded',
+  'rmPage.cadence.planned': 'scheduled, not due yet',
+  'rmPage.cadence.missed': 'booked but not held',
+  'rmPage.cadence.none': 'no appointment',
+  'rmPage.cadence.week': 'Week {range}: {mark}',
+  'rmPage.cadence.read': 'Meeting cadence over 8 weeks, {range}: {parts}',
+  'rmPage.cadence.count.met': { one: '{count} week met', other: '{count} weeks met' },
+  'rmPage.cadence.count.missed': {
+    one: '{count} week not held',
+    other: '{count} weeks not held',
+  },
+  'rmPage.cadence.count.unrecorded': {
+    one: '{count} week with the outcome not recorded',
+    other: '{count} weeks with the outcome not recorded',
+  },
+  'rmPage.cadence.count.planned': {
+    one: '{count} week scheduled',
+    other: '{count} weeks scheduled',
+  },
+  'rmPage.cadence.failed': 'The 8-week meeting cadence could not be worked out',
+  'rmPage.cadence.failedNext':
+    'The four numbers at the top of the page are still right. Try again, or open each customer to see its appointments.',
+  'rmPage.cadence.retry': 'Try again',
+  'rmPage.error.title': 'This RM page ran into an error and cannot be shown',
+  'rmPage.error.help':
+    'The saved data is not affected. Go back or choose another screen in the sidebar; if the error comes back, send the technical details below to whoever supports you.',
+  'team.searchRm.label': 'Find RM',
+  'team.searchRm.placeholder': 'Find an RM by name, accents optional',
+  'team.searchRm.list': 'Matching RMs',
+  'team.searchRm.sub': '– {team}',
+  'team.searchRm.kind': 'RM page',
+  'team.searchRm.none': 'No RM matches "{text}"',
+  'team.searchRm.noneNext': 'Type the name of an RM, accents optional.',
+  'error.PERSON_NAME_TAKEN':
+    'Team {team} already has {name}. Add a word to the full name to tell the two apart.',
   'outcome.invalidText':
     'The field "{field}" has a character that cannot be saved (a NUL, or one broken in pasting): delete it, then save again.',
 };

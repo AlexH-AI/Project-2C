@@ -14,6 +14,7 @@ import {
   evaluateKycGate,
   formatIsoDate,
   KYC_GATE_STATES,
+  searchText,
   toHex,
   type KycCategory,
   type KycField,
@@ -179,6 +180,8 @@ describe('seedDemoData', () => {
         const members = people.filter((p) => p.teamId === team.id);
         expect(members.filter((p) => p.role === 'TL')).toHaveLength(1);
         expect(members.filter((p) => p.role === 'RM')).toHaveLength(10);
+        // C2b: no two of one name in a team, accents and case aside.
+        expect(new Set(members.map((p) => searchText(p.name))).size).toBe(members.length);
       }
       expect([count('RM'), count('TL'), count('IS'), count('BD'), count('BDM')]).toEqual([
         30, 3, 1, 1, 1,

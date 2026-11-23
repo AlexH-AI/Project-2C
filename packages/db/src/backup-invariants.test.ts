@@ -388,6 +388,15 @@ describe('importBackup — rules across tables', () => {
       'a deleted TL next to the live TL of the team',
       (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
     ],
+    // C2b: one name per team, deleted people and other teams aside.
+    [
+      'an RM by the name of a deleted one of the team, and of one in another team',
+      (b, ids) => {
+        person(b, ids.rm, { id: 'gone-an', name: 'ÂN', deleted_at: DELETED });
+        b.tables.teams!.push({ ...b.tables.teams![0]!, id: 'other-team', name: 'Bình Minh' });
+        person(b, ids.rm, { id: 'other-an', team_id: 'other-team' });
+      },
+    ],
     [
       'a birth year in conflict between the profile and the RM’s note',
       (b, ids) => birthYearConflict(b, ids, '1984'),
@@ -815,6 +824,10 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     ['9: live people in a deleted team', (b) => (b.tables.teams![0]!.deleted_at = DELETED)],
+    [
+      '9: two live people of a team by one name, accents and case aside (C2b)',
+      (b, ids) => person(b, ids.rm, { id: 'twin', name: 'ÂN' }),
+    ],
     // DR6-52: the schema itself keeps an IS, BD or BDM out of every team, deleted or not.
     ['CHECK: an IS in a team', (b, ids) => person(b, ids.tl, { id: 'is', role: 'IS' })],
     [

@@ -24,6 +24,11 @@ export const DB_ERROR_CODES = [
    */
   'PERSON_NOT_FOUND',
   'PERSON_IN_USE',
+  /**
+   * A live person of the team has the name, accents, case and spacing aside (`searchText`; C2b,
+   * ADR-0007 "Team & nhân sự"). Params `name` (theirs, as stored) and `team`.
+   */
+  'PERSON_NAME_TAKEN',
   /** Params `name` and `role`, the role the person holds instead. */
   'RM_REQUIRED',
   'INVALID_DATE',

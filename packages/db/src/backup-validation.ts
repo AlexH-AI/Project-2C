@@ -15,6 +15,7 @@ import {
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   RM_ROLE,
+  searchText,
   type CurrencyCode,
   type CustomerStage,
   type KycFact,
@@ -478,8 +479,9 @@ function profileOf(customer: Row): ProfileFields {
 }
 
 /**
- * Rule 9 (staff): a live person's team is live; a team has at most one live TL (#223). A live TL
- * of a deleted team breaks the first part, so the second is counted over every team. That only RM
+ * Rule 9 (staff): a live person's team is live; a team has at most one live TL (#223); no two live
+ * people of a team by one name, accents, case and spacing aside (`searchText`, C2b). A live TL of
+ * a deleted team breaks the first part, so the others are counted over every team. That only RM
  * and TL belong to a team, deleted or not, is a CHECK of the schema (DR6-52).
  */
 function staffRule(read: (sql: string) => Row[]): Rule | null {
@@ -489,7 +491,11 @@ function staffRule(read: (sql: string) => Row[]): Rule | null {
       "SELECT 1 FROM people WHERE role = 'TL' AND deleted_at IS NULL GROUP BY team_id HAVING COUNT(*) > 1",
     ].join(' UNION ALL '),
   );
-  return broken.length === 0 ? null : 9;
+  const named = read(
+    'SELECT team_id, name FROM people WHERE deleted_at IS NULL AND team_id IS NOT NULL',
+  );
+  const keys = new Set(named.map((p) => JSON.stringify([p.team_id, searchText(String(p.name))])));
+  return broken.length === 0 && keys.size === named.length ? null : 9;
 }
 
 /**

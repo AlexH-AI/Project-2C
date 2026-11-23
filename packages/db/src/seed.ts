@@ -22,6 +22,7 @@ import {
   MAX_YEAR,
   MIN_YEAR,
   PIPELINE_STAGES,
+  searchText,
   type CalendarDate,
   type CustomerStage,
   type KycField,
@@ -264,11 +265,12 @@ function simulation(
   const kyc = kycSimulation(db, rng, born);
   const ai = aiSimulation(db, aiRng);
   const cancelAfterIssue = cancelSimulation(db, cancelRng, anchor);
+  // Each staff name once, accents and case aside: no two of one name in a team (C2b) at any scale.
   const names = new Set<string>();
   const staffName = (): string => {
     const name = personName(rng);
-    if (names.has(name)) return staffName();
-    names.add(name);
+    if (names.has(searchText(name))) return staffName();
+    names.add(searchText(name));
     return name;
   };
   const shared = (['IS', 'BD', 'BDM'] as const).map((role) =>

@@ -1356,6 +1356,14 @@ export const vi = {
   // The column of the "Sửa" buttons: no header on screen (mockup team.html), one for screen readers
   // (DR6-100).
   'team.colActions': 'Thao tác',
+  // The search of RM (C2b, mockup search-rm-team.html #team).
+  'team.searchRm.label': 'Tìm RM',
+  'team.searchRm.placeholder': 'Tìm RM theo tên, không cần dấu',
+  'team.searchRm.list': 'RM khớp',
+  'team.searchRm.sub': '– {team}',
+  'team.searchRm.kind': 'Trang RM',
+  'team.searchRm.none': 'Không có RM nào khớp "{text}"',
+  'team.searchRm.noneNext': 'Gõ tên RM không cần dấu.',
   // The page of an RM (spec Phase 6 §5, mockup search-rm-team.html #rm).
   'rmPage.role': 'RM',
   'rmPage.lead': 'TL {name}',
@@ -1380,6 +1388,26 @@ export const vi = {
   'rmPage.noOpen': 'RM này không có KH đang mở.',
   'rmPage.noClosed': 'RM này không có KH đã đóng.',
   'rmPage.foot': 'Bấm một KH để mở hồ sơ · sắp mặc định: lâu chưa gặp nhất lên đầu',
+  'rmPage.colCadence': 'Nhịp gặp · 8 tuần',
+  'rmPage.cadence.legend': 'Chú giải nhịp gặp',
+  'rmPage.cadence.met': 'đã gặp',
+  'rmPage.cadence.unrecorded': 'đã qua, chưa ghi kết quả',
+  'rmPage.cadence.planned': 'có lịch, chưa tới ngày',
+  'rmPage.cadence.missed': 'có hẹn nhưng không diễn ra',
+  'rmPage.cadence.none': 'không có lịch',
+  'rmPage.cadence.week': 'Tuần {range}: {mark}',
+  'rmPage.cadence.read': 'Nhịp gặp 8 tuần, {range}: {parts}',
+  'rmPage.cadence.count.met': '{count} tuần đã gặp',
+  'rmPage.cadence.count.missed': '{count} tuần không diễn ra',
+  'rmPage.cadence.count.unrecorded': '{count} tuần chưa ghi kết quả',
+  'rmPage.cadence.count.planned': '{count} tuần có lịch',
+  'rmPage.cadence.failed': 'Không tính được nhịp gặp 8 tuần',
+  'rmPage.cadence.failedNext':
+    'Bốn số ở đầu trang vẫn đúng. Thử lại, hoặc mở từng KH để xem lịch hẹn.',
+  'rmPage.cadence.retry': 'Thử lại',
+  'rmPage.error.title': 'Trang RM này gặp lỗi và không hiển thị được',
+  'rmPage.error.help':
+    'Dữ liệu đã lưu không bị ảnh hưởng. Bấm quay lại hoặc chọn một màn khác ở thanh bên; nếu lỗi lặp lại, gửi chi tiết kỹ thuật dưới đây cho người hỗ trợ.',
   'person.add': '+ Nhân sự',
   'person.new': 'Nhân sự mới',
   'person.edit': 'Sửa nhân sự',
@@ -1440,6 +1468,8 @@ export const vi = {
   'error.TEAM_NAME_TAKEN': 'Đã có team "{name}".',
   'error.TEAM_HAS_MEMBERS': 'Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team.',
   'error.TEAM_HAS_LEAD': 'Team này đã có TL: {name}.',
+  'error.PERSON_NAME_TAKEN':
+    'Team {team} đã có {name}. Thêm một chữ vào họ tên để phân biệt hai người.',
   'error.TEAM_NOT_ALLOWED': 'IS, BD và BDM không thuộc team nào: bỏ chọn team.',
   'error.TEAM_NOT_FOUND': 'Team không còn trong dữ liệu (có thể đã bị xóa).',
   'error.KYC_NOTE_EMPTY': 'Mỗi dữ kiện phải gắn với một ghi chú có nội dung: nhập ghi chú.',
