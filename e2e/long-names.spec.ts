@@ -789,6 +789,20 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   await expect(check.getByRole('alert')).toContainText(message);
   await expectHolds(page, check, 'the error of Kiểm tra kết nối');
 
+  // L162: the line of a check that passed, and the line of an analysis that runs, name the model;
+  // a name longer than the line breaks in them as the error does.
+  const model = unbroken('M', 100);
+  await page.evaluate(() => (window.exe.aiError = null));
+  await check.getByRole('button', { name: 'Kiểm tra kết nối' }).click();
+  const passed = check.getByRole('status');
+  await expect(passed).toContainText('Kết nối được');
+  await passed.evaluate((line, model) => line.append(` ${model}`), model);
+  await expectHolds(page, passed, 'the line of a check that passed');
+  await page.evaluate(
+    (message) => (window.exe.aiError = { code: 'AI_HTTP', httpStatus: 502, message }),
+    message,
+  );
+
   // The same error at Phân tích, said in the shape of every error with its Thử lại (VA3c): the
   // first line of the shape breaks as its next one does (review of PR 1406).
   await open(page, 'Khách hàng');
@@ -799,4 +813,17 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   await expect(panel.getByRole('alert')).toContainText(message);
   await expect(panel.getByRole('alert').getByRole('button', { name: 'Thử lại' })).toBeVisible();
   await expectHolds(page, panel, 'the error of Phân tích');
+
+  await page.evaluate(() => {
+    window.exe.aiError = null;
+    window.exe.holdAi();
+  });
+  await panel.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
+  const running = panel.getByRole('status').filter({ hasText: 'Đang phân tích' });
+  await running
+    .locator('span')
+    .first()
+    .evaluate((line, model) => line.append(` ${model}`), model);
+  await expectHolds(page, running, 'the line of an analysis that runs');
+  await page.evaluate(() => window.exe.releaseAi());
 });

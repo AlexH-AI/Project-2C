@@ -1,4 +1,4 @@
-import { useMemo, useState, type ComponentProps } from 'react';
+import { useMemo, useRef, useState, type ComponentProps } from 'react';
 import {
   APPOINTMENT_TRIGGERS,
   scheduleAppointment,
@@ -248,6 +248,7 @@ export function CoordinatorsField({
 }) {
   const [picked, setPicked] = useState('');
   const [addedId, setAddedId] = useState('');
+  const box = useRef<HTMLFieldSetElement>(null);
   // No RM coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RM never is one.
   const coordinators = people.filter((person) => ids.includes(person.id));
   const addable = people
@@ -261,8 +262,8 @@ export function CoordinatorsField({
     setAddedId(choice.value);
   };
   return (
-    <fieldset className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-0 p-0">
-      <legend className="p-0 font-medium">{t('appointmentForm.coordinators')}</legend>
+    <fieldset ref={box} className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-0 p-0">
+      <legend className="field-label p-0">{t('appointmentForm.coordinators')}</legend>
       {coordinators.length > 0 && (
         <div className="flex w-full flex-wrap gap-1.5">
           {coordinators.map((person) => (
@@ -271,7 +272,11 @@ export function CoordinatorsField({
               type="button"
               aria-label={t('appointmentForm.coordinatorRemove', { name: personLabel(person) })}
               className={`${CHIP} ${FOCUS}`}
-              onClick={() => onChange(ids.filter((id) => id !== person.id))}
+              onClick={() => {
+                // The chip goes with its press: the focus goes to the list that adds (DR6-186).
+                box.current?.querySelector('select')?.focus();
+                onChange(ids.filter((id) => id !== person.id));
+              }}
             >
               {personLabel(person)} {t('appointmentForm.coordinatorRemoveMark')}
             </button>
@@ -343,7 +348,18 @@ export function DateSuggestion({
               n: Math.abs(date.daysFromToday),
               next: other,
             })}
-      <button type="button" className={`${CHIP} ${FOCUS}`} onClick={() => onUse(other)}>
+      <button
+        type="button"
+        className={`${CHIP} ${FOCUS}`}
+        onClick={(event) => {
+          // It goes with its press: the focus goes to the day field it fills, the first of the row
+          // just before the note, in both dialogs that show one (DR6-186).
+          event.currentTarget.parentElement?.previousElementSibling
+            ?.querySelector('input')
+            ?.focus();
+          onUse(other);
+        }}
+      >
         {t('appointmentForm.suggestUse', { date: other })}
       </button>
       {help && 'date' in date && (
@@ -376,10 +392,12 @@ function CustomerField({
   history: PriorMeetings | undefined;
 }) {
   const matches = useMemo(() => searchCustomers(customers, query, MATCHES), [customers, query]);
+  // A match picked goes with the list: the focus goes to "Đổi KH", which takes its place (DR6-186).
+  const [picked, setPicked] = useState(false);
   if (customer) {
     return (
       <div className="flex flex-col gap-1">
-        <span className="font-medium">{t('appointmentForm.customer')}</span>
+        <span className="field-label">{t('appointmentForm.customer')}</span>
         <p className="m-0 flex flex-wrap items-center gap-2">
           <b>
             <CustomerName name={customer.name} />
@@ -389,6 +407,7 @@ function CustomerField({
           {!fixed && (
             <button
               type="button"
+              autoFocus={picked}
               className={`${CHIP} ${FOCUS} ml-auto`}
               onClick={() => onPick(undefined)}
             >
@@ -433,7 +452,10 @@ function CustomerField({
               <button
                 type="button"
                 className={`${CHIP} ${FOCUS} flex w-full items-center gap-2 text-left text-sm`}
-                onClick={() => onPick(match)}
+                onClick={() => {
+                  setPicked(true);
+                  onPick(match);
+                }}
               >
                 <b>
                   <CustomerName name={match.name} />

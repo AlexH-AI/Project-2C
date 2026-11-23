@@ -14,7 +14,7 @@ export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
 export const CARD_SKIN = 'card rounded-card';
 
 /** The room inside a card: 18 px above and below, 20 px at the sides (components.html 04). */
-const ROOMY = 'px-5 py-4.5';
+export const ROOMY = 'px-5 py-4.5';
 
 /**
  * A dense card of a screen, 16 px of room: the calendar, the list of the day, a block of the

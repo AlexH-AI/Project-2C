@@ -250,8 +250,74 @@ test('the appointments calendar shows December 2100 with blank cells after it', 
 
   await expect(picker.getByRole('status')).toHaveText('Tháng 12/2100');
   await expect(page.getByRole('heading', { name: 'Lịch tháng 12/2100' })).toBeVisible();
-  await expect(picker.getByRole('button', { name: 'Kỳ sau' })).toBeDisabled();
+  const next = picker.getByRole('button', { name: 'Kỳ sau' });
+  await expect(next).toBeDisabled();
   expect(errors).toEqual([]);
+
+  // The step of the screen that reaches the end goes off as the pill's does, keeping the focus
+  // (DR6-186).
+  await picker.getByRole('button', { name: 'Kỳ trước' }).click();
+  await expect(picker.getByRole('status')).toHaveText('Tháng 11/2100');
+  await next.press('Enter');
+  await expect(picker.getByRole('status')).toHaveText('Tháng 12/2100');
+  await expect(next).toBeDisabled();
+  await expect(next).toBeFocused();
+});
+
+// L177: ‹ › of the pill move the period from outside the layer, so what was typed in it goes,
+// with its error. Esc, or a press outside, takes dates typed right as the focus leaves them.
+test('‹ › of the pill clear what was typed in the layer; Esc and a press outside take the dates', async ({
+  page,
+}) => {
+  const { kinds, label, picker, previous, next } = await openPicker(page);
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  const start = picker.getByRole('textbox', { name: 'Từ ngày' });
+  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
+  await expect(label).toHaveText('01/09 – 30/09/2026');
+  await start.fill('99/99/9999');
+  await previous.click();
+  await expect(label).toHaveText('02/08 – 31/08/2026');
+  await expect(start).toHaveValue('02/08/2026');
+  await expect(end).toHaveValue('31/08/2026');
+  await expect(picker).not.toContainText('Ngày không có thật');
+  // Gone for good: back on the period it was typed on, the fields hold that period's dates.
+  await next.click();
+  await expect(label).toHaveText('01/09 – 30/09/2026');
+  await expect(start).toHaveValue('01/09/2026');
+  await expect(end).toHaveValue('30/09/2026');
+  await expect(start).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(picker).not.toContainText('Ngày không có thật');
+
+  await start.fill('01/08/2026');
+  await end.fill('10/08/2026');
+  await page.keyboard.press('Escape');
+  await expect(picker).toBeHidden();
+  await expect(label).toHaveText('01/08 – 10/08/2026');
+  await expect(label).toBeFocused();
+
+  await periodLayer(page);
+  await start.fill('03/08/2026');
+  await end.fill('12/08/2026');
+  await page.getByRole('heading', { level: 1 }).click();
+  await expect(picker).toBeHidden();
+  await expect(label).toHaveText('03/08 – 12/08/2026');
+});
+
+// DR6-186: a month of the year grid opens it, and goes; the focus goes to its day picked.
+test('a month picked in the year grid of Lịch hẹn hands the focus to the day of its calendar', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(TODAY);
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('group', { name: 'Kỳ thống kê' })
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Năm' })
+    .click();
+  await page.getByRole('button', { name: /^Tháng 10\/2026:/ }).focus();
+  await page.keyboard.press('Enter');
+  const calendar = page.getByRole('region', { name: 'Lịch tháng 10/2026' });
+  await expect(calendar.getByRole('button', { pressed: true })).toBeFocused();
 });
 
 test('"Hôm nay" goes back to the period containing today and stays enabled at year 1900', async ({

@@ -123,7 +123,13 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
             {t(data.hasFile ? 'settings.backup.exportHelp' : 'settings.backup.exportHelpWeb')}
           </span>
         </div>
-        <Button disabled={busy !== null} onClick={() => void exportFile()}>
+        {/* Off by `aria-disabled` while Data is busy, which keeps the focus on it (DR6-186). */}
+        <Button
+          aria-disabled={busy !== null || undefined}
+          onClick={() => {
+            if (busy === null) void exportFile();
+          }}
+        >
           {busy === 'export' ? t('settings.backup.exporting') : t('settings.backup.export')}
         </Button>
       </div>

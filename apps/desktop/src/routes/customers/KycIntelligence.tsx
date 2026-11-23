@@ -287,14 +287,17 @@ function HelpLine({ help }: { help: AiPanelHelp }) {
   );
 }
 
-/** A spinner-less busy line: the mockup's `.busy` box. */
+/**
+ * A spinner-less busy line: the mockup's `.busy` box. A word longer than the line, as the name of
+ * a model may be, breaks in it (L162).
+ */
 function BusyLine({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div
       role="status"
       className="flex items-center gap-2.5 rounded-control-sm border border-border-strong bg-surface-2 px-3 py-2.5 text-sm"
     >
-      <span className="flex-1">{children}</span>
+      <span className="min-w-0 flex-1 wrap-anywhere">{children}</span>
       {action}
     </div>
   );

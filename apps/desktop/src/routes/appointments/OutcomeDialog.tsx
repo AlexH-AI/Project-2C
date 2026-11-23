@@ -217,12 +217,11 @@ export function OutcomeDialog({
             )}
             <fieldset className="m-0 flex flex-col gap-3 rounded-control border border-border p-3">
               <legend className="px-1">
-                <label className="flex items-center gap-2 font-medium">
+                <label className="field-label flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={booking}
                     onChange={(event) => edit(setBooking)(event.target.checked)}
-                    className="accent-accent"
                   />
                   {t('outcome.next')}
                 </label>

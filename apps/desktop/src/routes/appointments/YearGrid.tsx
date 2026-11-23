@@ -14,9 +14,11 @@ const CELL = {
   future: 'border-dashed border-border bg-surface-1 hover:border-border-strong',
 } as const satisfies Record<MonthCell['state'], string>;
 
+// The month of today in --text, not the mockup's --accent: on its gold tint over the brightest glass
+// of macOS --accent is under 4.5:1 (L188); its tint and gold edge mark it.
 const NAME = {
   past: 'font-semibold',
-  current: 'font-semibold text-accent',
+  current: 'font-semibold text-fg',
   future: 'font-medium text-fg-3',
 } as const satisfies Record<MonthCell['state'], string>;
 
@@ -97,7 +99,7 @@ function MonthButton({
         <span className={`text-md ${NAME[cell.state]}`}>
           {t('appointments.monthCell', { month: cell.month })}
         </span>
-        {/* On the gold tint of the month of today `chosen-tint` writes it one step lighter. */}
+        {/* On the gold tint of the month of today `chosen-tint` writes it in --text (L188). */}
         <span className="text-xs text-fg-3">
           <b className="mr-0.75 text-lg text-fg">{formatNumber(count)}</b>
           {t('appointments.unit')}

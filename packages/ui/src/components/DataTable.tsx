@@ -79,8 +79,13 @@ interface DataTableProps<Row extends RowData> {
    * (`table-layout: fixed`), as in a narrow card of the mockups; else columns fit their content.
    */
   fixed?: boolean;
-  /** Cells 6 px from the column's edges instead of 10, as in a narrow card of the mockups. */
+  /** Cells 6 px from the column's edges instead of 12, as in a narrow card of the mockups. */
   compact?: boolean;
+  /**
+   * Cells 10 px from the column's edges instead of 12: a table that would run further past its
+   * card at the smallest window (the members of a team until C3, L170).
+   */
+  narrow?: boolean;
   /**
    * What a table with no row says under its headers, which stay (mockup components.html 09): a
    * `StateNote` of size `table`, in one row across every column.
@@ -135,6 +140,7 @@ export function DataTable<Row extends RowData>({
   ref,
   fixed = false,
   compact = false,
+  narrow = false,
   empty,
 }: DataTableProps<Row>) {
   const [limit, setLimit] = useState(initialLimit ?? SHOW_MORE_STEP);
@@ -167,7 +173,8 @@ export function DataTable<Row extends RowData>({
     column.align === 'end' ? 'text-right' : 'text-left';
   const align = (column: DataTableColumn<Row>) =>
     `${textAlign(column)} ${column.kind === 'text' ? '' : 'tabular-nums'}`;
-  const inset = compact ? 'px-1.5' : 'px-2.5';
+  // A heading 8 × 12 px, a cell 10 × 12 px (components.html 05).
+  const inset = compact ? 'px-1.5' : narrow ? 'px-2.5' : 'px-3';
   // A zero of a number column is written lighter, so the figures stand out (components.html 05).
   const zero = (column: DataTableColumn<Row>, row: Row) =>
     column.kind === 'number' && column.value(row) === 0 ? 'text-fg-3' : '';
@@ -209,7 +216,7 @@ export function DataTable<Row extends RowData>({
                   key={column.id}
                   scope="col"
                   aria-sort={header.kind === 'button' ? header.ariaSort : undefined}
-                  className={`border-b border-hairline ${inset} py-1.5 text-xs font-semibold whitespace-nowrap ${
+                  className={`border-b border-hairline ${inset} py-2 text-xs font-semibold whitespace-nowrap ${
                     sorted ? 'text-fg-2' : 'text-fg-3'
                   } ${align(column)} ${column.width ?? ''} ${hidden ? 'relative' : ''}`}
                 >
@@ -240,7 +247,7 @@ export function DataTable<Row extends RowData>({
         <tbody>
           {rows.length === 0 && empty !== undefined && (
             <tr>
-              <td colSpan={columns.length} className={`${inset} py-2`}>
+              <td colSpan={columns.length} className={`${inset} py-2.5`}>
                 {empty}
               </td>
             </tr>
@@ -250,7 +257,7 @@ export function DataTable<Row extends RowData>({
               {columns.map((column) => (
                 <td
                   key={column.id}
-                  className={`border-b border-hairline ${inset} py-2 align-middle group-last:border-b-0 ${align(column)} ${zero(column, row.original)} ${
+                  className={`border-b border-hairline ${inset} py-2.5 align-middle group-last:border-b-0 ${align(column)} ${zero(column, row.original)} ${
                     column.cellClass?.(row.original) ?? ''
                   }`}
                 >

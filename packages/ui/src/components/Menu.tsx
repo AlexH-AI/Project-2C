@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type AnimationEvent, type KeyboardEvent } from 'react';
+import { Mark } from './FieldMarks';
 import { menuMove } from './menu-keys';
 import { GONE_MS, calmMotion, layerState, type LayerState } from './motion';
 
@@ -121,24 +122,6 @@ export interface MenuRow {
   readonly divided?: boolean;
 }
 
-/** The marks of a menu (mockups' `#i-check`, `#i-down`, `#i-chev`), no text for a screen reader. */
-function Mark({ path, className }: { path: string; className: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`flex-none ${className}`}
-    >
-      <path d={path} />
-    </svg>
-  );
-}
-
 const ROW =
   'group flex min-h-8 w-full cursor-pointer items-center gap-2.5 rounded-control-sm pr-2.5 text-left text-md whitespace-nowrap hover:bg-fill-2 focus-visible:bg-fill-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent';
 
@@ -199,8 +182,8 @@ export function MenuRows({
             >
               {opener && (
                 <Mark
-                  path="M9 6l6 6-6 6"
-                  className={`motion-turn size-3 text-fg-3 ${row.expanded ? 'rotate-90' : ''}`}
+                  of="next"
+                  className={`motion-turn size-3 flex-none text-fg-3 ${row.expanded ? 'rotate-90' : ''}`}
                 />
               )}
               {/* A long name is cut in the row rather than widen the menu past the window. */}
@@ -209,9 +192,7 @@ export function MenuRows({
                   count goes a step brighter there. */}
               <span className="ml-auto flex items-center gap-1.5 text-fg-3 tabular-nums group-hover:text-fg-2 group-focus-visible:text-fg-2">
                 {row.note}
-                {row.checked && (
-                  <Mark path="M5 12.5l4.5 4.5L19 7.5" className="size-4 text-accent" />
-                )}
+                {row.checked && <Mark of="check" className="size-4 flex-none text-accent" />}
               </span>
             </button>
           </div>
@@ -285,7 +266,7 @@ export function MenuButton({
         {/* Capped: a long name would push the toolbar out of the window (DR6-170); it is read
             whole from the title. */}
         <span className="max-w-60 truncate">{text}</span>
-        <Mark path="M6 9l6 6 6-6" className="size-3.25 text-fg-2" />
+        <Mark of="down" className="size-3.25 flex-none text-fg-2" />
       </button>
       {drawn && (
         <MenuRows

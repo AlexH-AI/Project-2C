@@ -64,7 +64,6 @@ function Material({
         checked={auto || value}
         disabled={auto}
         onChange={(event) => onChange(event.target.checked)}
-        className="accent-accent"
       />
       {t(auto ? 'kycNote.autoMaterial' : 'kycNote.manualMaterial')}
     </label>

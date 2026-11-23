@@ -92,6 +92,74 @@ test('Dời lịch opens on the new day', async ({ page }) => {
   await expect(page.getByRole('dialog').getByRole('textbox', { name: /^Ngày mới/ })).toBeFocused();
 });
 
+// The × heads the dialog (mockup components.html 06): first in the Tab order, yet a dialog that
+// marks nothing to focus still opens on the first field or button after it (L157).
+test('the × comes first in the Tab order; a dialog marking nothing opens on its first button', async ({
+  page,
+}) => {
+  await page.goto('/#/team');
+  await page.getByRole('button', { name: 'Xóa team' }).focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: /^Xóa team / });
+  await expect(dialog.getByRole('button', { name: 'Đóng', exact: true })).toBeFocused();
+  await page.keyboard.press(`Shift+${tabKey(page)}`);
+  await expect(dialog.getByRole('button', { name: 'Đóng hộp thoại' })).toBeFocused();
+});
+
+// DR6-186: a button that goes with its own press, or goes off while it runs, leaves the focus
+// on something shown, never on the page itself.
+test('the buttons of Lịch hẹn mới that go with their press leave the focus in the dialog', async ({
+  page,
+}) => {
+  await page.goto('/#/appointments');
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  const search = dialog.getByRole('textbox', { name: /^Khách hàng/ });
+  await search.fill('K-');
+  await dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().focus();
+  await page.keyboard.press('Enter');
+  const change = dialog.getByRole('button', { name: 'Đổi KH' });
+  await expect(change).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(search).toBeFocused();
+
+  const date = dialog.getByRole('textbox', { name: /^Ngày/ });
+  await date.fill('5/1');
+  await dialog.getByRole('button', { name: /^Dùng / }).focus();
+  await page.keyboard.press('Enter');
+  await expect(date).toHaveValue('05/01/2027');
+  await expect(date).toBeFocused();
+
+  const coordinators = dialog.getByRole('group', { name: /^Người phối hợp/ });
+  const pick = coordinators.getByRole('combobox', { name: 'Thêm người phối hợp' });
+  await pick.selectOption({ index: 1 });
+  await coordinators.getByRole('button', { name: 'Thêm', exact: true }).click();
+  await coordinators.getByRole('button', { name: /^Bỏ / }).focus();
+  await page.keyboard.press('Enter');
+  await expect(coordinators.getByRole('button', { name: /^Bỏ / })).toHaveCount(0);
+  await expect(pick).toBeFocused();
+});
+
+test('Xuất Excel and Xuất backup keep the focus while they run (DR6-186)', async ({ page }) => {
+  await page.goto('/#/reports');
+  const excel = page.getByRole('button', { name: 'Xuất Excel' });
+  await excel.focus();
+  const sheet = page.waitForEvent('download');
+  await page.keyboard.press('Enter');
+  await sheet;
+  await expect(excel).toBeFocused();
+
+  await page.goto('/#/settings');
+  const backup = page
+    .getByRole('region', { name: 'Xuất / nhập backup' })
+    .getByRole('button', { name: 'Xuất backup' });
+  await backup.focus();
+  const file = page.waitForEvent('download');
+  await page.keyboard.press('Enter');
+  await file;
+  await expect(backup).toBeFocused();
+});
+
 test('arrow keys move the choice around a segmented control, wrapping at both ends', async ({
   page,
 }) => {

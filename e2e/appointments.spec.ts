@@ -755,7 +755,7 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
   await expect(calendar.locator('p > span')).toHaveText(groups);
   // --appt-unrecorded = --warn (orange), --appt-missed = --text-3 (grey): Owner G3 03/10.
   expect(await legendFill(calendar, 'Chưa ghi kết quả')).toBe('rgb(240, 160, 75)');
-  expect(await legendFill(calendar, 'Dời lịch')).toBe('rgb(140, 153, 172)');
+  expect(await legendFill(calendar, 'Dời lịch')).toBe('rgb(151, 164, 183)');
 
   const f = await fillAppointment(page, '10/9');
   await f.create.click();
@@ -798,10 +798,11 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
   );
   expect(fills.length).toBeGreaterThan(1);
   expect(new Set(fills)).toEqual(new Set([await legendFill(year, 'Dời lịch')]));
-  expect(await legendFill(year, 'Dời lịch')).toBe('rgb(140, 153, 172)');
-  // "lịch" by the count of that month, on the tint: --text-2, as --text-3 is under 4.5:1 there.
+  expect(await legendFill(year, 'Dời lịch')).toBe('rgb(151, 164, 183)');
+  // "lịch" by the count of that month, on the tint: --text, as --text-2 and --text-3 are under
+  // 4.5:1 there over the brightest glass of macOS (L188).
   await expect(today.locator('b').first().locator('..')).toHaveText(/^[\d,]+lịch$/);
-  await expect(today.locator('b').first().locator('..')).toHaveCSS('color', 'rgb(174, 185, 200)');
+  await expect(today.locator('b').first().locator('..')).toHaveCSS('color', 'rgb(232, 237, 244)');
 });
 
 test('an appointment of yesterday still scheduled reads unrecorded everywhere it is shown', async ({
@@ -1064,7 +1065,7 @@ test('a rescheduled appointment reads grey in the history, not the orange of unr
   const status = next.history.getByText('Dời lịch', { exact: true }).first();
   await expect(status).toBeVisible();
   // --appt-missed = --text-3 (grey), not --warn rgb(240, 160, 75): Owner G3 03/10.
-  expect(await css(status, 'color')).toBe('rgb(140, 153, 172)');
+  expect(await css(status, 'color')).toBe('rgb(151, 164, 183)');
 });
 
 test('the detail shows the latest accepted AI analysis read-only, or a link to analyse (spec Phase 5 §9.2)', async ({

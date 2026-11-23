@@ -61,6 +61,7 @@
   --text-sm: var(--fs-sm);
   --text-md: var(--fs-md);
   --text-lg: var(--fs-lg);
+  --text-title: var(--fs-title);
   --text-xl: var(--fs-xl);
   --text-2xl: var(--fs-2xl);
 
@@ -143,19 +144,21 @@
 }
 
 /* A chosen thing on a card (a team of the list, the month of today, a row of a table): the gold
-   tint. --text-3 is under 4.5:1 on it, so what is written in it there is one step lighter
+   tint. Over the brightest glass of macOS, the measure the Owner chose (21/11/2026, L188),
+   --text-2 and --text-3 are under 4.5:1 on it, so what is written in them there is --text
    (ADR-0013 appendix 11/11/2026 §7). */
 @utility chosen-tint {
-  --text-3: var(--text-2);
+  --text-2: var(--text);
+  --text-3: var(--text);
   background-color: var(--accent-soft);
 }
 
 /* The chosen row of a table (ui2.css `.tbl tr.is-sel`): the tint, and a missed appointment, which
-   the row writes in --appt-missed, one step lighter too. Only where that colour is text: the part
-   of a bar and the dot of a legend keep it. */
+   the row writes in --appt-missed, --text too. Only where that colour is text: the part of a bar
+   and the dot of a legend keep it. */
 @utility row-selected {
   @apply chosen-tint;
-  --appt-missed: var(--text-2);
+  --appt-missed: var(--text);
 }
 
 /* A row of a table under the pointer (ui2.css `.tbl tbody tr:hover td`). The light of the card that
@@ -183,6 +186,30 @@
   box-shadow: var(--mat-pop-edge), var(--shadow-3);
   &::backdrop {
     background: var(--scrim);
+  }
+}
+
+/* Where a dialog stands (ui2.css `.win > .dlg`): on macOS a sheet under the toolbar, 56 px from the
+   top of the window and 24 px clear of its foot; on Windows 11 in the middle, as the system has a
+   modal one. Its copy that leaves (`Dialog`, a popover) stands where it stood. */
+@utility dialog-place {
+  margin: --spacing(14) auto auto;
+  max-height: calc(100% - --spacing(20));
+  [data-os='win'] & {
+    margin: auto;
+    max-height: calc(100% - 2em - 6px);
+  }
+}
+
+/* The label of a field (ui2.css `.field > label`; components.html 02): small, heavy, --text-2, a
+   word in it in bold (the word to type of 10c / 11i) at 700. The * of one that must be filled is
+   gold (`.field .req`: `text-accent`). */
+@utility field-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+  & b {
+    font-weight: 700;
   }
 }
 
@@ -756,10 +783,6 @@
   }
   &[data-state='closing']::backdrop {
     animation: vanish var(--t-2) var(--ease-in) forwards;
-  }
-  /* The copy is not modal: it keeps the room a modal dialog has in the window */
-  &:popover-open {
-    max-height: calc(100% - 2em - 6px);
   }
 }
 /* A toast rises from 24 px under the bottom edge, 96 % → 100 %, by the bouncy spring in --t-4; it
