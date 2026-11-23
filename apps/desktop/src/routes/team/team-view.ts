@@ -5,9 +5,12 @@ import {
   isInPeriod,
   isPipelineStage,
   isRm,
+  periodMetrics,
   periodOf,
   type CalendarDate,
   type Customer,
+  type MetricsData,
+  type Money,
   type Period,
   type Person,
   type Policy,
@@ -101,6 +104,24 @@ export function staffMetrics(
     if (rm && policy.issuedDate && isInPeriod(policy.issuedDate, year)) rm.issuedThisYear++;
   }
   return counts;
+}
+
+/** The numbers under the top of a team (C3, mockup search-rm-team.html `.brief`). */
+export interface TeamBrief {
+  /** Doanh số: FYP issued less FYP cancelled. */
+  readonly revenue: Money;
+  /** Số HĐ: Tổng số HĐ, policies issued less policies cancelled. */
+  readonly net: number;
+}
+
+/**
+ * Doanh số and Số HĐ of the team for the month running, up to today: Team & nhân sự has no period
+ * to pick (mockup `#team`, "Ba số"). Forecast tuần comes with D6.
+ */
+export function teamBrief(data: MetricsData, teamId: string, today: CalendarDate): TeamBrief {
+  const month = customPeriod(periodOf('month', today).start, today);
+  const { revenue, netCount } = periodMetrics(data, month, { kind: 'team', teamId });
+  return { revenue, net: netCount };
 }
 
 /** At most this many customers of the trash are named in mockup 9b; the others are counted. */

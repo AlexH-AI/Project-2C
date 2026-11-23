@@ -1,8 +1,8 @@
 import { DbError, type PersonUsage } from '@p2c/db';
-import type { Person, Team } from '@p2c/domain';
+import type { Money, Person, Policy, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { maskName } from '../../shell/name-mask';
-import { groupByTeam, inUseHelp, retriesDelete, staffMetrics } from './team-view';
+import { groupByTeam, inUseHelp, retriesDelete, staffMetrics, teamBrief } from './team-view';
 
 const SAO_MAI: Team = { id: 't1', name: 'Sao Mai' };
 const BINH_MINH: Team = { id: 't2', name: 'Bình Minh' };
@@ -198,6 +198,50 @@ describe('staffMetrics', () => {
     expect(metrics.get('re4')).toEqual(none);
     const empty = { customers: [], appointments: [], policies: [] };
     expect(staffMetrics(people, empty, TODAY).get('re1')).toEqual(none);
+  });
+});
+
+describe('teamBrief (C3, mockup search-rm-team.html `.brief`)', () => {
+  const issued = (
+    rmId: string,
+    issuedDate: Policy['issuedDate'],
+    fyp: number,
+    cancelledDate: Policy['cancelledDate'] = null,
+  ): Policy => ({
+    id: `${rmId}-${issuedDate?.month}-${issuedDate?.day}`,
+    customerId: 'c',
+    rmId,
+    submittedDate: day(8, 1),
+    submittedFyp: fyp as Money,
+    issuedDate,
+    issuedFyp: fyp as Money,
+    cancelledDate,
+  });
+  const data = {
+    people: [person('re1', 'RM', 't1'), person('re2', 'RM', 't1'), person('re3', 'RM', 't2')],
+    appointments: [],
+    transitions: [],
+    policies: [
+      issued('re1', day(9, 3), 30_000_000),
+      // Issued and cancelled this month; issued last month, cancelled this one.
+      issued('re2', day(9, 10), 20_000_000, day(9, 20)),
+      issued('re1', day(8, 31), 10_000_000, day(9, 5)),
+      // After today, of last month, of another team, not issued: none count.
+      issued('re1', day(9, 29), 40_000_000),
+      issued('re2', day(8, 12), 50_000_000),
+      issued('re3', day(9, 4), 60_000_000),
+      issued('re1', null, 70_000_000),
+    ],
+  };
+
+  it('gives Doanh số and Số HĐ of the team, the month up to today, cancellations taken off', () => {
+    expect(teamBrief(data, 't1', TODAY)).toEqual({ revenue: 20_000_000, net: 0 });
+    expect(teamBrief(data, 't2', TODAY)).toEqual({ revenue: 60_000_000, net: 1 });
+  });
+
+  it('gives zeros to a team without RM or policies of the month', () => {
+    expect(teamBrief(data, 't3', TODAY)).toEqual({ revenue: 0, net: 0 });
+    expect(teamBrief(data, 't1', day(10, 1))).toEqual({ revenue: 0, net: 0 });
   });
 });
 

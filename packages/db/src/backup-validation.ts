@@ -70,7 +70,8 @@ export function validateBackupValues(db: Database, currency: CurrencyCode): void
       }
       if (NAMED.has(table) && !storedAs(requireName, row.name)) throw new DbError('BACKUP_INVALID');
       // C3: the colour and icon of a team, deleted or not, as the commands store them.
-      if (table === 'teams' && !isTeamLook(row.color, row.icon)) throw new DbError('BACKUP_INVALID');
+      if (table === 'teams' && !isTeamLook(row.color, row.icon))
+        throw new DbError('BACKUP_INVALID');
       if (table === 'appointments' && !appointmentTextStored(row)) {
         throw new DbError('BACKUP_INVALID');
       }

@@ -39,6 +39,7 @@ import { PERIOD_LABELS } from '../period-labels';
 import { stageBadge } from '../stage-badge';
 import { Boundary } from './Boundary';
 import { PersonDialog } from './PersonDialogs';
+import { TeamMark, teamNameClass } from './TeamLook';
 import {
   CADENCE_MARKS,
   appointmentsByCustomer,
@@ -346,8 +347,14 @@ function RmPageBody({ id }: { id: string }) {
             {rm.name} <span className={BADGE}>{t('rmPage.role')}</span>
           </h2>
           <p className="m-0 mt-1 text-sm text-fg-2 tabular-nums">
+            {/* The team as Team & nhân sự draws it, icon and colour (C3, mockup #rm). */}
+            {team && (
+              <>
+                <TeamMark team={team} /> <span className={teamNameClass(team)}>{team.name}</span>{' '}
+                {t('sep.dot')}{' '}
+              </>
+            )}
             {joinParts([
-              team && t('scope.teamName', { name: team.name }),
               lead ? t('rmPage.lead', { name: lead.name }) : t('team.noLead'),
               ...counts,
             ])}

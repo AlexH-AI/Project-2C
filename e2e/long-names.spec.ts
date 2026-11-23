@@ -80,9 +80,9 @@ async function renameTeam(page: Page, from: string, to: string) {
     .click();
   await page
     .getByRole('region', { name: `Thành viên team ${from}` })
-    .getByRole('button', { name: 'Đổi tên team' })
+    .getByRole('button', { name: 'Sửa team' })
     .click();
-  const dialog = page.getByRole('dialog', { name: 'Đổi tên team' });
+  const dialog = page.getByRole('dialog', { name: 'Sửa team' });
   await dialog.getByRole('textbox', { name: 'Tên team' }).fill(to);
   await dialog.getByRole('button', { name: 'Lưu' }).click();
   await expect(dialog).toBeHidden();
@@ -188,7 +188,7 @@ test('a team and an IS of 160 letters keep Team & nhân sự in the window, each
   await expect(is).toContainText(unbroken('S', 160));
 
   const card = page.getByRole('region', { name: `Thành viên team ${team}` });
-  await expect(card.getByRole('heading', { level: 2 })).toHaveText(`Team ${team}`);
+  await expect(card.getByRole('heading', { level: 2 })).toHaveText(team);
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await expectNoSideways(page, String(width));
@@ -199,7 +199,7 @@ test('a team and an IS of 160 letters keep Team & nhân sự in the window, each
       await right(list),
     );
     await expectByFirstLine(teamButton, team, teamButton.getByText(/RM$/), `count at ${width}`);
-    for (const label of ['Đổi tên team', 'Xóa team']) {
+    for (const label of ['Sửa team', 'Xóa team']) {
       const button = card.getByRole('button', { name: label });
       expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(await right(card));
     }
@@ -213,7 +213,7 @@ test('a team and an IS of 160 letters keep Team & nhân sự in the window, each
   }
 });
 
-test('a TL of 160 letters keeps Đổi tên team and Xóa team in the card of the team', async ({
+test('a TL of 160 letters keeps Sửa team and Xóa team in the card of the team', async ({
   page,
 }) => {
   await page.goto('/#/team');
@@ -229,12 +229,12 @@ test('a TL of 160 letters keeps Đổi tên team and Xóa team in the card of th
     await page.setViewportSize({ width, height: 900 });
     await expectNoSideways(page, String(width));
     expect(await scrolls(card), `card at ${width}`).toBe(false);
-    for (const label of ['Đổi tên team', 'Xóa team']) {
+    for (const label of ['Sửa team', 'Xóa team']) {
       const button = card.getByRole('button', { name: label });
       expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(await right(card));
     }
     // The title keeps its line beside the long TL name, not squeezed letter by letter.
-    expect(await lineTops(card, 'Team Bình Minh'), `title at ${width}`).toHaveLength(1);
+    expect(await lineTops(card, 'Bình Minh'), `title at ${width}`).toHaveLength(1);
   }
 });
 

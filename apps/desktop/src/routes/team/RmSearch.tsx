@@ -6,10 +6,13 @@ import { routeToHash } from '../../shell/routes';
 import { navigate } from '../../shell/useRoute';
 import { foundIn } from '../customers/customer-search';
 import { rmMatches, type RmHit } from './rm-search';
+import { TeamMark } from './TeamLook';
 
 // The option and its pick as the search of Khách hàng draws them (C1, mockup `.pal-o`).
 const OPTION =
-  'relative flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-control-sm px-2.5 text-md whitespace-nowrap hover:bg-fill-1';
+  'relative flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-control-sm px-2.5 text-md whitespace-nowrap';
+// Only on a row not picked: the picked one keeps --fill-2 under the pointer (mockup `.pal-o.sel`, L235).
+const HOVER = 'hover:bg-fill-1';
 const PICKED =
   'bg-fill-2 win:before:absolute win:before:inset-y-2.5 win:before:left-0 win:before:w-0.75 win:before:rounded-full win:before:bg-accent';
 const POP =
@@ -95,7 +98,7 @@ export function RmSearch({ people, teams }: { people: readonly Person[]; teams: 
               role="option"
               aria-selected={hit === hits[at]}
               onClick={() => pick(hit)}
-              className={`${OPTION} ${hit === hits[at] ? PICKED : ''}`}
+              className={`${OPTION} ${hit === hits[at] ? PICKED : HOVER}`}
             >
               <span className="min-w-0 flex-1 truncate">
                 {t('rmPage.role')}{' '}
@@ -103,6 +106,8 @@ export function RmSearch({ people, teams }: { people: readonly Person[]; teams: 
                   <Lit text={hit.rm.name} query={query} />
                 </b>{' '}
                 <span className="text-sm text-fg-2">
+                  {/* The team with its icon (C3, mockup `.pal-o .tmark`). */}
+                  {hit.team && <TeamMark team={hit.team} />}{' '}
                   {t('team.searchRm.sub', { team: hit.team?.name ?? '' })}
                 </span>
               </span>

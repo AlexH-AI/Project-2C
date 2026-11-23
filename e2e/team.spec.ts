@@ -3,12 +3,18 @@ import { expect, test, type Locator, type Page } from './fixtures';
 import { ANCHOR_YEAR } from './anchor';
 import {
   asExe,
+  contrast,
+  lowestContrast,
+  markOs,
+  pastTheWindow,
   pickCustomPeriod,
   pickFirstRm,
   pickPeriodKind,
   pickScope,
+  right,
   scopePill,
   screenSub,
+  scrolls,
 } from './support';
 
 // The simulated data (spec §7, D8): 3 teams of 1 TL + 10 RM, and a shared IS, BD and BDM.
@@ -61,11 +67,11 @@ test('lists the seeded teams, their members and the shared support staff', async
 test('the TL sits in the table header with an Edit button (B1)', async ({ page }) => {
   await teamButton(page, 'Sao Mai').click();
   const region = members(page, 'Sao Mai');
-  await expect(region.getByRole('heading', { name: 'Team Sao Mai', exact: true })).toBeVisible();
+  await expect(region.getByRole('heading', { name: 'Sao Mai', exact: true })).toBeVisible();
   const edit = region.getByRole('button', { name: /^Sửa / }).first();
   const name = ((await edit.getAttribute('aria-label')) ?? '').replace(/^Sửa /, '');
   await expect(region.getByText(name).first()).toBeVisible();
-  await expect(edit.locator('..')).toContainText(/TL.+·\s*Sửa/);
+  await expect(edit.locator('..')).toContainText(/TL.+Sửa/);
   await edit.click();
   const dialog = page.getByRole('dialog', { name: 'Sửa nhân sự' });
   await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveValue(name);
@@ -124,8 +130,8 @@ test('adds a team, then renames it', async ({ page }) => {
     'Bấm "+ Nhân sự" để thêm RM vào team này.',
   );
 
-  await members(page, 'Thiên Hà').getByRole('button', { name: 'Đổi tên team' }).click();
-  const rename = page.getByRole('dialog', { name: 'Đổi tên team' });
+  await members(page, 'Thiên Hà').getByRole('button', { name: 'Sửa team' }).click();
+  const rename = page.getByRole('dialog', { name: 'Sửa team' });
   await expect(rename.getByRole('textbox', { name: 'Tên team' })).toHaveValue('Thiên Hà');
   await rename.getByRole('textbox', { name: 'Tên team' }).fill('Ngân Hà');
   await rename.getByRole('button', { name: 'Lưu' }).click();
@@ -679,7 +685,7 @@ test('by the keyboard, deleting a person or changing their role leaves the focus
   // 9b of an RM of the table.
   await deleteByKeyboard(page, table, 'Trần Hải Yến');
   await expect(table.getByRole('row', { name: /Trần Hải Yến/ })).toHaveCount(0);
-  await expect(cardTop(card, 'Team Hừng Đông')).toBeFocused();
+  await expect(cardTop(card, 'Hừng Đông')).toBeFocused();
 
   // 9a: an RM made IS leaves the table, an IS made RM leaves "Người hỗ trợ".
   await addRm(page, 'Lê Thu Hà', 'Hừng Đông');
@@ -689,7 +695,7 @@ test('by the keyboard, deleting a person or changing their role leaves the focus
   await edit.getByRole('button', { name: 'Lưu' }).press('Enter');
   await expect(edit).toBeHidden();
   await expect(table.getByRole('row', { name: /Lê Thu Hà/ })).toHaveCount(0);
-  await expect(cardTop(card, 'Team Hừng Đông')).toBeFocused();
+  await expect(cardTop(card, 'Hừng Đông')).toBeFocused();
 
   const support = shared(page);
   await support.getByRole('button', { name: 'Sửa Lê Thu Hà' }).press('Enter');
@@ -719,14 +725,14 @@ test('by the keyboard, + Thêm TL and the delete of a TL leave the focus on the 
   await add.getByRole('button', { name: 'Thêm' }).press('Enter');
   await expect(add).toBeHidden();
   await expect(card.getByRole('button', { name: '+ Thêm TL' })).toHaveCount(0);
-  await expect(cardTop(card, 'Team Thiên Hà')).toBeFocused();
+  await expect(cardTop(card, 'Thiên Hà')).toBeFocused();
 
   await deleteByKeyboard(page, card, 'Đỗ Gia Bảo');
   await expect(card).toContainText('chưa có TL');
-  await expect(cardTop(card, 'Team Thiên Hà')).toBeFocused();
+  await expect(cardTop(card, 'Thiên Hà')).toBeFocused();
 });
 
-// Review of PR 744: only the top of the card is the team's (its heading, TL, Đổi tên / Xóa team);
+// Review of PR 744: only the top of the card is the team's (its heading, TL, Sửa / Xóa team);
 // the table of members stays, with the sort picked there and the rows of the people it shows.
 test('the member table keeps the sort picked when another team is shown', async ({ page }) => {
   const header = (team: string, name: string) =>
@@ -1011,16 +1017,16 @@ test('a page of an RM gone goes to Team & nhân sự, as an unknown address does
 test('renaming the team shown first keeps it shown, on Team and in the scope of Khách hàng', async ({
   page,
 }) => {
-  await expect(page.getByRole('heading', { name: 'Team Bình Minh' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bình Minh', exact: true })).toBeVisible();
   const rename = async (from: string, to: string) => {
-    await members(page, from).getByRole('button', { name: 'Đổi tên team' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Đổi tên team' });
+    await members(page, from).getByRole('button', { name: 'Sửa team' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Sửa team' });
     await dialog.getByRole('textbox', { name: 'Tên team' }).fill(to);
     await dialog.getByRole('button', { name: 'Lưu' }).click();
     await expect(dialog).toBeHidden();
   };
   await rename('Bình Minh', 'Xuân Thu');
-  await expect(page.getByRole('heading', { name: 'Team Xuân Thu' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Xuân Thu', exact: true })).toBeVisible();
   await expect(teamButton(page, 'Xuân Thu')).toHaveAttribute('aria-pressed', 'true');
 
   // Every team together on Tổng quan: on Khách hàng the first one, Hừng Đông, then an RM of it.
@@ -1041,4 +1047,207 @@ test('renaming the team shown first keeps it shown, on Team and in the scope of 
   await page.getByRole('link', { name: 'Khách hàng' }).click();
   const kept = page.getByRole('region', { name: 'RM của team Ánh Dương' });
   await expect(kept.getByRole('button', { pressed: true })).toContainText(rm);
+});
+
+// ---- C3: the colour and icon of a team, its top (mockup search-rm-team.html #team) ------------
+
+/** The colour `name` of tokens.css as the page paints it: `rgb(…)`. */
+const tokenColor = (page: Page, name: string) =>
+  page.evaluate((name) => {
+    const probe = document.body.appendChild(document.createElement('span'));
+    probe.style.color = `var(${name})`;
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  }, name);
+
+const colorOf = (box: Locator) => box.evaluate((node) => getComputedStyle(node).color);
+
+/** The six colours of the dialog, by their names, and the token each paints a name in. */
+const COLORS = [
+  ['Champagne', '--accent'],
+  ['Xanh dương', '--info'],
+  ['Tím', '--n2'],
+  ['Xanh ngọc', '--submitted'],
+  ['Xanh lá', '--ok'],
+  ['Cam', '--warn'],
+] as const;
+
+/**
+ * Picks a choice of Tạo / Sửa team by its swatch or icon, the label around the radio, as a person
+ * does: the radio itself is kept for screen readers only.
+ */
+const pick = async (radio: Locator) => {
+  await radio.locator('..').click();
+  await expect(radio).toBeChecked();
+};
+
+/** A choice of the colour or the icon in Tạo / Sửa team, by its name. */
+const choice = (dialog: Locator, group: 'Màu' | 'Icon', name: string) =>
+  dialog
+    .getByRole('group', { name: group === 'Màu' ? /^Màu chữ của tên team/ : /^Icon/ })
+    .getByRole('radio', { name, exact: true });
+
+test('Sửa team: a colour and an icon show in the preview, then at once on the top, the list and the RM page; Mặc định takes them back (C3)', async ({
+  page,
+}) => {
+  await teamButton(page, 'Hừng Đông').click();
+  const card = members(page, 'Hừng Đông');
+  const heading = card.getByRole('heading', { name: 'Hừng Đông', exact: true });
+  const text = await tokenColor(page, '--text');
+  await expect(heading).toHaveCSS('color', text);
+
+  await card.getByRole('button', { name: 'Sửa team' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa team' });
+  await expect(dialog).toContainText(/Hừng Đông · 10 RM · TL /);
+  const preview = dialog.getByRole('figure', { name: 'Xem trước' });
+  const named = preview.getByText('Hừng Đông', { exact: true });
+  await expect(choice(dialog, 'Màu', 'Mặc định')).toBeChecked();
+  await expect(choice(dialog, 'Icon', 'Mặc định')).toBeChecked();
+  await pick(choice(dialog, 'Màu', 'Cam'));
+  await pick(choice(dialog, 'Icon', 'Núi'));
+  const orange = await tokenColor(page, '--warn');
+  await expect(named).toHaveCSS('color', orange);
+  await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Hừng Đông 2');
+  await expect(preview.getByText('Hừng Đông 2', { exact: true })).toBeVisible();
+  await dialog.getByRole('textbox', { name: 'Tên team' }).fill('Hừng Đông');
+  await dialog.getByRole('button', { name: 'Lưu' }).click();
+  await expect(dialog).toBeHidden();
+
+  await expect(heading).toHaveCSS('color', orange);
+  // In the list the name of the team chosen stays in the colour of the text on its gold tint
+  // (L188); the row of a team not chosen takes the colour.
+  const listed = teamButton(page, 'Hừng Đông').getByText('Hừng Đông', { exact: true });
+  await expect(listed).toHaveCSS('color', text);
+  await teamButton(page, 'Sao Mai').click();
+  await expect(listed).toHaveCSS('color', orange);
+  await teamButton(page, 'Hừng Đông').click();
+  await card.getByRole('link').first().click();
+  await expect(page.getByText('Hừng Đông', { exact: true })).toHaveCSS('color', orange);
+  await page.getByRole('link', { name: '← Team & nhân sự' }).click();
+
+  await card.getByRole('button', { name: 'Sửa team' }).click();
+  await expect(choice(dialog, 'Màu', 'Cam')).toBeChecked();
+  await expect(choice(dialog, 'Icon', 'Núi')).toBeChecked();
+  await pick(choice(dialog, 'Màu', 'Mặc định'));
+  await pick(choice(dialog, 'Icon', 'Mặc định'));
+  await dialog.getByRole('button', { name: 'Lưu' }).click();
+  await expect(heading).toHaveCSS('color', text);
+});
+
+test('the top of a team: its icon, its name in its colour, the TL on its line as large, Doanh số and Số HĐ of the month (C3)', async ({
+  page,
+}) => {
+  // Tổng quan this month up to today: Doanh số of each team in So sánh team, Tổng số HĐ of all,
+  // which the three teams add up to (every RM is in one of them).
+  await page.goto('/#/overview');
+  const compare = page.getByRole('table', { name: 'So sánh team' });
+  const column = (await compare.getByRole('columnheader').allTextContents()).indexOf('Doanh số');
+  const row = compare
+    .getByRole('row')
+    .filter({ has: page.getByRole('button', { name: 'Sao Mai' }) });
+  const revenue = (await row.locator('th, td').nth(column).innerText()).trim();
+  const total = page.getByRole('region', { name: 'Tổng số HĐ', exact: true });
+  const net = Number((await total.getByRole('paragraph').first().innerText()).replaceAll(',', ''));
+  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
+  let sum = 0;
+  for (const team of SEEDED) {
+    await teamButton(page, team).click();
+    sum += Number(
+      (await members(page, team).getByRole('definition').nth(2).innerText()).replaceAll(',', ''),
+    );
+  }
+  expect(sum).toBe(net);
+
+  await teamButton(page, 'Sao Mai').click();
+  const card = members(page, 'Sao Mai');
+  const heading = card.getByRole('heading', { name: 'Sao Mai', exact: true });
+  await expect(heading).toHaveCSS('color', await tokenColor(page, '--accent'));
+  const lead = card.locator('b').first();
+  const [name, tl] = await Promise.all([heading.boundingBox(), lead.boundingBox()]);
+  expect(Math.abs(name!.y + name!.height / 2 - (tl!.y + tl!.height / 2))).toBeLessThan(2);
+  for (const property of ['font-size', 'font-weight']) {
+    await expect(lead).toHaveCSS(
+      property,
+      await heading.evaluate((n, p) => getComputedStyle(n).getPropertyValue(p), property),
+    );
+  }
+  await expect(card.getByRole('term')).toHaveText(['Doanh số', 'Số HĐ']);
+  await expect(card.getByRole('definition')).toHaveText([
+    revenue,
+    'tháng 9, tới 15/09',
+    /^-?[\d,]+$/,
+    'tháng 9, tới 15/09',
+  ]);
+  await expect(card.getByRole('definition').first()).toHaveCSS(
+    'color',
+    await tokenColor(page, '--accent'),
+  );
+});
+
+// The row chosen writes the name in the colour of the text: four of the six colours are under 4.5:1
+// on its gold tint over the brightest glass of macOS (L188, held by surfaces.spec.ts).
+test('team names: each of the six colours over 4.5:1 on the app, the card, a row of the list and the dialog, the row picked too; nine teams scroll in their list, the one picked in sight (C3)', async ({
+  page,
+}) => {
+  const app = await tokenColor(page, '--bg-0');
+  const list = teamList(page);
+  const box = list.locator('div').first();
+  for (const [index, [color, token]] of COLORS.entries()) {
+    const name = `Zeta ${index + 1}`;
+    await page.getByRole('button', { name: '+ Team' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Team mới' });
+    await dialog.getByRole('textbox', { name: 'Tên team' }).fill(name);
+    await pick(choice(dialog, 'Màu', color));
+    const preview = dialog
+      .getByRole('figure', { name: 'Xem trước' })
+      .getByText(name, { exact: true });
+    await expect(preview).toHaveCSS('color', await tokenColor(page, token));
+    expect(await lowestContrast(preview), `${color} in the dialog`).toBeGreaterThanOrEqual(4.5);
+    await dialog.getByRole('button', { name: 'Tạo team' }).click();
+    await expect(dialog).toBeHidden();
+
+    const picked = teamButton(page, name);
+    await expect(picked).toHaveAttribute('aria-pressed', 'true');
+    expect(await lowestContrast(picked), `${color} picked`).toBeGreaterThanOrEqual(4.5);
+    const heading = members(page, name).getByRole('heading', { name, exact: true });
+    expect(await lowestContrast(heading), `${color} on the card`).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(await colorOf(heading), app), `${color} on the app`).toBeGreaterThanOrEqual(
+      4.5,
+    );
+    // The row picked is in sight in the list, which scrolls from about eight teams.
+    const [row, frame] = await Promise.all([picked.boundingBox(), box.boundingBox()]);
+    expect(row!.y).toBeGreaterThanOrEqual(frame!.y - 1);
+    expect(row!.y + row!.height).toBeLessThanOrEqual(frame!.y + frame!.height + 1);
+  }
+  await expect(list.getByRole('button')).toHaveCount(9);
+  expect(await box.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+  // Every name not picked, on the card.
+  await teamButton(page, 'Bình Minh').click();
+  for (const index of COLORS.keys()) {
+    const row = teamButton(page, `Zeta ${index + 1}`);
+    expect(await lowestContrast(row), `Zeta ${index + 1} not picked`).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
+test('at 1 100 × 700 the member table fits its card: every Sửa of an RM shows whole, nothing scrolls sideways (L205)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await teamButton(page, 'Sao Mai').click();
+  const card = members(page, 'Sao Mai');
+  const table = card.getByRole('table');
+  const edits = table.getByRole('button', { name: /^Sửa / });
+  await expect(edits).toHaveCount(10);
+  // With the sidebar and the margins of each system (236 / 244 px): L148 measured 23 / 31 px past.
+  for (const os of ['win', 'mac'] as const) {
+    await markOs(page, os);
+    expect(await pastTheWindow(page), os).toEqual([]);
+    expect(await scrolls(table.locator('..')), os).toBe(false);
+    // The box the table scrolls in: what of it is past that edge is cut.
+    const edge = await right(table.locator('..'));
+    for (const button of await edits.all()) {
+      expect(await right(button), os).toBeLessThanOrEqual(edge);
+    }
+  }
 });

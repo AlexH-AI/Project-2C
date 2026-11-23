@@ -37,7 +37,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 | `appointments` | `src/routes/appointments/AppointmentsScreen.tsx` | `src/routes/appointments/appointments-view.ts` |
 | `customers` | `src/routes/customers/CustomersScreen.tsx` | `src/routes/customers/customers-view.ts` |
 | `reports` | `src/routes/reports/ReportsScreen.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/reports/reports-view.ts` |
-| `team` | `src/routes/team/TeamScreen.tsx` | `src/routes/team/team-view.ts` |
+| `team` | `src/routes/team/TeamScreen.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/team/team-view.ts` |
 | `settings` | `src/routes/Settings.tsx` | — |
 | `customer` | `src/routes/customers/CustomerProfile.tsx` | `src/routes/customers/customers-view.ts`, `src/routes/customers/kyc-view.ts` |
 | `rm` | `src/routes/team/RmPage.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/team/rm-view.ts` |
@@ -52,6 +52,6 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/routes/customers/` — CustomerAppointments.tsx, CustomerDialogs.tsx, CustomerKyc.tsx, CustomerPolicies.tsx, CustomerProfile.tsx, CustomerSearch.tsx, CustomersScreen.tsx, KycDialogs.tsx, KycExtraction.tsx, KycHistory.tsx, KycIntelligence.tsx, KycWebSession.tsx, PolicyDialogs.tsx, ai-panel-view.ts, customer-search.ts, customers-view.ts, extraction-view.ts, kyc-view.ts, policy-form.ts, use-ai-job.ts
 - `src/routes/overview/` — OverviewTiles.tsx, StageBlock.tsx, TeamCompare.tsx, overview-view.ts, stage-chart.ts, stage-view.ts, team-compare-view.ts
 - `src/routes/reports/` — ReportExport.tsx, ReportTable.tsx, ReportsScreen.tsx, report-workbook.ts, reports-view.ts
-- `src/routes/team/` — Boundary.tsx, PersonDialogs.tsx, RmPage.tsx, RmSearch.tsx, TeamDialogs.tsx, TeamScreen.tsx, rm-search.ts, rm-view.ts, team-view.ts
+- `src/routes/team/` — Boundary.tsx, PersonDialogs.tsx, RmPage.tsx, RmSearch.tsx, TeamDialogs.tsx, TeamLook.tsx, TeamScreen.tsx, rm-search.ts, rm-view.ts, team-view.ts
 - `src/shell/` — AppShell.tsx, Brand.tsx, CloseGuard.tsx, ErrorBoundary.tsx, NameMask.tsx, RmPicker.tsx, SaveWarning.tsx, ScopeContext.tsx, ScopePicker.tsx, ScreenBar.tsx, Sidebar.tsx, StartupError.tsx, Toasts.tsx, block-reload.ts, close-guard.ts, name-mask.ts, platform.ts, routes.ts, scope-menu.ts, scope.ts, screen-bar.ts, screen-error.ts, startup-error.ts, toast-queue.ts, trash-undo.ts, useRoute.ts
 <!-- codemap:end -->
