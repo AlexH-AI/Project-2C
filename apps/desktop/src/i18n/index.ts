@@ -65,7 +65,7 @@ const PLATFORM_SLOT = /\{(?:mod|store)\}/;
 
 /**
  * The words of the platform, which `t()` fills in every message that has their slots, so that no
- * caller has to (L170): `{mod}` written right before its key (`⌘A` on macOS, `Ctrl+A` on Windows),
+ * caller has to (VA8): `{mod}` written right before its key (`⌘A` on macOS, `Ctrl+A` on Windows),
  * `{store}` the system's store of the AI key (ADR-0019 §4). A caller's own params come first.
  */
 function withPlatform(message: string | PluralMessage, params?: MessageParams) {
