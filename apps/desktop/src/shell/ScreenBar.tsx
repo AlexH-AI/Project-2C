@@ -27,7 +27,7 @@ export function ScreenBar({ sub, actions }: { sub?: ReactNode; actions?: ReactNo
 
 /**
  * The toolbar and the screen under it. The toolbar: the name of the screen and the line under it;
- * the place kept for the "Lưu ý" pill (`data-slot="heads-up"`, VA9); then, on the right, `tools`
+ * in the middle of the free space, `headsUp`, the "Lưu ý" pill (VA9); then, on the right, `tools`
  * (the controls of the shell: the eye of the customer-name mask, the scope pill) and what the
  * screen puts there: its period pill, its buttons. `children` is the screen: its `ScreenBar`
  * draws into this toolbar.
@@ -35,12 +35,14 @@ export function ScreenBar({ sub, actions }: { sub?: ReactNode; actions?: ReactNo
 export function Toolbar({
   title,
   heading,
+  headsUp,
   tools,
   children,
 }: {
   title: string;
   /** The name of the screen takes the focus when the screen changes (`AppShell`). */
   heading: RefObject<HTMLHeadingElement | null>;
+  headsUp?: ReactNode;
   tools?: ReactNode;
   children: ReactNode;
 }) {
@@ -55,8 +57,16 @@ export function Toolbar({
         data-tauri-drag-region={macDragRegion('self')}
         className="toolbar z-10 flex flex-none items-center gap-2.5 pr-5.5 pl-7"
       >
-        <div className="min-w-0">
-          <h1 ref={heading} tabIndex={-1} className="screen-title m-0 whitespace-nowrap">
+        {/* Short of room, the line under the name is cut first (`shrink-1000`), then the pill
+            gives up the customer's name, then its time left; the name keeps 80 px at least. */}
+        <div className="min-w-20 shrink-1000">
+          {/* Cut at its end only (`clip` on x): the marks over a capital (Ổ) and the tails under
+              the line pass its 1.15 line, and `truncate` would cut them too. */}
+          <h1
+            ref={heading}
+            tabIndex={-1}
+            className="screen-title m-0 overflow-x-clip text-ellipsis whitespace-nowrap"
+          >
             {title}
           </h1>
           {/* --text-2, not the mockup's --text-3: over the bright cells that scroll under the
@@ -77,8 +87,10 @@ export function Toolbar({
         <div
           data-slot="heads-up"
           data-tauri-drag-region={macDragRegion('self')}
-          className="min-w-4 flex-1"
-        />
+          className="flex min-w-0 flex-auto justify-center"
+        >
+          {headsUp}
+        </div>
         <div className="flex flex-none items-center gap-2">
           {tools}
           <div ref={setActions} data-slot="screen-actions" className="contents" />

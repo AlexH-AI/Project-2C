@@ -241,11 +241,12 @@ test('the main button of a screen is on the toolbar, after the place kept for "L
     // The smallest window: the toolbar keeps its button inside it.
     expect(main.x + main.width).toBeLessThanOrEqual(1100);
   }
-  // Cài đặt puts nothing there: the toolbar has the name, the eye (VA6a) and the magnifier (VA8)
-  // of the shell alone.
+  // Cài đặt puts nothing there: the toolbar has the name, "Lưu ý" (VA9), the eye (VA6a) and the
+  // magnifier (VA8) of the shell alone.
   await nav(page).getByRole('link', { name: 'Cài đặt' }).click();
   await expect(title).toHaveText('Cài đặt');
-  await expect(toolbar(page).getByRole('button')).toHaveCount(2);
+  await expect(toolbar(page).getByRole('button')).toHaveCount(3);
+  await expect(headsUp.getByRole('button', { name: /^Lưu ý: / })).toBeVisible();
   await expect(toolbar(page).getByRole('button', { name: 'Che tên khách hàng' })).toBeVisible();
   await expect(toolbar(page).getByRole('button', { name: /^Tìm hay chạy lệnh/ })).toBeVisible();
   await expect(sub(page)).toBeHidden();
@@ -290,12 +291,12 @@ test('Tổng quan and Báo cáo: the scope pill, then the period pill, then the 
   }
   await page.keyboard.press('Escape');
 
-  // Tổng quan has the eye of the name mask (VA6a), the magnifier (VA8), the two pills and no main
-  // button yet (D8).
+  // Tổng quan has "Lưu ý" (VA9), the eye of the name mask (VA6a), the magnifier (VA8), the two
+  // pills and no main button yet (D8).
   await nav(page).getByRole('link', { name: 'Tổng quan' }).click();
   await expect(toolbar(page).getByRole('button', { name: /^Góc nhìn: / })).toBeVisible();
   await expect(period).toBeVisible();
-  await expect(toolbar(page).getByRole('button')).toHaveCount(6);
+  await expect(toolbar(page).getByRole('button')).toHaveCount(7);
   await expect(sub(page)).toHaveText('Tháng 09/2026 · 01/09 – 15/09/2026 (MTD) · Toàn bộ');
 });
 
@@ -621,4 +622,234 @@ test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on We
   const scale = await page.evaluate(() => devicePixelRatio);
   expect([1, 2]).toContain(scale);
   expect(await champagnePixels(page, shot, LETTERS)).toBeGreaterThan(scale === 1 ? 300 : 800);
+});
+
+// ---- The toast and the command bar (VA9 brings their review notes) ----
+
+const toastRegion = (page: Page, text: string) =>
+  page.locator('[aria-live="polite"]').filter({ hasText: text });
+/** Stops the page's clock: a toast shown from now on stays until the test moves the clock on. */
+const holdClock = async (page: Page) =>
+  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+
+test('a toast lies over the dialog open, and its button takes the click (L198)', async ({
+  page,
+}) => {
+  await page.goto('/#/team');
+  await holdClock(page);
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const made = page.getByRole('dialog', { name: 'Team mới' });
+  await made.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');
+  await made.getByRole('button', { name: 'Tạo team' }).click();
+  await page
+    .getByRole('region', { name: 'Thành viên team Thiên Hà' })
+    .getByRole('button', { name: 'Xóa team' })
+    .click();
+  // The live region of the window, there before the toast: a screen reader reads what comes in.
+  const live = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('[aria-live="polite"]')].find((n) => !n.closest('dialog'))!,
+  );
+  await page
+    .getByRole('dialog', { name: 'Xóa team Thiên Hà?' })
+    .getByRole('button', { name: 'Xóa', exact: true })
+    .click();
+  await expect(toastRegion(page, 'Đã chuyển team vào Thùng rác')).toBeVisible();
+  // The confirm closed as the toast showed: it is in that same region.
+  expect(await live.evaluate((n) => n.isConnected && n.textContent)).toContain('Đã chuyển team');
+  // A dialog opens while the toast is shown: the toast stays over it, its Hoàn tác in reach.
+  await page.getByRole('button', { name: '+ Team' }).click();
+  await expect(made).toBeVisible();
+  const inDialog = await page.evaluateHandle(() =>
+    document.querySelector('dialog:modal [aria-live="polite"]')!,
+  );
+  await page.getByRole('button', { name: 'Hoàn tác', exact: true }).click();
+  // The toast of what came back shows while the dialog is open, over it.
+  const restored = toastRegion(page, 'Đã khôi phục team Thiên Hà');
+  await expect(restored).toBeVisible();
+  await expect(made).toBeVisible();
+  const box = (await restored.boundingBox())!;
+  const top = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x!, y!)?.closest('[aria-live]')?.textContent ?? '',
+    [box.x + box.width / 2, box.y + box.height / 2],
+  );
+  expect(top).toContain('Đã khôi phục team Thiên Hà');
+  // Into the region the dialog had before, so it is read; the focus stays in the dialog.
+  expect(await inDialog.evaluate((n) => n.isConnected && n.textContent)).toContain('Đã khôi phục');
+  expect(await page.evaluate(() => !!document.activeElement?.closest('dialog:modal'))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(made).toBeHidden();
+  const teams = page.getByRole('region', { name: 'Team', exact: true });
+  await expect(teams.getByRole('button', { name: /^Thiên Hà / })).toBeVisible();
+});
+
+test('a new toast that comes under the pointer stays while the pointer is on it (L229)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await holdClock(page);
+  const eye = page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' });
+  await eye.click();
+  const masked = toastRegion(page, 'Đang che tên khách hàng');
+  await expect(masked).toBeVisible();
+  await masked.getByText('Đang che tên khách hàng').hover();
+  // By the keyboard, the pointer left where it was: the next toast takes the place under it.
+  await eye.focus();
+  await page.keyboard.press('Enter');
+  const shown = toastRegion(page, 'Đã hiện lại tên khách hàng');
+  await expect(shown).toBeVisible();
+  await page.clock.runFor(4_300);
+  await expect(shown).toBeVisible();
+  // Once the pointer leaves, it has 4,2 s again.
+  await page.mouse.move(10, 10);
+  await page.clock.runFor(4_300);
+  await expect(shown).toBeHidden();
+});
+
+/**
+ * On Team & nhân sự, the clock held: a new team deleted, its toast shown, then "Team mới" open
+ * over it, the toast in the region of the dialog.
+ */
+async function toastInDialog(page: Page) {
+  await page.goto('/#/team');
+  await holdClock(page);
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const made = page.getByRole('dialog', { name: 'Team mới' });
+  await made.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');
+  await made.getByRole('button', { name: 'Tạo team' }).click();
+  await page
+    .getByRole('region', { name: 'Thành viên team Thiên Hà' })
+    .getByRole('button', { name: 'Xóa team' })
+    .click();
+  await page
+    .getByRole('dialog', { name: 'Xóa team Thiên Hà?' })
+    .getByRole('button', { name: 'Xóa', exact: true })
+    .click();
+  const deleted = toastRegion(page, 'Đã chuyển team vào Thùng rác');
+  await expect(deleted).toBeVisible();
+  await page.getByRole('button', { name: '+ Team' }).click();
+  await expect(made.getByRole('button', { name: 'Hoàn tác', exact: true })).toBeVisible();
+  return { made, deleted };
+}
+
+test('the focus on the toast of a dialog that closes holds it no longer: it leaves 4,2 s later (L198)', async ({
+  page,
+}) => {
+  const { made, deleted } = await toastInDialog(page);
+  await made.getByRole('button', { name: 'Hoàn tác', exact: true }).focus();
+  await page.keyboard.press('Escape');
+  await expect(made).toBeHidden();
+  await page.clock.runFor(4_300);
+  await expect(deleted).toBeHidden();
+});
+
+test('the copy a dialog leaves for its move out shows no toast of its own (L198)', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/#/team');
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const made = page.getByRole('dialog', { name: 'Team mới' });
+  await made.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');
+  await made.getByRole('button', { name: 'Tạo team' }).click();
+  await page
+    .getByRole('region', { name: 'Thành viên team Thiên Hà' })
+    .getByRole('button', { name: 'Xóa team' })
+    .click();
+  // How the region of the toast is drawn in each copy, as it comes.
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as { copies: string[] }).copies = seen;
+    new MutationObserver((records) => {
+      for (const node of records.flatMap((record) => [...record.addedNodes])) {
+        const region = node instanceof HTMLDialogElement && node.querySelector('[popover]');
+        if (region) seen.push(getComputedStyle(region).display);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  await page
+    .getByRole('dialog', { name: 'Xóa team Thiên Hà?' })
+    .getByRole('button', { name: 'Xóa', exact: true })
+    .click();
+  const copies = () => page.evaluate(() => (window as unknown as { copies: string[] }).copies);
+  await expect.poll(async () => (await copies()).length).toBeGreaterThan(0);
+  expect(await copies()).toEqual((await copies()).map(() => 'none'));
+});
+
+test('the pointer on the toast of a dialog that closes holds it no longer once it moves away (L198)', async ({
+  page,
+}) => {
+  const { made, deleted } = await toastInDialog(page);
+  await made.getByText('Đã chuyển team vào Thùng rác').hover();
+  await page.keyboard.press('Escape');
+  await expect(made).toBeHidden();
+  await page.mouse.move(10, 10);
+  await page.clock.runFor(4_300);
+  await expect(deleted).toBeHidden();
+});
+
+const palette = (page: Page) => page.getByRole('dialog', { name: 'Ô lệnh' });
+const paletteField = (page: Page) => palette(page).getByRole('combobox', { name: 'Ô lệnh' });
+
+test('the key of the command bar held down opens it once (L243)', async ({ page, browserName }) => {
+  await page.goto('/#/customers');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Khách hàng');
+  const modifier = browserName === 'webkit' ? 'Meta' : 'Control';
+  await page.keyboard.down(modifier);
+  await page.keyboard.down('k');
+  // Held, the key repeats: the bar stays open.
+  await page.keyboard.down('k');
+  await page.keyboard.up('k');
+  await page.keyboard.up(modifier);
+  await expect(palette(page)).toBeVisible();
+});
+
+test('a drag from the field of the command bar out of it keeps the bar and what is typed (L240)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Tìm hay chạy lệnh/ })
+    .click();
+  await paletteField(page).fill('nguyen van');
+  const field = (await paletteField(page).boundingBox())!;
+  const dialog = (await palette(page).boundingBox())!;
+  await page.mouse.move(field.x + field.width - 4, field.y + field.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(field.x + field.width - 4, dialog.y - 30, { steps: 4 });
+  await page.mouse.up();
+  await expect(palette(page)).toBeVisible();
+  await expect(paletteField(page)).toHaveValue('nguyen van');
+  // A press and its release both on what is dimmed still close it.
+  await page.mouse.click(dialog.x + dialog.width / 2, dialog.y - 30);
+  await expect(palette(page)).toBeHidden();
+});
+
+test('"no result" of the command bar is said beside its list, not inside it (L245)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Tìm hay chạy lệnh/ })
+    .click();
+  await paletteField(page).fill('xyz');
+  await expect(palette(page).getByRole('status')).toContainText('xyz');
+  await expect(palette(page).getByRole('listbox').getByRole('status')).toHaveCount(0);
+});
+
+test('closed when what opened it is gone, the command bar gives the focus to the name of the screen (L241)', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/#/appointments');
+  const scope = page.getByRole('banner').getByRole('button', { name: /^Góc nhìn: / });
+  await scope.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitemradio', { name: 'Toàn bộ' })).toBeFocused();
+  await page.keyboard.press(browserName === 'webkit' ? 'Meta+k' : 'Control+k');
+  await expect(palette(page)).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(palette(page)).toBeHidden();
+  await expect(page.getByRole('heading', { level: 1, name: 'Lịch hẹn' })).toBeFocused();
 });
