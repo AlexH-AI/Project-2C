@@ -4,8 +4,9 @@ import { KYC_CATEGORIES, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COUNT_SLOTS, errorMessage, fillSlots, formatMessage, joinParts, t, tableMore } from '.';
+import { en } from './en';
 import { setDataCurrency } from './language';
-import { vi } from './vi';
+import { vi, type MessageKey } from './vi';
 
 /**
  * Slots shown as given: text, or a number that is no count (a year, a version, a month). Only this
@@ -112,6 +113,24 @@ describe('t', () => {
       '12,045 KH đang mở · 0 đã đóng',
     );
     expect(t('appointments.year', { year: 2026 })).toBe('Lịch năm 2026');
+  });
+
+  // A message that names a shortcut or the key store reads the platform's own words, filled by
+  // `t()` for every caller: none shows a bare "{mod}" or "{store}", in either language.
+  it('fills the words of the platform in every message that has them', () => {
+    const platform = /\{(?:mod|store)\}/;
+    const keys = (Object.keys(vi) as MessageKey[]).filter(
+      (key) => platform.test(JSON.stringify(vi[key])) || platform.test(JSON.stringify(en[key])),
+    );
+    expect(keys.length).toBeGreaterThanOrEqual(6);
+    try {
+      for (const language of ['vi', 'en'] as const) {
+        setDataCurrency('VND', language);
+        for (const key of keys) expect(t(key)).not.toMatch(platform);
+      }
+    } finally {
+      setDataCurrency('VND', 'vi');
+    }
   });
 
   it('knows whether each slot holds a count', () => {

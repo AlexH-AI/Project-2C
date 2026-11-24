@@ -22,6 +22,7 @@ import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { isReturning } from '../../shell/useRoute';
 import { CustomerName, useMasked } from '../../shell/NameMask';
+import { useCommand } from '../../shell/palette-commands';
 import { RmPicker } from '../../shell/RmPicker';
 import { scopeName, teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
@@ -198,6 +199,7 @@ export function CustomersScreen() {
     setToTable((count) => count + 1);
   };
   const [creating, setCreating] = useState(false);
+  useCommand('customer', () => setCreating(true));
   const scopeKey = JSON.stringify(scope);
   // The customer just made for an RM outside the scope, while the scope it was made in stays.
   const [created, setCreated] = useState<{ customer: CustomerRecord; scopeKey: string } | null>(

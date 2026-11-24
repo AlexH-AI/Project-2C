@@ -1,14 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '../i18n';
-import {
-  isMac,
-  macDragRegion,
-  modKey,
-  modParams,
-  platformMark,
-  storeParams,
-  windowBackdrop,
-} from './platform';
+import { isMac, macDragRegion, modKey, platformMark, windowBackdrop } from './platform';
 
 /** What the webview of each platform says: WKWebView on macOS, WebView2 (Edge) on Windows. */
 const MAC = {
@@ -23,6 +15,8 @@ const WINDOWS = {
 };
 
 describe('the platform of the webview (Mac-5a)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it('reads macOS from the platform or the user agent of the webview', () => {
     expect(isMac(MAC)).toBe(true);
     expect(isMac({ platform: '', userAgent: MAC.userAgent })).toBe(true);
@@ -46,19 +40,20 @@ describe('the platform of the webview (Mac-5a)', () => {
     expect(modKey(WINDOWS)).toBe('Ctrl');
   });
 
+  // `t()` fills `{mod}` itself, from the platform of the webview: a caller passes nothing.
   it('writes a shortcut as each platform does: ⌘A on macOS, Ctrl+A on Windows', () => {
-    expect(t('aiPanel.web.copyFailed', modParams(MAC))).toBe(
+    vi.stubGlobal('navigator', MAC);
+    expect(t('aiPanel.web.copyFailed')).toBe(
       'Không copy được — chọn hết đoạn dưới (⌘A trong ô) rồi ⌘C. ChatGPT đã được mở.',
     );
-    expect(t('aiPanel.web.copyFailed', modParams(WINDOWS))).toBe(
+    expect(t('aiPanel.web.pastePlaceholder')).toBe('Dán câu trả lời của ChatGPT (⌘V)');
+    expect(t('palette.open')).toBe('Tìm hay chạy lệnh (⌘K)');
+    vi.stubGlobal('navigator', WINDOWS);
+    expect(t('aiPanel.web.copyFailed')).toBe(
       'Không copy được — chọn hết đoạn dưới (Ctrl+A trong ô) rồi Ctrl+C. ChatGPT đã được mở.',
     );
-    expect(t('aiPanel.web.pastePlaceholder', modParams(MAC))).toBe(
-      'Dán câu trả lời của ChatGPT (⌘V)',
-    );
-    expect(t('aiPanel.web.pastePlaceholder', modParams(WINDOWS))).toBe(
-      'Dán câu trả lời của ChatGPT (Ctrl+V)',
-    );
+    expect(t('aiPanel.web.pastePlaceholder')).toBe('Dán câu trả lời của ChatGPT (Ctrl+V)');
+    expect(t('palette.open')).toBe('Tìm hay chạy lệnh (Ctrl+K)');
   });
 
   // VA5: `data-backdrop` of the exe's page. WebView2 names the version of Windows only in its
@@ -94,10 +89,12 @@ describe('the platform of the webview (Mac-5a)', () => {
   });
 
   it('names the key store of the platform: the Keychain on macOS, the Credential Manager on Windows', () => {
-    expect(t('settingsAi.keyNotSaved', storeParams(MAC))).toBe(
+    vi.stubGlobal('navigator', MAC);
+    expect(t('settingsAi.keyNotSaved')).toBe(
       'Key chưa được lưu. Thử lại; nếu vẫn lỗi, kiểm tra Keychain của macOS.',
     );
-    expect(t('settingsAi.keyNotSaved', storeParams(WINDOWS))).toBe(
+    vi.stubGlobal('navigator', WINDOWS);
+    expect(t('settingsAi.keyNotSaved')).toBe(
       'Key chưa được lưu. Thử lại; nếu vẫn lỗi, kiểm tra Windows Credential Manager.',
     );
   });

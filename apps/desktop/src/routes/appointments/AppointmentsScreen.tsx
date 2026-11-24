@@ -31,6 +31,7 @@ import { useTables, useToday } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { CustomerName, TypedText, useMasked } from '../../shell/NameMask';
+import { useCommand } from '../../shell/palette-commands';
 import { RmPicker } from '../../shell/RmPicker';
 import { teamRms } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
@@ -94,6 +95,7 @@ export function AppointmentsScreen() {
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState<{ from?: AppointmentRow } | null>(null);
+  useCommand('appointment', () => setCreating({}));
   const [moving, setMoving] = useState<AppointmentRow | null>(null);
   const [recording, setRecording] = useState<AppointmentRow | null>(null);
   const [editing, setEditing] = useState<AppointmentRow | null>(null);

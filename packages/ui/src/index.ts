@@ -14,8 +14,8 @@ export {
   type DataTableView,
 } from './components/DataTable';
 export { Chart, encodeHtml, type ChartOption } from './components/Chart';
-export { Button, type ButtonVariant } from './components/Button';
-export { Dialog, DialogFocusFallback } from './components/Dialog';
+export { Button, IconButton, type ButtonVariant } from './components/Button';
+export { Dialog, DialogFocusFallback, useLeaveBehind } from './components/Dialog';
 export { Toast } from './components/Toast';
 export { StateNote, type StateNoteIcon } from './components/StateNote';
 export { TextField } from './components/TextField';

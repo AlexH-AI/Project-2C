@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { NavIcon, type NavIconName } from './NavIcon';
 
 /** The paint of each level and its states (theme.css `btn-*`). */
 const VARIANTS = {
@@ -13,8 +14,11 @@ export type ButtonVariant = keyof typeof VARIANTS;
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** `default` is the secondary button; a region has one `primary`; `quiet` is text alone. */
   variant?: ButtonVariant;
-  /** `sm` is the compact button of a card, a table row or a banner: 28 px, not 34. */
-  size?: 'md' | 'sm';
+  /**
+   * `sm` is the compact button of a card, a table row or a banner: 28 px, not 34; `icon` a square
+   * of 34 px (`IconButton`).
+   */
+  size?: 'md' | 'sm' | 'icon';
 }
 
 /**
@@ -35,7 +39,9 @@ export function Button({
   const box =
     size === 'sm'
       ? 'h-7 rounded-control-sm px-2.75 text-sm'
-      : `h-8.5 rounded-control text-md ${variant === 'quiet' ? 'px-2.5' : 'px-3.5'}`;
+      : size === 'icon'
+        ? 'size-8.5 rounded-control text-md'
+        : `h-8.5 rounded-control text-md ${variant === 'quiet' ? 'px-2.5' : 'px-3.5'}`;
   return (
     <button
       type={type}
@@ -52,5 +58,39 @@ export function Button({
         onMouseDown?.(event);
       }}
     />
+  );
+}
+
+/**
+ * A button named by its icon alone (mockup app-shell.html `.btn.icon`): the magnifier of the
+ * toolbar, the eye of the mask of names. A square of 34 px, `label` its name and its tooltip. One
+ * that stays `on` until pressed again (`aria-pressed`) says so in gold, with `children`, the words
+ * after its icon (`#privacy`, `.btn.icon[data-mask].is-on`).
+ */
+export function IconButton({
+  icon,
+  label,
+  on,
+  children,
+  className,
+  ...props
+}: Omit<ButtonProps, 'variant' | 'size' | 'aria-pressed'> & {
+  icon: NavIconName;
+  label: string;
+  on?: boolean;
+}) {
+  return (
+    <Button
+      title={label}
+      {...props}
+      variant={on ? 'quiet' : 'default'}
+      size={children ? 'md' : 'icon'}
+      aria-label={label}
+      aria-pressed={on}
+      className={`flex-none ${on ? 'bg-accent-soft pr-3 inset-ring inset-ring-accent/45' : ''} ${className ?? ''}`}
+    >
+      <NavIcon name={icon} className="size-4" />
+      {children}
+    </Button>
   );
 }

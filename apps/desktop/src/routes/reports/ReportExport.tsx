@@ -25,9 +25,10 @@ export type ExportNotice =
 
 /**
  * Xuất Excel (mockup reports.html 2f): the exe writes the file into `exports\`, web mode downloads
- * it. A failure only says so; the data in the app is untouched. The notice is for the period and
- * scope on screen when Xuất Excel was pressed, and goes once another is picked: the numbers shown
- * are no longer those of the file it names. Back on that period and scope, it shows again.
+ * it. A failure only says so; the data in the app is untouched. The notice is for the period of
+ * the file and the scope on screen when it was asked for, and goes once another is picked: the
+ * numbers shown are no longer those of the file it names. Back on that period and scope, it shows
+ * again.
  */
 export function useReportExport(shown: FilterSelection) {
   const data = useAppData();
@@ -40,7 +41,8 @@ export function useReportExport(shown: FilterSelection) {
     return path;
   };
   const run = async (report: ExportedReport) => {
-    const exported = shown;
+    // The command bar exports this month as it puts it on screen, a period not shown yet.
+    const exported = { ...shown, period: report.period };
     setBusy(true);
     setLast(null);
     try {

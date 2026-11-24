@@ -19,7 +19,6 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import type { OpenCodeClient } from '../data/ai-tauri';
 import { t } from '../i18n';
-import { storeParams } from '../shell/platform';
 import { ALERT, BADGE, HEADING, SETTINGS_SECTION } from './classes';
 import { errorText } from './ai-error-view';
 import {
@@ -278,7 +277,7 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
           </Button>
         </span>
       </form>
-      <p className="m-0 text-xs text-fg-3">{t('settingsAi.keyHelp', storeParams())}</p>
+      <p className="m-0 text-xs text-fg-3">{t('settingsAi.keyHelp')}</p>
       {outcome?.kind === 'saved' && (
         <p role="status" className="m-0 text-ok">
           {t('settingsAi.keySaved')}
@@ -287,9 +286,7 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
       {outcome?.kind === 'error' && (
         <div role="alert" className={`${ALERT} flex flex-col gap-1 border-danger`}>
           <b>{outcome.text}</b>
-          {outcome.notSaved && (
-            <span className="text-fg-2">{t('settingsAi.keyNotSaved', storeParams())}</span>
-          )}
+          {outcome.notSaved && <span className="text-fg-2">{t('settingsAi.keyNotSaved')}</span>}
         </div>
       )}
       {stored && (

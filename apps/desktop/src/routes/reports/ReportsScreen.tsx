@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { periodOf, type Period } from '@p2c/domain';
 import { Button, Segmented } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { useCommand } from '../../shell/palette-commands';
 import { scopeName } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { HEADING, PANEL } from '../classes';
@@ -38,10 +40,11 @@ export function ReportsScreen() {
   const [chosenTable, setTable] = useState<TableKey>('byTeam');
   const exporter = useReportExport(selection);
 
-  const viewing = {
-    ...viewingText(selection, today, data.people, data.teams),
+  const viewingAt = (at: Period) => ({
+    ...viewingText({ period: at, scope: picked }, today, data.people, data.teams),
     scope: scopeName(picked, data.teams, data.people),
-  };
+  });
+  const viewing = viewingAt(period);
   const rows = useMemo(
     () => reportRows(data, period, picked, today),
     [data, period, picked, today],
@@ -50,6 +53,16 @@ export function ReportsScreen() {
   // Theo mốc is always there, so the list is never empty.
   const shown = tables.includes(chosenTable) ? chosenTable : (tables[0] ?? 'byMark');
   const summary = t('reports.summary');
+  const exportAt = (at: Period, atRows: ReportRows) => {
+    if (!exporter.busy)
+      void exporter.run({ rows: atRows, period: at, viewing: viewingAt(at), today });
+  };
+  // "Xuất Excel Báo cáo tháng này" of the command bar: the month of today on screen, and its file.
+  useCommand('export', () => {
+    const month = periodOf('month', today);
+    setPeriod(month);
+    exportAt(month, reportRows(data, month, picked, today));
+  });
   const table = tableOf(rows, shown);
 
   return (
@@ -65,9 +78,7 @@ export function ReportsScreen() {
           <Button
             variant="primary"
             aria-disabled={exporter.busy || undefined}
-            onClick={() => {
-              if (!exporter.busy) void exporter.run({ rows, period, viewing, today });
-            }}
+            onClick={() => exportAt(period, rows)}
           >
             {exporter.busy ? t('reports.exporting') : t('reports.export')}
           </Button>

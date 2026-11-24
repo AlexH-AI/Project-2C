@@ -9,7 +9,7 @@ import { Brand, Slogan } from './Brand';
 import { macDragRegion } from './platform';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
-const ICONS: Record<Section, NavIconName> = {
+export const SECTION_ICONS: Record<Section, NavIconName> = {
   overview: 'overview',
   appointments: 'calendar',
   customers: 'customers',
@@ -59,7 +59,7 @@ export function Sidebar({ current }: { current: Section }) {
                 className={`nav-item flex h-8.5 flex-none items-center gap-2.75 px-2.5 win:h-9 ${FOCUS}`}
               >
                 {active && <span aria-hidden="true" data-slot="nav-pill" className="nav-pill" />}
-                <NavIcon name={ICONS[section]} />
+                <NavIcon name={SECTION_ICONS[section]} />
                 {t(`screen.${section}`)}
               </a>
             </Fragment>

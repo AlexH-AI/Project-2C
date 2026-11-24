@@ -5,6 +5,7 @@ import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import { CARD_SKIN, FOCUS, HEADING, SETTINGS_SECTION } from './classes';
+import { useCommand } from '../shell/palette-commands';
 import type { SettingsSection } from '../shell/routes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { AiSection } from './SettingsAi';
@@ -44,6 +45,8 @@ const NAV_ITEM = `flex items-center gap-3 rounded-control-sm px-2.25 py-2 text-l
  */
 export function Settings({ section: linked }: { section?: SettingsSection }) {
   const [section, setSection] = useState<Section>(linked ?? 'data');
+  // "Sao lưu ngay" of the command bar runs in Dữ liệu (`BackupSection`), shown for it.
+  useCommand('backup', () => setSection('data'), true);
   return (
     <div className="flex max-w-4xl items-start gap-4">
       <nav
