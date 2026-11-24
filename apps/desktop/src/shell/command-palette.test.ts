@@ -123,6 +123,13 @@ describe('paletteResults (the command box, mockup search-rm-team.html `#palette`
     expect(isPaletteKey(key('j', { ctrl: true }), false)).toBe(false);
   });
 
+  it('takes a keydown with no key, as an autofill pick sends, for no key (L244)', () => {
+    const autofill = { ctrlKey: true, metaKey: false, altKey: false, shiftKey: false };
+    const noKey = autofill as typeof autofill & { key: string };
+    expect(isPaletteKey(noKey, false)).toBe(false);
+    expect(isPaletteKey({ ...noKey, ctrlKey: false }, false)).toBe(false);
+  });
+
   it('finds nothing for "xyz"', () => {
     expect(search('xyz')).toEqual({ customers: [], rms: [], screens: [], commands: [] });
   });

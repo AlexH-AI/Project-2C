@@ -16,15 +16,19 @@ import { rmMatches, type RmHit } from '../routes/team/rm-search';
 import { isMac } from './platform';
 import { SECTIONS, type Section } from './routes';
 
-/** ⌘K on macOS, Ctrl K on Windows, with no other modifier: the key of the command bar. */
+/**
+ * ⌘K on macOS, Ctrl K on Windows, with no other modifier: the key of the command bar. The
+ * modifiers first: a `keydown` with no `key` (Chromium's pick of an autofill suggestion) is none.
+ */
 export const isPaletteKey = (
   event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>,
   mac = isMac(),
 ) =>
-  event.key.toLowerCase() === 'k' &&
   (mac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey) &&
   !event.altKey &&
-  !event.shiftKey;
+  !event.shiftKey &&
+  typeof event.key === 'string' &&
+  event.key.toLowerCase() === 'k';
 
 /** The six commands of v1.0 (mockup search-rm-team.html `#ask` 2), in the order of the mockup. */
 export const COMMANDS = ['appointment', 'customer', 'team', 'export', 'backup', 'mask'] as const;

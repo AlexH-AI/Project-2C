@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { NavIcon, StateNote, useLeaveBehind, type NavIconName } from '@p2c/ui';
 import { useTables, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
@@ -62,9 +62,16 @@ interface Option {
  * customers, the RMs, the screens and the commands (`paletteResults`). ↑ ↓ pick, Enter opens: a
  * customer's profile, an RM's page, a screen; a command runs at once or opens its dialog on its
  * screen (`askCommand`). Esc, a press on what is dimmed or the key again closes it, and the focus
- * goes back where it was. A masked name is found by the real one, shown masked and never lit.
+ * goes back where it was; gone from the page (a row of a menu), to `fallback`, the name of the
+ * screen (L241). A masked name is found by the real one, shown masked and never lit.
  */
-export function CommandPalette({ onClose }: { onClose: () => void }) {
+export function CommandPalette({
+  onClose,
+  fallback,
+}: {
+  onClose: () => void;
+  fallback: RefObject<HTMLElement | null>;
+}) {
   const id = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const [query, setQuery] = useState('');
@@ -85,12 +92,17 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const opener = useRef<Element | null>(null);
   useEffect(() => {
     opener.current ??= document.activeElement;
+    // The name of the screen stays from screen to screen (`Toolbar`).
+    const name = fallback.current;
     dialog.current?.showModal();
     return () => {
       const back = opener.current;
-      if (back instanceof HTMLElement) back.focus({ preventScroll: true });
+      const to = back instanceof HTMLElement && back.isConnected ? back : name;
+      to?.focus({ preventScroll: true });
     };
-  }, []);
+  }, [fallback]);
+  // Where the press that ends in a click began: a drag out of the field ends on the dialog itself.
+  const pressedOn = useRef<EventTarget | null>(null);
 
   const go = (route: Route) => () => navigate(routeToHash(route));
   const run = (command: Command) => () => {
@@ -202,9 +214,12 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         event.preventDefault();
         onClose();
       }}
-      // A press on what is dimmed lands on the dialog itself, outside its box.
+      // A press on what is dimmed lands on the dialog itself, outside its box; a click there that
+      // began in the box is a drag, selecting the words typed (L240).
+      onPointerDown={(event) => (pressedOn.current = event.target)}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget && pressedOn.current === event.currentTarget)
+          onClose();
       }}
       className="pop motion-palette m-auto mt-21 w-155 max-w-full flex-col overflow-hidden rounded-pop p-0 text-fg open:flex"
     >
@@ -242,7 +257,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         id={`${id}-list`}
         role="listbox"
         aria-label={t('palette.label')}
-        className="max-h-117.5 min-h-0 overflow-y-auto px-1.5 pt-1 pb-1.5"
+        className="max-h-117.5 min-h-0 overflow-y-auto px-1.5 pt-1 pb-1.5 empty:p-0"
       >
         {groups.map(
           ([name, list], group) =>
@@ -278,17 +293,18 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
               </div>
             ),
         )}
-        {options.length === 0 && (
-          <div role="status">
-            <StateNote
-              size="card"
-              icon="search"
-              title={t('palette.none', { text: query.trim() })}
-              next={t('palette.noneNext')}
-            />
-          </div>
-        )}
       </div>
+      {/* Beside the list, as a list holds only its options and their groups (L245). */}
+      {options.length === 0 && (
+        <div role="status" className="px-1.5 pt-1 pb-1.5">
+          <StateNote
+            size="card"
+            icon="search"
+            title={t('palette.none', { text: query.trim() })}
+            next={t('palette.noneNext')}
+          />
+        </div>
+      )}
       <div className="flex flex-none flex-wrap gap-x-4 gap-y-1.5 border-t border-hairline px-4.5 py-2.25 text-xs text-fg-2">
         <span>
           <kbd className={KBD}>

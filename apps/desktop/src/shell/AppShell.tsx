@@ -18,6 +18,7 @@ import type { AppWindow } from './CloseGuard';
 import { isPaletteKey } from './command-palette';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
+import { HeadsUp } from './HeadsUp';
 import { NameMaskButton } from './NameMask';
 import { SaveWarning } from './SaveWarning';
 import {
@@ -225,6 +226,7 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
         <Toolbar
           title={title}
           heading={heading}
+          headsUp={<HeadsUp scope={picked} />}
           tools={
             <>
               {/* The mask of customer names, at the same place on every screen (VA6a). */}
@@ -262,14 +264,15 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
         </Toolbar>
       </div>
       <ToastRegion heading={heading} />
-      {palette && <CommandPalette onClose={() => setPalette(false)} />}
+      {palette && <CommandPalette onClose={() => setPalette(false)} fallback={heading} />}
     </div>
   );
 }
 
 /**
  * ⌘K / Ctrl K opens the command bar on every screen, a field being typed in too, and closes it
- * (VA8): heard before any field, and only that key is taken. Not over another dialog.
+ * (VA8): heard before any field, and only that key is taken. Not over another dialog. The key held
+ * down repeats: only its first press counts (L243).
  */
 function usePaletteKey(setPalette: (change: (open: boolean) => boolean) => void) {
   useEffect(() => {
@@ -278,7 +281,7 @@ function usePaletteKey(setPalette: (change: (open: boolean) => boolean) => void)
       const modal = document.querySelector('dialog:modal');
       if (modal && !modal.hasAttribute('data-palette')) return;
       event.preventDefault();
-      setPalette((open) => !open);
+      if (!event.repeat) setPalette((open) => !open);
     };
     addEventListener('keydown', onKey, true);
     return () => removeEventListener('keydown', onKey, true);

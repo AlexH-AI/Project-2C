@@ -27,7 +27,7 @@ export function ScreenBar({ sub, actions }: { sub?: ReactNode; actions?: ReactNo
 
 /**
  * The toolbar and the screen under it. The toolbar: the name of the screen and the line under it;
- * the place kept for the "Lưu ý" pill (`data-slot="heads-up"`, VA9); then, on the right, `tools`
+ * in the middle of the free space, `headsUp`, the "Lưu ý" pill (VA9); then, on the right, `tools`
  * (the controls of the shell: the eye of the customer-name mask, the scope pill) and what the
  * screen puts there: its period pill, its buttons. `children` is the screen: its `ScreenBar`
  * draws into this toolbar.
@@ -35,12 +35,14 @@ export function ScreenBar({ sub, actions }: { sub?: ReactNode; actions?: ReactNo
 export function Toolbar({
   title,
   heading,
+  headsUp,
   tools,
   children,
 }: {
   title: string;
   /** The name of the screen takes the focus when the screen changes (`AppShell`). */
   heading: RefObject<HTMLHeadingElement | null>;
+  headsUp?: ReactNode;
   tools?: ReactNode;
   children: ReactNode;
 }) {
@@ -74,11 +76,15 @@ export function Toolbar({
             className="m-0 truncate text-sm text-fg-2 tabular-nums empty:hidden"
           />
         </div>
+        {/* As wide as the pill, which gives up the customer's name before the time; the line
+            under the name of the screen is cut short first. */}
         <div
           data-slot="heads-up"
           data-tauri-drag-region={macDragRegion('self')}
-          className="min-w-4 flex-1"
-        />
+          className="flex flex-auto justify-center"
+        >
+          {headsUp}
+        </div>
         <div className="flex flex-none items-center gap-2">
           {tools}
           <div ref={setActions} data-slot="screen-actions" className="contents" />
