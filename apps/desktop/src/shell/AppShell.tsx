@@ -11,10 +11,11 @@ import {
 import { flushSync } from 'react-dom';
 import type { Scope } from '@p2c/domain';
 import { IconButton, openFrom, riseStep } from '@p2c/ui';
-import { useTables } from '../data/AppDataContext';
+import { useAppData, useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { lightCard } from '../routes/classes';
 import { Screen } from '../routes/Screen';
+import { createBackgroundJobs, JobsContext } from './background-jobs';
 import type { AppWindow } from './CloseGuard';
 import { isPaletteKey } from './command-palette';
 import { CommandPalette } from './CommandPalette';
@@ -187,10 +188,15 @@ function useOpen(main: RefObject<HTMLElement | null>, hash: string) {
  * screen shows through (`useToast`); `appWindow` is the exe's (see `App`).
  */
 export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
+  const data = useAppData();
+  // The jobs in the background, which the screens tell and "Lưu ý" shows (VA9b-a).
+  const [jobs] = useState(() => createBackgroundJobs(() => data.db().clockNow()));
   return (
-    <ToastProvider>
-      <Shell appWindow={appWindow} />
-    </ToastProvider>
+    <JobsContext value={jobs}>
+      <ToastProvider>
+        <Shell appWindow={appWindow} />
+      </ToastProvider>
+    </JobsContext>
   );
 }
 

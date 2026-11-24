@@ -14,6 +14,7 @@ import {
 import { analyseCustomer, startChatGptWeb, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { useJobs } from '../../shell/background-jobs';
 import { TypedText } from '../../shell/NameMask';
 import { errorParts, SETTINGS_AI_HASH, type AiFailure } from '../ai-error-view';
 import { ALERT, BADGE, CARD, HEADING, LINK } from '../classes';
@@ -414,6 +415,7 @@ export function KycIntelligence({
   onWebOpen: (open: boolean) => void;
 }) {
   const app = useAppData();
+  const background = useJobs();
   const { runner } = app.ai;
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
   // Kept by the app, so the profile left and shown again still has it (review of PR 439).
@@ -505,7 +507,19 @@ export function KycIntelligence({
   const analyse = () => {
     setWebState((state) => (state.phase === 'failed' ? { phase: 'idle' } : state));
     setWebEnded(null);
-    analysis.start((signal, call) => analyseCustomer(app, customerId, signal, call));
+    // A job on "Lưu ý" too (VA9b-a): an analysis the validator refused is no analysis to use, so
+    // it fails as an error does; Hủy, or nothing run (the gate, the data replaced), goes unsaid.
+    const job = background.start(`ai:${customerId}`, 'ai', customerId);
+    void analysis
+      .start((signal, call) => analyseCustomer(app, customerId, signal, call))
+      .then(
+        (outcome) => {
+          if (outcome.kind === 'saved' && outcome.status === 'ACCEPTED') job.done();
+          else if (['saved', 'error', 'failed'].includes(outcome.kind)) job.fail(analyse);
+          else job.drop();
+        },
+        () => job.fail(analyse),
+      );
   };
   const startWeb = async () => {
     setWebState({ phase: 'starting' });

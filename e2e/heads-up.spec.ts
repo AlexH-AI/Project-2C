@@ -1,6 +1,17 @@
 import { maskName } from '../apps/desktop/src/shell/name-mask';
 import { expect, test, type Page } from './fixtures';
-import { pickScope } from './support';
+import {
+  addKycNote,
+  asExe,
+  createKycCustomer,
+  discoveryFacts,
+  discoveryOutput,
+  panelOf,
+  pickPeriodKind,
+  pickScope,
+  screenSub,
+  useOpenCode,
+} from './support';
 
 // VA9 (mockup search-rm-team.html #now): "Lưu ý", a pill between the name of the screen and its
 // buttons on every screen, with the next appointment of the scope picked and the time left; a
@@ -175,4 +186,210 @@ test('a narrow window leaves the name out of the pill; the mask hides it in the 
   await pill(page).click();
   await expect(nextRow(page)).toContainText(maskName(name!));
   await expect(panel(page)).not.toContainText(name!);
+});
+
+// ---- Jobs in the background (VA9b-a, mockup #now, #states): Xuất Excel, a backup, an AI analysis ----
+
+interface Files {
+  /** `export_write` waits until `release`, as a slow disk would. */
+  held: boolean;
+  /** `export_write` fails, as a full disk would. */
+  fail: boolean;
+  release: () => void;
+}
+declare global {
+  interface Window {
+    files: Files;
+  }
+}
+
+/** The exe (`asExe`), its `export_write` held or failed at will (`window.files`). */
+async function asExeWithFiles(page: Page) {
+  await asExe(page);
+  await page.addInitScript(() => {
+    const control: Files = { held: false, fail: false, release: () => undefined };
+    type Invoke = (command: string, ...rest: unknown[]) => Promise<unknown>;
+    const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
+      .__TAURI_INTERNALS__;
+    const invoke = internals.invoke;
+    internals.invoke = async (command, ...rest) => {
+      if (command === 'export_write' && control.held)
+        await new Promise<void>((resolve) => (control.release = resolve));
+      if (command === 'export_write' && control.fail)
+        throw 'There is not enough space on the disk. (os error 112)';
+      return invoke(command, ...rest);
+    };
+    Object.assign(window, { files: control });
+  });
+}
+
+const hold = (page: Page) => page.evaluate(() => (window.files.held = true));
+const release = (page: Page) =>
+  page.evaluate(() => {
+    window.files.held = false;
+    window.files.release();
+  });
+const exportButton = (page: Page) => page.getByRole('button', { name: 'Xuất Excel', exact: true });
+const jobRows = (page: Page) =>
+  panel(page).getByRole('list', { name: 'Việc chạy nền' }).getByRole('listitem');
+/** The pill on the next appointment, no job on it. */
+const ON_APPOINTMENTS = /^Lưu ý: (\d\d:\d\d |Hết lịch hôm nay|Không có lịch hẹn sắp tới)/;
+const SEPTEMBER = 'bao-cao_2026-09_toan-bo_2026-09-15.xlsx';
+const holdClock = async (page: Page) =>
+  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+
+test('Xuất Excel runs on the pill, Báo cáo still in use; done, it says so about 3 s, then the next appointment', async ({
+  page,
+}) => {
+  await asExeWithFiles(page);
+  await page.goto('/#/reports');
+  await expect(pill(page)).toHaveAccessibleName(ON_APPOINTMENTS);
+  await hold(page);
+  await exportButton(page).click();
+  await expect(pill(page)).toHaveAccessibleName('Lưu ý: Đang xuất Excel Báo cáo');
+  await expect(pill(page)).toContainText('Đang xuất Excel Báo cáo');
+  // Its time is not measured: a bar with no percent.
+  await expect(pill(page).getByRole('progressbar', { name: 'Tiến độ' })).toBeVisible();
+  await expect(pill(page)).not.toContainText('%');
+  // The screen is in use meanwhile.
+  await pickPeriodKind(page, 'Năm');
+  await expect(screenSub(page)).toContainText('Năm 2026');
+
+  await release(page);
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
+  await holdClock(page);
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
+  await page.clock.runFor(3_000);
+  await expect(pill(page)).toHaveAccessibleName(ON_APPOINTMENTS);
+  // It stays in "Việc chạy nền" of the panel of today.
+  await pill(page).click();
+  await expect(jobRows(page)).toHaveText([new RegExp(`^Đã xuất ${SEPTEMBER}\\d\\d:\\d\\d$`)]);
+});
+
+test('a failed export stays on the pill, red, whatever the period, scope or screen, until a press runs it again (L146)', async ({
+  page,
+}) => {
+  await asExeWithFiles(page);
+  await page.goto('/#/reports');
+  await page.evaluate(() => (window.files.fail = true));
+  await exportButton(page).click();
+  const failed = 'Lưu ý: Xuất Excel Báo cáo không xong · bấm để thử lại';
+  await expect(pill(page)).toHaveAccessibleName(failed);
+  await expect(pill(page)).not.toHaveAttribute('aria-haspopup');
+  const [edge, danger] = await pill(page).evaluate((button) => {
+    const probe = document.createElement('i');
+    probe.style.color = 'var(--danger)';
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return [getComputedStyle(button).outlineColor, color];
+  });
+  expect(edge).toBe(danger);
+  const alert = page.getByRole('alert').filter({ hasText: 'Không xuất được báo cáo' });
+  await expect(alert).toBeVisible();
+
+  // Another period, another scope: the failure stays, on the pill and on Báo cáo.
+  await pickPeriodKind(page, 'Năm');
+  await pickScope(page, { team: 'Sao Mai' });
+  await expect(pill(page)).toHaveAccessibleName(failed);
+  await expect(alert).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Tổng quan' })
+    .click();
+  await expect(pill(page)).toHaveAccessibleName(failed);
+
+  // The press runs the same export again: the month of Toàn bộ, as asked.
+  await page.evaluate(() => (window.files.fail = false));
+  await pill(page).click();
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
+  await expect(pill(page)).toBeFocused();
+});
+
+test('"Xuất Excel Báo cáo tháng …" while an export runs says so, Báo cáo kept on its period (L234)', async ({
+  page,
+  browserName,
+}) => {
+  await asExeWithFiles(page);
+  await page.goto('/#/reports');
+  await pickPeriodKind(page, 'Năm');
+  await hold(page);
+  await exportButton(page).click();
+  await expect(pill(page)).toHaveAccessibleName('Lưu ý: Đang xuất Excel Báo cáo');
+
+  await page.keyboard.press(browserName === 'webkit' ? 'Meta+k' : 'Control+k');
+  const bar = page.getByRole('dialog', { name: 'Ô lệnh' });
+  await bar.getByRole('combobox', { name: 'Ô lệnh' }).fill('xuat file');
+  await bar.getByRole('option', { name: /^Xuất Excel Báo cáo tháng 09\/2026/ }).click();
+  await expect(
+    page.getByText('Một lần xuất Excel Báo cáo đang chạy: chạy lại lệnh khi lần đó xong.'),
+  ).toBeVisible();
+  await expect(screenSub(page)).toContainText('Năm 2026');
+
+  // The export of the year, the one running, goes on.
+  await release(page);
+  await expect(pill(page)).toHaveAccessibleName(
+    'Lưu ý: Đã xuất bao-cao_2026_toan-bo_2026-09-15.xlsx',
+  );
+  await expect(screenSub(page)).toContainText('Năm 2026');
+});
+
+test('an AI analysis and a backup show on the pill and in "Việc chạy nền", the name masked, a narrow window too', async ({
+  page,
+}) => {
+  await asExeWithFiles(page);
+  const name = 'Tú Việc Nền';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  await useOpenCode(page);
+  await page.evaluate((good) => {
+    window.exe.aiContent = good;
+    window.exe.holdAi();
+  }, discoveryOutput());
+  await panelOf(page).getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đang phân tích AI ${name}`);
+
+  // Masked, the job names the customer masked; a narrow window keeps the icon and the bar.
+  const masked = maskName(name);
+  await toolbar(page).getByRole('button', { name: 'Che tên khách hàng' }).click();
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đang phân tích AI ${masked}`);
+  await expect(pill(page)).toContainText(masked);
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await expect(pill(page)).toHaveText('');
+  await expect(pill(page).getByRole('progressbar')).toBeVisible();
+  const buttons = toolbar(page).getByRole('button');
+  const last = (await buttons.last().boundingBox())!;
+  expect(last.x + last.width).toBeLessThanOrEqual(1100);
+  const heads = (await pill(page).boundingBox())!;
+  const eye = (await toolbar(page)
+    .getByRole('button', { name: /tên khách hàng$/ })
+    .boundingBox())!;
+  expect(heads.x + heads.width).toBeLessThanOrEqual(eye.x);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã phân tích AI ${masked}`);
+
+  // A backup of Cài đặt → Dữ liệu, held: on the pill, the analysis under it in the panel.
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Cài đặt' })
+    .click();
+  await page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: 'Dữ liệu' })
+    .click();
+  await hold(page);
+  await page
+    .getByRole('region', { name: 'Xuất / nhập backup' })
+    .getByRole('button', { name: 'Xuất backup' })
+    .click();
+  await expect(pill(page)).toHaveAccessibleName('Lưu ý: Đang sao lưu');
+  await pill(page).click();
+  await expect(jobRows(page)).toHaveText([
+    'Đang sao lưu',
+    new RegExp(`^Đã phân tích AI ${masked.replaceAll('.', '\\.')}\\d\\d:\\d\\d$`),
+  ]);
+  await release(page);
+  await expect(pill(page)).toHaveAccessibleName(/^Lưu ý: Đã sao lưu lúc \d\d:\d\d$/);
+  await expect(jobRows(page).first()).toHaveText(/^Đã sao lưu lúc (\d\d:\d\d)\1$/);
 });

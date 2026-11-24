@@ -4,11 +4,12 @@ import {
   compareDates,
   formatDate,
   formatDayMonth,
+  formatLocalTime,
   fromLocalDate,
   weekdayOf,
   type Scope,
 } from '@p2c/domain';
-import { Button, NavIcon, useLayerState } from '@p2c/ui';
+import { Button, NavIcon, useLayerState, type NavIconName } from '@p2c/ui';
 import { useDatabase, useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { createdToast, withTime } from '../routes/appointments/appointment-form';
@@ -20,6 +21,14 @@ import {
 } from '../routes/appointments/appointments-view';
 import { OutcomeDialog } from '../routes/appointments/OutcomeDialog';
 import { BADGE } from '../routes/classes';
+import {
+  jobPillText,
+  jobText,
+  pillJob,
+  useJobs,
+  type BackgroundJob,
+  type JobKind,
+} from './background-jobs';
 import { headsUp, leftText, type HeadsUp as HeadsUpView, type HeadsUpState } from './heads-up';
 import { useMasked } from './NameMask';
 import { routeToHash } from './routes';
@@ -64,6 +73,59 @@ function useMinute(): Date {
   return now;
 }
 
+const JOB_ICON = { export: 'export', backup: 'data', ai: 'ai' } as const satisfies Record<
+  JobKind,
+  NavIconName
+>;
+
+/** The check and the alert of a toast (`MARKS` of packages/ui, not exported): done, failed. */
+const ENDED = { done: 'M5 12.5l4.5 4.5L19 7.5', failed: 'M12 4l9 16H3zM12 10v4M12 17v.01' };
+
+/** A job's icon: its kind's while it runs, then a check or an alert. */
+function JobIcon({ job }: { job: BackgroundJob }) {
+  if (job.state === 'running')
+    return <NavIcon name={JOB_ICON[job.kind]} className="size-3.75 flex-none text-fg-2" />;
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={`size-3.75 flex-none fill-none stroke-current ${job.state === 'done' ? 'text-ok' : 'text-danger'}`}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={ENDED[job.state]} />
+    </svg>
+  );
+}
+
+/**
+ * The pill as a job takes it (mockup `#now`): its icon and words, and a bar while it runs. Nothing
+ * is measured (`BackgroundJob`), so the bar is full and pulses, with no percent. A narrow window
+ * keeps the icon and the bar of one running, and fewer words of one ended.
+ */
+function JobFace({ job, name, narrow }: { job: BackgroundJob; name: string; narrow: boolean }) {
+  const running = job.state === 'running';
+  return (
+    <>
+      <JobIcon job={job} />
+      {!running && (
+        <b className={`min-w-0 truncate font-semibold ${narrow ? 'max-w-37.5' : ''}`}>
+          {jobPillText(job, name)}
+        </b>
+      )}
+      {running && !narrow && <span className="min-w-0 truncate">{jobText(job, name)}</span>}
+      {running && (
+        <span
+          role="progressbar"
+          aria-label={t('jobs.progress')}
+          className={`h-1 flex-none rounded-full bg-accent motion-safe:animate-pulse ${narrow ? 'w-13' : 'w-21'}`}
+        />
+      )}
+    </>
+  );
+}
+
 /** `T4 11/11 09:00`: the day of an appointment whose year is clear from context, and its time. */
 const dayText = (a: AppointmentRecord) =>
   withTime(`${t(`weekday.${weekdayOf(a.date)}`)} ${formatDayMonth(a.date)}`, a.time);
@@ -73,11 +135,16 @@ const dayText = (a: AppointmentRecord) =>
  * and its buttons, on every screen, for the scope picked on the toolbar: the next appointment and
  * the time left until it; once today has none left, the day of the next one. A narrow window
  * leaves out the name. A press opens the panel of today under it (`TodayPanel`); Esc, a press
- * outside or the focus going elsewhere closes it, the focus back on the pill.
+ * outside or the focus going elsewhere closes it, the focus back on the pill. A job in the
+ * background takes the pill while it runs, a few seconds once done, and once failed until a press
+ * runs it again (VA9b-a), whatever the screen.
  */
 export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   const { appointments, customers, people } = useTables();
   const now = useMinute();
+  const jobs = useJobs();
+  const job = pillJob(useSyncExternalStore(jobs.subscribe, jobs.list));
+  const failed = job?.state === 'failed';
   const view = useMemo(
     () => headsUp(appointments, people, scope, now),
     [appointments, people, scope, now],
@@ -136,8 +203,9 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
 
   const next = view.next;
   const later = next && compareDates(next.appointment.date, fromLocalDate(now)) > 0;
-  const name = (a: AppointmentRecord) =>
-    masked.name(customers.find((customer) => customer.id === a.customerId)?.name ?? '');
+  const nameOf = (id: string | undefined) =>
+    masked.name(customers.find((customer) => customer.id === id)?.name ?? '');
+  const name = (a: AppointmentRecord) => nameOf(a.customerId);
   // What the pill says: [what, who, when]; a narrow window leaves out the middle.
   const [what, who, when] = !next
     ? ['', t('headsUp.none'), '']
@@ -152,26 +220,38 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   // Read as shown: the time and the name, then "·" before the time left only beside a name.
   const head = [what, showWho ? who : ''].filter(Boolean).join(' ');
   const text = showWho && when ? joinParts([head, when]) : [head, when].filter(Boolean).join(' ');
+  const jobName = job && nameOf(job.customerId);
   return (
     <span ref={root} className="relative flex min-w-0 justify-center">
       <button
         ref={pill}
         type="button"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={t('headsUp.label', { text })}
-        onClick={() => (open ? close() : setOpen(true))}
-        className="press btn-default inline-flex h-8.5 max-w-95 min-w-0 cursor-pointer items-center gap-2 rounded-control pr-3.25 pl-2.75 text-md whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        // A failure's press runs its job again, as the pill says (mockup `#now`).
+        aria-haspopup={failed ? undefined : 'dialog'}
+        aria-expanded={failed ? undefined : open}
+        aria-label={t('headsUp.label', { text: job ? jobPillText(job, jobName!) : text })}
+        onClick={() => {
+          if (!failed) return open ? close() : setOpen(true);
+          setOpen(false);
+          job.retry?.();
+        }}
+        className={`press btn-default inline-flex h-8.5 max-w-95 min-w-0 cursor-pointer items-center gap-2 rounded-control pr-3.25 pl-2.75 text-md whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${failed ? 'outline-1 -outline-offset-1 outline-danger' : ''}`}
       >
-        {next && !later ? (
-          <span className="size-1.75 flex-none rounded-full bg-accent ring-3 ring-accent-soft motion-safe:animate-pulse" />
+        {job ? (
+          <JobFace job={job} name={jobName!} narrow={narrow} />
         ) : (
-          <NavIcon name="calendar" className="size-3.75 flex-none text-fg-2" />
+          <>
+            {next && !later ? (
+              <span className="size-1.75 flex-none rounded-full bg-accent ring-3 ring-accent-soft motion-safe:animate-pulse" />
+            ) : (
+              <NavIcon name="calendar" className="size-3.75 flex-none text-fg-2" />
+            )}
+            {what && <b className="font-semibold tabular-nums">{what}</b>}
+            {showWho && <span className="min-w-0 shrink-1000 truncate">{who}</span>}
+            {showWho && when && <span className="text-fg-3">{t('sep.dot')}</span>}
+            {when && <span className="min-w-0 truncate text-fg-2 tabular-nums">{when}</span>}
+          </>
         )}
-        {what && <b className="font-semibold tabular-nums">{what}</b>}
-        {showWho && <span className="min-w-0 shrink-1000 truncate">{who}</span>}
-        {showWho && when && <span className="text-fg-3">{t('sep.dot')}</span>}
-        {when && <span className="min-w-0 truncate text-fg-2 tabular-nums">{when}</span>}
       </button>
       {drawn && (
         <div
@@ -190,6 +270,10 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
             onRecord={(row) => {
               close();
               setRecording(row);
+            }}
+            onRetry={(failure) => {
+              close();
+              failure.retry?.();
             }}
             onClose={close}
           />
@@ -212,13 +296,15 @@ const ROW_END: Partial<Record<HeadsUpState, string>> = { next: `${BADGE} text-in
 /**
  * The panel of today (mockup `#now`, "Bảng hôm nay"): every appointment of the day by time, the
  * next one on a light gold, one passed with no outcome with "Ghi kết quả" (dialog 6c); "Cần làm"
- * leads to Lịch hẹn. Masked names show masked.
+ * leads to Lịch hẹn; "Việc chạy nền", the jobs running and the latest ended, Thử lại by a failure.
+ * Masked names show masked.
  */
 function TodayPanel({
   view,
   label,
   now,
   onRecord,
+  onRetry,
   onClose,
 }: {
   view: HeadsUpView;
@@ -226,11 +312,14 @@ function TodayPanel({
   label: string;
   now: Date;
   onRecord: (row: AppointmentRow) => void;
+  onRetry: (job: BackgroundJob) => void;
   /** Closes the panel, the focus back on the pill: a new screen then gives it to its name. */
   onClose: () => void;
 }) {
   const { customers, people, teams, transitions } = useTables();
   const masked = useMasked();
+  const jobs = useJobs();
+  const jobList = useSyncExternalStore(jobs.subscribe, jobs.list);
   const today = fromLocalDate(now);
   const rows = appointmentRows(
     {
@@ -324,6 +413,34 @@ function TodayPanel({
         </Button>
       ) : (
         <p className="m-0 text-sm text-fg-2">{t('headsUp.unrecordedNone')}</p>
+      )}
+      <hr className="my-2.5 border-0 border-t border-hairline" />
+      <h2 className={heading}>{t('jobs.title')}</h2>
+      {jobList.length === 0 ? (
+        <p className="m-0 text-sm text-fg-2">{t('jobs.none')}</p>
+      ) : (
+        <ul aria-label={t('jobs.title')} className="m-0 flex list-none flex-col p-0">
+          {jobList.map((job) => (
+            <li key={job.id} className="flex min-h-8 items-center gap-2 py-1">
+              <JobIcon job={job} />
+              <span className="min-w-0 flex-1 truncate">
+                {jobText(
+                  job,
+                  masked.name(customers.find((c) => c.id === job.customerId)?.name ?? ''),
+                )}
+              </span>
+              {job.state === 'failed' ? (
+                <Button size="sm" onClick={() => onRetry(job)}>
+                  {t('jobs.retry')}
+                </Button>
+              ) : (
+                job.endedAt && (
+                  <span className="text-xs text-fg-2">{formatLocalTime(job.endedAt)}</span>
+                )
+              )}
+            </li>
+          ))}
+        </ul>
       )}
     </>
   );

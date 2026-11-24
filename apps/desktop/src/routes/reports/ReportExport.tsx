@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { useJobs } from '../../shell/background-jobs';
 import { OpenFolderButton } from '../SettingsDataFile';
 import { sameSelection, type FilterSelection } from '../applied-filter';
 import {
@@ -25,14 +26,17 @@ export type ExportNotice =
 
 /**
  * Xuất Excel (mockup reports.html 2f): the exe writes the file into `exports\`, web mode downloads
- * it. A failure only says so; the data in the app is untouched. The notice is for the period of
- * the file and the scope on screen when it was asked for, and goes once another is picked: the
+ * it, a job in the background on "Lưu ý" (VA9b-a), so Báo cáo stays in use, also left meanwhile.
+ * A failure only says so, until the next export, whatever is picked meanwhile, as "Lưu ý" keeps
+ * it until Thử lại (L146); the data in the app is untouched. The notice of a file is for its
+ * period and the scope on screen when it was asked for, and goes once another is picked: the
  * numbers shown are no longer those of the file it names. Back on that period and scope, it shows
  * again.
  */
 export function useReportExport(shown: FilterSelection) {
   const data = useAppData();
-  const [busy, setBusy] = useState(false);
+  const jobs = useJobs();
+  const busy = useSyncExternalStore(jobs.subscribe, () => jobs.busy('export'));
   const [last, setLast] = useState<{ notice: ExportNotice; for: FilterSelection } | null>(null);
 
   const write = async (name: string, bytes: Uint8Array<ArrayBuffer>) => {
@@ -43,26 +47,26 @@ export function useReportExport(shown: FilterSelection) {
   const run = async (report: ExportedReport) => {
     // The command bar exports this month as it puts it on screen, a period not shown yet.
     const exported = { ...shown, period: report.period };
-    setBusy(true);
     setLast(null);
-    try {
-      const outcome = await exportReport(report, write);
-      const notice: ExportNotice =
-        outcome.kind === 'failed'
-          ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
-          : {
-              kind: 'exported',
-              sheets: reportSheetCount(report.rows),
-              where: outcome.path ?? outcome.name,
-              inFolder: outcome.path !== undefined,
-            };
-      setLast({ notice, for: exported });
-    } finally {
-      setBusy(false);
-    }
+    // Its time is not measured: the bar of "Lưu ý" has no percent.
+    const job = jobs.start('export', 'export');
+    const outcome = await exportReport(report, write);
+    const notice: ExportNotice =
+      outcome.kind === 'failed'
+        ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
+        : {
+            kind: 'exported',
+            sheets: reportSheetCount(report.rows),
+            where: outcome.path ?? outcome.name,
+            inFolder: outcome.path !== undefined,
+          };
+    if (outcome.kind === 'failed') job.fail(() => void run(report));
+    else job.done(outcome.name);
+    setLast({ notice, for: exported });
   };
   // By value: the same period and scope picked again are new objects.
-  const notice = last && sameSelection(last.for, shown) ? last.notice : null;
+  const notice =
+    last && (last.notice.kind === 'failed' || sameSelection(last.for, shown)) ? last.notice : null;
   return { busy, notice, run };
 }
 
