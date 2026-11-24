@@ -5,6 +5,7 @@ import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
+import { useCommand } from '../shell/palette-commands';
 import { ALERT, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmButton } from './ConfirmWordDialog';
 import { currencyName } from './money-view';
@@ -87,6 +88,12 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
     }
   };
 
+  // "Sao lưu ngay" of the command bar: Xuất backup.
+  const exportNow = () => {
+    if (busy === null) void exportFile();
+  };
+  useCommand('backup', exportNow);
+
   const readFile = async (file: File) => {
     onNotice(null);
     // Refused unread: reading a file this big would freeze the app (spec §6).
@@ -124,12 +131,7 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
           </span>
         </div>
         {/* Off by `aria-disabled` while Data is busy, which keeps the focus on it (DR6-186). */}
-        <Button
-          aria-disabled={busy !== null || undefined}
-          onClick={() => {
-            if (busy === null) void exportFile();
-          }}
-        >
+        <Button aria-disabled={busy !== null || undefined} onClick={exportNow}>
           {busy === 'export' ? t('settings.backup.exporting') : t('settings.backup.export')}
         </Button>
       </div>

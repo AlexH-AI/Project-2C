@@ -17,6 +17,7 @@ import {
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
+import { useCommand } from '../../shell/palette-commands';
 import { routeToHash } from '../../shell/routes';
 import { ScreenBar } from '../../shell/ScreenBar';
 import { isReturning } from '../../shell/useRoute';
@@ -180,6 +181,7 @@ export function TeamScreen() {
   const [back] = useState(() => (isReturning() ? left : null));
   const [selectedId, setSelectedId] = useState<string | null>(back?.teamId ?? null);
   const [editing, setEditing] = useState<Editing | null>(null);
+  useCommand('team', () => setEditing({ kind: 'create' }));
   const selected = view.teams.find((entry) => entry.team.id === selectedId) ?? view.teams[0];
   const brief = useMemo(
     () => selected && teamBrief(tables, selected.team.id, today),

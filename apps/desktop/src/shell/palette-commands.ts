@@ -14,8 +14,13 @@ export function askCommand(command: Command): void {
   for (const take of takers) take();
 }
 
-/** A screen runs `run` when the command bar asks for `command`: now, or as the screen opens. */
-export function useCommand(command: Command, run: () => void): void {
+/**
+ * A screen runs `run` when the command bar asks for `command`: now, or as the screen opens. With
+ * `leave`, `run` only shows the part of the screen that runs it and leaves the ask to that part:
+ * Cài đặt shows Dữ liệu for "Sao lưu ngay" when another section is open; a part shown already
+ * takes the ask as well, and the `run` of the screen then changes nothing.
+ */
+export function useCommand(command: Command, run: () => void, leave = false): void {
   const latest = useRef(run);
   useEffect(() => {
     latest.current = run;
@@ -23,7 +28,7 @@ export function useCommand(command: Command, run: () => void): void {
   useEffect(() => {
     const take = () => {
       if (asked !== command) return;
-      asked = null;
+      if (!leave) asked = null;
       latest.current();
     };
     take();
@@ -31,5 +36,5 @@ export function useCommand(command: Command, run: () => void): void {
     return () => {
       takers.delete(take);
     };
-  }, [command]);
+  }, [command, leave]);
 }

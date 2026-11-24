@@ -1,6 +1,6 @@
 import { maskName } from '../apps/desktop/src/shell/name-mask';
 import { expect, test, type Page } from './fixtures';
-import { pressButton } from './support';
+import { pickPeriodKind, pressButton } from './support';
 
 // VA8 (mockup search-rm-team.html #palette): the command bar, on every screen by ⌘K on macOS and
 // Ctrl K on Windows, or the magnifier of the toolbar on both. Four groups: customers, RMs, screens
@@ -127,6 +127,61 @@ test('↓ Enter opens a customer, an RM, a screen; a command runs', async ({ pag
   await open(page, 'che', 'Che / hiện tên khách hàng');
   const eye = page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' });
   await expect(eye).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('a command opens its dialog on its screen, from another screen or its own', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/#/overview');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
+  for (const [text, command, screen, dialog] of [
+    ['lich hen moi', 'Lịch hẹn mới…', 'Lịch hẹn', 'Lịch hẹn mới'],
+    ['khach hang moi', 'Khách hàng mới…', 'Khách hàng', 'Khách hàng mới'],
+    ['team moi', 'Team mới…', 'Team & nhân sự', 'Team mới'],
+  ] as const) {
+    // Twice: from the screen before, then from its own screen.
+    for (let again = 0; again < 2; again += 1) {
+      await page.keyboard.press(paletteKey(browserName));
+      await open(page, text, command);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(screen);
+      const box = page.getByRole('dialog', { name: dialog });
+      await expect(box).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(box).toBeHidden();
+    }
+  }
+});
+
+test('Sao lưu ngay exports a backup in Dữ liệu, from AI of Cài đặt too; Xuất Excel exports this month', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/#/settings');
+  await page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: 'AI' })
+    .click();
+  await page.keyboard.press(paletteKey(browserName));
+  const backup = page.waitForEvent('download');
+  await open(page, 'backup', 'Sao lưu ngay');
+  const file = await backup;
+  await expect(
+    page.getByRole('region', { name: 'Xuất / nhập backup' }).getByRole('status'),
+  ).toHaveText(
+    new RegExp(`^Đã xuất backup: ${file.suggestedFilename().replaceAll('.', '\\.')} · `),
+  );
+
+  // From Báo cáo on another period: the month of today comes back, then its file.
+  await page.goto('/#/reports');
+  await pickPeriodKind(page, 'Năm');
+  await page.keyboard.press(paletteKey(browserName));
+  const report = page.waitForEvent('download');
+  await open(page, 'xuat file', /^Xuất Excel Báo cáo tháng 09\/2026/);
+  expect((await report).suggestedFilename()).toBe('bao-cao_2026-09_toan-bo_2026-09-15.xlsx');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' })).toHaveText(
+    'Đã xuất báo cáo · 4 sheet: bao-cao_2026-09_toan-bo_2026-09-15.xlsx',
+  );
 });
 
 test('"xyz" finds nothing; masked, a customer is found by the real name and shown masked', async ({
