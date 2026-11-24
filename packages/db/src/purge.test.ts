@@ -22,7 +22,15 @@ import { addKycNote, confirmKycFact } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { softDeletePolicy, submitPolicy } from './policies';
 import { previewPurge, purgeTrash, type KeptBy, type KeptRecord, type PurgeCounts } from './purge';
-import { createPerson, createTeam, personUsage, softDeletePerson, softDeleteTeam } from './team';
+import {
+  createPerson,
+  createTeam,
+  personUsage,
+  restoreTeam,
+  setTeamTarget,
+  softDeletePerson,
+  softDeleteTeam,
+} from './team';
 import { codeOf, d, setup } from './test-support';
 import { listTrash } from './trash';
 
@@ -434,6 +442,30 @@ describe('purgeTrash', () => {
         .map((row) => [row.kind, row.id, row.keptBy])
         .sort(),
     ).toEqual(kept.map((k) => [k.kind, k.id, k.by]).sort());
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  // D1 (golden D `forecast.md` mục 4 điểm 11): a KPI tháng goes for good with its team, and only so.
+  it('takes the KPI tháng of a purged team, keeping those of a kept team and of the teams in use', async () => {
+    const t = await trash11a();
+    const { db, team, binhMinh } = t;
+    const closed = createTeam(db, { name: 'Ánh Dương' });
+    restoreTeam(db, binhMinh.id);
+    for (const { id } of [team, binhMinh, closed]) setTeamTarget(db, id, '2026-10', 1_000_000_000);
+    softDeleteTeam(db, binhMinh.id);
+    softDeleteTeam(db, closed.id);
+    // Bình Minh stays, as the team of the RM of a kept appointment (D6).
+    const { moved } = rescheduledFromFile(t);
+    db.sqlite.run('UPDATE appointments SET rm_id = ? WHERE id = ?', [t.mai.id, moved.id]);
+
+    const { kept } = purgeTrash(db);
+
+    expect(kept.filter((record) => record.kind === 'team').map((record) => record.id)).toEqual([
+      binhMinh.id,
+    ]);
+    expect(rowsOf(db, 'SELECT team_id FROM team_targets').map(([id]) => id)).toEqual(
+      [team.id, binhMinh.id].sort(),
+    );
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
   });
 

@@ -23,6 +23,7 @@ import {
   settings,
   stageTransitions,
   teams,
+  teamTargets,
 } from './schema';
 import { createTeam, listTeams } from './team';
 
@@ -82,6 +83,7 @@ describe('openDatabase', () => {
       'schema_migrations',
       'settings',
       'stage_transitions',
+      'team_targets',
       'teams',
     ]);
   });
@@ -103,6 +105,7 @@ describe('openDatabase', () => {
       aiAnalyses,
       settings,
       schemaMigrations,
+      teamTargets,
     ];
     for (const table of tables) {
       const config = getTableConfig(table);
@@ -458,16 +461,21 @@ describe('migrating a saved database', () => {
     rows.map((row) => row.map((value) => (value === 'RE' ? 'RM' : value)));
   /** Where migration 0018 puts the cancellation day of a policy (B1a): after the issued FYP. */
   const CANCELLED_AT = 7;
+  /** Where an appointment saved before D1 holds its case size and its last change. */
+  const [CASE_SIZE, UPDATED_AT] = [10, 14];
   /**
-   * Rows of `table` saved before B1a and C3 as their migrations leave them: a policy not cancelled,
-   * a team in the default look (0019 adds its colour and icon last).
+   * Rows of `table` saved before B1a, C3 and D1 as their migrations leave them: a policy not
+   * cancelled, a team in the default look (0019 adds its colour and icon last), an appointment's
+   * case size entered at its last change (0020 adds the stamp last, 0021 fills it).
    */
   const notCancelled = (table: string, rows: ReturnType<typeof rowsOf>) =>
     table === 'policies'
       ? rows.map((row) => row.toSpliced(CANCELLED_AT, 0, null))
       : table === 'teams'
         ? rows.map((row) => [...row, null, null])
-        : rows;
+        : table === 'appointments'
+          ? rows.map((row) => [...row, row[CASE_SIZE] === null ? null : row[UPDATED_AT]!])
+          : rows;
   /** How SQLite runs `query`, one step a line. */
   const queryPlan = (db: Database, query: string) =>
     db.sqlite
@@ -521,11 +529,11 @@ describe('migrating a saved database', () => {
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     for (const table of tables) expect(rowsOf(db.sqlite, table)).toEqual(withRm(before[table]!));
-    // The new column comes last and is empty on every existing appointment.
+    // The new column comes last and is empty on every existing appointment (then D1's stamp).
     expect(rowsOf(db.sqlite, 'appointments')).toEqual(
-      appointmentsBefore.map((row) => [...row, null]),
+      notCancelled('appointments', appointmentsBefore).map((row) => row.toSpliced(-1, 0, null)),
     );
-    expect(columnNames(db, 'appointments').at(-1)).toBe('outcome_reviewer_id');
+    expect(columnNames(db, 'appointments').at(-2)).toBe('outcome_reviewer_id');
     expect(foreignKeys(db, 'appointments')).toContain('outcome_reviewer_id->people.id');
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
   });
@@ -629,7 +637,9 @@ describe('migrating a saved database', () => {
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(
+      before.map((rows, i) => notCancelled(tables[i]!, rows)),
+    );
     expect(purge.kept).toEqual([expect.objectContaining({ kind: 'appointment', id: 'a1' })]);
     // What the purge keeps is looked for from the deleted appointments, then what was booked from
     // each: two lookups by index, no scan of the appointments.
@@ -678,7 +688,9 @@ describe('migrating a saved database', () => {
     const db = await openDatabase({ bytes: old.export() });
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before.map(withRm));
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(
+      before.map((rows, i) => notCancelled(tables[i]!, withRm(rows))),
+    );
     expect(foreignKeys(db, 'people')).toContain('team_id->teams.id');
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
     expect(() => db.sqlite.run("UPDATE people SET team_id = 't' WHERE id = 'is'")).toThrow(
@@ -815,9 +827,11 @@ describe('migrating a saved database', () => {
   }
 
   /** The indexes or triggers of a database, with the SQL that made them. */
+  /** Of the tables a file saved before D1 has: the KPI table of 0020 brings its own key. */
   const schemaOf = (sqlite: SqlJsDatabase, type: 'index' | 'trigger') =>
-    sqlite.exec(`SELECT name, sql FROM sqlite_master WHERE type = '${type}' ORDER BY name`)[0]
-      ?.values ?? [];
+    sqlite.exec(
+      `SELECT name, sql FROM sqlite_master WHERE type = '${type}' AND tbl_name <> 'team_targets' ORDER BY name`,
+    )[0]?.values ?? [];
   const OWNED = ['customers', 'appointments', 'policies'];
 
   it('A3: names the column of the RM rm_id, keeping every row, reference, index and trigger', async () => {
@@ -853,6 +867,7 @@ describe('migrating a saved database', () => {
       columns.map((c) => (c === 're_id' ? 'rm_id' : c)),
     );
     renamed[OWNED.indexOf('policies')]!.splice(CANCELLED_AT, 0, 'cancelled_date');
+    renamed[OWNED.indexOf('appointments')]!.push('expected_case_size_at');
     expect(OWNED.map((table) => columnNames(db, table))).toEqual(renamed);
     for (const table of OWNED) expect(foreignKeys(db, table)).toContain('rm_id->people.id');
     expect(foreignKeys(db, 'appointments')).toEqual([
@@ -914,6 +929,47 @@ describe('migrating a saved database', () => {
       db.sqlite.run("UPDATE policies SET cancelled_date = '2026-09-20' WHERE id = 'h2'"),
     ).toThrow(/CHECK constraint failed: policies_cancelled/);
     db.sqlite.run("UPDATE policies SET cancelled_date = '2026-09-20' WHERE id = 'h1'");
+  });
+
+  /** The schema version of a file saved before the case size's stamp and the KPI tháng (D1). */
+  const beforeD1 = MIGRATIONS.find((m) => m.tag === '0020_forecast_data')!.id - 1;
+
+  // Golden D mục 4 điểm 3: only an outcome wrote a case size before D1, so it was entered at the
+  // appointment's last change; a deleted appointment's too, which a restore gives back.
+  it('D1: stamps every case size already there at its last change, and has no KPI', async () => {
+    const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= beforeD1) });
+    old.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('an', 'An', 'RM', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, rm_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 'an', 'N2', 'x', 'x');
+      INSERT INTO appointments (id, customer_id, rm_id, date, status, trigger_type, stage_after,
+          next_step, expected_case_size, note, created_at, updated_at, deleted_at) VALUES
+        ('a1', 'c', 'an', '2026-09-10', 'MET', 'OTHER', 'N2', 'Gửi minh họa', 500000000, '',
+          '2026-09-10T11:00:00.000Z', '2026-09-12T08:30:00.000Z', NULL),
+        ('a2', 'c', 'an', '2026-09-11', 'MET', 'OTHER', 'N2', 'Gọi lại', NULL, '', 'x', 'x', NULL),
+        ('a3', 'c', 'an', '2026-10-01', 'SCHEDULED', 'OTHER', NULL, NULL, NULL, '', 'x', 'x', NULL),
+        ('a4', 'c', 'an', '2026-09-05', 'MET', 'OTHER', 'N2', 'Gửi', 80000000, '', 'x', 'y', 'y');
+    `);
+    const before = rowsOf(old.sqlite, 'appointments');
+    const columnsBefore = columnNames(old, 'appointments');
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(columnNames(db, 'appointments')).toEqual([...columnsBefore, 'expected_case_size_at']);
+    expect(rowsOf(db.sqlite, 'appointments')).toEqual(notCancelled('appointments', before));
+    expect(
+      listAppointments(db).map((a) => [a.id, a.expectedCaseSize, a.expectedCaseSizeAt]),
+    ).toEqual([
+      ['a1', 500_000_000, '2026-09-12T08:30:00.000Z'],
+      ['a2', null, null],
+      ['a3', null, null],
+    ]);
+    expect(rowsOf(db.sqlite, 'team_targets')).toEqual([]);
+    expect(foreignKeys(db, 'team_targets')).toEqual(['team_id->teams.id']);
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
   });
 
   it('A3: checks the RM of a customer, an appointment and a policy by rm_id, and purges as before', async () => {

@@ -1,3 +1,4 @@
+import { maxFee } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
 import {
@@ -10,22 +11,25 @@ import { openDatabase } from './database';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { DbError } from './errors';
 import { softDeletePolicy, submitPolicy } from './policies';
+import { setCurrency } from './settings';
 import {
   createPerson,
   createTeam,
   isPersonInUse,
   listPeople,
   listTeams,
+  listTeamTargets,
   ownsRecords,
   personUsage,
   updateTeam,
   restorePerson,
   restoreTeam,
+  setTeamTarget,
   softDeletePerson,
   softDeleteTeam,
   updatePerson,
 } from './team';
-import { byId, d, setup as withStaff } from './test-support';
+import { byId, d, errorOf, setup as withStaff } from './test-support';
 
 async function setup() {
   let clock = Date.UTC(2026, 8, 26, 8, 0, 0);
@@ -259,6 +263,123 @@ describe('the colour and icon of a team (C3, ADR-0007 "Team & nhân sự")', () 
 
     expect(migrated.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(listTeams(migrated)).toEqual([{ id: 't1', name: 'Sao Mai', color: null, icon: null }]);
+  });
+});
+
+// D1 (golden D `docs/golden/forecast.md` mục 4 điểm 6, 7, 11): the KPI tháng of a team.
+describe('the KPI tháng of a team (D1)', () => {
+  async function twoTeams() {
+    const { db } = await setup();
+    const a = createTeam(db, { name: 'Team A' });
+    const b = createTeam(db, { name: 'Team B' });
+    return { db, a, b };
+  }
+
+  it('keeps one KPI a team and month, changed in place, each month its own', async () => {
+    const { db, a, b } = await twoTeams();
+
+    expect(setTeamTarget(db, a.id, '2029-03', 1_800_000_000)).toEqual({
+      teamId: a.id,
+      month: '2029-03',
+      amount: 1_800_000_000,
+    });
+    setTeamTarget(db, b.id, '2029-03', 1_200_000_000);
+    setTeamTarget(db, a.id, '2029-04', 2_000_000_000);
+    // A second KPI for March replaces the first; April's stays as it was (điểm 7).
+    setTeamTarget(db, a.id, '2029-03', 900_000_000);
+
+    expect(listTeamTargets(db)).toEqual([
+      { teamId: a.id, month: '2029-03', amount: 900_000_000 },
+      { teamId: a.id, month: '2029-04', amount: 2_000_000_000 },
+      { teamId: b.id, month: '2029-03', amount: 1_200_000_000 },
+    ]);
+    const [created, updated] = db.sqlite.exec(
+      "SELECT created_at, updated_at FROM team_targets WHERE month = '2029-03' AND team_id = ?",
+      [a.id],
+    )[0]!.values[0]!;
+    expect(String(updated) > String(created)).toBe(true);
+  });
+
+  it('clears a KPI given none, the team then without one that month', async () => {
+    const { db, a } = await twoTeams();
+    setTeamTarget(db, a.id, '2029-03', 1_800_000_000);
+
+    expect(setTeamTarget(db, a.id, '2029-03', null)).toBeNull();
+    expect(listTeamTargets(db)).toEqual([]);
+    // Nothing to clear: nothing changes.
+    expect(setTeamTarget(db, a.id, '2029-05', null)).toBeNull();
+    expect(listTeamTargets(db)).toEqual([]);
+  });
+
+  it('takes a KPI above 0 up to 1,000 tỷ for a month yyyy-mm, else nothing changes', async () => {
+    const { db, a } = await twoTeams();
+    const before = db.export();
+
+    for (const [amount, code] of [
+      [0, 'INVALID_AMOUNT'],
+      [-1, 'INVALID_AMOUNT'],
+      [1.5, 'INVALID_AMOUNT'],
+      [10 * maxFee('VND') + 1, 'TARGET_TOO_LARGE'],
+      [Number.MAX_SAFE_INTEGER, 'TARGET_TOO_LARGE'],
+    ] as const) {
+      expect(codeOf(() => setTeamTarget(db, a.id, '2029-03', amount))).toBe(code);
+    }
+    for (const month of [
+      '2029-3',
+      '2029-13',
+      '2029-00',
+      '29-03',
+      '2029-03-01',
+      ' 2029-03',
+      '1899-12',
+      '2101-01',
+      '２０２９-03',
+    ]) {
+      expect(
+        codeOf(() => setTeamTarget(db, a.id, month, 1)),
+        month,
+      ).toBe('INVALID_MONTH');
+    }
+    expect(db.export()).toEqual(before);
+
+    expect(setTeamTarget(db, a.id, '2029-03', 1_000_000_000_000)?.amount).toBe(1_000_000_000_000);
+    for (const month of ['1900-01', '2100-12']) {
+      expect(setTeamTarget(db, a.id, month, 1)?.month).toBe(month);
+    }
+    // ADR-0018 §3: by the cap of the data's currency, 1,000 Bil dollars in cents.
+    setCurrency(db, 'USD');
+    expect(codeOf(() => setTeamTarget(db, a.id, '2029-03', 100_000_000_000_001))).toBe(
+      'TARGET_TOO_LARGE',
+    );
+    expect(setTeamTarget(db, a.id, '2029-03', 100_000_000_000_000)?.amount).toBe(
+      100_000_000_000_000,
+    );
+  });
+
+  it('sets or clears no KPI of a deleted or unknown team', async () => {
+    const { db, b } = await twoTeams();
+    setTeamTarget(db, b.id, '2029-03', 1_200_000_000);
+    softDeleteTeam(db, b.id);
+
+    for (const amount of [1, null]) {
+      expect(errorOf(() => setTeamTarget(db, b.id, '2029-03', amount))).toMatchObject({
+        code: 'TEAM_NOT_FOUND',
+        params: { name: 'Team B' },
+      });
+    }
+    expect(codeOf(() => setTeamTarget(db, 'x', '2029-03', 1))).toBe('TEAM_NOT_FOUND');
+  });
+
+  it('keeps the KPI of a team through a soft delete and a restore, out of the list meanwhile', async () => {
+    const { db, a, b } = await twoTeams();
+    const kept = setTeamTarget(db, a.id, '2029-03', 1_800_000_000);
+    const closed = setTeamTarget(db, b.id, '2029-03', 1_200_000_000);
+
+    softDeleteTeam(db, b.id);
+    expect(listTeamTargets(db)).toEqual([kept]);
+    restoreTeam(db, b.id);
+
+    expect(listTeamTargets(db)).toEqual([kept, closed]);
   });
 });
 

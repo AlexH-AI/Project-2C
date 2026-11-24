@@ -1107,6 +1107,9 @@ export const vi = {
   // The cap in the compact form of the data's currency (ADR-0018 §3; mockup #money "Quá trần phí").
   'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa {max} đồng.',
   'error.AMOUNT_TOO_LARGE.cents': 'Số tiền tối đa {max}.',
+  // KPI tháng (D1): ten times the cap of a fee; Vietnamese goes with VND only (ADR-0018 §1).
+  'error.TARGET_TOO_LARGE': 'KPI tháng tối đa 1,000 tỷ đồng.',
+  'error.INVALID_MONTH': 'Tháng không hợp lệ.',
   // The line under the name of Tổng quan and Báo cáo: the days counted of a month in progress.
   'overview.mtdRange': '{range} (MTD)',
   'overview.scopeTeams': 'Mọi team ({teams} team)',

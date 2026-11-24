@@ -14,10 +14,12 @@ export {
   isPersonInUse,
   listPeople,
   listTeams,
+  listTeamTargets,
   ownsRecords,
   personUsage,
   restorePerson,
   restoreTeam,
+  setTeamTarget,
   softDeletePerson,
   softDeleteTeam,
   updatePerson,
@@ -47,6 +49,7 @@ export {
   rescheduleAppointment,
   restoreAppointment,
   scheduleAppointment,
+  setExpectedCaseSize,
   softDeleteAppointment,
 } from './appointments';
 export type {
@@ -56,6 +59,7 @@ export type {
   MeetingOutcome,
   NewAppointment,
   NextAppointment,
+  Rescheduling,
 } from './appointments';
 export {
   cancelPolicy,

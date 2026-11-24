@@ -36,6 +36,7 @@ import {
   recordMeetingOutcome,
   rescheduleAppointment,
   scheduleAppointment,
+  setExpectedCaseSize,
   softDeleteAppointment,
 } from './appointments';
 import {
@@ -91,8 +92,10 @@ import {
 import {
   createPerson,
   createTeam,
+  isTargetMonth,
   listPeople,
   listTeams,
+  setTeamTarget,
   softDeletePerson,
   softDeleteTeam,
 } from './team';
@@ -151,6 +154,12 @@ const CANCEL_EVERY = 20;
 const CANCEL_DAYS = 21;
 /** Mixed into the seed for the cancellations' own random stream. */
 const CANCEL_STREAM = 0x5eed_ca;
+/** Of the appointments ahead of a customer in the Forecast, the share with a case size (D1). */
+const CASE_SIZE_SHARE = 0.85;
+/** The KPI tháng of a team: 10 to 16 hundred million đồng (D1). */
+const TARGET_HUNDRED_MILLIONS = [10, 16] as const;
+/** Mixed into the seed for the Forecast's own random stream. */
+const FORECAST_STREAM = 0x5eed_fc;
 /** Of the customers, appointments and policies, the share the load data deletes. */
 const TRASH_SHARE = 0.01;
 /** The team the load data closes, named apart from those `teamName` gives. */
@@ -182,6 +191,7 @@ interface Slot {
 
 interface Booked {
   readonly id: string;
+  readonly time: string | null;
   readonly customer: SimCustomer;
 }
 
@@ -209,6 +219,7 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
       }
       const simulate = simulation(db, { rng, aiRng, cancelRng }, anchor, scale);
       for (; today <= end; today++) simulate.day(today);
+      forecastData(db, createRng(options.seed ^ FORECAST_STREAM), anchor);
       // The clock is back on the anchor day.
       if (options.trash) simulate.fillTrash();
       // The sample data is in VND (ADR-0018 §8), stamped by the seed's clock as the rest of it.
@@ -330,16 +341,17 @@ function simulation(
     const [a, b] = [rng.pick(pool), rng.pick(pool)];
     const customer = stageRank(b.stage) > stageRank(a.stage) ? b : a;
     customer.busy = true;
+    const time = rng.chance(0.9) ? rng.pick(APPOINTMENT_TIMES) : null;
     const appointment = scheduleAppointment(db, {
       customerId: customer.id,
       rmId: rm.id,
       date: toDate(day),
-      time: rng.chance(0.9) ? rng.pick(APPOINTMENT_TIMES) : null,
+      time,
       triggerType: rng.weighted(TRIGGERS),
       triggerNote: rng.chance(0.4) ? rng.pick(TRIGGER_NOTES) : null,
       coordinatorIds: rng.chance(0.15) ? [rng.pick(coordinators.get(rm.id)!).id] : [],
     });
-    return { id: appointment.id, customer };
+    return { id: appointment.id, time, customer };
   };
 
   const submit = (customer: SimCustomer, day: number) => {
@@ -354,15 +366,16 @@ function simulation(
     if (issueDay < anchor) add(issues, issueDay, { id: policy.id, fyp });
   };
 
-  const resolve = (rm: Person, { id, customer }: Booked, day: number) => {
+  const resolve = (rm: Person, { id, time: was, customer }: Booked, day: number) => {
     const outcome = rng.weighted(OUTCOMES);
     if (outcome === 'RESCHEDULE') {
       const later = Math.min(day + rng.int(1, 10), end);
-      const moved = rescheduleAppointment(db, id, {
-        date: toDate(later),
-        time: rng.pick(APPOINTMENT_TIMES),
-      });
-      add(agenda, later, { rm, booked: { id: moved.id, customer } });
+      const { date, slot } = rescheduledDay(later);
+      const drawn = rng.pick(APPOINTMENT_TIMES);
+      // Moved off a Sunday back to this very Saturday: to another hour of it.
+      const time = date === day && drawn === was ? nextTime(drawn) : drawn;
+      const moved = rescheduleAppointment(db, id, { date: toDate(date), time });
+      add(agenda, slot, { rm, booked: { id: moved.id, time, customer } });
       return;
     }
     customer.busy = false;
@@ -384,6 +397,20 @@ function simulation(
     if (stageAfter === 'N1' && rng.chance(POLICY_CHANCE)) submit(customer, day);
   };
 
+  /**
+   * The day a meeting moved to `later` is booked on, and the day its slot comes up: never a Sunday
+   * (D-c, Owner 11/11/2026). Moved to a Sunday before the anchor day, it is booked on the Saturday
+   * before — the day it moves from, maybe — and its outcome still recorded on the Sunday, so that
+   * every draw of the data after it stays as it was; from the anchor day on, where nothing more is
+   * drawn, it is booked on the Monday after (the Saturday, past the last day).
+   */
+  const rescheduledDay = (later: number): { date: number; slot: number } => {
+    if (!isSunday(later)) return { date: later, slot: later };
+    if (later < anchor) return { date: later - 1, slot: later };
+    const moved = later < end ? later + 1 : later - 1;
+    return { date: moved, slot: moved };
+  };
+
   /** Now and then an RM moves a customer down or on hold by hand, outside any meeting. */
   const manualChange = (rm: Person, day: number) => {
     const open = customers.get(rm.id)!.filter((c) => isPipelineStage(c.stage));
@@ -397,10 +424,14 @@ function simulation(
 
   const day = (day: number) => {
     if ((day - start) % 7 === 0) {
+      // The six days of the week from this one but its Sunday (D-c): with a history starting on a
+      // Monday, as from a Tuesday anchor, the very days of before.
+      const workdays = [0, 1, 2, 3, 4, 5, 6].filter((offset) => !isSunday(day + offset));
       for (const rm of rms) {
         const weekdays = rng.shuffle([0, 1, 2, 3, 4, 5]).slice(0, rng.int(...scale.meetingDays));
         for (const offset of weekdays) {
-          if (day + offset <= end) add(agenda, day + offset, { rm });
+          const meeting = day + workdays[offset]!;
+          if (meeting <= end) add(agenda, meeting, { rm });
         }
       }
     }
@@ -586,6 +617,43 @@ function cancelSimulation(db: Database, rng: Rng, anchor: number) {
 }
 
 /**
+ * The data of the Forecast (D1; spec Phase 6 phản hồi §6.2 D-e, golden D mục 4 điểm 3): a case size
+ * on most appointments ahead of a customer now in N3, N2 or N1, the others left to fill in; a KPI
+ * tháng for every team, of the anchor day's month and the three before. As the cancellations, with
+ * its own random stream and a clock of its own, from just after the last booking, so that every
+ * other record stays as it was without it.
+ */
+function forecastData(db: Database, rng: Rng, anchor: number): void {
+  const stages = new Map(listCustomers(db).map((c) => [c.id, c.stage]));
+  const ahead = listAppointments(db).filter(
+    (a) =>
+      a.status === 'SCHEDULED' &&
+      dayNumber(a.date) >= anchor &&
+      FORECAST_STAGES.includes(stages.get(a.customerId)!),
+  );
+  const last = db.sqlite.exec('SELECT MAX(updated_at) FROM appointments')[0]!.values[0]![0];
+  let tick = typeof last === 'string' ? Date.parse(last) + 1 : middayOf(anchor);
+  db.withSources({ now: () => new Date(tick++), random: rng.fill }, () => {
+    for (const { id } of ahead) {
+      if (!rng.chance(CASE_SIZE_SHARE)) continue;
+      setExpectedCaseSize(db, id, rng.pick(CASE_SIZES_MILLION) * MILLION);
+    }
+    const { year, month } = toDate(anchor);
+    for (const team of listTeams(db)) {
+      for (let back = 3; back >= 0; back--) {
+        const index = year * 12 + month - 1 - back;
+        const key = `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+        const amount = rng.int(...TARGET_HUNDRED_MILLIONS) * 100 * MILLION;
+        if (isTargetMonth(key)) setTeamTarget(db, team.id, key, amount);
+      }
+    }
+  });
+}
+
+/** The stages a customer's appointments count in the Forecast at (spec Phase 6 phản hồi §6.1). */
+const FORECAST_STAGES: readonly CustomerStage[] = ['N3', 'N2', 'N1'];
+
+/**
  * Now and then the RM runs the Mock analysis after a meeting (spec Phase 5 §7.3): on the KYC as it
  * stands, at the mode of the gate, never at a gate that blocks the AI (P2). Later KYC changes leave
  * it STALE, as on screen. It writes with its own random stream and a clock that does not tick, so
@@ -645,6 +713,11 @@ function nextStage(rng: Rng, stage: CustomerStage): CustomerStage {
   }
 }
 
+/** The hour after `time` in `APPOINTMENT_TIMES`, the first after the last. */
+function nextTime(time: (typeof APPOINTMENT_TIMES)[number]): string {
+  return APPOINTMENT_TIMES[(APPOINTMENT_TIMES.indexOf(time) + 1) % APPOINTMENT_TIMES.length]!;
+}
+
 /** N4 → 0 … N1 → 3; closed stages rank below every open one. */
 function stageRank(stage: CustomerStage): number {
   return PIPELINE_STAGES.indexOf(stage as 'N4');
@@ -690,6 +763,14 @@ const EPOCH = calendarDate(1970, 1, 1);
 
 function dayNumber(date: CalendarDate): number {
   return daysBetween(EPOCH, date);
+}
+
+/**
+ * By the day number alone, as `weekdayOf` counts (day 0, 01/01/1970, is a Thursday): a week may run
+ * past 31/12/2100, where no `CalendarDate` is.
+ */
+function isSunday(day: number): boolean {
+  return (((day + 3) % 7) + 7) % 7 === 6;
 }
 
 function toDate(day: number): CalendarDate {

@@ -71,6 +71,7 @@ function drizzleAppointments(db: Database, customerId?: string) {
     triggerNote: a.triggerNote,
     stageAfter: a.stageAfter,
     expectedCaseSize: a.expectedCaseSize,
+    expectedCaseSizeAt: a.expectedCaseSizeAt,
     nextStep: a.nextStep,
     note: a.note,
     rescheduledFromId: a.rescheduledFromId,

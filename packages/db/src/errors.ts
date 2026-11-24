@@ -46,6 +46,10 @@ export const DB_ERROR_CODES = [
   'INVALID_AMOUNT',
   /** A fee (FYP, case size) over `maxFee` of the data's currency: 100 Billions (DR-23, ADR-0018 §3). */
   'AMOUNT_TOO_LARGE',
+  /** A KPI tháng over ten times `maxFee`: 1,000 Billions (golden D `forecast.md` mục 4 điểm 6). */
+  'TARGET_TOO_LARGE',
+  /** A month of a KPI tháng that is not `yyyy-mm` of 1900–2100: a bug of the caller (D1). */
+  'INVALID_MONTH',
   /** Params `name` when the customer is deleted (spec Phase 6 TR-1). */
   'CUSTOMER_NOT_FOUND',
   /** Params `to`, and `from` unless the customer is being created. */

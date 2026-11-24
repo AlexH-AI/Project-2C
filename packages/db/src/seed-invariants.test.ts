@@ -6,10 +6,12 @@ import {
   calendarDate,
   compareDates,
   daysBetween,
+  formatIsoDate,
   fromIsoDate,
   isPipelineStage,
   KYC_FIELDS,
   kycHash,
+  weekdayOf,
   type KycField,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -21,6 +23,7 @@ import { getKycProfile, listKycVersions, type KycProfileRecord } from './kyc';
 import { listPolicies } from './policies';
 import { seedDemoData, type SeedOptions } from './seed';
 import { getCurrency } from './settings';
+import { listTeams, listTeamTargets } from './team';
 import { stageAtEndOfDay } from './test-support';
 
 const SLOW = 60_000;
@@ -152,6 +155,41 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
         expect(days).toBeGreaterThanOrEqual(0);
         expect(days).toBeLessThanOrEqual(21);
         expect(compareDates(fromIsoDate(cancelled!), ANCHOR)).toBeLessThanOrEqual(0);
+      }
+    });
+  });
+
+  // D1 (spec Phase 6 phản hồi §6.2 D-c, D-e; golden D `forecast.md` mục 4 điểm 3).
+  describe('the data of the Forecast (D1)', () => {
+    it('books no appointment on a Sunday, deleted ones included', () => {
+      const days = db.sqlite.exec('SELECT date FROM appointments')[0]!.values;
+      expect(days.length).toBeGreaterThan(0);
+      expect(days.filter(([day]) => weekdayOf(fromIsoDate(String(day))) === 7)).toEqual([]);
+    });
+
+    it('gives most appointments ahead of a customer in N3, N2 or N1 a case size, a few none', () => {
+      const stages = new Map(customers.map((c) => [c.id, c.stage]));
+      const ahead = appointments.filter(
+        (a) =>
+          a.status === 'SCHEDULED' &&
+          compareDates(a.date, ANCHOR) >= 0 &&
+          ['N3', 'N2', 'N1'].includes(stages.get(a.customerId)!),
+      );
+      const sized = ahead.filter((a) => a.expectedCaseSize !== null);
+      expect(sized.length / ahead.length).toBeGreaterThan(0.7);
+      expect(sized.length).toBeLessThan(ahead.length);
+      // Each case size with when it was entered, and only those (deleted appointments too).
+      const unpaired = db.sqlite.exec(
+        'SELECT id FROM appointments WHERE (expected_case_size IS NULL) <> (expected_case_size_at IS NULL)',
+      );
+      expect(unpaired).toEqual([]);
+    });
+
+    it('gives every team a KPI tháng of the month of the anchor day', () => {
+      const month = formatIsoDate(ANCHOR).slice(0, 7);
+      const targets = listTeamTargets(db);
+      for (const team of listTeams(db)) {
+        expect(targets).toContainEqual(expect.objectContaining({ teamId: team.id, month }));
       }
     });
   });

@@ -120,8 +120,24 @@ export interface Appointment {
    */
   readonly stageAfter: CustomerStage | null;
   readonly expectedCaseSize: Money | null;
+  /**
+   * When the case size dự kiến was entered or last changed, as an ISO instant (golden D mục 4 điểm
+   * 2): there when and only when the case size is; the Forecast counts the latest one of a customer.
+   * The database always gives it; the metrics need none, so their fixtures leave it out.
+   */
+  readonly expectedCaseSizeAt?: string | null;
   readonly nextStep: string | null;
   readonly note: string;
+}
+
+/**
+ * KPI tháng of a team (golden D mục 4 điểm 6): its Doanh số target for one month, `yyyy-mm`. A team
+ * without one for a month has no KPI then; RM have none, the whole is the sum of the teams.
+ */
+export interface TeamTarget {
+  readonly teamId: string;
+  readonly month: string;
+  readonly amount: Money;
 }
 
 export interface Policy {

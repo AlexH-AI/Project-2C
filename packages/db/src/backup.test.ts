@@ -1,6 +1,6 @@
 import { calendarDate, normalizeNote, normalizeText } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { recordMeetingOutcome, scheduleAppointment } from './appointments';
+import { listAppointments, recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
 import {
   createCustomer,
@@ -25,7 +25,9 @@ import {
   createPerson,
   createTeam,
   listTeams,
+  listTeamTargets,
   restoreTeam,
+  setTeamTarget,
   softDeleteTeam,
   updateTeam,
 } from './team';
@@ -127,6 +129,7 @@ describe('exportBackup', () => {
       'policies',
       'settings',
       'stage_transitions',
+      'team_targets',
       'teams',
     ]);
   });
@@ -279,8 +282,8 @@ describe('importBackup', () => {
     expect(
       imported.db.sqlite
         .exec("SELECT name FROM pragma_table_info('appointments')")[0]
-        ?.values.at(-1),
-    ).toEqual(['outcome_reviewer_id']);
+        ?.values.slice(-2),
+    ).toEqual([['outcome_reviewer_id'], ['expected_case_size_at']]);
   });
 
   /** Every row as the app writes it now, ids and all; only the export time differs. */
@@ -324,6 +327,20 @@ describe('importBackup', () => {
     return styles;
   };
 
+  /**
+   * `file` as an app before D1 (migration 0020) saved it: no stamp of a case size, no KPI tháng.
+   * Returns the stamps and the KPI it held, a stamp of none and no KPI on a file of `small()`.
+   */
+  const withoutForecast = (file: BackupJson) => {
+    const stamps = file.tables.appointments!.map((row) => row.expected_case_size_at);
+    file.tables.appointments = file.tables.appointments!.map((row) =>
+      Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'expected_case_size_at')),
+    );
+    const { team_targets: targets, ...tables } = file.tables;
+    file.tables = tables;
+    return [stamps, targets!.length];
+  };
+
   // A2, A3 (spec Phase 6 phản hồi §3.3): the file of an app before RE became RM (version 13, after
   // migration 0012) imports as it was saved, through the migrations of A2 and A3.
   it('A2, A3: imports a file of migration 0012, with RM in place of the role and the note source RE, and rm_id of re_id', async () => {
@@ -339,6 +356,7 @@ describe('importBackup', () => {
     expect(withReId(file)).toEqual([2, 1, 1]);
     expect(withoutCancelledDate(file)).toEqual([null]);
     expect(withoutTeamStyle(file)).toEqual([[null, null]]);
+    expect(withoutForecast(file)).toEqual([[null], 0]);
 
     const imported = await importBackup(JSON.stringify(file));
 
@@ -357,6 +375,7 @@ describe('importBackup', () => {
     expect(withReId(file)).toEqual([2, 1, 1]);
     expect(withoutCancelledDate(file)).toEqual([null]);
     expect(withoutTeamStyle(file)).toEqual([[null, null]]);
+    expect(withoutForecast(file)).toEqual([[null], 0]);
     expect(Object.keys(file.tables.customers![0]!)).toEqual([
       'id',
       'code',
@@ -527,7 +546,11 @@ describe('importBackup', () => {
       [
         'a soft-deleted appointment',
         'appointments',
-        (row) => ({ deleted_at: row.created_at, expected_case_size: -1 }),
+        (row) => ({
+          deleted_at: row.created_at,
+          expected_case_size: -1,
+          expected_case_size_at: row.created_at,
+        }),
       ],
       [
         'an issued policy (CHECK of the schema)',
@@ -559,7 +582,11 @@ describe('importBackup', () => {
 
   // DR-23: the commands' cap holds for a backup too, so no file brings a total past a safe integer.
   const feeRows: [string, string, (fee: number) => Record<string, unknown>][] = [
-    ['an expected case size', 'appointments', (fee) => ({ expected_case_size: fee })],
+    [
+      'an expected case size',
+      'appointments',
+      (fee) => ({ expected_case_size: fee, expected_case_size_at: STAMP }),
+    ],
     ['a submitted FYP', 'policies', (fee) => ({ submitted_fyp: fee })],
     ['an issued FYP', 'policies', (fee) => ({ issued_date: '2026-09-01', issued_fyp: fee })],
   ];
@@ -712,6 +739,7 @@ describe('importBackup', () => {
     file.schemaVersion = before;
     expect(withoutCancelledDate(file)).toEqual([null]);
     expect(withoutTeamStyle(file)).toEqual([[null, null]]);
+    expect(withoutForecast(file)).toEqual([[null], 0]);
     expect(Object.keys(file.tables.policies![0]!)).not.toContain('cancelled_date');
 
     const imported = await importBackup(JSON.stringify(file));
@@ -772,11 +800,137 @@ describe('importBackup', () => {
     const before = MIGRATIONS.find((m) => m.tag === '0019_teams_style')!.id - 1;
     file.schemaVersion = before;
     expect(withoutTeamStyle(file)).toEqual([[null, null]]);
+    expect(withoutForecast(file)).toEqual([[null], 0]);
 
     const imported = await importBackup(JSON.stringify(file));
 
     expect(imported.schemaVersion).toBe(before);
     expect(listTeams(imported.db).map((t) => [t.color, t.icon])).toEqual([[null, null]]);
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
+  });
+
+  // D1 (golden D `docs/golden/forecast.md` mục 4 điểm 10): when a case size was entered goes with
+  // it; a KPI tháng is of a team of the file, a month yyyy-mm, once, within its range.
+  it('D1: keeps a case size with when it was entered, and the KPI tháng, through export and import', async () => {
+    const { db, rm, team } = await setup();
+    const lan = createCustomer(db, { name: 'Lan', rmId: rm.id, stage: 'N3', date: d(1, 9) });
+    const book = (expectedCaseSize: number | null) =>
+      scheduleAppointment(db, {
+        customerId: lan.id,
+        rmId: rm.id,
+        date: d(30, 9),
+        triggerType: 'REFERRAL',
+        expectedCaseSize,
+      });
+    const [sized, bare] = [book(200_000_000), book(null)];
+    const closed = createTeam(db, { name: 'Ánh Dương' });
+    for (const { id } of [team, closed]) setTeamTarget(db, id, '2026-09', 1_800_000_000);
+    setTeamTarget(db, team.id, '2026-10', 2_000_000_000);
+    softDeleteTeam(db, closed.id);
+    const first = exportBackup(db);
+    const { tables } = JSON.parse(first) as BackupJson;
+    expect(tables.team_targets).toHaveLength(3);
+
+    const { db: imported } = await importBackup(first);
+
+    expect(listAppointments(imported)).toEqual(listAppointments(db));
+    expect(byId(listAppointments(imported), sized.id)?.expectedCaseSizeAt).toBe(
+      sized.expectedCaseSizeAt,
+    );
+    expect(byId(listAppointments(imported), bare.id)?.expectedCaseSizeAt).toBeNull();
+    expect(listTeamTargets(imported)).toEqual(listTeamTargets(db));
+    expect((JSON.parse(exportBackup(imported)) as BackupJson).tables).toEqual(tables);
+    restoreTeam(imported, closed.id);
+    expect(listTeamTargets(imported)).toContainEqual({
+      teamId: closed.id,
+      month: '2026-09',
+      amount: 1_800_000_000,
+    });
+  });
+
+  it('D1: refuses a case size without when it was entered, or a stamp without a case size', async () => {
+    const backup = await smallBackup();
+    const row = backup.tables.appointments![0]!;
+
+    for (const change of [
+      { expected_case_size: 100_000_000 },
+      { expected_case_size_at: STAMP },
+      { expected_case_size: 100_000_000, expected_case_size_at: '2026-09-30' },
+      { expected_case_size: 100_000_000, expected_case_size_at: '2026-09-30T07:45:00Z' },
+    ]) {
+      backup.tables.appointments![0] = { ...row, ...change };
+      expect(await codeOfImport(JSON.stringify(backup)), JSON.stringify(change)).toBe(
+        'BACKUP_INVALID',
+      );
+    }
+    backup.tables.appointments![0] = {
+      ...row,
+      expected_case_size: 100_000_000,
+      expected_case_size_at: STAMP,
+    };
+    await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+  });
+
+  it('D1: refuses a KPI tháng of a team not in the file, a month not yyyy-mm, out of range or twice', async () => {
+    const backup = await smallBackup();
+    const kpi = {
+      team_id: backup.tables.teams![0]!.id,
+      month: '2026-09',
+      amount: 1_800_000_000,
+      created_at: STAMP,
+      updated_at: STAMP,
+    };
+    const withTargets = (rows: Record<string, unknown>[], currency = 'VND') =>
+      JSON.stringify(
+        inCurrency({ ...backup, tables: { ...backup.tables, team_targets: rows } }, currency),
+      );
+
+    for (const bad of [
+      [{ ...kpi, team_id: 'nobody' }],
+      ...['2026-9', '2026-13', '2026-00', '1899-12', '2101-01', '2026-09-01'].map((month) => [
+        { ...kpi, month },
+      ]),
+      [{ ...kpi, amount: 0 }],
+      [{ ...kpi, amount: -1 }],
+      [{ ...kpi, amount: 1_000_000_000_001 }],
+      [{ ...kpi, updated_at: '2026-09-30' }],
+      [kpi, { ...kpi, amount: 1_200_000_000 }],
+    ]) {
+      expect(await codeOfImport(withTargets(bad)), JSON.stringify(bad)).toBe('BACKUP_INVALID');
+    }
+    const good = [kpi, { ...kpi, month: '2026-10', amount: 1_000_000_000_000 }];
+    await expect(importBackup(withTargets(good))).resolves.toBeDefined();
+    // ADR-0018 §3: by the cap of the file's currency, 1,000 Bil dollars in cents.
+    expect(await codeOfImport(withTargets([{ ...kpi, amount: 100_000_000_000_001 }], 'USD'))).toBe(
+      'BACKUP_INVALID',
+    );
+    await expect(
+      importBackup(withTargets([{ ...kpi, amount: 100_000_000_000_000 }], 'USD')),
+    ).resolves.toBeDefined();
+  });
+
+  // Golden D mục 4 điểm 3, 10: the case size of an older file was entered at its last change.
+  it('D1: imports a file saved before the stamp of a case size and the KPI tháng', async () => {
+    const db = await small();
+    const { id } = listAppointments(db)[0]!;
+    recordMeetingOutcome(db, id, {
+      status: 'MET',
+      stageAfter: 'N3',
+      nextStep: 'Gọi lại',
+      expectedCaseSize: 100_000_000,
+    });
+    const latest = exportBackup(db);
+    const file = JSON.parse(latest) as BackupJson;
+    const before = MIGRATIONS.find((m) => m.tag === '0020_forecast_data')!.id - 1;
+    file.schemaVersion = before;
+    const updatedAt = file.tables.appointments![0]!.updated_at;
+    expect(withoutForecast(file)).toEqual([[updatedAt], 0]);
+
+    const imported = await importBackup(JSON.stringify(file));
+
+    expect(imported.schemaVersion).toBe(before);
+    expect(listAppointments(imported.db).map((a) => a.expectedCaseSizeAt)).toEqual([updatedAt]);
+    expect(listTeamTargets(imported.db)).toEqual([]);
     expect(unstamped(exportBackup(imported.db))).toBe(unstamped(latest));
   });
 

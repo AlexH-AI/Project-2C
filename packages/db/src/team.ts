@@ -5,17 +5,23 @@
 import {
   byName,
   isRm,
+  MAX_YEAR,
+  maxFee,
+  MIN_YEAR,
   PERSON_ROLES,
   REVIEWER_ROLES,
   ROLES_WITH_TEAM,
   searchText,
   TEAM_COLORS,
   TEAM_ICONS,
+  type CurrencyCode,
+  type Money,
   type Person,
   type PersonRole,
   type Team,
   type TeamColor,
   type TeamIcon,
+  type TeamTarget,
 } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 import {
@@ -36,7 +42,8 @@ import {
   POINTS_TO,
   type PersonReferenceKind,
 } from './person-references';
-import { people, teams } from './schema';
+import { people, teams, teamTargets } from './schema';
+import { getCurrency } from './settings';
 
 type TeamRow = typeof teams.$inferSelect;
 type PersonRow = typeof people.$inferSelect;
@@ -226,6 +233,79 @@ export function restoreTeam(db: Database, id: string): void {
 /** Why the team cannot be restored, thrown as `restoreTeam` throws it (spec Phase 6 TR-2). */
 export function checkRestoreTeam(db: Database, row: TeamRow): void {
   assertTeamNameFree(db, row.name, row.id);
+}
+
+// ---- KPI tháng (D1; golden D mục 4 điểm 6–8, 11) ----------------------------
+
+/** The KPI tháng of the live teams, by team and month; a deleted team's come back with it. */
+export function listTeamTargets(db: Database): TeamTarget[] {
+  return selectRows(
+    db,
+    `SELECT k.team_id, k.month, k.amount FROM team_targets k JOIN teams t ON t.id = k.team_id
+     WHERE t.deleted_at IS NULL ORDER BY k.team_id, k.month`,
+  ).map(([teamId, month, amount]) => ({
+    teamId: String(teamId),
+    month: String(month),
+    amount: Number(amount),
+  }));
+}
+
+/**
+ * Sets the KPI tháng of a live team for `month` (`yyyy-mm`), or clears it (null) for good, the team
+ * then without one that month: each month keeps its own (điểm 6, 7).
+ */
+export function setTeamTarget(
+  db: Database,
+  teamId: string,
+  month: string,
+  amount: Money | null,
+): TeamTarget | null {
+  return db.transaction(() => {
+    liveTeam(db, teamId);
+    if (!isTargetMonth(month)) throw new DbError('INVALID_MONTH');
+    if (amount === null) {
+      db.orm
+        .delete(teamTargets)
+        .where(and(eq(teamTargets.teamId, teamId), eq(teamTargets.month, month)))
+        .run();
+      return null;
+    }
+    if (!isTargetAmount(amount, getCurrency(db))) {
+      const positive = Number.isSafeInteger(amount) && amount > 0;
+      throw new DbError(positive ? 'TARGET_TOO_LARGE' : 'INVALID_AMOUNT');
+    }
+    const at = db.now().toISOString();
+    db.orm
+      .insert(teamTargets)
+      .values({ teamId, month, amount, createdAt: at, updatedAt: at })
+      .onConflictDoUpdate({
+        target: [teamTargets.teamId, teamTargets.month],
+        set: { amount, updatedAt: at },
+      })
+      .run();
+    return { teamId, month, amount };
+  });
+}
+
+/** Whether `value` is a month as stored: `yyyy-mm` of a year the app takes (1900–2100, DR-35). */
+export function isTargetMonth(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  return year >= MIN_YEAR && year <= MAX_YEAR;
+}
+
+/**
+ * Whether `value` is a KPI tháng in `currency`: a whole number of its smallest unit, above 0, at
+ * most ten times the cap of a fee (1,000 tỷ đồng; `maxFee`, ADR-0018 §3) — the commands and the
+ * import.
+ */
+export function isTargetAmount(value: unknown, currency: CurrencyCode): value is Money {
+  return (
+    typeof value === 'number' &&
+    Number.isSafeInteger(value) &&
+    value > 0 &&
+    value <= 10 * maxFee(currency)
+  );
 }
 
 // ---- person commands ------------------------------------------------------
