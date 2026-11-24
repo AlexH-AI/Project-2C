@@ -57,8 +57,10 @@ export function Toolbar({
         data-tauri-drag-region={macDragRegion('self')}
         className="toolbar z-10 flex flex-none items-center gap-2.5 pr-5.5 pl-7"
       >
-        <div className="min-w-0">
-          <h1 ref={heading} tabIndex={-1} className="screen-title m-0 whitespace-nowrap">
+        {/* Short of room, the line under the name is cut first (`shrink-1000`), then the pill
+            gives up the customer's name, then its time left; the name keeps 80 px at least. */}
+        <div className="min-w-20 shrink-1000">
+          <h1 ref={heading} tabIndex={-1} className="screen-title m-0 truncate">
             {title}
           </h1>
           {/* --text-2, not the mockup's --text-3: over the bright cells that scroll under the
@@ -76,12 +78,10 @@ export function Toolbar({
             className="m-0 truncate text-sm text-fg-2 tabular-nums empty:hidden"
           />
         </div>
-        {/* As wide as the pill, which gives up the customer's name before the time; the line
-            under the name of the screen is cut short first. */}
         <div
           data-slot="heads-up"
           data-tauri-drag-region={macDragRegion('self')}
-          className="flex flex-auto justify-center"
+          className="flex min-w-0 flex-auto justify-center"
         >
           {headsUp}
         </div>

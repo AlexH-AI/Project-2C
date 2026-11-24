@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from 'react';
 import { flushSync } from 'react-dom';
+import type { Scope } from '@p2c/domain';
 import { IconButton, openFrom, riseStep } from '@p2c/ui';
 import { useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
@@ -31,6 +32,7 @@ import {
   type Route,
 } from './routes';
 import { narrowScope, pinChoice, resolveScope, type ScopeChoice } from './scope';
+import { scopeLabel } from './scope-menu';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
 import { Toolbar } from './ScreenBar';
@@ -81,6 +83,8 @@ function useScreenFocus(route: Route, name: string, appWindow: AppWindow | undef
   }, [hash, onCustomers]);
   return { heading, main };
 }
+
+const EVERYONE: Scope = { kind: 'all' };
 
 /** A part of a screen for "Hiện": a card, or a block marked `data-part` (a row of controls). */
 const PART = '.card, [data-part]';
@@ -226,7 +230,13 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
         <Toolbar
           title={title}
           heading={heading}
-          headsUp={<HeadsUp scope={picked} />}
+          headsUp={
+            // A team on Tổng quan reads "Mọi team", every team together (VA4b): "Lưu ý" too.
+            <HeadsUp
+              scope={picked.kind === 'team' && !teamPickerShown(route.screen) ? EVERYONE : picked}
+              label={scopeLabel(picked, teams, people, teamPickerShown(route.screen))}
+            />
+          }
           tools={
             <>
               {/* The mask of customer names, at the same place on every screen (VA6a). */}

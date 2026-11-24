@@ -42,9 +42,10 @@ test('the eye is first on the right of the toolbar on every screen', async ({ pa
   for (const screen of screens) {
     await nav.getByRole('link', { name: screen }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(screen);
-    await expect(page.getByRole('banner').getByRole('button').first()).toHaveAccessibleName(
-      'Che tên khách hàng',
-    );
+    // First after "Lưu ý" (VA9), in the middle of the toolbar.
+    const buttons = page.getByRole('banner').getByRole('button');
+    await expect(buttons.first()).toHaveAccessibleName(/^Lưu ý: /);
+    await expect(buttons.nth(1)).toHaveAccessibleName('Che tên khách hàng');
   }
 });
 

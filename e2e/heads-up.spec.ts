@@ -47,7 +47,7 @@ test('a press opens the panel of today: by time, the next one on gold, Ghi kết
 }) => {
   await page.goto('/#/customers');
   await toOnePm(page);
-  await expect(pill(page)).toHaveAccessibleName(/^Lưu ý: \d\d:\d\d · .+ · (còn \d|đến giờ)/);
+  await expect(pill(page)).toHaveAccessibleName(/^Lưu ý: \d\d:\d\d .+ · (còn \d|đến giờ)/);
   await pill(page).click();
   await expect(panel(page)).toBeFocused();
   await expect(panel(page).getByRole('heading', { name: /^Hôm nay/ })).toContainText(
@@ -59,7 +59,7 @@ test('a press opens the panel of today: by time, the next one on gold, Ghi kết
   expect(timed).toEqual([...timed].sort());
   // The next one is the one the pill names, and the only one on gold.
   await expect(nextRow(page)).toHaveCount(1);
-  const [, time, name] = /^Lưu ý: (\d\d:\d\d) · (.+) · /.exec(
+  const [, time, name] = /^Lưu ý: (\d\d:\d\d) (.+) · /.exec(
     (await pill(page).getAttribute('aria-label'))!,
   )!;
   await expect(nextRow(page)).toContainText(`${time}${name}`);
@@ -122,11 +122,11 @@ test('a narrow window leaves the name out of the pill; the mask hides it in the 
   await page.goto('/#/reports');
   await toOnePm(page);
   const wide = (await pill(page).getAttribute('aria-label'))!;
-  const [, time, name, left] = /^Lưu ý: (\d\d:\d\d) · (.+) · (.+)$/.exec(wide)!;
+  const [, time, name, left] = /^Lưu ý: (\d\d:\d\d) (.+) · (.+)$/.exec(wide)!;
   await expect(pill(page)).toContainText(name!);
 
   await page.setViewportSize({ width: 1100, height: 700 });
-  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: ${time} · ${left}`);
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: ${time} ${left}`);
   await expect(pill(page)).not.toContainText(name!);
   // Every button of the toolbar of Báo cáo is still in the window, after the pill.
   const buttons = toolbar(page).getByRole('button');
@@ -140,7 +140,7 @@ test('a narrow window leaves the name out of the pill; the mask hides it in the 
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await toolbar(page).getByRole('button', { name: 'Che tên khách hàng' }).click();
-  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: ${time} · ${maskName(name!)} · ${left}`);
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: ${time} ${maskName(name!)} · ${left}`);
   await pill(page).click();
   await expect(nextRow(page)).toContainText(maskName(name!));
   await expect(panel(page)).not.toContainText(name!);

@@ -23,7 +23,6 @@ import { BADGE } from '../routes/classes';
 import { headsUp, leftText, type HeadsUp as HeadsUpView, type HeadsUpState } from './heads-up';
 import { useMasked } from './NameMask';
 import { routeToHash } from './routes';
-import { scopeName } from './scope';
 import { useToast } from './Toasts';
 import { navigate } from './useRoute';
 
@@ -72,7 +71,7 @@ const dayText = (a: AppointmentRecord) =>
  * leaves out the name. A press opens the panel of today under it (`TodayPanel`); Esc, a press
  * outside or the focus going elsewhere closes it, the focus back on the pill.
  */
-export function HeadsUp({ scope }: { scope: Scope }) {
+export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   const { appointments, customers, people } = useTables();
   const now = useMinute();
   const view = useMemo(
@@ -131,17 +130,19 @@ export function HeadsUp({ scope }: { scope: Scope }) {
           next.minutesLeft === null ? t('headsUp.allDay') : leftText(next.minutesLeft),
         ];
   const showWho = who !== '' && !(narrow && when);
-  const shown = [what, showWho ? who : '', when].filter(Boolean);
+  // Read as shown: the time and the name, then "·" before the time left only beside a name.
+  const head = [what, showWho ? who : ''].filter(Boolean).join(' ');
+  const text = showWho && when ? joinParts([head, when]) : [head, when].filter(Boolean).join(' ');
   return (
-    <span ref={root} className="relative flex justify-center">
+    <span ref={root} className="relative flex min-w-0 justify-center">
       <button
         ref={pill}
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={t('headsUp.label', { text: joinParts(shown) })}
+        aria-label={t('headsUp.label', { text })}
         onClick={() => (open ? close() : setOpen(true))}
-        className="press btn-default inline-flex h-8.5 max-w-95 cursor-pointer items-center gap-2 rounded-control pr-3.25 pl-2.75 text-md whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="press btn-default inline-flex h-8.5 max-w-95 min-w-0 cursor-pointer items-center gap-2 rounded-control pr-3.25 pl-2.75 text-md whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {next && !later ? (
           <span className="size-1.75 flex-none rounded-full bg-accent ring-3 ring-accent-soft motion-safe:animate-pulse" />
@@ -149,9 +150,9 @@ export function HeadsUp({ scope }: { scope: Scope }) {
           <NavIcon name="calendar" className="size-3.75 flex-none text-fg-2" />
         )}
         {what && <b className="font-semibold tabular-nums">{what}</b>}
-        {showWho && <span className="min-w-0 truncate">{who}</span>}
+        {showWho && <span className="min-w-0 shrink-1000 truncate">{who}</span>}
         {showWho && when && <span className="text-fg-3">{t('sep.dot')}</span>}
-        {when && <span className="text-fg-2 tabular-nums">{when}</span>}
+        {when && <span className="min-w-0 truncate text-fg-2 tabular-nums">{when}</span>}
       </button>
       {drawn && (
         <div
@@ -164,7 +165,7 @@ export function HeadsUp({ scope }: { scope: Scope }) {
         >
           <TodayPanel
             view={view}
-            scope={scope}
+            label={label}
             now={now}
             // The focus on the pill first: 6c gives it back to what held it as it opened.
             onRecord={(row) => {
@@ -196,13 +197,14 @@ const ROW_END: Partial<Record<HeadsUpState, string>> = { next: `${BADGE} text-in
  */
 function TodayPanel({
   view,
-  scope,
+  label,
   now,
   onRecord,
   onClose,
 }: {
   view: HeadsUpView;
-  scope: Scope;
+  /** The scope as the toolbar names it. */
+  label: string;
   now: Date;
   onRecord: (row: AppointmentRow) => void;
   onClose: () => void;
@@ -239,7 +241,7 @@ function TodayPanel({
         <small className="text-xs font-normal text-fg-2">
           {t('headsUp.todayMeta', {
             date,
-            scope: scopeName(scope, teams, people),
+            scope: label,
             count: rows.length,
           })}
         </small>

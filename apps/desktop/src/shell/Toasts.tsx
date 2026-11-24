@@ -67,21 +67,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 /** The modal dialog on top, if one is open: what is outside it takes no click (`inert`). */
 const topModal = () =>
   [...document.querySelectorAll<HTMLDialogElement>('dialog:modal')].at(-1) ?? null;
-const none = () => null;
 const watchModals = (changed: () => void) => {
   const changes = new MutationObserver(changed);
   changes.observe(document.body, { subtree: true, childList: true, attributeFilter: ['open'] });
   return () => changes.disconnect();
 };
-const watchNothing = () => () => undefined;
+
+/** What takes the focus in a dialog when the button of its toast goes. */
+const CONTROL = 'button:enabled, input:enabled, select:enabled, textarea:enabled, a[href]';
 
 /**
- * The modal dialog open while `watch` (a toast is shown), which the toast goes into (L198): a
- * toast outside it would lie under it, its button out of reach and its live region inert,
- * whatever its `z-index`. Watched only while a toast is shown: every change of the page is heard.
+ * As wide as its toast, in the middle of the window: inside a dialog, it stays in the width of the
+ * dialog. As a popover, none of the box, colour and place the browser gives one.
  */
-const useModalHost = (watch: boolean): HTMLDialogElement | null =>
-  useSyncExternalStore(watch ? watchModals : watchNothing, watch ? topModal : none, none);
+const REGION =
+  'pointer-events-none fixed inset-x-0 top-auto bottom-5.5 z-40 mx-auto my-0 flex h-auto max-h-none w-fit max-w-none justify-center overflow-visible border-0 bg-transparent px-4 py-0 text-fg';
 
 /**
  * Where the toast shows: the middle of the bottom edge of the window, over the screen and taking
@@ -94,21 +94,29 @@ const useModalHost = (watch: boolean): HTMLDialogElement | null =>
  * the pointer too (L229). Each toast shown is drawn anew, so that one of the same words is read out
  * again and rises again (L208); one that leaves moves out (`motion-toast`) out of the live region,
  * taking nothing. While a modal dialog is open, the toast lies over it (mockup ui2.css: the toast
- * at z-index 40, the dialog 30): a popover inside that dialog, so it takes clicks and is read.
+ * at z-index 40, the dialog 30; L198): outside it, it would lie under it, its button out of reach
+ * and its live region inert. So each modal dialog open has a region of its own, a popover inside
+ * it, there before any toast goes into it; the region of the window stays, empty meanwhile. A
+ * dialog that closes as its toast shows (a delete confirmed) leaves it in the region of the window.
  */
 export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null> }) {
   const queue = useToastQueue();
   const toast = useSyncExternalStore(queue.subscribe, queue.current, queue.current);
-  const region = useRef<HTMLDivElement>(null);
+  const base = useRef<HTMLDivElement>(null);
+  const hosted = useRef<HTMLDivElement>(null);
   const [last, setLast] = useState(toast);
   if (toast && toast !== last) setLast(toast);
   const { drawn, layer } = useLayerState(toast !== null);
-  const host = useModalHost(drawn);
+  const host = useSyncExternalStore(watchModals, topModal, () => null);
   // The queue tells its listeners as the toast changes, before React renders its buttons away.
+  // Under a dialog the heading is inert: the focus goes into the dialog.
   useEffect(
     () =>
       queue.subscribe(() => {
-        if (region.current?.contains(document.activeElement)) heading.current?.focus();
+        const focused = document.activeElement;
+        if (![base.current, hosted.current].some((region) => region?.contains(focused))) return;
+        const dialog = topModal();
+        (dialog ? dialog.querySelector<HTMLElement>(CONTROL) : heading.current)?.focus();
       }),
     [queue, heading],
   );
@@ -117,10 +125,9 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   useEffect(() => {
     if (toast && pointed.current) queue.hold('pointer', true);
   }, [queue, toast]);
-  // A dialog that closes as its toast shows (a delete confirmed) is gone before this runs: the
-  // region then goes back under the screen once the watch hears it.
+  // A dialog that closes as its toast shows (a delete confirmed) is gone before this runs.
   useLayoutEffect(() => {
-    if (host && region.current?.isConnected) region.current.showPopover();
+    if (host && hosted.current?.isConnected) hosted.current.showPopover();
   }, [host]);
   const error = toast?.tone === 'error';
   const draw = (toast: ToastSpec) => (
@@ -136,10 +143,10 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
     />
   );
   const view = toast && draw(toast);
-  const box = (
+  const frame = (ref: RefObject<HTMLDivElement | null>, shown: boolean, popover?: 'manual') => (
     <div
-      ref={region}
-      popover={host ? 'manual' : undefined}
+      ref={ref}
+      popover={popover}
       onPointerEnter={() => {
         pointed.current = true;
         queue.hold('pointer', true);
@@ -152,23 +159,27 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) queue.hold('focus', false);
       }}
-      // As a popover: none of the box, colour and place the browser gives one.
-      className="pointer-events-none fixed inset-x-0 top-auto bottom-5.5 z-40 m-0 flex size-auto max-h-none max-w-none justify-center overflow-visible border-0 bg-transparent px-4 py-0 text-fg"
+      className={REGION}
     >
       <div aria-live="polite" aria-atomic="true" className="pointer-events-auto flex max-w-full">
-        {!error && view}
+        {shown && !error && view}
       </div>
-      {error && (
+      {shown && error && (
         <div role="alert" className="pointer-events-auto flex max-w-full">
           {view}
         </div>
       )}
-      {!toast && drawn && last && (
+      {shown && !toast && drawn && last && (
         <div {...layer} className="flex max-w-full">
           {draw(last)}
         </div>
       )}
     </div>
   );
-  return host ? createPortal(box, host) : box;
+  return (
+    <>
+      {frame(base, host === null)}
+      {host && createPortal(frame(hosted, true, 'manual'), host)}
+    </>
+  );
 }

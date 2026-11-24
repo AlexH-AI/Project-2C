@@ -645,14 +645,23 @@ test('a toast lies over the dialog open, and its button takes the click (L198)',
     .getByRole('region', { name: 'Thành viên team Thiên Hà' })
     .getByRole('button', { name: 'Xóa team' })
     .click();
+  // The live region of the window, there before the toast: a screen reader reads what comes in.
+  const live = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('[aria-live="polite"]')].find((n) => !n.closest('dialog'))!,
+  );
   await page
     .getByRole('dialog', { name: 'Xóa team Thiên Hà?' })
     .getByRole('button', { name: 'Xóa', exact: true })
     .click();
   await expect(toastRegion(page, 'Đã chuyển team vào Thùng rác')).toBeVisible();
+  // The confirm closed as the toast showed: it is in that same region.
+  expect(await live.evaluate((n) => n.isConnected && n.textContent)).toContain('Đã chuyển team');
   // A dialog opens while the toast is shown: the toast stays over it, its Hoàn tác in reach.
   await page.getByRole('button', { name: '+ Team' }).click();
   await expect(made).toBeVisible();
+  const inDialog = await page.evaluateHandle(() =>
+    document.querySelector('dialog:modal [aria-live="polite"]')!,
+  );
   await page.getByRole('button', { name: 'Hoàn tác', exact: true }).click();
   // The toast of what came back shows while the dialog is open, over it.
   const restored = toastRegion(page, 'Đã khôi phục team Thiên Hà');
@@ -664,6 +673,9 @@ test('a toast lies over the dialog open, and its button takes the click (L198)',
     [box.x + box.width / 2, box.y + box.height / 2],
   );
   expect(top).toContain('Đã khôi phục team Thiên Hà');
+  // Into the region the dialog had before, so it is read; the focus stays in the dialog.
+  expect(await inDialog.evaluate((n) => n.isConnected && n.textContent)).toContain('Đã khôi phục');
+  expect(await page.evaluate(() => !!document.activeElement?.closest('dialog:modal'))).toBe(true);
   await page.keyboard.press('Escape');
   await expect(made).toBeHidden();
   const teams = page.getByRole('region', { name: 'Team', exact: true });
