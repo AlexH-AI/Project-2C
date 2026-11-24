@@ -183,6 +183,11 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   ];
   const options = groups.flatMap(([, list]) => list);
   const at = Math.min(active, options.length - 1);
+  // The option picked stays in view of the list, as `move()` of the mockup keeps it (ui2.js).
+  const picked = options[at] && `${id}-${options[at].key}`;
+  useEffect(() => {
+    if (picked) document.getElementById(picked)?.scrollIntoView({ block: 'nearest' });
+  }, [picked]);
   const pick = (option: Option) => {
     onClose();
     option.pick();
@@ -212,7 +217,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           aria-autocomplete="list"
           aria-expanded={options.length > 0}
           aria-controls={`${id}-list`}
-          aria-activedescendant={options[at] ? `${id}-${options[at].key}` : undefined}
+          aria-activedescendant={picked}
           placeholder={t('palette.placeholder')}
           autoComplete="off"
           spellCheck={false}

@@ -123,11 +123,14 @@ describe('t', () => {
       (key) => platform.test(JSON.stringify(vi[key])) || platform.test(JSON.stringify(en[key])),
     );
     expect(keys.length).toBeGreaterThanOrEqual(6);
-    for (const language of ['vi', 'en'] as const) {
-      setDataCurrency('VND', language);
-      for (const key of keys) expect(t(key)).not.toMatch(platform);
+    try {
+      for (const language of ['vi', 'en'] as const) {
+        setDataCurrency('VND', language);
+        for (const key of keys) expect(t(key)).not.toMatch(platform);
+      }
+    } finally {
+      setDataCurrency('VND', 'vi');
     }
-    setDataCurrency('VND', 'vi');
   });
 
   it('knows whether each slot holds a count', () => {

@@ -129,6 +129,33 @@ test('↓ Enter opens a customer, an RM, a screen; a command runs', async ({ pag
   await expect(eye).toHaveAttribute('aria-pressed', 'true');
 });
 
+// The list is 470 px at most: ↑ ↓ bring the option picked into view of it, as `move()` of the
+// mockup does (ui2.js), ↑ from the first going round to the last.
+test('↑ ↓ keep the option picked in view of the list', async ({ page, browserName }) => {
+  await page.goto('/#/overview');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
+  await page.keyboard.press(paletteKey(browserName));
+  await field(page).fill('n');
+  const list = palette(page).getByRole('listbox');
+  expect(
+    await list.evaluate((node) => node.scrollHeight > node.clientHeight + 200),
+    'the options of "n" run far past the list',
+  ).toBe(true);
+  const picked = palette(page).getByRole('option', { selected: true });
+  await field(page).press('ArrowUp');
+  await expect(options(page).last()).toHaveAttribute('aria-selected', 'true');
+  await expect(picked).toBeInViewport({ ratio: 0.95 });
+  await field(page).press('ArrowDown');
+  await expect(options(page).first()).toHaveAttribute('aria-selected', 'true');
+  await expect(picked).toBeInViewport({ ratio: 0.95 });
+  const count = await options(page).count();
+  for (let step = 1; step < count; step += 1) {
+    await field(page).press('ArrowDown');
+    await expect(options(page).nth(step)).toHaveAttribute('aria-selected', 'true');
+    await expect(picked).toBeInViewport({ ratio: 0.95 });
+  }
+});
+
 test('a command opens its dialog on its screen, from another screen or its own', async ({
   page,
   browserName,
