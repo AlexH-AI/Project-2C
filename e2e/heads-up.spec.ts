@@ -88,6 +88,13 @@ test('a press opens the panel of today: by time, the next one on gold, Ghi kết
   await pill(page).click();
   await page.getByRole('heading', { level: 1 }).click();
   await expect(panel(page)).toBeHidden();
+  // A press outside on what takes no focus: the focus back on the pill, as from a menu (L231).
+  await pill(page).click();
+  await expect(panel(page)).toBeFocused();
+  const at = (await pill(page).boundingBox())!;
+  await page.mouse.click(at.x - 24, at.y + at.height / 2);
+  await expect(panel(page)).toBeHidden();
+  await expect(pill(page)).toBeFocused();
 });
 
 test('"Cần làm" counts the sessions passed with no outcome and leads to Lịch hẹn', async ({
@@ -101,6 +108,12 @@ test('"Cần làm" counts the sessions passed with no outcome and leads to Lịc
   await todo.click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lịch hẹn');
   await expect(panel(page)).toBeHidden();
+  // Another screen gives the focus to its name; on Lịch hẹn itself it is back on the pill.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  await pill(page).click();
+  await todo.click();
+  await expect(panel(page)).toBeHidden();
+  await expect(pill(page)).toBeFocused();
 });
 
 test('the pill and its panel follow the scope picked on the toolbar', async ({ page }) => {

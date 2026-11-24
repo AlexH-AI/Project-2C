@@ -35,6 +35,10 @@ const onResize = (listener: () => void) => {
 };
 const narrowNow = () => innerWidth < NARROW_WIDTH;
 
+/** What takes the focus a press gives (`CONTROL` of packages/ui `Menu.tsx`). */
+const CONTROL =
+  'a[href], button:enabled, input:enabled, select:enabled, textarea:enabled, [tabindex]';
+
 /**
  * The app's clock (`clockNow`, the e2e day pinned), read again as each minute starts: what "còn 25
  * phút" counts from. A save or a new screen does not read it, so the pill stays on its minute.
@@ -97,7 +101,22 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
     panel.current?.focus();
     const outside = (target: EventTarget | null) =>
       target instanceof Node && !root.current?.contains(target);
-    const onPress = (event: Event) => {
+    const onPress = (event: PointerEvent) => {
+      if (!outside(event.target)) return;
+      setOpen(false);
+      if (event.target instanceof Element && event.target.closest(CONTROL)) return;
+      // Once the press on what takes no focus is over, the focus left on the page goes back to
+      // the pill; a press that ends in a drag (a cancel) leaves it alone (L231).
+      const settle = (end: PointerEvent) => {
+        document.removeEventListener('pointerup', settle);
+        document.removeEventListener('pointercancel', settle);
+        const now = document.activeElement;
+        if (end.type === 'pointerup' && (!now || now === document.body)) pill.current?.focus();
+      };
+      document.addEventListener('pointerup', settle);
+      document.addEventListener('pointercancel', settle);
+    };
+    const onFocus = (event: FocusEvent) => {
       if (outside(event.target)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
@@ -106,11 +125,11 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
       pill.current?.focus();
     };
     document.addEventListener('pointerdown', onPress);
-    document.addEventListener('focusin', onPress);
+    document.addEventListener('focusin', onFocus);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('pointerdown', onPress);
-      document.removeEventListener('focusin', onPress);
+      document.removeEventListener('focusin', onFocus);
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
@@ -172,7 +191,7 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
               close();
               setRecording(row);
             }}
-            onClose={() => setOpen(false)}
+            onClose={close}
           />
         </div>
       )}
@@ -207,6 +226,7 @@ function TodayPanel({
   label: string;
   now: Date;
   onRecord: (row: AppointmentRow) => void;
+  /** Closes the panel, the focus back on the pill: a new screen then gives it to its name. */
   onClose: () => void;
 }) {
   const { customers, people, teams, transitions } = useTables();

@@ -125,6 +125,15 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   useEffect(() => {
     if (toast && pointed.current) queue.hold('pointer', true);
   }, [queue, toast]);
+  // A region that goes with its dialog, or empties as one opens, says nothing of the pointer and
+  // the focus that were on it: the toast is held only by what is on the region that shows it now.
+  useEffect(() => {
+    const region = host ? hosted.current : base.current;
+    if (!region?.contains(document.activeElement)) queue.hold('focus', false);
+    if (region?.matches(':hover')) return;
+    pointed.current = false;
+    queue.hold('pointer', false);
+  }, [queue, host]);
   // A dialog that closes as its toast shows (a delete confirmed) is gone before this runs.
   useLayoutEffect(() => {
     if (host && hosted.current?.isConnected) hosted.current.showPopover();
@@ -159,7 +168,8 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) queue.hold('focus', false);
       }}
-      className={REGION}
+      // The popover hidden while not open, as in the copy a dialog leaves for its move out.
+      className={popover ? `${REGION} not-open:hidden` : REGION}
     >
       <div aria-live="polite" aria-atomic="true" className="pointer-events-auto flex max-w-full">
         {shown && !error && view}
