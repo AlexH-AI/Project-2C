@@ -560,6 +560,42 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **Model of run 5:** Opus (the run table of spec §10.1).
   - Queue: run 0, by hand: #1433 (T-483, DS-11) before this Issue (both change spec §10.1, §12 and this file); #1440 (T-485, the measurement), not blocked, can run at once, alongside DS-11; the OWNER decides on the storage ADR after the numbers. Run 5 (`auto-issues`, Opus): #1439 (T-484, records these decisions) → [T-485 by hand] → #1441 (T-486, B1a) → #1442 (T-487, B1b) → #1443 (T-488, B2) → #1444 (T-489, B3) → #1445 (T-490, DS-3a) → #1446 (T-491, DS-3b) → #1447 (T-492, DS-3c) → #1448 (T-493, F1) → #1449 (T-494, C1) → #1450 (T-495, C2a) → #1451 (T-496, C2b) → #1452 (T-497, C3) → #1453 (T-498, VA8) → #1454 (T-499, VA9) → #1455 (T-500, D1).
   - **After the Issues were written:** T-485 measured (PR #1457, merged 22/11; `docs/metrics/phase-6.md`, section "Số đo dữ liệu 5× / 10×"; the OWNER timed the `.dmg` on 22/11). On 21/11 the OWNER chose "ADR, không chặn" there, so the conditional above did not apply: `gate` came off #1441 and #1455, which run with the current storage, and the storage ADR is T-501 (#1458), after run 5. T-501 records that decision in this file. The numbers also led to T-502 (#1459, PR #1461, 22/11): Team & nhân sự counts the RM columns in one pass.
+- 2026-11-24: run 5b Issues (T-503 … T-507, #1497 … #1501). Seven OWNER decisions of 22–24/11/2026. The first was taken in the ordinary review session of PR #1457; the other six inside the `auto-issues` pipeline of run 5, as answers to questions of the orchestrating session. Decisions 1 … 6 are each recorded in a "Quyết định Owner" comment on GitHub. Decision 7 approved the ledger grouping proposal after run 5, which made run 5b; it has no such comment. Labels verbatim; T-503 #1497 records them in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §8.1, §10.1, §12.1, §12.2:
+  1. **DS-12**, 22/11/2026, review of PR #1457 (T-485, measuring at 5× / 10×), https://github.com/AlexH-AI/Project-2C/pull/1457#issuecomment-7076163924: "DS-12 mới (Recommended)".
+     - Four non-blocking notes of that review had no work of the same kind. They get the new target **DS-12**, of the kind "đo hiệu năng: probe `e2e/perf/**`, mốc mở lại" (performance measuring: the `e2e/perf/**` probe, the reopen baseline). Two other notes of that review keep the targets the review proposed ([G-09], [đóng phase]).
+     - No Issue yet: the HANDOFF waits for the OWNER to say "ra issue DS-12". The ledger @`859028e` has 5 `[DS-12]` notes: the four of this decision and L257, written later by the review of PR #1495 (the `tables` hash of the load data). One is Medium (L171: LCP on reopening at 1× is 1 093 ms, over the 1 s threshold, where acceptance L4 measured 717 ms) and must be checked before G7.
+     - The comment lists no option the OWNER did not choose.
+  2. **DS-3b** (#1446, T-491), 23/11/2026, https://github.com/AlexH-AI/Project-2C/issues/1446#issuecomment-7088133856, two answers:
+     - The product code was 525 lines, over 1.5 times the budget (300 → 450): "Đồng ý cỡ". One PR, not split.
+     - The name of the current month in the year grid of Lịch hẹn turns from yellow (mockup B6) to the normal text colour, to reach 4.5:1 on the brightest macOS glass: "Đồng ý đổi".
+     - The comment lists no option the OWNER did not choose.
+  3. **DS-13**, 23/11/2026, review of PR #1479 (T-492, DS-3c), https://github.com/AlexH-AI/Project-2C/pull/1479#issuecomment-7092298682: "DS-13 mới (Recommended)".
+     - The Nit / C note of that review gets the new target **DS-13**, "thẻ số dòng của sổ trong chú thích code / test thành định danh bền" (ledger line-number tags in code / test comments become stable ids). The fix sweeps all 93 lines (the count then, in 50 files).
+     - The comment lists no option the OWNER did not choose.
+  4. **C3**, 24/11/2026, review of PR #1489 (T-497), https://github.com/AlexH-AI/Project-2C/pull/1489#issuecomment-7111099403: "(a) Tên màu thường".
+     - The selected row of the team list keeps the transparent yellow band, like the other yellow bands of the app. The team name is written in the normal text colour and the icon keeps the team colour (the same `chosen-tint` rule), as the PR did. The blocking item of `REVIEW: CHANGES` @`f28dd6c` no longer blocks.
+     - The comment names only the option chosen.
+  5. **VA8** (#1453, T-498), 24/11/2026, https://github.com/AlexH-AI/Project-2C/issues/1453#issuecomment-7124308122: PR #1491 had 784 product lines / 1 144 in total: "(a) Thu hẹp PR".
+     - The PR holds only the command palette with all 6 commands (≈ 840 product lines; the OWNER agreed to that size).
+     - Three ledger notes (L168, L171, L174 then; L158, L161, L164 @`859028e`) go to a new Issue, now T-506 #1500. L172 (L162 @`859028e`) is relabelled [DS-13].
+     - The comment names only the option chosen.
+  6. **VA9** (#1454, T-499), 24/11/2026, https://github.com/AlexH-AI/Project-2C/issues/1454#issuecomment-7129629609: part A had 631 product lines / 487 test lines, and part B (the background jobs) was estimated at ≈ 225 / ≈ 200 more: "Tách B (khuyên)".
+     - The background jobs (the store, the pill running / done / failed, the three callers: Excel export, backup, AI analysis) get the target `[VA9b]`. PR #1493 closes #1454 with part A (the "Lưu ý" pill and the panel of today). Two ledger notes (L151, L242 then; L146, L234 @`859028e`) were left to `[VA9b]`.
+     - Option not chosen: keep one PR, ≈ 855 product lines.
+  7. **Ledger grouping after run 5**, 24/11/2026 (`auto-issues` §6, ledger @`859028e`, proposal of the coding session `coding-ses1`; the table is in the body of PR #1502, the ledger PR that relabelled the notes of run 5b): "Duyệt", with no change. There is no "Quyết định Owner" comment; the label is quoted from the bodies of PR #1502 and of #1497.
+     - Five Issues, T-503 … T-507 (#1497 … #1501).
+     - Two notes proposed for ACCEPTED (L138, L148, both `[DS-4]`), DS-4 and DS-12: no action now. L138 and L148 stay OPEN with `[DS-4]`.
+     - Option not chosen: Dừng (stop).
+  - **Decided by Claude while writing the proposal and the Issues** (by the existing rules; not questions to the OWNER):
+    - **VA9b splits in two** by the size cap of `docs/agents/issue-tracker.md`: VA9b-a (T-504 #1498: the background jobs, with L146, L234) and VA9b-b (T-505 #1499: the seven notes of review #1493 on the toasts over dialogs and the "Lưu ý" pill, L236, L237, L238, L239, L241, L242, L243). As one Issue it would have been ≈ 390 / ≈ 830 lines, at the cap, and part A of #1454 had already gone over the cap.
+    - **L240** (`minuteOf` in `heads-up.ts`, reading the minute of the day by hand) moves from [DS-4] to T-505: the same area of the pill. The other DS-4 notes keep their place.
+    - **DS-4** (26 notes @`859028e`, 25 after L240 moved; the spec §12.2 table says 4) keeps its place in run 7 (HD1 → DS-4 → G-06 …), as decided on 17/11 and 21/11. Suggested split when the run 7 Issues are written: DS-4a hiding names and access names; DS-4b focus when a button or field turns itself off; DS-4c KYC / HĐ / Thùng rác; DS-4d customer / RM search.
+    - **T-506** is `risk:med` because it may change `AppShell.tsx` (the scroll position when a screen comes back), and gets `build-mac` (only the WebKit job can check it).
+    - **DS-13 recounted** with a wider pattern (tags outside brackets too): 172 lines in 75 files @`859028e`, including 5 Rust files of `src-tauri`, so `build-exe` + `build-mac`, like DS-7. It is last in the queue because it touches 75 files, and it adds a check case that blocks new tags.
+    - **New spec rows** (VA9b-a, VA9b-b in §8.1; DS-12, DS-13 in §12.1 / §12.2) are added by T-503, as T-479 #1424 added DS-8 … DS-10; the four code Issues do not change the spec.
+    - **"Bị chặn bởi":** no run 5b Issue waits on a gate or on the result of another Issue; the run order is the queue.
+    - **Model of run 5b:** Opus (spec §10.1: VA9, DS-*).
+  - Run 5b queue (`auto-issues`, Opus): #1497 (T-503, records these decisions) → #1498 (T-504, VA9b-a) → #1499 (T-505, VA9b-b) → #1500 (T-506, e2e motion on WebKit) → #1501 (T-507, DS-13).
 
 ## Next decision
 
