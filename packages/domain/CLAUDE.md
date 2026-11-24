@@ -44,7 +44,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate
 - `src/kyc.ts` — type KycNote, type KycProfile, type KycFactInput, type KycVersion, addNote, currentFacts, confirmFact, markConflict, resolveConflict, kycHash, isMaterialChange, nextKycVersion
 - `src/language.ts` — LANGUAGES, type Language
-- `src/model.ts` — TEAM_COLORS, type TeamColor, TEAM_ICONS, type TeamIcon, type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, RM_ROLE, isRm, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
+- `src/model.ts` — TEAM_COLORS, type TeamColor, TEAM_ICONS, type TeamIcon, type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, RM_ROLE, isRm, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type TeamTarget, type Policy, type Scope
 - `src/money.ts` — CURRENCY_CODES, type CurrencyCode, type Money, type Currency, CURRENCIES, maxFee, languageFor, addMoney, formatMoney, formatMoneyCompact, formatMoneyDelta, type MoneyParseError, type MoneyParseResult, parseMoney
 - `src/name-order.ts` — LATIN, asciiDigits, byName
 - `src/number.ts` — groupDigits, formatNumber, formatPercentage, type CountStep, countFrame, formatBytes

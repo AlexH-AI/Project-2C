@@ -137,6 +137,9 @@ export const en: EnglishMessages = {
   // The cap of a fee (G-04), the mockup's sentence "Quá trần phí".
   'error.AMOUNT_TOO_LARGE': 'The maximum is {max} VNĐ.',
   'error.AMOUNT_TOO_LARGE.cents': 'The maximum is {max}.',
+  // KPI tháng (D1): ten times the cap of a fee, 1,000 Bil of the major unit in any currency.
+  'error.TARGET_TOO_LARGE': 'The monthly target (KPI) is at most 1,000 Bil.',
+  'error.INVALID_MONTH': 'The month is not valid.',
   // Cancelling a policy (B1a), in the terms of `CONTEXT.md` § Thuật ngữ tiếng Anh.
   'error.POLICY_NOT_ISSUED': 'Only an issued policy can be cancelled.',
   'error.POLICY_ALREADY_CANCELLED':

@@ -30,7 +30,7 @@ import { stagesOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
-import { isTeamLook } from './team';
+import { isTargetAmount, isTargetMonth, isTeamLook } from './team';
 import {
   PERSON_REFERENCE_KINDS,
   PERSON_REFERENCES,
@@ -41,7 +41,7 @@ import {
 
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
-const TIMESTAMPS = new Set(['created_at', 'updated_at', 'deleted_at']);
+const TIMESTAMPS = new Set(['created_at', 'updated_at', 'deleted_at', 'expected_case_size_at']);
 /**
  * A stamp as `toISOString()` writes it, milliseconds and `Z`: one instant is then one text, which
  * the app compares as such — a deletion and the transition it withdrew, the order of Thùng rác
@@ -75,6 +75,13 @@ export function validateBackupValues(db: Database, currency: CurrencyCode): void
       if (table === 'appointments' && !appointmentTextStored(row)) {
         throw new DbError('BACKUP_INVALID');
       }
+      // D1: a case size goes with when it was entered, and a stamp with a case size.
+      if (
+        table === 'appointments' &&
+        (row.expected_case_size === null) !== (row.expected_case_size_at === null)
+      ) {
+        throw new DbError('BACKUP_INVALID');
+      }
     }
   }
 }
@@ -88,6 +95,9 @@ function validValue(column: string, value: SqlValue, currency: CurrencyCode): bo
   if (column === 'seq') return Number.isSafeInteger(value) && (value as number) >= 1;
   // A fee, as `requireAmount` takes it (DR-23).
   if (FEES.has(column)) return isFee(value, currency);
+  // A KPI tháng, the only `month` and `amount` (D1): as `setTeamTarget` takes it.
+  if (column === 'month') return isTargetMonth(value);
+  if (column === 'amount') return isTargetAmount(value, currency);
   return true;
 }
 

@@ -8,7 +8,8 @@
  * - a deleted appointment: the one rescheduled from it (rule 5, of the same customer), and its own
  *   coordinators and withdrawn transitions, which go with it;
  * - a deleted person: only deleted records (`PERSON_IN_USE`, rule 5), of which only an appointment
- *   kept above stays; a deleted team: only deleted people (`TEAM_HAS_MEMBERS`, rule 9);
+ *   kept above stays; a deleted team: only deleted people (`TEAM_HAS_MEMBERS`, rule 9), and its
+ *   own KPI tháng, which go with it (D1);
  * - a deleted policy: nothing.
  * Should anything else point to one, the check of every reference refuses the purge, which then
  * changes nothing.
@@ -133,6 +134,9 @@ const PURGE = [
   `DELETE FROM policies WHERE deleted_at IS NOT NULL OR ${OF_DELETED_CUSTOMER}`,
   'DELETE FROM customers WHERE deleted_at IS NOT NULL',
   `DELETE FROM people WHERE deleted_at IS NOT NULL AND ${notKept('$people')}`,
+  // The KPI tháng of a purged team go with it (D1; golden D `forecast.md` mục 4 điểm 11).
+  `DELETE FROM team_targets WHERE team_id IN
+    (SELECT id FROM teams WHERE deleted_at IS NOT NULL AND ${notKept('$teams')})`,
   `DELETE FROM teams WHERE deleted_at IS NOT NULL AND ${notKept('$teams')}`,
 ];
 

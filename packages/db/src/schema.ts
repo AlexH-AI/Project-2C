@@ -154,6 +154,12 @@ export const appointments = sqliteTable(
     ...timestamps,
     /** Who decided the stage after the meeting (D9); added by a later migration, hence last. */
     outcomeReviewerId: text('outcome_reviewer_id').references(() => people.id),
+    /**
+     * When the case size dự kiến was entered or last changed (golden D mục 4 điểm 2): set when and
+     * only when there is one, stamped anew only when the number changes; the commands and the import
+     * check it, as migration 0020 adds it last without a CHECK.
+     */
+    expectedCaseSizeAt: text('expected_case_size_at'),
   },
   (t) => [
     // Thùng rác, the profile and 5f count a customer's records (DR6-44).
@@ -256,6 +262,28 @@ export const policies = sqliteTable(
       'policies_cancelled',
       sql`${t.cancelledDate} IS NULL OR (${t.issuedDate} IS NOT NULL AND ${t.cancelledDate} >= ${t.issuedDate})`,
     ),
+  ],
+);
+
+/**
+ * KPI tháng of a team (golden D mục 4 điểm 6, ADR-0007 phụ lục "Forecast"): at most one row a team
+ * and month (`yyyy-mm`), no row being no KPI. Never soft-deleted: emptied by its command, and gone
+ * for good with its team when Dọn sạch Thùng rác purges it.
+ */
+export const teamTargets = sqliteTable(
+  'team_targets',
+  {
+    teamId: text('team_id')
+      .notNull()
+      .references(() => teams.id),
+    month: text('month').notNull(),
+    amount: integer('amount').notNull(),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.teamId, t.month] }),
+    check('team_targets_amount', sql`${t.amount} > 0`),
   ],
 );
 

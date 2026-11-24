@@ -141,6 +141,20 @@
       "when": 1795437718627,
       "tag": "0019_teams_style",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1795529255056,
+      "tag": "0020_forecast_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1795529255829,
+      "tag": "0021_forecast_case_size_at",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ import {
   rescheduleAppointment,
   restoreAppointment,
   scheduleAppointment,
+  setExpectedCaseSize,
   softDeleteAppointment,
 } from './appointments';
 import { exportBackup, importBackup } from './backup';
@@ -85,6 +86,7 @@ describe('scheduleAppointment', () => {
       triggerNote: 'Hội thảo',
       stageAfter: null,
       expectedCaseSize: null,
+      expectedCaseSizeAt: null,
       nextStep: null,
       note: '',
       rescheduledFromId: null,
@@ -525,6 +527,7 @@ describe('recordOutcomeWithNext', () => {
       triggerNote: 'Hội thảo',
       stageAfter: null,
       expectedCaseSize: null,
+      expectedCaseSizeAt: null,
       nextStep: null,
       note: '',
       rescheduledFromId: null,
@@ -1114,8 +1117,6 @@ describe('the stage on the meeting day', () => {
     expect(stage()).toBe('N2');
   });
 
-  // T-399 (review of PR #1163): a meeting met just before the machine clock was set back across
-  // midnight is dated after the new today; the change still may not come before it.
   // Review of PR #1167: the restore and the edit dialog (6f) check the met meetings as the 5d does.
   it('refuses to restore a stage move dated before a met appointment recorded since', async () => {
     const { db, customer, schedule, stage } = await withCustomer();
@@ -1149,6 +1150,8 @@ describe('the stage on the meeting day', () => {
     expect(listStageTransitions(db, customer.id)).toHaveLength(1);
   });
 
+  // T-399 (review of PR #1163): a meeting met just before the machine clock was set back across
+  // midnight is dated after the new today; the change still may not come before it.
   // The meeting day is after today then: no day typed gets past it, and the error says so for the
   // message to name the machine clock (review of PR #1167).
   it('refuses a stage change dated before a met appointment after the clock was set back', async () => {
@@ -1297,6 +1300,192 @@ describe('rescheduleAppointment', () => {
     expect(rescheduleAppointment(db, untimed.id, { date: d(9, 1), time: '09:00' }).date).toEqual(
       d(9, 1),
     );
+  });
+});
+
+// D1 (golden D `docs/golden/forecast.md` mục 4 điểm 1, 2, 5, 9, 11): the case size dự kiến of an
+// appointment from its booking on, and when it was entered or last changed.
+describe('case size dự kiến (D1)', () => {
+  async function booking() {
+    const ctx = await withCustomer();
+    const input = {
+      customerId: ctx.customer.id,
+      rmId: ctx.rm.id,
+      date: d(10, 1),
+      triggerType: 'REFERRAL',
+    } as const;
+    const book = (expectedCaseSize?: number | null) =>
+      scheduleAppointment(ctx.db, { ...input, expectedCaseSize });
+    /** The stamps of the appointment as stored. */
+    const stamps = (id: string) => {
+      const [createdAt, updatedAt] = ctx.db.sqlite.exec(
+        'SELECT created_at, updated_at FROM appointments WHERE id = ?',
+        [id],
+      )[0]!.values[0]!;
+      return { createdAt, updatedAt };
+    };
+    /** The case size of the appointment as read back, and when it was entered. */
+    const sizeOf = (id: string) => {
+      const { expectedCaseSize, expectedCaseSizeAt } = byId(listAppointments(ctx.db), id)!;
+      return [expectedCaseSize, expectedCaseSizeAt];
+    };
+    return { ...ctx, input, book, stamps, sizeOf };
+  }
+
+  it('books an appointment with a case size stamped at the booking, or without one', async () => {
+    const { db, book, stamps, sizeOf } = await booking();
+
+    const sized = book(200_000_000);
+    const bare = [book(null), book()];
+
+    expect(sized).toMatchObject({
+      expectedCaseSize: 200_000_000,
+      expectedCaseSizeAt: stamps(sized.id).createdAt,
+    });
+    expect(byId(listAppointments(db), sized.id)).toEqual(sized);
+    for (const { id } of bare) expect(sizeOf(id)).toEqual([null, null]);
+  });
+
+  it('books nothing with a case size of 0, below it or past the cap (F19)', async () => {
+    const { db, book } = await booking();
+
+    for (const [size, code] of [
+      [0, 'INVALID_AMOUNT'],
+      [-1, 'INVALID_AMOUNT'],
+      [1.5, 'INVALID_AMOUNT'],
+      [maxFee('VND') + 1, 'AMOUNT_TOO_LARGE'],
+    ] as const) {
+      expect(codeOf(() => book(size))).toBe(code);
+    }
+    expect(listAppointments(db)).toEqual([]);
+  });
+
+  it('carries the number and when it was entered to the new day of a reschedule keeping it (F21)', async () => {
+    const { db, book, sizeOf } = await booking();
+    const old = book(110_000_000);
+    const entered = old.expectedCaseSizeAt;
+
+    const moved = rescheduleAppointment(db, old.id, { date: d(21, 1) });
+    // The same number typed again is no new entry either.
+    const again = rescheduleAppointment(db, moved.id, {
+      date: d(28, 1),
+      expectedCaseSize: 110_000_000,
+    });
+
+    expect(entered).toEqual(expect.any(String));
+    for (const { id } of [moved, again]) expect(sizeOf(id)).toEqual([110_000_000, entered]);
+    // The old one, now rescheduled, keeps its own (golden D mục 4 điểm 5).
+    expect(byId(listAppointments(db), old.id)).toMatchObject({
+      status: 'RESCHEDULED',
+      expectedCaseSize: 110_000_000,
+      expectedCaseSizeAt: entered,
+    });
+  });
+
+  it('stamps a number changed while rescheduling at the reschedule, and keeps one emptied empty', async () => {
+    const { db, book, stamps, sizeOf } = await booking();
+    const old = book(110_000_000);
+
+    const changed = rescheduleAppointment(db, old.id, {
+      date: d(21, 1),
+      expectedCaseSize: 130_000_000,
+    });
+    const emptied = rescheduleAppointment(db, changed.id, {
+      date: d(28, 1),
+      expectedCaseSize: null,
+    });
+
+    expect(changed.expectedCaseSizeAt).toBe(stamps(changed.id).createdAt);
+    expect(changed.expectedCaseSizeAt! > old.expectedCaseSizeAt!).toBe(true);
+    expect(sizeOf(emptied.id)).toEqual([null, null]);
+    expect(
+      codeOf(() => rescheduleAppointment(db, emptied.id, { date: d(30, 1), expectedCaseSize: 0 })),
+    ).toBe('INVALID_AMOUNT');
+    expect(byId(listAppointments(db), emptied.id)?.status).toBe('SCHEDULED');
+  });
+
+  it('sets, changes and clears the case size of a booked appointment in place (F17, F20)', async () => {
+    const { db, book, stamps, sizeOf } = await booking();
+    const { id } = book();
+
+    const filled = setExpectedCaseSize(db, id, 300_000_000);
+    expect(filled).toMatchObject({
+      expectedCaseSize: 300_000_000,
+      expectedCaseSizeAt: stamps(id).updatedAt,
+    });
+    const changed = setExpectedCaseSize(db, id, 180_000_000);
+    expect(changed.expectedCaseSizeAt! > filled.expectedCaseSizeAt!).toBe(true);
+    // The same number is no change: nothing is written (golden D mục 4 điểm 2).
+    const before = db.export();
+    expect(setExpectedCaseSize(db, id, 180_000_000)).toEqual(changed);
+    expect(db.export()).toEqual(before);
+
+    expect(setExpectedCaseSize(db, id, null)).toMatchObject({
+      expectedCaseSize: null,
+      expectedCaseSizeAt: null,
+    });
+    expect(sizeOf(id)).toEqual([null, null]);
+    expect(codeOf(() => setExpectedCaseSize(db, id, 0))).toBe('INVALID_AMOUNT');
+    expect(codeOf(() => setExpectedCaseSize(db, id, maxFee('VND') + 1))).toBe('AMOUNT_TOO_LARGE');
+    expect(sizeOf(id)).toEqual([null, null]);
+  });
+
+  it('sets a case size only on a live appointment of a live customer', async () => {
+    const { db, customer, book } = await booking();
+    const deleted = book();
+    softDeleteAppointment(db, deleted.id);
+    const open = book();
+    softDeleteCustomer(db, customer.id);
+
+    expect(codeOf(() => setExpectedCaseSize(db, deleted.id, 1))).toBe('APPOINTMENT_NOT_FOUND');
+    expect(codeOf(() => setExpectedCaseSize(db, 'x', 1))).toBe('APPOINTMENT_NOT_FOUND');
+    expect(codeOf(() => setExpectedCaseSize(db, open.id, 1))).toBe('CUSTOMER_NOT_FOUND');
+  });
+
+  // fc-13, fc-17, fc-30: an outcome keeps the number unless it changes it, as the dialog of 6c
+  // sends none for a status other than met.
+  it('keeps the number and when it was entered through an outcome that leaves it', async () => {
+    const { db, book, stamps, sizeOf } = await booking();
+    const cancelled = book(50_000_000);
+    const missed = book(140_000_000);
+    const met = book(400_000_000);
+
+    recordMeetingOutcome(db, cancelled.id, { status: 'CANCELLED' });
+    recordMeetingOutcome(db, missed.id, { status: 'NO_SHOW' });
+    recordMeetingOutcome(db, met.id, { ...MET_N2, expectedCaseSize: 400_000_000 });
+
+    for (const booked of [cancelled, missed, met]) {
+      expect(sizeOf(booked.id)).toEqual([booked.expectedCaseSize, booked.expectedCaseSizeAt]);
+    }
+    const changed = recordMeetingOutcome(db, met.id, { ...MET_N2, expectedCaseSize: 450_000_000 });
+    expect(changed.expectedCaseSizeAt).toBe(stamps(met.id).updatedAt);
+    expect(changed.expectedCaseSizeAt! > met.expectedCaseSizeAt!).toBe(true);
+    editMeetingOutcome(db, met.id, { ...MET_N2, expectedCaseSize: null }, {});
+    expect(sizeOf(met.id)).toEqual([null, null]);
+  });
+
+  it('books the next appointment of an outcome without a case size', async () => {
+    const { db, book } = await booking();
+    const met = book(200_000_000);
+
+    const { next } = recordOutcomeWithNext(
+      db,
+      met.id,
+      { ...MET_N2, expectedCaseSize: 200_000_000 },
+      { date: d(1, 10) },
+    );
+
+    expect([next.expectedCaseSize, next.expectedCaseSizeAt]).toEqual([null, null]);
+  });
+
+  it('keeps the number and when it was entered through a deletion and a restore', async () => {
+    const { db, book, sizeOf } = await booking();
+    const booked = book(300_000_000);
+
+    softDeleteAppointment(db, booked.id);
+    restoreAppointment(db, booked.id);
+
+    expect(sizeOf(booked.id)).toEqual([300_000_000, booked.expectedCaseSizeAt]);
   });
 });
 
@@ -1574,6 +1763,13 @@ describe('the status rule of the commands (T-403)', () => {
       run: (db, id) => softDeleteAppointment(db, id),
       takes: APPOINTMENT_STATUSES,
       refused: '',
+    },
+    // D1: filled in place from the Forecast (D5), on a booked appointment only.
+    {
+      name: 'setExpectedCaseSize',
+      run: (db, id) => setExpectedCaseSize(db, id, 300_000_000),
+      takes: ['SCHEDULED'],
+      refused: 'APPOINTMENT_NOT_SCHEDULED',
     },
   ];
 

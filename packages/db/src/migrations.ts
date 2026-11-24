@@ -22,6 +22,8 @@ import m0016 from '../migrations/0016_settings_currency.sql?raw';
 import m0017 from '../migrations/0017_policies_cancelled_date.sql?raw';
 import m0018 from '../migrations/0018_policies_cancelled.sql?raw';
 import m0019 from '../migrations/0019_teams_style.sql?raw';
+import m0020 from '../migrations/0020_forecast_data.sql?raw';
+import m0021 from '../migrations/0021_forecast_case_size_at.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -54,6 +56,10 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: 19, tag: '0018_policies_cancelled', sql: m0018 },
   // C3: two columns a team may leave empty, no CHECK; the commands and the import check them.
   { id: 20, tag: '0019_teams_style', sql: m0019 },
+  // D1: the KPI table and the stamp column, no CHECK on `appointments` (no rebuild); then, by hand,
+  // the stamp of the case sizes already there.
+  { id: 21, tag: '0020_forecast_data', sql: m0020 },
+  { id: 22, tag: '0021_forecast_case_size_at', sql: m0021 },
 ];
 
 /** The highest schema version a list of migrations reaches. */

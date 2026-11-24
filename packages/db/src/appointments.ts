@@ -56,6 +56,7 @@ type AppointmentRow = typeof appointments.$inferSelect;
 
 export type AppointmentTrigger = (typeof APPOINTMENT_TRIGGERS)[number];
 
+/** Of the database: `expectedCaseSizeAt` always given, null when there is no case size. */
 export interface AppointmentRecord extends Appointment {
   /** `HH:MM`, or null when no time was set. */
   readonly time: string | null;
@@ -75,12 +76,22 @@ export interface NewAppointment {
   readonly triggerType: AppointmentTrigger;
   readonly triggerNote?: string | null;
   readonly coordinatorIds?: readonly string[];
+  /** Case size dự kiến, a fee (golden D mục 4 điểm 1): none when null or left out. */
+  readonly expectedCaseSize?: Money | null;
+}
+
+/** The new day of a rescheduled appointment (mockup 6e) and its case size, the old one's when left out. */
+export interface Rescheduling {
+  readonly date: CalendarDate;
+  readonly time?: string | null;
+  readonly expectedCaseSize?: Money | null;
 }
 
 export interface MeetingOutcome {
   readonly status: OutcomeStatus;
   readonly stageAfter?: CustomerStage | null;
   readonly nextStep?: string | null;
+  /** Left out, the appointment's stays (fc-17, fc-30: the dialog sends one for a met meeting only). */
   readonly expectedCaseSize?: Money | null;
   readonly note?: string;
   readonly outcomeReviewerId?: string | null;
@@ -110,7 +121,7 @@ export function listAppointments(db: Database, customerId?: string): Appointment
     db,
     `SELECT a.id, a.customer_id, a.rm_id, a.date, a.time, a.status, a.trigger_type,
        a.trigger_note, a.stage_after, a.expected_case_size, a.next_step, a.note,
-       a.rescheduled_from_id, a.outcome_reviewer_id
+       a.rescheduled_from_id, a.outcome_reviewer_id, a.expected_case_size_at
      FROM appointments a JOIN customers c ON c.id = a.customer_id
      WHERE a.deleted_at IS NULL AND c.deleted_at IS NULL ${one}
      ORDER BY a.date, a.time, a.id`,
@@ -131,6 +142,7 @@ export function listAppointments(db: Database, customerId?: string): Appointment
       triggerNote: row[7] as string | null,
       stageAfter: row[8] as CustomerStage | null,
       expectedCaseSize: row[9] as Money | null,
+      expectedCaseSizeAt: row[14] as string | null,
       nextStep: row[10] as string | null,
       note: row[11] as string,
       rescheduledFromId: row[12] as string | null,
@@ -157,13 +169,13 @@ export function recordMeetingOutcome(
     if (!canAppointment(row.status, 'record') && !canAppointment(row.status, 'edit')) {
       throw new DbError('INVALID_STATUS');
     }
-    const fields = outcomeFields(db, outcome, row.note);
+    const fields = outcomeFields(db, outcome, row);
     requireOutcomeDay(db, fields.status, row.date);
     // Still met with the same stage after: the transition stays as it is, even once a later one
     // exists (D7). Otherwise only a met appointment can have moved the customer.
     const keepsStage = keepsTransition(row, fields);
     if (row.status === 'MET' && !keepsStage) withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = { ...row, ...updateRow(db, appointments, id, fields) };
+    const updated: AppointmentRow = { ...row, ...writeAppointment(db, row, fields) };
     if (!keepsStage) applyOutcome(db, updated);
     return toAppointment(db, updated);
   });
@@ -190,9 +202,10 @@ export function recordOutcomeWithNext(
     }
     const recorded = recordMeetingOutcome(db, id, outcome);
     const { rmId } = liveCustomer(db, recorded.customerId);
+    // No case size: the dialog of the outcome has no field for the next one's.
     const booked = insertScheduled(
       db,
-      { ...recorded, rmId, date: next.date, time: next.time },
+      { ...recorded, rmId, date: next.date, time: next.time, expectedCaseSize: null },
       null,
     );
     return { recorded, next: booked };
@@ -216,14 +229,14 @@ export function editMeetingOutcome(
   return db.transaction(() => {
     const row = liveAppointment(db, id);
     if (!canAppointment(row.status, 'edit')) throw new DbError('INVALID_STATUS');
-    const fields = { ...outcomeFields(db, outcome, row.note), ...detailFields(row, details) };
+    const fields = { ...outcomeFields(db, outcome, row), ...detailFields(row, details) };
     requireOutcomeDay(db, fields.status, fields.date);
     // Same rule as the two commands: an unchanged met outcome keeps its transition; on a new day it
     // is recorded again there, as a new one would be (T-232); any other outcome replaces it.
     const keepsStage = keepsTransition(row, fields);
     const moved = fields.date !== row.date;
     if (row.status === 'MET' && (!keepsStage || moved)) withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = { ...row, ...updateRow(db, appointments, id, fields) };
+    const updated: AppointmentRow = { ...row, ...writeAppointment(db, row, fields) };
     replaceCoordinators(db, row, details.coordinatorIds);
     if (!keepsStage || moved) applyOutcome(db, updated);
     return toAppointment(db, updated);
@@ -231,17 +244,20 @@ export function editMeetingOutcome(
 }
 
 /**
- * The old appointment becomes rescheduled, with the reason in its note (mockup 6e); a new one
- * takes its place on the new day (D3), which is not the old day and time again.
+ * The old appointment becomes rescheduled, with the reason in its note (mockup 6e), and keeps its
+ * case size; a new one takes its place on the new day (D3), which is not the old day and time
+ * again. Its case size is the old one's when left out or the same: that number and when it was
+ * entered, a reschedule being no new estimate (golden D mục 4 điểm 5, F21); else stamped now.
  */
 export function rescheduleAppointment(
   db: Database,
   id: string,
-  when: { readonly date: CalendarDate; readonly time?: string | null },
+  when: Rescheduling,
   note?: string,
 ): AppointmentRecord {
   return db.transaction(() => {
-    const old = toAppointment(db, liveAppointment(db, id));
+    const row = liveAppointment(db, id);
+    const old = toAppointment(db, row);
     if (!canAppointment(old.status, 'reschedule')) throw new DbError('APPOINTMENT_NOT_SCHEDULED');
     const time = requireTime(when.time ?? null);
     if (compareDates(when.date, old.date) === 0 && time === old.time) {
@@ -253,7 +269,28 @@ export function rescheduleAppointment(
       status: 'RESCHEDULED',
       note: [old.note, reason].filter(Boolean).join('\n'),
     });
-    return insertScheduled(db, { ...old, date: when.date, time }, id);
+    const { expectedCaseSize } = when;
+    return insertScheduled(db, { ...old, date: when.date, time, expectedCaseSize }, id, row);
+  });
+}
+
+/**
+ * Sets, changes or clears (null) the case size dự kiến of a booked appointment in place, as the
+ * Forecast fills it in (golden D mục 4 điểm 9; F17, F20): stamped anew only when the number
+ * changes, the same number writing nothing.
+ */
+export function setExpectedCaseSize(
+  db: Database,
+  id: string,
+  amount: Money | null,
+): AppointmentRecord {
+  return db.transaction(() => {
+    const row = liveAppointment(db, id);
+    // Only "Đã lên lịch" is in the Forecast; an outcome takes its own number (6c, 6f).
+    if (row.status !== 'SCHEDULED') throw new DbError('APPOINTMENT_NOT_SCHEDULED');
+    const expectedCaseSize = caseSize(db, amount);
+    if (expectedCaseSize === row.expectedCaseSize) return toAppointment(db, row);
+    return toAppointment(db, { ...row, ...writeAppointment(db, row, { expectedCaseSize }) });
   });
 }
 
@@ -338,8 +375,11 @@ function outcomeStage(row: AppointmentRow, stage: CustomerStage | null): Custome
 
 // ---- helpers --------------------------------------------------------------
 
-/** The outcome columns of an appointment, checked (spec §4, D9); the note stays when not given. */
-function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
+/**
+ * The outcome columns of an appointment, checked (spec §4, D9); the note and the case size stay
+ * when not given.
+ */
+function outcomeFields(db: Database, outcome: MeetingOutcome, row: AppointmentRow) {
   if (!isOutcomeStatus(outcome.status)) throw new DbError('INVALID_STATUS');
   const stageAfter = outcome.stageAfter == null ? null : requireStage(outcome.stageAfter);
   const nextStep = optionalText(outcome.nextStep);
@@ -354,15 +394,51 @@ function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
     if (outcome.status !== 'MET') throw new DbError('REVIEWER_NOT_ALLOWED');
     requireReviewer(db, reviewerId);
   }
-  const size = outcome.expectedCaseSize ?? null;
+  const size = outcome.expectedCaseSize;
   return {
     status: outcome.status,
     stageAfter,
     nextStep,
-    expectedCaseSize: size === null ? null : requireAmount(size, getCurrency(db)),
-    note: outcome.note === undefined ? note : (optionalText(outcome.note) ?? ''),
+    expectedCaseSize: size === undefined ? row.expectedCaseSize : caseSize(db, size),
+    note: outcome.note === undefined ? row.note : (optionalText(outcome.note) ?? ''),
     outcomeReviewerId: reviewerId,
   };
+}
+
+type CaseSize = Pick<AppointmentRow, 'expectedCaseSize' | 'expectedCaseSizeAt'>;
+
+const NO_CASE_SIZE: CaseSize = { expectedCaseSize: null, expectedCaseSizeAt: null };
+
+/** A case size dự kiến as given, checked as a fee: none for null, never 0 (F19). */
+function caseSize(db: Database, size: Money | null): Money | null {
+  return size === null ? null : requireAmount(size, getCurrency(db));
+}
+
+/**
+ * The case size `size` (checked) with when it was entered: `was`'s, number and stamp, when left out
+ * or the same, else stamped `at` (golden D mục 4 điểm 2: only a change of the number is an entry).
+ */
+function stampedSize(was: CaseSize, size: Money | null | undefined, at: string): CaseSize {
+  if (size === undefined || size === was.expectedCaseSize) {
+    return { expectedCaseSize: was.expectedCaseSize, expectedCaseSizeAt: was.expectedCaseSizeAt };
+  }
+  return { expectedCaseSize: size, expectedCaseSizeAt: size === null ? null : at };
+}
+
+/**
+ * Writes `changes` to the appointment as `updateRow` does, the case size stamped by `stampedSize`
+ * with the same instant: one reading of the clock, as before the stamp, so that the simulated data
+ * keeps its instants and ids.
+ */
+function writeAppointment(
+  db: Database,
+  row: AppointmentRow,
+  changes: Partial<AppointmentRow>,
+): Partial<AppointmentRow> {
+  const at = db.now().toISOString();
+  const written = { updatedAt: at, ...changes, ...stampedSize(row, changes.expectedCaseSize, at) };
+  db.orm.update(appointments).set(written).where(eq(appointments.id, row.id)).run();
+  return written;
 }
 
 /** Day, time and trigger of an appointment after the changes, checked; the rest stays. */
@@ -411,15 +487,19 @@ function applyOutcome(db: Database, row: AppointmentRow): void {
   if (to !== null) appendTransition(db, row.customerId, to, date, row.id);
 }
 
+/** Books `input`; rescheduled, from `was`, whose case size it keeps when it leaves its own out. */
 function insertScheduled(
   db: Database,
   input: NewAppointment,
   rescheduledFromId: string | null,
+  was: CaseSize = NO_CASE_SIZE,
 ): AppointmentRecord {
   liveCustomer(db, input.customerId);
   const rmId = input.rmId;
   const coordinatorIds = [...new Set(input.coordinatorIds ?? [])];
   requirePeople(db, rmId, coordinatorIds);
+  const size = input.expectedCaseSize;
+  const checked = size === undefined ? undefined : caseSize(db, size);
   const at = db.now().toISOString();
   const row: AppointmentRow = {
     id: ulid(db.now(), db.random),
@@ -432,7 +512,7 @@ function insertScheduled(
     triggerNote: optionalText(input.triggerNote),
     stageAfter: null,
     nextStep: null,
-    expectedCaseSize: null,
+    ...stampedSize(was, checked, at),
     note: '',
     rescheduledFromId,
     createdAt: at,
@@ -563,6 +643,7 @@ function toAppointment(
     triggerNote: row.triggerNote,
     stageAfter: row.stageAfter,
     expectedCaseSize: row.expectedCaseSize,
+    expectedCaseSizeAt: row.expectedCaseSizeAt,
     nextStep: row.nextStep,
     note: row.note,
     rescheduledFromId: row.rescheduledFromId,

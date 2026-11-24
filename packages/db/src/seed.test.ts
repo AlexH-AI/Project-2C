@@ -16,6 +16,7 @@ import {
   KYC_GATE_STATES,
   searchText,
   toHex,
+  weekdayOf,
   type KycCategory,
   type KycField,
 } from '@p2c/domain';
@@ -91,6 +92,7 @@ const DEMO_ROW_COUNTS = {
   policies: 988,
   settings: 1,
   stage_transitions: 3309,
+  team_targets: 12,
   teams: 3,
 };
 // T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
@@ -106,7 +108,10 @@ const DEMO_ROW_COUNTS = {
 // with a stream and a clock of its own — every other value of every row as it was, apart from the
 // updated_at of the cancelled policies.
 // C3 (T-497) on purpose: the two columns of a team's colour and icon, given to two teams.
-const DEMO_HASH = 'c0ce0bc840b3b4bb50a47ba38f96f8b3ec8e5cec8dceee861cb94c32dd223bd0';
+// D1 (T-500) on purpose: the stamp of a case size and the KPI tháng, with a stream and a clock of
+// their own; the 54 meetings moved to a Sunday booked on the Saturday before (D-c), their outcome
+// recorded on the Sunday as before — every other value of every row as it was.
+const DEMO_HASH = '900a0c950c111011390fb69644a92225087cd27dd9fc1cf981825e3b9ca84c53';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
@@ -427,6 +432,26 @@ describe('seedDemoData', () => {
         )[0]!.values[0]!;
         expect(String(days[0]) >= '1900-01-01').toBe(true);
         expect(String(days[1]) <= '2100-12-31').toBe(true);
+      }
+    },
+    SLOW,
+  );
+
+  // D-c (Owner 11/11/2026): no appointment on a Sunday, whatever day of the week the anchor is —
+  // the weeks of the meetings start from it — and however far a meeting moves (D1).
+  it(
+    'books no appointment on a Sunday from an anchor on any day of the week',
+    async () => {
+      const scale = { teams: 1, rmsPerTeam: 3, customersPerRm: 10, meetingDays: [6, 6] as const };
+      for (let day = 14; day <= 20; day++) {
+        const db = await openDatabase();
+        seedDemoData(db, { anchorDate: calendarDate(2026, 9, day), seed: 5, scale });
+        const sundays = listAppointments(db).filter((a) => weekdayOf(a.date) === 7);
+        expect(listAppointments(db).length).toBeGreaterThan(0);
+        expect(
+          sundays.map((a) => formatIsoDate(a.date)),
+          `anchor ${day}/09`,
+        ).toEqual([]);
       }
     },
     SLOW,

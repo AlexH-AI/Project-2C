@@ -167,4 +167,5 @@ export type {
   Team,
   TeamColor,
   TeamIcon,
+  TeamTarget,
 } from './model';
