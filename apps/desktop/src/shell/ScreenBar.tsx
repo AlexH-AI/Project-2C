@@ -60,7 +60,13 @@ export function Toolbar({
         {/* Short of room, the line under the name is cut first (`shrink-1000`), then the pill
             gives up the customer's name, then its time left; the name keeps 80 px at least. */}
         <div className="min-w-20 shrink-1000">
-          <h1 ref={heading} tabIndex={-1} className="screen-title m-0 truncate">
+          {/* Cut at its end only (`clip` on x): the marks over a capital (Ổ) and the tails under
+              the line pass its 1.15 line, and `truncate` would cut them too. */}
+          <h1
+            ref={heading}
+            tabIndex={-1}
+            className="screen-title m-0 overflow-x-clip text-ellipsis whitespace-nowrap"
+          >
             {title}
           </h1>
           {/* --text-2, not the mockup's --text-3: over the bright cells that scroll under the

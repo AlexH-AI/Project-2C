@@ -114,6 +114,19 @@ test('the pill and its panel follow the scope picked on the toolbar', async ({ p
   // Every row of the panel is of an RM of the team.
   const teams = await rows(page).allTextContents();
   for (const row of teams) expect(row).toContain('Sao Mai');
+  await page.keyboard.press('Escape');
+
+  // Tổng quan counts every team together, as its pill says: so does "Lưu ý".
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Tổng quan' })
+    .click();
+  await pickScope(page, 'teams');
+  await pill(page).click();
+  await expect(panel(page).getByRole('heading', { name: /^Hôm nay/ })).toContainText('Mọi team');
+  expect(
+    new Set((await rows(page).allTextContents()).map((row) => /· ([^·]+)$/.exec(row)?.[1])),
+  ).not.toEqual(new Set(['Sao Mai']));
 });
 
 test('a narrow window leaves the name out of the pill; the mask hides it in the pill and the panel', async ({
@@ -137,6 +150,11 @@ test('a narrow window leaves the name out of the pill; the mask hides it in the 
     pill(page).boundingBox(),
   ]);
   expect(heads!.x).toBeGreaterThanOrEqual(title!.x + title!.width);
+  // The time left whole, the pill clear of the eye after it.
+  const timeLeft = pill(page).locator('span').last();
+  expect(await timeLeft.evaluate((span) => span.scrollWidth <= span.clientWidth)).toBe(true);
+  const eye = await toolbar(page).getByRole('button', { name: 'Che tên khách hàng' }).boundingBox();
+  expect(heads!.x + heads!.width).toBeLessThanOrEqual(eye!.x);
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await toolbar(page).getByRole('button', { name: 'Che tên khách hàng' }).click();
