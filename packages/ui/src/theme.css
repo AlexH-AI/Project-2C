@@ -813,6 +813,26 @@
     animation: vanish var(--t-2) var(--ease-in) forwards;
   }
 }
+/* The command bar (VA8): a floating layer, 10 px from where it is and 98 % → 100 % on both systems
+   (ADR-0013 appendix 14/11/2026); what is behind dims and lights again as behind a dialog. */
+@utility motion-palette {
+  --from-y: -10px;
+  --from-scale: 0.98;
+  transform-origin: top center;
+  animation:
+    appear var(--t-2) var(--ease-out) backwards,
+    arrive var(--t-3) var(--spring-snappy) backwards;
+  &::backdrop {
+    animation: appear var(--t-2) var(--ease-out) backwards;
+  }
+  &[data-state='closing'] {
+    animation: leave var(--t-1) var(--ease-in) forwards;
+    pointer-events: none;
+  }
+  &[data-state='closing']::backdrop {
+    animation: vanish var(--t-2) var(--ease-in) forwards;
+  }
+}
 /* A toast rises from 24 px under the bottom edge, 96 % → 100 %, by the bouncy spring in --t-4; it
    leaves the same way in --t-2. */
 @utility motion-toast {

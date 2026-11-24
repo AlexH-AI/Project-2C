@@ -201,7 +201,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      className="pop motion-dialog m-auto mt-21 w-155 max-w-full flex-col overflow-hidden rounded-pop p-0 text-fg open:flex"
+      className="pop motion-palette m-auto mt-21 w-155 max-w-full flex-col overflow-hidden rounded-pop p-0 text-fg open:flex"
     >
       <div className="flex h-14 flex-none items-center gap-3 border-b border-hairline pr-4 pl-4.5 text-fg-2">
         <NavIcon name="search" className="size-5" />
