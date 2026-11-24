@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { formatLocalTime } from '@p2c/domain';
+import { formatLocalTime, formatPercentage } from '@p2c/domain';
 import { notify } from '../data/listeners';
 import { joinParts, t } from '../i18n';
 
@@ -14,7 +14,6 @@ export type JobKind = 'export' | 'backup' | 'ai';
 /**
  * A job the app runs in the background, the screen still in use (VA9b-a, mockup
  * search-rm-team.html `#now`): Xuất Excel of Báo cáo, a backup, an AI analysis of a customer.
- * None of them can measure how far it is (one write, one request): no progress, no percent.
  */
 export interface BackgroundJob {
   readonly id: number;
@@ -24,6 +23,11 @@ export interface BackgroundJob {
   /** The customer an analysis is of: its name is read, and masked, as it shows. */
   readonly customerId?: string;
   readonly state: 'running' | 'done' | 'failed';
+  /**
+   * From 0 to 1, as the caller measures it. None of the three can (one write, one request): with
+   * none, the bar has no percent.
+   */
+  readonly progress?: number;
   /** The file a done export wrote. */
   readonly file?: string;
   readonly endedAt?: Date;
@@ -37,6 +41,7 @@ export interface BackgroundJob {
 
 /** What the caller of a job tells of it as it goes. */
 export interface JobHandle {
+  progress(share: number): void;
   done(file?: string): void;
   fail(retry: () => void): void;
   /** Gone with no word: cancelled, or nothing ran. */
@@ -83,6 +88,7 @@ export function createBackgroundJobs(now: () => Date): BackgroundJobs {
       const end = (change: Partial<BackgroundJob>) =>
         update(id, { ...change, endedAt: now(), changed: ++changes });
       return {
+        progress: (share) => update(id, { progress: share }),
         done(file) {
           end({ state: 'done', file });
           setTimeout(() => update(id, { shown: false }), DONE_MS);
@@ -121,6 +127,12 @@ export const jobPillText = (job: BackgroundJob, name = ''): string =>
   job.state === 'failed'
     ? joinParts([jobText(job, name), t('jobs.retryHint')])
     : jobText(job, name);
+
+/** "60%" of a job running whose progress is measured; none else. */
+export const jobPercent = (job: BackgroundJob): string | null =>
+  job.state === 'running' && job.progress !== undefined
+    ? t('jobs.percent', { value: formatPercentage(job.progress * 100) })
+    : null;
 
 /** The jobs of the window, which `AppShell` holds. */
 export const JobsContext = createContext<BackgroundJobs | null>(null);

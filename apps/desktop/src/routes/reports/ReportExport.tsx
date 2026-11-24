@@ -50,19 +50,26 @@ export function useReportExport(shown: FilterSelection) {
     setLast(null);
     // Its time is not measured: the bar of "Lưu ý" has no percent.
     const job = jobs.start('export', 'export');
-    const outcome = await exportReport(report, write);
-    const notice: ExportNotice =
-      outcome.kind === 'failed'
-        ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
-        : {
-            kind: 'exported',
-            sheets: reportSheetCount(report.rows),
-            where: outcome.path ?? outcome.name,
-            inFolder: outcome.path !== undefined,
-          };
-    if (outcome.kind === 'failed') job.fail(() => void run(report));
-    else job.done(outcome.name);
-    setLast({ notice, for: exported });
+    const again = () => void run(report);
+    try {
+      const outcome = await exportReport(report, write);
+      const notice: ExportNotice =
+        outcome.kind === 'failed'
+          ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
+          : {
+              kind: 'exported',
+              sheets: reportSheetCount(report.rows),
+              where: outcome.path ?? outcome.name,
+              inFolder: outcome.path !== undefined,
+            };
+      setLast({ notice, for: exported });
+      if (outcome.kind === 'failed') job.fail(again);
+      else job.done(outcome.name);
+    } catch (error) {
+      // A bug: the job ends, so Xuất Excel is not off until the app is opened again.
+      job.fail(again);
+      throw error;
+    }
   };
   // By value: the same period and scope picked again are new objects.
   const notice =

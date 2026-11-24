@@ -111,6 +111,7 @@ export const en: EnglishMessages = {
   'jobs.failed.ai': 'AI analysis of {name} did not finish',
   'jobs.retryHint': 'click to retry',
   'jobs.retry': 'Try again',
+  'jobs.percent': '{value}%',
   'jobs.progress': 'Progress',
   'jobs.busy.export':
     'An export of Reports to Excel is running: run the command again once it is done.',

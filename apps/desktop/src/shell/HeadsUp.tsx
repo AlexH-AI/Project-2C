@@ -22,6 +22,7 @@ import {
 import { OutcomeDialog } from '../routes/appointments/OutcomeDialog';
 import { BADGE } from '../routes/classes';
 import {
+  jobPercent,
   jobPillText,
   jobText,
   pillJob,
@@ -100,28 +101,41 @@ function JobIcon({ job }: { job: BackgroundJob }) {
 }
 
 /**
- * The pill as a job takes it (mockup `#now`): its icon and words, and a bar while it runs. Nothing
- * is measured (`BackgroundJob`), so the bar is full and pulses, with no percent. A narrow window
- * keeps the icon and the bar of one running, and fewer words of one ended.
+ * The pill as a job takes it (mockup `#now`): its icon and words, a bar and the percent while it
+ * runs. Nothing measured, the bar is full and pulses, with no percent. A narrow window keeps the
+ * icon, the bar and the percent of one running, and fewer words of one ended.
  */
 function JobFace({ job, name, narrow }: { job: BackgroundJob; name: string; narrow: boolean }) {
-  const running = job.state === 'running';
-  return (
-    <>
-      <JobIcon job={job} />
-      {!running && (
+  if (job.state !== 'running') {
+    return (
+      <>
+        <JobIcon job={job} />
         <b className={`min-w-0 truncate font-semibold ${narrow ? 'max-w-37.5' : ''}`}>
           {jobPillText(job, name)}
         </b>
-      )}
-      {running && !narrow && <span className="min-w-0 truncate">{jobText(job, name)}</span>}
-      {running && (
-        <span
-          role="progressbar"
-          aria-label={t('jobs.progress')}
-          className={`h-1 flex-none rounded-full bg-accent motion-safe:animate-pulse ${narrow ? 'w-13' : 'w-21'}`}
-        />
-      )}
+      </>
+    );
+  }
+  const share = job.progress;
+  const percent = jobPercent(job);
+  return (
+    <>
+      <JobIcon job={job} />
+      {!narrow && <span className="min-w-0 truncate">{jobText(job, name)}</span>}
+      <span
+        role="progressbar"
+        aria-label={t('jobs.progress')}
+        aria-valuetext={percent ?? undefined}
+        className={`flex h-1 flex-none overflow-hidden rounded-full bg-fill-3 ${narrow ? 'w-13' : 'w-21'}`}
+      >
+        {/* A grow under 1 takes that share of the bar. */}
+        {share === undefined ? (
+          <i className="flex-1 rounded-full bg-accent motion-safe:animate-pulse" />
+        ) : (
+          <i className="rounded-full bg-accent" style={{ flex: share }} />
+        )}
+      </span>
+      {percent && <span className="text-fg-2 tabular-nums">{percent}</span>}
     </>
   );
 }
@@ -229,7 +243,9 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
         // A failure's press runs its job again, as the pill says (mockup `#now`).
         aria-haspopup={failed ? undefined : 'dialog'}
         aria-expanded={failed ? undefined : open}
-        aria-label={t('headsUp.label', { text: job ? jobPillText(job, jobName!) : text })}
+        aria-label={t('headsUp.label', {
+          text: job ? joinParts([jobPillText(job, jobName!), jobPercent(job)]) : text,
+        })}
         onClick={() => {
           if (!failed) return open ? close() : setOpen(true);
           setOpen(false);
@@ -434,9 +450,9 @@ function TodayPanel({
                   {t('jobs.retry')}
                 </Button>
               ) : (
-                job.endedAt && (
-                  <span className="text-xs text-fg-2">{formatLocalTime(job.endedAt)}</span>
-                )
+                <span className="text-xs text-fg-2">
+                  {job.endedAt ? formatLocalTime(job.endedAt) : jobPercent(job)}
+                </span>
               )}
             </li>
           ))}

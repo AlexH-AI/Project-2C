@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createBackgroundJobs,
   DONE_MS,
+  jobPercent,
   jobPillText,
   jobText,
   pillJob,
@@ -21,11 +22,16 @@ afterEach(() => vi.useRealTimers());
 const onPill = () => pillJob(jobs.list());
 
 describe('background jobs', () => {
-  it('shows a job running on the pill, busy until it ends', () => {
-    jobs.start('export', 'export');
+  it('shows a job running on the pill, busy until it ends, with its progress when measured', () => {
+    const job = jobs.start('export', 'export');
     expect(jobs.busy('export')).toBe(true);
     expect(jobs.busy('backup')).toBe(false);
     expect(onPill()).toMatchObject({ kind: 'export', state: 'running' });
+    expect(jobPercent(onPill()!)).toBeNull();
+    job.progress(0.6);
+    expect(jobPercent(onPill()!)).toBe('60%');
+    job.done('x.xlsx');
+    expect(jobPercent(onPill()!)).toBeNull();
   });
 
   it('says a job done for about 3 seconds, then leaves the pill but stays in the list', () => {

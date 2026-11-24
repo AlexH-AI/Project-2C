@@ -120,6 +120,7 @@ export const vi = {
   'jobs.failed.ai': 'Phân tích AI {name} không xong',
   'jobs.retryHint': 'bấm để thử lại',
   'jobs.retry': 'Thử lại',
+  'jobs.percent': '{value}%',
   'jobs.progress': 'Tiến độ',
   'jobs.busy.export': 'Một lần xuất Excel Báo cáo đang chạy: chạy lại lệnh khi lần đó xong.',
   'jobs.busy.backup': 'Một lần sao lưu đang chạy: chạy lại lệnh khi lần đó xong.',

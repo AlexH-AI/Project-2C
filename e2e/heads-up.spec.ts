@@ -9,6 +9,7 @@ import {
   panelOf,
   pickPeriodKind,
   pickScope,
+  pressButton,
   screenSub,
   useOpenCode,
 } from './support';
@@ -255,11 +256,13 @@ test('Xuất Excel runs on the pill, Báo cáo still in use; done, it says so ab
   await pickPeriodKind(page, 'Năm');
   await expect(screenSub(page)).toContainText('Năm 2026');
 
+  // The clock held from before the file is written: "Đã xuất" stays until 3 s have run.
+  await holdClock(page);
   await release(page);
   await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
-  await holdClock(page);
+  await page.clock.runFor(2_900);
   await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
-  await page.clock.runFor(3_000);
+  await page.clock.runFor(100);
   await expect(pill(page)).toHaveAccessibleName(ON_APPOINTMENTS);
   // It stays in "Việc chạy nền" of the panel of today.
   await pill(page).click();
@@ -301,7 +304,7 @@ test('a failed export stays on the pill, red, whatever the period, scope or scre
 
   // The press runs the same export again: the month of Toàn bộ, as asked.
   await page.evaluate(() => (window.files.fail = false));
-  await pill(page).click();
+  await pressButton(pill(page));
   await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
   await expect(pill(page)).toBeFocused();
 });

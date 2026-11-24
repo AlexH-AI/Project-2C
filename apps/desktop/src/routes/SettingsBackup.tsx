@@ -1,4 +1,4 @@
-import { useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { DbError, LATEST_SCHEMA_VERSION, MAX_BACKUP_BYTES } from '@p2c/db';
 import { formatBytes, formatLocalDateTime, type CurrencyCode } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
@@ -74,6 +74,15 @@ export function BackupSection({
   const toast = useToast();
   const exporting = useSyncExternalStore(jobs.subscribe, () => jobs.busy('backup'));
   const busy: DataBusy = held ?? (exporting ? 'export' : null);
+  // What Data is busy with now, for Thử lại of "Lưu ý", which may run once Data is left: it waits
+  // for a read, so "Nạp lại…" stays off until the read is over (DR6-200).
+  const heldNow = useRef<DataBusy>(null);
+  useEffect(() => {
+    heldNow.current = held;
+    return () => {
+      heldNow.current = null;
+    };
+  }, [held]);
   const input = useRef<HTMLInputElement>(null);
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [refused, setRefused] = useState<Refused | null>(null);
@@ -94,7 +103,9 @@ export function BackupSection({
         inFolder: exported.path !== undefined,
       });
     } catch (error) {
-      job.fail(() => void exportFile());
+      job.fail(() => {
+        if (heldNow.current === null && !jobs.busy('backup')) void exportFile();
+      });
       // A file over the limit is never written: no import would read it back (DR6-179).
       const tooLarge = error instanceof DbError && error.code === 'BACKUP_TOO_LARGE';
       const message = tooLarge
