@@ -24,6 +24,7 @@ import {
   isIsoDate,
   MAX_YEAR,
   MIN_YEAR,
+  isTime,
   minuteOfDay,
   parseDate,
   parseQuickDate,
@@ -118,8 +119,14 @@ describe('minuteOfDay', () => {
     'refuses %j',
     (text) => {
       expect(() => minuteOfDay(text)).toThrow(RangeError);
+      expect(isTime(text)).toBe(false);
     },
   );
+
+  // Review of PR 1507: the one rule of a stored time, for the commands and the backup import too.
+  it('tells a stored time by the rule it reads', () => {
+    for (const time of ['00:00', '09:05', '19:30', '23:59']) expect(isTime(time)).toBe(true);
+  });
 });
 
 describe('formatIsoDate', () => {

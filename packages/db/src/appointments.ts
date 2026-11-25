@@ -13,6 +13,7 @@ import {
   compareDates,
   formatDate,
   isOutcomeStatus,
+  isTime,
   REVIEWER_ROLES,
   type Appointment,
   type CalendarDate,
@@ -570,7 +571,7 @@ function requireReviewer(db: Database, personId: string): void {
 }
 
 function requireTime(time: string | null): string | null {
-  if (time !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new DbError('INVALID_TIME');
+  if (time !== null && !isTime(time)) throw new DbError('INVALID_TIME');
   return time;
 }
 

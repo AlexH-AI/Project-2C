@@ -2,7 +2,6 @@ import type { AppointmentRecord } from '@p2c/db';
 import {
   compareDates,
   formatDayMonth,
-  formatLocalDateTime,
   formatLocalTime,
   fromLocalDate,
   minuteOfDay,
@@ -183,9 +182,11 @@ export function watchMinute(
 ): MinuteWatcher {
   let now = read();
   return {
+    // Read on every render of the toolbar: a comparison, no text made. A minute starts at the same
+    // moment in every zone whose offset is whole minutes.
     current() {
       const next = read();
-      if (formatLocalDateTime(next) !== formatLocalDateTime(now)) now = next;
+      if (Math.floor(next.getTime() / 60_000) !== Math.floor(now.getTime() / 60_000)) now = next;
       return now;
     },
     subscribe(listener) {

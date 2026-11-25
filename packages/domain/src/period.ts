@@ -110,12 +110,17 @@ export function formatLocalTime(at: Date): string {
   return localTime(at);
 }
 
-/**
- * The minute of the day a stored time starts at (`HH:MM` exactly, 00:00–23:59, as
- * `formatLocalTime` writes one): 0–1439. Throws a RangeError for anything else.
- */
+/** A stored time: `HH:MM` exactly, 00:00–23:59, as `formatLocalTime` writes one. */
+const TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Whether `text` is a stored time (`TIME`): a command and the backup import ask. */
+export function isTime(text: string): boolean {
+  return TIME.test(text);
+}
+
+/** The minute of the day a stored time starts at: 0–1439. Throws a RangeError for anything else. */
 export function minuteOfDay(time: string): number {
-  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+  const match = TIME.exec(time);
   if (!match) throw new RangeError(`Not an HH:MM time: ${time}`);
   return Number(match[1]) * 60 + Number(match[2]);
 }
