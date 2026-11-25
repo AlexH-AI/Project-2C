@@ -4,15 +4,21 @@
 // judge the goal while a child session works, and reads one line when the wait is over:
 //
 //   node tools/auto-wait.mjs pr <issue>                an open PR closes the Issue
-//   node tools/auto-wait.mjs ci <N> [--not <sha>]      CI finished on the PR's head; with --not,
-//                         [--since <time>]             first a head other than that SHA (a push),
+//   node tools/auto-wait.mjs ci <N> [--not <sha>]      CI finished on the PR's head, or one check
+//                         [--since <time>]             of it red (not with --since); with --not,
+//                                                      first a head other than that SHA (a push),
 //                                                      the PR's branch on GitHub at another SHA for
 //                                                      3 min while the head stays: exit 3 (a push
 //                                                      GitHub missed); with --since, the checks of
 //                                                      the PR's newest pull_request run made at or
 //                                                      after that UTC time (a reopened PR),
 //                                                      cancelled: exit 3
+//   node tools/auto-wait.mjs fix <N> --not <sha>       a coding session's fix is out: a head other
+//                                                      than that SHA, or a "XIN XEM LẠI" for it
+//                                                      after its latest REVIEW; a stale head as
+//                                                      with ci --not (ADR-0001 M15)
 //   node tools/auto-wait.mjs review <N> [--sha <sha>]  the latest REVIEW names the head (or <sha>)
+//                                                      and no "XIN XEM LẠI" for it came after
 //   node tools/auto-wait.mjs title <text>              an open or merged PR whose title holds it
 //   node tools/auto-wait.mjs sleep                     only the time
 //
@@ -30,6 +36,7 @@ import {
   EXIT,
   USAGE,
   ciState,
+  fixState,
   heldFor,
   parseArgs,
   prForIssue,
@@ -75,6 +82,12 @@ const branchSha = (name) =>
 // Since when this wait has seen the PR's branch at the SHA it reads now.
 const branchHeld = heldFor(Date.now);
 
+/** The PR's branch on GitHub and how long this wait has seen it at that SHA (ci, fix). */
+const branchOf = (pr) => () => {
+  const sha = branchSha(pr.headRefName);
+  return { sha, forMs: branchHeld(sha) };
+};
+
 // One read of GitHub per mode.
 const READS = {
   pr: ({ target }) =>
@@ -99,11 +112,12 @@ const READS = {
       runs: () => runsOf(pr.headRefOid),
       // Every file, as pr-status reads them, so docs-only is decided the same way there.
       files: () => loadPrFiles(target),
-      branch: () => {
-        const sha = branchSha(pr.headRefName);
-        return { sha, forMs: branchHeld(sha) };
-      },
+      branch: branchOf(pr),
     });
+  },
+  fix: ({ target, not }) => {
+    const pr = readPr(target);
+    return fixState(pr, { not, branch: branchOf(pr) });
   },
   review: ({ target, sha }) => reviewState(readPr(target), { sha }),
   title: ({ target }) =>

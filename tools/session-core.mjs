@@ -75,8 +75,9 @@ export function fitOutput(header, body, limit = HOOK_LIMIT) {
 }
 
 // Only people with write access may post the REVIEW that gates a merge: the repo is
-// public, so anyone else can comment "REVIEW: PASS" (gh's authorAssociation).
-const REVIEWERS = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+// public, so anyone else can comment "REVIEW: PASS" (gh's authorAssociation). The same goes
+// for a request to review a head again (tools/auto-wait-core.mjs).
+export const REVIEWERS = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
 
 /**
  * The last "REVIEW: …" comment of a PR written by a REVIEWER: verdict line, the head SHA

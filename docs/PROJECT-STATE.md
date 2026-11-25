@@ -596,6 +596,10 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **"Bị chặn bởi":** no run 5b Issue waits on a gate or on the result of another Issue; the run order is the queue.
     - **Model of run 5b:** Opus (spec §10.1: VA9, DS-*).
   - Run 5b queue (`auto-issues`, Opus): #1497 (T-503, records these decisions) → #1498 (T-504, VA9b-a) → #1499 (T-505, VA9b-b) → #1500 (T-506, e2e motion on WebKit) → #1501 (T-507, DS-13).
+- 2026-11-25: **review runs beside CI** (ADR-0001 appendix M15, T-508 #1509). After run 5b the OWNER asked, in chat on the Home PC, to hand a review out as soon as a PR or a new head exists, while CI runs, to save about 20 minutes a round; to send `REVIEW: CHANGES` back for a fix at once; and to fold red CI and CHANGES into one fix. Measured in runs 5 and 5b: CI 25–40 min per head, a clean review 15–25 min, about 1 hour per CHANGES round.
+  - Earlier the same day, on PR #1507 (https://github.com/AlexH-AI/Project-2C/pull/1507, comment "Quyết định Owner (25/11/2026)"): "hãy dừng chuỗi ngay sau khi issue đang làm dở và sổ ghi chú merge. Dừng để anh sửa auto-issue như ý trên". Run 5b stopped after PR #1507 and its ledger PR #1508; #1500 (T-506) and #1501 (T-507) wait for the next run.
+  - Claude put the plan and a draft of M15 to the OWNER (G1). The OWNER: "Duyệt G1" (comment on #1509). Approved with it: a red check is red CI even while others run; a new `auto-wait fix` wait instead of a two-signal wait; a "XIN XEM LẠI" comment instead of an empty commit when nothing but the PR body has to change (also after an OWNER decision that overrules a blocking item); `merge-pr` unchanged. Two defaults the OWNER kept: a re-review after "PASS, then red CI" is a full review; a flaky CI still gets an empty commit.
+  - The change touches the pipeline's "không tự sửa" fence, so T-508 runs the ordinary way (issue, branch, PR `risk:high`, clean review, the OWNER merges), not in `auto-issues`; K49 is lifted for it as for DS-0, done while the pipeline is not running.
 
 ## Next decision
 

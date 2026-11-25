@@ -3,6 +3,7 @@ import {
   EXIT,
   STALE_HEAD_MS,
   ciState,
+  fixState,
   heldFor,
   parseArgs,
   prForIssue,
@@ -19,6 +20,11 @@ const check = (name, conclusion, status = 'COMPLETED') => ({ name, status, concl
 const review = (verdict, sha, who = 'OWNER') => ({
   authorAssociation: who,
   body: `REVIEW: ${verdict}\n\nPR #941, head \`${sha}\`, mức \`low\`.`,
+});
+// The coding session asks for a review of the same head: nothing but the PR body had to change.
+const again = (sha, who = 'OWNER') => ({
+  authorAssociation: who,
+  body: `XIN XEM LẠI: head \`${sha}\` (auto-issues). Thân PR đã sửa theo REVIEW @${sha}.`,
 });
 const BRANCH = 'task/T-941-wait';
 const pr = (overrides = {}) => ({
@@ -63,6 +69,28 @@ describe('parseArgs', () => {
     });
     expect(parseArgs(['review', '941', '--sha', HEAD]).sha).toBe(HEAD);
     expect(parseArgs(['sleep', '--timeout', '30']).timeoutMin).toBe(30);
+  });
+
+  it('reads fix, which needs the head to move past (--not)', () => {
+    expect(parseArgs(['fix', '941', '--not', 'ABC1234', '--timeout', '15'])).toEqual({
+      mode: 'fix',
+      target: 941,
+      timeoutMin: 15,
+      everySec: 60,
+      not: 'abc1234',
+      sha: null,
+    });
+    expect(parseArgs(['fix', '941', '--not', 'abc1234', '--once']).timeoutMin).toBe(0);
+    for (const argv of [
+      ['fix'],
+      ['fix', '941'],
+      ['fix', '941', '--once'],
+      ['fix', '941', '--not'],
+      ['fix', '941', '--not', 'abc1234', '--sha', 'abc1234'],
+      ['fix', '941', '--not', 'abc1234', '--since', '2026-11-02T10:56:33Z'],
+    ]) {
+      expect(parseArgs(argv).error, argv.join(' ')).toMatch(/\S/);
+    }
   });
 
   it('reads --since, a UTC time, for ci only', () => {
@@ -154,12 +182,30 @@ describe('ciState', () => {
     expect(state.text).toBe('CI red @abc1234: e2e, ci/legacy');
   });
 
-  it('waits while a check runs, even after another failed', () => {
+  it('is red at the first red check, while others still run (ADR-0001 M15)', () => {
+    // One red check and the head can no longer merge: the review runs beside CI, and the fix of
+    // both goes in one push.
     const state = ciState(
-      pr({ statusCheckRollup: [check('Verify', 'FAILURE'), check('e2e', null, 'IN_PROGRESS')] }),
+      pr({
+        statusCheckRollup: [
+          check('Verify', 'FAILURE'),
+          check('e2e', null, 'IN_PROGRESS'),
+          check('exe', 'SUCCESS'),
+        ],
+      }),
     );
-    expect(state.done).toBe(false);
-    expect(state.text).toBe('CI 0 pass, 1 fail, 1 pending @abc1234');
+    expect(state).toEqual({
+      done: true,
+      code: EXIT.bad,
+      text: 'CI red @abc1234: Verify; 1 still running',
+    });
+  });
+
+  it('waits while checks run and none is red', () => {
+    const state = ciState(
+      pr({ statusCheckRollup: [check('Verify', 'SUCCESS'), check('e2e', null, 'IN_PROGRESS')] }),
+    );
+    expect(state).toEqual({ done: false, text: 'CI 1 pass, 0 fail, 1 pending @abc1234' });
   });
 
   it('waits for the first check of a code PR', () => {
@@ -182,8 +228,13 @@ describe('ciState', () => {
     });
     const ended = going.map((run) => ({ ...run, status: 'completed' }));
     expect(ciState(verified, { runs: () => ended })).toMatchObject({ done: true, code: EXIT.done });
+    // A red check is red at once: the jobs still to come cannot make the head green (M15).
     const failed = pr({ statusCheckRollup: [check('Verify', 'FAILURE')] });
-    expect(ciState(failed, { runs: () => going }).done).toBe(false);
+    expect(ciState(failed, { runs: () => going })).toEqual({
+      done: true,
+      code: EXIT.bad,
+      text: 'CI red @abc1234: Verify',
+    });
   });
 
   it('reads the workflow runs only once every check ended', () => {
@@ -194,6 +245,8 @@ describe('ciState', () => {
     expect(ciState(running, { runs }).done).toBe(false);
     expect(ciState(pr({ statusCheckRollup: [] }), { runs }).done).toBe(false);
     expect(ciState(pr(), { not: 'abc1234', runs }).done).toBe(false);
+    const red = pr({ statusCheckRollup: [check('Verify', 'FAILURE'), check('e2e', 'SUCCESS')] });
+    expect(ciState(red, { runs }).code).toBe(EXIT.bad);
     expect(ciState(pr({ state: 'MERGED' }), { runs }).code).toBe(EXIT.look);
   });
 
@@ -404,6 +457,18 @@ describe('ciState', () => {
       );
     });
 
+    it('waits for its own run when a red check left from before shares the head with it', () => {
+      // A red check of the run before the reopen says nothing of the reopened PR: no early red.
+      const failedBefore = [ranIn(1, 'Verify', 'SUCCESS'), ranIn(1, 'e2e', 'FAILURE')];
+      const going = [ranIn(2, 'Verify', null, 'IN_PROGRESS')];
+      expect(
+        ciState(pr({ statusCheckRollup: [...failedBefore, ...going] }), {
+          since,
+          runs: () => [old, { ...fresh, status: 'in_progress', conclusion: null }],
+        }),
+      ).toEqual({ done: false, text: 'CI 1 pass, 1 fail, 1 pending @abc1234' });
+    });
+
     it('calls a failed run red even when the head shows no red check of it yet', () => {
       // gh reads the checks before the runs, so the Actions API can already say the run failed.
       const failed = { ...fresh, conclusion: 'failure' };
@@ -514,7 +579,107 @@ describe('ciState', () => {
   });
 });
 
+describe('fixState', () => {
+  const not = 'abc1234';
+  const PUSHED = 'fedcba9876543210fedcba9876543210fedcba98';
+  const waiting = { done: false, text: 'head still abc1234: waiting for a push or XIN XEM LẠI' };
+
+  it('is done once the head moved past the one given', () => {
+    expect(fixState(pr(), { not: OLD.slice(0, 7) })).toEqual({
+      done: true,
+      code: EXIT.done,
+      text: 'head moved past 0110000 to abc1234',
+    });
+  });
+
+  it('is done on a XIN XEM LẠI for the head that follows its latest REVIEW', () => {
+    const asked = {
+      done: true,
+      code: EXIT.done,
+      text: 'XIN XEM LẠI @abc1234: review the same head',
+    };
+    for (const comments of [
+      [review('CHANGES', 'abc1234'), again('abc1234')],
+      [review('CHANGES', OLD), review('CHANGES', 'abc1234'), again(HEAD)],
+      // A review that has not landed yet: the request still stands.
+      [again('abc1234')],
+    ]) {
+      expect(fixState(pr({ comments }), { not })).toEqual(asked);
+    }
+  });
+
+  it('reads the marker whatever form its accents take', () => {
+    const decomposed = { ...again('abc1234'), body: again('abc1234').body.normalize('NFD') };
+    expect(
+      fixState(pr({ comments: [review('CHANGES', 'abc1234'), decomposed] }), { not }).done,
+    ).toBe(true);
+  });
+
+  it('waits while no push came and no XIN XEM LẠI stands for the head', () => {
+    for (const comments of [
+      [],
+      [review('CHANGES', 'abc1234')],
+      // Asked, then reviewed again: that request is spent.
+      [review('CHANGES', 'abc1234'), again('abc1234'), review('CHANGES', 'abc1234')],
+      [review('CHANGES', 'abc1234'), again(OLD.slice(0, 7))],
+      // The repo is public: only people with write access ask (as for REVIEW).
+      [review('CHANGES', 'abc1234'), again('abc1234', 'NONE')],
+      // Only a first line that opens with the marker counts.
+      [
+        review('CHANGES', 'abc1234'),
+        { authorAssociation: 'OWNER', body: 'Xin xem lại head `abc1234`' },
+      ],
+      [
+        review('CHANGES', 'abc1234'),
+        { authorAssociation: 'OWNER', body: `Ghi chú.\n${again('abc1234').body}` },
+      ],
+    ]) {
+      expect(fixState(pr({ comments }), { not }), JSON.stringify(comments)).toEqual(waiting);
+    }
+  });
+
+  it('stops on a head stale behind its branch, as ci --not does', () => {
+    expect(fixState(pr(), { not, branch: () => ({ sha: PUSHED, forMs: STALE_HEAD_MS }) })).toEqual({
+      done: true,
+      code: EXIT.look,
+      text: 'PR head stale: branch at fedcba9, head still abc1234 (GitHub missed the push)',
+    });
+    expect(
+      fixState(pr(), { not, branch: () => ({ sha: PUSHED, forMs: STALE_HEAD_MS - 1 }) }),
+    ).toEqual({
+      done: false,
+      text: 'head still abc1234, branch at fedcba9: waiting for the PR to follow',
+    });
+    const gone = () => {
+      throw new Error('gh api … failed: gh: Not Found (HTTP 404)');
+    };
+    expect(fixState(pr(), { not, branch: gone })).toEqual(waiting);
+  });
+
+  it('stops for a PR that is no longer open', () => {
+    expect(fixState(pr({ state: 'MERGED' }), { not })).toEqual({
+      done: true,
+      code: EXIT.look,
+      text: 'PR #941 is MERGED',
+    });
+  });
+});
+
 describe('reviewState', () => {
+  it('waits for a new REVIEW once a XIN XEM LẠI follows the latest REVIEW of the head', () => {
+    expect(reviewState(pr({ comments: [review('CHANGES', 'abc1234'), again('abc1234')] }))).toEqual(
+      { done: false, text: 'XIN XEM LẠI @abc1234 after the latest REVIEW: waiting for a new one' },
+    );
+    expect(
+      reviewState(
+        pr({ comments: [review('CHANGES', 'abc1234'), again('abc1234'), review('PASS', HEAD)] }),
+      ),
+    ).toEqual({ done: true, code: EXIT.done, text: `REVIEW PASS @${HEAD}, level low` });
+    expect(
+      reviewState(pr({ comments: [review('CHANGES', 'abc1234'), again('abc1234', 'NONE')] })).code,
+    ).toBe(EXIT.bad);
+  });
+
   it('is done on the latest REVIEW of the head: PASS good, CHANGES bad', () => {
     expect(reviewState(pr({ comments: [review('PASS', 'abc1234')] }))).toEqual({
       done: true,

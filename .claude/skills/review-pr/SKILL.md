@@ -73,7 +73,9 @@ PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Corr
 | B. Standards — `docs/process/REVIEW-CHECKLIST.md` | ✓ | ✓ | ✓ |
 | B'. Mùi code (không chặn) | — | 4 mùi | 12 mùi |
 | C. Correctness: `code-review`, args ở §C | **high** | **max** | **max**, `--max-findings all` |
-| CI xanh trên đúng SHA head | ✓ | ✓ | ✓ |
+| Ghi trạng thái CI trên đúng SHA head, đọc ngay trước khi đăng comment (không chặn, xem §B) | ✓ | ✓ | ✓ |
+
+Review chạy song song với CI (Owner quyết 25/11/2026, ADR-0001 phụ lục M15): không chờ CI xanh mới review. Merge cần cả hai trên đúng head, CI xanh và `REVIEW: PASS`; `merge-pr` kiểm CI, review không kiểm thay.
 
 ### A. Trục Spec (từ mattpocock `code-review`)
 
@@ -110,7 +112,10 @@ Head chưa có `tools/notes-for.mjs` (nhánh cắt trước khi T-261 merge) →
 
 ### B. Trục Standards
 
-Đi hết `docs/process/REVIEW-CHECKLIST.md`. Quy chuẩn repo luôn thắng. Không review lại những gì tooling đã kiểm (`pnpm verify`: lint, typecheck, `lint:deps`, coverage) khi CI xanh.
+Đi hết `docs/process/REVIEW-CHECKLIST.md`. Quy chuẩn repo luôn thắng. Không review lại những gì tooling đã kiểm (`pnpm verify`: lint, typecheck, `lint:deps`, coverage), dù CI đang chạy, xanh hay đỏ:
+- không chạy lại cả `pnpm verify` trong worktree review: phần đó là việc của CI, và `merge-pr` chặn khi CI chưa xanh trên head;
+- CI đỏ không phải mục chặn của review, CI xanh không phải lý do PASS. Kết luận chỉ dựa trên ba trục. Check đỏ (nếu có) ghi vào đoạn mở đầu; phiên code sửa nó theo luồng CI đỏ, cùng lần với các mục chặn nếu có;
+- vẫn chạy riêng test liên quan tới một phát hiện khi cần bằng chứng (§C).
 
 ### B'. Mùi code (Fowler, *Refactoring* ch.3), luôn là **không chặn**
 
@@ -153,7 +158,7 @@ Mẫu comment (`gh pr comment <N> --body-file <file tạm>`):
 ```
 REVIEW: PASS | CHANGES
 
-PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có). Đầu vào: Issue #<i>, diff `<base>...<sha7>`, <tài liệu đã đọc>. Correctness: <code-review <args đã truyền> | bỏ: PR chỉ sửa docs | code-review không chạy được: …, rà inline>.
+PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có). Đầu vào: Issue #<i>, diff `<base>...<sha7>`, <tài liệu đã đọc>. CI lúc đăng: <xanh | đang chạy (<n> check xong / <m>) | đỏ: <tên check>> trên `<sha7>`. Correctness: <code-review <args đã truyền> | bỏ: PR chỉ sửa docs | code-review không chạy được: …, rà inline>.
 
 ## Spec
 - [chặn] `file:line`: … (spec: "…")
@@ -175,6 +180,8 @@ Trục nào không có mục thì ghi "Không có phát hiện". Mục không ch
 ## 5. Sau comment
 
 - `risk:low` (sau khi nâng mức vẫn là low) + `REVIEW: PASS` + CI xanh trên head → `node tools/merge-pr.mjs <N>` (`--merge` khi có PR xếp chồng): lệnh kiểm lại các điều kiện, merge và dọn nhánh theo CLAUDE.md. Lệnh đọc mức từ phần ``mức `<risk>` `` của comment (mẫu §4), nên mức đã nâng phải ghi đúng dạng đó.
+- `REVIEW: PASS` mà CI trên head còn chạy: không chờ CI trong phiên review, không poll. Báo Owner "PASS, CI còn chạy". Khi CI xanh, Owner hay một phiên sau chạy `merge-pr` (lệnh tự kiểm CI và SHA của PASS).
+- `REVIEW: PASS` mà CI trên head đỏ: báo Owner. Phiên code sửa CI và push; head mới làm PASS hết giá trị, nên head đó được review lại ở phiên sạch (dòng "Trước khi merge" ở dưới).
 - Còn lại → báo Owner: kết luận, số mục mỗi trục, mục chặn nặng nhất.
 - **Phiên con của pipeline `auto-issues`** (tin nhắn có dòng `[auto-issues]`, ADR-0001 phụ lục M11): làm tới hết §4 rồi dừng.
   - Không merge, kể cả `risk:low`: phiên điều phối merge.
