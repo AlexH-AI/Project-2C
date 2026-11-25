@@ -98,7 +98,7 @@ describe('a connection check (mockup 1f, 2l, 4a, 4c)', () => {
     ['AI_BAD_RESPONSE', 'Trả lời của OpenCode không đọc được.'],
     ['AI_BUSY', 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.'],
     ['AI_BAD_REQUEST', 'Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ.'],
-    // The same on both platforms: neither key store is named (L187).
+    // The same on both platforms: neither key store is named (review of PR 1348).
     ['AI_KEYRING', 'Không đọc / ghi được key trong kho key của máy.'],
   ] as const)('shows the message of %s', (code, text) => {
     expect(checkShown({ kind: 'error', code }, CREDIT)).toEqual({ phase: 'error', text });

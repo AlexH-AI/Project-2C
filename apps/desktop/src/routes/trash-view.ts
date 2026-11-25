@@ -82,7 +82,7 @@ export function filterTrash(
 
 /**
  * What "Đang lọc" names: the kind, and the text typed as `filterTrash` reads it, so text of spaces
- * or invisible characters alone, which filters nothing, is not named (L215).
+ * or invisible characters alone, which filters nothing, is not named (review of PR 1406).
  */
 export function filterParts(filter: TrashFilter, query: string): string[] {
   return [

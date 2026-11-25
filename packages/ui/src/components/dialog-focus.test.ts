@@ -12,7 +12,7 @@ const dialogOf = (marked: unknown, reachable: unknown[]) =>
     querySelectorAll: () => reachable,
   }) as unknown as ParentNode;
 
-// L157: the × heads the dialog, first in the Tab order, yet a dialog opens on a field or a button.
+// Review of PR 1402: the × heads the dialog, first in the Tab order, yet a dialog opens on a field or a button.
 describe('openingFocus', () => {
   it('opens on what the dialog marks', () => {
     const marked = control(false);

@@ -290,7 +290,7 @@ function HelpLine({ help }: { help: AiPanelHelp }) {
 
 /**
  * A spinner-less busy line: the mockup's `.busy` box. A word longer than the line, as the name of
- * a model may be, breaks in it (L162).
+ * a model may be, breaks in it (review of PR 1402).
  */
 function BusyLine({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (

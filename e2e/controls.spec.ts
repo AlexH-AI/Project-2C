@@ -276,7 +276,7 @@ async function expectFieldLabel(page: Page, label: Locator, at: string, required
   if (required) await expect(label.getByText('*'), at).toHaveCSS('color', ACCENT);
 }
 
-// ui2.css `.field > label`, `.field .req` (L154): in the shared fields and in the labels the
+// ui2.css `.field > label`, `.field .req` (review #1400): in the shared fields and in the labels the
 // dialogs of Lịch hẹn write themselves. A ticked box is drawn by the theme, not `accent-color`.
 test('the label of a field is 12.5 px, 600, --text-2, its * gold, wherever a dialog of Lịch hẹn has one', async ({
   page,

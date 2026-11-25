@@ -288,7 +288,7 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
 /**
  * ⌘K / Ctrl K opens the command bar on every screen, a field being typed in too, and closes it
  * (VA8): heard before any field, and only that key is taken. Not over another dialog. The key held
- * down repeats: only its first press counts (L243).
+ * down repeats: only its first press counts (review of PR 1491).
  */
 function usePaletteKey(setPalette: (change: (open: boolean) => boolean) => void) {
   useEffect(() => {

@@ -15,7 +15,7 @@ const FORMULA = 'text-xs text-fg-2 tabular-nums';
 const TONE = { good: 'text-ok', bad: 'text-danger', same: 'text-fg-2' } as const;
 /**
  * The link of a tile covers the whole of it (out of the flow, over the card, which is `relative`),
- * so a press anywhere on the tile opens it, and it takes no room of its own there (L235); its focus
+ * so a press anywhere on the tile opens it, and it takes no room of its own there (review of PR 1473); its focus
  * ring goes round the tile.
  */
 const OPEN = 'absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-accent';

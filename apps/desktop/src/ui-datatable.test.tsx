@@ -43,7 +43,7 @@ describe('DataTable', () => {
     expect(cell?.[1]?.split(/\s+/)).toContain('relative');
   });
 
-  it('marks the row of `selectedId` as the current one, and no row without it (L21)', () => {
+  it('marks the row of `selectedId` as the current one, and no row without it (DR6-188)', () => {
     const current = (markup: string) =>
       [...markup.matchAll(/<tr[^>]*aria-current="true"[^>]*>.*?<\/tr>/g)].map(([row]) =>
         row.replace(/<[^>]*>/g, ''),
@@ -88,7 +88,7 @@ describe('DataTable numbers', () => {
     { id: 'met', header: 'Đã gặp', kind: 'number', align: 'end', value: (row) => row.met },
   ];
 
-  // components.html 05 (`.tbl td.zero`): a zero is written lighter, so the figures stand out (L201).
+  // components.html 05 (`.tbl td.zero`): a zero is written lighter, so the figures stand out (review of PR 1402).
   it('writes a zero of a number column lighter than the other figures', () => {
     const html = renderToStaticMarkup(
       <DataTable

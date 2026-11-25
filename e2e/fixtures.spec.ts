@@ -96,7 +96,7 @@ test("lint refuses Playwright's own test to every e2e file but fixtures.ts", asy
   expect(await refusals(fixtures, 'e2e/fixtures.ts')).toBe(0);
 });
 
-// L154: on the Windows runner the e2e server now and then refuses one connection of the burst a
+// Review #1301: on the Windows runner the e2e server now and then refuses one connection of the burst a
 // page load makes, and Edge logs it (CI run 43639871899).
 test('trackConsoleErrors leaves out a file of the e2e server refused, and keeps every other error', async ({
   page,

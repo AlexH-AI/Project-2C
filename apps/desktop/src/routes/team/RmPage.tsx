@@ -239,7 +239,7 @@ function Stat({ tile }: { tile: KpiTile }) {
   );
 }
 
-/** The page failed as a whole (mockup `#states`, L232): its own words and the way back to Team. */
+/** The page failed as a whole (mockup `#states`, review of PR 1485): its own words and the way back to Team. */
 export function PageFailed({ error }: { error: unknown }) {
   return (
     <StateNote

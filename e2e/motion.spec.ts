@@ -38,12 +38,15 @@ interface Move {
   readonly scrolled?: number;
 }
 
-/** Past the latest start of "Hiện" (its eighth step, 196 ms), and any move under a pointer. */
+/**
+ * Past the latest start of "Hiện" (its eighth step at 196 ms, the bar in it at 296 ms), and any
+ * move under a pointer.
+ */
 const QUIET_MS = 600;
 
 /**
  * Records in the page, from now on, the moves of the elements `select` finds (run in the page), as
- * each move starts: one lasts 120–600 ms only, so it may be over once the action is done (L239). A
+ * each move starts: one lasts 120–600 ms only, so it may be over once the action is done (review #1422). A
  * move already there now is left out. Call the result once what starts the moves is done: it gives
  * them by element, in the order of the page, once every one heard is over.
  * `quiet`, for a step that plays nothing: what starts inside the elements counts too, and a
@@ -458,7 +461,7 @@ test('a tick lands by the bouncy spring in --t-3; under forced colours the syste
   });
 });
 
-test('the arrow of a team row turns 90° in --t-3 by the snappy spring as it opens (L238)', async ({
+test('the arrow of a team row turns 90° in --t-3 by the snappy spring as it opens (review #1420)', async ({
   page,
 }) => {
   await page.goto('/#/customers');
@@ -488,7 +491,7 @@ test('the arrow of a team row turns 90° in --t-3 by the snappy spring as it ope
   );
 });
 
-test('a press on a control turned off, out of a menu opened by the keyboard, puts the focus back on its pill (L246)', async ({
+test('a press on a control turned off, out of a menu opened by the keyboard, puts the focus back on its pill (review #1420)', async ({
   page,
 }) => {
   // WebKit too: it sends a control turned off no mouse event, but its pointer events.
@@ -837,7 +840,7 @@ test.describe('under "Giảm chuyển động"', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan' })).toBeFocused();
     expect(await opened()).toEqual([]);
     // The parts are the ones the shell gives a step of "Hiện" (`--rise-step`), all ten of them:
-    // none is shifted (L239).
+    // none is shifted (review #1420).
     const parts = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('main *')]
         .filter((part) => part.style.getPropertyValue('--rise-step') !== '')
@@ -849,7 +852,7 @@ test.describe('under "Giảm chuyển động"', () => {
     await scopePill(page).click();
     await expect(scopeMenu(page)).toBeVisible();
     expect(await menu()).toEqual([]);
-    // The arrow of a team row turns at once (L238).
+    // The arrow of a team row turns at once (review #1420).
     await expect(teamRow(page, 'Bình Minh').locator('svg')).toHaveCSS('transition-duration', '0s');
     await page.keyboard.press('Escape');
     // Gone at once: no menu on its way out.

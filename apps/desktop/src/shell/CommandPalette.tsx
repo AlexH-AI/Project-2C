@@ -63,7 +63,7 @@ interface Option {
  * customer's profile, an RM's page, a screen; a command runs at once or opens its dialog on its
  * screen (`askCommand`). Esc, a press on what is dimmed or the key again closes it, and the focus
  * goes back where it was; gone from the page (a row of a menu), to `fallback`, the name of the
- * screen (L241). A masked name is found by the real one, shown masked and never lit.
+ * screen (review of PR 1491). A masked name is found by the real one, shown masked and never lit.
  */
 export function CommandPalette({
   onClose,
@@ -215,7 +215,7 @@ export function CommandPalette({
         onClose();
       }}
       // A press on what is dimmed lands on the dialog itself, outside its box; a click there that
-      // began in the box is a drag, selecting the words typed (L240).
+      // began in the box is a drag, selecting the words typed (review of PR 1491).
       onPointerDown={(event) => (pressedOn.current = event.target)}
       onClick={(event) => {
         if (event.target === event.currentTarget && pressedOn.current === event.currentTarget)
@@ -294,7 +294,7 @@ export function CommandPalette({
             ),
         )}
       </div>
-      {/* Beside the list, as a list holds only its options and their groups (L245). */}
+      {/* Beside the list, as a list holds only its options and their groups (review of PR 1491). */}
       {options.length === 0 && (
         <div role="status" className="px-1.5 pt-1 pb-1.5">
           <StateNote

@@ -69,5 +69,5 @@ async function start(): Promise<ReactNode> {
   return <App data={data} appWindow={isTauri() ? getCurrentWindow() : undefined} />;
 }
 
-// The page names the data folder Rust chose, when it could choose one (L185).
+// The page names the data folder Rust chose, when it could choose one (review of PR 1348).
 start().then(render, async (error: unknown) => render(await startupErrorPage(error, storage)));

@@ -13,7 +13,7 @@ const REACHABLE =
 
 /**
  * What a dialog opens on: the field or button it marks (`data-autofocus`), else the first one a
- * person reaches after its head, whose × comes first in the Tab order (L157), as before the ×
+ * person reaches after its head, whose × comes first in the Tab order (review of PR 1402), as before the ×
  * moved there.
  */
 export function openingFocus(dialog: ParentNode): HTMLElement | null {

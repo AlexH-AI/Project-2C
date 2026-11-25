@@ -5,7 +5,7 @@ import { GONE_MS, calmMotion, layerState, type LayerState } from './motion';
 
 /**
  * What can take the focus a press gives: a press on one of these keeps it there. A control turned
- * off takes none (L246): a press on it leaves the focus on the page, and so goes back to the pill.
+ * off takes none (review of PR 1420): a press on it leaves the focus on the page, and so goes back to the pill.
  */
 const CONTROL =
   'a[href], button:enabled, input:enabled, select:enabled, textarea:enabled, [tabindex]';

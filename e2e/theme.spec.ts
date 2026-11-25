@@ -138,7 +138,7 @@ test('the logo keeps its colours on the dark sidebar, the navy tree and "Heritas
       { alt: '', width: 95, loaded: true },
     ]);
   // The outline of the tree and of "Heritas" is in their images, with room around each
-  // (shell.spec.ts measures it): no filter draws it, which the macOS app left out (L179). "L-CRM"
+  // (shell.spec.ts measures it): no filter draws it, which the macOS app left out (review #1344). "L-CRM"
   // is gold already.
   for (const piece of await pieces.all()) await expect(piece).toHaveCSS('filter', 'none');
 });
@@ -193,7 +193,7 @@ test('with "Giảm độ trong suốt" the window and the focus layer are solid,
   browserName,
 }) => {
   await page.goto('/');
-  // Not the setting of the machine of the run: Playwright gives this media feature no default (L194).
+  // Not the setting of the machine of the run: Playwright gives this media feature no default (review #1398).
   await setTransparency(page, 'no-preference');
   expect(await token(page, '--mat-pop')).not.toBe(await token(page, '--bg-2'));
   expect(await token(page, '--mat-window')).not.toBe(await token(page, '--bg-1'));

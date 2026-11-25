@@ -79,13 +79,16 @@ describe('startupMessage', () => {
         help: 'File dữ liệu không hỏng, không cần khôi phục. Thư mục Project2C-data cạnh exe là một link (junction) tới một thư mục không còn ở đó: ổ chứa thư mục đó (USB, ổ mạng) đã rút ra hay ngắt kết nối, hoặc thư mục đó đã bị xóa hay đổi tên. Hãy cắm hay nối lại ổ đó, hoặc sửa link cho trỏ tới đúng thư mục dữ liệu, rồi đóng cửa sổ này và mở lại app.',
       },
     ],
-  ])('says the file is whole when it is out of reach (%s, DR6-07, L184)', (error, expected) => {
-    const message = startupMessage(error, FOLDER);
-    expect(message).toEqual(expected);
-    expect(message.help).not.toContain('chép bản mới nhất');
-  });
+  ])(
+    'says the file is whole when it is out of reach (%s, DR6-07, review of PR 1348)',
+    (error, expected) => {
+      const message = startupMessage(error, FOLDER);
+      expect(message).toEqual(expected);
+      expect(message.help).not.toContain('chép bản mới nhất');
+    },
+  );
 
-  it('says in English that a Project2C-data leading nowhere needs no restoring (L184)', () => {
+  it('says in English that a Project2C-data leading nowhere needs no restoring (review of PR 1348)', () => {
     setDataCurrency('VND', 'en');
     expect(startupMessage('DATA_DIR_UNREACHABLE')).toEqual({
       title: 'Cannot reach the data folder Project2C-data',
@@ -93,7 +96,7 @@ describe('startupMessage', () => {
     });
   });
 
-  it('names the data folder of each platform and mode only when Rust could not choose it (L185)', () => {
+  it('names the data folder of each platform and mode only when Rust could not choose it (review of PR 1348)', () => {
     const modes =
       'Windows: %LOCALAPPDATA%\\com.heritas.lcrm, hoặc Project2C-data cạnh exe khi chạy portable; macOS: ~/Library/Application Support/com.heritas.lcrm';
     // The one page that tells to copy a backup by hand says where the backups are.

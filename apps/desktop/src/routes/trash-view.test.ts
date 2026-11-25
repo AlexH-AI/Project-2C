@@ -263,7 +263,7 @@ describe('filterTrash', () => {
   });
 });
 
-// L215: "Đang lọc" names what `filterTrash` filters by, no more.
+// Review of PR 1406: "Đang lọc" names what `filterTrash` filters by, no more.
 describe('filterParts', () => {
   const kind = t('trash.filter.kind', { label: t('trash.kind.customer') });
 
@@ -843,7 +843,7 @@ describe('blockedReason (mockup 11d)', () => {
     expect(
       reason(policy, { code: 'DATE_IN_FUTURE', params: { date: '12/10/2026', field: 'issued' } }),
     ).toBe('Ngày phát hành 12/10/2026 sau hôm nay.');
-    // B1a, from an imported file only: the day said, as of the other two (review log L244).
+    // B1a, from an imported file only: the day said, as of the other two (review of PR 1467).
     expect(
       reason(issuedPolicy, {
         code: 'DATE_IN_FUTURE',

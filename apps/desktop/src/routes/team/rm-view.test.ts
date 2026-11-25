@@ -215,7 +215,7 @@ describe('rmView, the customers in charge', () => {
     expect(bình.next?.date).toEqual(day(11, 12));
   });
 
-  // L231: the table writes a 0 of a number column light, as it does "Chưa gặp" and "Chưa hẹn".
+  // Review of PR 1485: the table writes a 0 of a number column light, as it does "Chưa gặp" and "Chưa hẹn".
   it('sorts a meeting or an appointment of today by a key that is no 0', () => {
     const row = (id: string) => view.open.find((one) => one.card.customer.id === id)!;
     expect(lastMetKey(row('Dũng')) === 0 || nextKey(row('Chi')) === 0).toBe(false);

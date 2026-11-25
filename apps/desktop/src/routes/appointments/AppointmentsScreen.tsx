@@ -645,7 +645,7 @@ function DayTable({
   day: CalendarDate;
   today: CalendarDate;
   rows: readonly AppointmentRow[];
-  /** The coordinator the rows are filtered by, which an empty day names as the list does (L212). */
+  /** The coordinator the rows are filtered by, which an empty day names as the list does (review of PR 1406). */
   filter: string | null;
   onSelect: (id: string) => void;
 }) {

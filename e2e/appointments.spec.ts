@@ -388,7 +388,7 @@ test('a list the coordinator filter empties names the filter, and "Bỏ lọc" f
   await expect(rows).toHaveCount(1);
   await expect(rows).toContainText(`Không có lịch hẹn nào khớp trong ${TODAY}`);
   await expect(rows).toContainText(`Đang lọc Phối hợp: ${someone}. Bỏ lọc hoặc xem kỳ khác.`);
-  // The card of the day names the filter too, not "none on this day" (L212).
+  // The card of the day names the filter too, not "none on this day" (review #1406).
   await expect(day).toContainText('Không có lịch hẹn nào khớp trong ngày.');
   await expect(day).toContainText(`Đang lọc Phối hợp: ${someone}.`);
   // No "create" here, and today is in the period: one button.
@@ -800,7 +800,7 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
   expect(new Set(fills)).toEqual(new Set([await legendFill(year, 'Dời lịch')]));
   expect(await legendFill(year, 'Dời lịch')).toBe('rgb(151, 164, 183)');
   // "lịch" by the count of that month, on the tint: --text, as --text-2 and --text-3 are under
-  // 4.5:1 there over the brightest glass of macOS (L188).
+  // 4.5:1 there over the brightest glass of macOS (review #1418).
   await expect(today.locator('b').first().locator('..')).toHaveText(/^[\d,]+lịch$/);
   await expect(today.locator('b').first().locator('..')).toHaveCSS('color', 'rgb(232, 237, 244)');
 });
@@ -887,7 +887,7 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   const { detail } = screen(page);
   await pickScope(page, { team: 'Sao Mai' });
   const f = await fillAppointment(page, '30/9', 'Sao Mai');
-  // The page clock held: a toast shown by mistake would stay, not leave by itself in 4,2 s (L210).
+  // The page clock held: a toast shown by mistake would stay, not leave by itself in 4,2 s (review #1404).
   await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
   await f.create.click();
 
@@ -898,7 +898,7 @@ test('an appointment for an RM outside the scope says so; the scope stays', asyn
   );
   await expect(scopePill(page)).toHaveText('Team Sao Mai');
   await expect(detail).toContainText('Chọn một lịch hẹn để xem chi tiết.');
-  // The line says it: no toast besides (VA3b; L210).
+  // The line says it: no toast besides (VA3b; review #1404).
   await expect(page.locator('[aria-live="polite"][aria-atomic="true"]')).toBeEmpty();
 
   await pickScope(page, 'all');

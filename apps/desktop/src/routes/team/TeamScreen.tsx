@@ -154,7 +154,7 @@ function memberColumns(
  * The window under 1 280 px, where `max-xl:` takes the list of teams to 220 px: the member table
  * takes cells of 6 px there, the narrow rule of the mockup (`#team`, @container 1240). With cells
  * of 10 px it still ran past its card at 1 100 px on WebKit, by about 5 px with the tokens of
- * Windows and 13 px with those of macOS (L205).
+ * Windows and 13 px with those of macOS (review of PR 1408).
  */
 const XL = 1280;
 const onResize = (change: () => void) => {
@@ -240,7 +240,7 @@ export function TeamScreen() {
         <RmSearch people={view.people} teams={teams} />
       </div>
       <div className="flex items-start gap-4">
-        {/* 220 px under 1 280 (mockup @container 1240): the member table fits 1 100 (L205). */}
+        {/* 220 px under 1 280 (mockup @container 1240): the member table fits 1 100 (review of PR 1408). */}
         <div className="flex w-64 shrink-0 flex-col gap-4 max-xl:w-55">
           <section aria-labelledby={LIST_TITLE} className={CARD}>
             <h2 id={LIST_TITLE} tabIndex={-1} className={`${HEADING} mb-2`}>
@@ -260,7 +260,7 @@ export function TeamScreen() {
                 // The name breaks, even with no space; the count stays whole, by the name's first line
                 // (DR6-148). On the gold tint of the chosen team both are in --text: --text-3 is under
                 // 4.5:1 there, and so are four of the six team colours over the brightest glass of
-                // macOS (ADR-0013 appendix 11/11/2026 §7, L188); its icon keeps the colour (C3).
+                // macOS (ADR-0013 appendix 11/11/2026 §7, review of PR 1418); its icon keeps the colour (C3).
                 return (
                   <button
                     key={entry.team.id}
@@ -485,7 +485,7 @@ function Members({
           // hundred rows (DR6-32).
           resetKey={entry.team.id}
           // Cells 10 px from their edges, 6 px under 1 280 px: the table fits its card at 1 100 px,
-          // every Sửa whole (L205; e2e team.spec.ts).
+          // every Sửa whole (review of PR 1408; e2e team.spec.ts).
           narrow={!smallWindow}
           compact={smallWindow}
           empty={

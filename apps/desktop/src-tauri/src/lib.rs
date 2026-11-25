@@ -34,7 +34,7 @@ fn data_dir() -> Result<PathBuf, String> {
 }
 
 /// The data folder `db_open` opens (`chosen`, see `platform::data_dir`), with the error the startup
-/// page tells apart (L184), by the one rule of `storage::open` (`storage::out_of_reach`, L204): the
+/// page tells apart (review #1348), by the one rule of `storage::open` (`storage::out_of_reach`, review #1362): the
 /// system refusing the app the folder → [`storage::ACCESS_DENIED`]; a folder another program holds
 /// (os error 32 / 33, Windows only) → [`storage::FILE_IN_USE`]; a `Project2C-data` that leads
 /// nowhere or out of reach is [`storage::DATA_DIR_UNREACHABLE`] already. Any other error stays as
@@ -251,7 +251,7 @@ mod test_support {
     }
 
     /// A new [`TempDir`], named by the process and a count of the run, so no two tests share one.
-    /// One a killed run left under the same name is removed first (L188).
+    /// One a killed run left under the same name is removed first (review #1348).
     pub fn temp_dir() -> TempDir {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
@@ -276,10 +276,10 @@ mod tests {
     #[test]
     fn db_open_says_the_system_refuses_the_data_folder_as_storage_open_does() {
         // The page of `ACCESS_DENIED` says the file needs no restoring; the page of any other error
-        // tells to copy a backup over a file that is whole (L184).
+        // tells to copy a backup over a file that is whole (review #1348).
         let refused = opened_dir(Err(io::Error::from(ErrorKind::PermissionDenied)));
         assert_eq!(refused.unwrap_err(), storage::ACCESS_DENIED);
-        // One rule with `storage::open` (`out_of_reach`, L204): a folder another program holds.
+        // One rule with `storage::open` (`out_of_reach`, review #1362): a folder another program holds.
         #[cfg(windows)]
         assert_eq!(
             opened_dir(Err(io::Error::from_raw_os_error(32))).unwrap_err(),

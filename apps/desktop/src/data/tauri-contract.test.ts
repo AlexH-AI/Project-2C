@@ -154,11 +154,11 @@ describe('the JS ↔ Rust storage contract', () => {
     expect(rustString(storage, 'DATA_DIR_UNREACHABLE')).toBe(DATA_DIR_UNREACHABLE);
   });
 
-  it('gives the startup page the errors of the data folder it tells apart (L184)', () => {
+  it('gives the startup page the errors of the data folder it tells apart (review of PR 1348)', () => {
     expect(commandSource('db_open')).toContain('let dir = opened_dir(platform::data_dir())?;');
   });
 
-  it('gives the startup page the storage of the exe, which names the data folder (L205)', () => {
+  it('gives the startup page the storage of the exe, which names the data folder (review of PR 1362)', () => {
     const main = readFileSync(new URL('../main.tsx', import.meta.url), 'utf8');
     expect(main).toContain('const storage = isTauri() ? tauriStorage(invoke) : undefined;');
     expect(main).toContain('render(await startupErrorPage(error, storage))');
@@ -466,7 +466,7 @@ describe('the release configuration (DR6-12…14)', () => {
   });
 
   // The installer and its uninstaller speak the language of Windows, Vietnamese or English (the
-  // first for any other), and Windows names the publisher "Heritas" in its list of apps (L170,
+  // first for any other), and Windows names the publisher "Heritas" in its list of apps (review of PR 1340,
   // Owner 17/11/2026), not "heritas" taken from the identifier.
   it('gives the Windows installer Vietnamese and English, and the publisher Heritas', () => {
     const { bundle } = JSON.parse(desktop('src-tauri/tauri.windows.conf.json')) as {

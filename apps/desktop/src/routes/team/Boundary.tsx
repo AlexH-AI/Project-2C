@@ -4,7 +4,7 @@ type State = { readonly failed: false } | { readonly failed: true; readonly erro
 
 /**
  * What a part of the RM page shows when rendering it threw (mockup search-rm-team.html `#states`):
- * the page as a whole in place of the shell's note (L232), or the strip "Nhịp gặp · 8 tuần" in its
+ * the page as a whole in place of the shell's note (review of PR 1485), or the strip "Nhịp gặp · 8 tuần" in its
  * card, the four numbers above it still there. `retry` renders the part again.
  */
 export class Boundary extends Component<

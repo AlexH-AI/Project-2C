@@ -62,7 +62,7 @@ const JOINER = /^ ?[!-/:-@] $/;
  * Reads the separators, marks and joiners from the source of the i18n strings (DR6-207): every
  * symbol there, a separator when a `sep.*` holds it. A comment there, on lines of its own, may use
  * others (`§`). A `sep.*` written another way than `'sep.name': 'text'` throws: unread, its joiner
- * would no longer be guarded while the check stays green (L190).
+ * would no longer be guarded while the check stays green (review #1398).
  */
 export function marksOf(strings: string): Marks {
   const code = strings.replace(/^\s*\/\/.*$/gm, '');

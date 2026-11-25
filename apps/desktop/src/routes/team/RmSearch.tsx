@@ -11,7 +11,7 @@ import { TeamMark } from './TeamLook';
 // The option and its pick as the search of Khách hàng draws them (C1, mockup `.pal-o`).
 const OPTION =
   'relative flex min-h-9 shrink-0 cursor-pointer items-center gap-2.5 rounded-control-sm px-2.5 text-md whitespace-nowrap';
-// Only on a row not picked: the picked one keeps --fill-2 under the pointer (mockup `.pal-o.sel`, L235).
+// Only on a row not picked: the picked one keeps --fill-2 under the pointer (mockup `.pal-o.sel`, review of PR 1487).
 const HOVER = 'hover:bg-fill-1';
 const PICKED =
   'bg-fill-2 win:before:absolute win:before:inset-y-2.5 win:before:left-0 win:before:w-0.75 win:before:rounded-full win:before:bg-accent';

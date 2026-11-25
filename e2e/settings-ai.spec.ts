@@ -401,6 +401,6 @@ test('exe: a save that failed keeps the key status, read late or not (R2-14)', a
   await expect(card).toContainText('Đã có key');
   await expect(card.getByRole('button', { name: 'Xóa key…' })).toBeVisible();
   // The failure stays said, in words of both platforms (the alert also names the key store of this
-  // one, L187).
+  // one, review #1348).
   await expect(card.getByRole('alert')).toContainText('kho key của máy');
 });

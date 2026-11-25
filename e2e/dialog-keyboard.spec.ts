@@ -93,7 +93,7 @@ test('Dời lịch opens on the new day', async ({ page }) => {
 });
 
 // The × heads the dialog (mockup components.html 06): first in the Tab order, yet a dialog that
-// marks nothing to focus still opens on the first field or button after it (L157).
+// marks nothing to focus still opens on the first field or button after it (review #1402).
 test('the × comes first in the Tab order; a dialog marking nothing opens on its first button', async ({
   page,
 }) => {

@@ -127,10 +127,10 @@ const REGION =
  * last on screen, its button is reached by Tab. A button that goes with its toast while it holds
  * the focus gives it to the screen's heading, as the save warning does (`SaveWarning`). While the
  * pointer is over the toast or the focus in it, it stays (`hold`), a new toast that comes under
- * the pointer too (L229). Each toast shown is drawn anew, so that one of the same words is read out
- * again and rises again (L208); one that leaves moves out (`motion-toast`) out of the live region,
+ * the pointer too (review of PR 1420). Each toast shown is drawn anew, so that one of the same words is read out
+ * again and rises again (review of PR 1404); one that leaves moves out (`motion-toast`) out of the live region,
  * taking nothing. While a modal dialog is open, the toast lies over it (mockup ui2.css: the toast
- * at z-index 40, the dialog 30; L198), clear of its buttons (`clearOfDialog`): outside it, it would
+ * at z-index 40, the dialog 30; review of PR 1404), clear of its buttons (`clearOfDialog`): outside it, it would
  * lie under it, its button out of reach and its live region inert. So each modal dialog open has a
  * region of its own, a popover inside it, there before any toast goes into it; the region of the
  * window stays, empty meanwhile. A dialog that closes as its toast shows (a delete confirmed)

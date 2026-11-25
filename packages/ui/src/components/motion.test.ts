@@ -133,7 +133,7 @@ describe('glide, once over', () => {
   beforeEach(moving);
   const end = (type: string, target: unknown) => ({ type, target }) as unknown as Event;
 
-  it('takes its marks away when its own move ends or is cut short, not when a move inside it does (L247)', () => {
+  it('takes its marks away when its own move ends or is cut short, not when a move inside it does (review of PR 1420)', () => {
     for (const type of ['animationend', 'animationcancel']) {
       const thumb = glider();
       glide(thumb, { x: 40 });
@@ -148,7 +148,7 @@ describe('glide, once over', () => {
 });
 
 describe('GONE_MS', () => {
-  it('outlasts every move out (L241): a layer whose move cannot end still goes', () => {
+  it('outlasts every move out (review of PR 1420): a layer whose move cannot end still goes', () => {
     expect(GONE_MS).toBeGreaterThanOrEqual(400);
   });
 });

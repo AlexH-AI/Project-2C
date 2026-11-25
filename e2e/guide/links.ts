@@ -71,7 +71,7 @@ const endsBlock = (line: string | undefined) =>
 
 /**
  * The ids GitHub gives the headings of a Markdown text, outside code, ATX ones and one-line setext
- * ones in the order they come (L182): of the text it shows, lower case, every character but
+ * ones in the order they come (review #1261): of the text it shows, lower case, every character but
  * letters, digits, `_`, `-` and spaces left out, spaces turned to `-`, `-1`, `-2`… after a repeated
  * one (CLR6-F7). A paragraph of more lines over an underline gives none, so a link to it shows as
  * broken; GitHub would take every line of it.

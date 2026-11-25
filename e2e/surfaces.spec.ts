@@ -136,7 +136,7 @@ test('the light of a card follows the pointer over it', async ({ page }) => {
     .toBe('1');
 });
 
-test('the row of the appointment open in Chi tiết is the current one, painted as chosen (L21)', async ({
+test('the row of the appointment open in Chi tiết is the current one, painted as chosen (DR6-188)', async ({
   page,
 }) => {
   await asExe(page);
@@ -146,7 +146,7 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
   await expect(table.locator('tbody tr').first()).toBeVisible();
   await expect(current).toHaveCount(0);
   // A table of numbers: one line of heading, as written; a cell 10 × 12 px, a heading 8 × 12 px
-  // (components.html 05, L157).
+  // (components.html 05, review #1402).
   await expect(table.getByRole('columnheader').first()).toHaveCSS('text-transform', 'none');
   await expect(table.getByRole('columnheader').first()).toHaveCSS('padding', '8px 12px');
   await expect(table.getByRole('cell').first()).toHaveCSS('padding', '10px 12px');
@@ -165,7 +165,7 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
     await page.mouse.move(0, 0);
     await expect(row).toHaveCSS('background-color', 'rgba(217, 178, 106, 0.14)');
     // --text-2 and --text-3 are under 4.5:1 on the chosen row over the brightest glass of macOS:
-    // what the row writes in them is --text there (L188).
+    // what the row writes in them is --text there (review #1418).
     for (const lighter of ['--text-2', '--text-3']) {
       expect(
         await row.evaluate((node, name) => getComputedStyle(node).getPropertyValue(name), lighter),
@@ -173,7 +173,7 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
     }
     expect(await lowestContrast(row), `row ${index}`).toBeGreaterThanOrEqual(TEXT_CONTRAST);
   }
-  // The standard the Owner chose: the chosen rows over the brightest glass of macOS (L188), names
+  // The standard the Owner chose: the chosen rows over the brightest glass of macOS (review #1418), names
   // masked, so the trigger typed on row 1 is dots in --text-2 straight on the tint.
   await onBrightestGlass(page);
   await page.getByRole('button', { name: 'Che tên khách hàng' }).click();
@@ -189,8 +189,8 @@ test('the row of the appointment open in Chi tiết is the current one, painted 
 
 /**
  * How far `table` runs past the box that scrolls it sideways, or with none (Danh sách lịch hẹn,
- * Khách hàng) past the content of the narrowest box around it, its card or the window (L235):
- * with its cells as they are, and with the 10 px at their sides of before L157.
+ * Khách hàng) past the content of the narrowest box around it, its card or the window (review #1477):
+ * with its cells as they are, and with the 10 px at their sides of before review #1402.
  */
 const pastItsBox = (table: Locator) =>
   table.evaluate((node) => {
@@ -220,8 +220,8 @@ const pastItsBox = (table: Locator) =>
   });
 
 // Cells of 10 × 12 px take no table of the smallest window further past its card than before
-// (L157). The members of a team run past it already (23 px on Windows, 31 on macOS in Edge): they
-// keep 10 px until C3 fits them (L170).
+// (review #1402). The members of a team run past it already (23 px on Windows, 31 on macOS in Edge): they
+// keep 10 px until C3 fits them (review #1408).
 test('at 1 100 × 700 cells of 10 × 12 px take no table further past its card', async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 700 });
   const tables = [
@@ -247,7 +247,7 @@ test('at 1 100 × 700 cells of 10 × 12 px take no table further past its card',
   }
 });
 
-// L235: the link of a tile covers the whole of it, and takes no room of its own in it.
+// Review #1473: the link of a tile covers the whole of it, and takes no room of its own in it.
 test('the link of a tile of Tổng quan covers the tile', async ({ page }) => {
   await page.goto('/');
   const tile = region(page, 'Chuyển RF');
@@ -260,7 +260,7 @@ test('the link of a tile of Tổng quan covers the tile', async ({ page }) => {
 
 /**
  * The window of the macOS exe over its glass at its brightest, the measure the Owner chose for the
- * text of the content (21/11/2026, L188): 1.6 times the glass the Owner measured (shell.spec.ts).
+ * text of the content (21/11/2026, review #1418): 1.6 times the glass the Owner measured (shell.spec.ts).
  */
 async function onBrightestGlass(page: Page) {
   await setTransparency(page, 'no-preference');
@@ -274,7 +274,7 @@ async function onBrightestGlass(page: Page) {
 
 // The gold tint on the material of a card: --text-2 and --text-3 are under 4.5:1 there, as on the
 // chosen row; --text-3 reads at 4.5:1 on the card itself (ADR-0013 appendix 11/11/2026 §7; review
-// of PR 1402), each over the brightest glass of macOS too (L188).
+// of PR 1402), each over the brightest glass of macOS too (review #1418).
 test('what is chosen on a card reads 4.5:1 on its gold tint: the team of the list, the month of today', async ({
   page,
 }) => {
@@ -319,7 +319,7 @@ test('a dialog is the focus layer: × and Escape close it, a click on the dimmed
   await page.goto('/#/appointments');
   const open = page.getByRole('button', { name: '+ Lịch hẹn' });
 
-  // The see-through material, whatever the machine of the run is set to (L194).
+  // The see-through material, whatever the machine of the run is set to (review #1398).
   await setTransparency(page, 'no-preference');
   await pressButton(open);
   let dialog = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
@@ -338,7 +338,7 @@ test('a dialog is the focus layer: × and Escape close it, a click on the dimmed
   expect(
     await dialog.evaluate((node) => getComputedStyle(node, '::backdrop').backgroundColor),
   ).toBe('rgba(4, 7, 12, 0.55)');
-  // components.html 06 (L157): text 14 px, the title 18 px, the × in the head, 20 px from the top
+  // components.html 06 (review #1402): text 14 px, the title 18 px, the × in the head, 20 px from the top
   // and 22 px from the right.
   await expect(dialog.getByText('Gõ tên hoặc mã KH.').locator('..')).toHaveCSS('font-size', '14px');
   await expect(dialog.getByRole('heading', { level: 2 })).toHaveCSS('font-size', '18px');

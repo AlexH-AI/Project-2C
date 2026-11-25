@@ -60,7 +60,7 @@ export function ReportsScreen() {
       void exporter.run({ rows: atRows, period: at, viewing: viewingAt(at), today });
   };
   // "Xuất Excel Báo cáo tháng này" of the command bar: the month of today on screen, and its file.
-  // While an export runs, it says so and changes nothing (L234).
+  // While an export runs, it says so and changes nothing (review of PR 1491).
   useCommand('export', () => {
     if (exporter.busy) return toast.show({ text: t('jobs.busy.export'), tone: 'info' });
     const month = periodOf('month', today);

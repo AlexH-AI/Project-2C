@@ -29,7 +29,7 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'field',
   'fields',
   'file',
-  // The data folder named by the startup page (L185).
+  // The data folder named by the startup page (review of PR 1348).
   'folder',
   'from',
   'fyp',
@@ -177,7 +177,7 @@ describe('formatMessage', () => {
   });
 
   // A count passed as text is shown as passed and never picks `one` ('1' is not 1): "1 tokens".
-  // So every caller passes the number and `fillSlots` writes it (review note of T-437, L162).
+  // So every caller passes the number and `fillSlots` writes it (review of PR 1293, T-437).
   it('gets the number of every count from its callers, never a formatted text', () => {
     const src = new URL('../', import.meta.url);
     // `count: formatNumber(n)`, or `const count = formatNumber(n)` passed on as `{ count }`.
@@ -242,7 +242,7 @@ describe('errorMessage', () => {
   });
 
   // ADR-0018 §3, mockup #money "Quá trần phí": the cap of the data's currency, in its compact form,
-  // "đồng" in Vietnamese as the mockup writes it (L125).
+  // "đồng" in Vietnamese as the mockup writes it (review of PR 1303).
   it('names the fee cap of the currency of the data', () => {
     expect(errorMessage(new DbError('AMOUNT_TOO_LARGE'))).toBe('Số tiền tối đa 100 tỷ đồng.');
     try {

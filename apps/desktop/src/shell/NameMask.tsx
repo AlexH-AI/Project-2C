@@ -40,13 +40,13 @@ export function CustomerName({ name }: { name: string }) {
  * Text a user typed, or the AI wrote, about a customer (a note, the trigger of a meeting, a KYC
  * fact in words, an analysis): it may hold a name, so while the mask is on the whole of it shows
  * as dots, which a screen reader reads as "đã ẩn", never the text. On a chosen row the gold tint
- * writes them in --text (`chosen-tint`, L188).
+ * writes them in --text (`chosen-tint`, review of PR 1418).
  */
 export function TypedText({ text }: { text: string }) {
   const { masked } = useNameMask();
   if (!masked || !text) return text;
   // --text-2, not the mockup's --text-3: chosen in VA6a, when --text-3 was below 4.5:1 on the glass
-  // of macOS (it reads 4.5:1 on a card since L188).
+  // of macOS (it reads 4.5:1 on a card since review of PR 1418).
   return (
     <span className="text-fg-2 italic">
       <span aria-hidden="true">{t('nameMask.dots')}</span>

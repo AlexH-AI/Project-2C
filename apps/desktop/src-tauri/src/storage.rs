@@ -224,7 +224,7 @@ fn disk_full(error: io::Error) -> io::Error {
 /// never tells to copy a backup over a good file (DR6-07): another program holds the file or its
 /// `.tmp` ([`FILE_IN_USE`], Windows only), or the system refuses the app the data folder
 /// ([`ACCESS_DENIED`]). Any other error stays as it is. The one rule of "out of reach": `db_open`
-/// asks it of the data folder too (L204).
+/// asks it of the data folder too (review #1362).
 pub(crate) fn out_of_reach(error: io::Error) -> io::Error {
     if platform::held_by_another_program(&error) {
         io::Error::new(ErrorKind::ResourceBusy, FILE_IN_USE)
@@ -282,7 +282,7 @@ fn copy_to_backups(
 /// [`READ_ONLY`], and a data folder that no longer lets the app add a file → [`FOLDER_READ_ONLY`]
 /// (see [`refused`]). macOS replaces a read-only file all the same and refuses a locked one only
 /// with a bare error once the `.tmp` is written, so there the save asks [`replace_refused`] before
-/// it writes anything (`platform::REFUSES_REPLACING_READ_ONLY`, L76): the file keeps its data and
+/// it writes anything (`platform::REFUSES_REPLACING_READ_ONLY`, review #1219): the file keeps its data and
 /// its mark, as on Windows.
 pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
     save_with(dir, bytes, page, lock, fs::File::sync_all)
@@ -1717,7 +1717,7 @@ mod tests {
 
     #[test]
     fn open_while_another_process_holds_the_data_folder_touches_nothing_on_every_platform() {
-        // Windows refuses the second process by sharing, macOS by its lock (L137).
+        // Windows refuses the second process by sharing, macOS by its lock (review #1204).
         let dir = temp_dir();
         let lock = DataLock::new();
         save(&dir, &db("changed")).unwrap();
@@ -1766,7 +1766,7 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn open_reports_a_read_only_data_folder_or_database_file_as_access_denied_on_macos() {
-        // As on Windows (DR6-74, DR6-120, L137): refused before anything is written, the file
+        // As on Windows (DR6-74, DR6-120, review #1204): refused before anything is written, the file
         // whole. The lock file is left from an earlier start, so opening creates nothing.
         let dir = temp_dir();
         let file = dir.join(DB_FILE);
@@ -1828,7 +1828,7 @@ mod tests {
     #[test]
     fn a_save_after_the_file_turned_read_only_is_reported_as_read_only_on_macos() {
         // As on Windows: macOS would rename over the file all the same, so its data and its mark
-        // would go unseen (L76). With the folder read-only too, the folder is named first.
+        // would go unseen (review #1219). With the folder read-only too, the folder is named first.
         let dir = temp_dir();
         let lock = DataLock::new();
         let file = dir.join(DB_FILE);
@@ -1891,7 +1891,7 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn a_locked_database_file_is_refused_at_open_and_at_save_on_macos() {
-        // The codes of a read-only file, never the bare "Operation not permitted" (L76): the file
+        // The codes of a read-only file, never the bare "Operation not permitted" (review #1219): the file
         // keeps its data and its flag.
         let dir = temp_dir();
         let lock = DataLock::new();

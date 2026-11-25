@@ -20,7 +20,7 @@ const isReloadKey = (press: KeyPress): boolean =>
  * where WebView2 steps with them even in a text field; and on macOS ⌘[ / ⌘], and ⌘← / ⌘→ outside a
  * text field, where they move the caret to the start or end of the line instead (Mac-5a). macOS
  * leaves ⌥← / ⌥→ alone: WKWebView takes no step with them, and they move the caret a word at a time
- * (with ⇧, select it; L186).
+ * (with ⇧, select it; review of PR 1348).
  */
 const isHistoryKey = (press: KeyPress, mac: boolean): boolean =>
   press.key === 'BrowserBack' ||

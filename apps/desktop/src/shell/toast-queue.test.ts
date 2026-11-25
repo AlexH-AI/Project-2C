@@ -76,7 +76,7 @@ describe('createToastQueue', () => {
     expect(listener).toHaveBeenCalledTimes(2);
   });
 
-  it('stays while the pointer is over it or the focus in it, then has 4 200 ms again (L209)', () => {
+  it('stays while the pointer is over it or the focus in it, then has 4 200 ms again (review of PR 1404)', () => {
     const queue = createToastQueue();
     queue.show({ text: 'Đã chuyển lịch hẹn vào Thùng rác', action: undo(() => {}) });
     vi.advanceTimersByTime(4_000);

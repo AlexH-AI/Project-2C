@@ -810,7 +810,7 @@
   // sig3(v, from) rounds a running value to three significant digits, so a frame reads like a number
   // at rest ("987 tr", not "987.65 tr"), and rounds it towards `from`, the value the run started from
   // (down on the way up, up on the way down, never back past `from`): no frame passes the target, so
-  // 290 tr → 310.6 tr runs "… 309 tr | 310 tr | 310.6 tr", never through "311 tr" (L94). Without
+  // 290 tr → 310.6 tr runs "… 309 tr | 310 tr | 310.6 tr", never through "311 tr" (review #1254). Without
   // `from`, the run being written gives it; outside a run it rounds to the nearest. The page formats
   // every frame with the app's own formatter, so the unit is always the unit of the value on screen.
   let runFrom = null;

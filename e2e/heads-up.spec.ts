@@ -101,7 +101,7 @@ test('a press opens the panel of today: by time, the next one on gold, Ghi kết
   await pill(page).click();
   await page.getByRole('heading', { level: 1 }).click();
   await expect(panel(page)).toBeHidden();
-  // A press outside on what takes no focus: the focus back on the pill, as from a menu (L231).
+  // A press outside on what takes no focus: the focus back on the pill, as from a menu (review #1411).
   await pill(page).click();
   await expect(panel(page)).toBeFocused();
   const at = (await pill(page).boundingBox())!;
@@ -275,7 +275,7 @@ test('Xuất Excel runs on the pill, Báo cáo still in use; done, it says so ab
   await expect(jobRows(page)).toHaveText([new RegExp(`^Đã xuất ${SEPTEMBER}\\d\\d:\\d\\d$`)]);
 });
 
-test('a failed export stays on the pill, red, whatever the period, scope or screen, until a press runs it again (L146)', async ({
+test('a failed export stays on the pill, red, whatever the period, scope or screen, until a press runs it again (review #1410)', async ({
   page,
 }) => {
   await asExeWithFiles(page);
@@ -315,7 +315,7 @@ test('a failed export stays on the pill, red, whatever the period, scope or scre
   await expect(pill(page)).toBeFocused();
 });
 
-test('"Xuất Excel Báo cáo tháng …" while an export runs says so, Báo cáo kept on its period (L234)', async ({
+test('"Xuất Excel Báo cáo tháng …" while an export runs says so, Báo cáo kept on its period (review #1491)', async ({
   page,
   browserName,
 }) => {
