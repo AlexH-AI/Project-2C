@@ -180,25 +180,39 @@ describe('pillText', () => {
 });
 
 describe('shownJobs', () => {
+  const job = (
+    id: number,
+    kind: JobKind,
+    customerId?: string,
+    state: BackgroundJob['state'] = 'failed',
+  ): BackgroundJob => ({
+    id,
+    key: `${kind}:${id}`,
+    kind,
+    customerId,
+    state,
+    shown: true,
+    changed: id,
+  });
+
   // Review of PR 1505: failed, then the customer deleted, the pill named nobody.
-  it('leaves out an analysis of a customer no longer there, and only that', () => {
-    const job = (id: number, kind: JobKind, customerId?: string): BackgroundJob => ({
-      id,
-      key: `${kind}:${id}`,
-      kind,
-      customerId,
-      state: 'failed',
-      shown: true,
-      changed: id,
-    });
+  it('leaves out an ended analysis of a customer no longer there, and only that', () => {
     const jobs = [
       job(1, 'ai', 'c-kept'),
       job(2, 'ai', 'c-gone'),
       job(3, 'backup'),
       job(4, 'export'),
+      job(5, 'ai', 'c-gone', 'done'),
     ];
     expect(shownJobs(jobs, [{ id: 'c-kept' }]).map((shown) => shown.id)).toEqual([1, 3, 4]);
+    // The customer back, so are its jobs.
     expect(shownJobs(jobs, [{ id: 'c-kept' }, { id: 'c-gone' }])).toEqual(jobs);
+  });
+
+  // Review of PR 1507: the AI runner stays busy until it ends, and says so on another profile.
+  it('keeps an analysis still running of a customer no longer there', () => {
+    const jobs = [job(1, 'ai', 'c-gone', 'running'), job(2, 'ai', 'c-gone', 'failed')];
+    expect(shownJobs(jobs, []).map((shown) => shown.id)).toEqual([1]);
   });
 });
 

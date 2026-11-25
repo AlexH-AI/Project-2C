@@ -45,9 +45,9 @@ const onResize = (listener: () => void) => {
 const narrowNow = () => innerWidth < NARROW_WIDTH;
 
 /**
- * The app's clock (`clockNow`, the e2e day pinned), read again as each minute starts and as the
- * window wakes (`watchMinute`): what "còn 25 phút" counts from. A save or a new screen does not
- * read it, so the pill stays on its minute.
+ * The app's clock (`clockNow`, the e2e day pinned), what "còn 25 phút" counts from: read on every
+ * render of the toolbar, and as each minute starts and as the window wakes (`watchMinute`). The
+ * pill changes only as a new minute starts: a render within the same minute gives the same moment.
  */
 function useMinute(): Date {
   const db = useDatabase();
@@ -121,8 +121,9 @@ function JobFace({ job, name, narrow }: { job: BackgroundJob; name: string; narr
  * leaves out the name. A press opens the panel of today under it (`TodayPanel`); Esc, a press
  * outside or the focus going elsewhere closes it, the focus back on the pill (`useLayer`). A job
  * in the background takes the pill while it runs, a few seconds once done, and once failed until
- * a press runs it again (VA9b-a), whatever the screen; an analysis of a customer no longer there
- * shows neither on the pill nor in the panel (`shownJobs`).
+ * a press runs it again (VA9b-a), whatever the screen; an ended analysis of a customer no longer
+ * there shows neither on the pill nor in the panel, one still running shows with no name
+ * (`shownJobs`).
  */
 export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   const { appointments, customers, people } = useTables();
@@ -180,12 +181,30 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
               <NavIcon name="calendar" className="size-3.75 flex-none text-fg-2" />
             )}
             {what && <b className="font-semibold tabular-nums">{what}</b>}
-            {who && <span className="min-w-0 shrink-1000 truncate">{who}</span>}
+            {/* Short of room, the customer's name is cut to nothing first, then the time left.
+                Once today has none left, "kế tiếp …" first, so that "Hết lịch hôm nay" stays whole
+                (review of PR 1507). At 1000 to 1, the other one still gave up a sixteenth of a
+                pixel, and an ellipsis took its end. */}
+            {who && (
+              <span className={`min-w-0 truncate ${words.today ? 'shrink-100000' : ''}`}>
+                {who}
+              </span>
+            )}
             {who && when && <span className="text-fg-3">{t('sep.dot')}</span>}
-            {when && <span className="min-w-0 truncate text-fg-2 tabular-nums">{when}</span>}
+            {when && (
+              <span
+                className={`min-w-0 truncate text-fg-2 tabular-nums ${words.today ? '' : 'shrink-100000'}`}
+              >
+                {when}
+              </span>
+            )}
           </>
         )}
       </button>
+      {/* Gives up the part of a pixel the toolbar takes from the pill while it cuts the line
+          under the name of the screen (`shrink-1000` of ScreenBar.tsx): taken from the words, it
+          would end them in an ellipsis (Khách hàng at 1 100 px, review of PR 1507). */}
+      <span aria-hidden="true" className="w-px shrink-100000" />
       {drawn && (
         <div
           ref={panel}

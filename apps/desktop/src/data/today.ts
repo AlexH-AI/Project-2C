@@ -17,6 +17,24 @@ export interface WakeEvents {
   readonly document: EventTarget & { readonly visibilityState: DocumentVisibilityState };
 }
 
+/**
+ * Calls `listener` whenever the window wakes: gets focus, or turns visible again (not as it hides).
+ * A timer does not run while the machine sleeps, so a clock of the app reads again then
+ * (`watchToday`, and `watchMinute` of "Lưu ý"). Returns the function that stops it.
+ */
+export function onWake(events: WakeEvents, listener: () => void): () => void {
+  const onFocus = () => listener();
+  const onVisible = () => {
+    if (events.document.visibilityState === 'visible') listener();
+  };
+  events.window.addEventListener('focus', onFocus);
+  events.document.addEventListener('visibilitychange', onVisible);
+  return () => {
+    events.window.removeEventListener('focus', onFocus);
+    events.document.removeEventListener('visibilitychange', onVisible);
+  };
+}
+
 /** Milliseconds from `at` to the next local midnight. */
 const untilMidnight = (at: Date) =>
   new Date(at.getFullYear(), at.getMonth(), at.getDate() + 1).getTime() - at.getTime();
@@ -42,18 +60,12 @@ export function watchToday(
           if (!stopped) wait();
         }, untilMidnight(new Date()));
       };
-      const onFocus = () => listener();
-      const onVisible = () => {
-        if (events.document.visibilityState === 'visible') listener();
-      };
       wait();
-      events.window.addEventListener('focus', onFocus);
-      events.document.addEventListener('visibilitychange', onVisible);
+      const offWake = onWake(events, listener);
       return () => {
         stopped = true;
         clearTimeout(timer);
-        events.window.removeEventListener('focus', onFocus);
-        events.document.removeEventListener('visibilitychange', onVisible);
+        offWake();
       };
     },
   };
