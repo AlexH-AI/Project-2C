@@ -670,7 +670,8 @@ async function watchMoves(page: Page) {
  * Khách hàng scrolled down, as chuyen-dong.html `#mo` asks: the board in a window too low for it
  * (1100 × 460), or the table (Bảng) at 1100 × 700. Gives a customer in view (its link), and how far
  * the screen is scrolled as it is clicked (`scrollAtClick`). The board is still by then: a click
- * Playwright tries again on a card still rising scrolls it to the middle or the top.
+ * Playwright tries again on a card still rising first scrolls it to the end, the middle or the top
+ * of the window. Below the first window of the page, the link leaves it scrolled at each of them.
  */
 async function scrolledCard(page: Page, view: 'Kanban' | 'Bảng' = 'Kanban') {
   await page.setViewportSize({ width: 1100, height: view === 'Kanban' ? 460 : 700 });
@@ -686,7 +687,9 @@ async function scrolledCard(page: Page, view: 'Kanban' | 'Bảng' = 'Kanban') {
       window.scrollTo(0, down);
       const card = [...document.querySelectorAll<HTMLElement>('main a[data-open]')].find((link) => {
         const box = link.getBoundingClientRect();
-        return box.top > 100 && box.bottom < innerHeight - 20;
+        return (
+          box.top > 100 && box.bottom < innerHeight - 20 && box.bottom + scrollY > innerHeight + 20
+        );
       });
       return card?.getAttribute('href') ?? '';
     },
