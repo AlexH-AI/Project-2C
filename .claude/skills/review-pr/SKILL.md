@@ -147,7 +147,7 @@ Mọi mức gọi Skill `code-review` (Owner quyết 21/10/2026, ADR-0017 phụ 
 - **Đề xuất nhãn đích** cho mỗi mục không chặn (Owner quyết 12/11/2026, ADR-0001 phụ lục M14; luật ở đầu mục OPEN của sổ). Ghi mức theo thước §4.3 của kế hoạch deep review `docs/process/deep-review-phase-1-6.md` (Critical / High / Medium / Low / Nit) và trục chính theo §4.1 (E, C, D, G, S, P, B, T, A), để xếp thứ tự: Medium trở lên, và Low ở trục D (dữ liệu), S (an toàn ở ranh giới), G (guardrail AI) làm trước; Low có hậu quả lên dữ liệu đã lưu, backup, key hay output AI thì xếp D / S / G, dù trục khác cũng hợp. Rồi đề xuất nhãn, lấy bậc đầu tiên có:
   1. Issue đang mở phụ trách file đó → `[T-… #…]`;
   2. việc dự kiến cùng loại trong spec (danh sách tên đích, `docs/design/phase-6-phan-hoi-dung-thu.md` §12) → `[<tên việc>]`;
-  3. Issue dọn sổ cùng loại → `[DS-…]`; không DS nào cùng loại thì đề xuất một DS mới, nêu loại.
+  3. Issue dọn sổ cùng loại → `[DS-…]`; không DS nào cùng loại thì đề xuất một DS mới, viết đúng dạng `đích: DS mới — <loại>`, thêm `; thay: [<nhãn>]` khi có một nhãn sẵn có gần nhất mà Owner có thể chọn thay. Không đánh số: `auto-issues` lấy số kế tiếp từ sổ trên `main` và hỏi Owner ngay khi merge (`auto-issues` §5, "DS mới lúc merge"; Owner quyết 26/11/2026, T-513 #1520). Các mục cùng loại viết cùng một `<loại>`.
 
   Mọi mục làm trước v1.0; chỉ Owner chuyển một mục sang ACCEPTED (không sửa). Đề xuất không đổi kết luận PASS / CHANGES của PR. PR sổ gắn nhãn theo nó (`auto-issues` §3.5).
 - Có ít nhất một mục chặn → `REVIEW: CHANGES`. Ngược lại → `REVIEW: PASS` (có thể "kèm ghi chú").
@@ -170,6 +170,7 @@ PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có)
 ## Correctness
 - [chặn] `file:line`: … (tái hiện: …)
 - [không chặn · Low / D · đích: [T-… #…]] `file:line`: …
+- [không chặn · Low / T · đích: DS mới — e2e đọc đúng lúc; thay: [T-… #…]] `file:line`: …
 
 ## Tóm tắt
 Spec: n mục (nặng nhất: …) · Standards: n · Correctness: n
