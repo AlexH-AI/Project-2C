@@ -52,12 +52,14 @@ export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
     /** The settings the running request was started with (DR5-31). */
     settings: job?.settings,
     ended,
-    /** `run` gets the call taken now, so what runs is what the screen says runs. */
+    /**
+     * `run` gets the call taken now, so what runs is what the screen says runs. Gives how it ends,
+     * `AI_BUSY` when refused, for "Lưu ý" (VA9b-a); `AiJobs` reports a rejection already.
+     */
     start(run: (signal: AiAbortSignal, call: AiCall) => Promise<Outcome>) {
       setEnded(null);
       const call = ai.call();
-      // `AiJobs` handles how `done` ends, a rejection too.
-      void jobs.start(key, (signal) => run(signal, call), call.settings, keptFailures(app));
+      return jobs.start(key, (signal) => run(signal, call), call.settings, keptFailures(app));
     },
     cancel: () => jobs.cancel(key),
     /** Back to nothing shown: Đóng, or another run of the screen starting. */

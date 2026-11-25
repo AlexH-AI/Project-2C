@@ -1,11 +1,13 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { DbError, LATEST_SCHEMA_VERSION, MAX_BACKUP_BYTES } from '@p2c/db';
 import { formatBytes, formatLocalDateTime, type CurrencyCode } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
+import { useJobs } from '../shell/background-jobs';
 import { useCommand } from '../shell/palette-commands';
+import { useToast } from '../shell/Toasts';
 import { ALERT, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmButton } from './ConfirmWordDialog';
 import { currencyName } from './money-view';
@@ -57,9 +59,30 @@ interface BackupSectionProps extends DataNoticeProps<BackupNotice> {
   readonly onBusy: (busy: DataBusy) => void;
 }
 
-/** Settings → Data, "Xuất / nhập backup" (mockup settings-data, 10a, 10b; spec §6). */
-export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: BackupSectionProps) {
+/**
+ * Settings → Data, "Xuất / nhập backup" (mockup settings-data, 10a, 10b; spec §6). An export is
+ * a job in the background on "Lưu ý" (VA9b-a), busy also once Data is left and shown again.
+ */
+export function BackupSection({
+  notice,
+  onNotice,
+  busy: held,
+  onBusy: setBusy,
+}: BackupSectionProps) {
   const data = useAppData();
+  const jobs = useJobs();
+  const toast = useToast();
+  const exporting = useSyncExternalStore(jobs.subscribe, () => jobs.busy('backup'));
+  const busy: DataBusy = held ?? (exporting ? 'export' : null);
+  // What Data is busy with now, for Thử lại of "Lưu ý", which may run once Data is left: it waits
+  // for a read, so "Nạp lại…" stays off until the read is over (DR6-200).
+  const heldNow = useRef<DataBusy>(null);
+  useEffect(() => {
+    heldNow.current = held;
+    return () => {
+      heldNow.current = null;
+    };
+  }, [held]);
   const input = useRef<HTMLInputElement>(null);
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [refused, setRefused] = useState<Refused | null>(null);
@@ -67,9 +90,12 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
   const exportFile = async () => {
     setBusy('export');
     onNotice(null);
+    // Its time is not measured: the bar of "Lưu ý" has no percent.
+    const job = jobs.start('backup', 'backup');
     try {
       const exported = await data.exportBackup();
       if (exported.path === undefined) download(exported.name, exported.text);
+      job.done();
       onNotice({
         kind: 'exported',
         where: exported.path ?? exported.name,
@@ -77,6 +103,9 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
         inFolder: exported.path !== undefined,
       });
     } catch (error) {
+      job.fail(() => {
+        if (heldNow.current === null && !jobs.busy('backup')) void exportFile();
+      });
       // A file over the limit is never written: no import would read it back (DR6-179).
       const tooLarge = error instanceof DbError && error.code === 'BACKUP_TOO_LARGE';
       const message = tooLarge
@@ -88,11 +117,18 @@ export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: Backu
     }
   };
 
-  // "Sao lưu ngay" of the command bar: Xuất backup.
   const exportNow = () => {
     if (busy === null) void exportFile();
   };
-  useCommand('backup', exportNow);
+  // "Sao lưu ngay" of the command bar: Xuất backup; while Data is busy, it says so (L234).
+  useCommand('backup', () =>
+    busy === null
+      ? exportNow()
+      : toast.show({
+          text: t(busy === 'read' ? 'jobs.busy.read' : 'jobs.busy.backup'),
+          tone: 'info',
+        }),
+  );
 
   const readFile = async (file: File) => {
     onNotice(null);

@@ -14,6 +14,7 @@ import {
 import { analyseCustomer, startChatGptWeb, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { useJobs } from '../../shell/background-jobs';
 import { TypedText } from '../../shell/NameMask';
 import { errorParts, SETTINGS_AI_HASH, type AiFailure } from '../ai-error-view';
 import { ALERT, BADGE, CARD, HEADING, LINK } from '../classes';
@@ -392,6 +393,12 @@ export function AiErrorText({ error }: { error: AiFailure }) {
 }
 
 /**
+ * The customers whose ChatGPT web session is open: Thử lại of "Lưu ý", which may run once the
+ * profile is left, waits for it as the buttons do.
+ */
+const webOpenFor = new Set<string>();
+
+/**
  * Mockup customer.html "KYC Intelligence" (spec Phase 5 §9.1): the gate, a run of the AI with Hủy,
  * its errors, and the latest ACCEPTED analysis, CURRENT or STALE. Every AI button follows the app's
  * one runner (P5), so it is off while any AI request runs, also after Hủy.
@@ -414,6 +421,7 @@ export function KycIntelligence({
   onWebOpen: (open: boolean) => void;
 }) {
   const app = useAppData();
+  const background = useJobs();
   const { runner } = app.ai;
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
   // Kept by the app, so the profile left and shown again still has it (review of PR 439).
@@ -454,12 +462,17 @@ export function KycIntelligence({
     action();
     setRefocus((count) => count + 1);
   };
-  // AI trích xuất of this customer is off too while the session waits (ADR-0009 W-1 item 6).
+  // AI trích xuất of this customer is off too while the session waits (ADR-0009 W-1 item 6), and
+  // Thử lại of "Lưu ý" (`webOpenFor`).
   useEffect(() => {
     if (!webOpen) return;
+    webOpenFor.add(customerId);
     onWebOpen(true);
-    return () => onWebOpen(false);
-  }, [webOpen, onWebOpen]);
+    return () => {
+      webOpenFor.delete(customerId);
+      onWebOpen(false);
+    };
+  }, [webOpen, onWebOpen, customerId]);
   // The history row picked (mockup 2j) holds until a new row is saved, from any run, so the result
   // shows once saved (review of PR 462).
   const latest = analyses[0]?.id ?? null;
@@ -505,7 +518,22 @@ export function KycIntelligence({
   const analyse = () => {
     setWebState((state) => (state.phase === 'failed' ? { phase: 'idle' } : state));
     setWebEnded(null);
-    analysis.start((signal, call) => analyseCustomer(app, customerId, signal, call));
+    const ended = analysis.start((signal, call) => analyseCustomer(app, customerId, signal, call));
+    // A job on "Lưu ý" too (VA9b-a): an analysis the validator refused is no analysis to use, so
+    // it fails as an error does; Hủy, or nothing run (the gate, the data replaced), goes unsaid.
+    // Its Thử lại waits, as the buttons do, while the runner or this customer's web session is busy.
+    const job = background.start(`ai:${customerId}`, 'ai', customerId);
+    const again = () => {
+      if (!runner.busy && !webOpenFor.has(customerId)) analyse();
+    };
+    void ended.then(
+      (outcome) => {
+        if (outcome.kind === 'saved' && outcome.status === 'ACCEPTED') job.done();
+        else if (['saved', 'error', 'failed'].includes(outcome.kind)) job.fail(again);
+        else job.drop();
+      },
+      () => job.fail(again),
+    );
   };
   const startWeb = async () => {
     setWebState({ phase: 'starting' });

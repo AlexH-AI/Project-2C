@@ -6,6 +6,7 @@ import { t } from '../../i18n';
 import { useCommand } from '../../shell/palette-commands';
 import { scopeName } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
+import { useToast } from '../../shell/Toasts';
 import { HEADING, PANEL } from '../classes';
 import { FilterBar } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
@@ -39,6 +40,7 @@ export function ReportsScreen() {
   const selection = useMemo(() => ({ period, scope: picked }), [period, picked]);
   const [chosenTable, setTable] = useState<TableKey>('byTeam');
   const exporter = useReportExport(selection);
+  const toast = useToast();
 
   const viewingAt = (at: Period) => ({
     ...viewingText({ period: at, scope: picked }, today, data.people, data.teams),
@@ -58,7 +60,9 @@ export function ReportsScreen() {
       void exporter.run({ rows: atRows, period: at, viewing: viewingAt(at), today });
   };
   // "Xuất Excel Báo cáo tháng này" of the command bar: the month of today on screen, and its file.
+  // While an export runs, it says so and changes nothing (L234).
   useCommand('export', () => {
+    if (exporter.busy) return toast.show({ text: t('jobs.busy.export'), tone: 'info' });
     const month = periodOf('month', today);
     setPeriod(month);
     exportAt(month, reportRows(data, month, picked, today));
