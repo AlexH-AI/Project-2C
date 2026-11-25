@@ -181,12 +181,14 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
               <NavIcon name="calendar" className="size-3.75 flex-none text-fg-2" />
             )}
             {what && <b className="font-semibold tabular-nums">{what}</b>}
-            {/* Short of room, the customer's name is cut first, then the time left. Once today
-                has none left, "kế tiếp …" is cut to nothing first, so that "Hết lịch hôm nay"
-                stays whole (review of PR 1507): at 1000 to 1, "Hết lịch hôm nay" still gave up a
-                sixteenth of a pixel, and an ellipsis took its end. */}
+            {/* Short of room, the customer's name is cut to nothing first, then the time left.
+                Once today has none left, "kế tiếp …" first, so that "Hết lịch hôm nay" stays whole
+                (review of PR 1507). At 1000 to 1, the other one still gave up a sixteenth of a
+                pixel, and an ellipsis took its end. */}
             {who && (
-              <span className={`min-w-0 truncate ${words.today ? 'shrink-1000' : ''}`}>{who}</span>
+              <span className={`min-w-0 truncate ${words.today ? 'shrink-100000' : ''}`}>
+                {who}
+              </span>
             )}
             {who && when && <span className="text-fg-3">{t('sep.dot')}</span>}
             {when && (
