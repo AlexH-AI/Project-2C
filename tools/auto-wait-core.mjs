@@ -3,20 +3,27 @@
 // same way every time. No I/O here: unit-tested in auto-wait-core.test.mjs.
 
 import { prFiles, prList } from './pr-core.mjs';
-import { checkCounts, checksSummary, latestReview } from './session-core.mjs';
+import { REVIEWERS, checkCounts, checksSummary, latestReview } from './session-core.mjs';
 
 /** Exit codes: done and good, done and bad, timed out, look at it, usage. */
 export const EXIT = { done: 0, bad: 1, timeout: 2, look: 3, usage: 64 };
 
 export const USAGE =
   'usage: node tools/auto-wait.mjs pr <issue> | ci <N> [--not <sha>] [--since <time>] |' +
-  ' review <N> [--sha <sha>] | title <text> | sleep   [--timeout <min> | --once] [--every <s>]';
+  ' fix <N> --not <sha> | review <N> [--sha <sha>] | title <text> | sleep' +
+  '   [--timeout <min> | --once] [--every <s>]';
 
 // What each mode waits on: an Issue number, a PR number, a title text, nothing.
-const TARGETS = { pr: 'issue', ci: 'PR', review: 'PR', title: 'text', sleep: null };
+const TARGETS = { pr: 'issue', ci: 'PR', fix: 'PR', review: 'PR', title: 'text', sleep: null };
 // Flags of one mode only: --not / --sha take a SHA, --since a time. --timeout / --every go with
-// every mode.
-const MODE_FLAGS = { ci: ['--not', '--since'], review: ['--sha'] };
+// every mode. fix cannot do without its --not.
+const MODE_FLAGS = { ci: ['--not', '--since'], fix: ['--not'], review: ['--sha'] };
+
+// The first line of the comment that asks a clean session to review the same head again, once
+// the coding session had nothing but the PR body to change, or the Owner overruled what blocked
+// (ADR-0001 M15, auto-issues §3.4, §5): `XIN XEM LẠI: head \`<sha7>\` …`. It does not open with
+// "REVIEW", so nothing that reads REVIEW comments takes it for one.
+export const REVIEW_AGAIN = 'XIN XEM LẠI:';
 const LIMITS = { '--timeout': ['timeoutMin', 1, 120], '--every': ['everySec', 30, 600] };
 // Reads of GitHub stay at least this far apart (#942), the last one before the deadline too.
 const MIN_EVERY_MS = LIMITS['--every'][1] * 1000;
@@ -80,6 +87,7 @@ export function parseArgs(argv) {
     if (flags.has('--timeout')) return { error: '--once and --timeout do not go together' };
     options.timeoutMin = 0;
   }
+  if (mode === 'fix' && options.not === null) return { error: 'fix needs --not <sha>' };
   const kind = TARGETS[mode];
   if (kind === null) {
     return positional.length ? { error: `sleep takes no "${positional[0]}"` } : options;
@@ -124,6 +132,58 @@ function readBranch(branch) {
   }
 }
 
+/** The names of the red checks, as "Verify, e2e". */
+const failedNames = (checks) =>
+  checks
+    .filter((c) => checkCounts([c]).fail === 1)
+    .map((c) => c.name ?? c.context)
+    .join(', ');
+
+/**
+ * While the PR's head is still the one a fix is waited past: `branch()` gives the SHA of the PR's
+ * branch on GitHub and how long this wait has seen it there, and a branch at another SHA for
+ * STALE_HEAD_MS is a push GitHub missed: something to look at, since the PR's head and CI will not
+ * move until the PR is reopened (PR #1070). A branch GitHub does not have (404) is waited on as a
+ * push (readBranch). `what` names what the wait is for.
+ */
+function awaitPush(pr, branch, what) {
+  const head = short(pr.headRefOid);
+  const moved = readBranch(branch);
+  if (!moved || sameSha(moved.sha, pr.headRefOid)) {
+    return { done: false, text: `head still ${head}: waiting for ${what}` };
+  }
+  const at = short(moved.sha);
+  return moved.forMs >= STALE_HEAD_MS
+    ? {
+        done: true,
+        code: EXIT.look,
+        text: `PR head stale: branch at ${at}, head still ${head} (GitHub missed the push)`,
+      }
+    : { done: false, text: `head still ${head}, branch at ${at}: waiting for the PR to follow` };
+}
+
+// A first line "XIN XEM LẠI: … head `<sha>` …"; the body is read in NFC, so the accents match
+// however the comment was typed.
+const AGAIN_LINE = new RegExp(`^${REVIEW_AGAIN}.*\\bhead \`([0-9a-f]{7,40})\``, 'u');
+
+/**
+ * True when a XIN XEM LẠI for `sha` by someone with write access came after the latest REVIEW
+ * (any head) by such a person: the review of that head is to be done again in a clean session.
+ * gh lists comments oldest first.
+ */
+function askedAgain(comments, sha) {
+  let review = -1;
+  let asked = -1;
+  comments.forEach((c, i) => {
+    if (!REVIEWERS.has(c.authorAssociation)) return;
+    const first = c.body.normalize('NFC').split('\n')[0];
+    if (first.startsWith('REVIEW:')) review = i;
+    const named = AGAIN_LINE.exec(first)?.[1];
+    if (named && sameSha(named, sha)) asked = i;
+  });
+  return asked > review;
+}
+
 // The workflow whose runs are CI's. macos.yml makes a pull_request run too, for every push and
 // label of every PR (its job skipped without build-mac): never CI's verdict (T-428).
 const CI_WORKFLOW = '.github/workflows/ci.yml';
@@ -143,13 +203,11 @@ function newestRunOfPr(pr, all, since) {
 
 /**
  * CI on the PR's head: done once no check runs and every workflow run of the head ended, since a
- * job that `needs` another, like the exe build, gets its check only when that one ends. `runs()`
+ * job that `needs` another, like the exe build, gets its check only when that one ends; red as
+ * soon as one check of the head is red, without `since` (ADR-0001 M15). `runs()`
  * gives those runs (Actions API); it is called only once every check ended, so a wait does not
- * read them each poll. With `not`, first a head other than that SHA (a push after a fix); while the
- * head is still that SHA, `branch()` gives the SHA of the PR's branch on GitHub and how long this
- * wait has seen it there, and a branch at another SHA for STALE_HEAD_MS is a push GitHub missed:
- * something to look at, since the PR's head and CI will not move until the PR is reopened; a branch
- * GitHub does not have (404) is waited on as a push (readBranch). With
+ * read them each poll. With `not`, first a head other than that SHA (a push after a fix), the
+ * stale branch read as awaitPush says. With
  * `since`, the verdict is that of the newest `pull_request` run of the PR's branch made at or after
  * that time, read from its own checks: after `gh pr close` + `gh pr reopen` the head keeps its old
  * checks, all ended, until GitHub makes the new run, and a run of another event (workflow_dispatch)
@@ -168,26 +226,20 @@ export function ciState(
   const stop = notOpen(pr);
   if (stop) return stop;
   const head = short(pr.headRefOid);
-  if (not && sameSha(pr.headRefOid, not)) {
-    const moved = readBranch(branch);
-    if (!moved || sameSha(moved.sha, pr.headRefOid)) {
-      return { done: false, text: `head still ${head}: waiting for a push` };
-    }
-    const at = short(moved.sha);
-    return moved.forMs >= STALE_HEAD_MS
-      ? {
-          done: true,
-          code: EXIT.look,
-          text: `PR head stale: branch at ${at}, head still ${head} (GitHub missed the push)`,
-        }
-      : { done: false, text: `head still ${head}, branch at ${at}: waiting for the PR to follow` };
-  }
+  if (not && sameSha(pr.headRefOid, not)) return awaitPush(pr, branch, 'a push');
   const rollup = pr.statusCheckRollup ?? [];
   const { pass, fail, pending } = checkCounts(rollup);
   if (pass + fail + pending === 0) {
     return prFiles({ ...pr, files: files() }).docsOnly
       ? { done: true, code: EXIT.done, text: `docs-only @${head}: CI not needed` }
       : { done: false, text: `no checks yet @${head}` };
+  }
+  // Without since every check of the head is the PR's: one red check and the head can no longer
+  // merge (merge-pr), so the checks and jobs still to come are not waited for. The review runs
+  // beside CI, and the fix of both goes in one push (ADR-0001 M15).
+  if (fail > 0 && !since) {
+    const still = pending > 0 ? `; ${pending} still running` : '';
+    return { done: true, code: EXIT.bad, text: `CI red @${head}: ${failedNames(rollup)}${still}` };
   }
   if (pending > 0) return { done: false, text: `${checksSummary(rollup)} @${head}` };
   const all = runs();
@@ -218,9 +270,8 @@ export function ciState(
     }
     checks = rollup.filter((c) => runOf(c) === String(own.id));
   }
-  const failed = checks.filter((c) => checkCounts([c]).fail === 1).map((c) => c.name ?? c.context);
-  if (failed.length) {
-    return { done: true, code: EXIT.bad, text: `CI red @${head}: ${failed.join(', ')}` };
+  if (checkCounts(checks).fail > 0) {
+    return { done: true, code: EXIT.bad, text: `CI red @${head}: ${failedNames(checks)}` };
   }
   // The rollup is read before the runs, so it may not show a red check of a run that failed yet.
   if (newest?.conclusion === 'failure') {
@@ -243,7 +294,30 @@ export function ciState(
   };
 }
 
-/** The latest REVIEW comment, once it names `sha` (default: the head). */
+/**
+ * What a coding session sent back after a fix (CI red, REVIEW: CHANGES, main ahead, an Owner
+ * answer): a head other than `not` (a push), or, on that head, a XIN XEM LẠI after its latest
+ * REVIEW (nothing but the PR body had to change). Either way the head is to be reviewed in a clean
+ * session, beside CI (ADR-0001 M15). While neither came, a head stale behind its branch is
+ * something to look at, as with `ci --not` (awaitPush).
+ */
+export function fixState(pr, { not, branch = () => null }) {
+  const stop = notOpen(pr);
+  if (stop) return stop;
+  const head = short(pr.headRefOid);
+  if (!sameSha(pr.headRefOid, not)) {
+    return { done: true, code: EXIT.done, text: `head moved past ${short(not)} to ${head}` };
+  }
+  if (askedAgain(pr.comments ?? [], pr.headRefOid)) {
+    return { done: true, code: EXIT.done, text: `XIN XEM LẠI @${head}: review the same head` };
+  }
+  return awaitPush(pr, branch, 'a push or XIN XEM LẠI');
+}
+
+/**
+ * The latest REVIEW comment, once it names `sha` (default: the head) and no XIN XEM LẠI for that
+ * head came after it (askedAgain).
+ */
 export function reviewState(pr, { sha = null } = {}) {
   const stop = notOpen(pr);
   if (stop) return stop;
@@ -254,6 +328,12 @@ export function reviewState(pr, { sha = null } = {}) {
     return {
       done: false,
       text: `latest REVIEW is for ${review.sha ?? 'no head'}, waiting for ${short(target)}`,
+    };
+  }
+  if (askedAgain(pr.comments, target)) {
+    return {
+      done: false,
+      text: `XIN XEM LẠI @${short(target)} after the latest REVIEW: waiting for a new one`,
     };
   }
   const level = review.level ? `, level ${review.level}` : '';

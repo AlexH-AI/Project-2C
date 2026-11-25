@@ -223,3 +223,47 @@ Owner 12/11/2026, chat ở Home PC: "Anh không muốn để lại sau 1.0 vì s
 - **G1:** danh sách tên đích, bảng ghép 90 mục OPEN (Issue #1227), DS-1…DS-4 và thứ tự spec §10 do Claude đề xuất. Owner duyệt G1 ngày 12/11/2026, trong PR #1228 của T-419: "Duyệt G1".
 
 `CLAUDE.md` (Mô hình thực hiện; "Quy trình một task" bước 2, bước 4), `docs/process/REVIEW-CHECKLIST.md`, skill `review-pr` §3.A, §4, skill `auto-issues` §3.5, §3.6, mẫu Issue / PR, `docs/agents/issue-tracker.md`, `.claude/commands/session-start.md`, `tools/notes-for.mjs` và đầu sổ ghi chú sửa theo phụ lục này.
+
+## Phụ lục — review chạy song song với CI (M15 — Accepted G1, Owner quyết 25/11/2026 · Issue #1509)
+
+Owner 25/11/2026, chat ở Home PC, sau đợt 5b của `auto-issues` (PR #1505, #1507): "giao review ngay khi có PR hay head mới, chạy cùng lúc với CI, để bớt khoảng 20 phút mỗi vòng. Khi review ra CHANGES, phiên điều phối giao phiên code sửa ngay. CI đỏ và CHANGES thì gộp làm một lần sửa." Việc này đổi thứ tự của quy trình một task, nên là cổng G1. Claude trình kế hoạch và nháp phụ lục này; Owner duyệt cùng ngày: "Duyệt G1".
+
+- **Số đo:**
+  - Đợt 5b: CI mỗi head 25–40 phút (Verify ~21–26, E2E WebKit macOS ~28–37); review phiên sạch 15–25 phút; mỗi vòng `REVIEW: CHANGES` ~1 giờ.
+  - Đợt 5 và 5b, 17 PR code (#1467 … #1507): 29 lần review, 12 lần CHANGES. 7 head có CI đỏ (`ci.yml` 1 head, `macos.yml` 7 head, trùng 1); 2 trong số đó bị thay ngay trong lượt của phiên code.
+  - PR #1507: mục chặn @`665b2c8` chỉ nằm ở thân PR; commit rỗng `fe0d02a` chỉ để có head mới cho review, CI chạy lại ~40 phút.
+- **Thay câu:**
+  - Quyết định mục 5, "PR → CI Windows → **review ở phiên mới, context sạch**", thành: PR → CI Windows và review ở phiên mới, context sạch, chạy song song → merge khi cả hai đạt trên cùng head.
+  - M11, gạch thứ hai của yêu cầu ngày 01/11 ("Phiên review context sạch chạy `/review-pr` khi CI xanh"): review chạy khi có head mới, không chờ CI.
+
+  Thân ADR và M11 giữ nguyên làm lịch sử.
+- **Luật** (head `H`; bảng bước và ví dụ thứ tự sự kiện ở skill `auto-issues` §2):
+  1. Chưa có REVIEW cho `H`: giao review ngay, dù CI đang chạy, xanh hay đỏ.
+  2. PASS + CI xanh: merge. PASS + CI đang chạy: chờ CI. PASS + CI đỏ: phiên code sửa CI; head đổi thì PASS mất giá trị, review lại ở phiên sạch.
+  3. CHANGES + CI xanh hay đang chạy: phiên code sửa ngay, không chờ CI. CHANGES + CI đỏ: một tin gộp.
+  4. CI đỏ khi review của `H` còn chạy: chờ review xong rồi gửi một tin. Phiên con vẫn chạy lần lượt, phiên code không push khi review đang chạy; chỉ CI chạy song song với phiên con.
+  5. "CI đỏ" là khi đã có một check đỏ trên `H`, dù check khác còn chạy: head đó không merge được nữa. Trước khi push, phiên code đọc lại các check của `H` và sửa luôn check vừa đỏ.
+  6. Không file nào phải đổi (mục chặn chỉ ở thân PR, hay Owner bác mục chặn): phiên code sửa thân PR và đăng comment `XIN XEM LẠI` cho `H`, không commit rỗng; phiên review sạch review lại cùng head. Comment đó không mở đầu bằng "REVIEW", nên không gì đọc REVIEW lấy nhầm nó.
+- **Cổng merge không đổi.** `merge-pr` vẫn đòi CI xanh trên head, notice `Tested base`, nhãn build, và REVIEW mới nhất là PASS nêu đúng head (`mergeBlockers` của `tools/pr-core.mjs`). PASS của lần review lại cùng head là REVIEW mới nhất và nêu đúng head, nên luật SHA không cần sửa. Review không PASS vì CI xanh, không CHANGES vì CI đỏ; nó ghi trạng thái CI lúc đăng comment.
+- **Công cụ** (`tools/auto-wait.mjs`):
+  - kiểu chờ mới `fix <N> --not <H>`: xong khi head khác `H`, hay khi có `XIN XEM LẠI` cho `H` mới hơn REVIEW cuối; giữ phát hiện head kẹt (mã 3). `ci --not` chỉ xong khi CI của head mới xong, quá muộn cho luật 1;
+  - `review` không tính REVIEW cũ hơn `XIN XEM LẠI` của cùng head. Chỉ comment của người có quyền ghi được tính, như REVIEW (`REVIEWERS` của `tools/session-core.mjs`);
+  - `ci` báo đỏ ở check đỏ đầu tiên (luật 5), trừ khi chờ run mới của PR mở lại (`--since`, vì check đỏ của run cũ còn trên head);
+  - không thêm kiểu chờ hai tín hiệu (CI hay REVIEW, cái nào tới trước): lúc review chạy, kết quả CI không đổi bước kế (luật 4), nên chỉ chờ REVIEW; sau REVIEW chỉ còn một tín hiệu.
+- **Phương án đã cân nhắc:**
+  - giữ thứ tự cũ: loại, mỗi vòng CHANGES tốn thêm cả thời gian CI;
+  - cho phiên code sửa CI đỏ ngay khi review còn chạy: loại, push giữa lúc review làm REVIEW nêu head cũ và mất một vòng review;
+  - commit rỗng cho mục chặn chỉ ở thân PR: loại, CI chạy lại ~40 phút nằm trên đường găng, vì merge cần CI xanh trên head mới;
+  - chờ mọi check xong rồi mới báo đỏ (như trước): loại, review xong trước CI nên hàng "CHANGES + CI đỏ" gần như không bao giờ khớp, và PASS phải chờ cả những check không còn đổi được kết luận.
+- **Hai lựa chọn Claude đặt mặc định, Owner không đổi khi duyệt:**
+  - review lại sau "PASS rồi CI đỏ" là review đầy đủ như brief §3.2 của `auto-issues`, không chỉ phần diff từ SHA đã PASS (skill `review-pr` §5). Nó chạy song song với CI nên không tốn thời gian chờ;
+  - CI chập chờn: brief §3.3 giữ commit rỗng.
+- **Hệ quả:**
+  - Vòng CHANGES không chờ CI; vòng PASS cuối không chờ review khi review xong trước CI.
+  - Review thêm khi CI đỏ sau khi đã giao review: ở đợt 5 và 5b tối đa 5 lần trên 29, kể cả commit rỗng khi CI chập chờn. Review đó chạy song song với CI nên tốn token, không tốn thời gian.
+  - Push sớm hơn: `ci.yml` hủy run của head cũ (`cancel-in-progress`); `macos.yml` không hủy, nên run Mac của head cũ chạy tiếp (repo public nên không tốn tiền, chỉ chiếm lượt máy macOS).
+  - Một PR có thể có hai PASS (PASS rồi CI đỏ, head mới, PASS lại): chỉ phiên review của PASS mới nhất giữ việc dở (PR sổ).
+  - Mục chặn chỉ ở thân PR không còn chạy lại CI: review lại cùng head rồi merge ngay khi CI của head đó đã xanh.
+- **K49:** đây là công cụ pipeline, như DS-0 (M14). Owner bảo làm ngày 25/11/2026; chỉ làm khi pipeline không chạy. Đợt 5b dừng sau PR #1507 và PR sổ #1508 (comment "Quyết định Owner (25/11/2026)" trên #1507).
+
+`CLAUDE.md` bước 4, skill `review-pr` §3, §3.B, §4, §5, skill `auto-issues` (mô tả, §2, §3.2–§3.4b, §4, §5), `.claude/rules/ci.md`, `tools/auto-wait*`, `tools/session-core.mjs` (chỉ export `REVIEWERS`) và `docs/PROJECT-STATE.md` sửa theo phụ lục này.
