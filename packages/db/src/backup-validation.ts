@@ -9,6 +9,7 @@ import {
   calendarDate,
   fromIsoDate,
   isIsoDate,
+  isTime,
   KYC_FIELDS,
   kycHash,
   normalizeKycValue,
@@ -40,7 +41,6 @@ import {
 } from './person-references';
 
 const YEAR = /^\d{4}$/;
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const TIMESTAMPS = new Set(['created_at', 'updated_at', 'deleted_at', 'expected_case_size_at']);
 /**
  * A stamp as `toISOString()` writes it, milliseconds and `Z`: one instant is then one text, which
@@ -89,7 +89,7 @@ export function validateBackupValues(db: Database, currency: CurrencyCode): void
 function validValue(column: string, value: SqlValue, currency: CurrencyCode): boolean {
   if (column === 'birth_date') return validYear(value) || validDate(value);
   if (column === 'date' || column.endsWith('_date')) return validDate(value);
-  if (column === 'time') return typeof value === 'string' && TIME.test(value);
+  if (column === 'time') return typeof value === 'string' && isTime(value);
   if (TIMESTAMPS.has(column)) return timestamp.safeParse(value).success;
   // A safe integer, as `nextSeq` writes it (DR-34).
   if (column === 'seq') return Number.isSafeInteger(value) && (value as number) >= 1;

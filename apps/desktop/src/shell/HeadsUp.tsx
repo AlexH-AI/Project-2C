@@ -1,18 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import type { AppointmentRecord } from '@p2c/db';
-import {
-  compareDates,
-  formatDate,
-  formatDayMonth,
-  formatLocalTime,
-  fromLocalDate,
-  weekdayOf,
-  type Scope,
-} from '@p2c/domain';
-import { Button, NavIcon, useLayerState, type NavIconName } from '@p2c/ui';
+import { formatDate, formatLocalTime, fromLocalDate, weekdayOf, type Scope } from '@p2c/domain';
+import { Button, Mark, NavIcon, useLayer, type NavIconName } from '@p2c/ui';
 import { useDatabase, useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
-import { createdToast, withTime } from '../routes/appointments/appointment-form';
+import { createdToast } from '../routes/appointments/appointment-form';
 import {
   appointmentRows,
   personLabel,
@@ -30,7 +21,15 @@ import {
   type BackgroundJob,
   type JobKind,
 } from './background-jobs';
-import { headsUp, leftText, type HeadsUp as HeadsUpView, type HeadsUpState } from './heads-up';
+import {
+  headsUp,
+  leftText,
+  pillText,
+  shownJobs,
+  watchMinute,
+  type HeadsUp as HeadsUpView,
+  type HeadsUpState,
+} from './heads-up';
 import { useMasked } from './NameMask';
 import { routeToHash } from './routes';
 import { useToast } from './Toasts';
@@ -45,33 +44,15 @@ const onResize = (listener: () => void) => {
 };
 const narrowNow = () => innerWidth < NARROW_WIDTH;
 
-/** What takes the focus a press gives (`CONTROL` of packages/ui `Menu.tsx`). */
-const CONTROL =
-  'a[href], button:enabled, input:enabled, select:enabled, textarea:enabled, [tabindex]';
-
 /**
- * The app's clock (`clockNow`, the e2e day pinned), read again as each minute starts: what "còn 25
- * phút" counts from. A save or a new screen does not read it, so the pill stays on its minute.
+ * The app's clock (`clockNow`, the e2e day pinned), read again as each minute starts and as the
+ * window wakes (`watchMinute`): what "còn 25 phút" counts from. A save or a new screen does not
+ * read it, so the pill stays on its minute.
  */
 function useMinute(): Date {
   const db = useDatabase();
-  const [now, setNow] = useState(() => db.clockNow());
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    const wait = (at: Date) => {
-      timer = setTimeout(
-        () => {
-          const next = db.clockNow();
-          setNow(next);
-          wait(next);
-        },
-        60_000 - (at.getSeconds() * 1_000 + at.getMilliseconds()),
-      );
-    };
-    wait(db.clockNow());
-    return () => clearTimeout(timer);
-  }, [db]);
-  return now;
+  const clock = useMemo(() => watchMinute(() => db.clockNow()), [db]);
+  return useSyncExternalStore(clock.subscribe, clock.current);
 }
 
 const JOB_ICON = { export: 'export', backup: 'data', ai: 'ai' } as const satisfies Record<
@@ -79,24 +60,17 @@ const JOB_ICON = { export: 'export', backup: 'data', ai: 'ai' } as const satisfi
   NavIconName
 >;
 
-/** The check and the alert of a toast (`MARKS` of packages/ui, not exported): done, failed. */
-const ENDED = { done: 'M5 12.5l4.5 4.5L19 7.5', failed: 'M12 4l9 16H3zM12 10v4M12 17v.01' };
-
-/** A job's icon: its kind's while it runs, then a check or an alert. */
+/** A job's icon: its kind's while it runs, then the check or the alert of a toast. */
 function JobIcon({ job }: { job: BackgroundJob }) {
   if (job.state === 'running')
     return <NavIcon name={JOB_ICON[job.kind]} className="size-3.75 flex-none text-fg-2" />;
+  const done = job.state === 'done';
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={`size-3.75 flex-none fill-none stroke-current ${job.state === 'done' ? 'text-ok' : 'text-danger'}`}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={ENDED[job.state]} />
-    </svg>
+    <Mark
+      of={done ? 'check' : 'alert'}
+      stroke={2}
+      className={`size-3.75 flex-none ${done ? 'text-ok' : 'text-danger'}`}
+    />
   );
 }
 
@@ -140,24 +114,23 @@ function JobFace({ job, name, narrow }: { job: BackgroundJob; name: string; narr
   );
 }
 
-/** `T4 11/11 09:00`: the day of an appointment whose year is clear from context, and its time. */
-const dayText = (a: AppointmentRecord) =>
-  withTime(`${t(`weekday.${weekdayOf(a.date)}`)} ${formatDayMonth(a.date)}`, a.time);
-
 /**
  * "Lưu ý" (VA9, mockup search-rm-team.html `#now`, `#ask` 3): a pill between the name of the screen
  * and its buttons, on every screen, for the scope picked on the toolbar: the next appointment and
  * the time left until it; once today has none left, the day of the next one. A narrow window
  * leaves out the name. A press opens the panel of today under it (`TodayPanel`); Esc, a press
- * outside or the focus going elsewhere closes it, the focus back on the pill. A job in the
- * background takes the pill while it runs, a few seconds once done, and once failed until a press
- * runs it again (VA9b-a), whatever the screen.
+ * outside or the focus going elsewhere closes it, the focus back on the pill (`useLayer`). A job
+ * in the background takes the pill while it runs, a few seconds once done, and once failed until
+ * a press runs it again (VA9b-a), whatever the screen; an analysis of a customer no longer there
+ * shows neither on the pill nor in the panel (`shownJobs`).
  */
 export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   const { appointments, customers, people } = useTables();
   const now = useMinute();
-  const jobs = useJobs();
-  const job = pillJob(useSyncExternalStore(jobs.subscribe, jobs.list));
+  const background = useJobs();
+  const allJobs = useSyncExternalStore(background.subscribe, background.list);
+  const jobs = useMemo(() => shownJobs(allJobs, customers), [allJobs, customers]);
+  const job = pillJob(jobs);
   const failed = job?.state === 'failed';
   const view = useMemo(
     () => headsUp(appointments, people, scope, now),
@@ -165,75 +138,19 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   );
   const narrow = useSyncExternalStore(onResize, narrowNow, () => false);
   const masked = useMasked();
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLSpanElement>(null);
-  const pill = useRef<HTMLButtonElement>(null);
+  const { open, setOpen, close, root, trigger: pill, drawn, layer } = useLayer();
   const panel = useRef<HTMLDivElement>(null);
-  const { drawn, layer } = useLayerState(open);
   const [recording, setRecording] = useState<AppointmentRow | null>(null);
   const toast = useToast();
-  const close = () => {
-    setOpen(false);
-    pill.current?.focus();
-  };
-  // The layer of a menu (`useLayer` of packages/ui, not exported): focus in it once open.
+  // The focus in the panel once open.
   useEffect(() => {
-    if (!open) return;
-    panel.current?.focus();
-    const outside = (target: EventTarget | null) =>
-      target instanceof Node && !root.current?.contains(target);
-    const onPress = (event: PointerEvent) => {
-      if (!outside(event.target)) return;
-      setOpen(false);
-      if (event.target instanceof Element && event.target.closest(CONTROL)) return;
-      // Once the press on what takes no focus is over, the focus left on the page goes back to
-      // the pill; a press that ends in a drag (a cancel) leaves it alone (L231).
-      const settle = (end: PointerEvent) => {
-        document.removeEventListener('pointerup', settle);
-        document.removeEventListener('pointercancel', settle);
-        const now = document.activeElement;
-        if (end.type === 'pointerup' && (!now || now === document.body)) pill.current?.focus();
-      };
-      document.addEventListener('pointerup', settle);
-      document.addEventListener('pointercancel', settle);
-    };
-    const onFocus = (event: FocusEvent) => {
-      if (outside(event.target)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setOpen(false);
-      pill.current?.focus();
-    };
-    document.addEventListener('pointerdown', onPress);
-    document.addEventListener('focusin', onFocus);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPress);
-      document.removeEventListener('focusin', onFocus);
-      document.removeEventListener('keydown', onKey);
-    };
+    if (open) panel.current?.focus();
   }, [open]);
 
-  const next = view.next;
-  const later = next && compareDates(next.appointment.date, fromLocalDate(now)) > 0;
   const nameOf = (id: string | undefined) =>
     masked.name(customers.find((customer) => customer.id === id)?.name ?? '');
-  const name = (a: AppointmentRecord) => nameOf(a.customerId);
-  // What the pill says: [what, who, when]; a narrow window leaves out the middle.
-  const [what, who, when] = !next
-    ? ['', t('headsUp.none'), '']
-    : later
-      ? ['', t('headsUp.dayOver'), t('headsUp.nextOn', { when: dayText(next.appointment) })]
-      : [
-          next.appointment.time ?? '',
-          name(next.appointment),
-          next.minutesLeft === null ? t('headsUp.allDay') : leftText(next.minutesLeft),
-        ];
-  const showWho = who !== '' && !(narrow && when);
-  // Read as shown: the time and the name, then "·" before the time left only beside a name.
-  const head = [what, showWho ? who : ''].filter(Boolean).join(' ');
-  const text = showWho && when ? joinParts([head, when]) : [head, when].filter(Boolean).join(' ');
+  const words = pillText(view, now, narrow, (a) => nameOf(a.customerId));
+  const { what, who, when } = words;
   const jobName = job && nameOf(job.customerId);
   return (
     <span ref={root} className="relative flex min-w-0 justify-center">
@@ -244,7 +161,7 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
         aria-haspopup={failed ? undefined : 'dialog'}
         aria-expanded={failed ? undefined : open}
         aria-label={t('headsUp.label', {
-          text: job ? joinParts([jobPillText(job, jobName!), jobPercent(job)]) : text,
+          text: job ? joinParts([jobPillText(job, jobName!), jobPercent(job)]) : words.text,
         })}
         onClick={() => {
           if (!failed) return open ? close() : setOpen(true);
@@ -257,14 +174,14 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
           <JobFace job={job} name={jobName!} narrow={narrow} />
         ) : (
           <>
-            {next && !later ? (
+            {words.today ? (
               <span className="size-1.75 flex-none rounded-full bg-accent ring-3 ring-accent-soft motion-safe:animate-pulse" />
             ) : (
               <NavIcon name="calendar" className="size-3.75 flex-none text-fg-2" />
             )}
             {what && <b className="font-semibold tabular-nums">{what}</b>}
-            {showWho && <span className="min-w-0 shrink-1000 truncate">{who}</span>}
-            {showWho && when && <span className="text-fg-3">{t('sep.dot')}</span>}
+            {who && <span className="min-w-0 shrink-1000 truncate">{who}</span>}
+            {who && when && <span className="text-fg-3">{t('sep.dot')}</span>}
             {when && <span className="min-w-0 truncate text-fg-2 tabular-nums">{when}</span>}
           </>
         )}
@@ -282,6 +199,8 @@ export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
             view={view}
             label={label}
             now={now}
+            jobs={jobs}
+            nameOf={nameOf}
             // The focus on the pill first: 6c gives it back to what held it as it opened.
             onRecord={(row) => {
               close();
@@ -312,13 +231,16 @@ const ROW_END: Partial<Record<HeadsUpState, string>> = { next: `${BADGE} text-in
 /**
  * The panel of today (mockup `#now`, "Bảng hôm nay"): every appointment of the day by time, the
  * next one on a light gold, one passed with no outcome with "Ghi kết quả" (dialog 6c); "Cần làm"
- * leads to Lịch hẹn; "Việc chạy nền", the jobs running and the latest ended, Thử lại by a failure.
+ * leads to Lịch hẹn; "Việc chạy nền", the jobs running and the latest ended, Thử lại by a failure;
+ * a long list of them scrolls, so the panel stays in a window of 1 100 × 700 (review of PR 1505).
  * Masked names show masked.
  */
 function TodayPanel({
   view,
   label,
   now,
+  jobs,
+  nameOf,
   onRecord,
   onRetry,
   onClose,
@@ -327,6 +249,10 @@ function TodayPanel({
   /** The scope as the toolbar names it. */
   label: string;
   now: Date;
+  /** The jobs "Lưu ý" shows, latest first. */
+  jobs: readonly BackgroundJob[];
+  /** A customer's name as the window shows it, masked or not. */
+  nameOf: (customerId: string | undefined) => string;
   onRecord: (row: AppointmentRow) => void;
   onRetry: (job: BackgroundJob) => void;
   /** Closes the panel, the focus back on the pill: a new screen then gives it to its name. */
@@ -334,8 +260,6 @@ function TodayPanel({
 }) {
   const { customers, people, teams, transitions } = useTables();
   const masked = useMasked();
-  const jobs = useJobs();
-  const jobList = useSyncExternalStore(jobs.subscribe, jobs.list);
   const today = fromLocalDate(now);
   const rows = appointmentRows(
     {
@@ -432,18 +356,18 @@ function TodayPanel({
       )}
       <hr className="my-2.5 border-0 border-t border-hairline" />
       <h2 className={heading}>{t('jobs.title')}</h2>
-      {jobList.length === 0 ? (
+      {jobs.length === 0 ? (
         <p className="m-0 text-sm text-fg-2">{t('jobs.none')}</p>
       ) : (
-        <ul aria-label={t('jobs.title')} className="m-0 flex list-none flex-col p-0">
-          {jobList.map((job) => (
-            <li key={job.id} className="flex min-h-8 items-center gap-2 py-1">
+        <ul
+          aria-label={t('jobs.title')}
+          className="-mx-2 my-0 flex max-h-16 list-none flex-col overflow-y-auto px-2"
+        >
+          {jobs.map((job) => (
+            <li key={job.id} className="flex min-h-8 flex-none items-center gap-2 py-1">
               <JobIcon job={job} />
               <span className="min-w-0 flex-1 truncate">
-                {jobText(
-                  job,
-                  masked.name(customers.find((c) => c.id === job.customerId)?.name ?? ''),
-                )}
+                {jobText(job, nameOf(job.customerId))}
               </span>
               {job.state === 'failed' ? (
                 <Button size="sm" onClick={() => onRetry(job)}>

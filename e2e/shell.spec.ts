@@ -3,6 +3,7 @@ import {
   asExe,
   contrast,
   drawnCorner,
+  holdClock,
   lowestContrast,
   markOs,
   pickFirstRm,
@@ -626,15 +627,17 @@ test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on We
 
 // ---- The toast and the command bar (VA9 brings their review notes) ----
 
+/** The polite live region while it holds a toast of these words: what a screen reader reads out. */
 const toastRegion = (page: Page, text: string) =>
   page.locator('[aria-live="polite"]').filter({ hasText: text });
-/** Stops the page's clock: a toast shown from now on stays until the test moves the clock on. */
-const holdClock = async (page: Page) =>
-  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+const DELETED = 'Đã chuyển team vào Thùng rác';
 
-test('a toast lies over the dialog open, and its button takes the click (L198)', async ({
-  page,
-}) => {
+/**
+ * On Team & nhân sự, the clock held: a new team deleted, its toast shown in the live region of the
+ * window, which was there before it (a screen reader reads what comes in). The confirm closed as
+ * the toast showed: the toast is in that same region.
+ */
+async function deletedTeamToast(page: Page) {
   await page.goto('/#/team');
   await holdClock(page);
   await page.getByRole('button', { name: '+ Team' }).click();
@@ -645,7 +648,6 @@ test('a toast lies over the dialog open, and its button takes the click (L198)',
     .getByRole('region', { name: 'Thành viên team Thiên Hà' })
     .getByRole('button', { name: 'Xóa team' })
     .click();
-  // The live region of the window, there before the toast: a screen reader reads what comes in.
   const live = await page.evaluateHandle(() =>
     [...document.querySelectorAll('[aria-live="polite"]')].find((n) => !n.closest('dialog'))!,
   );
@@ -653,12 +655,27 @@ test('a toast lies over the dialog open, and its button takes the click (L198)',
     .getByRole('dialog', { name: 'Xóa team Thiên Hà?' })
     .getByRole('button', { name: 'Xóa', exact: true })
     .click();
-  await expect(toastRegion(page, 'Đã chuyển team vào Thùng rác')).toBeVisible();
-  // The confirm closed as the toast showed: it is in that same region.
-  expect(await live.evaluate((n) => n.isConnected && n.textContent)).toContain('Đã chuyển team');
-  // A dialog opens while the toast is shown: the toast stays over it, its Hoàn tác in reach.
+  await expect(toastRegion(page, DELETED)).toBeVisible();
+  expect(await live.evaluate((n) => n.isConnected && n.textContent)).toContain(DELETED);
+  // Wherever it shows from now on, read out or not.
+  return { made, deleted: page.getByText(DELETED) };
+}
+
+/**
+ * `deletedTeamToast`, then "Team mới" open over it: the toast moves into the region of the dialog,
+ * its Hoàn tác in reach.
+ */
+async function toastInDialog(page: Page) {
+  const shown = await deletedTeamToast(page);
   await page.getByRole('button', { name: '+ Team' }).click();
-  await expect(made).toBeVisible();
+  await expect(shown.made.getByRole('button', { name: 'Hoàn tác', exact: true })).toBeVisible();
+  return shown;
+}
+
+test('a toast lies over the dialog open, and its button takes the click (L198)', async ({
+  page,
+}) => {
+  const { made } = await toastInDialog(page);
   const inDialog = await page.evaluateHandle(() =>
     document.querySelector('dialog:modal [aria-live="polite"]')!,
   );
@@ -705,32 +722,6 @@ test('a new toast that comes under the pointer stays while the pointer is on it 
   await expect(shown).toBeHidden();
 });
 
-/**
- * On Team & nhân sự, the clock held: a new team deleted, its toast shown, then "Team mới" open
- * over it, the toast in the region of the dialog.
- */
-async function toastInDialog(page: Page) {
-  await page.goto('/#/team');
-  await holdClock(page);
-  await page.getByRole('button', { name: '+ Team' }).click();
-  const made = page.getByRole('dialog', { name: 'Team mới' });
-  await made.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');
-  await made.getByRole('button', { name: 'Tạo team' }).click();
-  await page
-    .getByRole('region', { name: 'Thành viên team Thiên Hà' })
-    .getByRole('button', { name: 'Xóa team' })
-    .click();
-  await page
-    .getByRole('dialog', { name: 'Xóa team Thiên Hà?' })
-    .getByRole('button', { name: 'Xóa', exact: true })
-    .click();
-  const deleted = toastRegion(page, 'Đã chuyển team vào Thùng rác');
-  await expect(deleted).toBeVisible();
-  await page.getByRole('button', { name: '+ Team' }).click();
-  await expect(made.getByRole('button', { name: 'Hoàn tác', exact: true })).toBeVisible();
-  return { made, deleted };
-}
-
 test('the focus on the toast of a dialog that closes holds it no longer: it leaves 4,2 s later (L198)', async ({
   page,
 }) => {
@@ -775,17 +766,102 @@ test('the copy a dialog leaves for its move out shows no toast of its own (L198)
   expect(await copies()).toEqual((await copies()).map(() => 'none'));
 });
 
-test('the pointer on the toast of a dialog that closes holds it no longer once it moves away (L198)', async ({
-  page,
-}) => {
+// Review of PR 1493: the toast moves to the region of the window, or of the dialog, under a pointer
+// that stays where it was: it gets no enter of its own, and the pointer still holds it; once the
+// pointer moves away, it holds it no longer.
+test('the toast of a dialog that closes stays while the pointer stays on it', async ({ page }) => {
   const { made, deleted } = await toastInDialog(page);
-  await made.getByText('Đã chuyển team vào Thùng rác').hover();
+  await made.getByText(DELETED).hover();
   await page.keyboard.press('Escape');
   await expect(made).toBeHidden();
+  await page.clock.runFor(4_300);
+  await expect(deleted).toBeVisible();
+  // Once the pointer leaves, it has 4,2 s again.
   await page.mouse.move(10, 10);
   await page.clock.runFor(4_300);
   await expect(deleted).toBeHidden();
 });
+
+test('a toast under the pointer as a dialog opens by the keyboard stays while the pointer is on it', async ({
+  page,
+}) => {
+  const { made, deleted } = await deletedTeamToast(page);
+  await deleted.hover();
+  await page.getByRole('button', { name: '+ Team' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(made.getByText(DELETED)).toBeVisible();
+  await page.clock.runFor(4_300);
+  await expect(deleted).toBeVisible();
+});
+
+test('a toast that only moves as a dialog opens or closes is not read out again; the next one is', async ({
+  page,
+}) => {
+  const { made, deleted } = await toastInDialog(page);
+  const live = () => deleted.evaluate((node) => !!node.closest('[aria-live], [role="alert"]'));
+  expect(await live()).toBe(false);
+  await page.keyboard.press('Escape');
+  await expect(made).toBeHidden();
+  await expect(deleted).toBeVisible();
+  expect(await live()).toBe(false);
+  await page.getByRole('button', { name: 'Hoàn tác', exact: true }).click();
+  await expect(toastRegion(page, 'Đã khôi phục team Thiên Hà')).toBeVisible();
+});
+
+// Review of PR 1493: at 1 100 × 700 "Khách hàng mới" reaches the bottom of the window, where the toast
+// lies: there it lies over the buttons of the foot instead. Measured once the dialog has stopped:
+// as it moves in, its buttons stand higher (`motion-dialog`).
+for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+  test(`the toast over a dialog as tall as the window leaves every point of its buttons in reach (${reducedMotion})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.setViewportSize({ width: 1100, height: 700 });
+    await page.goto('/#/customers');
+    await holdClock(page);
+    await page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' }).click();
+    await expect(page.getByText('Đang che tên khách hàng')).toBeVisible();
+    await page.getByRole('button', { name: '+ Khách hàng' }).click();
+    const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
+    await expect(create.getByText('Đang che tên khách hàng')).toBeVisible();
+    // Read again until it holds: the page's clock held, no frame of the page can be waited for.
+    const measured = () =>
+      create.evaluate((dialog) => {
+        if (dialog.getAnimations().length > 0) return 'moving';
+        // The region of the dialog is as large as its toast.
+        const toast = dialog.querySelector('[popover]')!.getBoundingClientRect();
+        const foot = [...dialog.querySelectorAll('button')].filter((button) =>
+          ['Hủy', 'Lưu KH'].includes(button.textContent ?? ''),
+        );
+        return {
+          toast: [toast.height > 0, toast.bottom <= innerHeight],
+          foot: foot.map((button) => {
+            const { left, right, top, bottom } = button.getBoundingClientRect();
+            const apart =
+              toast.bottom <= top ||
+              bottom <= toast.top ||
+              toast.right <= left ||
+              right <= toast.left;
+            // Across it and down it, every point takes its click (its rounded corners aside).
+            const points: [number, number][] = [];
+            for (let x = left + 1; x < right; x += 2) points.push([x, (top + bottom) / 2]);
+            for (let y = top + 1; y < bottom; y += 2) points.push([(left + right) / 2, y]);
+            const reached = points.every(([x, y]) =>
+              button.contains(document.elementFromPoint(x, y)),
+            );
+            return [button.textContent, apart, reached];
+          }),
+        };
+      });
+    await expect.poll(measured).toEqual({
+      toast: [true, true],
+      foot: [
+        ['Hủy', true, true],
+        ['Lưu KH', true, true],
+      ],
+    });
+  });
+}
 
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Ô lệnh' });
 const paletteField = (page: Page) => palette(page).getByRole('combobox', { name: 'Ô lệnh' });

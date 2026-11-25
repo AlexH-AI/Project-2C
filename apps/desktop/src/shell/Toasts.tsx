@@ -76,6 +76,42 @@ const watchModals = (changed: () => void) => {
 /** What takes the focus in a dialog when the button of its toast goes. */
 const CONTROL = 'button:enabled, input:enabled, select:enabled, textarea:enabled, a[href]';
 
+/** What takes a click in a dialog, on or off. */
+const PRESSABLE = 'button, input, select, textarea, a[href]';
+
+/**
+ * Inside a dialog the toast lies at the bottom of the window, as outside, unless there it would
+ * cover what takes a click in the dialog: on a dialog as tall as the window (1 100 × 700), the
+ * buttons of its foot (review of PR 1493). It then lies just over those buttons, as far from them
+ * as it would lie from the edge of the window: over the end of the dialog's body, for a while.
+ */
+function clearOfDialog(region: HTMLElement, dialog: HTMLElement) {
+  region.style.removeProperty('bottom');
+  const toast = region.getBoundingClientRect();
+  if (toast.height === 0) return;
+  const covered = [...dialog.querySelectorAll(PRESSABLE)]
+    .filter((control) => !region.contains(control))
+    .map((control) => control.getBoundingClientRect())
+    .filter(
+      (box) =>
+        box.bottom > toast.top &&
+        box.top < toast.bottom &&
+        box.right > toast.left &&
+        box.left < toast.right,
+    );
+  if (covered.length === 0) return;
+  const top = Math.min(...covered.map((box) => box.top));
+  region.style.bottom = `${innerHeight - top + (innerHeight - toast.bottom)}px`;
+}
+
+const MOVED = 'moved';
+/**
+ * Where each toast was read out first: the dialog whose region held it (`null`, the window's), or
+ * `MOVED` once it has moved to another region since. One the browser never drew (in the region of
+ * a dialog closing as it shows) is not yet read.
+ */
+const readIn = new WeakMap<ToastSpec, HTMLDialogElement | null | typeof MOVED>();
+
 /**
  * As wide as its toast, in the middle of the window: inside a dialog, it stays in the width of the
  * dialog. As a popover, none of the box, colour and place the browser gives one.
@@ -94,10 +130,13 @@ const REGION =
  * the pointer too (L229). Each toast shown is drawn anew, so that one of the same words is read out
  * again and rises again (L208); one that leaves moves out (`motion-toast`) out of the live region,
  * taking nothing. While a modal dialog is open, the toast lies over it (mockup ui2.css: the toast
- * at z-index 40, the dialog 30; L198): outside it, it would lie under it, its button out of reach
- * and its live region inert. So each modal dialog open has a region of its own, a popover inside
- * it, there before any toast goes into it; the region of the window stays, empty meanwhile. A
- * dialog that closes as its toast shows (a delete confirmed) leaves it in the region of the window.
+ * at z-index 40, the dialog 30; L198), clear of its buttons (`clearOfDialog`): outside it, it would
+ * lie under it, its button out of reach and its live region inert. So each modal dialog open has a
+ * region of its own, a popover inside it, there before any toast goes into it; the region of the
+ * window stays, empty meanwhile. A dialog that closes as its toast shows (a delete confirmed)
+ * leaves it in the region of the window. A toast that moves to another region as a dialog opens or
+ * closes is not read out again: it shows out of the live region (review of PR 1493); the pointer
+ * still on it where it now shows holds it still.
  */
 export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null> }) {
   const queue = useToastQueue();
@@ -120,24 +159,82 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       }),
     [queue, heading],
   );
-  // The pointer still on the region when a new toast takes the place of the one it was on.
+  // Where the pointer was last, and whether that was on the region showing the toast.
+  const pointer = useRef<{ readonly x: number; readonly y: number } | null>(null);
   const pointed = useRef(false);
+  const point = useCallback(
+    (on: boolean) => {
+      pointed.current = on;
+      queue.hold('pointer', on);
+    },
+    [queue],
+  );
+  // Read from every move, not from the region's own enter and leave: a toast that moves under a
+  // still pointer, as a dialog opens or closes, gets neither.
+  useEffect(() => {
+    // The region of the window is empty while a dialog's shows the toast.
+    const onMove = ({ clientX: x, clientY: y, target }: PointerEvent) => {
+      pointer.current = { x, y };
+      const on =
+        target instanceof Node &&
+        [base.current, hosted.current].some((region) => !!region?.contains(target));
+      if (on !== pointed.current) point(on);
+    };
+    const onOut = (event: PointerEvent) => {
+      if (event.relatedTarget !== null) return;
+      // Out of the window.
+      pointer.current = null;
+      if (pointed.current) point(false);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerout', onOut);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerout', onOut);
+    };
+  }, [point]);
+  // The pointer still on the region when a new toast takes the place of the one it was on.
   useEffect(() => {
     if (toast && pointed.current) queue.hold('pointer', true);
   }, [queue, toast]);
-  // A region that goes with its dialog, or empties as one opens, says nothing of the pointer and
-  // the focus that were on it: the toast is held only by what is on the region that shows it now.
+  // A region that goes with its dialog, or empties as one opens, says nothing of the focus that
+  // was on it; the toast is held by the pointer if it shows under it now (review of PR 1493).
   useEffect(() => {
     const region = host ? hosted.current : base.current;
     if (!region?.contains(document.activeElement)) queue.hold('focus', false);
-    if (region?.matches(':hover')) return;
-    pointed.current = false;
-    queue.hold('pointer', false);
-  }, [queue, host]);
+    const at = pointer.current;
+    point(!!at && !!region?.contains(document.elementFromPoint(at.x, at.y)));
+  }, [queue, host, point]);
   // A dialog that closes as its toast shows (a delete confirmed) is gone before this runs.
   useLayoutEffect(() => {
     if (host && hosted.current?.isConnected) hosted.current.showPopover();
   }, [host]);
+  // Clear of the dialog's buttons, as the toast changes, the dialog's size or the window's, and once
+  // the dialog has moved in: as it comes (`motion-dialog`) its buttons stand higher, and a move
+  // tells no observer.
+  useLayoutEffect(() => {
+    const region = hosted.current;
+    if (!host || !region?.isConnected) return;
+    const place = () => clearOfDialog(region, host);
+    place();
+    const sized = new ResizeObserver(place);
+    sized.observe(host);
+    addEventListener('resize', place);
+    host.addEventListener('animationend', place);
+    return () => {
+      sized.disconnect();
+      removeEventListener('resize', place);
+      host.removeEventListener('animationend', place);
+    };
+  }, [host, toast]);
+  // Read once the browser has it in a live region on the page.
+  useLayoutEffect(() => {
+    const region = host ? hosted.current : base.current;
+    if (!toast || !region?.isConnected) return;
+    if (!readIn.has(toast)) readIn.set(toast, host);
+    else if (readIn.get(toast) !== host) readIn.set(toast, MOVED);
+  }, [toast, host]);
+  const moved = toast !== null && readIn.has(toast) && readIn.get(toast) !== host;
   const error = toast?.tone === 'error';
   const draw = (toast: ToastSpec) => (
     <Toast
@@ -152,18 +249,10 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
     />
   );
   const view = toast && draw(toast);
-  const frame = (ref: RefObject<HTMLDivElement | null>, shown: boolean, popover?: 'manual') => (
+  const frame = (shown: boolean, popover?: 'manual') => (
     <div
-      ref={ref}
+      ref={popover ? hosted : base}
       popover={popover}
-      onPointerEnter={() => {
-        pointed.current = true;
-        queue.hold('pointer', true);
-      }}
-      onPointerLeave={() => {
-        pointed.current = false;
-        queue.hold('pointer', false);
-      }}
       onFocus={() => queue.hold('focus', true)}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) queue.hold('focus', false);
@@ -172,13 +261,14 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       className={popover ? `${REGION} not-open:hidden` : REGION}
     >
       <div aria-live="polite" aria-atomic="true" className="pointer-events-auto flex max-w-full">
-        {shown && !error && view}
+        {shown && !error && !moved && view}
       </div>
-      {shown && error && (
+      {shown && error && !moved && (
         <div role="alert" className="pointer-events-auto flex max-w-full">
           {view}
         </div>
       )}
+      {shown && moved && <div className="pointer-events-auto flex max-w-full">{view}</div>}
       {shown && !toast && drawn && last && (
         <div {...layer} className="flex max-w-full">
           {draw(last)}
@@ -188,8 +278,8 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   );
   return (
     <>
-      {frame(base, host === null)}
-      {host && createPortal(frame(hosted, true, 'manual'), host)}
+      {frame(host === null)}
+      {host && createPortal(frame(true, 'manual'), host)}
     </>
   );
 }

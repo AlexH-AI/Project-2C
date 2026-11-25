@@ -3,6 +3,7 @@ import { expect, test, type Page } from './fixtures';
 import {
   asExe,
   createKycCustomer,
+  holdClock,
   pressButton,
   scopeMenu,
   scopePill,
@@ -852,13 +853,12 @@ const toast = (page: Page, text: string) =>
 const undo = (page: Page) => page.getByRole('button', { name: 'Hoàn tác', exact: true });
 const MOVED = 'Đã chuyển lịch hẹn vào Thùng rác';
 
-/** Stops the page's clock: a toast shown from now on stays until the test moves the clock on. */
-const holdClock = async (page: Page) =>
-  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
-
-/** "Hoàn tác" of the toast `moved`: no question is asked, and a toast says what came back. */
+/**
+ * "Hoàn tác" of the toast `moved`, read out or not (a dialog opened and closed over it): no
+ * question is asked, and a toast says what came back.
+ */
 async function undoFrom(page: Page, moved: string, restored: string) {
-  await expect(toast(page, moved)).toBeVisible();
+  await expect(page.getByText(moved)).toBeVisible();
   await undo(page).click();
   await expect(toast(page, restored)).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -1077,5 +1077,6 @@ test('an appointment made in the scope says so in a toast, at the middle of the 
     return document.elementFromPoint((left + right) / 2, (top + bottom) / 2) === button;
   });
   expect(onTop).toBe(true);
-  await expect(made).toBeVisible();
+  // In the region of the dialog now, not read out again.
+  await expect(page.getByRole('dialog').getByText('Đã tạo lịch hẹn')).toBeVisible();
 });

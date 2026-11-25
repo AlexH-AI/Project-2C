@@ -6,6 +6,7 @@ import {
   createKycCustomer,
   discoveryFacts,
   discoveryOutput,
+  holdClock,
   panelOf,
   pickPeriodKind,
   pickScope,
@@ -107,6 +108,13 @@ test('a press opens the panel of today: by time, the next one on gold, Ghi kết
   await page.mouse.click(at.x - 24, at.y + at.height / 2);
   await expect(panel(page)).toBeHidden();
   await expect(pill(page)).toBeFocused();
+  // The focus going elsewhere closes it too, and stays where it went.
+  await pill(page).press('Enter');
+  await expect(panel(page)).toBeFocused();
+  const eye = toolbar(page).getByRole('button', { name: 'Che tên khách hàng' });
+  await eye.focus();
+  await expect(panel(page)).toBeHidden();
+  await expect(eye).toBeFocused();
 });
 
 test('"Cần làm" counts the sessions passed with no outcome and leads to Lịch hẹn', async ({
@@ -236,8 +244,6 @@ const jobRows = (page: Page) =>
 /** The pill on the next appointment, no job on it. */
 const ON_APPOINTMENTS = /^Lưu ý: (\d\d:\d\d |Hết lịch hôm nay|Không có lịch hẹn sắp tới)/;
 const SEPTEMBER = 'bao-cao_2026-09_toan-bo_2026-09-15.xlsx';
-const holdClock = async (page: Page) =>
-  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
 
 test('Xuất Excel runs on the pill, Báo cáo still in use; done, it says so about 3 s, then the next appointment', async ({
   page,
@@ -395,4 +401,22 @@ test('an AI analysis and a backup show on the pill and in "Việc chạy nền",
   await release(page);
   await expect(pill(page)).toHaveAccessibleName(/^Lưu ý: Đã sao lưu lúc \d\d:\d\d$/);
   await expect(jobRows(page).first()).toHaveText(/^Đã sao lưu lúc (\d\d:\d\d)\1$/);
+
+  // Review of PR 1505: a third job on this busy day, in a window of 1 100 × 700: the list of jobs
+  // scrolls, so the panel and its last row stay in the window.
+  await page.keyboard.press('Escape');
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Báo cáo' })
+    .click();
+  await exportButton(page).click();
+  await expect(pill(page)).toHaveAccessibleName(`Lưu ý: Đã xuất ${SEPTEMBER}`);
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await pill(page).click();
+  await expect(jobRows(page)).toHaveCount(3);
+  expect(await panel(page).evaluate((node) => node.getBoundingClientRect().bottom)).toBeLessThan(
+    700,
+  );
+  await jobRows(page).last().scrollIntoViewIfNeeded();
+  await expect(jobRows(page).last()).toBeInViewport({ ratio: 1 });
 });
