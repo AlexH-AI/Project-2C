@@ -14,6 +14,7 @@ import {
 import type { WakeEvents } from '../data/today';
 import { joinParts, t } from '../i18n';
 import { withTime } from '../routes/appointments/appointment-form';
+import type { BackgroundJob } from './background-jobs';
 
 /** How an appointment of today stands in the panel of "Lưu ý" (mockup search-rm-team.html `#now`). */
 export type HeadsUpState = 'met' | 'missed' | 'unrecorded' | 'next' | 'planned';
@@ -102,6 +103,19 @@ export function leftText(minutes: number): string {
     count: rest,
   });
 }
+
+/**
+ * The jobs "Lưu ý" shows, in their order: not an analysis of a customer no longer there (in the
+ * Thùng rác, or of data replaced), which has no name to show and would be refused if run again
+ * (review of PR 1505). The customer back, so is the job.
+ */
+export const shownJobs = (
+  jobs: readonly BackgroundJob[],
+  customers: readonly { readonly id: string }[],
+): BackgroundJob[] =>
+  jobs.filter(
+    (job) => job.customerId === undefined || customers.some((c) => c.id === job.customerId),
+  );
 
 /** `T4 11/11 09:00`: the day of an appointment whose year is clear from context, and its time. */
 const dayText = (a: AppointmentRecord) =>

@@ -766,20 +766,9 @@ test('the copy a dialog leaves for its move out shows no toast of its own (L198)
   expect(await copies()).toEqual((await copies()).map(() => 'none'));
 });
 
-test('the pointer on the toast of a dialog that closes holds it no longer once it moves away (L198)', async ({
-  page,
-}) => {
-  const { made, deleted } = await toastInDialog(page);
-  await made.getByText(DELETED).hover();
-  await page.keyboard.press('Escape');
-  await expect(made).toBeHidden();
-  await page.mouse.move(10, 10);
-  await page.clock.runFor(4_300);
-  await expect(deleted).toBeHidden();
-});
-
 // Review of PR 1493: the toast moves to the region of the window, or of the dialog, under a pointer
-// that stays where it was: it gets no enter of its own, and the pointer still holds it.
+// that stays where it was: it gets no enter of its own, and the pointer still holds it; once the
+// pointer moves away, it holds it no longer.
 test('the toast of a dialog that closes stays while the pointer stays on it', async ({ page }) => {
   const { made, deleted } = await toastInDialog(page);
   await made.getByText(DELETED).hover();

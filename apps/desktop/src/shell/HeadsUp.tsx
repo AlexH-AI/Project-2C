@@ -25,6 +25,7 @@ import {
   headsUp,
   leftText,
   pillText,
+  shownJobs,
   watchMinute,
   type HeadsUp as HeadsUpView,
   type HeadsUpState,
@@ -120,22 +121,15 @@ function JobFace({ job, name, narrow }: { job: BackgroundJob; name: string; narr
  * leaves out the name. A press opens the panel of today under it (`TodayPanel`); Esc, a press
  * outside or the focus going elsewhere closes it, the focus back on the pill (`useLayer`). A job
  * in the background takes the pill while it runs, a few seconds once done, and once failed until
- * a press runs it again (VA9b-a), whatever the screen. An analysis of a customer no longer there
- * (in the Thùng rác, or of data replaced) shows neither on the pill nor in the panel: run again,
- * it would be refused (review of PR 1505).
+ * a press runs it again (VA9b-a), whatever the screen; an analysis of a customer no longer there
+ * shows neither on the pill nor in the panel (`shownJobs`).
  */
 export function HeadsUp({ scope, label }: { scope: Scope; label: string }) {
   const { appointments, customers, people } = useTables();
   const now = useMinute();
   const background = useJobs();
   const allJobs = useSyncExternalStore(background.subscribe, background.list);
-  const jobs = useMemo(
-    () =>
-      allJobs.filter(
-        (job) => job.customerId === undefined || customers.some((c) => c.id === job.customerId),
-      ),
-    [allJobs, customers],
-  );
+  const jobs = useMemo(() => shownJobs(allJobs, customers), [allJobs, customers]);
   const job = pillJob(jobs);
   const failed = job?.state === 'failed';
   const view = useMemo(

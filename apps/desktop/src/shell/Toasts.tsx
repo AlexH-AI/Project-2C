@@ -82,8 +82,8 @@ const PRESSABLE = 'button, input, select, textarea, a[href]';
 /**
  * Inside a dialog the toast lies at the bottom of the window, as outside, unless there it would
  * cover what takes a click in the dialog: on a dialog as tall as the window (1 100 × 700), the
- * buttons of its foot (review of PR 1493). It then lies over them, as far from them as it would
- * lie from the edge of the window.
+ * buttons of its foot (review of PR 1493). It then lies just over those buttons, as far from them
+ * as it would lie from the edge of the window: over the end of the dialog's body, for a while.
  */
 function clearOfDialog(region: HTMLElement, dialog: HTMLElement) {
   region.style.removeProperty('bottom');
@@ -172,10 +172,12 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   // Read from every move, not from the region's own enter and leave: a toast that moves under a
   // still pointer, as a dialog opens or closes, gets neither.
   useEffect(() => {
-    const onMove = (event: PointerEvent) => {
-      pointer.current = { x: event.clientX, y: event.clientY };
-      const region = topModal() ? hosted.current : base.current;
-      const on = event.target instanceof Node && !!region?.contains(event.target);
+    // The region of the window is empty while a dialog's shows the toast.
+    const onMove = ({ clientX: x, clientY: y, target }: PointerEvent) => {
+      pointer.current = { x, y };
+      const on =
+        target instanceof Node &&
+        [base.current, hosted.current].some((region) => !!region?.contains(target));
       if (on !== pointed.current) point(on);
     };
     const onOut = (event: PointerEvent) => {

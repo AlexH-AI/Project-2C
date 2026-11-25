@@ -1,7 +1,8 @@
 import type { AppointmentRecord } from '@p2c/db';
 import type { CalendarDate, Person } from '@p2c/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { headsUp, leftText, pillText, watchMinute } from './heads-up';
+import type { BackgroundJob, JobKind } from './background-jobs';
+import { headsUp, leftText, pillText, shownJobs, watchMinute } from './heads-up';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -175,6 +176,29 @@ describe('pillText', () => {
     }
     const none = pillText(headsUp([], people, { kind: 'all' }, NOW), NOW, true, name);
     expect(none.text).toBe('Không có lịch hẹn sắp tới');
+  });
+});
+
+describe('shownJobs', () => {
+  // Review of PR 1505: failed, then the customer deleted, the pill named nobody.
+  it('leaves out an analysis of a customer no longer there, and only that', () => {
+    const job = (id: number, kind: JobKind, customerId?: string): BackgroundJob => ({
+      id,
+      key: `${kind}:${id}`,
+      kind,
+      customerId,
+      state: 'failed',
+      shown: true,
+      changed: id,
+    });
+    const jobs = [
+      job(1, 'ai', 'c-kept'),
+      job(2, 'ai', 'c-gone'),
+      job(3, 'backup'),
+      job(4, 'export'),
+    ];
+    expect(shownJobs(jobs, [{ id: 'c-kept' }]).map((shown) => shown.id)).toEqual([1, 3, 4]);
+    expect(shownJobs(jobs, [{ id: 'c-kept' }, { id: 'c-gone' }])).toEqual(jobs);
   });
 });
 
