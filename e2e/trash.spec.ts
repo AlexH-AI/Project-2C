@@ -869,7 +869,7 @@ test('a deleted appointment says so in a toast; Hoàn tác brings it back at onc
   page,
 }) => {
   const errors = trackConsoleErrors(page);
-  // The clock held: a slow machine does not see the toast go before Hoàn tác is pressed (L210).
+  // The clock held: a slow machine does not see the toast go before Hoàn tác is pressed (review #1404).
   const { name } = await bookAndDelete(page, () => holdClock(page));
   await expect(toast(page, MOVED)).toBeVisible();
   // It takes no focus, which goes where it went before: to the detail the appointment left.
@@ -905,7 +905,7 @@ test('a toast leaves after 4,2 s, its Hoàn tác with it; from Thùng rác the r
   await expect(page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 15/09/2026?' })).toBeVisible();
 });
 
-// L209: the 4,2 s of a toast wait while the keyboard is on its Hoàn tác or the pointer over it.
+// Review #1404: the 4,2 s of a toast wait while the keyboard is on its Hoàn tác or the pointer over it.
 test('a toast stays while the focus is on its Hoàn tác or the pointer over it, then has 4,2 s again', async ({
   page,
 }) => {

@@ -8,7 +8,7 @@ const classesOf = (html: string, tag: string) =>
 
 describe('Toast', () => {
   // VA3b (components.html 08, `.toast` of ui2.css): 42 px on the focus layer, a capsule on macOS,
-  // 8 px on Windows 11 (`toast-shape`, L205), rising as it shows (VA7a); what was done is marked
+  // 8 px on Windows 11 (`toast-shape`, review of PR 1404), rising as it shows (VA7a); what was done is marked
   // in green, an error in red, by a drawing no screen reader reads.
   it('is a capsule on the focus layer, one line high, its words breaking when too long', () => {
     const done = renderToStaticMarkup(<Toast text="Đã tạo lịch hẹn" />);

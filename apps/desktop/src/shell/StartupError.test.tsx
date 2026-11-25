@@ -5,7 +5,7 @@ import { StartupError, startupErrorPage } from './StartupError';
 const FOLDER = 'E:\\Heritas L-CRM\\Project2C-data';
 
 describe('StartupError', () => {
-  it('names the data folder Rust gave in its help (L185)', () => {
+  it('names the data folder Rust gave in its help (review of PR 1348)', () => {
     const page = renderToStaticMarkup(<StartupError error="FILE_IN_USE" folder={FOLDER} />);
     expect(page).toContain('trong thư mục dữ liệu của app (E:\\Heritas L-CRM\\Project2C-data)');
   });
@@ -13,7 +13,7 @@ describe('StartupError', () => {
 
 describe('startupErrorPage', () => {
   // The page `main.tsx` shows when the app cannot start: it asks the storage for the real data
-  // folder (L205).
+  // folder (review of PR 1362).
   it('names the data folder the storage gives', async () => {
     const storage = { dataFolder: () => Promise.resolve(FOLDER) };
     const page = renderToStaticMarkup(await startupErrorPage('ACCESS_DENIED', storage));

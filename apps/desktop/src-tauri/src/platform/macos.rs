@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn a_second_lock_of_the_lock_file_is_refused_until_the_first_is_released() {
-        // The lock of macOS (`flock`, L137); on Windows the same `std` lock, though the exe locks
+        // The lock of macOS (`flock`, review #1204); on Windows the same `std` lock, though the exe locks
         // by sharing there. Made before the locks, the folder drops after them.
         let dir = crate::test_support::temp_dir();
         fs::create_dir_all(&dir).unwrap();

@@ -373,7 +373,7 @@ function ConnectionCard({ mock, settings }: { mock: boolean; settings: AiSetting
           {shown.phase !== 'running' && busy && (
             <span className="text-xs text-fg-3">{t('aiError.AI_BUSY')}</span>
           )}
-          {/* A word longer than the line, as the name of a model may be, breaks in it (L162). */}
+          {/* A word longer than the line, as the name of a model may be, breaks in it (review of PR 1402). */}
           {shown.phase === 'ok' && !busy && (
             <span role="status" className="min-w-0 wrap-anywhere">
               <b className="text-ok">{t('settingsAi.checkOk')}</b> {shown.detail}

@@ -53,7 +53,7 @@ describe('customerMatches (the search of Khách hàng, spec Phase 6 phản hồi
     expect(names(search(customers, 'k-9a'))?.inside).toEqual(['Trần Thị Mai']);
   });
 
-  // DR6-197 (L22): "KH ２" is found by "KH 2", as `byName` puts them side by side.
+  // DR6-197: "KH ２" is found by "KH 2", as `byName` puts them side by side.
   it('finds a full-width digit by the ASCII one', () => {
     expect(names(search([customer('K-0001', 'KH ２')], 'KH 2'))?.inside).toEqual(['KH ２']);
   });

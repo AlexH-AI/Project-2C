@@ -63,7 +63,7 @@ test('brokenLinks finds a missing file, a missing anchor and a name in the wrong
         '## Thư mục `Project2C-data\\` (bản exe)',
         '## Lặp',
         '## Lặp',
-        // As GitHub shows them (L182): emphasis, a tag, an entity, a reference link, setext.
+        // As GitHub shows them (review #1261): emphasis, a tag, an entity, a reference link, setext.
         '## Hello _world_',
         '## Press <kbd>Ctrl</kbd> now',
         '## Tom &amp; Jerry',
@@ -113,7 +113,7 @@ test('headingIds takes each heading in order, ATX or setext, from the text GitHu
   ]);
 });
 
-// One form a line (L116, L117 of the review notes): the id GitHub gives it, or none where GitHub
+// One form a line (two notes of review #1280): the id GitHub gives it, or none where GitHub
 // makes no heading of it.
 test('headingIds reads each form as GitHub does', () => {
   const forms: [string, string[]][] = [

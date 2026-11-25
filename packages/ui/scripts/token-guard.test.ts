@@ -240,7 +240,7 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
-  // L190: a separator it cannot read would no longer be guarded, `pnpm lint:tokens` still green.
+  // Review #1398: a separator it cannot read would no longer be guarded, `pnpm lint:tokens` still green.
   it('refuses strings whose sep.* it cannot read, rather than guard fewer joiners', () => {
     const vi = (...entries: string[]) => ['export const vi = {', ...entries, '};'].join('\n');
     const dot = "  'sep.dot': '·',";

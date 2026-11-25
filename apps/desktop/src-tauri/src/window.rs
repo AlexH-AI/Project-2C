@@ -1,5 +1,5 @@
 //! The window of the app, `main` (VA5, ADR-0013 appendix 11/11/2026 §2): transparent over the
-//! material of its system where the system has one, solid where it has none (DS-9, L217).
+//! material of its system where the system has one, solid where it has none (DS-9, review #1414).
 //! tauri.conf.json describes it over the material, as macOS and Windows 11 have it; `run` makes it
 //! solid on Windows 10 before Tauri builds it. A transparent window over nothing lets the desktop
 //! show where WebView2 has not painted yet: before its first frame at startup, and along the edge

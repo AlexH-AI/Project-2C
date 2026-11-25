@@ -830,7 +830,7 @@ test('the name of an RM opens their page; the way back returns to it, then to Te
     'aria-sort',
     'ascending',
   );
-  // Every customer listed is one this RM is in charge of: KH đang mở of the Team table (L233).
+  // Every customer listed is one this RM is in charge of: KH đang mở of the Team table (review #1485).
   const open = page.getByRole('radio', { name: 'Đang mở' });
   await expect(open).toBeChecked();
   await expect(list.getByRole('row')).toHaveCount(1 + openCount);
@@ -994,7 +994,7 @@ test('a name another of the team has is refused at Họ tên, so no picker lists
   await edit.getByRole('button', { name: 'Hủy' }).click();
   await expect(table.getByRole('link', { name: first, exact: true })).toHaveCount(1);
 
-  // L17: the pickers of a person list each "Họ tên · Team" once.
+  // DR6-185: the pickers of a person list each "Họ tên · Team" once.
   await page.getByRole('link', { name: 'Khách hàng' }).click();
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const picker = page
@@ -1164,7 +1164,7 @@ test('Sửa team: a colour and an icon show in the preview, then at once on the 
   await expect(heading).toHaveCSS('color', orange);
   expect(await iconIn(card)).toBe(mountain);
   // In the list the name of the team chosen stays in the colour of the text on its gold tint
-  // (L188); the row of a team not chosen takes the colour. The icon is the one picked in both.
+  // (review #1418); the row of a team not chosen takes the colour. The icon is the one picked in both.
   const row = teamButton(page, 'Hừng Đông');
   const listed = row.getByText('Hừng Đông', { exact: true });
   await expect(listed).toHaveCSS('color', text);
@@ -1260,7 +1260,7 @@ test('the top of a team: its icon, its name in its colour, the TL on its line as
 });
 
 // The row chosen writes the name in the colour of the text: four of the six colours are under 4.5:1
-// on its gold tint over the brightest glass of macOS (L188, held by surfaces.spec.ts).
+// on its gold tint over the brightest glass of macOS (review #1418, held by surfaces.spec.ts).
 test('team names: each of the six colours over 4.5:1 on the app, the card, a row of the list and the dialog, the row picked too; nine teams scroll in their list, the one picked in sight, renamed too (C3)', async ({
   page,
 }) => {
@@ -1310,7 +1310,7 @@ test('team names: each of the six colours over 4.5:1 on the app, the card, a row
   await inSight(teamButton(page, 'Zz Bình Minh'), box);
 });
 
-test('at 1 100 × 700 the member table fits its card: every Sửa of an RM shows whole, nothing scrolls sideways (L205)', async ({
+test('at 1 100 × 700 the member table fits its card: every Sửa of an RM shows whole, nothing scrolls sideways (review #1408)', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1100, height: 700 });
@@ -1319,7 +1319,7 @@ test('at 1 100 × 700 the member table fits its card: every Sửa of an RM shows
   const table = card.getByRole('table');
   const edits = table.getByRole('button', { name: /^Sửa / });
   await expect(edits).toHaveCount(10);
-  // With the sidebar and the margins of each system (236 / 244 px): L148 measured 23 / 31 px past.
+  // With the sidebar and the margins of each system (236 / 244 px): review #1408 measured 23 / 31 px past.
   for (const os of ['win', 'mac'] as const) {
     await markOs(page, os);
     expect(await pastTheWindow(page), os).toEqual([]);

@@ -21,7 +21,7 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
 }
 
 /**
- * The WCAG contrast of two colours, 1 to 21: the one formula of luminance of the e2e (L172). Each
+ * The WCAG contrast of two colours, 1 to 21: the one formula of luminance of the e2e (review #1414). Each
  * is an `rgb(…)` / `rgba(…)` as a browser writes it, painted on a white page; another syntax fails
  * the test (read it through a canvas, as `lowestContrast` does, which also runs this in the page
  * from its text: it uses nothing from outside itself).
@@ -161,7 +161,7 @@ export const token = (page: Page, name: string) =>
 /**
  * Sets the system's "Giảm độ trong suốt" for the page (`prefers-reduced-transparency`). Playwright
  * has no option for it and gives it no default, so a page reads the setting of the machine of the
- * run: a test of a see-through material first says `no-preference` (L194). Through CDP, so on
+ * run: a test of a see-through material first says `no-preference` (review #1398). Through CDP, so on
  * Chromium only: false where it could not be set.
  */
 export async function setTransparency(page: Page, value: 'no-preference' | 'reduce') {
@@ -220,7 +220,7 @@ export const sticksOut = (box: Locator) =>
  * `box` scrolls sideways: something of it is past its edge, text included. A dialog (`Dialog`)
  * scrolls in its body, the part under its head, which cuts what is past its edge (`overflow-x:
  * hidden`): the dialog itself never sees that, so for a dialog it is what of its body ends past the
- * body's edge too (L157). That counts a list by its box (`sticksOut`): WebKit counts the whole
+ * body's edge too (review #1402). That counts a list by its box (`sticksOut`): WebKit counts the whole
  * choice of a list in the scrolling width of what holds it (Mac-7b).
  */
 export async function scrolls(box: Locator): Promise<boolean> {
@@ -283,7 +283,7 @@ export const fullNamesShown = (page: Page, names: readonly string[]) =>
         .map((a) => a.value),
     );
     const text = [document.body.innerText, ...attributes].join('\n');
-    // A name is text, not a pattern: "(" would not compile, "gặp (lần 2)" would not match (L242).
+    // A name is text, not a pattern: "(" would not compile, "gặp (lần 2)" would not match (review #1416).
     const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
     return names.filter(
       (name) =>
@@ -480,7 +480,7 @@ export async function gotoScreen(page: Page, path: string) {
 /**
  * A file of the e2e server that the server refused to connect for, as Edge logs it. On the Windows
  * runner the server now and then refuses one connection of the burst a page load makes, on the
- * address it answers the others on (L154: CI runs 43639871899, 43599601497). Only that line of the
+ * address it answers the others on (review #1301: CI runs 43639871899, 43599601497). Only that line of the
  * server's own files is left out: a file of another server refused, or any other error, still is.
  */
 const refusedByServer = (message: ConsoleMessage, page: Page) =>

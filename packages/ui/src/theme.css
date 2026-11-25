@@ -144,7 +144,7 @@
 }
 
 /* A chosen thing on a card (a team of the list, the month of today, a row of a table): the gold
-   tint. Over the brightest glass of macOS, the measure the Owner chose (21/11/2026, L188),
+   tint. Over the brightest glass of macOS, the measure the Owner chose (21/11/2026, review #1418),
    --text-2 and --text-3 are under 4.5:1 on it, so what is written in them there is --text
    (ADR-0013 appendix 11/11/2026 §7). */
 @utility chosen-tint {
@@ -163,7 +163,7 @@
 
 /* A row of a table under the pointer (ui2.css `.tbl tbody tr:hover td`). The light of the card that
    follows the pointer lies over it: --text-3 would fall under 4.5:1 near the top of a card, so what
-   the row writes in it, a zero of a number column too, is one step lighter (L208). */
+   the row writes in it, a zero of a number column too, is one step lighter (review #1402). */
 @utility row-hover {
   &:hover {
     --text-3: var(--text-2);
@@ -584,7 +584,7 @@
    window, it paints nothing past the pane's corner; anywhere else the corner is of the pane's own
    colour and does not show. The pane's edge is drawn above it (`content-edge`). Under "Giảm độ
    trong suốt" nothing shows through the bar itself: solid down to its foot, it fades out in the
-   18 px below (L225; ui2.css keeps the fade of the bar, app-shell.html #feasible turns the glass
+   18 px below (review #1408; ui2.css keeps the fade of the bar, app-shell.html #feasible turns the glass
    solid). */
 @utility toolbar {
   position: sticky;
@@ -661,7 +661,7 @@
    a hairline on top and on the left (ui2.css [data-os='win'] .main). Both stay as the page scrolls:
    the pane under it all, its edge above the toolbar, which would cover it, wherever the toolbar is
    (below the warning of a failed save, or stuck at the top). Both have the frame of the pane
-   (`content-frame`), so that the edge never leaves the pane (L227). */
+   (`content-frame`), so that the edge never leaves the pane (review #1414). */
 @utility content-frame {
   display: none;
   [data-os='win'] & {

@@ -32,7 +32,7 @@ function outlined(images: Record<string, string>) {
  * The outline is in the images of those two: the pieces as Edge draws them with the approved
  * outline, four `drop-shadow` of half a pixel in `--brand-outline`, captured at each scale Windows
  * and macOS show the app at (1x to 3x). Drawn by the web view, the outline did not show in the
- * macOS app (L179). An image is a box of whole pixels at every scale, with room for the outline
+ * macOS app (review of PR 1344). An image is a box of whole pixels at every scale, with room for the outline
  * around the piece (the tree at 1 px of 44 × 44, "Heritas" at 2 px, 1 px down, of 112 × 32): the
  * margins take that room back. Their size, given, keeps the sidebar from moving as they load. A
  * screen reader reads the name of the app for them.

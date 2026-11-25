@@ -194,7 +194,7 @@ describe('blockReload', () => {
     );
   });
 
-  it('leaves ⌥← / ⌥→ to macOS, where they move the caret a word at a time and step through no history (L186)', () => {
+  it('leaves ⌥← / ⌥→ to macOS, where they move the caret a word at a time and step through no history (review of PR 1348)', () => {
     const editable: Node = { tag: 'div', attributes: { contenteditable: '' } };
     for (const field of [input('text'), { tag: 'textarea' }, { tag: 'b', parent: editable }]) {
       expect(blocked({ key: 'ArrowLeft', altKey: true }, field, true), field.tag).toBe(false);

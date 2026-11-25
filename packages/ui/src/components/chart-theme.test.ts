@@ -34,7 +34,7 @@ describe('chartTheme', () => {
     });
   });
 
-  it('keeps a tooltip in its chart, a name with no space broken inside it (L16)', () => {
+  it('keeps a tooltip in its chart, a name with no space broken inside it (DR6-183)', () => {
     const { tooltip } = chartTheme(read);
 
     expect(tooltip.confine).toBe(true);

@@ -62,7 +62,7 @@ describe('countFrame', () => {
     expect(countFrame(66.67, 50, 1, 'tenth')).toBe(50);
   });
 
-  it('never passes 310.6 tr on the way up from 290 tr (L94): in between, three significant digits rounded down', () => {
+  it('never passes 310.6 tr on the way up from 290 tr (review #1254): in between, three significant digits rounded down', () => {
     const frames = progress.map((at) => countFrame(290 * TR, 310_600_000, at, 'sig3'));
     expect(Math.max(...frames)).toBe(310 * TR);
     expect(frames.every((frame, at) => frame <= (frames[at + 1] ?? frame))).toBe(true);

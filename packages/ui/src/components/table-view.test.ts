@@ -71,7 +71,7 @@ describe('tableView', () => {
 });
 
 describe('rowState', () => {
-  it('marks the row of `selectedId` as the current one, painted as the chosen row (L21)', () => {
+  it('marks the row of `selectedId` as the current one, painted as the chosen row (DR6-188)', () => {
     const state = rowState('b', 'b');
     expect(state['aria-current']).toBe('true');
     expect(state.className.split(' ')).toContain('row-selected');

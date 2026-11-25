@@ -2,7 +2,7 @@
  * The marks of the components, drawn rather than written, so they are no text for a screen reader
  * nor a glyph a system font may lack: one path each on the 24-unit grid, a circle drawn as arcs
  * (the mockups' `#i-x`, `#i-alert`, `#i-info`, `#i-down`, `#i-chev`, `#i-check`). Every component
- * draws them from here (L160).
+ * draws them from here (review of PR 1402).
  */
 export const MARKS = {
   close: 'M6 6l12 12M18 6L6 18',

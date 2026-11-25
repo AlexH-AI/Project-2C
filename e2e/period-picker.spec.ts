@@ -264,7 +264,7 @@ test('the appointments calendar shows December 2100 with blank cells after it', 
   await expect(next).toBeFocused();
 });
 
-// L177: ‹ › of the pill move the period from outside the layer, so what was typed in it goes,
+// Review #1410: ‹ › of the pill move the period from outside the layer, so what was typed in it goes,
 // with its error. Esc, or a press outside, takes dates typed right as the focus leaves them.
 test('‹ › of the pill clear what was typed in the layer; Esc and a press outside take the dates', async ({
   page,

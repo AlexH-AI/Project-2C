@@ -13,7 +13,7 @@ const marks = [
     .matchAll(/^\s+(\w+): '([^']+)',$/gm),
 ].map(([, name, path]) => [name!, path!] as const);
 
-// L160: the × of a dialog, a toast and an error line, the alert of a toast and an empty place, the
+// Review #1402: the × of a dialog, a toast and an error line, the alert of a toast and an empty place, the
 // arrows and the check of a menu and a list: each drawn in one place, `MARKS` of FieldMarks.tsx.
 describe('MARKS of FieldMarks.tsx', () => {
   it('holds the six marks of the components', () => {

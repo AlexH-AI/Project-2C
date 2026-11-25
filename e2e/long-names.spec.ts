@@ -441,7 +441,7 @@ test('a customer of 81 letters, an RM and a team of 160, a model of 100 push no 
       reasoning: 'DEFAULT',
     },
   );
-  // Settings → AI on a model of 160 letters no list has: the warning of Cài đặt → AI names it (L153).
+  // Settings → AI on a model of 160 letters no list has: the warning of Cài đặt → AI names it (review #1402).
   const stored = unbroken('V', 160);
   const ai = {
     provider: 'OPENCODE_GO',
@@ -645,7 +645,7 @@ async function expectHolds(page: Page, box: Locator, at: string) {
   }
 }
 
-// DR6-183 (L16): the sweep above is of each screen at rest. What a screen says after an action,
+// DR6-183: the sweep above is of each screen at rest. What a screen says after an action,
 // the body of a dialog, an error of the AI and the tooltip of a chart break a name with no space
 // too: once in what they share (the body of `Dialog`, `ALERT`, the theme of a chart).
 test('names of 160 letters, an error of 200, break in the body of a dialog, a line said after an action and a tooltip', async ({
@@ -783,7 +783,7 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   await expect(check.getByRole('alert')).toContainText(message);
   await expectHolds(page, check, 'the error of Kiểm tra kết nối');
 
-  // L162: the line of a check that passed, and the line of an analysis that runs, name the model;
+  // Review #1402: the line of a check that passed, and the line of an analysis that runs, name the model;
   // a name longer than the line breaks in them as the error does.
   const model = unbroken('M', 100);
   await page.evaluate(() => (window.exe.aiError = null));
@@ -822,7 +822,7 @@ test('names of 160 letters, an error of 200, break in the body of a dialog, a li
   await page.evaluate(() => window.exe.releaseAi());
 });
 
-// L153: the bodies of the dialogs of Issue #1385 the case above does not open (6b, 6h, 6f, 8d, 9a),
+// Review #1402: the bodies of the dialogs of Issue #1385 the case above does not open (6b, 6h, 6f, 8d, 9a),
 // and the line of Khách hàng after a customer made out of the scope, with a customer, an RM, a team
 // and an IS of 160 letters: in the customer matched and picked, a coordinator, "Khi lưu", a list.
 test('names of 160 letters break in the body of 6b, 6h, 6f, 8d and 9a, and in the line of a customer made out of the scope', async ({

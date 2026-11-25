@@ -61,7 +61,7 @@ export const NO_DAY = Number.MAX_SAFE_INTEGER;
 
 const FIRST_DAY = calendarDate(MIN_YEAR, 1, 1);
 
-/** A day as a sort key, from 1: never the 0 a number column writes light, as "Chưa gặp" (L231). */
+/** A day as a sort key, from 1: never the 0 a number column writes light, as "Chưa gặp" (review of PR 1485). */
 const dayKey = (date: CalendarDate): number => daysBetween(FIRST_DAY, date) + 1;
 
 /** The "Gặp gần nhất" column sorts by this: the earliest meeting first, never met last. */

@@ -30,7 +30,7 @@ export function StartupError({ error, folder }: { error: unknown; folder?: strin
 
 /**
  * The page `main.tsx` shows when the app cannot start: `StartupError` naming the data folder
- * `storage` gives, when it can give one (L185, L205).
+ * `storage` gives, when it can give one (review of PR 1348, review of PR 1362).
  */
 export async function startupErrorPage(
   error: unknown,

@@ -59,11 +59,11 @@ fn launch(windows: bool, debug: bool, exe: PathBuf) -> io::Result<Launch> {
 
 /// Whether a folder `Project2C-data` is next to `exe`: the portable mode of the exe on Windows.
 /// Nothing there, or anything else by that name, is no. One the system cannot read is an error, as
-/// a missing variable is, so the data never goes silently to the installed app's folder (L176): a
+/// a missing variable is, so the data never goes silently to the installed app's folder (review #1340): a
 /// link that leads nowhere or out of reach too (a junction to a deleted folder, to a drive pulled
 /// out or not ready). That one's message is
 /// [`DATA_DIR_UNREACHABLE`](crate::storage::DATA_DIR_UNREACHABLE) (see [`unreadable`]): the file
-/// is whole, so the startup page must not tell to copy a backup over it (L184, L204).
+/// is whole, so the startup page must not tell to copy a backup over it (review #1348, review #1362).
 fn portable(exe: &Path) -> io::Result<bool> {
     portable_with(exe, |dir| fs::metadata(dir))
 }
@@ -86,7 +86,7 @@ fn portable_with(
 /// whose end cannot be reached, for any cause but the system refusing the app, is
 /// [`DATA_DIR_UNREACHABLE`](crate::storage::DATA_DIR_UNREACHABLE): what it leads to is gone or
 /// out of reach (a drive pulled out, or still in the machine but not ready, a network not reached;
-/// L204). The refusal stays as it is, for `db_open` to tell apart.
+/// review #1362). The refusal stays as it is, for `db_open` to tell apart.
 fn unreadable(error: io::Error, entry: impl FnOnce() -> io::Result<()>) -> io::Result<bool> {
     if error.kind() == ErrorKind::PermissionDenied {
         return Err(error);
@@ -179,7 +179,7 @@ fn absolute(value: Option<OsString>, name: &str) -> io::Result<PathBuf> {
 /// Opens the lock file of the data folder at `path` and holds the folder for this process until
 /// the file drops; the system lets go when the process ends, crashed or not. Windows opens it
 /// without sharing; macOS locks it (`flock`), as any program may open a file there, so `open -n`
-/// or the binary run from inside the `.app` cannot write the data at the same time (L137).
+/// or the binary run from inside the `.app` cannot write the data at the same time (review #1204).
 /// Another process holding it → `ResourceBusy` with the message
 /// [`ALREADY_OPEN`](crate::storage::ALREADY_OPEN). `std` only: no crate (ADR-0016).
 pub fn lock_data_folder(path: &Path) -> io::Result<fs::File> {
@@ -212,7 +212,7 @@ pub fn delete_refused(path: &Path) -> bool {
 
 /// Whether the system refuses itself to rename a new file over a read-only one: Windows does, with
 /// `PermissionDenied`. macOS's `rename` asks only the folder's write bits, so it replaces a
-/// read-only file (no write bit), whose data and mark would be lost unseen (L76); a locked one it
+/// read-only file (no write bit), whose data and mark would be lost unseen (review #1219); a locked one it
 /// refuses, but with a bare "Operation not permitted" once the whole new file is written.
 pub const REFUSES_REPLACING_READ_ONLY: bool = imp::REFUSES_REPLACING_READ_ONLY;
 
@@ -251,7 +251,7 @@ type Waiting = thread::JoinHandle<io::Result<ExitStatus>>;
 
 /// Starts `opener` (Explorer, `open`) and returns at once: Explorer reports exit code 1 even when
 /// it opened the folder, so its end says nothing. A thread of its own waits for it, so it does not
-/// stay a zombie until the app quits (L77). `None` when the system could not start that thread:
+/// stay a zombie until the app quits (review #1219). `None` when the system could not start that thread:
 /// the program runs all the same, only its end is not collected. Every opener goes through here
 /// ([`open_folder`], [`open_url`]): each platform only builds the command.
 fn spawn_unwaited(opener: &mut Command) -> io::Result<Option<Waiting>> {
@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn an_opener_is_not_waited_for_but_its_end_is_collected() {
         // The program cannot end while the test holds its input open: `spawn_unwaited` returning
-        // at all shows it did not wait (L77). Called on a thread of its own, so a wait fails the
+        // at all shows it did not wait (review #1219). Called on a thread of its own, so a wait fails the
         // test after a while instead of holding it up forever.
         let (input, held) = io::pipe().unwrap();
         let (sent, returned) = std::sync::mpsc::channel();
@@ -434,7 +434,7 @@ mod tests {
             "exe has no parent folder"
         );
         // A `Project2C-data` the system cannot read is an error, never the installed app's folder
-        // in its place (L176): here a path through a file, `ENOTDIR` on macOS. Windows reports that
+        // in its place (review #1340): here a path through a file, `ENOTDIR` on macOS. Windows reports that
         // path as not found, hence macOS only.
         #[cfg(not(windows))]
         {
@@ -448,7 +448,7 @@ mod tests {
     /// A link at `link` to the folder `target`: a junction on Windows (`mklink /J` needs no
     /// privilege, unlike a symbolic link), a symbolic link on macOS. cmd splits a path at `&` or
     /// `^` out of quotes, and `std` quotes only a path with a space, so each path goes raw and
-    /// quoted (L188).
+    /// quoted (review #1348).
     fn link_folder(target: &Path, link: &Path) {
         #[cfg(windows)]
         {
@@ -477,7 +477,7 @@ mod tests {
 
     /// `root` with a `Project2C-data` link to a folder already removed (a junction to a deleted
     /// folder, or to the drive of a USB stick pulled out); returns the exe next to it. The exe's
-    /// folder has an `&` in its name, which cmd would split an unquoted path at (L188).
+    /// folder has an `&` in its name, which cmd would split an unquoted path at (review #1348).
     fn beside_a_link_to_nowhere(root: &Path) -> PathBuf {
         let folder = root.join("R&D");
         let target = root.join("target");
@@ -493,8 +493,8 @@ mod tests {
     #[test]
     fn a_project2c_data_link_that_leads_nowhere_is_an_error_not_no_folder() {
         // The system says "not found" for what the link leads to, though the link is there: the
-        // data must not go silently to the installed app's folder (L176, review of PR 1348). Its
-        // message is the code the startup page tells apart (L184).
+        // data must not go silently to the installed app's folder (review #1340 and the review of PR 1348). Its
+        // message is the code the startup page tells apart (review #1348).
         let root = temp_dir();
         let exe = beside_a_link_to_nowhere(&root);
         let error = portable(&exe).unwrap_err();
@@ -505,7 +505,7 @@ mod tests {
     #[test]
     fn db_open_says_the_file_is_whole_when_project2c_data_leads_nowhere() {
         // Not the page that tells to copy a backup over the file, which is whole, only out of
-        // reach until the drive or the link is back (L184).
+        // reach until the drive or the link is back (review #1348).
         let root = temp_dir();
         let exe = beside_a_link_to_nowhere(&root);
         let chosen = launch(true, false, exe).and_then(choose_data_dir);
@@ -516,7 +516,7 @@ mod tests {
     fn a_project2c_data_there_that_leads_to_a_drive_out_of_reach_is_unreachable() {
         // A link to a drive still in the machine but not ready (a memory card pulled out of its
         // reader), or across a network not reached, fails with another kind than "not found": the
-        // file is whole all the same, so not the page that tells to copy a backup over it (L204).
+        // file is whole all the same, so not the page that tells to copy a backup over it (review #1362).
         for error in [
             io::Error::other("not ready"),
             io::Error::from(ErrorKind::NetworkUnreachable),
@@ -543,7 +543,7 @@ mod tests {
     #[test]
     fn any_project2c_data_there_whose_read_fails_is_unreachable_not_only_a_link() {
         // The new branch covers whatever the system reads by that name, as the one for "not found"
-        // does: a folder of any other kind of reparse point fails out of reach the same (L204).
+        // does: a folder of any other kind of reparse point fails out of reach the same (review #1362).
         let root = temp_dir();
         fs::create_dir_all(root.join("Project2C-data")).unwrap();
         let not_ready = |_: &Path| Err(io::Error::other("not ready"));
@@ -554,7 +554,7 @@ mod tests {
     #[test]
     fn db_open_says_the_file_is_whole_when_project2c_data_leads_round_in_a_loop() {
         // Two links that lead to each other: the entry is there and what it leads to fails with
-        // another kind than "not found", as a drive not ready does (L204), here through `portable`
+        // another kind than "not found", as a drive not ready does (review #1362), here through `portable`
         // as `db_open` meets it.
         let root = temp_dir();
         let folder = root.join("exe");
@@ -582,7 +582,7 @@ mod tests {
 
     #[test]
     fn only_a_release_exe_on_windows_looks_for_its_portable_folder() {
-        // Its error is the data folder's, so the app does not start (L176); a debug build and
+        // Its error is the data folder's, so the app does not start (review #1340); a debug build and
         // macOS never look, so the same link is no reason for them to fail.
         let root = temp_dir();
         let exe = beside_a_link_to_nowhere(&root);
@@ -610,7 +610,7 @@ mod tests {
     #[test]
     fn the_data_folder_of_a_run_depends_on_the_platform_and_the_build_it_runs() {
         // The line that ties the choice to this build: tests run a debug build, whose data folder
-        // is the same on both platforms, so only what it passes on shows it (L188).
+        // is the same on both platforms, so only what it passes on shows it (review #1348).
         let root = temp_dir();
         let this = this_build(root.join("project2c.exe")).unwrap();
         assert_eq!(

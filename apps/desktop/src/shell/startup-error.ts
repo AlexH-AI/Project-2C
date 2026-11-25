@@ -17,7 +17,7 @@ export interface StartupMessage {
 }
 
 /**
- * The data folder the startup page names (L185): the one Rust chose (`data_folder`), asked once the
+ * The data folder the startup page names (review of PR 1348): the one Rust chose (`data_folder`), asked once the
  * page shows, as Rust's errors are bare codes the webview matches exactly. `undefined` in web mode,
  * or when Rust could not choose the folder (the data folder itself failed); never an error of its
  * own in place of the one the page tells.
@@ -41,7 +41,7 @@ export function startupMessage(error: unknown, folder?: string): StartupMessage 
   if (error === ALREADY_OPEN) {
     return { title: t('storage.alreadyOpen'), help: t('storage.alreadyOpenHelp') };
   }
-  // The file is whole: copying a backup over it would lose the changes since (DR6-07, L184).
+  // The file is whole: copying a backup over it would lose the changes since (DR6-07, review of PR 1348).
   if (error === FILE_IN_USE) {
     return { title: t('storage.fileInUse'), help: t('storage.fileInUseHelp', where) };
   }

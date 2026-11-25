@@ -83,7 +83,7 @@ const findLook = (lit: boolean | undefined) =>
 
 /**
  * The colour of a text of a card or a closed row: dimmed, a text in --text-3 or a colour takes a
- * lighter one to stay at AA over the brightest glass of macOS (L188): a card's second line
+ * lighter one to stay at AA over the brightest glass of macOS (review of PR 1418): a card's second line
  * --text-2, its "n HĐ" and the day of a closed row --text.
  */
 const tone = (lit: boolean | undefined, shown: string, dimmed: string) =>

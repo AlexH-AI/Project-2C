@@ -12,7 +12,7 @@ function failedWith(error: unknown, fallback: Boundary['props']['fallback']): st
 
 // Mockup search-rm-team.html #states.
 describe('the failures of the RM page', () => {
-  it('says the RM page failed, with the way back to Team and the detail (L232)', () => {
+  it('says the RM page failed, with the way back to Team and the detail (review of PR 1485)', () => {
     const html = failedWith(new TypeError('no cadence'), (error) => <PageFailed error={error} />);
     expect(html).toContain('Trang RM này gặp lỗi và không hiển thị được');
     expect(html).toContain('← Team &amp; nhân sự</button>');

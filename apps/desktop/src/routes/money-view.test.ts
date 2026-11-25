@@ -138,7 +138,7 @@ describe('refusalKey', () => {
     expect(keyOf(text, currency, 'en')).toBe(key);
   });
 
-  // Owner 14/11/2026 (review notes L163, "Whole cents (Recommended)").
+  // Owner 14/11/2026 (review of PR 1251, "Whole cents (Recommended)").
   it('says money with cents must be whole cents, in English', () => {
     expect(en[keyOf('1.505', 'USD', 'en')]).toBe('Amounts must be whole cents.');
   });

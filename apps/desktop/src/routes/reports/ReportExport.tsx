@@ -28,7 +28,7 @@ export type ExportNotice =
  * Xuất Excel (mockup reports.html 2f): the exe writes the file into `exports\`, web mode downloads
  * it, a job in the background on "Lưu ý" (VA9b-a), so Báo cáo stays in use, also left meanwhile.
  * A failure only says so, until the next export, whatever is picked meanwhile, as "Lưu ý" keeps
- * it until Thử lại (L146); the data in the app is untouched. The notice of a file is for its
+ * it until Thử lại (review of PR 1410); the data in the app is untouched. The notice of a file is for its
  * period and the scope on screen when it was asked for, and goes once another is picked: the
  * numbers shown are no longer those of the file it names. Back on that period and scope, it shows
  * again.

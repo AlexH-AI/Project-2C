@@ -350,7 +350,7 @@ test('the line under the name of the screen: team → RM on Lịch hẹn, the cu
   await expect(sub(page)).toHaveText('Toàn bộ');
 });
 
-// L228: lost, the attribute leaves every test green while the macOS window no longer moves by the
+// Review #1414: lost, the attribute leaves every test green while the macOS window no longer moves by the
 // toolbar. Tauri reads `''` as a press on the element itself, `deep` as one anywhere inside it.
 test('the macOS window moves by the free space of the toolbar and the top of the sidebar; Windows keeps its title bar (VA5)', async ({
   page,
@@ -374,7 +374,7 @@ test('the toolbar is 68 px high and what scrolls under it fades at its edge', as
   browserName,
 }) => {
   await page.goto('/#/customers');
-  // Not the setting of the machine of the run: Playwright gives this media feature no default (L194).
+  // Not the setting of the machine of the run: Playwright gives this media feature no default (review #1398).
   await setTransparency(page, 'no-preference');
   expect((await box(toolbar(page))).height).toBe(68);
   await expect(toolbar(page)).toHaveCSS('position', 'sticky');
@@ -395,7 +395,7 @@ test('the toolbar is 68 px high and what scrolls under it fades at its edge', as
     // Set through CDP, on Chromium only; on the macOS app it is checked by hand (NT-MAC-19).
     step.skip(browserName === 'webkit', 'prefers-reduced-transparency is set through CDP');
     await setTransparency(page, 'reduce');
-    // Solid over the whole bar, fading out in the 18 px below it only (L225).
+    // Solid over the whole bar, fading out in the 18 px below it only (review #1408).
     expect((await edge()).image).toMatch(
       /^linear-gradient\(.*rgb\(11, 16, 23\) calc\(100% - 18px\), .*\)$/,
     );
@@ -599,13 +599,13 @@ async function champagnePixels(page: Page, png: Buffer, rows: { from: number; to
   return count;
 }
 
-// L179: in the macOS app the outline drawn by four `drop-shadow` of half a pixel did not show, and
+// Review #1344: in the macOS app the outline drawn by four `drop-shadow` of half a pixel did not show, and
 // the navy "Heritas" was lost on the dark sidebar; the outline is now in the image. Its letters are
 // navy below the gold leaf of the "i": there, any champagne is the outline, and with no outline
 // there is none.
 const LETTERS = { from: 0.45, to: 1 };
 
-test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on WebKit (L179)', async ({
+test('the navy "Heritas" of the logo is outlined in champagne, on Edge and on WebKit (review #1344)', async ({
   page,
 }, testInfo) => {
   await page.goto('/');
@@ -672,7 +672,7 @@ async function toastInDialog(page: Page) {
   return shown;
 }
 
-test('a toast lies over the dialog open, and its button takes the click (L198)', async ({
+test('a toast lies over the dialog open, and its button takes the click (review #1404)', async ({
   page,
 }) => {
   const { made } = await toastInDialog(page);
@@ -699,7 +699,7 @@ test('a toast lies over the dialog open, and its button takes the click (L198)',
   await expect(teams.getByRole('button', { name: /^Thiên Hà / })).toBeVisible();
 });
 
-test('a new toast that comes under the pointer stays while the pointer is on it (L229)', async ({
+test('a new toast that comes under the pointer stays while the pointer is on it (review #1420)', async ({
   page,
 }) => {
   await page.goto('/#/customers');
@@ -722,7 +722,7 @@ test('a new toast that comes under the pointer stays while the pointer is on it 
   await expect(shown).toBeHidden();
 });
 
-test('the focus on the toast of a dialog that closes holds it no longer: it leaves 4,2 s later (L198)', async ({
+test('the focus on the toast of a dialog that closes holds it no longer: it leaves 4,2 s later (review #1404)', async ({
   page,
 }) => {
   const { made, deleted } = await toastInDialog(page);
@@ -733,7 +733,7 @@ test('the focus on the toast of a dialog that closes holds it no longer: it leav
   await expect(deleted).toBeHidden();
 });
 
-test('the copy a dialog leaves for its move out shows no toast of its own (L198)', async ({
+test('the copy a dialog leaves for its move out shows no toast of its own (review #1404)', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -866,7 +866,10 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Ô lệnh' });
 const paletteField = (page: Page) => palette(page).getByRole('combobox', { name: 'Ô lệnh' });
 
-test('the key of the command bar held down opens it once (L243)', async ({ page, browserName }) => {
+test('the key of the command bar held down opens it once (review #1491)', async ({
+  page,
+  browserName,
+}) => {
   await page.goto('/#/customers');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Khách hàng');
   const modifier = browserName === 'webkit' ? 'Meta' : 'Control';
@@ -879,7 +882,7 @@ test('the key of the command bar held down opens it once (L243)', async ({ page,
   await expect(palette(page)).toBeVisible();
 });
 
-test('a drag from the field of the command bar out of it keeps the bar and what is typed (L240)', async ({
+test('a drag from the field of the command bar out of it keeps the bar and what is typed (review #1491)', async ({
   page,
 }) => {
   await page.goto('/#/customers');
@@ -901,7 +904,7 @@ test('a drag from the field of the command bar out of it keeps the bar and what 
   await expect(palette(page)).toBeHidden();
 });
 
-test('"no result" of the command bar is said beside its list, not inside it (L245)', async ({
+test('"no result" of the command bar is said beside its list, not inside it (review #1491)', async ({
   page,
 }) => {
   await page.goto('/#/customers');
@@ -914,7 +917,7 @@ test('"no result" of the command bar is said beside its list, not inside it (L24
   await expect(palette(page).getByRole('listbox').getByRole('status')).toHaveCount(0);
 });
 
-test('closed when what opened it is gone, the command bar gives the focus to the name of the screen (L241)', async ({
+test('closed when what opened it is gone, the command bar gives the focus to the name of the screen (review #1491)', async ({
   page,
   browserName,
 }) => {

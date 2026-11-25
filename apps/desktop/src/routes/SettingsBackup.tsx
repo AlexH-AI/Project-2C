@@ -120,7 +120,7 @@ export function BackupSection({
   const exportNow = () => {
     if (busy === null) void exportFile();
   };
-  // "Sao lưu ngay" of the command bar: Xuất backup; while Data is busy, it says so (L234).
+  // "Sao lưu ngay" of the command bar: Xuất backup; while Data is busy, it says so (review of PR 1491).
   useCommand('backup', () =>
     busy === null
       ? exportNow()
