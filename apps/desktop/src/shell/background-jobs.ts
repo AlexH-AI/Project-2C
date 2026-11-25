@@ -6,7 +6,10 @@ import { joinParts, t } from '../i18n';
 /** How long "Đã …" of a job done stays on "Lưu ý" before the next appointment is back. */
 export const DONE_MS = 3_000;
 
-/** How many of the jobs ended the panel of today keeps, the latest. */
+/**
+ * How many of the jobs done and off the pill the panel of today keeps, the latest. One still on
+ * the pill stays whatever the count: a failure until it is run again.
+ */
 const KEPT = 5;
 
 export type JobKind = 'export' | 'backup' | 'ai';
@@ -64,8 +67,8 @@ export function createBackgroundJobs(now: () => Date): BackgroundJobs {
   let changes = 0;
   const listeners = new Set<() => void>();
   const set = (next: readonly BackgroundJob[]) => {
-    let ended = 0;
-    jobs = next.filter((job) => job.state === 'running' || ++ended <= KEPT);
+    let off = 0;
+    jobs = next.filter((job) => job.shown || ++off <= KEPT);
     notify(listeners, console.error);
   };
   const update = (id: number, change: Partial<BackgroundJob>) => {

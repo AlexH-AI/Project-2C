@@ -67,10 +67,30 @@ describe('background jobs', () => {
     expect(onPill()).toMatchObject({ kind: 'backup', state: 'failed' });
   });
 
-  it('drops a job cancelled with no word, and keeps the five latest of those ended', () => {
+  it('keeps a failure however many jobs end after it, until it is run again', () => {
+    jobs.start('backup', 'backup').fail(() => undefined);
+    jobs.start('export', 'export').done('bao-cao.xlsx');
+    for (const id of ['c1', 'c2', 'c3', 'c4', 'c5']) jobs.start(`ai:${id}`, 'ai', id).done();
+    vi.advanceTimersByTime(DONE_MS);
+    expect(onPill()).toMatchObject({ kind: 'backup', state: 'failed' });
+    // Of the jobs done, the five latest.
+    expect(jobs.list().map((job) => job.customerId ?? job.kind)).toEqual([
+      'c5',
+      'c4',
+      'c3',
+      'c2',
+      'c1',
+      'backup',
+    ]);
+  });
+
+  it('drops a job cancelled with no word, and keeps the five latest of those done', () => {
     jobs.start('ai:c1', 'ai', 'c1').drop();
     expect(jobs.list()).toEqual([]);
     for (const key of ['a', 'b', 'c', 'd', 'e', 'f']) jobs.start(key, 'export').done(`${key}.xlsx`);
+    // Each says so on the pill first.
+    expect(jobs.list()).toHaveLength(6);
+    vi.advanceTimersByTime(DONE_MS);
     expect(jobs.list().map((job) => job.file)).toEqual([
       'f.xlsx',
       'e.xlsx',
