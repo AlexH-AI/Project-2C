@@ -809,43 +809,59 @@ test('a toast that only moves as a dialog opens or closes is not read out again;
 });
 
 // Review of PR 1493: at 1 100 × 700 "Khách hàng mới" reaches the bottom of the window, where the toast
-// lies: there it lies over the buttons of the foot instead.
-test('the toast over a dialog as tall as the window leaves every point of its buttons in reach', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1100, height: 700 });
-  await page.goto('/#/customers');
-  await holdClock(page);
-  await page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' }).click();
-  const shown = page.getByText('Đang che tên khách hàng');
-  await expect(shown).toBeVisible();
-  await page.getByRole('button', { name: '+ Khách hàng' }).click();
-  const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
-  await expect(create.getByText('Đang che tên khách hàng')).toBeVisible();
-  // The region of the dialog is as large as its toast.
-  const toast = (await create.locator('[popover]').boundingBox())!;
-  expect(toast.height).toBeGreaterThan(0);
-  expect(toast.y + toast.height).toBeLessThanOrEqual(700);
-  for (const name of ['Hủy', 'Lưu KH']) {
-    const button = create.getByRole('button', { name, exact: true });
-    const box = (await button.boundingBox())!;
-    const apart =
-      toast.y + toast.height <= box.y ||
-      box.y + box.height <= toast.y ||
-      toast.x + toast.width <= box.x ||
-      box.x + box.width <= toast.x;
-    expect(apart, name).toBe(true);
-    // Across it and down it, every point takes its click (its rounded corners aside).
-    const reached = await button.evaluate((node) => {
-      const { left, right, top, bottom } = node.getBoundingClientRect();
-      const points: [number, number][] = [];
-      for (let x = left + 1; x < right; x += 2) points.push([x, (top + bottom) / 2]);
-      for (let y = top + 1; y < bottom; y += 2) points.push([(left + right) / 2, y]);
-      return points.every(([x, y]) => node.contains(document.elementFromPoint(x, y)));
+// lies: there it lies over the buttons of the foot instead. Measured once the dialog has stopped:
+// as it moves in, its buttons stand higher (`motion-dialog`).
+for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+  test(`the toast over a dialog as tall as the window leaves every point of its buttons in reach (${reducedMotion})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.setViewportSize({ width: 1100, height: 700 });
+    await page.goto('/#/customers');
+    await holdClock(page);
+    await page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' }).click();
+    await expect(page.getByText('Đang che tên khách hàng')).toBeVisible();
+    await page.getByRole('button', { name: '+ Khách hàng' }).click();
+    const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
+    await expect(create.getByText('Đang che tên khách hàng')).toBeVisible();
+    // Read again until it holds: the page's clock held, no frame of the page can be waited for.
+    const measured = () =>
+      create.evaluate((dialog) => {
+        if (dialog.getAnimations().length > 0) return 'moving';
+        // The region of the dialog is as large as its toast.
+        const toast = dialog.querySelector('[popover]')!.getBoundingClientRect();
+        const foot = [...dialog.querySelectorAll('button')].filter((button) =>
+          ['Hủy', 'Lưu KH'].includes(button.textContent ?? ''),
+        );
+        return {
+          toast: [toast.height > 0, toast.bottom <= innerHeight],
+          foot: foot.map((button) => {
+            const { left, right, top, bottom } = button.getBoundingClientRect();
+            const apart =
+              toast.bottom <= top ||
+              bottom <= toast.top ||
+              toast.right <= left ||
+              right <= toast.left;
+            // Across it and down it, every point takes its click (its rounded corners aside).
+            const points: [number, number][] = [];
+            for (let x = left + 1; x < right; x += 2) points.push([x, (top + bottom) / 2]);
+            for (let y = top + 1; y < bottom; y += 2) points.push([(left + right) / 2, y]);
+            const reached = points.every(([x, y]) =>
+              button.contains(document.elementFromPoint(x, y)),
+            );
+            return [button.textContent, apart, reached];
+          }),
+        };
+      });
+    await expect.poll(measured).toEqual({
+      toast: [true, true],
+      foot: [
+        ['Hủy', true, true],
+        ['Lưu KH', true, true],
+      ],
     });
-    expect(reached, name).toBe(true);
-  }
-});
+  });
+}
 
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Ô lệnh' });
 const paletteField = (page: Page) => palette(page).getByRole('combobox', { name: 'Ô lệnh' });

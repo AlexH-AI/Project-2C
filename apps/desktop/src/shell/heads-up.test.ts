@@ -221,19 +221,23 @@ describe('watchMinute', () => {
     return { events, clock, listener, unsubscribe: clock.subscribe(listener) };
   };
 
-  it('gives the same moment while its minute lasts, the next one as it starts', () => {
+  // Review of PR 1507: a second listener heard no minute the first one had taken.
+  it('gives the same moment while its minute lasts; every listener hears the next one start', () => {
     const { clock, listener } = setup();
+    const other = vi.fn();
+    clock.subscribe(other);
     const first = clock.current();
     vi.advanceTimersByTime(39_000);
     expect(listener).not.toHaveBeenCalled();
     expect(clock.current()).toBe(first);
     vi.advanceTimersByTime(1_000);
     expect(listener).toHaveBeenCalledTimes(1);
+    expect(other).toHaveBeenCalledTimes(1);
     expect(clock.current()).toEqual(new Date(2026, 10, 10, 13, 36));
   });
 
   // Review of PR 1493: a timer does not run while the machine sleeps, as `watchToday` says.
-  it('reads the clock again when the window gets focus or turns visible, and waits from there', () => {
+  it('tells its listener when the window gets focus or turns visible, and waits from there', () => {
     const { events, clock, listener } = setup();
     vi.setSystemTime(new Date(2026, 10, 11, 8, 0, 30));
     events.document.visibilityState = 'hidden';
@@ -243,18 +247,15 @@ describe('watchMinute', () => {
     events.document.visibilityState = 'visible';
     events.document.dispatchEvent(new Event('visibilitychange'));
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(clock.current()).toEqual(new Date(2026, 10, 11, 8, 0, 30));
-    // The same minute again: nothing to tell.
+    const woken = clock.current();
+    expect(woken).toEqual(new Date(2026, 10, 11, 8, 0, 30));
+    // The same minute: the same moment; the next one starts 30 s on.
     events.window.dispatchEvent(new Event('focus'));
-    expect(listener).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(30_000);
     expect(listener).toHaveBeenCalledTimes(2);
-    expect(clock.current()).toEqual(new Date(2026, 10, 11, 8, 1));
-
-    vi.setSystemTime(new Date(2026, 10, 11, 9, 15, 10));
-    events.window.dispatchEvent(new Event('focus'));
+    expect(clock.current()).toBe(woken);
+    vi.advanceTimersByTime(30_000);
     expect(listener).toHaveBeenCalledTimes(3);
-    expect(clock.current()).toEqual(new Date(2026, 10, 11, 9, 15, 10));
+    expect(clock.current()).toEqual(new Date(2026, 10, 11, 8, 1));
   });
 
   it('stops its timer and its event listeners on unsubscribe', () => {

@@ -209,7 +209,9 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   useLayoutEffect(() => {
     if (host && hosted.current?.isConnected) hosted.current.showPopover();
   }, [host]);
-  // Clear of the dialog's buttons, as the toast changes, the dialog's size or the window's.
+  // Clear of the dialog's buttons, as the toast changes, the dialog's size or the window's, and once
+  // the dialog has moved in: as it comes (`motion-dialog`) its buttons stand higher, and a move
+  // tells no observer.
   useLayoutEffect(() => {
     const region = hosted.current;
     if (!host || !region?.isConnected) return;
@@ -218,9 +220,11 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
     const sized = new ResizeObserver(place);
     sized.observe(host);
     addEventListener('resize', place);
+    host.addEventListener('animationend', place);
     return () => {
       sized.disconnect();
       removeEventListener('resize', place);
+      host.removeEventListener('animationend', place);
     };
   }, [host, toast]);
   // Read once the browser has it in a live region on the page.

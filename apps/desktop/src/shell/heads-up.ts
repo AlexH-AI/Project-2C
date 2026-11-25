@@ -164,16 +164,18 @@ export function pillText(
 
 /** The app's clock for "Lưu ý", for `useSyncExternalStore`. */
 export interface MinuteWatcher {
-  /** The moment read last: the same object while its minute lasts, so memos keep. */
+  /** The moment read: the same object while its minute lasts, so memos keep. */
   current(): Date;
+  /**
+   * Calls `listener` as each minute starts and whenever the window wakes (gets focus, turns visible
+   * again). Returns the unsubscribe function.
+   */
   subscribe(listener: () => void): () => void;
 }
 
 /**
- * The app's clock (`read`: `clockNow`, the e2e day pinned) as "Lưu ý" counts from it: read again
- * as each minute starts, and whenever the window wakes (gets focus, turns visible again), as the
- * day of the screens is (`watchToday`): a timer does not run while the machine sleeps (review of
- * PR 1493). The listener hears only of a new minute.
+ * The app's clock (`read`: `clockNow`, the e2e day pinned) as "Lưu ý" counts from it, as the day of
+ * the screens is (`watchToday`): a timer does not run while the machine sleeps (review of PR 1493).
  */
 export function watchMinute(
   read: () => Date,
@@ -181,31 +183,35 @@ export function watchMinute(
 ): MinuteWatcher {
   let now = read();
   return {
-    current: () => now,
+    current() {
+      const next = read();
+      if (formatLocalDateTime(next) !== formatLocalDateTime(now)) now = next;
+      return now;
+    },
     subscribe(listener) {
       let timer: ReturnType<typeof setTimeout>;
       let stopped = false;
-      const take = () => {
-        const next = read();
-        if (formatLocalDateTime(next) === formatLocalDateTime(now)) return next;
-        now = next;
-        listener();
-        return next;
-      };
       // From the moment read: a timer that fires a little early waits the rest of its minute.
-      const wait = (at: Date) => {
+      const wait = () => {
         clearTimeout(timer);
         if (stopped) return;
+        const at = read();
         timer = setTimeout(
-          () => wait(take()),
+          () => {
+            listener();
+            wait();
+          },
           60_000 - (at.getSeconds() * 1_000 + at.getMilliseconds()),
         );
       };
-      const onFocus = () => wait(take());
-      const onVisible = () => {
-        if (events.document.visibilityState === 'visible') wait(take());
+      const onFocus = () => {
+        listener();
+        wait();
       };
-      wait(read());
+      const onVisible = () => {
+        if (events.document.visibilityState === 'visible') onFocus();
+      };
+      wait();
       events.window.addEventListener('focus', onFocus);
       events.document.addEventListener('visibilitychange', onVisible);
       return () => {
