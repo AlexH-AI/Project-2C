@@ -463,6 +463,10 @@ export async function pressButton(button: Locator) {
   else await button.click();
 }
 
+/** Stops the page's clock: a toast shown from now on stays until the test moves the clock on. */
+export const holdClock = async (page: Page) =>
+  page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+
 /**
  * Opens the screen at `path` (`/#/…`) as `page.goto` does on Chromium: a page already at that
  * address stays as it is. WebKit loads such a page again, which drops the web build's data, kept in

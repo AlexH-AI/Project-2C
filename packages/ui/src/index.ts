@@ -3,7 +3,8 @@ export { Segmented, type SegmentedOption } from './components/Segmented';
 export { PeriodPicker, type PeriodPickerLabels } from './components/PeriodPicker';
 export { periodLabel } from './components/PeriodPicker.label';
 export { PeriodPill } from './components/PeriodPill';
-export { MenuButton, MenuRows, useLayerState, type MenuRow } from './components/Menu';
+export { MenuButton, MenuRows, useLayer, useLayerState, type MenuRow } from './components/Menu';
+export { Mark } from './components/FieldMarks';
 export { calmMotion, openFrom, riseStep, type LayerState } from './components/motion';
 export { Count, useCount, useGlide } from './components/motion-hooks';
 export {

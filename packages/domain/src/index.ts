@@ -26,6 +26,7 @@ export {
   localFileStamp,
   isInPeriod,
   isIsoDate,
+  minuteOfDay,
   parseDate,
   parseQuickDate,
   periodOf,

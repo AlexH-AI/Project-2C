@@ -24,6 +24,7 @@ import {
   isIsoDate,
   MAX_YEAR,
   MIN_YEAR,
+  minuteOfDay,
   parseDate,
   parseQuickDate,
   periodOf,
@@ -102,6 +103,23 @@ describe('local date and time', () => {
   it('stamps file names as YYYYMMDD-HHMM', () => {
     expect(localFileStamp(at)).toBe('20260905-0704');
   });
+});
+
+describe('minuteOfDay', () => {
+  it('reads the minute of the day a stored HH:MM starts at', () => {
+    expect(minuteOfDay('00:00')).toBe(0);
+    expect(minuteOfDay('09:05')).toBe(545);
+    expect(minuteOfDay('14:00')).toBe(840);
+    expect(minuteOfDay('23:59')).toBe(1_439);
+    expect(minuteOfDay(formatLocalTime(new Date(2026, 8, 5, 7, 4, 59)))).toBe(424);
+  });
+
+  it.each(['24:00', '12:60', '9:05', '09:5', '09.05', '09:05:00', ' 09:05', 'ab:cd', ''])(
+    'refuses %j',
+    (text) => {
+      expect(() => minuteOfDay(text)).toThrow(RangeError);
+    },
+  );
 });
 
 describe('formatIsoDate', () => {

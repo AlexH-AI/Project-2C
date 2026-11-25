@@ -1,13 +1,19 @@
 import type { AppointmentRecord } from '@p2c/db';
 import {
   compareDates,
+  formatDayMonth,
+  formatLocalDateTime,
   formatLocalTime,
   fromLocalDate,
+  minuteOfDay,
   scopeMatcher,
+  weekdayOf,
   type Person,
   type Scope,
 } from '@p2c/domain';
-import { t } from '../i18n';
+import type { WakeEvents } from '../data/today';
+import { joinParts, t } from '../i18n';
+import { withTime } from '../routes/appointments/appointment-form';
 
 /** How an appointment of today stands in the panel of "Lưu ý" (mockup search-rm-team.html `#now`). */
 export type HeadsUpState = 'met' | 'missed' | 'unrecorded' | 'next' | 'planned';
@@ -33,8 +39,7 @@ export interface HeadsUp {
 }
 
 /** The minute of the day of a stored `HH:MM`; one with no time ends its day. */
-const minuteOf = (time: string | null) =>
-  time === null ? Infinity : Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+const minuteOf = (time: string | null) => (time === null ? Infinity : minuteOfDay(time));
 
 /** By day, then by time, those with no time after the timed ones of their day. */
 const byWhen = (a: AppointmentRecord, b: AppointmentRecord) =>
@@ -96,4 +101,105 @@ export function leftText(minutes: number): string {
     n: hours,
     count: rest,
   });
+}
+
+/** `T4 11/11 09:00`: the day of an appointment whose year is clear from context, and its time. */
+const dayText = (a: AppointmentRecord) =>
+  withTime(`${t(`weekday.${weekdayOf(a.date)}`)} ${formatDayMonth(a.date)}`, a.time);
+
+/** What the pill says of the next appointment (mockup search-rm-team.html `#now`). */
+export interface PillText {
+  /** Whether the next one is of today: a dot pulses before it; else the calendar shows. */
+  readonly today: boolean;
+  /** Its time, on today. */
+  readonly what: string;
+  /** The customer's name; once today has none left, "Hết lịch hôm nay"; with none, that. */
+  readonly who: string;
+  /** The time left until it; once today has none left, the day of the next. */
+  readonly when: string;
+  /** All of it as read out: "·" before the time left only beside a name. */
+  readonly text: string;
+}
+
+/**
+ * The words of the pill for `view`; `name` gives a customer's name as the window shows it. A
+ * narrow window leaves out the customer's name, and only that (review of PR 1493): the time and
+ * the time left stay, as do "Hết lịch hôm nay" and the day of the next.
+ */
+export function pillText(
+  view: HeadsUp,
+  now: Date,
+  narrow: boolean,
+  name: (a: AppointmentRecord) => string,
+): PillText {
+  const next = view.next;
+  const today = !!next && compareDates(next.appointment.date, fromLocalDate(now)) === 0;
+  const [what, who, when] = !next
+    ? ['', t('headsUp.none'), '']
+    : !today
+      ? ['', t('headsUp.dayOver'), t('headsUp.nextOn', { when: dayText(next.appointment) })]
+      : [
+          next.appointment.time ?? '',
+          narrow ? '' : name(next.appointment),
+          next.minutesLeft === null ? t('headsUp.allDay') : leftText(next.minutesLeft),
+        ];
+  const head = [what, who].filter(Boolean).join(' ');
+  const text = who && when ? joinParts([head, when]) : [head, when].filter(Boolean).join(' ');
+  return { today, what, who, when, text };
+}
+
+/** The app's clock for "Lưu ý", for `useSyncExternalStore`. */
+export interface MinuteWatcher {
+  /** The moment read last: the same object while its minute lasts, so memos keep. */
+  current(): Date;
+  subscribe(listener: () => void): () => void;
+}
+
+/**
+ * The app's clock (`read`: `clockNow`, the e2e day pinned) as "Lưu ý" counts from it: read again
+ * as each minute starts, and whenever the window wakes (gets focus, turns visible again), as the
+ * day of the screens is (`watchToday`): a timer does not run while the machine sleeps (review of
+ * PR 1493). The listener hears only of a new minute.
+ */
+export function watchMinute(
+  read: () => Date,
+  events: WakeEvents = { window, document },
+): MinuteWatcher {
+  let now = read();
+  return {
+    current: () => now,
+    subscribe(listener) {
+      let timer: ReturnType<typeof setTimeout>;
+      let stopped = false;
+      const take = () => {
+        const next = read();
+        if (formatLocalDateTime(next) === formatLocalDateTime(now)) return next;
+        now = next;
+        listener();
+        return next;
+      };
+      // From the moment read: a timer that fires a little early waits the rest of its minute.
+      const wait = (at: Date) => {
+        clearTimeout(timer);
+        if (stopped) return;
+        timer = setTimeout(
+          () => wait(take()),
+          60_000 - (at.getSeconds() * 1_000 + at.getMilliseconds()),
+        );
+      };
+      const onFocus = () => wait(take());
+      const onVisible = () => {
+        if (events.document.visibilityState === 'visible') wait(take());
+      };
+      wait(read());
+      events.window.addEventListener('focus', onFocus);
+      events.document.addEventListener('visibilitychange', onVisible);
+      return () => {
+        stopped = true;
+        clearTimeout(timer);
+        events.window.removeEventListener('focus', onFocus);
+        events.document.removeEventListener('visibilitychange', onVisible);
+      };
+    },
+  };
 }

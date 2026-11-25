@@ -1,7 +1,7 @@
 import type { AppointmentRecord } from '@p2c/db';
 import type { CalendarDate, Person } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
-import { headsUp, leftText } from './heads-up';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { headsUp, leftText, pillText, watchMinute } from './heads-up';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -143,5 +143,104 @@ describe('leftText', () => {
     expect(leftText(0)).toBe('đến giờ');
     expect(leftText(60)).toBe('còn 1 giờ');
     expect(leftText(85)).toBe('còn 1 giờ 25 phút');
+  });
+});
+
+describe('pillText', () => {
+  const name = (a: AppointmentRecord) => `KH ${a.id}`;
+  const pill = (now: Date, narrow: boolean) =>
+    pillText(headsUp(DAY, people, { kind: 'all' }, now), now, narrow, name);
+
+  it('names the next of today, its time and the time left; a narrow window leaves the name out', () => {
+    expect(pill(NOW, false)).toMatchObject({
+      today: true,
+      what: '14:00',
+      who: 'KH a1400',
+      text: '14:00 KH a1400 · còn 25 phút',
+    });
+    expect(pill(NOW, true)).toMatchObject({ what: '14:00', who: '', text: '14:00 còn 25 phút' });
+  });
+
+  // Review of PR 1493: only the name of a customer goes, never "Hết lịch hôm nay".
+  it('keeps "Hết lịch hôm nay" and the day of the next in a narrow window', () => {
+    const evening = new Date(2026, 10, 10, 17, 0);
+    for (const narrow of [false, true]) {
+      expect(pill(evening, narrow)).toEqual({
+        today: false,
+        what: '',
+        who: 'Hết lịch hôm nay',
+        when: 'kế tiếp T4 11/11 09:00',
+        text: 'Hết lịch hôm nay · kế tiếp T4 11/11 09:00',
+      });
+    }
+    const none = pillText(headsUp([], people, { kind: 'all' }, NOW), NOW, true, name);
+    expect(none.text).toBe('Không có lịch hẹn sắp tới');
+  });
+});
+
+/** Stand-in for `document`: only its events and visibility matter. */
+class FakeDocument extends EventTarget {
+  visibilityState: DocumentVisibilityState = 'visible';
+}
+
+describe('watchMinute', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ now: new Date(2026, 10, 10, 13, 35, 20) });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  const setup = () => {
+    const events = { window: new EventTarget(), document: new FakeDocument() };
+    const clock = watchMinute(() => new Date(), events);
+    const listener = vi.fn();
+    return { events, clock, listener, unsubscribe: clock.subscribe(listener) };
+  };
+
+  it('gives the same moment while its minute lasts, the next one as it starts', () => {
+    const { clock, listener } = setup();
+    const first = clock.current();
+    vi.advanceTimersByTime(39_000);
+    expect(listener).not.toHaveBeenCalled();
+    expect(clock.current()).toBe(first);
+    vi.advanceTimersByTime(1_000);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(clock.current()).toEqual(new Date(2026, 10, 10, 13, 36));
+  });
+
+  // Review of PR 1493: a timer does not run while the machine sleeps, as `watchToday` says.
+  it('reads the clock again when the window gets focus or turns visible, and waits from there', () => {
+    const { events, clock, listener } = setup();
+    vi.setSystemTime(new Date(2026, 10, 11, 8, 0, 30));
+    events.document.visibilityState = 'hidden';
+    events.document.dispatchEvent(new Event('visibilitychange'));
+    expect(listener).not.toHaveBeenCalled();
+
+    events.document.visibilityState = 'visible';
+    events.document.dispatchEvent(new Event('visibilitychange'));
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(clock.current()).toEqual(new Date(2026, 10, 11, 8, 0, 30));
+    // The same minute again: nothing to tell.
+    events.window.dispatchEvent(new Event('focus'));
+    expect(listener).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(30_000);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(clock.current()).toEqual(new Date(2026, 10, 11, 8, 1));
+
+    vi.setSystemTime(new Date(2026, 10, 11, 9, 15, 10));
+    events.window.dispatchEvent(new Event('focus'));
+    expect(listener).toHaveBeenCalledTimes(3);
+    expect(clock.current()).toEqual(new Date(2026, 10, 11, 9, 15, 10));
+  });
+
+  it('stops its timer and its event listeners on unsubscribe', () => {
+    const { events, listener, unsubscribe } = setup();
+    expect(vi.getTimerCount()).toBe(1);
+    unsubscribe();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.setSystemTime(new Date(2026, 10, 11, 8, 0));
+    events.window.dispatchEvent(new Event('focus'));
+    events.document.dispatchEvent(new Event('visibilitychange'));
+    expect(listener).not.toHaveBeenCalled();
   });
 });
