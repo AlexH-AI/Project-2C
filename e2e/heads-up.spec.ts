@@ -197,6 +197,52 @@ test('a narrow window leaves the name out of the pill; the mask hides it in the 
   await expect(panel(page)).not.toContainText(name!);
 });
 
+/** The screens whose toolbar follows the scope picked (Tổng quan has its own, every team). */
+const SCOPED = ['Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự', 'Cài đặt'];
+
+test('once today has none left, a narrow window cuts "kế tiếp …" first, "Hết lịch hôm nay" whole (review #1507)', async ({
+  page,
+}) => {
+  await page.goto('/#/appointments');
+  // 21:30 on the e2e day, past the last appointment of Sao Mai.
+  await page.clock.fastForward('12:00:00');
+  await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+  await pickScope(page, { team: 'Sao Mai' });
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  /** The width of each phrase on the pill: "Hết lịch hôm nay", the dot, "kế tiếp …". */
+  const phrases = async (screen: string) => {
+    await nav.getByRole('link', { name: screen }).click();
+    await expect(toolbar(page).getByRole('heading', { level: 1 })).toHaveText(screen);
+    await expect(pill(page)).toHaveAccessibleName(/^Lưu ý: Hết lịch hôm nay · kế tiếp /);
+    return pill(page).evaluate((button) =>
+      [...button.querySelectorAll(':scope > span')].map(
+        (span) => span.getBoundingClientRect().width,
+      ),
+    );
+  };
+  // Whole in a wide window; a phrase shorter by any part of a pixel ends in an ellipsis.
+  const whole = new Map<string, number[]>();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const screen of SCOPED) whole.set(screen, await phrases(screen));
+  await page.setViewportSize({ width: 1100, height: 700 });
+  for (const screen of SCOPED) {
+    const [dayOver, , next] = await phrases(screen);
+    const [wholeDayOver, , wholeNext] = whole.get(screen)!;
+    expect(Math.abs(dayOver! - wholeDayOver!), screen).toBeLessThan(0.01);
+    // Báo cáo, its toolbar the fullest, may cut "kế tiếp …"; the others show it whole.
+    if (screen === 'Báo cáo') expect(next!, screen).toBeLessThan(wholeNext! + 0.01);
+    else expect(Math.abs(next! - wholeNext!), screen).toBeLessThan(0.01);
+    // Every button of the toolbar still in the window, the pill clear of the eye after it.
+    const last = (await toolbar(page).getByRole('button').last().boundingBox())!;
+    expect(last.x + last.width, screen).toBeLessThanOrEqual(1100);
+    const [heads, eye] = await Promise.all([
+      pill(page).boundingBox(),
+      toolbar(page).getByRole('button', { name: 'Che tên khách hàng' }).boundingBox(),
+    ]);
+    expect(heads!.x + heads!.width, screen).toBeLessThanOrEqual(eye!.x);
+  }
+});
+
 // ---- Jobs in the background (VA9b-a, mockup #now, #states): Xuất Excel, a backup, an AI analysis ----
 
 interface Files {

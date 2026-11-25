@@ -863,6 +863,87 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
   });
 }
 
+// Review of PR 1507: with motion, "Khách hàng mới" opened by the keyboard first leaves the toast at the
+// bottom of the window, its buttons higher as the macOS sheet drops in (`motion-dialog`), then lifts
+// it clear of them once it has moved in, under a pointer that has not moved: whether the pointer
+// holds it is read again there.
+const MASKING = 'Đang che tên khách hàng';
+
+/** Khách hàng at 1 100 × 700, motion on, as on macOS, the clock held: the toast of the eye shown. */
+async function maskingToast(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto('/#/customers');
+  await markOs(page, 'mac');
+  await holdClock(page);
+  await page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' }).click();
+  await expect(page.getByText(MASKING)).toBeVisible();
+  return page.getByText(MASKING);
+}
+
+/**
+ * "Khách hàng mới" opened by the keyboard, the pointer left where it is; once it has moved in and
+ * the toast lies over its buttons, where the toast lies.
+ */
+async function openLifting(page: Page) {
+  await page.getByRole('button', { name: '+ Khách hàng' }).focus();
+  await page.keyboard.press('Enter');
+  const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  const toast = create.getByText(MASKING);
+  const cancel = create.getByRole('button', { name: 'Hủy', exact: true });
+  // Read again until it holds: the page's clock held, no frame of the page can be waited for.
+  await expect
+    .poll(async () => {
+      if (await create.evaluate((dialog) => dialog.getAnimations().length > 0)) return false;
+      const [shown, foot] = await Promise.all([box(toast), box(cancel)]);
+      return shown.y + shown.height <= foot.y;
+    })
+    .toBe(true);
+  return box(toast);
+}
+
+/** Whether the point `x`, `y` is inside `shown`. */
+const holds = (shown: Awaited<ReturnType<typeof box>>, x: number, y: number) =>
+  x > shown.x && x < shown.x + shown.width && y > shown.y && y < shown.y + shown.height;
+
+test('a toast lifted out from under a still pointer as a dialog moves in leaves on time (review #1507)', async ({
+  page,
+}) => {
+  const toast = await maskingToast(page);
+  const before = await box(toast);
+  const [x, y] = [before.x + before.width / 2, before.y + before.height / 2];
+  await page.mouse.move(x, y);
+  const lifted = await openLifting(page);
+  expect(holds(lifted, x, y)).toBe(false);
+  // Nothing moves from here: a toast that leaves is gone at once.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeHidden();
+});
+
+test('a toast lifted under a still pointer as a dialog moves in stays while the pointer is on it (review #1507)', async ({
+  page,
+}) => {
+  const toast = await maskingToast(page);
+  // Where it lies over the buttons, from a first opening; the pointer then there, off the toast.
+  const lifted = await openLifting(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Khách hàng mới' })).toBeHidden();
+  // The copy the dialog leaves for its move out gone too.
+  await expect(toast).toHaveCount(1);
+  const [x, y] = [lifted.x + lifted.width / 2, lifted.y + lifted.height / 2];
+  await page.mouse.move(x, y);
+  expect(holds(await box(toast), x, y)).toBe(false);
+  expect(holds(await openLifting(page), x, y)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeVisible();
+  // Once the pointer leaves, it has 4,2 s again.
+  await page.mouse.move(10, 10);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeHidden();
+});
+
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Ô lệnh' });
 const paletteField = (page: Page) => palette(page).getByRole('combobox', { name: 'Ô lệnh' });
 

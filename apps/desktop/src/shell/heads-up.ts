@@ -10,7 +10,7 @@ import {
   type Person,
   type Scope,
 } from '@p2c/domain';
-import type { WakeEvents } from '../data/today';
+import { onWake, type WakeEvents } from '../data/today';
 import { joinParts, t } from '../i18n';
 import { withTime } from '../routes/appointments/appointment-form';
 import type { BackgroundJob } from './background-jobs';
@@ -104,16 +104,20 @@ export function leftText(minutes: number): string {
 }
 
 /**
- * The jobs "Lưu ý" shows, in their order: not an analysis of a customer no longer there (in the
- * Thùng rác, or of data replaced), which has no name to show and would be refused if run again
- * (review of PR 1505). The customer back, so is the job.
+ * The jobs "Lưu ý" shows, in their order: not an ended analysis of a customer no longer there (in
+ * the Thùng rác, or of data replaced), which has no name to show and would be refused if run again
+ * (review of PR 1505). The customer back, so is the job. One still running shows, with no name: the
+ * AI runner stays busy until it ends (review of PR 1507).
  */
 export const shownJobs = (
   jobs: readonly BackgroundJob[],
   customers: readonly { readonly id: string }[],
 ): BackgroundJob[] =>
   jobs.filter(
-    (job) => job.customerId === undefined || customers.some((c) => c.id === job.customerId),
+    (job) =>
+      job.state === 'running' ||
+      job.customerId === undefined ||
+      customers.some((c) => c.id === job.customerId),
   );
 
 /** `T4 11/11 09:00`: the day of an appointment whose year is clear from context, and its time. */
@@ -205,21 +209,15 @@ export function watchMinute(
           60_000 - (at.getSeconds() * 1_000 + at.getMilliseconds()),
         );
       };
-      const onFocus = () => {
+      wait();
+      const offWake = onWake(events, () => {
         listener();
         wait();
-      };
-      const onVisible = () => {
-        if (events.document.visibilityState === 'visible') onFocus();
-      };
-      wait();
-      events.window.addEventListener('focus', onFocus);
-      events.document.addEventListener('visibilitychange', onVisible);
+      });
       return () => {
         stopped = true;
         clearTimeout(timer);
-        events.window.removeEventListener('focus', onFocus);
-        events.document.removeEventListener('visibilitychange', onVisible);
+        offWake();
       };
     },
   };

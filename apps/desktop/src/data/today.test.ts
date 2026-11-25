@@ -1,11 +1,43 @@
 import { calendarDate, fromLocalDate } from '@p2c/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { watchToday } from './today';
+import { onWake, watchToday } from './today';
 
 /** Stand-in for `document`: only its events and visibility matter. */
 class FakeDocument extends EventTarget {
   visibilityState: DocumentVisibilityState = 'visible';
 }
+
+// Review of PR 1507: one listening for `watchToday` and `watchMinute` of "Lưu ý".
+describe('onWake', () => {
+  it('calls its listener as the window gets focus or turns visible, not as it hides', () => {
+    const events = { window: new EventTarget(), document: new FakeDocument() };
+    const listener = vi.fn();
+    onWake(events, listener);
+
+    events.document.visibilityState = 'hidden';
+    events.document.dispatchEvent(new Event('visibilitychange'));
+    expect(listener).not.toHaveBeenCalled();
+    events.document.visibilityState = 'visible';
+    events.document.dispatchEvent(new Event('visibilitychange'));
+    expect(listener).toHaveBeenCalledTimes(1);
+    events.window.dispatchEvent(new Event('focus'));
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops listening once the function it returns is called, the others still listening', () => {
+    const events = { window: new EventTarget(), document: new FakeDocument() };
+    const stopped = vi.fn();
+    const other = vi.fn();
+    const stop = onWake(events, stopped);
+    onWake(events, other);
+
+    stop();
+    events.window.dispatchEvent(new Event('focus'));
+    events.document.dispatchEvent(new Event('visibilitychange'));
+    expect(stopped).not.toHaveBeenCalled();
+    expect(other).toHaveBeenCalledTimes(2);
+  });
+});
 
 function setup() {
   const events = { window: new EventTarget(), document: new FakeDocument() };
