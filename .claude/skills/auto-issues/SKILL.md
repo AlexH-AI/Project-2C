@@ -97,7 +97,8 @@ Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của
    - `node tools/pr-status.mjs <N>`: trạng thái, head `H`, REVIEW mới nhất kèm SHA, mức;
    - `node tools/auto-wait.mjs review <N> --once`: REVIEW cho `H`. Mã 0 là PASS @`H`, mã 1 là CHANGES @`H`, mã 2 là **chưa có REVIEW hợp lệ cho `H`**: chưa có REVIEW nào, REVIEW mới nhất của head khác, hoặc có comment `XIN XEM LẠI` cho `H` mới hơn REVIEW mới nhất (§3.4);
    - `node tools/auto-wait.mjs ci <N> --once`: CI của `H`. Mã 0 là **xanh** (mọi check xong, kể cả job có check đến muộn như exe); mã 1 là **đỏ**, tức đã có một check đỏ, dù check khác còn chạy (head đó không merge được nữa); mã 2 là **đang chạy** (gồm cả chưa có check nào);
-   - PR đã merge: `node tools/auto-wait.mjs title "record the notes of the PR <N> review" --once` cho PR sổ: chưa có (mã 2), hoặc số `L` và trạng thái (đang mở / đã merge).
+   - PR đã merge: `node tools/auto-wait.mjs title "record the notes of the PR <N> review" --once` cho PR sổ: chưa có (mã 2), hoặc số `L` và trạng thái (đang mở / đã merge);
+   - PR đã merge, chưa có PR sổ: `gh pr view <N> --json comments --jq '[.comments[].body] | {ds: ([.[] | select(startswith("REVIEW:"))] | last // "" | contains("đích: DS mới")), decided: any(.[]; split("\n")[0] | startswith("Quyết định Owner (") and contains("): DS mới cho review PR #<N>"))}'` cho hai điều kiện của hàng `đích: DS mới` trong bảng bước: `ds` là REVIEW mới nhất có dòng `đích: DS mới`, `decided` là đã có comment quyết định (§5, "DS mới lúc merge").
 4. **Phiên con:**
    - `list_sessions {"linked": true}`: phiên đang chạy hay rảnh, `lastActivityAt`;
    - phiên rảnh: `list_events` (limit 6) để đọc dòng `AUTO-CHILD:` cuối, gồm thẻ việc và kết quả.
@@ -132,7 +133,8 @@ Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của
 | PR mở, `REVIEW: PASS` @`H`, CI đỏ | Gửi §3.3 cho phiên code của PR. Head mới làm PASS @`H` mất giá trị: hàng "chưa có REVIEW hợp lệ" sẽ giao review lại ở phiên sạch | `fix <N> --not <H> --timeout 15` |
 | PR mở, `REVIEW: CHANGES` @`H`, CI đỏ | Gửi tin gộp §3.4b cho phiên code của PR (luật 2) | `fix <N> --not <H> --timeout 15` |
 | PR mở, `REVIEW: CHANGES` @`H`, CI xanh hay đang chạy | Gửi §3.4 cho phiên code của PR ngay, không chờ CI (luật 2) | `fix <N> --not <H> --timeout 15` |
-| PR đã merge; chưa có PR sổ; chưa phiên review nào có dòng `AUTO-CHILD` cuối là kết quả của §3.5 cho `N` | Gửi §3.5 cho phiên review đã PASS | `title "record the notes of the PR <N> review" --timeout 15` |
+| PR đã merge; chưa có PR sổ; comment REVIEW mới nhất của `N` có dòng `đích: DS mới`; trên `N` chưa có comment `Quyết định Owner (…): DS mới cho review PR #<N>` | Hỏi Owner tên DS mới (§5, "DS mới lúc merge"), đăng comment quyết định (Owner chọn dừng thì không đăng), rồi làm tiếp nhịp ngay: hàng dưới gửi §3.5 kèm quyết định | — |
+| PR đã merge; chưa có PR sổ; chưa phiên review nào có dòng `AUTO-CHILD` cuối là kết quả của §3.5 cho `N` | Gửi §3.5 cho phiên review đã PASS, kèm quyết định DS mới nếu có (comment `Quyết định Owner (…): DS mới cho review PR #<N>`) | `title "record the notes of the PR <N> review" --timeout 15` |
 | PR sổ đang mở | Merge PR sổ (§4) | — |
 | PR sổ đã merge, hoặc phiên review báo `[PR #<N>] SỔ KHÔNG ĐỔI` | Issue xong. Khi `SỔ KHÔNG ĐỔI`, comment lên PR: `Sổ ghi chú: không đổi sau review @<H> (auto-issues).` Sang Issue kế: `git -C C:/workspace/Project-2C fetch origin`, `git -C C:/workspace/Project-2C-auto checkout --detach origin/main` | — |
 | Hết hàng đợi | Làm theo bảng ở §6 | |
@@ -148,6 +150,13 @@ Các hàng giao việc theo PR (review, PASS + CI đỏ, CHANGES) không cần �
 - **V5, PASS trước, CI đỏ sau (luật 2):** phút 20 PASS, chờ CI. Phút 24 một check đỏ (`ci` báo đỏ ngay, không chờ check khác) → §3.3. Phiên code push `H2` → PASS @`H` hết giá trị → giao review `H2` ở phiên sạch.
 - **V6, CHANGES, CI đỏ khi phiên code đang sửa:** phút 20 CHANGES, CI còn chạy → §3.4. Phút 23 Verify đỏ, phiên code đang chạy → không giao gì. Trước khi push, phiên code đọc lại check của `H` (§3.4) và sửa luôn check đỏ trong cùng lần push.
 - **V7, mục chặn chỉ ở thân PR (luật 4):** phút 20 CHANGES @`H`, chỉ cần sửa thân PR. Phiên code sửa thân, đăng comment `XIN XEM LẠI` cho `H` (§3.4), rảnh với `XIN XEM LẠI @H` → `review --once` mã 2 → giao review lại `H` ở phiên sạch. CI của `H` đã xanh nên PASS là merge ngay, không chạy CI lại.
+
+**Ví dụ DS mới lúc merge** (§5; phát lại các PR thật, như thể REVIEW đã ghi theo dạng `đích: DS mới` của `review-pr` §4):
+
+- **V8, PR #1511:** CHANGES rồi PASS cùng head, cả hai vòng đề xuất DS mới loại "e2e đọc đúng lúc". Merge xong, REVIEW mới nhất (PASS) có `đích: DS mới — e2e đọc đúng lúc; thay: [T-507 #1501]` → số kế tiếp 15 → hỏi "DS-15 mới (đề xuất)" / "[T-507 #1501]" → Owner chọn DS-15 → comment quyết định → §3.5 mang quyết định, phiên sổ ghi bốn mục [DS-15] mà không dừng.
+- **V9, PR #1513:** hai PASS (head mới chỉ là commit rỗng chạy lại CI), hai vòng viết loại khác chữ. Chỉ PASS mới nhất tính, nên một loại, một câu hỏi: "DS-16 mới (đề xuất)" / "[Mac-8]".
+- **V10, PR #1507:** ba vòng REVIEW. Vòng `c6cb4d7` không đề xuất DS mới nào; năm mục `đích: DS mới` cùng loại có từ vòng `665b2c8`, và PASS `fe0d02a` ghi lại cả năm. Đọc REVIEW mới nhất là đủ: một loại, một câu → DS-14.
+- **V11, PR #1469:** REVIEW đề xuất DS mới, không nêu `thay`. Từ nay phiên điều phối vẫn hỏi (dòng `đích: DS mới` có trong REVIEW): "DS-13 mới (đề xuất)" / "Dừng pipeline". Owner chọn DS-13, nhưng phiên sổ thấy `[đóng phase]` cùng loại theo bậc 2 (mục không có phần `thay`), nên gắn `[đóng phase]` như PR sổ #1470, không thêm DS-13 vào danh sách tên đích, ghi lý do ở thân PR sổ (§3.5). Ở V8, Owner chọn DS-15 chứ không chọn `[T-507 #1501]` ở phần `thay` của mục, nên phiên sổ không gắn `[T-507 #1501]`.
 
 **Chọn và `/clear` phiên con:**
 
@@ -276,7 +285,9 @@ Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>`, `AUTO-CHILD: [PR #<N>] 
 - Đọc mọi comment REVIEW của PR #<N>, mọi vòng, kể cả vòng do phiên review kia viết hay do bạn viết trước một lần `/clear`. Lấy ghi chú không chặn của tất cả, như sổ đã ghi cho nhóm review #917.
 - Worktree riêng: `git -C C:/workspace/Project-2C fetch origin`, rồi `git -C C:/workspace/Project-2C worktree add ../Project-2C-notes-<N> -b docs/T-<số>-review-notes-<N> origin/main`. Làm trong đó, không làm ở worktree review hay checkout chính.
 - Chỉ sửa `docs/state/review-notes.md`, theo đoạn đầu của sổ:
-  - ghi chú không chặn mới vào OPEN. Đối chiếu sổ trước khi ghi một mục là MỚI; mỗi mục nêu ít nhất một đường dẫn file trong backtick. Gắn nhãn đích theo đề xuất của comment REVIEW (skill `review-pr` §4; luật ở đầu mục OPEN của sổ, ADR-0001 phụ lục M14). Comment thiếu đề xuất thì tự chọn theo ba bậc của `review-pr` §4: Issue đang mở phụ trách file đó → `[T-… #…]`; việc dự kiến cùng loại trong spec → `[<tên việc>]`; Issue dọn sổ cùng loại → `[DS-…]`. Không DS nào cùng loại → `CẦN OWNER` (đề xuất một DS mới, nêu loại);
+  - ghi chú không chặn mới vào OPEN. Đối chiếu sổ trước khi ghi một mục là MỚI; mỗi mục nêu ít nhất một đường dẫn file trong backtick. Gắn nhãn đích theo đề xuất của comment REVIEW (skill `review-pr` §4; luật ở đầu mục OPEN của sổ, ADR-0001 phụ lục M14). Comment thiếu đề xuất thì tự chọn theo ba bậc của `review-pr` §4: Issue đang mở phụ trách file đó → `[T-… #…]`; việc dự kiến cùng loại trong spec → `[<tên việc>]`; Issue dọn sổ cùng loại → `[DS-…]`;
+  - <khi có comment `Quyết định Owner (…): DS mới cho review PR #<N>`: dòng "Quyết định Owner về DS mới: <trích nguyên văn> (<link comment>). Mục `đích: DS mới` của comment REVIEW: Owner chọn nhãn có sẵn (phần `thay` của mục đó) thì gắn đúng nhãn đó. Owner chọn DS mới thì vẫn xét ba bậc của `review-pr` §4 trước, như PR sổ #1470: bậc nào cho một nhãn có sẵn khác phần `thay` của mục (như `[đóng phase]` của #1469) thì gắn nhãn đó, không thêm tên DS vào danh sách tên đích, và ghi lý do ở thân PR sổ; nhãn ở phần `thay` thì không gắn, vì Owner đã không chọn nó. Không bậc nào cho nhãn thì gắn tên DS Owner chọn và thêm tên đó vào danh sách tên đích ở đầu mục OPEN của sổ, như DS-15 (loại, ngày, câu Owner chọn, link comment)."; không có thì bỏ gạch này>
+  - mục mà không DS nào cùng loại và quyết định trên không phủ (ghi chú của vòng review trước, hay đề xuất không theo dạng `đích: DS mới`) → `CẦN OWNER` (đề xuất một DS mới, nêu loại);
   - mục thân PR #<N> ghi "đã sửa" chuyển sang RESOLVED.
 - PR: tiêu đề `docs: record the notes of the PR <N> review (T-<số>)`; thân `Refs #<I>` và các phần như #940; nhãn `type:task`, `risk:low`. Không merge.
 - Không có gì để ghi thì không mở PR.
@@ -339,7 +350,16 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - `/clear` bị từ chối ở cả hai phiên;
 - phiên con dừng hai lần không có dòng `AUTO-CHILD`; kết quả phiên con báo mà GitHub vẫn không thấy sau khi đã nhắc;
 - chờ cho cùng một việc tới 60 phút mà không có gì đổi (§2, "Chờ");
-- xác nhận hàng đợi ở lượt đầu; duyệt đề xuất gom sổ (§6).
+- xác nhận hàng đợi ở lượt đầu; duyệt đề xuất gom sổ (§6);
+- PR task vừa merge mà comment REVIEW mới nhất đề xuất DS mới (§2, "DS mới lúc merge" ở dưới).
+
+**DS mới lúc merge** (Owner quyết 26/11/2026, T-513 #1520). Trước đây phiên viết PR sổ đọc hết REVIEW rồi mới dừng `CẦN OWNER` để hỏi tên DS (đợt 25/11: PR #1511, #1513). Nay phiên điều phối hỏi ngay sau khi merge, trước khi giao §3.5:
+
+1. Đọc comment REVIEW mới nhất của `N`: `gh pr view <N> --json comments --jq '[.comments[] | select(.body | startswith("REVIEW:"))] | last | .body'`. Lấy mọi dòng có `đích: DS mới — <loại>` (dạng cố định của `review-pr` §4), cùng phần `thay: [<nhãn>]` nếu có. Chỉ REVIEW mới nhất tính. Ghi chú còn đúng ở head thường được REVIEW đó tìm lại (PR #1507: năm mục DS mới của vòng `665b2c8` có lại ở PASS `fe0d02a`); mục chỉ có ở vòng trước thì §3.5 vẫn để `CẦN OWNER`.
+2. Số kế tiếp: trong `C:/workspace/Project-2C-auto` (đã về `origin/main` lúc merge), số lớn nhất của `DS-<n>` ở dòng danh sách tên đích đầu mục OPEN của `docs/state/review-notes.md`, cộng 1. Đề xuất cùng loại thì chung một số; khác loại thì số liền nhau.
+3. Hỏi một lần, mỗi loại một câu trong cùng `AskUserQuestion` (cách hỏi ở dưới): trích dòng của REVIEW kèm link; phương án "DS-<n> mới — <loại> (đề xuất)", "<nhãn thay>" khi REVIEW nêu, "Dừng pipeline".
+4. Owner chọn một nhãn ở mọi câu: đăng comment lên `N` mà dòng đầu đúng là `Quyết định Owner (<dd/mm/yyyy>): DS mới cho review PR #<N>`, rồi câu trả lời nguyên văn. Comment này chặn hàng của §2 khớp lần nữa (nhịp thừa, sau nén context). Owner chọn "Dừng pipeline", dù chỉ ở một câu: không đăng comment này, làm theo bước 4 của "Cách hỏi"; lần chạy sau hàng của §2 khớp lại và hỏi lại.
+5. Làm tiếp nhịp: §3.5 mang quyết định.
 
 **Cách hỏi:**
 
