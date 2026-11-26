@@ -160,8 +160,14 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       }),
     [queue, heading],
   );
-  // Where the pointer was last, and whether that was on the region showing the toast.
-  const pointer = useRef<{ readonly x: number; readonly y: number } | null>(null);
+  // Where the pointer was last in the window, where the corner of the window then lay on the
+  // screen, and whether that was on the region showing the toast.
+  const pointer = useRef<{
+    readonly x: number;
+    readonly y: number;
+    readonly left: number;
+    readonly top: number;
+  } | null>(null);
   const pointed = useRef(false);
   const point = useCallback(
     (on: boolean) => {
@@ -175,7 +181,7 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   useEffect(() => {
     // The region of the window is empty while a dialog's shows the toast.
     const onMove = ({ clientX: x, clientY: y, target }: PointerEvent) => {
-      pointer.current = { x, y };
+      pointer.current = { x, y, left: window.screenX, top: window.screenY };
       const on =
         target instanceof Node &&
         [base.current, hosted.current].some((region) => !!region?.contains(target));
@@ -209,12 +215,19 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
   // its bottom edge. A toast that moves under a still pointer gets no move of it (reviews of PR
   // 1493, 1507, 1525). In a dialog it lies clear of the buttons, placed again as the dialog's size
   // changes and once the dialog has moved in: as it comes (`motion-dialog`) its buttons stand
-  // higher, and a move tells no observer.
+  // higher, and a move tells no observer. A window whose corner has moved on the screen since the
+  // pointer last moved (as it changes size by Win+↑, Snap, Ctrl+Cmd+F) has moved under it: where
+  // the pointer is in it is unknown until it moves, as when it has left the window (review of PR
+  // 1535).
   useLayoutEffect(() => {
     const region = host ? hosted.current : base.current;
     if (!region?.isConnected) return;
     const place = () => {
       if (host) clearOfDialog(region, host);
+      const was = pointer.current;
+      if (was && (was.left !== window.screenX || was.top !== window.screenY)) {
+        pointer.current = null;
+      }
       const at = pointer.current;
       point(!!at && region.contains(document.elementFromPoint(at.x, at.y)));
     };

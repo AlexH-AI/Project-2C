@@ -949,10 +949,34 @@ test('a toast lifted under a still pointer as a dialog moves in stays while the 
 // whether the pointer holds it is read again there. Only the height changes, so the toast only
 // moves up or down, and the pointer stays in the window.
 
-/** Khách hàng at 1 280 × 720, the clock held: the toast of the eye in the region of the window. */
+/**
+ * The corner of the window at `x`, `y` of the screen, as the page reads it (`screenX`, `screenY`
+ * and their other names): Playwright changes the size of the page, and says nothing of where its
+ * window lies.
+ */
+async function placeWindow(page: Page, x: number, y: number) {
+  await page.evaluate(
+    ([x, y]) => {
+      const corner = { screenX: x, screenLeft: x, screenY: y, screenTop: y };
+      for (const [name, value] of Object.entries(corner))
+        Object.defineProperty(window, name, { configurable: true, get: () => value });
+    },
+    [x, y] as const,
+  );
+  // Not on a browser that keeps its own.
+  const read = await page.evaluate(() => [screenX, screenLeft, screenY, screenTop]);
+  expect(read).toEqual([x, x, y, y]);
+}
+
+/**
+ * Khách hàng at 1 280 × 720, its window not maximised (its corner at 200, 120 of the screen, where
+ * it stays unless the case moves it), the clock held: the toast of the eye in the region of the
+ * window.
+ */
 async function windowToast(page: Page) {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/#/customers');
+  await placeWindow(page, 200, 120);
   await holdClock(page);
   await page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' }).click();
   await expect(page.getByText(MASKING)).toBeVisible();
@@ -995,6 +1019,50 @@ test('a toast that moves under a still pointer as the window changes size stays 
   expect(holds(before, x, y)).toBe(false);
   await resizeTo(page, 620);
   expect(holds(await box(toast), x, y)).toBe(true);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeVisible();
+  // Once the pointer leaves, it has 4,2 s again.
+  await page.mouse.move(10, 10);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeHidden();
+});
+
+// Review of PR 1535: as it changes size, the window may move its corner on the screen too (Win+↑
+// from a window not maximised, Snap, Ctrl+Cmd+F). A still pointer is then no longer where it was
+// in the window, and the page may hear of no move of it: where it was holds the toast no more,
+// until it moves again.
+
+/**
+ * The pointer still on the toast of the window as the window moves its corner to the corner of the
+ * screen and grows 4 px higher: the toast lies 4 px lower, still under where the pointer was in the
+ * window. Where that was.
+ */
+async function movedUnder(page: Page) {
+  const toast = await windowToast(page);
+  const before = await box(toast);
+  const [x, y] = [before.x + before.width / 2, before.y + before.height / 2];
+  await page.mouse.move(x, y);
+  await placeWindow(page, 0, 0);
+  await resizeTo(page, 724);
+  expect(holds(await box(toast), x, y)).toBe(true);
+  return { toast, x, y };
+}
+
+test('a toast under where a still pointer was as the window moves and changes size leaves on time (review #1535)', async ({
+  page,
+}) => {
+  const { toast } = await movedUnder(page);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeHidden();
+});
+
+test('the toast of a window that moved as it changed size stays once the pointer moves on it again (review #1535)', async ({
+  page,
+}) => {
+  const { toast, x, y } = await movedUnder(page);
+  await page.clock.runFor(2_000);
+  await page.mouse.move(x + 2, y);
+  // Held: 4,2 s from when the window moved are gone.
   await page.clock.runFor(4_300);
   await expect(toast).toBeVisible();
   // Once the pointer leaves, it has 4,2 s again.
