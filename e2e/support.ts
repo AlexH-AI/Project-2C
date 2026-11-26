@@ -477,6 +477,155 @@ export async function gotoScreen(page: Page, path: string) {
   if (!URL.canParse(path, here) || new URL(path, here).href !== here) await page.goto(path);
 }
 
+/** The transform and the opacity of a frame of a move. */
+interface Frame {
+  readonly transform?: string;
+  readonly opacity?: string;
+}
+
+/** One move of an element, as the page runs it: its first frame, or the last of a move out. */
+export interface Move {
+  readonly name: string;
+  readonly start: number;
+  readonly end: number;
+  readonly from?: Frame;
+  readonly to?: Frame;
+  /** What it runs on: its role, or its tag (`nextMove`). */
+  readonly on?: string;
+  /** What it runs on shows, where it has any: the choice of each list, how far it is scrolled. */
+  readonly lists?: readonly string[];
+  readonly scrolled?: number;
+}
+
+/**
+ * Past the latest start of "Hiện" (its eighth step at 196 ms, the bar in it at 296 ms), and any
+ * move under a pointer.
+ */
+const QUIET_MS = 600;
+
+/**
+ * Records in the page, from now on, the moves of the elements `select` finds (run in the page), as
+ * each move starts: one lasts 120–600 ms only, so it may be over once the action is done (review #1422). A
+ * move already there now is left out. Call the result once what starts the moves is done: it gives
+ * them by element, in the order of the page, once every one heard is over.
+ * `quiet`, for a step that plays nothing: what starts inside the elements counts too, and a
+ * transition of a place or a size (not of a colour); the result waits `QUIET_MS` after the action,
+ * never for a first move, and gives what it heard or what is still to start.
+ */
+export async function recordMoves(
+  page: Page,
+  select: string,
+  { quiet = false } = {},
+): Promise<() => Promise<Move[][]>> {
+  const mode = { select, quiet };
+  const record = await page.evaluateHandle(({ select, quiet }) => {
+    const before = new Set(document.getAnimations());
+    const heard = new Map<Element, Map<Animation, Move>>();
+    // The end of each move, taken as it is heard: the page drops a part's move once it is over,
+    // which cancels it, and the promise of a move cancelled is a new one that never settles.
+    const ends: Promise<unknown>[] = [];
+    let onFirst = () => {};
+    const anyHeard = new Promise<void>((resolve) => (onFirst = resolve));
+    const moves = (node: Element) =>
+      node
+        .getAnimations({ subtree: quiet })
+        .filter(
+          (move) =>
+            move instanceof CSSAnimation ||
+            (quiet &&
+              move instanceof CSSTransition &&
+              ['transform', 'translate', 'scale', 'rotate'].includes(move.transitionProperty)),
+        );
+    const hear = () => {
+      for (const node of document.querySelectorAll(select)) {
+        for (const move of moves(node)) {
+          if (before.has(move) || heard.get(node)?.has(move)) continue;
+          const effect = move.effect as KeyframeEffect;
+          const timing = effect.getComputedTiming();
+          const first: ComputedKeyframe | undefined = effect.getKeyframes()[0];
+          if (!heard.has(node)) heard.set(node, new Map());
+          heard.get(node)!.set(move, {
+            name:
+              move instanceof CSSAnimation
+                ? move.animationName
+                : (move as CSSTransition).transitionProperty,
+            start: Number(timing.delay),
+            end: Math.round(Number(timing.endTime)),
+            from: {
+              ...(typeof first?.transform === 'string' && { transform: first.transform }),
+              ...(typeof first?.opacity === 'string' && { opacity: first.opacity }),
+            },
+          });
+          ends.push(move.finished.catch(() => {}));
+          onFirst();
+        }
+      }
+    };
+    for (const type of ['animationstart', 'transitionrun'])
+      document.addEventListener(type, hear, true);
+    return async () => {
+      if (quiet) hear();
+      else await anyHeard;
+      // Every move heard is over, and the frame after brings no new one; quiet, as they are now.
+      for (let count = -1; !quiet && count !== ends.length;) {
+        count = ends.length;
+        await Promise.all(ends);
+        await new Promise(requestAnimationFrame);
+      }
+      for (const type of ['animationstart', 'transitionrun'])
+        document.removeEventListener(type, hear, true);
+      return [...heard.keys()]
+        .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+        .map((node) => [...heard.get(node)!.values()]);
+    };
+  }, mode);
+  return async () => {
+    // Timed here: the page's clock is Playwright's.
+    if (quiet) await page.waitForTimeout(QUIET_MS);
+    return record.evaluate((read) => read());
+  };
+}
+
+/**
+ * The names of the CSS animations there now on the elements `select` finds and inside them, a loop
+ * too: what a listener of `recordMoves` leaves out, as it was there before the listener (review
+ * #1511). Read as the listener starts, it leaves no move out between them.
+ */
+export const movesNow = (page: Page, select: string) =>
+  page.evaluate(
+    (select) =>
+      [
+        ...new Set(
+          [...document.querySelectorAll(select)].flatMap((node) =>
+            node.getAnimations({ subtree: true }),
+          ),
+        ),
+      ]
+        .filter((move) => move instanceof CSSAnimation)
+        .map((move) => move.animationName),
+    select,
+  );
+
+/**
+ * How far the screen is scrolled as the next click lands, which the way back of "Mở" keeps: read in
+ * the page then, not before the click, since Playwright first brings what it clicks into view.
+ */
+export async function scrollAtClick(page: Page): Promise<() => Promise<number>> {
+  await page.evaluate(() =>
+    addEventListener('click', () => Object.assign(window, { clickedAt: scrollY }), {
+      capture: true,
+      once: true,
+    }),
+  );
+  return async () => {
+    const scroll = await page.evaluate(
+      () => (window as unknown as { clickedAt: number }).clickedAt,
+    );
+    expect(scroll).toBeGreaterThan(0);
+    return scroll;
+  };
+}
+
 /**
  * A file of the e2e server that the server refused to connect for, as Edge logs it. On the Windows
  * runner the server now and then refuses one connection of the burst a page load makes, on the

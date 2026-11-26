@@ -7,6 +7,7 @@ import {
   lowestContrast,
   markOs,
   pickScope,
+  recordMoves,
   scopePill,
   token,
 } from './support';
@@ -91,10 +92,22 @@ test('under the pointer a button changes its light only; pressed it shrinks 4%, 
     await page.mouse.up();
   };
 
+  /**
+   * The moves of the buttons of the dialog, heard from before a step: a move that ends where it
+   * started is over by the time the button is read once the step is done.
+   */
+  const buttonMoves = () => recordMoves(page, 'dialog[open] button', { quiet: true });
+
+  // The pointer over a button moves nothing, heard from before it comes (review #1511); what is
+  // read after is where the button stays.
+  let moves = await buttonMoves();
   await primary.hover();
+  expect(await moves()).toEqual([]);
   await expect(primary).toHaveCSS('filter', 'brightness(1.07)');
   await expect(primary).toHaveCSS('transform', 'none');
+  moves = await buttonMoves();
   await secondary.hover();
+  expect(await moves()).toEqual([]);
   await expect(secondary).toHaveCSS('background-color', await painted(page, '--fill-3'));
   await expect(secondary).toHaveCSS('transform', 'none');
   // It springs back in --t-3 by --spring-snappy; the light changes in --t-1.
@@ -105,8 +118,13 @@ test('under the pointer a button changes its light only; pressed it shrinks 4%, 
   await whilePressed(secondary, () => expect(secondary).toHaveCSS('transform', SHRUNK));
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await whilePressed(primary, () => expect(primary).toHaveCSS('transform', 'none'));
-  await whilePressed(secondary, () => expect(secondary).toHaveCSS('transform', 'none'));
+  for (const button of [primary, secondary]) {
+    moves = await buttonMoves();
+    await whilePressed(button, async () => {
+      expect(await moves()).toEqual([]);
+      await expect(button).toHaveCSS('transform', 'none');
+    });
+  }
   // Neither was clicked: the dialog is still there.
   await expect(dialog).toBeVisible();
 });
