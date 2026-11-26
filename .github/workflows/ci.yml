@@ -7,6 +7,7 @@ on:
     # Package CLAUDE.md files are code: pnpm verify checks their codemap block (DR-74).
     # The G5 docs are code too: unit tests compare code with them word for word (DR5-57).
     # So is ui2.css: a unit test compares its block B with tokens.css (review #1398).
+    # And ui2.js: tools/notes-line-tags.test.mjs scans its comments (review #1513).
     # Keep in step with CODE_DOCS of tools/pr-core.mjs (a test checks).
     paths:
       - '**'
@@ -20,12 +21,14 @@ on:
       - 'docs/design/phase-5-prompts.md'
       - 'docs/golden/ai-eval.md'
       - 'docs/design/mockups/ui2.css'
+      - 'docs/design/mockups/ui2.js'
   push:
     branches: [main]
     # Docs-only pushes to main skip CI too (ADR-0015, Actions minutes addendum).
     # Package CLAUDE.md files are code: pnpm verify checks their codemap block (DR-74).
     # The G5 docs are code too: unit tests compare code with them word for word (DR5-57).
     # So is ui2.css: a unit test compares its block B with tokens.css (review #1398).
+    # And ui2.js: tools/notes-line-tags.test.mjs scans its comments (review #1513).
     # Keep in step with CODE_DOCS of tools/pr-core.mjs (a test checks).
     paths:
       - '**'
@@ -39,6 +42,7 @@ on:
       - 'docs/design/phase-5-prompts.md'
       - 'docs/golden/ai-eval.md'
       - 'docs/design/mockups/ui2.css'
+      - 'docs/design/mockups/ui2.js'
   workflow_dispatch:
 
 # A new push to a PR cancels that PR's older run. Runs on main never cancel each
