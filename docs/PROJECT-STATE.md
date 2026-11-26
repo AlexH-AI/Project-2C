@@ -688,6 +688,24 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **New spec rows** (DS-20 in §12.1 / §12.2) are added by T-519; T-520 does not change the spec.
     - **Model of run 5f:** Opus (spec §10.1: DS-*).
   - Run 5f queue (`auto-issues`, Opus): #1544 (T-519, records these decisions) → #1545 (T-520, DS-20). T-512 #1518 (DS-16) and T-516 #1531 (DS-18) are still done by hand in an ordinary session, outside the queue.
+- 2026-11-26: run 5g Issues (T-521, T-522, #1551, #1552). Two OWNER decisions of 26/11/2026. The first was taken inside the `auto-issues` pipeline of run 5f: the REVIEW of the task PR proposed `đích: DS mới`, and the orchestrating session asked the OWNER after that PR merged and before its notes PR, the way T-513 #1520 set; it is recorded in a comment that opens "Quyết định Owner (26/11/2026): DS mới cho review PR #1549". Decision 2 approved the ledger grouping proposal after run 5f, which made run 5g; it has no such comment. Labels verbatim; T-521 #1551 records them in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §10.1, §12.1, §12.2:
+  1. **DS-21**, 26/11/2026, review of PR #1549 (T-520, DS-20), https://github.com/AlexH-AI/Project-2C/pull/1549#issuecomment-7187750852: "DS-21 mới (đề xuất)".
+     - The Low / T note of that review on the exe acceptance rows NT-CH-23 / NT-MAC-32 of `docs/testing/nghiem-thu-v1.md` (the case where a toast is held by mistake does not say to put the pointer in the middle of the toast, so the rows can pass on the unfixed code; the 21 px threshold of the Notes column also holds only with the pointer in the middle) had no work of the same kind: DS-20 (T-520 #1545) closed with that PR, DS-19 (#1538), DS-17 (#1530) and DS-14 (#1516) are closed, and VA9b was done in T-504 #1498 and T-505 #1499. It gets the new target **DS-21**, of the kind "vỏ app: thông báo nổi, viên "Lưu ý"" (app shell: the toasts, the "Lưu ý" pill), the same kind as DS-14, DS-17, DS-19 and DS-20. Now T-522 #1552, L259 @`e8308b49`.
+     - The comment lists no option the OWNER did not choose. The review also proposed `thay: [đóng phase]`; that label was not taken.
+  2. **Ledger grouping after run 5f**, 26/11/2026 (`auto-issues` §3.6, ledger @`e8308b49`, proposal of the coding session `coding-ses2`; the table is in the body of PR #1553, the ledger PR that relabelled the notes of run 5g). The OWNER answered the question of the orchestrating session: "Duyệt". There is no "Quyết định Owner" comment; the label is quoted from the bodies of #1551 and of PR #1553.
+     - Two separate Issues, T-521 and T-522 (#1551, #1552), as proposed. Option not chosen (named in the body of #1551): fold DS-21 into T-521.
+     - T-521 takes no ledger note; L259 @`e8308b49` (`[DS-21]`) goes to T-522.
+     - Not now: DS-4 (25 notes @`e8308b49`) keeps its place in run 7; DS-12 (5 notes @`e8308b49`: L160, L162, L163, L164, L238) waits for the OWNER to say "ra issue DS-12", and its Medium note, L164 (reopening the data at 1× takes 1 093 ms, above the 1 s threshold), is to be checked before G7; L252 (`[DS-16]`) goes with T-512 #1518.
+     - Four notes proposed for ACCEPTED: L138, L147 (`[DS-4]`) and L252 (`[DS-16]`), carried over from the earlier groupings; L143 (`[D8]`, whose fix itself offers "hoặc Owner chuyển mục sang ACCEPTED"), to be decided when the run 6 Issues are written. The OWNER has not decided them on their own; they keep their labels.
+  - **Decided by Claude while writing the proposal and the Issues** (by the existing rules; not questions to the OWNER):
+    - **The name "run 5g"** and its place: right after run 5f, before run 6.
+    - **Two separate Issues:** DS-21 is not folded into T-521, so §12.2 keeps the "DS-n · #Issue" row pattern.
+    - **`[đóng phase]` notes in the same files stay:** L52, L102, L129, as with T-514, T-517, T-519. L102 lets an Issue that records a later run's decisions take it if that Issue may change the "Trạng thái" line / §10; that part is outside recording one run.
+    - **PR labels:** T-521 `risk:low`, docs only; T-522 `risk:low`, docs only. The file of T-522 (`docs/testing/nghiem-thu-v1.md`) is not in `CODE_DOCS` and no test reads it, so its PR runs no CI and carries no build label, and its review does not call `code-review`.
+    - **"Bị chặn bởi":** no run 5g Issue waits on a gate or on the result of another Issue; the run order is the queue. The two Issues share no file, and share none with T-512 or T-516.
+    - **New spec rows** (DS-21 in §12.1 / §12.2) are added by T-521; T-522 does not change the spec.
+    - **Model of run 5g:** Opus (spec §10.1: DS-*).
+  - Run 5g queue (`auto-issues`, Opus): #1551 (T-521, records these decisions) → #1552 (T-522, DS-21). T-512 #1518 (DS-16) and T-516 #1531 (DS-18) are still done by hand in an ordinary session, outside the queue.
 
 ## Next decision
 
