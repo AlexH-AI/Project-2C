@@ -709,6 +709,20 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **New spec rows** (DS-21 in §12.1 / §12.2) are added by T-521; T-522 does not change the spec.
     - **Model of run 5g:** Opus (spec §10.1: DS-*).
   - Run 5g queue (`auto-issues`, Opus): #1551 (T-521, records these decisions) → #1552 (T-522, DS-21). T-512 #1518 (DS-16) and T-516 #1531 (DS-18) are still done by hand in an ordinary session, outside the queue.
+- 2026-11-26: G1 of the storage ADR, ADR-0020 (T-501, #1458, PR #1561; `docs/decisions/0020-luu-tru-khi-du-lieu-lon.md`). Claude asked four questions in the question box of a Claude Code session on the Home PC, each with a proposed option, and the OWNER chose the proposed option on all four. Labels verbatim, also in the comment "Quyết định Owner (26/11/2026)" https://github.com/AlexH-AI/Project-2C/pull/1561#issuecomment-7198301539:
+  1. **The direction of ADR-0020:** "Duyệt hướng (Recommended)". **ADR-0020 is Accepted (G1).**
+     - v1.0 keeps ADR-0016 (sql.js, the whole file written after each transaction); no crate and no change to the save path before G7.
+     - When `project2c.db` reaches ≈ 21 MB (≈ 1.5× the load data), a profiling task P0 splits open, save and creating an appointment into parts, on the Home PC and the Office Laptop.
+     - By P0: native SQLite in Rust keeps the file and replays each transaction's writes (sql.js stays the working copy) for saves; a coalesced export first where the export is most of a write; Rust as the only database left to a later ADR.
+     - Backups over 100 MB become an SQLite file whose rows are copied into an app-built database and checked; JSON backups stay importable.
+     - The Rust SQLite crate goes through G4 when the first issue that needs it is opened. Code issues only when the OWNER says so.
+     - Option not chosen: "Chưa duyệt, sửa ADR".
+  2. **Opening and the first screen after a reload stay over their thresholds on that path** (the whole file is still loaded into the webview): "Chấp nhận tạm, P0 quyết (Recommended)". They may stay over until Rust holds the only database; if P0 shows that loading the whole file is most of opening, the ADR for that option is written right after P0 instead of waiting for ≈ 5×.
+     - Options not chosen: "Nới ngưỡng cho dữ liệu lớn", "Viết ADR (4) ngay".
+  3. **A small code issue for the backup messages** (the import dialog 10b for a file over the cap stops saying "kiểm tra lại file đã chọn"; export refuses early when clearly over the cap, the exact byte check stays near it): "Làm trước G7 (Recommended)". It goes under K49 and is created when the OWNER says so.
+     - Option not chosen: "Sau v1.0".
+  4. **The marks, by the size of `project2c.db`:** "Giữ 21 / 35 MB (Recommended)". Start P0 at ≈ 21 MB; saves done before ≈ 35 MB (≈ 2.5×); P0 also measures the Office Laptop and moves the marks down if it is slower.
+     - Option not chosen: "Sớm hơn: 17 / 28 MB".
 
 ## Next decision
 
