@@ -1,6 +1,6 @@
 # ADR-0016: Lưu trữ — sql.js ở mọi nơi, ghi file qua lệnh Rust mỏng
 
-- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026)
+- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026). Lưu trữ khi dữ liệu lớn (mốc đo, hướng chuyển sau v1.0): ADR-0020.
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4; ADR-0004, ADR-0005, ADR-0006, ADR-0010; spec `docs/design/phase-3-du-lieu.md`
 - **Commit / PR:** PR #58 (issue #57)
