@@ -944,6 +944,65 @@ test('a toast lifted under a still pointer as a dialog moves in stays while the 
   await expect(toast).toBeHidden();
 });
 
+// Review of PR 1525: the region of the window lies at the middle of its bottom edge, so the toast
+// moves as the window changes size (Win+↑, Snap, Ctrl+Cmd+F), under a pointer that has not moved:
+// whether the pointer holds it is read again there. Only the height changes, so the toast only
+// moves up or down, and the pointer stays in the window.
+
+/** Khách hàng at 1 280 × 720, the clock held: the toast of the eye in the region of the window. */
+async function windowToast(page: Page) {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/#/customers');
+  await holdClock(page);
+  await page.getByRole('banner').getByRole('button', { name: 'Che tên khách hàng' }).click();
+  await expect(page.getByText(MASKING)).toBeVisible();
+  return page.getByText(MASKING);
+}
+
+/** The window `height` px high, once the page has heard of it: after the app's own listener. */
+async function resizeTo(page: Page, height: number) {
+  type Resized = { resized: Promise<void> };
+  await page.evaluate(() => {
+    (window as unknown as Resized).resized = new Promise((done) =>
+      addEventListener('resize', () => done(), { once: true }),
+    );
+  });
+  await page.setViewportSize({ width: 1280, height });
+  await page.evaluate(() => (window as unknown as Resized).resized);
+}
+
+test('a toast that moves from under a still pointer as the window changes size leaves on time (review #1525)', async ({
+  page,
+}) => {
+  const toast = await windowToast(page);
+  const before = await box(toast);
+  const [x, y] = [before.x + before.width / 2, before.y + before.height / 2];
+  await page.mouse.move(x, y);
+  await resizeTo(page, 820);
+  expect(holds(await box(toast), x, y)).toBe(false);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeHidden();
+});
+
+test('a toast that moves under a still pointer as the window changes size stays while the pointer is on it (review #1525)', async ({
+  page,
+}) => {
+  const toast = await windowToast(page);
+  const before = await box(toast);
+  // Where it will lie in a window 100 px lower, off it for now.
+  const [x, y] = [before.x + before.width / 2, before.y + before.height / 2 - 100];
+  await page.mouse.move(x, y);
+  expect(holds(before, x, y)).toBe(false);
+  await resizeTo(page, 620);
+  expect(holds(await box(toast), x, y)).toBe(true);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeVisible();
+  // Once the pointer leaves, it has 4,2 s again.
+  await page.mouse.move(10, 10);
+  await page.clock.runFor(4_300);
+  await expect(toast).toBeHidden();
+});
+
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Ô lệnh' });
 const paletteField = (page: Page) => palette(page).getByRole('combobox', { name: 'Ô lệnh' });
 

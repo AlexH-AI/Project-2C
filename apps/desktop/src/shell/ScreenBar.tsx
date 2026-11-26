@@ -58,7 +58,10 @@ export function Toolbar({
         className="toolbar z-10 flex flex-none items-center gap-2.5 pr-5.5 pl-7"
       >
         {/* Short of room, the line under the name is cut first (`shrink-1000`), then the pill
-            gives up the customer's name, then its time left; the name keeps 80 px at least. */}
+            gives up the customer's name, then its time left; once today has none left, "kế tiếp
+            …" first, "Hết lịch hôm nay" whole. The part of a pixel taken from the pill while the
+            line is cut goes from its 1 px spacer (HeadsUp.tsx), not from its words. The name
+            keeps 80 px at least. */}
         <div className="min-w-20 shrink-1000">
           {/* Cut at its end only (`clip` on x): the marks over a capital (Ổ) and the tails under
               the line pass its 1.15 line, and `truncate` would cut them too. */}

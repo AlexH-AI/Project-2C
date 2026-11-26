@@ -205,10 +205,11 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
     if (host && hosted.current?.isConnected) hosted.current.showPopover();
   }, [host]);
   // Where the toast lies, then whether the pointer is on it there, as the toast changes or goes to
-  // another region: a toast that moves under a still pointer gets no move of it (reviews of PR
-  // 1493, 1507). In a dialog it lies clear of the buttons, placed again as the dialog's size or the
-  // window's changes and once the dialog has moved in: as it comes (`motion-dialog`) its buttons
-  // stand higher, and a move tells no observer.
+  // another region, and as the window changes size: the region of the window lies at the middle of
+  // its bottom edge. A toast that moves under a still pointer gets no move of it (reviews of PR
+  // 1493, 1507, 1525). In a dialog it lies clear of the buttons, placed again as the dialog's size
+  // changes and once the dialog has moved in: as it comes (`motion-dialog`) its buttons stand
+  // higher, and a move tells no observer.
   useLayoutEffect(() => {
     const region = host ? hosted.current : base.current;
     if (!region?.isConnected) return;
@@ -218,10 +219,10 @@ export function ToastRegion({ heading }: { heading: RefObject<HTMLElement | null
       point(!!at && region.contains(document.elementFromPoint(at.x, at.y)));
     };
     place();
-    if (!host) return;
+    addEventListener('resize', place);
+    if (!host) return () => removeEventListener('resize', place);
     const sized = new ResizeObserver(place);
     sized.observe(host);
-    addEventListener('resize', place);
     host.addEventListener('animationend', place);
     return () => {
       sized.disconnect();
