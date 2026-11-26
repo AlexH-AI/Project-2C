@@ -40,6 +40,8 @@ Máy: Home PC (i9-12900K, 32 GB). Dữ liệu 1× ≈ 1 500 KH, 10 400 lịch h�
 | `project2c.db` | — | — | 14,1 MB | 70,0 MB | 144,7 MB |
 | File backup | — | trần 104,9 MB | 16,0 MB | 80,2 MB | 160,7 MB |
 
+Đơn vị: MB trong ADR này là 1 000 000 byte (14,1 MB là 14 102 528 byte). Trần backup "100 MB" của app là 104 857 600 byte (100 × 1 024 × 1 024), tức ≈ 104,9 MB theo đơn vị đó.
+
 - **Thao tác màn chịu được cỡ lớn:** đổi kỳ, sắp, lọc, mở hồ sơ, Thùng rác đều dưới 200 ms ở cả 10×. Màn Team & nhân sự là ngoại lệ, nhưng chỗ chậm nằm ở phần tính của màn, không do cách lưu, và T-502 đã sửa (10×: 292 → 17 ms).
 - **Mọi việc đụng tới cả file thì vượt ngưỡng:** mở, màn đầu sau tải lại, lưu, tạo lịch hẹn, nhập / xuất backup. Các số tăng gần tuyến tính theo cỡ file. Nội suy giữa 1× và 5×, ngưỡng bắt đầu vượt ở:
   - màn đầu sau tải lại ≈ 1,4–2×;
@@ -158,7 +160,8 @@ Theo mục số đo, đoạn "Cỡ một người dùng thật có thể đạt"
   - Trần mới đặt lúc viết Issue, theo số đo nhập file 10× / 20× (thời gian, bộ nhớ đỉnh). ADR này chỉ chốt định dạng.
 - **Câu báo hôm nay, dùng tới khi có B3:**
   - Hộp 10b khi nhập file quá trần: bỏ câu "Backup của Project-2C nhỏ hơn nhiều: kiểm tra lại file đã chọn". Thay bằng câu nói file có thể là backup của dữ liệu lớn mà app chưa đọc được, kèm cách chép file `.db` như câu `settings.backup.exportTooLarge`.
-  - Xuất: từ chối trước khi dựng JSON khi ước cỡ file vượt trần, thay vì sau 3,3 s và 1,45 GB. Ở ba cỡ của mục số đo, file backup ≈ 1,1–1,15 lần `project2c.db`.
+  - Xuất: từ chối trước khi dựng JSON khi ước cỡ file vượt trần rõ, thay vì sau 3,3 s và 1,45 GB. Ở ba cỡ của mục số đo, file backup ≈ 1,1–1,15 lần `project2c.db`. Phép ước chỉ từ chối khi vượt xa trần (biên an toàn đặt ở Issue). Gần trần thì app vẫn dựng JSON và kiểm đúng số byte như hôm nay, vì trần là số byte của file, cùng thước với hộp 10b (Owner 08/11/2026, DR6-179; spec Phase 3): một phép ước không được từ chối file mà luật đúng số byte cho qua.
+  - Câu riêng của hộp 10b cho file quá trần không có trong mockup `docs/design/mockups/settings-data.html` (mockup chỉ có câu cho file hỏng), nên đổi câu không cần G3.
   - Đây là một Issue code nhỏ, chịu K49. Làm trước G7 hay sau v1.0 là câu hỏi cho Owner (thân PR của T-501).
 
 ## Mốc đo để chuyển
@@ -168,7 +171,11 @@ Theo mục số đo, đoạn "Cỡ một người dùng thật có thể đạt"
   - màn đầu sau tải lại vượt ngưỡng từ ≈ 1,4–2×;
   - mọi số đo chỉ trên i9-12900K;
   - việc chuyển ước 4–6 Issue, cần thời gian làm và nghiệm thu.
-- **Mốc phải xong: trước ≈ 35 MB (≈ 2,5×).** Đó là chỗ mở và lưu vượt ngưỡng trên Home PC. P0 đo cả trên Office Laptop; máy chậm hơn thì dời hai mốc xuống theo số của nó.
+- **Mốc phải xong: trước ≈ 35 MB (≈ 2,5×).** Đó là chỗ lưu và tạo lịch hẹn vượt ngưỡng trên Home PC. P0 đo cả trên Office Laptop; máy chậm hơn thì dời hai mốc xuống theo số của nó.
+- **Mở và màn đầu sau tải lại vẫn vượt ngưỡng trên hướng đề xuất.** (2) và (3) vẫn nạp cả file vào webview, nên `app.open-data` và `reload.*` vẫn tăng tuyến tính: màn đầu sau tải lại vượt 500 ms từ ≈ 1,4–2×, tức trước cả mốc bắt đầu; mở vượt 600 ms từ ≈ 2,5×. (3) chỉ rút được phần kiểm toàn vẹn và chép backup. Chỉ (4) sửa hẳn hai việc này. Ba cách, Owner chọn (câu hỏi ở thân PR của T-501):
+  - chấp nhận hai việc này vượt ngưỡng (mở một lần mỗi phiên) tới khi làm (4); nếu P0 cho thấy phần nạp cả file chiếm phần lớn của lần mở, viết ADR (4) ngay sau P0 thay vì chờ ≈ 5× (đề xuất của Claude);
+  - nới ngưỡng của hai việc này cho dữ liệu lớn;
+  - viết ADR (4) ngay, trước P0.
 - **Mốc backup:** B3 làm cùng việc chuyển cách lưu, và phải xong trước khi `project2c.db` tới ≈ 90 MB (≈ 6,5×, trần backup JSON).
 - **Thước phụ khi đã có dữ liệu thật:** probe (`e2e/perf/README.md`) đọc `p2c:data-open` và `p2c:db-save` trên một bản chép của dữ liệu, so với ngưỡng Owner 13/10 (≤ 600 ms, ≤ 400 ms).
   - Không dùng LCP hay "mở lại ≤ 1 s" làm mốc. Ở 1× hôm nay, LCP đã ≈ 1,09 s mà chưa rõ nguyên nhân (mục số đo; ghi chú Medium của DS-12 ở sổ).
@@ -186,7 +193,8 @@ Theo mục số đo, đoạn "Cỡ một người dùng thật có thể đạt"
    - **Tạo lịch hẹn và lệnh ghi:** nếu phần xuất file chiếm phần lớn, (2) sửa được và rẻ (1–2 Issue). Khi đó (2) làm trước, (3) làm khi `db.save` thành vấn đề (vượt ngưỡng trên máy đang dùng, hay đóng app phải chờ lưu).
    - **Nếu phần đọc lại bảng và vẽ màn chiếm phần lớn:** không phương án lưu nào sửa được. Đó là việc riêng ở phía đọc, như T-502, ngoài ADR này.
    - **Mở:** nếu `integrity_check` và chép backup chiếm phần lớn, (3) rút được (kiểm bằng SQLite gốc trong Rust). Nếu phần nạp cả file chiếm phần lớn, chỉ (4) sửa được: cần ADR riêng.
-5. **(4) không chọn bây giờ:** nó chỉ có lợi về mở và bộ nhớ khi đổi cả phía đọc của app. Xét bằng ADR riêng khi dữ liệu tới ≈ 5×, hay khi bộ nhớ thành vấn đề trên máy 8 GB (mục số đo: máy 8 GB sẽ chật ở 10×).
+   - Trên hướng này, mở và màn đầu sau tải lại vượt ngưỡng từ ≈ 1,4–2,5× cho tới khi làm (4) (mục Mốc đo; Owner chọn một trong ba cách ở đó).
+5. **(4) không chọn bây giờ:** nó chỉ có lợi về mở và bộ nhớ khi đổi cả phía đọc của app. Xét bằng ADR riêng sớm nhất ngay sau P0, nếu P0 cho thấy phần nạp cả file chiếm phần lớn của lần mở; muộn nhất khi dữ liệu tới ≈ 5×, hay khi bộ nhớ thành vấn đề trên máy 8 GB (mục số đo: máy 8 GB sẽ chật ở 10×).
 6. **Backup trên 100 MB: (B3)**, file SQLite, nhập bằng cách chép hàng vào DB app dựng rồi kiểm giá trị. Làm cùng việc chuyển cách lưu, xong trước ≈ 6,5×. Backup JSON vẫn nhập được.
 7. **G1 của ADR này chỉ duyệt hướng và mốc.** Crate SQLite cho Rust qua G4 lúc mở Issue đầu tiên cần nó. Issue code chỉ tạo khi Owner bảo.
 
