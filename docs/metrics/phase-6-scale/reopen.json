@@ -940,5 +940,167 @@
         ]
       ]
     }
-  ]
+  ],
+  "diagnostics": {
+    "note": "Read in the page after the opening (no debugger while it opened), by a script not committed; Tổng quan, load data 1×.",
+    "mainExeWithForcePrefersReducedMotionFlag": {
+      "browserArgument": "--force-prefers-reduced-motion",
+      "prefersReducedMotionMatches": false,
+      "riseAnimationName": "rise",
+      "runs": [
+        {
+          "callToPageStartMs": 289,
+          "openDataMs": 320,
+          "lcp": [
+            644,
+            "P Tháng 11/2026 · 01/11 – 27/11/"
+          ]
+        },
+        {
+          "callToPageStartMs": 261,
+          "openDataMs": 307,
+          "lcp": [
+            616,
+            "P Tháng 11/2026 · 01/11 – 27/11/"
+          ]
+        },
+        {
+          "callToPageStartMs": 280,
+          "openDataMs": 307,
+          "lcp": [
+            632,
+            "P Tháng 11/2026 · 01/11 – 27/11/"
+          ]
+        }
+      ]
+    },
+    "calmExe": {
+      "riseAnimationName": "none",
+      "runs": [
+        {
+          "callToPageStartMs": 289,
+          "openDataMs": 310,
+          "lcp": [
+            624,
+            "P Tháng 11/2026 · 01/11 – 27/11/"
+          ],
+          "scriptsMs": [
+            [
+              "App-kZZ6Ya1k.js",
+              310,
+              314
+            ],
+            [
+              "chart-Zomw1zIK.js",
+              310,
+              316
+            ]
+          ],
+          "longAnimationFrames": [
+            {
+              "startMs": 190,
+              "durationMs": 109,
+              "renderStartMs": 0,
+              "scripts": []
+            },
+            {
+              "startMs": 333,
+              "durationMs": 235,
+              "renderStartMs": 558,
+              "scripts": [
+                {
+                  "source": "index-CfBkzOQc.js",
+                  "invoker": "MessagePort.onmessage",
+                  "startMs": 333,
+                  "durationMs": 224
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "callToPageStartMs": 291,
+          "openDataMs": 307,
+          "lcp": [
+            628,
+            "P Tháng 11/2026 · 01/11 – 27/11/"
+          ],
+          "scriptsMs": [
+            [
+              "App-kZZ6Ya1k.js",
+              307,
+              311
+            ],
+            [
+              "chart-Zomw1zIK.js",
+              307,
+              313
+            ]
+          ],
+          "longAnimationFrames": [
+            {
+              "startMs": 188,
+              "durationMs": 108,
+              "renderStartMs": 0,
+              "scripts": []
+            },
+            {
+              "startMs": 330,
+              "durationMs": 237,
+              "renderStartMs": 556,
+              "scripts": [
+                {
+                  "source": "index-CfBkzOQc.js",
+                  "invoker": "MessagePort.onmessage",
+                  "startMs": 330,
+                  "durationMs": 226
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "callToPageStartMs": 288,
+          "openDataMs": 306,
+          "lcp": [
+            620,
+            "P Tháng 11/2026 · 01/11 – 27/11/"
+          ],
+          "scriptsMs": [
+            [
+              "App-kZZ6Ya1k.js",
+              306,
+              309
+            ],
+            [
+              "chart-Zomw1zIK.js",
+              306,
+              312
+            ]
+          ],
+          "longAnimationFrames": [
+            {
+              "startMs": 187,
+              "durationMs": 109,
+              "renderStartMs": 0,
+              "scripts": []
+            },
+            {
+              "startMs": 329,
+              "durationMs": 238,
+              "renderStartMs": 556,
+              "scripts": [
+                {
+                  "source": "index-CfBkzOQc.js",
+                  "invoker": "MessagePort.onmessage",
+                  "startMs": 329,
+                  "durationMs": 227
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
 }
