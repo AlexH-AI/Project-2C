@@ -154,12 +154,18 @@ describe('isDocsOnly', () => {
     expect(isDocsOnly(['docs/design/mockups/chuyen-dong.html'])).toBe(true);
   });
 
+  it('treats ui2.js as code: the check of tools/notes-line-tags.test.mjs scans it (review #1513)', () => {
+    expect(isDocsOnly(['docs/design/mockups/ui2.js'])).toBe(false);
+  });
+
   it('lists every docs file that a test reads, and only files that exist (R2-21, review #1398)', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
-    const tests = execFileSync('git', ['ls-files', '*.test.*', '*.spec.*'], { cwd: root })
+    // Not a test deleted but not staged, which git still lists; `-z` keeps a name outside ASCII
+    // unquoted (review #1513).
+    const tests = execFileSync('git', ['ls-files', '-z', '*.test.*', '*.spec.*'], { cwd: root })
       .toString()
-      .split('\n')
-      .filter(Boolean);
+      .split('\0')
+      .filter((file) => file && existsSync(join(root, file)));
     const read = new Set(
       tests.flatMap((file) => docsRead(root, file, readFileSync(join(root, file), 'utf8'))),
     );

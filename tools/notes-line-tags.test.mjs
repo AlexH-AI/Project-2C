@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { isDocsOnly } from './pr-core.mjs';
 
 // A line number of docs/state/review-notes.md moves with every PR of the notes, so a comment that
 // names a note by it, as `(L184)`, soon points at another note (DS-13, T-507 #1501). A comment
@@ -33,10 +34,17 @@ function lineTags(path, text) {
   return text.split('\n').flatMap((line, i) => (TAG.test(line) ? [`${path}:${i + 1}`] : []));
 }
 
-/** The files under `SCANNED` git has or would add: no build output, no `node_modules`. */
+/**
+ * The files under `SCANNED` git has or would add: no build output, no `node_modules`. No Markdown
+ * file: a README (e2e/perf has one) is a doc, as every `.md` is, and CI skips it. No file deleted
+ * but not staged, which git still lists; `-z` keeps a name outside ASCII unquoted (review #1513).
+ */
 function scannedFiles() {
-  const args = ['ls-files', '--cached', '--others', '--exclude-standard', '--', ...SCANNED];
-  return execFileSync('git', args, { cwd: ROOT }).toString().split('\n').filter(Boolean);
+  const args = ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', ...SCANNED];
+  return execFileSync('git', args, { cwd: ROOT })
+    .toString()
+    .split('\0')
+    .filter((path) => path && !path.endsWith('.md') && existsSync(join(ROOT, path)));
 }
 
 describe('line numbers of the review notes in comments', () => {
@@ -75,5 +83,11 @@ describe('line numbers of the review notes in comments', () => {
         return bytes.includes(0) ? [] : lineTags(file, bytes.toString('utf8'));
       });
     expect(found).toEqual([]);
+  });
+
+  // A PR that only changes a file CI skips merges without CI; a tag it wrote there would turn the
+  // Verify of the next code PR red, at a file outside that PR (review #1513).
+  it('scans only files whose change makes CI run', () => {
+    expect(scannedFiles().filter((file) => isDocsOnly([file]))).toEqual([]);
   });
 });

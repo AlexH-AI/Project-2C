@@ -29,14 +29,16 @@ export const CODEMAP_DOCS = [
 
 // Every docs file (under docs/ or .md) that CI treats as code: the package CLAUDE.md files, plus
 // every file under docs/ that a unit test reads, Markdown or not (a test checks): the G5 docs it
-// compares code with word for word (prompts, retry, web@1; eval profiles, DR5-57), and the mockup
-// CSS file whose block B it compares to tokens.css (review #1398). ci.yml lists exactly these files
+// compares code with word for word (prompts, retry, web@1; eval profiles, DR5-57), the mockup
+// CSS file whose block B it compares to tokens.css (review #1398), and the mockup script whose
+// comments tools/notes-line-tags.test.mjs scans (review #1513). ci.yml lists exactly these files
 // in both of its `paths` filters (a test checks).
 export const CODE_DOCS = [
   ...CODEMAP_DOCS,
   'docs/design/phase-5-prompts.md',
   'docs/golden/ai-eval.md',
   'docs/design/mockups/ui2.css',
+  'docs/design/mockups/ui2.js',
 ];
 
 /** True when CI skips the PR (ci.yml `paths`: docs/** and **\/*.md, but not CODE_DOCS). */
