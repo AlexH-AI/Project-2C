@@ -1033,28 +1033,34 @@ test('a toast that moves under a still pointer as the window changes size stays 
 // until it moves again.
 
 /**
- * The pointer still on the toast of the window as the window moves its corner to the corner of the
- * screen and grows 4 px higher: the toast lies 4 px lower, still under where the pointer was in the
- * window. Where that was.
+ * The pointer still on the toast of the window as the window moves its corner to `corner` of the
+ * screen (from 200, 120; the corner of the screen unless the case says) and grows 4 px higher: the
+ * toast lies 4 px lower, still under where the pointer was in the window. Where that was.
  */
-async function movedUnder(page: Page) {
+async function movedUnder(page: Page, corner = { x: 0, y: 0 }) {
   const toast = await windowToast(page);
   const before = await box(toast);
   const [x, y] = [before.x + before.width / 2, before.y + before.height / 2];
   await page.mouse.move(x, y);
-  await placeWindow(page, 0, 0);
+  await placeWindow(page, corner.x, corner.y);
   await resizeTo(page, 724);
   expect(holds(await box(toast), x, y)).toBe(true);
   return { toast, x, y };
 }
 
-test('a toast under where a still pointer was as the window moves and changes size leaves on time (review #1535)', async ({
-  page,
-}) => {
-  const { toast } = await movedUnder(page);
-  await page.clock.runFor(4_300);
-  await expect(toast).toBeHidden();
-});
+// Review of PR 1542: Snap of a window already at the top of the screen moves its corner along one
+// axis only, so each axis has its own case. Moved along both, the corner is told by either.
+for (const [axis, corner] of [
+  ['x', { x: 0, y: 120 }],
+  ['y', { x: 200, y: 0 }],
+] as const)
+  test(`a toast under where a still pointer was as the window moves along ${axis} only and changes size leaves on time (review #1535)`, async ({
+    page,
+  }) => {
+    const { toast } = await movedUnder(page, corner);
+    await page.clock.runFor(4_300);
+    await expect(toast).toBeHidden();
+  });
 
 test('the toast of a window that moved as it changed size stays once the pointer moves on it again (review #1535)', async ({
   page,
