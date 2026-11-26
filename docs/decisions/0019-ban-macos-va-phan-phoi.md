@@ -1,6 +1,6 @@
 # ADR-0019: Bản macOS và phân phối hai nền tảng
 
-- **Trạng thái:** Accepted (G1, G4, G6): Owner duyệt ngày 12/11/2026 ("Duyệt tất cả"). G1 là quyết định Q1–Q7; G4 là crate Keychain (Q8), NSIS (Q9), WebKit của Playwright (Q10); G6 là kho key macOS (Q8). Cùng câu trả lời, Owner mở K49 cho Q11 và Q12. Ký mã và Store không chốt ở đây: Owner "cân nhắc sau" (§6).
+- **Trạng thái:** Accepted (G1, G4, G6): Owner duyệt ngày 12/11/2026 ("Duyệt tất cả"). G1 là quyết định Q1–Q7; G4 là crate Keychain (Q8), NSIS (Q9), WebKit của Playwright (Q10); G6 là kho key macOS (Q8). Cùng câu trả lời, Owner mở K49 cho Q11 và Q12. Ký mã và Store không chốt ở đây: Owner "cân nhắc sau" (§6). "ADR lưu trữ (chưa có)" ở dưới nay là ADR-0020.
 - **Ngày:** 2026-11-12
 - **Nguồn:** Owner 10–12/11/2026 trong chat ở Home PC (nguyên văn: `docs/PROJECT-STATE.md`, các mục 2026-11-10, 2026-11-11, 2026-11-12; Issue #1230 mục Bối cảnh). Kết quả thử bản Mac: Issue #1226. Phân tích: `docs/design/nen-tang-mac-va-thuong-mai-hoa.md`. Spec: `docs/design/phase-6-phan-hoi-dung-thu.md` §9.
 - **Thay một phần:**
