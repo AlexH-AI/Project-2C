@@ -14,6 +14,7 @@ import {
   right,
   scopePill,
   screenSub,
+  scrollAtClick,
   scrolls,
 } from './support';
 
@@ -841,7 +842,9 @@ test('the name of an RM opens their page; the way back returns to it, then to Te
 
   const customer = list.getByRole('row').nth(12).getByRole('link');
   await customer.scrollIntoViewIfNeeded();
-  const [href, scroll] = [await customer.getAttribute('href'), await page.evaluate(() => scrollY)];
+  // How far the page is scrolled as the click lands, which the way back keeps: a click Playwright
+  // tries again first brings the link into view anew (review #1511).
+  const [href, scrolled] = [await customer.getAttribute('href'), await scrollAtClick(page)];
   await customer.click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
   await expect(page).toHaveURL(new RegExp(`${href}$`));
@@ -851,7 +854,7 @@ test('the name of an RM opens their page; the way back returns to it, then to Te
   await expect(policies).toHaveAttribute('aria-sort', 'descending');
   await expect(list.getByRole('row').nth(12).getByRole('link')).toBeFocused();
   await expect(list.getByRole('row').nth(12).getByRole('link')).toHaveAttribute('href', href!);
-  expect(await page.evaluate(() => scrollY)).toBe(scroll);
+  expect(await page.evaluate(() => scrollY)).toBe(await scrolled());
 
   await page.getByRole('link', { name: '← Team & nhân sự' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');

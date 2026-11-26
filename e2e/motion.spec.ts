@@ -2,14 +2,18 @@ import { expect, test, type Locator, type Page } from './fixtures';
 import {
   gotoScreen,
   markOs,
+  movesNow,
   periodPill,
   pickFirstRm,
   pickScope,
   pressButton,
+  recordMoves,
   scopeMenu,
   scopePill,
+  scrollAtClick,
   tabKey,
   teamRow,
+  type Move,
 } from './support';
 
 // The moves of the app (VA7a; chuyen-dong.html, ADR-0013 appendix 14/11/2026). Every other spec
@@ -17,115 +21,6 @@ import {
 // group. What is read is the move itself (`getAnimations()`: its name, when it starts and ends, its
 // first frame), never a transform caught halfway.
 test.use({ reducedMotion: 'no-preference' });
-
-/** The transform and the opacity of a frame of a move. */
-interface Frame {
-  readonly transform?: string;
-  readonly opacity?: string;
-}
-
-/** One move of an element, as the page runs it: its first frame, or the last of a move out. */
-interface Move {
-  readonly name: string;
-  readonly start: number;
-  readonly end: number;
-  readonly from?: Frame;
-  readonly to?: Frame;
-  /** What it runs on: its role, or its tag (`nextMove`). */
-  readonly on?: string;
-  /** What it runs on shows, where it has any: the choice of each list, how far it is scrolled. */
-  readonly lists?: readonly string[];
-  readonly scrolled?: number;
-}
-
-/**
- * Past the latest start of "Hiện" (its eighth step at 196 ms, the bar in it at 296 ms), and any
- * move under a pointer.
- */
-const QUIET_MS = 600;
-
-/**
- * Records in the page, from now on, the moves of the elements `select` finds (run in the page), as
- * each move starts: one lasts 120–600 ms only, so it may be over once the action is done (review #1422). A
- * move already there now is left out. Call the result once what starts the moves is done: it gives
- * them by element, in the order of the page, once every one heard is over.
- * `quiet`, for a step that plays nothing: what starts inside the elements counts too, and a
- * transition of a place or a size (not of a colour); the result waits `QUIET_MS` after the action,
- * never for a first move, and gives what it heard or what is still to start.
- */
-async function recordMoves(
-  page: Page,
-  select: string,
-  { quiet = false } = {},
-): Promise<() => Promise<Move[][]>> {
-  const mode = { select, quiet };
-  const record = await page.evaluateHandle(({ select, quiet }) => {
-    const before = new Set(document.getAnimations());
-    const heard = new Map<Element, Map<Animation, Move>>();
-    // The end of each move, taken as it is heard: the page drops a part's move once it is over,
-    // which cancels it, and the promise of a move cancelled is a new one that never settles.
-    const ends: Promise<unknown>[] = [];
-    let onFirst = () => {};
-    const anyHeard = new Promise<void>((resolve) => (onFirst = resolve));
-    const moves = (node: Element) =>
-      node
-        .getAnimations({ subtree: quiet })
-        .filter(
-          (move) =>
-            move instanceof CSSAnimation ||
-            (quiet &&
-              move instanceof CSSTransition &&
-              ['transform', 'translate', 'scale', 'rotate'].includes(move.transitionProperty)),
-        );
-    const hear = () => {
-      for (const node of document.querySelectorAll(select)) {
-        for (const move of moves(node)) {
-          if (before.has(move) || heard.get(node)?.has(move)) continue;
-          const effect = move.effect as KeyframeEffect;
-          const timing = effect.getComputedTiming();
-          const first: ComputedKeyframe | undefined = effect.getKeyframes()[0];
-          if (!heard.has(node)) heard.set(node, new Map());
-          heard.get(node)!.set(move, {
-            name:
-              move instanceof CSSAnimation
-                ? move.animationName
-                : (move as CSSTransition).transitionProperty,
-            start: Number(timing.delay),
-            end: Math.round(Number(timing.endTime)),
-            from: {
-              ...(typeof first?.transform === 'string' && { transform: first.transform }),
-              ...(typeof first?.opacity === 'string' && { opacity: first.opacity }),
-            },
-          });
-          ends.push(move.finished.catch(() => {}));
-          onFirst();
-        }
-      }
-    };
-    for (const type of ['animationstart', 'transitionrun'])
-      document.addEventListener(type, hear, true);
-    return async () => {
-      if (quiet) hear();
-      else await anyHeard;
-      // Every move heard is over, and the frame after brings no new one; quiet, as they are now.
-      for (let count = -1; !quiet && count !== ends.length;) {
-        count = ends.length;
-        await Promise.all(ends);
-        await new Promise(requestAnimationFrame);
-      }
-      for (const type of ['animationstart', 'transitionrun'])
-        document.removeEventListener(type, hear, true);
-      return [...heard.keys()]
-        .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
-        .map((node) => [...heard.get(node)!.values()]);
-    };
-  }, mode);
-  return async () => {
-    // Timed here: the page's clock is Playwright's.
-    if (quiet) await page.waitForTimeout(QUIET_MS);
-    return record.evaluate((read) => read());
-  };
-}
 
 /**
  * Waits in the page for the next move named `name` to start, wherever it is (a menu or a dialog
@@ -709,23 +604,17 @@ async function scrolledCard(page: Page, view: 'Kanban' | 'Bảng' = 'Kanban') {
 const scrollOf = (page: Page) => page.evaluate(() => window.scrollY);
 
 /**
- * How far the screen is scrolled as the next click lands, which the way back of "Mở" keeps: read in
- * the page then, not before the click, since Playwright first brings what it clicks into view.
+ * The way back of "Mở": "← Khách hàng" brings Khách hàng back (its own title, not "Hồ sơ khách
+ * hàng"), the focus on what was opened, the screen as far scrolled as at the click
+ * (`scrollAtClick`).
  */
-async function scrollAtClick(page: Page): Promise<() => Promise<number>> {
-  await page.evaluate(() =>
-    addEventListener('click', () => Object.assign(window, { clickedAt: scrollY }), {
-      capture: true,
-      once: true,
-    }),
-  );
-  return async () => {
-    const scroll = await page.evaluate(
-      () => (window as unknown as { clickedAt: number }).clickedAt,
-    );
-    expect(scroll).toBeGreaterThan(0);
-    return scroll;
-  };
+async function backToCustomers(page: Page, card: Locator, scrolled: () => Promise<number>) {
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Khách hàng', exact: true }),
+  ).toBeVisible();
+  await expect(card).toBeFocused();
+  expect(await scrollOf(page)).toBe(await scrolled());
 }
 
 test('a card of Khách hàng grows into the profile, which shrinks back to it: the board as far scrolled, the focus on the card (Mở)', async ({
@@ -742,12 +631,7 @@ test('a card of Khách hàng grows into the profile, which shrinks back to it: t
     .poll(async () => (await moved()).moves)
     .toEqual([`in ${href} Hồ sơ khách hàng main`]);
 
-  await page.getByRole('link', { name: '← Khách hàng' }).click();
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Khách hàng', exact: true }),
-  ).toBeVisible();
-  await expect(card).toBeFocused();
-  expect(await scrollOf(page)).toBe(await scrolled());
+  await backToCustomers(page, card, scrolled);
   expect(await page.locator('main [data-rise]').count()).toBe(0);
   // The page shrinks to the card itself.
   await expect
@@ -758,10 +642,8 @@ test('a card of Khách hàng grows into the profile, which shrinks back to it: t
   const row = await scrolledCard(page, 'Bảng');
   await row.card.click();
   await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
-  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await backToCustomers(page, row.card, row.scrolled);
   await expect(page.getByRole('radio', { name: 'Bảng' })).toBeChecked();
-  await expect(row.card).toBeFocused();
-  expect(await scrollOf(page)).toBe(await row.scrolled());
   await expect.poll(async () => (await moved()).moves).toHaveLength(4);
   expect((await moved()).moves.slice(2)).toEqual([
     `in ${row.href} Hồ sơ khách hàng main`,
@@ -798,11 +680,9 @@ test('the way back to a table sorted by name and shown past its first hundred ro
   const [href, scrolled] = [await link.getAttribute('href'), await scrollAtClick(page)];
   await link.click();
   await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
-  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await backToCustomers(page, table.getByRole('row').nth(121).getByRole('link'), scrolled);
   await expect(byName).toHaveAttribute('aria-sort', 'ascending');
   await expect(table.getByRole('row')).toHaveCount(201);
-  await expect(table.getByRole('row').nth(121).getByRole('link')).toBeFocused();
-  expect(await scrollOf(page)).toBe(await scrolled());
   // The page shrinks to the row clicked.
   await expect
     .poll(async () => (await moved()).moves)
@@ -819,12 +699,7 @@ test('without View Transitions a card opens the plain way: the profile rises, th
   await card.click();
   await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
   await expect(page.locator('main [data-rise]').first()).toBeAttached();
-  await page.getByRole('link', { name: '← Khách hàng' }).click();
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Khách hàng', exact: true }),
-  ).toBeVisible();
-  await expect(card).toBeFocused();
-  expect(await scrollOf(page)).toBe(await scrolled());
+  await backToCustomers(page, card, scrolled);
 });
 
 test.describe('under "Giảm chuyển động"', () => {
@@ -833,7 +708,15 @@ test.describe('under "Giảm chuyển động"', () => {
   test('nothing moves: a screen is there whole, the pill jumps, layers show and go at once; colours still change and the focus ring stays', async ({
     page,
   }) => {
-    const still = (select: string) => recordMoves(page, select, { quiet: true });
+    /**
+     * Heard from now on: what the step plays, in the elements `select` finds and inside them. What
+     * is heard leaves out a move already there, a loop too, so none may be there (review #1511).
+     */
+    const still = async (select: string) => {
+      const moves = await recordMoves(page, select, { quiet: true });
+      expect(await movesNow(page, select)).toEqual([]);
+      return moves;
+    };
     await page.goto('/#/customers');
     const opened = await still('main, header, nav');
     await nav(page, 'Tổng quan').click();
@@ -902,12 +785,7 @@ test.describe('under "Giảm chuyển động"', () => {
     expect(started).toEqual([]);
     await card.click();
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ khách hàng' })).toBeVisible();
-    await page.getByRole('link', { name: '← Khách hàng' }).click();
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Khách hàng', exact: true }),
-    ).toBeVisible();
-    await expect(card).toBeFocused();
-    expect(await scrollOf(page)).toBe(await scrolled());
+    await backToCustomers(page, card, scrolled);
     expect(await page.evaluate(() => (window as unknown as { started: string[] }).started)).toEqual(
       [],
     );
