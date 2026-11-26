@@ -214,11 +214,18 @@ test('once today has none left, a narrow window cuts "kế tiếp …" first, "H
     await nav.getByRole('link', { name: screen }).click();
     await expect(toolbar(page).getByRole('heading', { level: 1 })).toHaveText(screen);
     await expect(pill(page)).toHaveAccessibleName(/^Lưu ý: Hết lịch hôm nay · kế tiếp /);
-    return pill(page).evaluate((button) =>
-      [...button.querySelectorAll(':scope > span')].map(
-        (span) => span.getBoundingClientRect().width,
-      ),
+    const spans = await pill(page).evaluate((button) =>
+      [...button.querySelectorAll(':scope > span')].map((span) => ({
+        text: span.textContent,
+        width: span.getBoundingClientRect().width,
+      })),
     );
+    // The widths of these words, not of another part of the pill (review of PR 1525).
+    expect(
+      spans.map(({ text }) => text),
+      screen,
+    ).toEqual(['Hết lịch hôm nay', '·', expect.stringMatching(/^kế tiếp /)]);
+    return spans.map(({ width }) => width);
   };
   // Whole in a wide window; a phrase shorter by any part of a pixel ends in an ellipsis.
   const whole = new Map<string, number[]>();
@@ -229,9 +236,10 @@ test('once today has none left, a narrow window cuts "kế tiếp …" first, "H
     const [dayOver, , next] = await phrases(screen);
     const [wholeDayOver, , wholeNext] = whole.get(screen)!;
     expect(Math.abs(dayOver! - wholeDayOver!), screen).toBeLessThan(0.01);
-    // Báo cáo, its toolbar the fullest, may cut "kế tiếp …"; the others show it whole.
-    if (screen === 'Báo cáo') expect(next!, screen).toBeLessThan(wholeNext! + 0.01);
-    else expect(Math.abs(next! - wholeNext!), screen).toBeLessThan(0.01);
+    // Báo cáo, its toolbar the fullest, cuts "kế tiếp …" (Issue #1516); the others show it whole.
+    if (screen === 'Báo cáo') {
+      expect(next!, `${screen}: ${next} of ${wholeNext} px`).toBeLessThan(wholeNext! - 0.01);
+    } else expect(Math.abs(next! - wholeNext!), screen).toBeLessThan(0.01);
     // Every button of the toolbar still in the window, the pill clear of the eye after it.
     const last = (await toolbar(page).getByRole('button').last().boundingBox())!;
     expect(last.x + last.width, screen).toBeLessThanOrEqual(1100);
