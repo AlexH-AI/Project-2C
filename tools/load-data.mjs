@@ -7,7 +7,8 @@
 // Defaults: anchor 2026-10-12, seed 6, scale 1, out .local/load-data/load-<anchor>-seed<n>.p2cbackup
 // (not committed: tens of MB), with -x<scale> before the extension above scale 1; a relative --out
 // is from the repo root, wherever the command is run from. --scale 1 to 20 gives that many times
-// the teams (T-485): 10× is a 160 MB file, over the 100 MB an import takes.
+// the teams (T-485): 10× is a 153 MB file, over the 100 MB an import takes (MB of 1 024 × 1 024
+// bytes, as the app's limit).
 // Prints the rows of each table and the hash of `tables`: the same on any machine from UTC−12 to
 // UTC+11 for the same anchor and seed, as the data of `seedDemoData` is.
 

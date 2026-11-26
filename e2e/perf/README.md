@@ -26,7 +26,9 @@
 
 3. **Nạp dữ liệu tải** trong exe: Cài đặt → Dữ liệu → Nhập backup → chọn file của bước 1 → Backup rồi thay dữ liệu. Probe kiểm dòng "Nội dung" ở Cài đặt → Dữ liệu (ít nhất 1 400 KH và 9 000 lịch hẹn; seed demo có 1 200 KH), in dòng đó, và dừng, báo số đang có, nếu không phải dữ liệu tải.
 
-   **File quá 100 MB** (`MAX_BACKUP_BYTES`; từ khoảng 6×, 10× là 160 MB): app không nhập, không xuất backup cỡ đó. Nạp như câu báo của app chỉ: đóng exe, chép file DB của cùng mốc, seed và cỡ thành `Project2C-data\project2c.db`, mở lại (cách sinh file DB: `docs/metrics/phase-6.md`, mục "Số đo dữ liệu 5× / 10×"). Vẫn đặt `PERF_BACKUP` tới file backup cùng cỡ: probe chọn KH có phân tích AI từ đó, và với file quá trần thì bỏ `backup.read`, `backup.import`, `backup.export` (in lý do), mọi lần đo dùng dữ liệu exe mở lúc đầu.
+   Cỡ file ở README này, ở lệnh dữ liệu tải và ở đầu ra của probe tính MB = 1 024 × 1 024 byte, như trần 100 MB và dòng "Lưu lần cuối" của Cài đặt → Dữ liệu; số đo Phase 6 và ADR-0020 ghi cỡ file theo MB = 1 000 000 byte.
+
+   **File quá 100 MB** (`MAX_BACKUP_BYTES` = 104 857 600 byte; từ khoảng 6,5×, 10× là 153 MB): app không nhập, không xuất backup cỡ đó. Nạp như câu báo của app chỉ: đóng exe, chép file DB của cùng mốc, seed và cỡ thành `Project2C-data\project2c.db`, mở lại (cách sinh file DB: `docs/metrics/phase-6.md`, mục "Số đo dữ liệu 5× / 10×"). Vẫn đặt `PERF_BACKUP` tới file backup cùng cỡ: probe chọn KH có phân tích AI từ đó, và với file quá trần thì bỏ `backup.read`, `backup.import`, `backup.export` (in lý do), mọi lần đo dùng dữ liệu exe mở lúc đầu.
 
 4. **Chạy probe**, để cửa sổ exe **ở trên cùng, không thu nhỏ, không bị che**: WebView2 ngừng vẽ khung hình khi cửa sổ bị che, probe khi đó báo "no frame painted". Không dùng máy trong lúc đo (≈ 3–5 phút với 5 lần).
 
@@ -61,7 +63,7 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 | Tổng quan / Báo cáo: mở bảng chọn kỳ ở viên kỳ (không đo), chọn kỳ Năm rồi Tháng, số đổi ngay (từ VA4b không còn nút Lọc; tên số đo giữ `filter-…` để so với các lần đo trước, khi đó đo lần bấm Lọc); Báo cáo Theo RM | `overview.filter-year`, `-month`, `reports.filter-year`, `-month`, `reports.table-re` |
 | Thùng rác: mở (đo khi đã ngắt debugger), lọc Lịch hẹn | `trash.open`, `trash.kind-appointments` |
 | Bộ nhớ JS heap của webview sau khi đi hết các màn (sau GC; không gồm bộ nhớ WebAssembly của sql.js, nơi giữ DB) | `memory.js-heap` (MB) |
-| Ngay sau đó, Private Bytes của các tiến trình WebView2 của exe (`msedgewebview2.exe` có `--webview-exe-name=project2c.exe` trong dòng lệnh, và tiến trình con của chúng), tổng và riêng tiến trình renderer (giữ trang và bộ nhớ WebAssembly của sql.js); đọc bằng `Get-CimInstance Win32_Process` + `Get-Process` (T-485) | `memory.webview-private`, `memory.webview-renderer` (MB) |
+| Ngay sau đó, Private Bytes của các tiến trình WebView2 của exe probe đang nối: tiến trình browser (CDP `SystemInfo.getProcessInfo` cho số tiến trình) và các tiến trình con của nó, tổng và riêng tiến trình renderer (giữ trang và bộ nhớ WebAssembly của sql.js); đọc bằng `Get-CimInstance Win32_Process` + `Get-Process` (T-485). Không chọn theo tên exe: bản cài, exe dùng thử và `pnpm dev` cũng chạy dưới tên `project2c.exe` (T-523). Lệnh PowerShell lỗi thì probe in lý do, bỏ hai số này, đo tiếp | `memory.webview-private`, `memory.webview-renderer` (MB) |
 | Nhập backup: từ lúc chọn file tới hộp xác nhận; bấm xác nhận tới khi báo đã nhập | `backup.read`, `backup.import` |
 | Xuất Excel, Xuất backup (ghi vào `Project2C-data\exports\`, không có hộp chọn file) | `reports.export-excel`, `backup.export` |
 | Tạo lịch hẹn tiếp theo từ lịch đã gặp, chọn ở kỳ Tháng / Năm (tháng / năm nào: đoạn dưới bảng) | `appointments.next-month`, `appointments.next-year` |
@@ -79,10 +81,18 @@ Ngưỡng: thao tác màn (đổi kỳ, sắp, chọn, mở hồ sơ, Thùng rá
 
 **DevTools cũng làm chậm thao tác chạy nhiều câu SQL** (deep review Phase 1–6 lượt 2, DR6-98). Đo trên exe, mở Thùng rác khi gắn DevTools chậm ×2,4–3,3 so với khi đã ngắt, lệch tăng theo số dòng Thùng rác. Vì vậy `trash.open` cũng đo khi đã ngắt, như lệnh ghi (từ T-256; số `trash.open` đo trước đó là số khi gắn, nên cao hơn). Probe đo nó sau `memory.js-heap`, vì mỗi lần nối lại để lại script của Playwright trong heap (≈ 0,5 MB) tới lần tải lại kế. Thao tác màn không chạy câu SQL mới chỉ lệch ±1 ms; mở dữ liệu khi tải lại màn (`reload.*`) chậm hơn ≈ 7 % khi gắn.
 
-**Đo tay:**
+**Mở lại** (T-523) tính cả lúc khởi động tiến trình và tạo cửa sổ, trước khi trang bắt đầu, mà `app.open-data` không tính. Bấm giờ theo cách T-227 (`docs/metrics/phase-6.md`) bằng `reopen.mts`, trên thư mục portable của bước 2 đã nạp dữ liệu (exe đã đóng):
 
-- Mở app tính cả lúc khởi động tiến trình và tạo cửa sổ (trước khi trang bắt đầu, `app.open-data` không tính): bấm giờ từ lúc nhấp đúp exe tới khi màn đầu có số liệu, 3 lần, lấy trung vị. **Lần đầu** = thư mục `Project2C-data\` chưa có (app sinh seed demo); **mở lại** = đã có dữ liệu tải. Nối probe ngay sau khi mở để có thêm `app.open-data`.
-- Không có thao tác nào cần hộp chọn file native: nhập backup dùng ô chọn file của webview (probe đặt file qua CDP), xuất ghi thẳng vào `exports\`.
+```powershell
+node e2e/perf/reopen.mts C:\perf-exe --runs 3 --screen overview --out .local\perf\reopen-overview.json
+```
+
+- Mỗi lần: gọi exe với cổng debug 9222 (ghi lúc gọi), đặt cửa sổ luôn ở trên cùng, chờ 12 s rồi mới nối CDP (debugger làm chậm lúc mở), đọc trang bắt đầu (`performance.timeOrigin`), `p2c:data-open`, FCP và các ứng viên LCP (lúc vẽ, phần tử), rồi đóng exe như nút ✕ (sau khi Playwright đã nối, exe đôi khi không đóng: sau 30 s thì đóng ép, JSON ghi `forced`). Cửa sổ bị che thì dừng.
+- App mở lại màn cuối cùng (`p2c.lastRoute` trong profile WebView2 chung của mọi `project2c.exe`, cả bản cài): một lần mở không đo đặt `--screen` (mặc định `overview`, Tổng quan) cho các lần đo; lần cuối trả lại màn cũ. LCP khác theo màn: ghi màn khi so hai lần đo.
+- In trung vị (min–max) của từng mốc, ghi JSON (`--out`, mặc định `.local/perf/reopen-<thời điểm>.json`). Mỗi lần ghi `calm`: "Giảm chuyển động" của máy, mà chuyển động của app theo. Cờ `--force-prefers-reduced-motion` của WebView2 không đổi `calm`, không tắt chuyển động, mà đổi lúc LCP tính phần đang hiện dần (T-523): không dùng khi đo.
+- **Lần đầu** (thư mục `Project2C-data\` chưa có, app sinh seed demo) bấm giờ cùng cách, trên thư mục mới mỗi lần; script chỉ đo mở lại. Probe nối ngay sau khi mở exe thì có thêm `app.open-data`.
+
+**Hộp chọn file:** không thao tác nào cần hộp chọn file native: nhập backup dùng ô chọn file của webview (probe đặt file qua CDP), xuất ghi thẳng vào `exports\`.
 
 ## Đọc kết quả
 

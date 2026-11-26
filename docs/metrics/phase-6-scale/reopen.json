@@ -1,0 +1,944 @@
+{
+  "version": 1,
+  "issue": "T-523 (#1563)",
+  "at": "2026-11-27",
+  "machine": "Home PC DESKTOP-KDURKJP, i9-12900K, 32 GB RAM, Windows 11 Pro 26200",
+  "script": "node e2e/perf/reopen.mts <folder> --screen <overview|settings> (3 timed runs after one not timed)",
+  "exes": {
+    "main": "pnpm build:exe at a78b7fe, 5560320 bytes, sha256 64834ECF1394A6B723A86578286C4AB7557651B754854D39696C7C5144AFA274",
+    "calm": "a78b7fe with calmMotion() and the reduced-motion block of theme.css forced on (not committed), sha256 AF3161076AFB2ECFB1ECD258E9DF3F5E255DE051104D9387E98419145387E53B",
+    "calmEarlyApp": "calm, and main.tsx starting import(./App) before the data opens, as before T-442 (not committed), sha256 FF57D243F0CE0A6E1B3ED32AB6DD1B0AA437F8E868FE481CE699F4A4776A05FC",
+    "trial5215b2e": "the trial exe 5215b2e (2026-11-09, before T-442 and VA7), 5652992 bytes, sha256 5C19749B35F5DDE5C0A40C4083CC95BAB505A9AC137EA4DF3BC89B74CB3B1A26, copied to a new folder"
+  },
+  "loadData": {
+    "command": "node tools/load-data.mjs at a78b7fe (anchor 2026-10-12, seed 6)",
+    "tablesSha256": "42e6e6e23c9b7a09feb9a7c45c2a8b8b02ec7dfbbcdc040be34e34dc2d2a0215",
+    "backupBytes": 16437916,
+    "dbBytesImported": 14147584,
+    "content": "4 team · 51 nhân sự · 1,481 KH · 10,240 lịch hẹn · 1,765 HĐ"
+  },
+  "sets": [
+    {
+      "exe": "main",
+      "data": "load data 1× of a78b7fe",
+      "screen": "overview",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          272,
+          274,
+          274
+        ],
+        "median": 274
+      },
+      "openDataMs": {
+        "all": [
+          307,
+          308,
+          307
+        ],
+        "median": 307
+      },
+      "fcpMs": {
+        "all": [
+          108,
+          124,
+          104
+        ],
+        "median": 108
+      },
+      "lcpMs": {
+        "all": [
+          1044,
+          1060,
+          1056
+        ],
+        "median": 1056
+      },
+      "callToLcpMs": {
+        "all": [
+          1316,
+          1334,
+          1330
+        ],
+        "median": 1330
+      },
+      "closedByForce": 0,
+      "lcpCandidates": [
+        [
+          [
+            108,
+            "?"
+          ],
+          [
+            608,
+            "SPAN \"Không có lịch hẹn sắp tới\""
+          ],
+          [
+            628,
+            "IMG \"\""
+          ],
+          [
+            996,
+            "H1 \"Tổng quan\""
+          ],
+          [
+            1044,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            624,
+            "SPAN \"Không có lịch hẹn sắp tới\""
+          ],
+          [
+            624,
+            "IMG \"\""
+          ],
+          [
+            1008,
+            "H1 \"Tổng quan\""
+          ],
+          [
+            1060,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            104,
+            "?"
+          ],
+          [
+            620,
+            "SPAN \"Không có lịch hẹn sắp tới\""
+          ],
+          [
+            636,
+            "IMG \"\""
+          ],
+          [
+            1004,
+            "H1 \"Tổng quan\""
+          ],
+          [
+            1056,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "main",
+      "data": "load data 1× of a78b7fe",
+      "screen": "settings",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          258,
+          269,
+          262
+        ],
+        "median": 262
+      },
+      "openDataMs": {
+        "all": [
+          310,
+          313,
+          305
+        ],
+        "median": 310
+      },
+      "fcpMs": {
+        "all": [
+          124,
+          124,
+          124
+        ],
+        "median": 124
+      },
+      "lcpMs": {
+        "all": [
+          924,
+          924,
+          924
+        ],
+        "median": 924
+      },
+      "callToLcpMs": {
+        "all": [
+          1182,
+          1193,
+          1186
+        ],
+        "median": 1186
+      },
+      "closedByForce": 0,
+      "lcpCandidates": [
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            508,
+            "SPAN \"Không có lịch hẹn sắp tới\""
+          ],
+          [
+            508,
+            "IMG \"\""
+          ],
+          [
+            924,
+            "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+          ]
+        ],
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            508,
+            "SPAN \"Không có lịch hẹn sắp tới\""
+          ],
+          [
+            508,
+            "IMG \"\""
+          ],
+          [
+            924,
+            "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+          ]
+        ],
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            508,
+            "SPAN \"Không có lịch hẹn sắp tới\""
+          ],
+          [
+            508,
+            "IMG \"\""
+          ],
+          [
+            924,
+            "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "calm",
+      "data": "load data 1× of a78b7fe",
+      "screen": "overview",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          266,
+          258,
+          272
+        ],
+        "median": 266
+      },
+      "openDataMs": {
+        "all": [
+          308,
+          306,
+          311
+        ],
+        "median": 308
+      },
+      "fcpMs": {
+        "all": [
+          112,
+          116,
+          124
+        ],
+        "median": 116
+      },
+      "lcpMs": {
+        "all": [
+          632,
+          632,
+          640
+        ],
+        "median": 632
+      },
+      "callToLcpMs": {
+        "all": [
+          898,
+          890,
+          912
+        ],
+        "median": 898
+      },
+      "closedByForce": 0,
+      "lcpCandidates": [
+        [
+          [
+            112,
+            "?"
+          ],
+          [
+            632,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            632,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            640,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "calm",
+      "data": "load data 1× of a78b7fe",
+      "screen": "settings",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          256,
+          273,
+          259
+        ],
+        "median": 259
+      },
+      "openDataMs": {
+        "all": [
+          308,
+          314,
+          305
+        ],
+        "median": 308
+      },
+      "fcpMs": {
+        "all": [
+          112,
+          112,
+          124
+        ],
+        "median": 112
+      },
+      "lcpMs": {
+        "all": [
+          516,
+          512,
+          508
+        ],
+        "median": 512
+      },
+      "callToLcpMs": {
+        "all": [
+          772,
+          785,
+          767
+        ],
+        "median": 772
+      },
+      "closedByForce": 0,
+      "lcpCandidates": [
+        [
+          [
+            112,
+            "?"
+          ],
+          [
+            516,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ],
+        [
+          [
+            112,
+            "?"
+          ],
+          [
+            512,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ],
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            508,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "calmEarlyApp",
+      "data": "load data 1× of a78b7fe",
+      "screen": "overview",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          284,
+          276,
+          261
+        ],
+        "median": 276
+      },
+      "openDataMs": {
+        "all": [
+          318,
+          310,
+          312
+        ],
+        "median": 312
+      },
+      "fcpMs": {
+        "all": [
+          128,
+          124,
+          112
+        ],
+        "median": 124
+      },
+      "lcpMs": {
+        "all": [
+          612,
+          608,
+          596
+        ],
+        "median": 608
+      },
+      "callToLcpMs": {
+        "all": [
+          896,
+          884,
+          857
+        ],
+        "median": 884
+      },
+      "closedByForce": 1,
+      "lcpCandidates": [
+        [
+          [
+            128,
+            "?"
+          ],
+          [
+            612,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            124,
+            "?"
+          ],
+          [
+            608,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            112,
+            "?"
+          ],
+          [
+            596,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "calmEarlyApp",
+      "data": "load data 1× of a78b7fe",
+      "screen": "settings",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          332,
+          274,
+          280
+        ],
+        "median": 280
+      },
+      "openDataMs": {
+        "all": [
+          328,
+          309,
+          313
+        ],
+        "median": 313
+      },
+      "fcpMs": {
+        "all": [
+          132,
+          112,
+          116
+        ],
+        "median": 116
+      },
+      "lcpMs": {
+        "all": [
+          500,
+          476,
+          484
+        ],
+        "median": 484
+      },
+      "callToLcpMs": {
+        "all": [
+          832,
+          750,
+          764
+        ],
+        "median": 764
+      },
+      "closedByForce": 0,
+      "lcpCandidates": [
+        [
+          [
+            132,
+            "?"
+          ],
+          [
+            500,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ],
+        [
+          [
+            112,
+            "?"
+          ],
+          [
+            476,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ],
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            484,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "trial5215b2e",
+      "data": "its own demo seed, anchored 2026-11-27",
+      "screen": "overview",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          305,
+          279,
+          274
+        ],
+        "median": 279
+      },
+      "openDataMs": {
+        "all": [
+          274,
+          263,
+          258
+        ],
+        "median": 263
+      },
+      "fcpMs": {
+        "all": [
+          132,
+          128,
+          128
+        ],
+        "median": 128
+      },
+      "lcpMs": {
+        "all": [
+          468,
+          444,
+          444
+        ],
+        "median": 444
+      },
+      "callToLcpMs": {
+        "all": [
+          773,
+          723,
+          718
+        ],
+        "median": 723
+      },
+      "closedByForce": 2,
+      "lcpCandidates": [
+        [
+          [
+            132,
+            "?"
+          ],
+          [
+            436,
+            "P \"▼ 112 điểm % so với 01/10 – 27/10 · 82 H\""
+          ],
+          [
+            468,
+            "IMG \"\""
+          ]
+        ],
+        [
+          [
+            128,
+            "?"
+          ],
+          [
+            396,
+            "P \"▼ 112 điểm % so với 01/10 – 27/10 · 82 H\""
+          ],
+          [
+            444,
+            "IMG \"\""
+          ]
+        ],
+        [
+          [
+            128,
+            "?"
+          ],
+          [
+            396,
+            "P \"▼ 112 điểm % so với 01/10 – 27/10 · 82 H\""
+          ],
+          [
+            444,
+            "IMG \"\""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "trial5215b2e",
+      "data": "its own demo seed, anchored 2026-11-27",
+      "screen": "settings",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          267,
+          288,
+          279
+        ],
+        "median": 279
+      },
+      "openDataMs": {
+        "all": [
+          262,
+          257,
+          258
+        ],
+        "median": 258
+      },
+      "fcpMs": {
+        "all": [
+          120,
+          132,
+          132
+        ],
+        "median": 132
+      },
+      "lcpMs": {
+        "all": [
+          320,
+          316,
+          316
+        ],
+        "median": 316
+      },
+      "callToLcpMs": {
+        "all": [
+          587,
+          604,
+          595
+        ],
+        "median": 595
+      },
+      "closedByForce": 1,
+      "lcpCandidates": [
+        [
+          [
+            120,
+            "?"
+          ],
+          [
+            320,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ],
+        [
+          [
+            132,
+            "?"
+          ],
+          [
+            316,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ],
+        [
+          [
+            132,
+            "?"
+          ],
+          [
+            316,
+            "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "main",
+      "data": "its own demo seed, anchored 2026-11-27",
+      "screen": "overview",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          263,
+          263,
+          302
+        ],
+        "median": 263
+      },
+      "openDataMs": {
+        "all": [
+          256,
+          252,
+          245
+        ],
+        "median": 252
+      },
+      "fcpMs": {
+        "all": [
+          116,
+          116,
+          116
+        ],
+        "median": 116
+      },
+      "lcpMs": {
+        "all": [
+          968,
+          956,
+          952
+        ],
+        "median": 956
+      },
+      "callToLcpMs": {
+        "all": [
+          1231,
+          1219,
+          1254
+        ],
+        "median": 1231
+      },
+      "closedByForce": 1,
+      "lcpCandidates": [
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            532,
+            "P \"Where legacy meets trust\""
+          ],
+          [
+            532,
+            "IMG \"\""
+          ],
+          [
+            916,
+            "H1 \"Tổng quan\""
+          ],
+          [
+            968,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            524,
+            "P \"Where legacy meets trust\""
+          ],
+          [
+            544,
+            "IMG \"\""
+          ],
+          [
+            916,
+            "H1 \"Tổng quan\""
+          ],
+          [
+            956,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ],
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            516,
+            "P \"Where legacy meets trust\""
+          ],
+          [
+            532,
+            "IMG \"\""
+          ],
+          [
+            900,
+            "H1 \"Tổng quan\""
+          ],
+          [
+            952,
+            "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+          ]
+        ]
+      ]
+    },
+    {
+      "exe": "main",
+      "data": "its own demo seed, anchored 2026-11-27",
+      "screen": "settings",
+      "runs": 3,
+      "callToPageStartMs": {
+        "all": [
+          262,
+          268,
+          301
+        ],
+        "median": 268
+      },
+      "openDataMs": {
+        "all": [
+          243,
+          246,
+          259
+        ],
+        "median": 246
+      },
+      "fcpMs": {
+        "all": [
+          116,
+          104,
+          116
+        ],
+        "median": 116
+      },
+      "lcpMs": {
+        "all": [
+          832,
+          840,
+          852
+        ],
+        "median": 840
+      },
+      "callToLcpMs": {
+        "all": [
+          1094,
+          1108,
+          1153
+        ],
+        "median": 1108
+      },
+      "closedByForce": 0,
+      "lcpCandidates": [
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            416,
+            "P \"Where legacy meets trust\""
+          ],
+          [
+            432,
+            "IMG \"\""
+          ],
+          [
+            832,
+            "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+          ]
+        ],
+        [
+          [
+            104,
+            "?"
+          ],
+          [
+            424,
+            "P \"Where legacy meets trust\""
+          ],
+          [
+            424,
+            "IMG \"\""
+          ],
+          [
+            840,
+            "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+          ]
+        ],
+        [
+          [
+            116,
+            "?"
+          ],
+          [
+            432,
+            "P \"Where legacy meets trust\""
+          ],
+          [
+            452,
+            "IMG \"\""
+          ],
+          [
+            852,
+            "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+          ]
+        ]
+      ]
+    }
+  ]
+}

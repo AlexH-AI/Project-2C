@@ -161,12 +161,14 @@ Theo mục số đo, đoạn "Cỡ một người dùng thật có thể đạt"
 - **Câu báo hôm nay, dùng tới khi có B3:**
   - Hộp 10b khi nhập file quá trần: bỏ câu "Backup của Project-2C nhỏ hơn nhiều: kiểm tra lại file đã chọn". Thay bằng câu nói file có thể là backup của dữ liệu lớn mà app chưa đọc được, kèm cách chép file `.db` như câu `settings.backup.exportTooLarge`.
   - Xuất: từ chối trước khi dựng JSON khi ước cỡ file vượt trần rõ, thay vì sau 3,3 s và 1,45 GB. Ở ba cỡ của mục số đo, file backup ≈ 1,1–1,15 lần `project2c.db`. Phép ước chỉ từ chối khi vượt xa trần (biên an toàn đặt ở Issue). Gần trần thì app vẫn dựng JSON và kiểm đúng số byte như hôm nay, vì trần là số byte của file, cùng thước với hộp 10b (Owner 08/11/2026, DR6-179; spec Phase 3): một phép ước không được từ chối file mà luật đúng số byte cho qua.
-  - Câu riêng của hộp 10b cho file quá trần không có trong mockup `docs/design/mockups/settings-data.html` (mockup chỉ có câu cho file hỏng), nên đổi câu không cần G3.
+  - Câu riêng của hộp 10b cho file quá trần không có trong mockup `docs/design/mockups/settings-data.html` (10b của mockup có ba câu: file từ bản app mới hơn, file hỏng hoặc không phải backup Project-2C, file từ bản app cũ hơn; không câu nào nói cỡ file), nên đổi câu không cần G3.
   - Đây là một Issue code nhỏ, chịu K49. Owner chọn làm trước G7 (26/11/2026, "Làm trước G7 (Recommended)"); Issue tạo khi Owner bảo.
 
 ## Mốc đo để chuyển
 
-- **Thước chính: cỡ `project2c.db`.** Mọi việc vượt ngưỡng tăng gần tuyến tính theo cỡ file, và ai cũng xem được cỡ file trong thư mục dữ liệu (Cài đặt → Dữ liệu chỉ đường dẫn; app hôm nay không hiện cỡ file). 1× = 14,1 MB.
+- **Thước chính: cỡ `project2c.db`.** Mọi việc vượt ngưỡng tăng gần tuyến tính theo cỡ file. 1× = 14,1 MB.
+  - Chỗ đọc: dòng "Lưu lần cuối" của Cài đặt → Dữ liệu (`{giờ} · {cỡ}`, có sau lần lưu đầu của mỗi lần chạy app; mở mà chưa lưu thì chưa có), hay Explorer ở thư mục dữ liệu (Properties ghi cả số byte).
+  - Cả hai nơi tính MB = 1 024 × 1 024 byte, khác đơn vị của ADR này (dòng "Đơn vị" ở trên). Theo số app hiện: 1× là "13.4 MB"; mốc bắt đầu 21 MB (21 000 000 byte) là ≈ "20 MB"; mốc phải xong 35 MB (35 000 000 byte) là ≈ "33.4 MB". Hai mốc giữ như Owner chọn ngày 26/11/2026, chỉ đổi cách đọc.
 - **Mốc bắt đầu: ≈ 21 MB (≈ 1,5×)** trên máy bất kỳ đang dùng app. Tới mốc này thì làm P0 (đo phân rã), chọn phương án theo luật ở mục Quyết định, rồi lên lịch các Issue. Chọn 1,5× mà không chờ 2,5× vì:
   - màn đầu sau tải lại vượt ngưỡng từ ≈ 1,4–2×;
   - mọi số đo chỉ trên i9-12900K;

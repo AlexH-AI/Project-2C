@@ -723,6 +723,12 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
      - Option not chosen: "Sau v1.0".
   4. **The marks, by the size of `project2c.db`:** "Giữ 21 / 35 MB (Recommended)". Start P0 at ≈ 21 MB; saves done before ≈ 35 MB (≈ 2.5×); P0 also measures the Office Laptop and moves the marks down if it is slower.
      - Option not chosen: "Sớm hơn: 17 / 28 MB".
+- 2026-11-27: the DS-12 Issue (T-523, #1563). The OWNER said "ra issue DS-12" on 27/11/2026 and, asked how to run it, chose "T-523 qua pipeline (Recommended)" (option not chosen: doing it by hand in an ordinary session). It runs through `auto-issues`, Opus, with #1563 alone in the queue; the reopen timing needs the Home PC idle, with the exe window kept on top by the coding session itself. Recorded in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §12.2 (row DS-12) by T-523.
+  - **Decided by Claude while writing the Issue** (by the existing rules; not questions to the OWNER):
+    - **Seven notes:** L160, L162, L163, L164, L238, L255 (`[DS-12]` @`93072c9`) and L161 (`[đóng phase]`, a missing blank line right under the line L164 rewrites).
+    - **One unit per place:** the probe's README, the load data command's comments and the probe's comments and output give file sizes in MB of 1 024 × 1 024 bytes, as the app's 100 MB backup cap and its "Lưu lần cuối" line do; ADR-0020 and the measures keep MB of 1 000 000 bytes, as ADR-0020 says. For L255 the ADR only adds where to read the size and the two marks in the app's unit; the marks the OWNER chose on 26/11 (21 / 35 MB) stay.
+    - **The exits of L164:** "Đạt" is a median call → LCP of at most 1 s and not worse than the G7 mark (617 ms) beyond the noise rule (over 740 ms); exits (b) motion, (c) slow without motion and (d) no cause after two rounds stop with `CẦN OWNER` for the orchestrating session to ask the OWNER.
+    - **Label:** `risk:med`; the orchestrating session merges (`merge-pr --owner`, ADR-0001 M11).
 
 ## Next decision
 

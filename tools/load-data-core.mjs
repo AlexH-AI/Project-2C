@@ -21,7 +21,7 @@ export const LOAD_SCALE = {
 
 export const LOAD_ANCHOR = '2026-10-12';
 export const LOAD_SEED = 6;
-/** The most `--scale` takes: 20× is about 30 000 customers and a 320 MB backup file. */
+/** The most `--scale` takes: 20× is about 30 000 customers and a 306 MB backup file (MiB). */
 export const MAX_LOAD_SCALE = 20;
 
 const USAGE =
