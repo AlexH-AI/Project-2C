@@ -1,6 +1,8 @@
 // The pure part of the perf probe (e2e/perf/README.md): summaries, the result file, the comparison
 // with a base run, and the checks before measuring. Tested in stats.spec.ts, which `pnpm e2e` runs.
 
+import type { SpawnSyncReturns } from 'node:child_process';
+
 export type Unit = 'ms' | 'MB';
 
 export interface Summary {
@@ -223,7 +225,7 @@ export const BACKUP_LIMIT_BYTES = 100 * 1024 * 1024;
 
 /**
  * Why the probe neither imports nor exports a backup of the load data of this size (T-485: 10× is
- * 160 MB), or null when it does both. Such data reaches the exe as its project2c.db (README).
+ * 153 MB), or null when it does both. Such data reaches the exe as its project2c.db (README).
  */
 export function backupSkipped(bytes: number): string | null {
   if (bytes <= BACKUP_LIMIT_BYTES) return null;
@@ -244,26 +246,51 @@ export interface WebviewProcess {
 }
 
 /**
- * The Private Bytes, in MB, of the WebView2 processes of `exe`: all of them, and its renderer, where
- * the page and the WebAssembly memory of sql.js live (which `memory.js-heap` leaves out). Other
- * apps run WebView2 too: a process is the exe's when its command line names the exe, or its parent
- * is such a process (the crash handler names none). Undefined when the exe has none.
+ * The Private Bytes, in MB, of the WebView2 processes of the exe the probe is connected to: its
+ * browser process (`browserId`, which CDP gives) and that process's children, all of them, and the
+ * renderer, where the page and the WebAssembly memory of sql.js live (which `memory.js-heap` leaves
+ * out). Not by the exe's name: the installed app, the trial exe and `pnpm dev` run as project2c.exe
+ * too (T-523). Undefined when that process is not in the list.
  */
 export function webviewMemory(
   processes: readonly WebviewProcess[],
-  exe: string,
+  browserId: number | undefined,
 ): { total: number; renderer: number } | undefined {
-  const named = new Set(
-    processes.filter((p) => p.commandLine.includes(`--webview-exe-name=${exe}`)).map((p) => p.id),
-  );
-  const own = processes.filter((p) => named.has(p.id) || named.has(p.parentId));
-  if (own.length === 0) return undefined;
+  if (!processes.some((p) => p.id === browserId)) return undefined;
+  const own = processes.filter((p) => p.id === browserId || p.parentId === browserId);
   const mb = (list: readonly WebviewProcess[]) =>
     list.reduce((sum, p) => sum + p.privateBytes, 0) / 1024 / 1024;
   return {
     total: mb(own),
     renderer: mb(own.filter((p) => p.commandLine.includes('--type=renderer'))),
   };
+}
+
+/**
+ * The WebView2 processes in the JSON list the probe's PowerShell query printed, or why none: it did
+ * not run, failed (`-ErrorAction Stop` exits 1) or printed no list. `[]` is no WebView2 (T-523).
+ */
+export function readProcessList(
+  ran: Pick<SpawnSyncReturns<string>, 'status' | 'stdout' | 'stderr' | 'error'>,
+): { processes: WebviewProcess[] } | { error: string } {
+  if (ran.error) return { error: `PowerShell did not run: ${ran.error.message}` };
+  if (ran.status !== 0) {
+    const reason = ran.stderr.trim().split('\n')[0]?.trim();
+    return { error: `the process query failed (exit ${ran.status}): ${reason}` };
+  }
+  const printed = ran.stdout.trim();
+  let list: (Partial<Record<keyof WebviewProcess, unknown>> | null)[] | undefined;
+  try {
+    list = JSON.parse(printed);
+  } catch {
+    // No list: below.
+  }
+  const fit = (p: Partial<Record<keyof WebviewProcess, unknown>> | null) =>
+    typeof p?.commandLine === 'string' &&
+    (['id', 'parentId', 'privateBytes'] as const).every((key) => typeof p[key] === 'number');
+  return Array.isArray(list) && list.every(fit)
+    ? { processes: list as WebviewProcess[] }
+    : { error: `the process query printed no list: "${printed.slice(0, 80)}"` };
 }
 
 interface BackupTables {

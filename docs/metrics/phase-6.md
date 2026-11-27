@@ -467,7 +467,8 @@ Số đo để Owner quyết có viết ADR lưu trữ cho dữ liệu lớn tr�
 - **Exe:** build release tại máy (`pnpm build:exe`) ở `75b7e14`, code app trùng `3a34861` (T-482). File 5 536 256 byte, sha256 `DD14DE17…C32E`. Exe chạy portable ở `C:\perf-scale\` (có `Project2C-data\`). Cả ba cỡ dùng chung một exe.
 - **Dữ liệu:** `node tools/load-data.mjs --scale <n>` (neo 12/10/2026, seed 6). `--scale` nhân **số team**; mỗi team giữ như 1×: 11 RM, mỗi RM 34 KH và gặp 4 ngày một tuần, lịch sử 365 ngày.
   - Vì sao nhân số team: lịch hẹn của một RM đến từ số ngày gặp trong tuần, không từ số KH. Nhân số KH mỗi RM thì KH lên 5× mà lịch hẹn vẫn ≈ 1×.
-  - `--scale 1` cho đúng hash `tables` như `main` (`7abd010f…`). `--scale 20` vẫn sinh được (244 s, 306 MB), nhưng không đo trên exe.
+  - `--scale 1` cho đúng hash `tables` như `main` lúc đó (`7abd010f…`). `--scale 20` vẫn sinh được (244 s, file ≈ 321 MB), nhưng không đo trên exe.
+  - Hash `7abd010f…` và mọi số 1× / 5× / 10× của mục này thuộc dữ liệu tải trước PR #1495 (T-500): ngày neo mặc định của lệnh dữ liệu tải có lịch sử bắt đầu Chủ Nhật, nên từ T-500 tuần gặp dời một ngày và dữ liệu đổi; sau đó dữ liệu giả lập còn đổi thêm (vd. bảng `team_targets`, `settings` mới có dòng). Dữ liệu 1× sinh lại ở `main` `a78b7fe` (T-523, mục "Mở lại trên exe của `main`" dưới): `tables` sha256 `42e6e6e2…2a0215`, file 16 437 916 byte.
 - **Cách nạp:**
   - 1× và 5×: Nhập backup.
   - 10×: file backup 160,7 MB, quá trần nhập 100 MB (`MAX_BACKUP_BYTES`), nên nạp bằng `project2c.db` như câu báo `settings.backup.exportTooLarge` của app chỉ. Đóng exe, chép file DB cùng mốc, seed và cỡ vào `Project2C-data\`, rồi mở lại.
@@ -544,7 +545,8 @@ Bảng probe: trung vị, min–max trong ngoặc (5 lần; `db.save` 15 lần �
 | Nhập backup 10×: chọn file → hộp 10b (1 lần) | — | — | 10 ms, từ chối: "File lớn hơn 100 MB, app không đọc" | — |
 | Xuất backup 10×: bấm → câu báo (1 lần, đã ngắt debugger) | — | — | 3 260 ms, từ chối: "Chưa xuất backup: dữ liệu lớn hơn 100 MB…"; sau đó tiến trình WebView2 của exe giữ 1 451 MB | — |
 
-- **LCP ở 1× chậm hơn mốc L4:** gọi exe → LCP ở 1× hôm nay ≈ 1,09 s, trong khi nghiệm thu L4 (09/11, exe `a1e6a20`) đo 717 ms. `p2c:data-open` thì nhanh hơn (314 so với 375 ms). Nghĩa là phần chậm thêm nằm sau lúc mở xong dữ liệu. Chưa tìm nguyên nhân; có thể là chuyển động của VA7 ("Đếm số lớn") dời mốc LCP. Việc này ngoài T-485, cần kiểm riêng trước khi dùng số này so với ngưỡng "mở lại ≤ 1 s".
+- **LCP ở 1× chậm hơn mốc L4:** gọi exe → LCP ở 1× hôm nay ≈ 1,09 s, trong khi nghiệm thu L4 (09/11, exe `a1e6a20`) đo 717 ms. `p2c:data-open` thì nhanh hơn (314 so với 375 ms). Nghĩa là phần chậm thêm nằm sau lúc mở xong dữ liệu. Chưa tìm nguyên nhân; có thể là chuyển động của VA7 ("Đếm số lớn") dời mốc LCP. Việc này ngoài T-485, cần kiểm riêng trước khi dùng số này so với ngưỡng "mở lại ≤ 1 s". Đo lại ở T-523 (27/11): mục "Mở lại trên exe của `main`" dưới; không Đạt cả khi tắt chuyển động, "Hiện" dời LCP ≈ 420 ms và lần vẽ đầu sau `p2c:data-open` chậm hơn 09/11 ≈ 150 ms.
+
 Chuyển màn bằng sidebar (đo thêm ngày 22/11, sau khi Owner thấy Team & nhân sự chậm trên Mac). Probe không đo việc này, chỉ đo màn đầu sau tải lại. Cách đo:
 - Cùng exe, cùng máy. Bấm link của màn ở sidebar, tính tới khung hình sau khi màn hiện nội dung chính: bảng "So sánh team" và biểu đồ của Tổng quan; bảng "Danh sách lịch hẹn"; cột N4; bảng "Theo team"; bảng "Thành viên team…"; mục "File dữ liệu".
 - Đi từ Cài đặt (riêng Cài đặt thì từ Tổng quan), mỗi màn 5 lần. Đo khi đã ngắt debugger, như probe đo lệnh ghi.
@@ -630,6 +632,44 @@ writeFileSync(out, bytes);
 console.log(`${out}  ${bytes.length} bytes`);
 console.log(`tables sha256  ${tablesHash(JSON.parse(exportBackup(db)).tables)}`);
 ```
+
+### Mở lại trên exe của `main` (T-523, 27/11/2026)
+
+Bấm giờ lại "mở lại ≤ 1 s" trên exe của `main` (DS-12; ghi chú Medium của review #1457, gạch "LCP ở 1× chậm hơn mốc L4" ở trên), tách từng mốc, có và không có chuyển động, bằng script mới `e2e/perf/reopen.mts` (cách T-227, `e2e/perf/README.md`).
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`, đo 01:40–02:30 ngày 27/11; máy rảnh (chỉ phiên điều phối `auto-issues` đang chờ), cửa sổ exe luôn ở trên cùng (script đặt).
+- **Exe:** build release tại máy ở `main` `a78b7fe` (PR của T-523 chỉ đổi `e2e/perf/**`, chú thích `tools/` và docs: code app trùng). 5 560 320 byte, sha256 `64834ECF…A274`, portable ở `C:\perf-t523\`.
+- **Dữ liệu:** `node tools/load-data.mjs` ở `a78b7fe` (neo 12/10/2026, seed 6): `tables` sha256 `42e6e6e2…2a0215`, file 16 437 916 byte. Nhập ở Cài đặt → Dữ liệu: "4 team · 51 nhân sự · 1,481 KH · 10,240 lịch hẹn · 1,765 HĐ"; `project2c.db` 14 147 584 byte.
+- **Tắt chuyển động:** cờ WebView2 không bật "Giảm chuyển động" cho trang (`--force-prefers-reduced-motion`, `--blink-settings`: `prefers-reduced-motion` vẫn là không), còn cài đặt hiệu ứng của Windows là cài đặt của máy, không đổi khi không có Owner. Nên dùng exe tạm build ở `a78b7fe` với hai chỗ đọc "Giảm chuyển động" ép bật (`calmMotion` của `packages/ui`, khối `prefers-reduced-motion` của `theme.css`; không commit, sha256 `AF316107…E53B`), cùng dữ liệu. Kiểm trên exe đó: phần `[data-rise]` có `animation-name: none`.
+- **Màn:** app mở lại màn cuối cùng (`p2c.lastRoute`, chung mọi `project2c.exe`). G7, L4, T-485 không ghi màn. Đo cả Tổng quan và Cài đặt.
+- **Exe trước VA7 và T-442:** exe dùng thử `5215b2e` (09/11) chép ra thư mục mới, so với exe `main`, mỗi exe trên seed demo do chính nó sinh (neo 27/11): exe cũ không mở được dữ liệu tải của `main`.
+- **File JSON:** `docs/metrics/phase-6-scale/reopen.json`: mọi lần, mọi ứng viên LCP; khối `diagnostics` giữ các lần đọc thêm bằng script không commit (mở với cờ, long-animation-frame, `animation-name`).
+
+**Kết quả: không Đạt, cả khi tắt chuyển động.** "Đạt" (Issue #1563) là trung vị gọi exe → LCP ≤ 1 s và không quá mốc G7 617 ms theo luật nhiễu, tức ≤ 740 ms.
+
+| Dữ liệu tải 1×, trung vị từng cột (ms) | Màn | Gọi exe → trang bắt đầu | Trang bắt đầu → `p2c:data-open` | Trang bắt đầu → LCP | Gọi exe → LCP (min–max) | Phần tử LCP |
+|---|---|---|---|---|---|---|
+| `main` `a78b7fe` | Tổng quan | 274 | 307 | 1 056 | **1 330** ❌ (1 316–1 334) | dòng phụ "Tháng 11/2026 · …" |
+| `main` `a78b7fe` | Cài đặt | 262 | 310 | 924 | **1 186** ❌ (1 182–1 193) | dòng "Mỗi lần mở app · giữ 10 bản…" |
+| tắt chuyển động (exe tạm) | Tổng quan | 266 | 308 | 632 | **898** ❌ (890–912) | dòng phụ "Tháng 11/2026 · …" |
+| tắt chuyển động (exe tạm) | Cài đặt | 259 | 308 | 512 | **772** ❌ (767–785) | khối "Nạp lại dữ liệu giả lập…" |
+| tắt chuyển động, nạp `App` từ đầu như trước T-442 (exe tạm `FF57D243…05FC`) | Tổng quan | 276 | 312 | 608 | 884 (857–896) | dòng phụ "Tháng 11/2026 · …" |
+| như trên | Cài đặt | 280 | 313 | 484 | 764 (750–832) | khối "Nạp lại dữ liệu giả lập…" |
+| Mốc G7 (T-348, 03/11) | — | — | — | — | 617 (605–625) | — |
+| Mốc L4 (T-401, 09/11, exe `a1e6a20`) | — | — | 375 | — | 717 (710–739) | — |
+| T-485 (21/11, exe `75b7e14`) | — | — | 314 | 840–880 (min–max) | 1 093 (1 090–1 134) | — |
+
+| Gọi exe → LCP, seed demo của chính exe | Tổng quan | Cài đặt |
+|---|---|---|
+| dùng thử `5215b2e` (09/11) | 723 ms (718–773) | 595 ms (587–604) |
+| `main` `a78b7fe` | 1 231 ms (1 219–1 254) | 1 108 ms (1 094–1 153) |
+
+- **Phần trước `p2c:data-open` không đổi:** gọi exe → trang bắt đầu 260–290 ms, trang bắt đầu → `p2c:data-open` 307–313 ms ở mọi exe trên dữ liệu tải. Phần chậm nằm sau đó.
+- **"Hiện" (VA7a, 20/11) dời LCP ≈ 420 ms.** Ở exe `main`, vỏ app (logo, viên "Không có lịch hẹn sắp tới") vẽ lúc ≈ 620 ms từ trang bắt đầu; tiêu đề "Tổng quan" được tính lúc ≈ 1 000 ms, dòng phụ "Tháng 11/2026 · …" (phần tử LCP) lúc ≈ 1 050 ms. Hai dòng này hiện dần từ trong suốt trong `--t-3` = 400 ms (dòng phụ trễ 40 ms), và LCP tính chúng lúc chuyển động xong. Exe tắt chuyển động vẽ dòng phụ ngay lúc ≈ 632 ms. Cài đặt cũng vậy: dòng "Mỗi lần mở app · giữ 10 bản…" ≈ 924 ms, tắt chuyển động thì khối "Nạp lại dữ liệu giả lập…" ≈ 512 ms.
+- **Mốc LCP này đo cách Chromium tính phần đang hiện dần, không đo lúc màn hiện ra.** Exe `main` mở với cờ `--force-prefers-reduced-motion`: "Hiện" vẫn chạy (`animation-name: rise`), mà LCP ghi dòng phụ ngay lúc ≈ 616–644 ms.
+- **Lần vẽ đầu sau `p2c:data-open` chậm hơn 09/11 ≈ 150 ms, không do T-442.** Từ `p2c:data-open` tới khung hình đầu có màn: exe `5215b2e` ≈ 135 ms ở Tổng quan, ≈ 60 ms ở Cài đặt (seed); exe `main` ≈ 280 ms (vỏ app, seed), ≈ 320 ms / ≈ 205 ms khi tắt chuyển động (dữ liệu tải). Long-animation-frame đọc trong trang (không gắn debugger lúc mở; Tổng quan, tắt chuyển động): chunk `App` và `chart` tải lúc 306–316 ms, rồi một tác vụ React (`MessagePort.onmessage` của `index.js`) chạy liền 224–227 ms, khung hình đầu ≈ 620 ms (3 lần). Nạp `App` từ đầu như trước T-442 chỉ bớt ≈ 10–15 ms. Phần còn lại là chính lần vẽ đầu của vỏ app và màn; chưa tách theo component (bundle release đã rút gọn tên hàm).
+- **Mốc cũ có lẽ đo ở màn khác nhau:** G7 617 ms gần Cài đặt của exe `5215b2e` (595 ms), L4 717 ms gần Tổng quan (723 ms). T-485 1 093 ms (trang bắt đầu → LCP 840–880 ms) khớp Cài đặt có chuyển động.
+- **Lối ra (c)** của Issue #1563: không Đạt cả khi tắt chuyển động. T-523 không sửa code app; dừng `CẦN OWNER` (27/11) kèm số trên và đề xuất một Issue sửa: không chạy "Hiện" cho màn đầu lúc mở app, và tìm phần chậm của lần vẽ đầu bằng profile trên bản build giữ tên hàm. Owner chọn "a) PR ghi (c) + Issue sửa" (27/11, https://github.com/AlexH-AI/Project-2C/issues/1563#issuecomment-7211037317; không chọn "b) Owner đặt mốc đo mới"): ngưỡng và NT-HN-01 giữ nguyên, Issue sửa chưa tạo, Owner tạo khi bảo.
 
 ## Kiểm tra trên `main`
 

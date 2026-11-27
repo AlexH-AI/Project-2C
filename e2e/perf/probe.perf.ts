@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,11 +9,11 @@ import {
   loadDataError,
   markdownTable,
   parseRun,
+  readProcessList,
   toRun,
   webviewMemory,
   type Measure,
   type Unit,
-  type WebviewProcess,
 } from './stats';
 
 // The operations of spec Phase 6 §5.2 on the exe release holding the load data (§5.1), through
@@ -535,20 +535,21 @@ async function trash() {
   await records.getByRole('radio', { name: /^Tất cả/ }).click();
 }
 
-/** The WebView2 processes Windows runs now, with their Private Bytes. */
-function webviewProcesses(): WebviewProcess[] {
+/** The WebView2 processes Windows runs now, with their Private Bytes, or why there are none. */
+function webviewProcesses() {
   const script =
-    'ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process -Filter "Name=\'msedgewebview2.exe\'" | ' +
+    'ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process -Filter "Name=\'msedgewebview2.exe\'" -ErrorAction Stop | ' +
     'ForEach-Object { $p = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue; ' +
     'if ($p) { [pscustomobject]@{ id = [int]$_.ProcessId; parentId = [int]$_.ParentProcessId; ' +
     'commandLine = [string]$_.CommandLine; privateBytes = [long]$p.PrivateMemorySize64 } } })';
   const args = ['-NoProfile', '-NonInteractive', '-Command', script];
-  return JSON.parse(execFileSync('powershell.exe', args, { encoding: 'utf8' })) as WebviewProcess[];
+  return readProcessList(spawnSync('powershell.exe', args, { encoding: 'utf8' }));
 }
 
 /**
  * The webview's JavaScript heap once every screen has been opened; then the Private Bytes of the
- * exe's WebView2 processes, which hold the WebAssembly memory of sql.js too (T-485).
+ * WebView2 processes of the exe the probe is connected to, which hold the WebAssembly memory of
+ * sql.js too (T-485). A failure there skips those two, with its reason, not the run (T-523).
  */
 async function memory() {
   const cdp = await page.context().newCDPSession(page);
@@ -556,13 +557,23 @@ async function memory() {
   const { usedSize } = await cdp.send('Runtime.getHeapUsage');
   add('memory.js-heap', 'MB', usedSize / 1024 / 1024);
   await cdp.detach();
-  const webview = webviewMemory(webviewProcesses(), 'project2c.exe');
-  if (!webview) {
-    process.stdout.write('  No WebView2 process of project2c.exe: memory.webview-* not measured\n');
-    return;
+  const skip = (why: string) => {
+    process.stdout.write(`  memory.webview-* not measured: ${why.split('\n')[0]}\n`);
+  };
+  try {
+    const session = await browser.newBrowserCDPSession();
+    const { processInfo } = await session.send('SystemInfo.getProcessInfo');
+    await session.detach();
+    const browserId = processInfo.find((p) => p.type === 'browser')?.id;
+    const listed = webviewProcesses();
+    if ('error' in listed) return skip(listed.error);
+    const webview = webviewMemory(listed.processes, browserId);
+    if (!webview) return skip(`no WebView2 process of the browser at ${CDP} (id ${browserId})`);
+    add('memory.webview-private', 'MB', webview.total);
+    add('memory.webview-renderer', 'MB', webview.renderer);
+  } catch (error) {
+    skip(String(error));
   }
-  add('memory.webview-private', 'MB', webview.total);
-  add('memory.webview-renderer', 'MB', webview.renderer);
 }
 
 /**

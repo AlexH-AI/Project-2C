@@ -7,6 +7,7 @@ import {
   loadDataError,
   markdownTable,
   parseRun,
+  readProcessList,
   summarize,
   toRun,
   webviewMemory,
@@ -230,7 +231,7 @@ test('backupSkipped lets a file up to the app limit through and names one over i
   );
 });
 
-test('webviewMemory sums the Private Bytes of the WebView2 processes of the exe alone', () => {
+test('webviewMemory sums the Private Bytes of the browser process the probe is connected to', () => {
   const MB = 1024 * 1024;
   const process = (id: number, parentId: number, type: string, exe: string | null, mb: number) => ({
     id,
@@ -249,6 +250,31 @@ test('webviewMemory sums the Private Bytes of the WebView2 processes of the exe 
     process(22, 20, 'gpu-process', 'project2c.exe', 134.5),
     process(23, 20, 'renderer', 'project2c.exe', 158),
   ];
-  expect(webviewMemory(processes, 'project2c.exe')).toEqual({ total: 328, renderer: 158 });
-  expect(webviewMemory(processes.slice(0, 3), 'project2c.exe')).toBeUndefined();
+  expect(webviewMemory(processes, 20)).toEqual({ total: 328, renderer: 158 });
+  expect(webviewMemory(processes.slice(0, 3), 20)).toBeUndefined();
+  expect(webviewMemory(processes, undefined)).toBeUndefined();
+  // The installed app, the trial exe and `pnpm dev` run as project2c.exe too, with the same profile.
+  const other = [process(30, 3, '', 'project2c.exe', 40), process(33, 30, 'renderer', null, 300)];
+  expect(webviewMemory([...processes, ...other], 20)).toEqual({ total: 328, renderer: 158 });
+  expect(webviewMemory([...other, ...processes], 30)).toEqual({ total: 340, renderer: 300 });
+});
+
+test('readProcessList tells a list, even empty, from a query that failed or printed no list', () => {
+  const ran = (status: number | null, stdout: string, stderr = '') => ({ status, stdout, stderr });
+  const listed = [{ id: 20, parentId: 2, commandLine: 'msedgewebview2.exe', privateBytes: 1 }];
+  expect(readProcessList(ran(0, `${JSON.stringify(listed)}\r\n`))).toEqual({ processes: listed });
+  // No WebView2 running: an empty list, not a failure.
+  expect(readProcessList(ran(0, '[]\r\n'))).toEqual({ processes: [] });
+  // Get-CimInstance with -ErrorAction Stop: nothing on stdout, exit 1, the reason on stderr.
+  expect(
+    readProcessList(ran(1, '', 'Get-CimInstance : Invalid class \r\nAt line:1 char:39\r\n')),
+  ).toEqual({ error: 'the process query failed (exit 1): Get-CimInstance : Invalid class' });
+  for (const printed of ['', '{"id":20}', '[{"id":"20"}]', '[null]']) {
+    const error = `the process query printed no list: "${printed}"`;
+    expect(readProcessList(ran(0, printed))).toEqual({ error });
+  }
+  // PowerShell not started at all (not found, blocked): no status.
+  expect(
+    readProcessList({ ...ran(null, '', ''), error: new Error('spawnSync powershell.exe ENOENT') }),
+  ).toEqual({ error: 'PowerShell did not run: spawnSync powershell.exe ENOENT' });
 });
