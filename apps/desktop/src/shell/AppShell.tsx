@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import type { Scope } from '@p2c/domain';
-import { IconButton, openFrom, riseStep } from '@p2c/ui';
+import { chartsAfterFirstFrame, IconButton, openFrom, riseStep } from '@p2c/ui';
 import { useAppData, useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { lightCard } from '../routes/classes';
@@ -213,6 +213,8 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
   const { heading, main } = useScreenFocus(route, title, appWindow);
   const { onOpen, still } = useOpen(main, routeToHash(route));
   useRise(main, heading, routeToHash(route), still);
+  // The charts of the screen the app opens on wait for its first frame (T-525); before theirs.
+  useLayoutEffect(() => chartsAfterFirstFrame(), []);
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
   // The team or RM shown stays the one shown: a name changed or added never moves it (CLR6-D6).

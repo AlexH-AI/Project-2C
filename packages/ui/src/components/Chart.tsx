@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, init, use as registerModules, type ComposeOption } from 'echarts/core';
 import { BarChart, type BarSeriesOption } from 'echarts/charts';
 import {
@@ -27,11 +27,28 @@ export type ChartOption = ComposeOption<
 export const encodeHtml: (text: string) => string = format.encodeHTML;
 
 /**
- * A chart is drawn this long after it is shown at the latest, when no frame was painted before (a
+ * A chart of the first frame is drawn this long after it at the latest, when no frame is painted (a
  * page in the background, whose timers run about once a second anyway): longer than a first frame
  * takes on a busy machine, so that one is never kept waiting.
  */
 const DRAW_LATE_MS = 1_000;
+
+/** Set from `chartsAfterFirstFrame` until the first frame of the app is painted. */
+let opening = false;
+
+/**
+ * Called by the app as it draws the screen it opens on (T-525: ECharts held the first frame of
+ * Tổng quan ≈ 100 ms): the charts of that draw are drawn once its frame is painted. Every other
+ * chart (a new screen, another stage, period or scope) is drawn at once, never empty for a frame.
+ */
+export function chartsAfterFirstFrame(): void {
+  opening = true;
+  const over = () => {
+    opening = false;
+  };
+  requestAnimationFrame(() => window.setTimeout(over));
+  window.setTimeout(over, DRAW_LATE_MS);
+}
 
 interface ChartProps {
   /** Accessible name; the chart is exposed as one image. */
@@ -64,43 +81,52 @@ export function Chart({
   className = 'h-64 w-full',
 }: ChartProps) {
   const box = useRef<HTMLDivElement>(null);
-  /** Whether this box has had a drawing: drawn again, it is never left empty for a frame. */
-  const shown = useRef(false);
+  const [, fail] = useState<unknown>();
 
   useEffect(() => {
     const element = box.current;
     if (!element) return;
-    let drawn: { chart: ReturnType<typeof init>; observer: ResizeObserver } | undefined;
+    let chart: ReturnType<typeof init> | undefined;
+    let observer: ResizeObserver | undefined;
     const draw = () => {
-      if (drawn) return;
       const style = getComputedStyle(element);
-      const chart = init(
+      chart = init(
         element,
         chartTheme((name) => style.getPropertyValue(name), palette),
-        { renderer: 'svg' },
+        {
+          renderer: 'svg',
+        },
       );
       chart.setOption(option);
-      const observer = new ResizeObserver(() => chart.resize());
+      observer = new ResizeObserver(() => chart?.resize());
       observer.observe(element);
-      drawn = { chart, observer };
-      shown.current = true;
     };
-    // A new box is drawn once the frame that shows it is painted: the first frame of a screen
-    // never waits for its charts (T-525: ECharts held that of Tổng quan ≈ 100 ms as the app
-    // opened). A page in the background paints no frame: the timer draws it then. A box drawn
-    // before (another stage, period or scope) is drawn again at once, as its old drawing goes.
-    let [next, frame, late] = [0, 0, 0];
-    if (shown.current) draw();
+    let [next, frame, late, tried] = [0, 0, 0, false];
+    // A chart of the first frame is drawn once that frame is painted (`chartsAfterFirstFrame`); a
+    // page in the background paints no frame: the timer draws it then. A drawing that fails is
+    // thrown into React, as in the effect: the screen's ErrorBoundary shows it.
+    const later = () => {
+      if (tried) return;
+      tried = true;
+      try {
+        draw();
+      } catch (error) {
+        fail(() => {
+          throw error;
+        });
+      }
+    };
+    if (!opening) draw();
     else {
-      frame = requestAnimationFrame(() => (next = window.setTimeout(draw)));
-      late = window.setTimeout(draw, DRAW_LATE_MS);
+      frame = requestAnimationFrame(() => (next = window.setTimeout(later)));
+      late = window.setTimeout(later, DRAW_LATE_MS);
     }
     return () => {
       cancelAnimationFrame(frame);
       clearTimeout(next);
       clearTimeout(late);
-      drawn?.observer.disconnect();
-      drawn?.chart.dispose();
+      observer?.disconnect();
+      chart?.dispose();
     };
   }, [option, palette]);
 
