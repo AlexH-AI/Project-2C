@@ -3,13 +3,15 @@
 //   node e2e/perf/reopen.mts <folder of project2c.exe> [--runs 3] [--screen overview] [--out <file>]
 // The app opens on its last screen, kept in the WebView2 profile every project2c.exe shares: an
 // opening not timed sets --screen for the timed ones, and the last one puts the old screen back.
+// Stopped half way, it closes the exe and says which screen to put back by hand (T-525).
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
+import { browserPid, runCount, summarize } from './stats.ts';
 
 const options = {
   runs: { type: 'string', default: '3' },
@@ -22,24 +24,51 @@ const exe = resolve(positionals[0] ?? '.', 'project2c.exe');
 if (!existsSync(join(dirname(exe), 'Project2C-data'))) {
   throw new Error(`No portable exe at ${exe}: copy it with Project2C-data\\ beside it (README).`);
 }
-const runs = Number(values.runs);
+const runs = runCount(values.runs);
+if (runs === undefined) {
+  throw new Error(`--runs is ${values.runs}: give a whole number of runs, at least 1.`);
+}
 const CDP = 'http://127.0.0.1:9222';
 process.env.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222';
 const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
 const portUp = () => fetch(`${CDP}/json/version`).then(Boolean, () => false);
 
 // Started before any timing, so that its own start costs the opening nothing: puts the window of
-// each process id it reads on top, once it shows (a covered WebView2 paints no frame).
-const PIN = `Add-Type -Name W -Namespace P -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);'
+// each process id it reads on top, once it shows (a covered WebView2 paints no frame). One line
+// answers each id: `pinned True`, or `pinned False: <why>` (Add-Type blocked, no window; T-525).
+const PIN = `$ErrorActionPreference = 'Stop'
+try { Add-Type -Name W -Namespace P -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);'; $why = '' } catch { $why = $_.Exception.Message }
 'ready'
 while (($id = [Console]::In.ReadLine()) -ne $null) {
-  $p = Get-Process -Id $id; $n = 0
-  while ($p.MainWindowHandle -eq 0 -and $n++ -lt 2000) { Start-Sleep -Milliseconds 5; $p.Refresh() }
-  'pinned ' + [P.W]::SetWindowPos($p.MainWindowHandle, [IntPtr](-1), 0, 0, 0, 0, 0x43)
+  try {
+    if ($why) { throw $why }
+    $p = Get-Process -Id $id; $n = 0
+    while ($p.MainWindowHandle -eq 0 -and $n++ -lt 2000) { Start-Sleep -Milliseconds 5; $p.Refresh() }
+    if ($p.MainWindowHandle -eq 0) { throw 'no window in 10 s' }
+    'pinned ' + [P.W]::SetWindowPos($p.MainWindowHandle, [IntPtr](-1), 0, 0, 0, 0, 0x43)
+  } catch { 'pinned False: ' + ($_.Exception.Message -replace '\\s+', ' ') }
 }`;
-const pin = spawn('powershell.exe', ['-NoProfile', '-Command', PIN], { stdio: 'pipe' });
-const said = createInterface({ input: pin.stdout })[Symbol.asyncIterator]();
-await said.next();
+const pin = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', PIN]);
+let pinErrors = '';
+pin.stderr.setEncoding('utf8').on('data', (text: string) => (pinErrors += text));
+const lines = createInterface({ input: pin.stdout })[Symbol.asyncIterator]();
+
+/** The next line of the PowerShell script within `ms`; else it stops, with what it wrote to stderr. */
+async function said(ms: number): Promise<string> {
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<'late'>((done) => (timer = setTimeout(done, ms, 'late')));
+  const next = await Promise.race([lines.next(), late]).finally(() => clearTimeout(timer));
+  if (next !== 'late' && !next.done) return String(next.value);
+  // Its stderr is read to the end once it has closed.
+  if (next !== 'late' && pin.exitCode === null && pin.signalCode === null)
+    await new Promise((done) => pin.once('close', done));
+  const why = pinErrors.trim().split(/\r?\n/)[0] || 'nothing on its stderr';
+  throw new Error(
+    next === 'late'
+      ? `PowerShell said nothing in ${ms / 1000} s: ${why}`
+      : `PowerShell stopped: ${why}`,
+  );
+}
 
 /** Runs in the page: the marks of its opening, and each LCP candidate with what it painted. */
 async function marks() {
@@ -62,43 +91,63 @@ async function marks() {
 }
 
 const ROUTE = 'p2c.lastRoute';
-let before: string | null = null;
+/** p2c.lastRoute before the first opening (undefined until read), and what the script left there. */
+let before: string | null | undefined;
+let left: string | null | undefined;
+/** The exe open now: closed by force when the script stops half way. */
+let app: ChildProcess | undefined;
 
 /** One opening, timed or not, leaving `next` as the screen the following one opens on. */
 async function open(timed: boolean, next: string | null) {
   if (await portUp()) throw new Error(`${CDP} answers already: close that exe or WebView2 first.`);
   const called = Date.now();
-  const app = spawn(exe, [], { stdio: 'ignore' });
-  pin.stdin.write(`${app.pid}\n`);
-  const pinned = String((await said.next()).value).endsWith('True');
+  const opened = (app = spawn(exe, [], { stdio: 'ignore' }));
+  pin.stdin.write(`${opened.pid}\n`);
+  const pinned = await said(30_000);
+  if (pinned !== 'pinned True') {
+    const why = pinned.replace(/^pinned False:?\s*/, '') || 'SetWindowPos refused';
+    throw new Error(`The exe window was not put on top: ${why}`);
+  }
   await sleep(12_000); // A debugger slows the opening: connect only once it is over.
   const browser = await chromium.connectOverCDP(CDP);
-  const [page] = browser.contexts()[0]?.pages() ?? [];
-  if (!page) throw new Error(`${CDP} has no window of the exe.`);
-  const read = timed ? await page.evaluate(marks) : undefined;
-  before = timed ? before : await page.evaluate((key) => localStorage.getItem(key), ROUTE);
-  await page.evaluate(
-    ([key, hash]) => (hash ? localStorage.setItem(key, hash) : localStorage.removeItem(key)),
-    [ROUTE, next] as const,
-  );
-  // Closed once its WebView2 browser process is gone too: a new exe would join one still closing.
-  const session = await browser.newBrowserCDPSession();
-  const { processInfo } = await session.send('SystemInfo.getProcessInfo');
-  const webview = processInfo.find((p) => p.type === 'browser')?.id ?? app.pid;
-  await browser.close();
-  spawnSync('taskkill', ['/PID', String(app.pid)]); // As its ✕: WM_CLOSE.
-  const alive = () =>
-    spawnSync('tasklist', ['/FI', `PID eq ${webview}`]).stdout.includes(` ${webview} `);
+  let read: Awaited<ReturnType<typeof marks>> | undefined;
+  let webview: number | undefined;
+  try {
+    const [page] = browser.contexts()[0]?.pages() ?? [];
+    if (!page) throw new Error(`${CDP} has no window of the exe.`);
+    read = timed ? await page.evaluate(marks) : undefined;
+    // Read once: null (no screen kept) is an answer too.
+    if (before === undefined)
+      before = await page.evaluate((key) => localStorage.getItem(key), ROUTE);
+    await page.evaluate(
+      ([key, hash]) => (hash ? localStorage.setItem(key, hash) : localStorage.removeItem(key)),
+      [ROUTE, next] as const,
+    );
+    left = next;
+    // Closed once its WebView2 browser process is gone too: a new exe would join one still closing.
+    const session = await browser.newBrowserCDPSession();
+    webview = browserPid((await session.send('SystemInfo.getProcessInfo')).processInfo);
+  } finally {
+    await browser.close();
+  }
+  const pid = webview ?? opened.pid;
+  spawnSync('taskkill', ['/PID', String(opened.pid)]); // As its ✕: WM_CLOSE.
+  const alive = () => spawnSync('tasklist', ['/FI', `PID eq ${pid}`]).stdout.includes(` ${pid} `);
   let forced = false;
-  for (let t = 0; app.exitCode === null || alive() || (await portUp()); t++) {
+  for (let t = 0; opened.exitCode === null || alive() || (await portUp()); t++) {
     // Now and then, once Playwright has been connected, the exe misses it: by force then.
     if (t === 150)
-      forced = spawnSync('taskkill', ['/F', '/T', '/PID', String(app.pid)]).status === 0;
-    if (t === 300) throw new Error(`The exe (${app.pid}) did not close in 60 s.`);
+      forced = spawnSync('taskkill', ['/F', '/T', '/PID', String(opened.pid)]).status === 0;
+    if (t === 300) throw new Error(`The exe (${opened.pid}) did not close in 60 s.`);
     await sleep(200);
   }
+  app = undefined;
   if (!read) return undefined;
-  if (read.hidden || !pinned) throw new Error('The exe window was covered: run again.');
+  if (read.hidden) throw new Error('The exe window was covered: run again.');
+  // A screen the app does not know opens Tổng quan: the times would be of another screen.
+  if (read.screen !== `#/${values.screen}`) {
+    throw new Error(`The exe opened ${read.screen || 'no screen'}, not #/${values.screen}.`);
+  }
   const [lcpAt = NaN, element] = read.lcp.at(-1) ?? [];
   const start = read.origin - called;
   const run = { ...read, forced, start, lcpAt, callToLcp: start + lcpAt };
@@ -111,16 +160,29 @@ async function open(timed: boolean, next: string | null) {
 }
 type Key = 'start' | 'dataOpen' | 'fcp' | 'lcpAt' | 'callToLcp';
 
-await open(false, `#/${values.screen}`);
 const done: NonNullable<Awaited<ReturnType<typeof open>>>[] = [];
-for (let i = 0; i < runs; i++)
-  done.push((await open(true, i < runs - 1 ? `#/${values.screen}` : before))!);
-pin.stdin.end();
+try {
+  if ((await said(60_000)) !== 'ready') throw new Error('PowerShell did not start its script.');
+  await open(false, `#/${values.screen}`);
+  for (let i = 0; i < runs; i++)
+    done.push((await open(true, i < runs - 1 ? `#/${values.screen}` : (before ?? null)))!);
+} catch (error) {
+  if (app?.exitCode === null) spawnSync('taskkill', ['/F', '/T', '/PID', String(app.pid)]);
+  if (before !== undefined && left !== before) {
+    console.error(
+      `${ROUTE} is left at ${left ?? 'none'}; it was ${before ?? 'none (Tổng quan)'}: open the ` +
+        'exe, go to that screen and close it, to put it back.',
+    );
+  }
+  throw error;
+} finally {
+  pin.stdin.end();
+  pin.kill();
+}
 const series = (key: Key) => {
   const all = done.map((run) => Math.round(run[key]));
-  const sorted = [...all].sort((a, b) => a - b);
-  const median = (sorted[(runs - 1) >> 1]! + sorted[runs >> 1]!) / 2;
-  console.log(`${key}: ${median} ms (${sorted[0]}–${sorted.at(-1)})`);
+  const { median, min, max } = summarize(all);
+  console.log(`${key}: ${median} ms (${min}–${max})`);
   return { all, median };
 };
 const at = new Date().toISOString();

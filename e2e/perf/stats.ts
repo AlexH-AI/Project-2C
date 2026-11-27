@@ -236,6 +236,20 @@ export function backupSkipped(bytes: number): string | null {
   );
 }
 
+/** The number of runs `text` asks for: a whole number, at least 1; else undefined (T-525). */
+export function runCount(text: string | undefined): number | undefined {
+  const runs = Number(text);
+  return text?.trim() && Number.isInteger(runs) && runs >= 1 ? runs : undefined;
+}
+
+/**
+ * The WebView2 browser process the CDP session belongs to, in what `SystemInfo.getProcessInfo`
+ * lists: the probe and the script that times reopening both find the exe's processes by it.
+ */
+export function browserPid(processes: readonly { type: string; id: number }[]): number | undefined {
+  return processes.find((p) => p.type === 'browser')?.id;
+}
+
 /** A WebView2 process (msedgewebview2.exe), as Windows lists it. */
 export interface WebviewProcess {
   id: number;

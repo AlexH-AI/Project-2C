@@ -6,6 +6,7 @@ import { chromium, expect, test, type Browser, type Locator, type Page } from '@
 import {
   aiCustomer,
   backupSkipped,
+  browserPid,
   loadDataError,
   markdownTable,
   parseRun,
@@ -564,7 +565,7 @@ async function memory() {
     const session = await browser.newBrowserCDPSession();
     const { processInfo } = await session.send('SystemInfo.getProcessInfo');
     await session.detach();
-    const browserId = processInfo.find((p) => p.type === 'browser')?.id;
+    const browserId = browserPid(processInfo);
     const listed = webviewProcesses();
     if ('error' in listed) return skip(listed.error);
     const webview = webviewMemory(listed.processes, browserId);

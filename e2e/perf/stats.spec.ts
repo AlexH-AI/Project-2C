@@ -3,11 +3,13 @@ import {
   aiCustomer,
   backupSkipped,
   BACKUP_LIMIT_BYTES,
+  browserPid,
   compareRuns,
   loadDataError,
   markdownTable,
   parseRun,
   readProcessList,
+  runCount,
   summarize,
   toRun,
   webviewMemory,
@@ -277,4 +279,22 @@ test('readProcessList tells a list, even empty, from a query that failed or prin
   expect(
     readProcessList({ ...ran(null, '', ''), error: new Error('spawnSync powershell.exe ENOENT') }),
   ).toEqual({ error: 'PowerShell did not run: spawnSync powershell.exe ENOENT' });
+});
+
+test('browserPid finds the WebView2 browser process among those CDP lists', () => {
+  const listed = [
+    { type: 'renderer', id: 23, cpuTime: 1.5 },
+    { type: 'browser', id: 20, cpuTime: 0.4 },
+    { type: 'gpu', id: 22, cpuTime: 0.2 },
+  ];
+  expect(browserPid(listed)).toBe(20);
+  expect(browserPid(listed.filter((p) => p.type !== 'browser'))).toBeUndefined();
+});
+
+test('runCount takes a whole number of runs, at least 1, and nothing else (T-525)', () => {
+  expect(runCount('3')).toBe(3);
+  expect(runCount('1')).toBe(1);
+  // 0 and abc gave no run and a median of NaN; 2.5 ran 3 times with a wrong median.
+  for (const text of ['0', '-2', 'abc', '2.5', '', undefined])
+    expect(runCount(text)).toBeUndefined();
 });

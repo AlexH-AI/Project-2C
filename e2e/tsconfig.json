@@ -2,7 +2,9 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023", "DOM"],
-    "types": ["node"]
+    "types": ["node"],
+    // perf/reopen.mts runs under node, which imports perf/stats.ts by its own name.
+    "allowImportingTsExtensions": true
   },
   "include": [
     ".",

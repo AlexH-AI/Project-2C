@@ -87,8 +87,11 @@ Ngưỡng: thao tác màn (đổi kỳ, sắp, chọn, mở hồ sơ, Thùng rá
 node e2e/perf/reopen.mts C:\perf-exe --runs 3 --screen overview --out .local\perf\reopen-overview.json
 ```
 
+- `--runs` là số nguyên ≥ 1 (như `PERF_RUNS` của probe); sai thì dừng trước khi mở exe.
 - Mỗi lần: gọi exe với cổng debug 9222 (ghi lúc gọi), đặt cửa sổ luôn ở trên cùng, chờ 12 s rồi mới nối CDP (debugger làm chậm lúc mở), đọc trang bắt đầu (`performance.timeOrigin`), `p2c:data-open`, FCP và các ứng viên LCP (lúc vẽ, phần tử), rồi đóng exe như nút ✕ (sau khi Playwright đã nối, exe đôi khi không đóng: sau 30 s thì đóng ép, JSON ghi `forced`). Cửa sổ bị che thì dừng.
-- App mở lại màn cuối cùng (`p2c.lastRoute` trong profile WebView2 chung của mọi `project2c.exe`, cả bản cài): một lần mở không đo đặt `--screen` (mặc định `overview`, Tổng quan) cho các lần đo; lần cuối trả lại màn cũ. LCP khác theo màn: ghi màn khi so hai lần đo.
+- Cửa sổ do một script PowerShell đặt lên trên cùng (Add-Type gọi `SetWindowPos`). Script đó lỗi (Add-Type bị chặn, không có cửa sổ), dừng hay im lặng quá hạn thì script đo dừng, in lý do (`pinned False: …`, hay dòng đầu stderr của PowerShell).
+- App mở lại màn cuối cùng (`p2c.lastRoute` trong profile WebView2 chung của mọi `project2c.exe`, cả bản cài): một lần mở không đo đặt `--screen` (mặc định `overview`, Tổng quan) cho các lần đo; lần cuối trả lại màn cũ. Lần đo mở màn khác `#/<--screen>` (gõ nhầm tên màn: app mở Tổng quan) thì dừng, báo màn đọc được. LCP khác theo màn: ghi màn khi so hai lần đo.
+- Dừng giữa chừng vì bất cứ lỗi nào: script đóng ép exe đang mở, và khi `p2c.lastRoute` chưa về màn cũ thì in màn cũ để trả lại tay (mở exe, sang màn đó, đóng).
 - In trung vị (min–max) của từng mốc, ghi JSON (`--out`, mặc định `.local/perf/reopen-<thời điểm>.json`). Mỗi lần ghi `calm`: "Giảm chuyển động" của máy, mà chuyển động của app theo. Cờ `--force-prefers-reduced-motion` của WebView2 không đổi `calm`, không tắt chuyển động, mà đổi lúc LCP tính phần đang hiện dần (T-523): không dùng khi đo. Đo khi tắt chuyển động theo một trong hai cách:
   - tắt "Animation effects" của Windows (Settings → Accessibility → Visual effects), cài đặt mà Chromium đọc cho "Giảm chuyển động". T-523 chưa thử cách này vì đó là cài đặt của máy. Chỉ dùng số khi JSON ghi `calm: true`;
   - như T-523: build một exe tạm có hai chỗ đọc "Giảm chuyển động" ép bật (`calmMotion` của `packages/ui`, khối `prefers-reduced-motion` của `theme.css`), rồi chạy script trên thư mục của exe đó (mục số đo "Mở lại trên exe của `main`").

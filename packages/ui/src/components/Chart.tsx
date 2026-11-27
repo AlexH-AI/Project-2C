@@ -26,6 +26,9 @@ export type ChartOption = ComposeOption<
  */
 export const encodeHtml: (text: string) => string = format.encodeHTML;
 
+/** A chart is drawn this long after it is shown at the latest, when no frame was painted before. */
+const DRAW_LATE_MS = 200;
+
 interface ChartProps {
   /** Accessible name; the chart is exposed as one image. */
   label: string;
@@ -61,18 +64,32 @@ export function Chart({
   useEffect(() => {
     const element = box.current;
     if (!element) return;
-    const style = getComputedStyle(element);
-    const chart = init(
-      element,
-      chartTheme((name) => style.getPropertyValue(name), palette),
-      { renderer: 'svg' },
-    );
-    chart.setOption(option);
-    const observer = new ResizeObserver(() => chart.resize());
-    observer.observe(element);
+    let drawn: { chart: ReturnType<typeof init>; observer: ResizeObserver } | undefined;
+    const draw = () => {
+      if (drawn) return;
+      const style = getComputedStyle(element);
+      const chart = init(
+        element,
+        chartTheme((name) => style.getPropertyValue(name), palette),
+        { renderer: 'svg' },
+      );
+      chart.setOption(option);
+      const observer = new ResizeObserver(() => chart.resize());
+      observer.observe(element);
+      drawn = { chart, observer };
+    };
+    // Drawn once the frame that shows its box is painted: the first frame of a screen never waits
+    // for its charts (T-525: ECharts held that of Tổng quan ≈ 100 ms as the app opened). A page in
+    // the background paints no frame: the timer draws it then.
+    let next = 0;
+    const frame = requestAnimationFrame(() => (next = window.setTimeout(draw)));
+    const late = window.setTimeout(draw, DRAW_LATE_MS);
     return () => {
-      observer.disconnect();
-      chart.dispose();
+      cancelAnimationFrame(frame);
+      clearTimeout(next);
+      clearTimeout(late);
+      drawn?.observer.disconnect();
+      drawn?.chart.dispose();
     };
   }, [option, palette]);
 
