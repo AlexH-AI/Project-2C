@@ -14,7 +14,7 @@ export {
   type DataTableSort,
   type DataTableView,
 } from './components/DataTable';
-export { Chart, encodeHtml, type ChartOption } from './components/Chart';
+export { Chart, chartsAfterFirstFrame, encodeHtml, type ChartOption } from './components/Chart';
 export { Button, IconButton, type ButtonVariant } from './components/Button';
 export { Dialog, DialogFocusFallback, useLeaveBehind } from './components/Dialog';
 export { Toast } from './components/Toast';

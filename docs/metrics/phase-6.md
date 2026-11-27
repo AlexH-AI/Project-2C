@@ -545,7 +545,7 @@ Bảng probe: trung vị, min–max trong ngoặc (5 lần; `db.save` 15 lần �
 | Nhập backup 10×: chọn file → hộp 10b (1 lần) | — | — | 10 ms, từ chối: "File lớn hơn 100 MB, app không đọc" | — |
 | Xuất backup 10×: bấm → câu báo (1 lần, đã ngắt debugger) | — | — | 3 260 ms, từ chối: "Chưa xuất backup: dữ liệu lớn hơn 100 MB…"; sau đó tiến trình WebView2 của exe giữ 1 451 MB | — |
 
-- **LCP ở 1× chậm hơn mốc L4:** gọi exe → LCP ở 1× hôm nay ≈ 1,09 s, trong khi nghiệm thu L4 (09/11, exe `a1e6a20`) đo 717 ms. `p2c:data-open` thì nhanh hơn (314 so với 375 ms). Nghĩa là phần chậm thêm nằm sau lúc mở xong dữ liệu. Chưa tìm nguyên nhân; có thể là chuyển động của VA7 ("Đếm số lớn") dời mốc LCP. Việc này ngoài T-485, cần kiểm riêng trước khi dùng số này so với ngưỡng "mở lại ≤ 1 s". Đo lại ở T-523 (27/11): mục "Mở lại trên exe của `main`" dưới; không Đạt cả khi tắt chuyển động, "Hiện" dời LCP ≈ 420 ms và lần vẽ đầu sau `p2c:data-open` chậm hơn 09/11 ≈ 150 ms.
+- **LCP ở 1× chậm hơn mốc L4:** gọi exe → LCP ở 1× hôm nay ≈ 1,09 s, trong khi nghiệm thu L4 (09/11, exe `a1e6a20`) đo 717 ms. `p2c:data-open` thì nhanh hơn (314 so với 375 ms). Nghĩa là phần chậm thêm nằm sau lúc mở xong dữ liệu. Chưa tìm nguyên nhân; có thể là chuyển động của VA7 ("Đếm số lớn") dời mốc LCP. Việc này ngoài T-485, cần kiểm riêng trước khi dùng số này so với ngưỡng "mở lại ≤ 1 s". Đo lại ở T-523 (27/11): mục "Mở lại trên exe của `main`" dưới; không Đạt cả khi tắt chuyển động, "Hiện" dời LCP ≈ 420 ms và lần vẽ đầu sau `p2c:data-open` chậm hơn 09/11 ≈ 150 ms. Sau T-525 (27/11): 873 ms ở Tổng quan, 791 ms ở Cài đặt, Đạt theo mốc mới của Owner "≤ 1 s mọi màn"; mục "Mở lại sau khi bỏ "Hiện" ở màn đầu" dưới.
 
 Chuyển màn bằng sidebar (đo thêm ngày 22/11, sau khi Owner thấy Team & nhân sự chậm trên Mac). Probe không đo việc này, chỉ đo màn đầu sau tải lại. Cách đo:
 - Cùng exe, cùng máy. Bấm link của màn ở sidebar, tính tới khung hình sau khi màn hiện nội dung chính: bảng "So sánh team" và biểu đồ của Tổng quan; bảng "Danh sách lịch hẹn"; cột N4; bảng "Theo team"; bảng "Thành viên team…"; mục "File dữ liệu".
@@ -669,7 +669,42 @@ Bấm giờ lại "mở lại ≤ 1 s" trên exe của `main` (DS-12; ghi chú M
 - **Mốc LCP này đo cách Chromium tính phần đang hiện dần, không đo lúc màn hiện ra.** Exe `main` mở với cờ `--force-prefers-reduced-motion`: "Hiện" vẫn chạy (`animation-name: rise`), mà LCP ghi dòng phụ ngay lúc ≈ 616–644 ms.
 - **Lần vẽ đầu sau `p2c:data-open` chậm hơn 09/11 ≈ 150 ms, không do T-442.** Từ `p2c:data-open` tới khung hình đầu có màn: exe `5215b2e` ≈ 135 ms ở Tổng quan, ≈ 60 ms ở Cài đặt (seed); exe `main` ≈ 280 ms (vỏ app, seed), ≈ 320 ms / ≈ 205 ms khi tắt chuyển động (dữ liệu tải). Long-animation-frame đọc trong trang (không gắn debugger lúc mở; Tổng quan, tắt chuyển động): chunk `App` và `chart` tải lúc 306–316 ms, rồi một tác vụ React (`MessagePort.onmessage` của `index.js`) chạy liền 224–227 ms, khung hình đầu ≈ 620 ms (3 lần). Nạp `App` từ đầu như trước T-442 chỉ bớt ≈ 10–15 ms. Phần còn lại là chính lần vẽ đầu của vỏ app và màn; chưa tách theo component (bundle release đã rút gọn tên hàm).
 - **Mốc cũ có lẽ đo ở màn khác nhau:** G7 617 ms gần Cài đặt của exe `5215b2e` (595 ms), L4 717 ms gần Tổng quan (723 ms). T-485 1 093 ms (trang bắt đầu → LCP 840–880 ms) khớp Cài đặt có chuyển động.
-- **Lối ra (c)** của Issue #1563: không Đạt cả khi tắt chuyển động. T-523 không sửa code app; dừng `CẦN OWNER` (27/11) kèm số trên và đề xuất một Issue sửa: không chạy "Hiện" cho màn đầu lúc mở app, và tìm phần chậm của lần vẽ đầu bằng profile trên bản build giữ tên hàm. Owner chọn "a) PR ghi (c) + Issue sửa" (27/11, https://github.com/AlexH-AI/Project-2C/issues/1563#issuecomment-7211037317; không chọn "b) Owner đặt mốc đo mới"): ngưỡng và NT-HN-01 giữ nguyên, Issue sửa chưa tạo, Owner tạo khi bảo.
+- **Lối ra (c)** của Issue #1563: không Đạt cả khi tắt chuyển động. T-523 không sửa code app; dừng `CẦN OWNER` (27/11) kèm số trên và đề xuất một Issue sửa: không chạy "Hiện" cho màn đầu lúc mở app, và tìm phần chậm của lần vẽ đầu bằng profile trên bản build giữ tên hàm. Owner chọn "a) PR ghi (c) + Issue sửa" (27/11, https://github.com/AlexH-AI/Project-2C/issues/1563#issuecomment-7211037317; không chọn "b) Owner đặt mốc đo mới"): ngưỡng và NT-HN-01 giữ nguyên, Issue sửa chưa tạo, Owner tạo khi bảo. Issue sửa là T-525 (#1569): mục "Mở lại sau khi bỏ "Hiện" ở màn đầu" dưới.
+
+### Mở lại sau khi bỏ "Hiện" ở màn đầu (T-525, 27/11/2026)
+
+Bấm giờ lại "mở lại ≤ 1 s" sau phần sửa của DS-23 (Issue #1569; ghi chú Medium của review #1457): màn đầu lúc mở app không chạy "Hiện", biểu đồ vẽ sau khung hình đầu. Cùng cách T-523 (`e2e/perf/reopen.mts`, 3 lần mỗi màn sau một lần không đo).
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`, đo 22:55–23:30 ngày 27/11; máy rảnh (chỉ phiên điều phối `auto-issues` đang chờ), cửa sổ exe luôn ở trên cùng, "Giảm chuyển động" của máy tắt (`calm: false` ở mọi lần).
+- **Exe:** build release tại máy ở `329c637` (nhánh của T-525), 5 560 832 byte, sha256 `76C4AC65…0FDE`, portable ở `C:\perf-t525\`.
+- **Dữ liệu:** `node tools/load-data.mjs` ở `329c637`: `tables` sha256 `42e6e6e2…2a0215`, file 16 437 916 byte, như T-523. Nhập vào thư mục mới: "4 team · 51 nhân sự · 1,481 KH · 10,240 lịch hẹn · 1,765 HĐ", `project2c.db` 14 147 584 byte.
+- **Exe tạm (không commit), trên bản chép `project2c.db` của T-523:** "chỉ bỏ Hiện" (`5A9DAD30…5675`); "trần" (`5DA49ECC…D6F9`): thêm biểu đồ không vẽ, viên "Lưu ý" không đọc bảng nào. "Trần" là giới hạn của hai phần chậm profile chỉ ra, không phải phần sửa.
+- **File JSON:** `docs/metrics/phase-6-scale/reopen-t525.json` (mọi lần, mọi ứng viên LCP).
+
+**Kết quả: Đạt theo mốc mới của Owner, "≤ 1 s mọi màn"** (27/11, cuối mục): 873 / 791 ms. Theo mốc cũ của Issue (≤ 740 ms: G7 617 ms cộng luật nhiễu) thì không Đạt ở màn nào, lối ra (b).
+
+| Dữ liệu tải 1×, trung vị từng cột (ms) | Màn | Gọi exe → trang bắt đầu | Trang bắt đầu → `p2c:data-open` | Trang bắt đầu → LCP | Gọi exe → LCP (min–max) | Phần tử LCP |
+|---|---|---|---|---|---|---|
+| `329c637` (T-525) | Tổng quan | 293 | 321 | 580 | **873** ✅ (842–874) | dòng phụ "Tháng 11/2026 · …" |
+| `329c637` (T-525) | Cài đặt | 275 | 313 | 520 | **791** ✅ (787–809) | khối "Nạp lại dữ liệu giả lập…" |
+| chỉ bỏ "Hiện" (exe tạm) | Tổng quan | 285 | 319 | 640 | 925 (895–949) | dòng phụ "Tháng 11/2026 · …" |
+| chỉ bỏ "Hiện" (exe tạm) | Cài đặt | 277 | 315 | 512 | 790 (777–793) | khối "Nạp lại dữ liệu giả lập…" |
+| "trần" (exe tạm) | Tổng quan | 281 | 314 | 572 | 865 (817–871) | dòng phụ "Tháng 11/2026 · …" |
+| "trần" (exe tạm) | Cài đặt | 271 | 314 | 436 | 713 (701–715) | khối "Nạp lại dữ liệu giả lập…" |
+| T-523, `main` `a78b7fe` | Tổng quan / Cài đặt | 274 / 262 | 307 / 310 | 1 056 / 924 | 1 330 / 1 186 | — |
+| Mốc G7 (T-348) / L4 (T-401) | — | — | — | — | 617 / 717 | — |
+
+- **Profile, bản build giữ tên hàm** (`vite build --minify false`, rồi `tauri build --no-bundle` với `beforeBuildCommand` thay qua `-c`; không đổi `vite.config.*`, không commit; cây "chỉ bỏ Hiện", sha256 `D0F23F02…AD51`). CPU profile qua CDP của lần mở lạnh, nối ngay khi cổng debug trả lời (profile từ ≈ 10 ms sau trang bắt đầu; debugger làm chậm, chỉ đọc tỷ lệ). Tổng quan, sau `p2c:data-open` (≈ 349 ms):
+  - vẽ 392–511 ms (≈ 120 ms): `HeadsUp` (viên "Lưu ý", VA9) 76 ms, gần hết là đọc cả bảng lịch hẹn (`listAppointments` 63 ms) và KH (11 ms); `Overview` 40 ms (`stageBlock` 20; đọc bảng giai đoạn 11, HĐ 11);
+  - commit 512–639 ms (≈ 127 ms): effect của `Chart` chạy **trước** khung hình đầu. `init` của ECharts 62 ms (trong đó `getSize` ép tính bố cục 60 ms), `setOption` 47 ms. Thanh công cụ nhận chỗ của dòng phụ và nút qua ref là state (`setSub`, `setActions` của `Toolbar`), nên commit đầu sinh một lần vẽ đồng bộ, và React chạy hết effect còn chờ trước lần vẽ đó;
+  - Cài đặt: vẽ ≈ 95 ms, `HeadsUp` 76 ms (lịch hẹn 63, KH 9), `DataFileSection` 6 ms.
+- **Long-animation-frame không gắn debugger** (tải lại trang trên bản giữ tên hàm): một tác vụ React (`MessagePort.onmessage` → `performWorkUntilDeadline`) 119 ms ở Tổng quan, 92 ms ở Cài đặt.
+- **Phần đã sửa (vòng 1):**
+  - "Hiện" (`useRise` của AppShell.tsx): màn đầu không trồi. Gọi exe → LCP 1 330 → 925 ms ở Tổng quan, 1 186 → 790 ms ở Cài đặt; trang bắt đầu → LCP về mức tắt chuyển động của T-523 (632 / 512 ms).
+  - Biểu đồ (`Chart` của packages/ui): vẽ sau khung hình có ô của nó (`requestAnimationFrame` rồi một tác vụ; trang ở nền không vẽ khung hình thì hẹn giờ, 200 ms ở exe đo, 1 000 ms ở head của PR: chỉ đổi đường của trang ở nền). Trang bắt đầu → khung hình đầu (cũng là LCP: dòng phụ vẽ cùng khung hình) ở Tổng quan 640 → 580 ms, gọi exe → LCP 925 → 873 ms; Cài đặt không có biểu đồ (790 → 791 ms). Đây là dời việc ra sau khung hình đầu, không bớt việc; phần tử LCP không đổi. `reload.overview` của probe chờ `main svg`, nên từ nay tính thêm khoảng một khung hình.
+- **Phần còn lại theo profile:** đọc cả bảng ở lần vẽ đầu. `Overview` cần bốn bảng (lịch hẹn, KH, giai đoạn, HĐ); `HeadsUp` chỉ cần lịch hẹn hôm nay, lịch kế tiếp và số lịch quá giờ chưa ghi, mà đọc cả bảng lịch hẹn. Bớt việc đó cần một câu đọc hẹp ở packages/db, ngoài các file Issue cho sửa. Bản "trần" cho biết trần của cả hai: Cài đặt 713 ms (dưới 740 ms), Tổng quan 865 ms (vẫn trên 740 ms).
+- **Tổng quan và mốc 740 ms:** gọi exe → trang bắt đầu ≈ 280 ms và `p2c:data-open` ≈ 315 ms chỉ để lại ≈ 140 ms cho vẽ, bố cục và khung hình đầu, trong khi chỉ đọc bốn bảng của màn đã ≈ 100 ms khi gắn debugger. Mốc G7 617 ms gần Cài đặt của exe `5215b2e`, L4 717 ms gần Tổng quan (mục T-523), mà luật ≤ 740 ms đặt một mốc cho cả hai màn.
+- **Lối ra (b)** của Issue #1569: đã bỏ "Hiện" ở màn đầu và sửa một phần chậm profile chỉ ra, vẫn không Đạt mốc 740 ms ở cả hai màn. Dừng `CẦN OWNER` (27/11). Owner chọn "b) Mốc mới + Issue đọc hẹp (đề xuất)", mốc "Đạt" mới của thời gian mở lại app là "≤ 1 s mọi màn" (trung vị gọi exe → LCP của mọi màn, cả Tổng quan và Cài đặt, ≤ 1 000 ms, thay mốc 740 ms; 27/11, https://github.com/AlexH-AI/Project-2C/issues/1569#issuecomment-7223800230; không chọn "a) PR ghi số và phần sửa"). Theo mốc đó T-525 Đạt. Issue câu đọc hẹp của viên "Lưu ý" ở packages/db: tạo khi Owner bảo (Cài đặt tốt nhất ≈ 713 ms, số "trần").
 
 ## Kiểm tra trên `main`
 

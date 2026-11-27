@@ -157,6 +157,77 @@ test('a new screen is there at once, its parts rise in turn and land within 0.6 
   expect(await earlier()).toEqual([]);
 });
 
+test.describe('the first frame, charts drawn again: on the clock of the machine, a frame is one painted (T-525)', () => {
+  test.use({ machineClock: true });
+  test('the screen the app opens on is there whole at once; every screen after it rises, that one too (T-525)', async ({
+    page,
+  }) => {
+    // Heard from before the page starts: what the shell marks to rise (a part of `main`, the name of
+    // the screen, the line under it), as it marks it.
+    await page.addInitScript(() => {
+      const marked: string[] = [];
+      Object.assign(window, { marked });
+      new MutationObserver((changes) => {
+        for (const { target } of changes)
+          if (target instanceof Element && target.hasAttribute('data-rise'))
+            marked.push(target.closest('main') ? 'part' : target.localName);
+      }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-rise'] });
+      // Whether a chart was drawn in the frame that first shows the screen: it comes after.
+      const first: { charted?: boolean } = {};
+      Object.assign(window, { first });
+      new MutationObserver((_, watch) => {
+        if (!document.querySelector('main [role="img"]')) return;
+        watch.disconnect();
+        requestAnimationFrame(() => {
+          first.charted = !!document.querySelector('main [role="img"] svg');
+        });
+      }).observe(document, { subtree: true, childList: true });
+    });
+    /** What was marked since the last call. */
+    const marked = () =>
+      page.evaluate(() => (window as unknown as { marked: string[] }).marked.splice(0));
+    const heading = (name: string) => page.getByRole('heading', { level: 1, name });
+    await page.goto('/#/overview');
+    await expect(heading('Tổng quan')).toBeVisible();
+    expect(await marked()).toEqual([]);
+    await expect(page.locator('main [role="img"] svg').first()).toBeAttached();
+    const first = await page.evaluate(() => (window as unknown as { first: object }).first);
+    expect(first).toEqual({ charted: false });
+    await nav(page, 'Khách hàng').click();
+    await expect(heading('Khách hàng')).toBeVisible();
+    expect(await marked()).toEqual(expect.arrayContaining(['part', 'h1', 'p']));
+    await nav(page, 'Tổng quan').click();
+    await expect(heading('Tổng quan')).toBeVisible();
+    // Its ten parts, as when it is reached from any screen.
+    expect((await marked()).filter((one) => one === 'part')).toHaveLength(10);
+  });
+
+  test('a chart drawn again (a stage hidden, another period or scope) is never empty for a frame (T-525 review)', async ({
+    page,
+  }) => {
+    await page.goto('/#/overview');
+    await expect(page.locator('main [role="img"] svg').first()).toBeAttached();
+    // Counted in every frame from now on: a frame with a chart box that has no drawing.
+    const empty = () => page.evaluate(() => (window as unknown as { empty: number }).empty);
+    await page.evaluate(() => {
+      const seen = Object.assign(window, { empty: 0 });
+      const count = () => {
+        const boxes = [...document.querySelectorAll('main [role="img"]')];
+        if (boxes.some((box) => !box.querySelector('svg'))) seen.empty += 1;
+        requestAnimationFrame(count);
+      };
+      requestAnimationFrame(count);
+    });
+    const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
+    await block.getByRole('button', { name: /^N4/ }).click();
+    await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+    await pickScope(page, 'teams');
+    await pickScope(page, 'all');
+    await page.waitForTimeout(300);
+    expect(await empty()).toBe(0);
+  });
+});
+
 test('the pill of the sidebar and the thumb of a segmented control glide to their place; the pointer over a card or a button moves nothing', async ({
   page,
 }) => {

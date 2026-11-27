@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, init, use as registerModules, type ComposeOption } from 'echarts/core';
 import { BarChart, type BarSeriesOption } from 'echarts/charts';
 import {
@@ -25,6 +25,30 @@ export type ChartOption = ComposeOption<
  * RM, customer names) goes through it (F-18).
  */
 export const encodeHtml: (text: string) => string = format.encodeHTML;
+
+/**
+ * A chart of the first frame is drawn this long after it at the latest, when no frame is painted (a
+ * page in the background, whose timers run about once a second anyway): longer than a first frame
+ * takes on a busy machine, so that one is never kept waiting.
+ */
+const DRAW_LATE_MS = 1_000;
+
+/** Set from `chartsAfterFirstFrame` until the first frame of the app is painted. */
+let opening = false;
+
+/**
+ * Called by the app as it draws the screen it opens on (T-525: ECharts held the first frame of
+ * Tổng quan ≈ 100 ms): the charts of that draw are drawn once its frame is painted. Every other
+ * chart (a new screen, another stage, period or scope) is drawn at once, never empty for a frame.
+ */
+export function chartsAfterFirstFrame(): void {
+  opening = true;
+  const over = () => {
+    opening = false;
+  };
+  requestAnimationFrame(() => window.setTimeout(over));
+  window.setTimeout(over, DRAW_LATE_MS);
+}
 
 interface ChartProps {
   /** Accessible name; the chart is exposed as one image. */
@@ -57,22 +81,52 @@ export function Chart({
   className = 'h-64 w-full',
 }: ChartProps) {
   const box = useRef<HTMLDivElement>(null);
+  const [, fail] = useState<unknown>();
 
   useEffect(() => {
     const element = box.current;
     if (!element) return;
-    const style = getComputedStyle(element);
-    const chart = init(
-      element,
-      chartTheme((name) => style.getPropertyValue(name), palette),
-      { renderer: 'svg' },
-    );
-    chart.setOption(option);
-    const observer = new ResizeObserver(() => chart.resize());
-    observer.observe(element);
+    let chart: ReturnType<typeof init> | undefined;
+    let observer: ResizeObserver | undefined;
+    const draw = () => {
+      const style = getComputedStyle(element);
+      chart = init(
+        element,
+        chartTheme((name) => style.getPropertyValue(name), palette),
+        {
+          renderer: 'svg',
+        },
+      );
+      chart.setOption(option);
+      observer = new ResizeObserver(() => chart?.resize());
+      observer.observe(element);
+    };
+    let [next, frame, late, tried] = [0, 0, 0, false];
+    // A chart of the first frame is drawn once that frame is painted (`chartsAfterFirstFrame`); a
+    // page in the background paints no frame: the timer draws it then. A drawing that fails is
+    // thrown into React, as in the effect: the screen's ErrorBoundary shows it.
+    const later = () => {
+      if (tried) return;
+      tried = true;
+      try {
+        draw();
+      } catch (error) {
+        fail(() => {
+          throw error;
+        });
+      }
+    };
+    if (!opening) draw();
+    else {
+      frame = requestAnimationFrame(() => (next = window.setTimeout(later)));
+      late = window.setTimeout(later, DRAW_LATE_MS);
+    }
     return () => {
-      observer.disconnect();
-      chart.dispose();
+      cancelAnimationFrame(frame);
+      clearTimeout(next);
+      clearTimeout(late);
+      observer?.disconnect();
+      chart?.dispose();
     };
   }, [option, palette]);
 

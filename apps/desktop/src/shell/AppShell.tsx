@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import type { Scope } from '@p2c/domain';
-import { IconButton, openFrom, riseStep } from '@p2c/ui';
+import { chartsAfterFirstFrame, IconButton, openFrom, riseStep } from '@p2c/ui';
 import { useAppData, useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { lightCard } from '../routes/classes';
@@ -99,7 +99,9 @@ const RISE_MS = 1_000;
  * of the screen and the line under it. A part inside another rises with it: the rows of a table,
  * the cards of the board of Khách hàng. Only as a screen opens: what a change of scope or period
  * draws again is there at once. The name and its line stay from screen to screen; their move
- * starts again. A screen drawn by "Mở" (`still`) comes as one block: nothing in it rises.
+ * starts again. A screen drawn by "Mở" (`still`) comes as one block: nothing in it rises. The
+ * screen the app opens on is there whole at once, as under "Giảm chuyển động" (T-525); every
+ * screen after it rises, that one too when it is opened again.
  */
 function useRise(
   main: RefObject<HTMLElement | null>,
@@ -107,7 +109,11 @@ function useRise(
   hash: string,
   still: RefObject<boolean>,
 ) {
+  // By the screen, not by a first run: StrictMode runs the effect twice in development.
+  const opening = useRef<string | null>(hash);
   useLayoutEffect(() => {
+    if (opening.current === hash) return;
+    opening.current = null;
     if (still.current) return;
     const parts = [...(main.current?.querySelectorAll<HTMLElement>(PART) ?? [])].filter(
       (part) => !part.parentElement?.closest(PART),
@@ -207,6 +213,8 @@ function Shell({ appWindow }: { appWindow?: AppWindow }) {
   const { heading, main } = useScreenFocus(route, title, appWindow);
   const { onOpen, still } = useOpen(main, routeToHash(route));
   useRise(main, heading, routeToHash(route), still);
+  // The charts of the screen the app opens on wait for its first frame (T-525); before theirs.
+  useLayoutEffect(() => chartsAfterFirstFrame(), []);
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
   // The team or RM shown stays the one shown: a name changed or added never moves it (CLR6-D6).
