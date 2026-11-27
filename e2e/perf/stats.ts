@@ -1,6 +1,8 @@
 // The pure part of the perf probe (e2e/perf/README.md): summaries, the result file, the comparison
 // with a base run, and the checks before measuring. Tested in stats.spec.ts, which `pnpm e2e` runs.
 
+import type { SpawnSyncReturns } from 'node:child_process';
+
 export type Unit = 'ms' | 'MB';
 
 export interface Summary {
@@ -265,16 +267,12 @@ export function webviewMemory(
 }
 
 /**
- * The WebView2 processes from a run of the PowerShell query of the probe (a JSON list), or why
- * there are none to read: PowerShell did not run, the query failed (its `-ErrorAction Stop` exits
- * 1), or it printed something else. An empty list is a list: no WebView2 running (T-523).
+ * The WebView2 processes in the JSON list the probe's PowerShell query printed, or why none: it did
+ * not run, failed (`-ErrorAction Stop` exits 1) or printed no list. `[]` is no WebView2 (T-523).
  */
-export function readProcessList(ran: {
-  status: number | null;
-  stdout: string;
-  stderr: string;
-  error?: Error;
-}): { processes: WebviewProcess[] } | { error: string } {
+export function readProcessList(
+  ran: Pick<SpawnSyncReturns<string>, 'status' | 'stdout' | 'stderr' | 'error'>,
+): { processes: WebviewProcess[] } | { error: string } {
   if (ran.error) return { error: `PowerShell did not run: ${ran.error.message}` };
   if (ran.status !== 0) {
     const reason = ran.stderr.trim().split('\n')[0]?.trim();

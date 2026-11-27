@@ -231,44 +231,37 @@ test('backupSkipped lets a file up to the app limit through and names one over i
   );
 });
 
-const MB = 1024 * 1024;
-const webview = (id: number, parentId: number, type: string, exe: string | null, mb: number) => ({
-  id,
-  parentId,
-  commandLine: `msedgewebview2.exe${type ? ` --type=${type}` : ''}${exe ? ` --webview-exe-name=${exe}` : ''}`,
-  privateBytes: mb * MB,
-});
-
 test('webviewMemory sums the Private Bytes of the browser process the probe is connected to', () => {
+  const MB = 1024 * 1024;
+  const process = (id: number, parentId: number, type: string, exe: string | null, mb: number) => ({
+    id,
+    parentId,
+    commandLine: `msedgewebview2.exe${type ? ` --type=${type}` : ''}${exe ? ` --webview-exe-name=${exe}` : ''}`,
+    privateBytes: mb * MB,
+  });
   const processes = [
     // Another app's WebView2, with a renderer of its own.
-    webview(10, 1, '', 'SearchHost.exe', 31),
-    webview(11, 10, 'renderer', 'SearchHost.exe', 61),
-    webview(12, 10, 'crashpad-handler', null, 3),
+    process(10, 1, '', 'SearchHost.exe', 31),
+    process(11, 10, 'renderer', 'SearchHost.exe', 61),
+    process(12, 10, 'crashpad-handler', null, 3),
     // The exe's: the crash handler names no exe, its parent does.
-    webview(20, 2, '', 'project2c.exe', 33),
-    webview(21, 20, 'crashpad-handler', null, 2.5),
-    webview(22, 20, 'gpu-process', 'project2c.exe', 134.5),
-    webview(23, 20, 'renderer', 'project2c.exe', 158),
+    process(20, 2, '', 'project2c.exe', 33),
+    process(21, 20, 'crashpad-handler', null, 2.5),
+    process(22, 20, 'gpu-process', 'project2c.exe', 134.5),
+    process(23, 20, 'renderer', 'project2c.exe', 158),
   ];
   expect(webviewMemory(processes, 20)).toEqual({ total: 328, renderer: 158 });
   expect(webviewMemory(processes.slice(0, 3), 20)).toBeUndefined();
   expect(webviewMemory(processes, undefined)).toBeUndefined();
-  // The installed app (or the trial exe, or `pnpm dev`) runs as project2c.exe too, with the same
-  // profile: its processes look the same but for their ids.
-  const installed = [
-    webview(30, 3, '', 'project2c.exe', 40),
-    webview(33, 30, 'renderer', null, 300),
-  ];
-  expect(webviewMemory([...processes, ...installed], 20)).toEqual({ total: 328, renderer: 158 });
-  expect(webviewMemory([...installed, ...processes], 30)).toEqual({ total: 340, renderer: 300 });
+  // The installed app, the trial exe and `pnpm dev` run as project2c.exe too, with the same profile.
+  const other = [process(30, 3, '', 'project2c.exe', 40), process(33, 30, 'renderer', null, 300)];
+  expect(webviewMemory([...processes, ...other], 20)).toEqual({ total: 328, renderer: 158 });
+  expect(webviewMemory([...other, ...processes], 30)).toEqual({ total: 340, renderer: 300 });
 });
 
 test('readProcessList tells a list, even empty, from a query that failed or printed no list', () => {
   const ran = (status: number | null, stdout: string, stderr = '') => ({ status, stdout, stderr });
-  const listed = [
-    { id: 20, parentId: 2, commandLine: 'msedgewebview2.exe', privateBytes: 33 * MB },
-  ];
+  const listed = [{ id: 20, parentId: 2, commandLine: 'msedgewebview2.exe', privateBytes: 1 }];
   expect(readProcessList(ran(0, `${JSON.stringify(listed)}\r\n`))).toEqual({ processes: listed });
   // No WebView2 running: an empty list, not a failure.
   expect(readProcessList(ran(0, '[]\r\n'))).toEqual({ processes: [] });
