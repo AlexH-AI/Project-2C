@@ -26,8 +26,12 @@ export type ChartOption = ComposeOption<
  */
 export const encodeHtml: (text: string) => string = format.encodeHTML;
 
-/** A chart is drawn this long after it is shown at the latest, when no frame was painted before. */
-const DRAW_LATE_MS = 200;
+/**
+ * A chart is drawn this long after it is shown at the latest, when no frame was painted before (a
+ * page in the background, whose timers run about once a second anyway): longer than a first frame
+ * takes on a busy machine, so that one is never kept waiting.
+ */
+const DRAW_LATE_MS = 1_000;
 
 interface ChartProps {
   /** Accessible name; the chart is exposed as one image. */
