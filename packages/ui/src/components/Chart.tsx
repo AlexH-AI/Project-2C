@@ -64,6 +64,8 @@ export function Chart({
   className = 'h-64 w-full',
 }: ChartProps) {
   const box = useRef<HTMLDivElement>(null);
+  /** Whether this box has had a drawing: drawn again, it is never left empty for a frame. */
+  const shown = useRef(false);
 
   useEffect(() => {
     const element = box.current;
@@ -81,13 +83,18 @@ export function Chart({
       const observer = new ResizeObserver(() => chart.resize());
       observer.observe(element);
       drawn = { chart, observer };
+      shown.current = true;
     };
-    // Drawn once the frame that shows its box is painted: the first frame of a screen never waits
-    // for its charts (T-525: ECharts held that of Tổng quan ≈ 100 ms as the app opened). A page in
-    // the background paints no frame: the timer draws it then.
-    let next = 0;
-    const frame = requestAnimationFrame(() => (next = window.setTimeout(draw)));
-    const late = window.setTimeout(draw, DRAW_LATE_MS);
+    // A new box is drawn once the frame that shows it is painted: the first frame of a screen
+    // never waits for its charts (T-525: ECharts held that of Tổng quan ≈ 100 ms as the app
+    // opened). A page in the background paints no frame: the timer draws it then. A box drawn
+    // before (another stage, period or scope) is drawn again at once, as its old drawing goes.
+    let [next, frame, late] = [0, 0, 0];
+    if (shown.current) draw();
+    else {
+      frame = requestAnimationFrame(() => (next = window.setTimeout(draw)));
+      late = window.setTimeout(draw, DRAW_LATE_MS);
+    }
     return () => {
       cancelAnimationFrame(frame);
       clearTimeout(next);

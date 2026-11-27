@@ -200,6 +200,29 @@ test('the screen the app opens on is there whole at once; every screen after it 
   expect((await marked()).filter((one) => one === 'part')).toHaveLength(10);
 });
 
+test('a chart drawn again (a stage hidden, another period) is never empty for a frame (T-525 review)', async ({
+  page,
+}) => {
+  await page.goto('/#/overview');
+  await expect(page.locator('main [role="img"] svg').first()).toBeAttached();
+  // Counted in every frame from now on: a frame with a chart box that has no drawing.
+  const empty = () => page.evaluate(() => (window as unknown as { empty: number }).empty);
+  await page.evaluate(() => {
+    const seen = Object.assign(window, { empty: 0 });
+    const count = () => {
+      const boxes = [...document.querySelectorAll('main [role="img"]')];
+      if (boxes.some((box) => !box.querySelector('svg'))) seen.empty += 1;
+      requestAnimationFrame(count);
+    };
+    requestAnimationFrame(count);
+  });
+  const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
+  await block.getByRole('button', { name: /^N4/ }).click();
+  await periodPill(page).getByRole('button', { name: 'Kỳ trước' }).click();
+  await page.waitForTimeout(300);
+  expect(await empty()).toBe(0);
+});
+
 test('the pill of the sidebar and the thumb of a segmented control glide to their place; the pointer over a card or a button moves nothing', async ({
   page,
 }) => {

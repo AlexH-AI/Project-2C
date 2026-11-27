@@ -42,8 +42,8 @@ try { Add-Type -Name W -Namespace P -MemberDefinition '[DllImport("user32.dll")]
 while (($id = [Console]::In.ReadLine()) -ne $null) {
   try {
     if ($why) { throw $why }
-    $p = Get-Process -Id $id; $n = 0
-    while ($p.MainWindowHandle -eq 0 -and $n++ -lt 2000) { Start-Sleep -Milliseconds 5; $p.Refresh() }
+    $p = Get-Process -Id $id; $w = [Diagnostics.Stopwatch]::StartNew()
+    while ($p.MainWindowHandle -eq 0 -and $w.ElapsedMilliseconds -lt 10000) { Start-Sleep -Milliseconds 5; $p.Refresh() }
     if ($p.MainWindowHandle -eq 0) { throw 'no window in 10 s' }
     'pinned ' + [P.W]::SetWindowPos($p.MainWindowHandle, [IntPtr](-1), 0, 0, 0, 0, 0x43)
   } catch { 'pinned False: ' + ($_.Exception.Message -replace '\\s+', ' ') }
@@ -51,6 +51,8 @@ while (($id = [Console]::In.ReadLine()) -ne $null) {
 const pin = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', PIN]);
 let pinErrors = '';
 pin.stderr.setEncoding('utf8').on('data', (text: string) => (pinErrors += text));
+// A write to a PowerShell already gone (EPIPE) is no crash: `said` tells why, from its stderr.
+pin.stdin.on('error', () => undefined);
 const lines = createInterface({ input: pin.stdout })[Symbol.asyncIterator]();
 
 /** The next line of the PowerShell script within `ms`; else it stops, with what it wrote to stderr. */
