@@ -179,7 +179,7 @@ Theo mục số đo, đoạn "Cỡ một người dùng thật có thể đạt"
   - Không chọn: nới ngưỡng của hai việc này cho dữ liệu lớn; viết ADR (4) ngay, trước P0.
 - **Mốc backup:** B3 làm cùng việc chuyển cách lưu, và phải xong trước khi `project2c.db` tới ≈ 90 MB (≈ 6,5×, trần backup JSON).
 - **Thước phụ khi đã có dữ liệu thật:** probe (`e2e/perf/README.md`) đọc `p2c:data-open` và `p2c:db-save` trên một bản chép của dữ liệu, so với ngưỡng Owner 13/10 (≤ 600 ms, ≤ 400 ms).
-  - Không dùng LCP hay "mở lại ≤ 1 s" làm mốc. Ở 1× hôm nay, LCP đã ≈ 1,09 s mà chưa rõ nguyên nhân (mục số đo; ghi chú Medium của DS-12 ở sổ).
+  - Không dùng LCP hay "mở lại ≤ 1 s" làm mốc. Ở 1×, LCP đo cả chuyển động và lần vẽ đầu, không riêng phần mở dữ liệu: 1 330 / 1 186 ms (Tổng quan / Cài đặt) ở T-523, vì "Hiện" dời LCP ≈ 420 ms và lần vẽ đầu chậm hơn 09/11; sau T-525 (màn đầu không chạy "Hiện", biểu đồ vẽ sau khung hình đầu) 873 / 791 ms, phần còn lại là đọc cả bảng ở lần vẽ đầu (mục "Mở lại sau khi bỏ "Hiện" ở màn đầu" của số đo Phase 6).
 - **Lúc làm so với v1.0 / G7:** không đổi engine hay đường lưu trước G7.
   - v1.0 bắt đầu từ dữ liệu trống. Với 44 RM, mốc 1,5× tới sau ≈ 1,5 năm.
   - Đổi sau phát hành không phải chuyển dữ liệu: (2), (3) và (4) đều mở đúng file `project2c.db` hôm nay (cùng định dạng SQLite, schema, migration); backup JSON cũ vẫn nhập được. Chờ không làm việc sau đắt hơn. Thư mục dữ liệu của ADR-0019 thì khác: đổi nó sau phát hành là chuyển dữ liệu thật, nên ADR-0019 chốt trước G7.

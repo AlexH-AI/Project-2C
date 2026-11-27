@@ -1,0 +1,527 @@
+{
+ "version": 1,
+ "issue": "T-525 (#1569)",
+ "at": "2026-11-27",
+ "machine": "Home PC DESKTOP-KDURKJP, i9-12900K, 32 GB RAM, Windows 11 Pro 26200",
+ "script": "node e2e/perf/reopen.mts <folder> --runs 3 --screen <overview|settings> (3 timed runs after one not timed), at 329c637",
+ "exes": {
+  "head": "pnpm build:exe at 329c637 (no \"Hiện\" on the first screen, charts after the first frame), 5560832 bytes, sha256 76C4AC65E3ED18FF485551C85DA948E4ED88C020372A23E543D15F57356F0FDE",
+  "noRise": "the working tree before 329c637 with only the useRise change (not committed), sha256 5A9DAD3072ADC232F7E779F1E2D42BEC0F05E54E5E22065DBD569C9BE6145675",
+  "ceiling": "noRise, and Chart drawing nothing, HeadsUp reading no table (not committed; a bound, not a fix), sha256 5DA49ECCC072BC80F95767C11F041D8351D54E0ACDA885A8CC8347421654D6F9",
+  "keepNames": "noRise built by vite build --minify false and tauri build --no-bundle (beforeBuildCommand replaced; not committed), for the profiles, sha256 D0F23F0225945D50F29BBE3693EBFEE282FB30197C93B58D4CB0E6E0634AAD51"
+ },
+ "loadData": {
+  "command": "node tools/load-data.mjs at 329c637 (anchor 2026-10-12, seed 6), imported into a new portable folder for head",
+  "tablesSha256": "42e6e6e23c9b7a09feb9a7c45c2a8b8b02ec7dfbbcdc040be34e34dc2d2a0215",
+  "backupBytes": 16437916,
+  "dbBytesImported": 14147584,
+  "content": "4 team · 51 nhân sự · 1,481 KH · 10,240 lịch hẹn · 1,765 HĐ",
+  "noRiseAndCeiling": "a copy of the project2c.db T-523 imported (same tables sha256)"
+ },
+ "sets": [
+  {
+   "exe": "head",
+   "data": "load data 1× imported at 329c637",
+   "screen": "overview",
+   "runs": 3,
+   "callToPageStartMs": {
+    "all": [
+     294,
+     293,
+     278
+    ],
+    "median": 293
+   },
+   "openDataMs": {
+    "all": [
+     323,
+     321,
+     312
+    ],
+    "median": 321
+   },
+   "fcpMs": {
+    "all": [
+     128,
+     128,
+     132
+    ],
+    "median": 128
+   },
+   "lcpMs": {
+    "all": [
+     580,
+     580,
+     564
+    ],
+    "median": 580
+   },
+   "callToLcpMs": {
+    "all": [
+     874,
+     873,
+     842
+    ],
+    "median": 873
+   },
+   "closedByForce": 0,
+   "calm": [
+    false,
+    false,
+    false
+   ],
+   "lcpCandidates": [
+    [
+     [
+      128,
+      "?"
+     ],
+     [
+      580,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ],
+    [
+     [
+      128,
+      "?"
+     ],
+     [
+      580,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ],
+    [
+     [
+      132,
+      "?"
+     ],
+     [
+      564,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ]
+   ]
+  },
+  {
+   "exe": "head",
+   "data": "load data 1× imported at 329c637",
+   "screen": "settings",
+   "runs": 3,
+   "callToPageStartMs": {
+    "all": [
+     275,
+     271,
+     289
+    ],
+    "median": 275
+   },
+   "openDataMs": {
+    "all": [
+     311,
+     314,
+     313
+    ],
+    "median": 313
+   },
+   "fcpMs": {
+    "all": [
+     164,
+     172,
+     136
+    ],
+    "median": 164
+   },
+   "lcpMs": {
+    "all": [
+     512,
+     520,
+     520
+    ],
+    "median": 520
+   },
+   "callToLcpMs": {
+    "all": [
+     787,
+     791,
+     809
+    ],
+    "median": 791
+   },
+   "closedByForce": 0,
+   "calm": [
+    false,
+    false,
+    false
+   ],
+   "lcpCandidates": [
+    [
+     [
+      164,
+      "?"
+     ],
+     [
+      512,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ],
+    [
+     [
+      172,
+      "?"
+     ],
+     [
+      520,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ],
+    [
+     [
+      136,
+      "?"
+     ],
+     [
+      520,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ]
+   ]
+  },
+  {
+   "exe": "noRise",
+   "data": "project2c.db of T-523",
+   "screen": "overview",
+   "runs": 3,
+   "callToPageStartMs": {
+    "all": [
+     285,
+     267,
+     293
+    ],
+    "median": 285
+   },
+   "openDataMs": {
+    "all": [
+     326,
+     313,
+     319
+    ],
+    "median": 319
+   },
+   "fcpMs": {
+    "all": [
+     124,
+     128,
+     124
+    ],
+    "median": 124
+   },
+   "lcpMs": {
+    "all": [
+     640,
+     628,
+     656
+    ],
+    "median": 640
+   },
+   "callToLcpMs": {
+    "all": [
+     925,
+     895,
+     949
+    ],
+    "median": 925
+   },
+   "closedByForce": 1,
+   "calm": [
+    false,
+    false,
+    false
+   ],
+   "lcpCandidates": [
+    [
+     [
+      124,
+      "?"
+     ],
+     [
+      640,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ],
+    [
+     [
+      128,
+      "?"
+     ],
+     [
+      628,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ],
+    [
+     [
+      124,
+      "?"
+     ],
+     [
+      656,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ]
+   ]
+  },
+  {
+   "exe": "noRise",
+   "data": "project2c.db of T-523",
+   "screen": "settings",
+   "runs": 3,
+   "callToPageStartMs": {
+    "all": [
+     277,
+     269,
+     278
+    ],
+    "median": 277
+   },
+   "openDataMs": {
+    "all": [
+     312,
+     316,
+     315
+    ],
+    "median": 315
+   },
+   "fcpMs": {
+    "all": [
+     116,
+     124,
+     112
+    ],
+    "median": 116
+   },
+   "lcpMs": {
+    "all": [
+     516,
+     508,
+     512
+    ],
+    "median": 512
+   },
+   "callToLcpMs": {
+    "all": [
+     793,
+     777,
+     790
+    ],
+    "median": 790
+   },
+   "closedByForce": 0,
+   "calm": [
+    false,
+    false,
+    false
+   ],
+   "lcpCandidates": [
+    [
+     [
+      116,
+      "?"
+     ],
+     [
+      516,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ],
+    [
+     [
+      124,
+      "?"
+     ],
+     [
+      508,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ],
+    [
+     [
+      112,
+      "?"
+     ],
+     [
+      512,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ]
+   ]
+  },
+  {
+   "exe": "ceiling",
+   "data": "project2c.db of T-523",
+   "screen": "overview",
+   "runs": 3,
+   "callToPageStartMs": {
+    "all": [
+     299,
+     265,
+     281
+    ],
+    "median": 281
+   },
+   "openDataMs": {
+    "all": [
+     321,
+     312,
+     314
+    ],
+    "median": 314
+   },
+   "fcpMs": {
+    "all": [
+     120,
+     152,
+     116
+    ],
+    "median": 120
+   },
+   "lcpMs": {
+    "all": [
+     572,
+     552,
+     584
+    ],
+    "median": 572
+   },
+   "callToLcpMs": {
+    "all": [
+     871,
+     817,
+     865
+    ],
+    "median": 865
+   },
+   "closedByForce": 0,
+   "calm": [
+    false,
+    false,
+    false
+   ],
+   "lcpCandidates": [
+    [
+     [
+      120,
+      "?"
+     ],
+     [
+      572,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ],
+    [
+     [
+      152,
+      "?"
+     ],
+     [
+      552,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ],
+    [
+     [
+      116,
+      "?"
+     ],
+     [
+      584,
+      "P \"Tháng 11/2026 · 01/11 – 27/11/2026 (MTD)\""
+     ]
+    ]
+   ]
+  },
+  {
+   "exe": "ceiling",
+   "data": "project2c.db of T-523",
+   "screen": "settings",
+   "runs": 3,
+   "callToPageStartMs": {
+    "all": [
+     277,
+     265,
+     271
+    ],
+    "median": 271
+   },
+   "openDataMs": {
+    "all": [
+     313,
+     314,
+     315
+    ],
+    "median": 314
+   },
+   "fcpMs": {
+    "all": [
+     152,
+     152,
+     144
+    ],
+    "median": 152
+   },
+   "lcpMs": {
+    "all": [
+     436,
+     436,
+     444
+    ],
+    "median": 436
+   },
+   "callToLcpMs": {
+    "all": [
+     713,
+     701,
+     715
+    ],
+    "median": 713
+   },
+   "closedByForce": 0,
+   "calm": [
+    false,
+    false,
+    false
+   ],
+   "lcpCandidates": [
+    [
+     [
+      152,
+      "?"
+     ],
+     [
+      436,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ],
+    [
+     [
+      152,
+      "?"
+     ],
+     [
+      436,
+      "DIV \"Nạp lại dữ liệu giả lậpXóa dữ liệu hiện \""
+     ]
+    ],
+    [
+     [
+      144,
+      "?"
+     ],
+     [
+      444,
+      "SPAN \"Mỗi lần mở app · giữ 10 bản mới nhất ở C\""
+     ]
+    ]
+   ]
+  }
+ ]
+}
