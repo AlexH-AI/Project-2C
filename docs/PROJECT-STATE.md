@@ -728,6 +728,8 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **Seven notes:** L160, L162, L163, L164, L238, L255 (`[DS-12]` @`93072c9`) and L161 (`[đóng phase]`, a missing blank line right under the line L164 rewrites).
     - **One unit per place:** the probe's README, the load data command's comments and the probe's comments and output give file sizes in MB of 1 024 × 1 024 bytes, as the app's 100 MB backup cap and its "Lưu lần cuối" line do; ADR-0020 and the measures keep MB of 1 000 000 bytes, as ADR-0020 says. For L255 the ADR only adds where to read the size and the two marks in the app's unit; the marks the OWNER chose on 26/11 (21 / 35 MB) stay.
     - **The exits of L164:** "Đạt" is a median call → LCP of at most 1 s and not worse than the G7 mark (617 ms) beyond the noise rule (over 740 ms); exits (b) motion, (c) slow without motion and (d) no cause after two rounds stop with `CẦN OWNER` for the orchestrating session to ask the OWNER.
+  - **Exit (c) of L164, OWNER's choice the same day:** "a) PR ghi (c) + Issue sửa" (https://github.com/AlexH-AI/Project-2C/issues/1563#issuecomment-7211037317). Reopening the load data 1× takes 1 330 ms to LCP on Tổng quan, 898 ms with motion off (measures, section "Mở lại trên exe của `main`"); T-523 records exit (c) and changes no app code. The threshold and NT-HN-01 stay; the fix Issue (no "Hiện" on the first screen at app start, and the slower first render) is created when the OWNER says so.
+    - Option not chosen: "b) Owner đặt mốc đo mới".
     - **Label:** `risk:med`; the orchestrating session merges (`merge-pr --owner`, ADR-0001 M11).
 
 ## Next decision

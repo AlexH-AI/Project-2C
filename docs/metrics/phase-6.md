@@ -647,11 +647,17 @@ Bấm giờ lại "mở lại ≤ 1 s" trên exe của `main` (DS-12; ghi chú M
 
 **Kết quả: không Đạt, cả khi tắt chuyển động.** "Đạt" (Issue #1563) là trung vị gọi exe → LCP ≤ 1 s và không quá mốc G7 617 ms theo luật nhiễu, tức ≤ 740 ms.
 
-| Gọi exe → LCP, trung vị (min–max), dữ liệu tải | Tổng quan | Cài đặt |
-|---|---|---|
-| `main` `a78b7fe` | **1 330 ms** ❌ (1 316–1 334) | **1 186 ms** ❌ (1 182–1 193) |
-| tắt chuyển động (exe tạm) | **898 ms** ❌ (890–912) | **772 ms** ❌ (767–785) |
-| tắt chuyển động và nạp `App` từ đầu như trước T-442 (exe tạm, sha256 `FF57D243…05FC`) | 884 ms (857–896) | 764 ms (750–832) |
+| Dữ liệu tải 1×, trung vị từng cột (ms) | Màn | Gọi exe → trang bắt đầu | Trang bắt đầu → `p2c:data-open` | Trang bắt đầu → LCP | Gọi exe → LCP (min–max) | Phần tử LCP |
+|---|---|---|---|---|---|---|
+| `main` `a78b7fe` | Tổng quan | 274 | 307 | 1 056 | **1 330** ❌ (1 316–1 334) | dòng phụ "Tháng 11/2026 · …" |
+| `main` `a78b7fe` | Cài đặt | 262 | 310 | 924 | **1 186** ❌ (1 182–1 193) | dòng "Mỗi lần mở app · giữ 10 bản…" |
+| tắt chuyển động (exe tạm) | Tổng quan | 266 | 308 | 632 | **898** ❌ (890–912) | dòng phụ "Tháng 11/2026 · …" |
+| tắt chuyển động (exe tạm) | Cài đặt | 259 | 308 | 512 | **772** ❌ (767–785) | khối "Nạp lại dữ liệu giả lập…" |
+| tắt chuyển động, nạp `App` từ đầu như trước T-442 (exe tạm `FF57D243…05FC`) | Tổng quan | 276 | 312 | 608 | 884 (857–896) | dòng phụ "Tháng 11/2026 · …" |
+| như trên | Cài đặt | 280 | 313 | 484 | 764 (750–832) | khối "Nạp lại dữ liệu giả lập…" |
+| Mốc G7 (T-348, 03/11) | — | — | — | — | 617 (605–625) | — |
+| Mốc L4 (T-401, 09/11, exe `a1e6a20`) | — | — | 375 | — | 717 (710–739) | — |
+| T-485 (21/11, exe `75b7e14`) | — | — | 314 | 840–880 (min–max) | 1 093 (1 090–1 134) | — |
 
 | Gọi exe → LCP, seed demo của chính exe | Tổng quan | Cài đặt |
 |---|---|---|
@@ -663,7 +669,7 @@ Bấm giờ lại "mở lại ≤ 1 s" trên exe của `main` (DS-12; ghi chú M
 - **Mốc LCP này đo cách Chromium tính phần đang hiện dần, không đo lúc màn hiện ra.** Exe `main` mở với cờ `--force-prefers-reduced-motion`: "Hiện" vẫn chạy (`animation-name: rise`), mà LCP ghi dòng phụ ngay lúc ≈ 616–644 ms.
 - **Lần vẽ đầu sau `p2c:data-open` chậm hơn 09/11 ≈ 150 ms, không do T-442.** Từ `p2c:data-open` tới khung hình đầu có màn: exe `5215b2e` ≈ 135 ms ở Tổng quan, ≈ 60 ms ở Cài đặt (seed); exe `main` ≈ 280 ms (vỏ app, seed), ≈ 320 ms / ≈ 205 ms khi tắt chuyển động (dữ liệu tải). Long-animation-frame đọc trong trang (không gắn debugger lúc mở; Tổng quan, tắt chuyển động): chunk `App` và `chart` tải lúc 306–316 ms, rồi một tác vụ React (`MessagePort.onmessage` của `index.js`) chạy liền 224–227 ms, khung hình đầu ≈ 620 ms (3 lần). Nạp `App` từ đầu như trước T-442 chỉ bớt ≈ 10–15 ms. Phần còn lại là chính lần vẽ đầu của vỏ app và màn; chưa tách theo component (bundle release đã rút gọn tên hàm).
 - **Mốc cũ có lẽ đo ở màn khác nhau:** G7 617 ms gần Cài đặt của exe `5215b2e` (595 ms), L4 717 ms gần Tổng quan (723 ms). T-485 1 093 ms (trang bắt đầu → LCP 840–880 ms) khớp Cài đặt có chuyển động.
-- **Lối ra (c)** của Issue #1563: không Đạt cả khi tắt chuyển động. T-523 không sửa code app; dừng `CẦN OWNER` (27/11) kèm số trên và đề xuất một Issue sửa: không chạy "Hiện" cho màn đầu lúc mở app, và tìm phần chậm của lần vẽ đầu bằng profile trên bản build giữ tên hàm. Quyết định của Owner ghi ở đây khi có.
+- **Lối ra (c)** của Issue #1563: không Đạt cả khi tắt chuyển động. T-523 không sửa code app; dừng `CẦN OWNER` (27/11) kèm số trên và đề xuất một Issue sửa: không chạy "Hiện" cho màn đầu lúc mở app, và tìm phần chậm của lần vẽ đầu bằng profile trên bản build giữ tên hàm. Owner chọn "a) PR ghi (c) + Issue sửa" (27/11, https://github.com/AlexH-AI/Project-2C/issues/1563#issuecomment-7211037317; không chọn "b) Owner đặt mốc đo mới"): ngưỡng và NT-HN-01 giữ nguyên, Issue sửa chưa tạo, Owner tạo khi bảo.
 
 ## Kiểm tra trên `main`
 
