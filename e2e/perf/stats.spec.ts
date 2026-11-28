@@ -334,6 +334,10 @@ test('routeLeftNote names both screens when it stopped while writing one (T-530)
   expect(routeLeftNote('k', null, '#/overview', null)).toBe(
     `k is left at #/overview, or at none ${gotThrough}; it was none (Tổng quan): ${putBack}`,
   );
+  // The same with an old screen to write again, not a key to remove.
+  expect(routeLeftNote('k', '#/team', '#/overview', '#/team')).toBe(
+    `k is left at #/overview, or at #/team ${gotThrough}; it was #/team: ${putBack}`,
+  );
   // Writing the screen already there: as with no write; the old one over itself; not read yet.
   const timed = routeLeftNote('k', '#/team', '#/overview');
   expect(routeLeftNote('k', '#/team', '#/overview', '#/overview')).toBe(timed);
