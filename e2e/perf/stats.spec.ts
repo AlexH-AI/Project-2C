@@ -9,6 +9,7 @@ import {
   markdownTable,
   parseRun,
   readProcessList,
+  routeLeftNote,
   runCount,
   summarize,
   toRun,
@@ -297,4 +298,24 @@ test('runCount takes a whole number of runs, at least 1, and nothing else (T-525
   // 0 and abc gave no run and a median of NaN; 2.5 ran 3 times with a wrong median.
   for (const text of ['0', '-2', 'abc', '2.5', '', undefined])
     expect(runCount(text)).toBeUndefined();
+});
+
+test('routeLeftNote names the screen to put back only once the script wrote one (T-528)', () => {
+  const KEY = 'p2c.lastRoute';
+  const putBack = 'open the exe, go to that screen and close it, to put it back.';
+  // Stopped before it read the old screen.
+  expect(routeLeftNote(KEY, undefined, undefined)).toBeUndefined();
+  // Read the old screen, then stopped before writing the timed one: the old one is still there.
+  for (const before of ['#/team', null])
+    expect(routeLeftNote(KEY, before, undefined)).toBeUndefined();
+  // Wrote the timed screen, then stopped: the old one goes back by hand.
+  expect(routeLeftNote(KEY, '#/team', '#/overview')).toBe(
+    `p2c.lastRoute is left at #/overview; it was #/team: ${putBack}`,
+  );
+  expect(routeLeftNote(KEY, null, '#/overview')).toBe(
+    `p2c.lastRoute is left at #/overview; it was none (Tổng quan): ${putBack}`,
+  );
+  // The old screen is back, or the timed screen was the old one.
+  for (const before of ['#/team', '#/overview', null])
+    expect(routeLeftNote(KEY, before, before)).toBeUndefined();
 });

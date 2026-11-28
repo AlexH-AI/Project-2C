@@ -11,7 +11,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
-import { browserPid, runCount, summarize } from './stats.ts';
+import { browserPid, routeLeftNote, runCount, summarize } from './stats.ts';
 
 const options = {
   runs: { type: 'string', default: '3' },
@@ -93,7 +93,10 @@ async function marks() {
 }
 
 const ROUTE = 'p2c.lastRoute';
-/** p2c.lastRoute before the first opening (undefined until read), and what the script left there. */
+/**
+ * p2c.lastRoute before the first opening (undefined until read), and what the script wrote there
+ * (undefined until it writes one).
+ */
 let before: string | null | undefined;
 let left: string | null | undefined;
 /** The exe open now: closed by force when the script stops half way. */
@@ -170,12 +173,8 @@ try {
     done.push((await open(true, i < runs - 1 ? `#/${values.screen}` : (before ?? null)))!);
 } catch (error) {
   if (app?.exitCode === null) spawnSync('taskkill', ['/F', '/T', '/PID', String(app.pid)]);
-  if (before !== undefined && left !== before) {
-    console.error(
-      `${ROUTE} is left at ${left ?? 'none'}; it was ${before ?? 'none (Tổng quan)'}: open the ` +
-        'exe, go to that screen and close it, to put it back.',
-    );
-  }
+  const note = routeLeftNote(ROUTE, before, left);
+  if (note) console.error(note);
   throw error;
 } finally {
   pin.stdin.end();
