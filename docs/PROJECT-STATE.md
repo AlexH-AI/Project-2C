@@ -757,6 +757,30 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **New spec rows** (DS-22, DS-23 in §12.1 / §12.2) are added by T-524; T-525 and T-526 do not change the spec.
     - **Model of run 5h:** Opus (spec §10.1: DS-*).
   - Run 5h queue (`auto-issues`, Opus): #1568 (T-524, records these decisions) → #1569 (T-525, DS-23; the Home PC idle while it measures, the exe window kept on top by the timing script). T-526 #1570 (DS-22) is done by hand in an ordinary session, outside the queue.
+- 2026-11-28: run 5i Issues (T-527, T-528, #1576, #1577). Three OWNER decisions of 27–28/11/2026, all taken inside the `auto-issues` pipeline of run 5h. The first came when the coding session of T-525 #1569 stopped with `CẦN OWNER` at exit (b) of that Issue; the orchestrating session asked the OWNER and recorded the answer in a comment on #1569 that opens "Quyết định Owner (27/11/2026): T-525 dừng ở lối ra (b)". The second: the REVIEW of PR #1574 proposed `đích: DS mới`, and the orchestrating session asked the OWNER after that PR merged and before its notes PR #1575, the way T-513 #1520 set; its comment opens "Quyết định Owner (28/11/2026): DS mới cho review PR #1574". Decision 3 approved the ledger grouping proposal after run 5h, which made run 5i; it has no such comment. Labels verbatim; T-527 #1576 records them in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §10.1, §12.1, §12.2:
+  1. **Exit (b) of T-525 and a new mark for reopening**, 27/11/2026, Issue #1569 (T-525, DS-23), https://github.com/AlexH-AI/Project-2C/issues/1569#issuecomment-7223800230:
+     - T-525 took "Hiện" off the first screen and fixed one slow part the profile showed, yet missed the 740 ms mark of the Issue on both Tổng quan and Cài đặt (873 / 791 ms); the coding session stopped with `CẦN OWNER`.
+     - Direction: "b) Mốc mới + Issue đọc hẹp (đề xuất)". The OWNER sets a new mark, and the PR records its result by that mark.
+     - The new "Đạt" mark: "≤ 1 s mọi màn": the median call → LCP of every screen, both Tổng quan and Cài đặt, at most 1 000 ms, in place of 740 ms. PR #1574 recorded its result by that mark ("Đạt", 873 / 791 ms) and merged on 28/11/2026. The numbers stay in the measures `docs/metrics/phase-6.md`, section "Mở lại sau khi bỏ "Hiện" ở màn đầu"; this entry only points there.
+     - **The narrow read Issue in `packages/db` does not exist yet: it is created when the OWNER says so**, like the backup messages Issue of ADR-0020 (decision 3 of 26/11 above). What it aims at, reading whole tables at the first render (the "Lưu ý" pill reads the whole appointments table), is in the measures, same section, "Phần còn lại theo profile".
+     - The comment lists no option the OWNER did not choose; the measures, same section, name one: "a) PR ghi số và phần sửa".
+  2. **DS-24**, 28/11/2026, review of PR #1574 (T-525, DS-23), https://github.com/AlexH-AI/Project-2C/pull/1574#issuecomment-7232385241: "DS-24 mới (đề xuất)".
+     - The Nit / E note of that review gets the new target **DS-24**, of the kind "script đo `e2e/perf`" (the `e2e/perf` timing scripts), following DS-12 and DS-23. Now L250 @`706f4e4`: the route message of the reopen timing script when it stops on an error. There was no work of the same kind: DS-23 (T-525 #1569) closed with that PR and DS-12 (#1563) is closed. Now T-528 #1577.
+     - The review also proposed `thay: [đóng phase]`; that label was not taken.
+  3. **Ledger grouping after run 5h**, 28/11/2026 (`auto-issues` §3.6, ledger @`706f4e4`, proposal of the coding session `coding-ses2`; the table is in the body of PR #1578, the ledger PR that relabelled the notes of run 5i). The OWNER answered the question of the orchestrating session: "Duyệt". There is no "Quyết định Owner" comment; the label is quoted from the message of the orchestrating session ("Owner duyệt đề xuất (T-527 docs quyết định Owner 27–28/11 + lịch đợt 5i; T-528 DS-24 L250)"), the body of #1576 and the body of PR #1578.
+     - Two Issues, T-527 and T-528 (#1576, #1577), as proposed.
+     - Not now: DS-4 (25 notes @`706f4e4`) keeps its place in run 7, as decided on 17/11 and 21/11. The other 124 notes carry the labels of planned work in the spec; L247 belongs to T-526 #1570.
+     - Three notes proposed for ACCEPTED: L138, L147 (`[DS-4]`, run 7) and L143 (`[D8]`, when the run 6 Issues are written). The OWNER has not decided them on their own; they keep their labels.
+  - **Decided by Claude while writing the proposal and the Issues** (by the existing rules; not questions to the OWNER):
+    - **The name "run 5i"** and its place: after run 5h, before run 6.
+    - **Two separate Issues:** T-528 changes a timing script, so CI runs; T-527 is docs only. §12.2 keeps the "DS-n · #Issue" row pattern.
+    - **The red case of DS-24:** the timing script needs the exe, so it has no direct case. T-528 moves the choice of the route message into a pure function of the timing scripts' library, like `runCount` and `browserPid` of T-525, with a case that turns red when the fix is removed. No new timing: the fix does not change the measured path.
+    - **Notes in the same files stay:** T-527: L45 → [E6], L48 → [HD1], L49 → [D8], L52, L102, L129 → [đóng phase], as with T-524; T-528: L159 → [G-09] (the backup cap copied in the timing library, the same pattern as the [G-09] notes on the backup cap).
+    - **PR labels:** T-527 `risk:low`, docs only, no CI; T-528 `risk:low`, CI runs (Verify + e2e), no build label: it touches neither `src-tauri`, Cargo, `package.json`, the lockfile, the build config nor `macos.yml`.
+    - **"Bị chặn bởi":** no run 5i Issue waits on a gate or on the result of another Issue; the run order is the queue. The two Issues share no file, and share none with T-526 #1570.
+    - **New spec rows** (DS-24 in §12.1 / §12.2) are added by T-527; T-528 does not change the spec.
+    - **Model of run 5i:** Opus (spec §10.1: DS-*).
+  - Run 5i queue (`auto-issues`, Opus): #1576 (T-527, records these decisions) → #1577 (T-528, DS-24; no timing on the exe). T-526 #1570 (DS-22) is still done by hand in an ordinary session, outside the queue.
 
 ## Next decision
 
