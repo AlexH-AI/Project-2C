@@ -246,17 +246,24 @@ export function runCount(text: string | undefined): number | undefined {
  * What the script that times reopening prints when it stops half way, about the screen the app
  * opens on (`key`, p2c.lastRoute): the screen the script left there and the one it found, to put
  * back by hand; undefined when nothing is to put back (T-528). `before` is undefined until read
- * and null when no screen was kept; `left` is undefined until the script writes a screen there.
+ * and null when no screen was kept; `left` is undefined until the script writes a screen there;
+ * `writing` is the screen of a write that has not answered, maybe kept or not (T-530).
  */
 export function routeLeftNote(
   key: string,
   before: string | null | undefined,
   left: string | null | undefined,
+  writing?: string | null,
 ): string | undefined {
-  if (before === undefined || left === undefined || left === before) return undefined;
+  const prior = left === undefined ? before : left;
+  const pending = writing !== undefined && writing !== prior;
+  if (before === undefined || (!pending && prior === before)) return undefined;
+  const maybe = pending
+    ? `, or at ${writing ?? 'none'} if the write it stopped in got through`
+    : '';
   return (
-    `${key} is left at ${left ?? 'none'}; it was ${before ?? 'none (Tổng quan)'}: open the ` +
-    'exe, go to that screen and close it, to put it back.'
+    `${key} is left at ${prior ?? 'none'}${maybe}; it was ${before ?? 'none (Tổng quan)'}: ` +
+    'open the exe, go to that screen and close it, to put it back.'
   );
 }
 
