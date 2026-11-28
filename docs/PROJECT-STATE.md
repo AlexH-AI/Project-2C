@@ -781,6 +781,25 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - **New spec rows** (DS-24 in §12.1 / §12.2) are added by T-527; T-528 does not change the spec.
     - **Model of run 5i:** Opus (spec §10.1: DS-*).
   - Run 5i queue (`auto-issues`, Opus): #1576 (T-527, records these decisions) → #1577 (T-528, DS-24; no timing on the exe). T-526 #1570 (DS-22) is still done by hand in an ordinary session, outside the queue.
+- 2026-11-28: run 5j Issues (T-529, T-530, #1582, #1583). Two OWNER decisions of 28/11/2026, both taken inside the `auto-issues` pipeline of run 5i. The first: the REVIEW of PR #1580 proposed `đích: DS mới`, and the orchestrating session asked the OWNER after that PR merged and before its notes PR #1581, the way T-513 #1520 set; its comment opens "Quyết định Owner (28/11/2026): DS mới cho review PR #1580". Decision 2 approved the ledger grouping proposal after run 5i, which made run 5j; it has no such comment. Run 5i is done: T-527 (PR #1579) and T-528 (DS-24, PR #1580) merged on 28/11/2026. Labels verbatim; T-529 #1582 records them, with the result of run 5i, in the spec `docs/design/phase-6-phan-hoi-dung-thu.md` §10.1, §12.1, §12.2:
+  1. **DS-25**, 28/11/2026, review of PR #1580 (T-528, DS-24), https://github.com/AlexH-AI/Project-2C/pull/1580#issuecomment-7235361981: "DS-25 mới — script đo e2e/perf (đề xuất)".
+     - The Nit / E note of that review gets the new target **DS-25**, of the kind "script đo `e2e/perf`" (the `e2e/perf` timing scripts), following DS-12, DS-23 and DS-24. Now L251 @`8554d43`: the route message of the reopen timing script when the route write fails midway. There was no work of the same kind: DS-24 (T-528 #1577) closed with that PR; DS-12 (#1563) and DS-23 (#1569) are closed. Now T-530 #1583.
+     - The review also proposed `thay: [đóng phase]`; that label was not taken.
+  2. **Ledger grouping after run 5i**, 28/11/2026 (`auto-issues` §3.6, ledger @`8554d43`, proposal of the coding session `coding-ses2`; the table is in the body of PR #1584, the ledger PR that relabelled the notes of run 5j). The OWNER answered the question of the orchestrating session: "Duyệt". There is no "Quyết định Owner" comment; the label is quoted from the message of the orchestrating session ("Owner duyệt đề xuất (T-529, T-530 như bảng của bạn)"), the body of #1582 and the body of PR #1584.
+     - Two Issues, T-529 and T-530 (#1582, #1583), as proposed.
+     - **L251 was a candidate for ACCEPTED:** the proposal named it so (Nit / E; the review found the behaviour as Issue #1577 set it and only said "Sửa nếu muốn"; only developers run the timing script), and proposed to fix it anyway. The OWNER approved the table with T-530, so the note is fixed and does not go to ACCEPTED.
+     - Not now: DS-4 (25 notes @`8554d43`) keeps its place in run 7, as decided on 17/11 and 21/11. The other 124 notes carry the labels of planned work in the spec; L247 belongs to T-526 #1570.
+     - Three notes proposed for ACCEPTED: L138, L147 (`[DS-4]`, run 7) and L143 (`[D8]`, when the run 6 Issues are written), line numbers unchanged since @`706f4e4`. The OWNER has not decided them on their own; they keep their labels.
+  - **Decided by Claude while writing the proposal and the Issues** (by the existing rules; not questions to the OWNER):
+    - **The name "run 5j"** and its place: after run 5i, before run 6.
+    - **Two separate Issues:** T-530 changes a timing script, so CI runs; T-529 is docs only. §12.2 keeps the "DS-n · #Issue" row pattern.
+    - **The red case and the scope of DS-25:** the timing script needs the exe, so it has no direct case. The pure function `routeLeftNote` (T-528) also takes the route being written, with a case that turns red when the fix is removed. The scope is every write that fails midway, not only the first open the note names. No new timing: the fix does not change the measured path.
+    - **Notes in the same files stay:** T-529: L45 → [E6], L48 → [HD1], L49 → [D8], L52, L102, L129 → [đóng phase], as with T-524 and T-527; T-530: L159 → [G-09], as with T-528.
+    - **PR labels:** T-529 `risk:low`, docs only, no CI; T-530 `risk:low`, CI runs (Verify + e2e), no build label: it touches neither `src-tauri`, Cargo, `package.json`, the lockfile, the build config nor `macos.yml`.
+    - **"Bị chặn bởi":** no run 5j Issue waits on a gate or on the result of another Issue; the run order is the queue. The two Issues share no file, and share none with T-526 #1570.
+    - **New spec rows** (DS-25 in §12.1 / §12.2) are added by T-529; T-530 does not change the spec.
+    - **Model of run 5j:** Opus (spec §10.1: DS-*).
+  - Run 5j queue (`auto-issues`, Opus): #1582 (T-529, records these decisions) → #1583 (T-530, DS-25; no timing on the exe). T-526 #1570 (DS-22) is still done by hand in an ordinary session, outside the queue.
 
 ## Next decision
 
