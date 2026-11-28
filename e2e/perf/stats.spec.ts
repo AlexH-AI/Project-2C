@@ -319,3 +319,24 @@ test('routeLeftNote names the screen to put back only once the script wrote one 
   for (const before of ['#/team', '#/overview', null])
     expect(routeLeftNote(KEY, before, before)).toBeUndefined();
 });
+
+test('routeLeftNote names both screens when it stopped while writing one (T-530)', () => {
+  const putBack = 'open the exe, go to that screen and close it, to put it back.';
+  const gotThrough = 'if the write it stopped in got through';
+  // First opening: the timed screen may be written already.
+  expect(routeLeftNote('k', '#/team', undefined, '#/overview')).toBe(
+    `k is left at #/team, or at #/overview ${gotThrough}; it was #/team: ${putBack}`,
+  );
+  expect(routeLeftNote('k', null, undefined, '#/overview')).toBe(
+    `k is left at none, or at #/overview ${gotThrough}; it was none (Tổng quan): ${putBack}`,
+  );
+  // Last opening, putting the old screen back: it may be back already.
+  expect(routeLeftNote('k', null, '#/overview', null)).toBe(
+    `k is left at #/overview, or at none ${gotThrough}; it was none (Tổng quan): ${putBack}`,
+  );
+  // Writing the screen already there: as with no write; the old one over itself; not read yet.
+  const timed = routeLeftNote('k', '#/team', '#/overview');
+  expect(routeLeftNote('k', '#/team', '#/overview', '#/overview')).toBe(timed);
+  expect(routeLeftNote('k', '#/team', undefined, '#/team')).toBeUndefined();
+  expect(routeLeftNote('k', undefined, undefined, '#/overview')).toBeUndefined();
+});

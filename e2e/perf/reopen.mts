@@ -94,11 +94,12 @@ async function marks() {
 
 const ROUTE = 'p2c.lastRoute';
 /**
- * p2c.lastRoute before the first opening (undefined until read), and what the script wrote there
- * (undefined until it writes one).
+ * p2c.lastRoute before the first opening (undefined until read), what the script wrote there
+ * (undefined until it writes one), and what it is writing there (undefined once that answered).
  */
 let before: string | null | undefined;
 let left: string | null | undefined;
+let writing: string | null | undefined;
 /** The exe open now: closed by force when the script stops half way. */
 let app: ChildProcess | undefined;
 
@@ -124,11 +125,12 @@ async function open(timed: boolean, next: string | null) {
     // Read once: null (no screen kept) is an answer too.
     if (before === undefined)
       before = await page.evaluate((key) => localStorage.getItem(key), ROUTE);
+    writing = next;
     await page.evaluate(
       ([key, hash]) => (hash ? localStorage.setItem(key, hash) : localStorage.removeItem(key)),
       [ROUTE, next] as const,
     );
-    left = next;
+    [left, writing] = [next, undefined];
     // Closed once its WebView2 browser process is gone too: a new exe would join one still closing.
     const session = await browser.newBrowserCDPSession();
     webview = browserPid((await session.send('SystemInfo.getProcessInfo')).processInfo);
@@ -173,7 +175,7 @@ try {
     done.push((await open(true, i < runs - 1 ? `#/${values.screen}` : (before ?? null)))!);
 } catch (error) {
   if (app?.exitCode === null) spawnSync('taskkill', ['/F', '/T', '/PID', String(app.pid)]);
-  const note = routeLeftNote(ROUTE, before, left);
+  const note = routeLeftNote(ROUTE, before, left, writing);
   if (note) console.error(note);
   throw error;
 } finally {
